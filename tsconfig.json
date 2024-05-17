@@ -1,0 +1,35 @@
+{
+  "compileOnSave": true,
+  "files": ["declarations.d.ts"],
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "jsx": "react-jsx",
+    "rootDir": "./src",
+    "outDir": "build",
+    "esModuleInterop": true,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "sourceMap": true,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "typeRoots": [ "./types", "./node_modules/@types"],
+    "paths": {
+      "@app/*": ["./src/app/*"],
+      "@pages/*": ["./src/pages/*"],
+      "@widgets/*": ["./src/widgets/*"],
+      "@features/*": ["./src/features/*"],
+      "@entities/*": ["./src/entities/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@layout/*": ["./src/layout/*"]
+    },
+    "lib": [
+          "ES2021.String",
+          "dom"
+        ]
+  },
+    "include": ["src/**/*"],
+  "exclude": ["node_modules", "build/**/*", "types"]
+}

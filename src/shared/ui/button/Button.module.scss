@@ -1,0 +1,39 @@
+.button {
+  //border-radius: 10px
+  color: white;
+  font-size: 16px;
+}
+
+.new-style {
+  background: green;
+  color: white;
+
+  &:hover {
+    background: darkgreen;
+  }
+}
+
+.delete-style {
+  background: red;
+  color: white;
+
+  &:hover {
+    background: darkred;
+  }
+}
+
+.edit {
+  color: white;
+  background: gray;
+
+  &:hover {
+    background: darkgray;
+  }
+}
+
+.action {
+  background: transparent;
+  border: 1px solid grey;
+  color: black;
+  min-width: 100px;
+}

@@ -1,0 +1,19 @@
+.avatar {
+  width: 100px;
+  height: 100px;
+  font-size: 40px;
+  background-color: crimson;
+  & img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+  }
+}
+
+// TODO => вынести этот код, он повторяется как и ImagePreview
+.paper {
+  &::before {
+    width: 100px;
+    height: 100px;
+  }
+}

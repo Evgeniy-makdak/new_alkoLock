@@ -1,0 +1,14 @@
+.aside {
+  position: relative;
+  width: auto;
+  border-left: 1px solid #d8d8d8;
+  height: 100vh;
+  max-height: 100vh;
+}
+
+.close {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  cursor: pointer;
+}
