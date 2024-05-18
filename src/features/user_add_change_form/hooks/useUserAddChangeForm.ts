@@ -33,7 +33,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { register, control, handleSubmit, watch, clearErrors, setValue, getValues, formState } =
     useForm({
       resolver: yupResolver(schema(id)),
-      values: initUser.defaultValues,
+      defaultValues: initUser.defaultValues,
     });
   const stateOfForm = getFormState(formState, watch);
 
@@ -100,6 +100,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
     const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
+
     if (
       stateOfForm.state.disableDriverInfo &&
       (licenseClass || licenseIssueDate || licenseExpirationDate) &&
@@ -108,22 +109,49 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       setAlert(true);
       return;
     }
+
     const { formData, userData, userFoto } = getDataForRequest(
       data,
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
     );
-    if (!id) {
-      const isError = (await createItem(formData)).isError;
-      isError && enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
-      !isError && closeModal();
-    } else if (id) {
-      const isErrorChangeItem = (await changeItem(userData))?.isError;
-      isErrorChangeItem && enqueueSnackbar('Ошибка сохранения пользователя', { variant: 'error' });
-      !isErrorChangeItem && closeModal();
-      if (!userFoto) return;
-      const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
-      isErrorChangeFoto && enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+
+    // Отладка: выводим данные FormData в консоль
+    formData.forEach((value, key) => {
+      console.log(`${key}: ${value}`);
+    });
+
+    console.log('Формируемые данные для запроса:', { formData, userData, userFoto });
+
+    try {
+      if (!id) {
+        const response = await createItem(formData); // Отправка formData
+        const isError = response.isError;
+        console.log('Ответ сервера при создании:', response);
+        if (isError) {
+          enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
+        } else {
+          closeModal && closeModal();
+        }
+      } else {
+        const isErrorChangeItem = (await changeItem(userData))?.isError;
+        console.log('Ответ сервера при изменении:', isErrorChangeItem);
+        if (isErrorChangeItem) {
+          enqueueSnackbar('Ошибка сохранения пользователя', { variant: 'error' });
+        } else {
+          closeModal && closeModal();
+          if (userFoto) {
+            const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
+            console.log('Ответ сервера при изменении фото:', isErrorChangeFoto);
+            if (isErrorChangeFoto) {
+              enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Непредвиденная ошибка:', error);
+      enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
     }
   };
 
