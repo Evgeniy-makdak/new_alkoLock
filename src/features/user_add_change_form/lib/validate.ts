@@ -30,9 +30,9 @@ export type KeyForm = keyof Form;
 
 type YupContext = yup.TestContext<Form>;
 
-const isSameDate = (val1: Dayjs, val2: Dayjs) => {
-  return val1.date() === val2.date() && val1.month() === val2.month() && val1.year() && val2.year();
-};
+// const isSameDate = (val1: Dayjs, val2: Dayjs) => {
+//   return val1.date() === val2.date() && val1.month() === val2.month() && val1.year() === val2.year();
+// };
 
 yup.addMethod(object, 'licenseIssueDate', function method(message) {
   return this.test(
@@ -55,7 +55,7 @@ yup.addMethod(object, 'licenseIssueDate', function method(message) {
         'isValid' in licenseExpirationDate &&
         licenseExpirationDate.isValid();
       if (!isValidExpirationDate) return true;
-      if (isSameDate(licenseExpirationDate, value)) {
+      if (!value.isBefore(licenseExpirationDate)) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
@@ -81,13 +81,14 @@ yup.addMethod(object, 'licenseExpirationDate', function method(message) {
       const isValidIssueDate =
         licenseIssueDate && 'isValid' in licenseIssueDate && licenseIssueDate.isValid();
       if (!isValidIssueDate) return true;
-      if (isSameDate(licenseIssueDate, value)) {
+      if (!licenseIssueDate.isBefore(value)) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
     },
   );
 });
+
 
 yup.addMethod(object, 'birthDate', function method(message) {
   return this.test('birthDate', message, function validate(value: Dayjs, context: YupContext) {
