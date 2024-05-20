@@ -117,9 +117,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     );
 
     // Отладка: выводим данные FormData в консоль
-    formData.forEach((value, key) => {
-      console.log(`${key}: ${value}`);
-    });
+    if (formData) {
+  formData.forEach((value, key) => {
+    console.log(`${key}: ${value}`);
+  });
+}
+
 
     console.log('Формируемые данные для запроса:', { formData, userData, userFoto });
 
