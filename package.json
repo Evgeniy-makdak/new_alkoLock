@@ -41,7 +41,8 @@
     "format": "prettier --write \"**/*.+(ts|tsx|css|md)\"",
     "prepare": "husky install",
     "precommit": "yarn format && yarn lint && yarn lint:fix",
-    "watch": "yarn typed-scss-modules src --watch"
+    "watch": "yarn typed-scss-modules src --watch",
+    "proxy": "http://localhost:8080" 
   },
   "husky": {
     "hooks": {
