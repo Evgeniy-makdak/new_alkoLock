@@ -8,7 +8,7 @@ export const getDataForRequest = (
   branchId: ID,
   userID: ID,
 ): { formData?: FormData | null; userData?: CreateUserData | null; userFoto?: FormData | null } => {
-  console.log('Проверка userID:', userID); // Логирование userID
+  // console.log('Проверка userID:', userID); // Логирование userID
   
   const userGroups = ArrayUtils.getArrayFromValues(data?.userGroups);
   const licenseCode = data?.licenseCode || '';
@@ -92,8 +92,8 @@ export const getDataForRequest = (
     userFoto.append('hash', image?.hash || '');
   }
 
-  console.log('Сформированные formData:', formData);
-  console.log('Сформированные userData:', reqBody);
+  // console.log('Сформированные formData:', formData);
+  // console.log('Сформированные userData:', reqBody);
   console.log('Сформированные userFoto:', userFoto);
 
   return { formData, userData: reqBody, userFoto };
