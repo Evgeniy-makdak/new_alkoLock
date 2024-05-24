@@ -1,4 +1,4 @@
-import * as CryptoJS from 'crypto-js';
+import CryptoJS from 'crypto-js';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '../hooks/useUploadImg';
@@ -15,6 +15,9 @@ export async function getFileHashAndEncodeBase64(file: File | Blob) {
     // Кодирование хэша в строку Base64url
     const base64EncodedHash = CryptoJS.enc.Base64url.stringify(hash);
 
+    console.log('getFileHashAndEncodeBase64 - hash:', base64EncodedHash);
+    console.log('getFileHashAndEncodeBase64 - file name:', file);
+
     return base64EncodedHash;
   } catch (error) {
     console.error('Ошибка при получении хэша файла:', error);
@@ -25,6 +28,9 @@ export const filterListImages = (images: ImageState[]): ImageState[] => {
   if (images?.length < 2) return images;
   return images.reduce((acc: ImageState[], value) => {
     const hash = value?.hash;
+    console.log('filterListImages - hash:', hash);
+    console.log('filterListImages - file name:', value.image);
+
     if (!hash) return [...acc, value];
     const hasElement = acc.find((item) => item?.hash === hash);
     if (hasElement) {
@@ -69,3 +75,4 @@ export const prevent = (
   e.preventDefault();
   e.stopPropagation();
 };
+
