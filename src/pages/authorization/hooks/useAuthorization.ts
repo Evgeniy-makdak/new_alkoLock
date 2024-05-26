@@ -87,6 +87,14 @@ export const useAuthorization = () => {
     isPlaceholderData ||
     !canEnter;
 
+    console.log(isError);
+    console.log(accountData);
+    console.log(isSuccessGetAccountData);
+    console.log(canEnter);
+    
+    
+    
+
   useEffect(() => {
     if (canNotEnter) return;
     // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов

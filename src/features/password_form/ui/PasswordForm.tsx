@@ -1,6 +1,7 @@
 import { type FC } from 'react';
 
-import { TextField, Typography } from '@mui/material';
+import { Typography } from '@mui/material';
+import { InputPassword } from '@shared/ui/InputPassword/Input';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
@@ -13,7 +14,7 @@ type PasswordForm = {
 };
 
 export const PasswordForm: FC<PasswordForm> = ({ close }) => {
-  const { currentPasswordError, handleSubmit, newPasswordError, register } = usePasswordForm(close);
+  const { currentPasswordError, handleSubmit, newPasswordError, register, control } = usePasswordForm(close);
   const isNotValidForm = !!currentPasswordError || !!newPasswordError;
   return (
     <>
@@ -21,16 +22,26 @@ export const PasswordForm: FC<PasswordForm> = ({ close }) => {
         Изменение пароля
       </Typography>
       <InputsColumnWrapper>
-        <TextField
-          {...register('currentPassword')}
+        <InputPassword
           error={!!currentPasswordError}
-          helperText={currentPasswordError}
+          {...register('currentPassword')}
+          name="currentPassword"
+          control={control}
+          autoComplete="off"
+          fullWidth
+          type={'pass'}
+          variant={'outlined'}
           label="Текущий пароль"
         />
-        <TextField
-          {...register('newPassword')}
+        <InputPassword
           error={!!newPasswordError}
-          helperText={newPasswordError}
+          {...register('newPassword')}
+          name="newPassword"
+          control={control}
+          autoComplete="off"
+          fullWidth
+          type={'pass'}
+          variant={'outlined'}
           label="Новый пароль"
         />
       </InputsColumnWrapper>

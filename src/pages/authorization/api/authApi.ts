@@ -21,6 +21,8 @@ export const useAuthApi = (
   } = useMutation({
     mutationFn: (data: UserDataLogin) => UsersApi.authenticate(data),
     onError(error: AxiosError<IError>) {
+      console.log(error);
+
       enqueueSnackbar(`${error?.response?.data?.detail} ${error?.response?.data.status}`, {
         variant: 'error',
       });

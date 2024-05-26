@@ -12,6 +12,7 @@ export const usePasswordForm = (close: () => void) => {
     formState: {
       errors: { currentPassword, newPassword },
     },
+    control,
   } = useForm({
     resolver: yupResolver(schema),
   });
@@ -26,5 +27,5 @@ export const usePasswordForm = (close: () => void) => {
     close();
   };
 
-  return { currentPasswordError, newPasswordError, register, handleSubmit: handleSubmit(onSubmit) };
+  return { currentPasswordError, newPasswordError, register, handleSubmit: handleSubmit(onSubmit), control };
 };
