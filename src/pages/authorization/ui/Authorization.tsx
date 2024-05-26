@@ -18,7 +18,7 @@ export const Authorization = () => {
     control,
     errorPassword,
     errorUsername,
-    remeberMe,
+    rememberMe,
     handleChangeRemeber,
   } = useAuthorization();
 
@@ -67,7 +67,7 @@ export const Authorization = () => {
               <FormCheckbox
                 checkBox={{
                   onChange: (_e, val) => handleChangeRemeber(val),
-                  checked: remeberMe,
+                  checked: rememberMe,
                 }}
                 label={'Запомнить меня'}
               />

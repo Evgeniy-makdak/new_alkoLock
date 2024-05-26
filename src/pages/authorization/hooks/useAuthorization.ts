@@ -42,6 +42,9 @@ export const useAuthorization = () => {
       setState({
         auth: true,
       });
+
+      console.log('state после успешной авторизации:', appStore.getState());
+
       setCanLoadLoginData(true);
     }
   };
@@ -87,13 +90,6 @@ export const useAuthorization = () => {
     isPlaceholderData ||
     !canEnter;
 
-    console.log(isError);
-    console.log(accountData);
-    console.log(isSuccessGetAccountData);
-    console.log(canEnter);
-    
-    
-    
 
   useEffect(() => {
     if (canNotEnter) return;
@@ -131,7 +127,7 @@ export const useAuthorization = () => {
     errorPassword,
     errorUsername,
     control,
-    remeberMe: watch('rememberMe'),
+    rememberMe: watch('rememberMe'),
     handleChangeRemeber,
   };
 };

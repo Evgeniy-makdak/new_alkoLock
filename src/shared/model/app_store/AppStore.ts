@@ -16,8 +16,8 @@ export interface AppStore {
   selectedBranchState: SelectedBranchState | null;
   auth: boolean;
   isAdmin: boolean;
-  email: string;
-  assignmentBranch: SelectedBranchState;
+  email: string | null;
+  assignmentBranch: SelectedBranchState | null;
   // TODO => переделать работу с доступами
   permissions: string[];
   setState: (data: {
@@ -74,7 +74,11 @@ export const appStore = create<AppStore>()((set, get) => ({
       auth: false,
       email: null,
       isAdmin: false,
+      assignmentBranch: null,
+      permissions: [],
     });
+
+    console.log('State после logout:', get());
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
   },
