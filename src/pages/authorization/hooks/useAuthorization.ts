@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
+// Импортируем useLocation
 import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -19,9 +20,13 @@ import { schema } from '../lib/validate';
 export const useAuthorization = () => {
   const setState = appStore.setState;
   const [canLoadLoginData, setCanLoadLoginData] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
     cookieManager.removeAll();
+    setState({ auth: false });
     if (errors.length > 0) {
       errors.map((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error?.message}`, { variant: 'error' });
@@ -43,11 +48,13 @@ export const useAuthorization = () => {
         auth: true,
       });
 
-      console.log('state после успешной авторизации:', appStore.getState());
-
       setCanLoadLoginData(true);
+
+      // После успешной авторизации перезагружаем текущую страницу
+      navigate(location.pathname, { replace: true });
     }
   };
+
   const {
     mutate: enter,
     isLoading,
@@ -75,8 +82,6 @@ export const useAuthorization = () => {
     resolver: yupResolver(schema),
   });
 
-  const navigate = useNavigate();
-
   const handleChangeRemeber = (value: boolean) => {
     setValue('rememberMe', value);
   };
@@ -89,7 +94,6 @@ export const useAuthorization = () => {
     !accountData?.permissions ||
     isPlaceholderData ||
     !canEnter;
-
 
   useEffect(() => {
     if (canNotEnter) return;
@@ -124,6 +128,7 @@ export const useAuthorization = () => {
     handleSubmit: handleSubmit(handleAuthorization),
     isLoading,
     register,
+
     errorPassword,
     errorUsername,
     control,

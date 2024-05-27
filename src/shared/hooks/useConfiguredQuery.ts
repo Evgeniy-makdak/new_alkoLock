@@ -70,7 +70,7 @@ export const useConfiguredQuery = <T, D extends QueryOptions>(
       
       return fn(newOptions ? newOptions : {})},
     ...(settings || {}),
-  });
+  });  
 
   return data;
 };

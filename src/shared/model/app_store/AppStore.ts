@@ -78,8 +78,8 @@ export const appStore = create<AppStore>()((set, get) => ({
       permissions: [],
     });
 
-    console.log('State после logout:', get());
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
+    window.location.reload();
   },
 }));

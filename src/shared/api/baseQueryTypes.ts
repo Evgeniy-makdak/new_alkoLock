@@ -110,7 +110,7 @@ export function postQuery<T, D>({
       headers: returnHeaders(headers),
     })
     .catch((e) => {
-      console.log(e);
+      // console.log(e);
       return viewResErrors<T>(e);
     });
 }
