@@ -16,7 +16,9 @@ export async function getFileHashAndEncodeBase64(file: File | Blob) {
     const base64EncodedHash = CryptoJS.enc.Base64url.stringify(hash);
 
     return base64EncodedHash;
-  } catch (error) {}
+  } catch (error) {
+    console.error('Ошибка при получении хэша файла:', error);
+  }
 }
 
 export const filterListImages = (images: ImageState[]): ImageState[] => {
