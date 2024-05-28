@@ -18,20 +18,11 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     return { hasError: true };
   }
 
-  // componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-  //   console.log(error, errorInfo);
-  // }
-
   render() {
     if (this.state.hasError) {
       return (
         <div>
           <h2>Ошибка UI.</h2>
-          {/* <details style={{ whiteSpace: 'pre-wrap' }}>
-            {this.state.error && this.state.error.toString()}
-            <br />
-            {this.state.errorInfo.componentStack}
-          </details> */}
         </div>
       );
     }

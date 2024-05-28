@@ -8,8 +8,6 @@ export const getDataForRequest = (
   branchId: ID,
   userID: ID,
 ): { formData?: FormData | null; userData?: CreateUserData | null; userFoto?: FormData | null } => {
-  // console.log('Проверка userID:', userID); // Логирование userID
-  
   const userGroups = ArrayUtils.getArrayFromValues(data?.userGroups);
   const licenseCode = data?.licenseCode || '';
   const phone = data?.phone?.trim();
@@ -22,8 +20,6 @@ export const getDataForRequest = (
     : null;
   const licenseIssueDate = hasDriver ? data?.licenseIssueDate?.format('YYYY-MM-DD') : null;
   const image = data?.userPhotoDTO?.length > 0 ? data?.userPhotoDTO[0] : null;
-  
-  console.log('Проверка image:', image); // Логирование image
 
   const reqBody: CreateUserData = {
     branchId: branchId,
@@ -91,10 +87,6 @@ export const getDataForRequest = (
     userFoto.append('image', image?.image || '');
     userFoto.append('hash', image?.hash || '');
   }
-
-  // console.log('Сформированные formData:', formData);
-  // console.log('Сформированные userData:', reqBody);
-  console.log('Сформированные userFoto:', userFoto);
 
   return { formData, userData: reqBody, userFoto };
 };

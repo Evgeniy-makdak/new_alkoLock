@@ -97,12 +97,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   }, [avatar]);
 
   const onSubmit = async (data: Form) => {
-    // console.log('Отправляемые данные:', data);
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
     const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
-    const userID = id; // Убедиться, что id здесь не null
-    // console.log('Проверка userID в onSubmit:', userID);
+    const userID = id; 
 
     if (
       stateOfForm.state.disableDriverInfo &&
@@ -119,22 +117,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       id,
     );
 
-    // console.log('Формируемые данные для запроса:', { formData, userData, userFoto });
-
-    // Отладка: выводим данные FormData в консоль
-    // if (formData) {
-    //   formData.forEach((value, key) => {
-    //     console.log(`${key}: ${value}`);
-    //   });
-    // }
-
-    // console.log('Формируемые данные для запроса:', { formData, userData, userFoto });
-
     try {
       if (!id) {
-        const response = await createItem(formData); // Отправка formData
+        const response = await createItem(formData); 
         const isError = response.isError;
-        // console.log('Ответ сервера при создании:', response);
         if (isError) {
           enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
         } else {
@@ -142,14 +128,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       } else {
         const isErrorChangeItem = (await changeItem(userData))?.isError;
-        // console.log('Ответ сервера при изменении:', isErrorChangeItem);
         if (isErrorChangeItem) {
           enqueueSnackbar('Ошибка сохранения пользователя', { variant: 'error' });
         } else {
           closeModal && closeModal();
           if (userFoto) {
             const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
-            console.log('Ответ сервера при изменении фото:', isErrorChangeFoto);
             if (isErrorChangeFoto) {
               enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
             }

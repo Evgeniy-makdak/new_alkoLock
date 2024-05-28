@@ -112,26 +112,13 @@ export class UsersApi {
     });
   }
   static changeAvatar(data: FormData, userId: ID) {
-    console.log('changeAvatar: Отправка данных (data):', data);
-    console.log('changeAvatar: Данные FormData:', data.getAll('image'));
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
   static deleteUserImages(ids: ID[], userId: ID) {
-    // Логируем входные данные
-    console.log('deleteUserImages: ID аватаров (ids):', ids);
-    console.log('deleteUserImages: ID пользователя (userId):', userId);
-
-    // Логируем формируемый URL запроса
     const url = `api/users/${userId}/photo`;
-    console.log('deleteUserImages: URL запроса:', url);
 
-    // Выполняем запрос
     const response = deleteQuery({ url, data: ids });
 
-    // Логируем ответ сервера
-    console.log('deleteUserImages: Ответ сервера:', response);
-
-    // Возвращаем результат запроса
     return response;
   }
   static getList(options: QueryOptions, widthCars = false) {
