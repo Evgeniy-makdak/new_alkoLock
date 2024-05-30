@@ -392,7 +392,7 @@ export function getCreateAlkolocksURL() {
 ////////////////////////////////==============================================EVENTS API
 
 export const getEventsTypeUrl = () => {
-  return `api/event-types`;
+  return `api/v1/front-data/event-types`;
 };
 
 function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirection) {
@@ -455,8 +455,9 @@ export function getEventsHistoryURL({
     queries += `&all.device.id.in=${alcolockId}`;
   }
 
-  if (order && sortBy) {
-    queries += getSortQueryEvents(sortBy, order);
+  if (sortBy && order) {
+    const sortDirection = 'asc';
+    queries += getSortQueryEvents(sortBy, sortDirection);
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 50}${queries}`;
@@ -495,7 +496,8 @@ export function getEventsApiURL({
   }
 
   if (sortBy && order) {
-    queries += getSortQueryEvents(sortBy, order);
+    const sortDirection = 'asc';
+    queries += getSortQueryEvents(sortBy, sortDirection);
   }
 
   if (queryTrimmed.length) {
@@ -562,7 +564,8 @@ export function getEventListForAutoServiceURL({
   }
 
   if (sortBy && order) {
-    queries += getSortQueryEvents(sortBy, order);
+    const sortDirection = 'asc';
+    queries += getSortQueryEvents(sortBy, sortDirection);
   }
 
   if (queryTrimmed.length) {
