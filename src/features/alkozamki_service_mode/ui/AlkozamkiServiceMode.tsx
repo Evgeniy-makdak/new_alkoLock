@@ -40,7 +40,7 @@ export const AlkozamkiServiceMode = ({
     <>
       <div className={style.alcolockServiceMode}>
         <Stack spacing={2} direction={'column'}>
-          <span className={style.name}>Режим &quot;Автосервис&quot;: </span>
+          <span className={style.name}>Сервисный режим: </span>
           {/* {getText()} */}
           {hasTime && (
             <Stack spacing={2} direction={'row'}>
@@ -58,7 +58,7 @@ export const AlkozamkiServiceMode = ({
 
       <Popup
         isOpen={openActivatePopup}
-        headerTitle={'Включить режим “Автосервис”?'}
+        headerTitle={'Включить сервисный режим?'}
         toggleModal={toggleActivatePopup}
         body={
           <ActivateForm
@@ -71,7 +71,7 @@ export const AlkozamkiServiceMode = ({
 
       <Popup
         isOpen={openDeactivatePopup}
-        headerTitle={'Отключить режим “Автосервис”?'}
+        headerTitle={'Отключить сервисный режим?'}
         toggleModal={toggleDeactivatePopup}
         buttons={[
           <Button key={'action_1'} typeButton={ButtonsType.action} onClick={handleDeactivate}>

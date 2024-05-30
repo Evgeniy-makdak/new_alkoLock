@@ -236,7 +236,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
         );
       }
     } catch (err) {
-      return <>Ошибка в отображении режима автосервиса</>;
+      return <>Ошибка в отображении сервисного режима</>;
     }
   };
 

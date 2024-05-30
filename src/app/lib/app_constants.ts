@@ -207,7 +207,7 @@ export class AppConstants {
   static alkolockWorkModes = [
     {
       value: 'MAINTENANCE',
-      label: 'Автосервис',
+      label: 'Сервисный режим',
     },
     {
       value: 'NORMAL',
@@ -305,7 +305,7 @@ export class AppConstants {
     },
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOff,
-      label: 'Выход из режима "Атвосервис"',
+      label: 'Выход из сервисного режима',
     },
     {
       value: this.EVENT_TYPES.alcolockEventEmergencyModeOn,
@@ -349,7 +349,7 @@ export class AppConstants {
 
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOn,
-      label: 'Переход в режим "Автосервис"',
+      label: 'Переход в сервисный режим',
     },
   ];
 

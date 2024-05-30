@@ -43,7 +43,7 @@ export const NAV_LINKS = [
   },
   {
     path: RoutePaths.autoService,
-    name: 'Автосервис',
+    name: 'Сервисный режим',
     icon: <EngineeringOutlinedIcon />,
   },
   {
