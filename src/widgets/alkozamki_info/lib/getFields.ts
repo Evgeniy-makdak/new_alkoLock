@@ -28,7 +28,7 @@ export const getFields = (itemData: IAlcolock) => {
       label: 'Режим работы',
       type: TypeOfRows.MODE,
       value: {
-        label: mode,
+        label: mode.split(' ')[0],
       },
     },
     {
