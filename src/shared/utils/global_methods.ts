@@ -7,12 +7,12 @@ export class SearchMethods {
     }
 
     let mostRecentEvent = events[0];
-    let mostRecentTime = new Date(mostRecentEvent.reportedAt);
+    let mostRecentTime = new Date(mostRecentEvent.occurredAt);
 
     events
       .filter((event) => event.eventType !== 'APP_ACKNOWLEDGED')
       .forEach((event) => {
-        const eventTime = new Date(event.reportedAt);
+        const eventTime = new Date(event.occurredAt);
         if (eventTime > mostRecentTime) {
           mostRecentTime = eventTime;
           mostRecentEvent = event;
