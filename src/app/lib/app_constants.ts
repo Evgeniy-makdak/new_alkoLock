@@ -207,7 +207,7 @@ export class AppConstants {
   static alkolockWorkModes = [
     {
       value: 'MAINTENANCE',
-      label: 'Сервисный режим',
+      label: 'Сервисный',
     },
     {
       value: 'NORMAL',
