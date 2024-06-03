@@ -173,7 +173,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
               );
             } else if (serviceModeInfo.requestType === 'APP_REQUEST') {
               if (serviceModeInfo.isAcknowledged) {
-                return <span>Отклонение подтвержденно приложением</span>;
+                return <span>Отклонение подтверждено приложением</span>;
               } else {
                 return <span>Ожидание подтверждения приложения</span>;
               }
@@ -197,7 +197,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
               );
             } else if (serviceModeInfo.requestType === EventType.APP_REQUEST) {
               if (serviceModeInfo.isAcknowledged) {
-                return <span>Подтвержденно приложением</span>;
+                return <span>Подтверждено приложением</span>;
               } else {
                 return <span>Ожидание подтверждения приложения</span>;
               }
