@@ -9,21 +9,25 @@ import { Formatters } from '@shared/utils/formatters';
 import { ValuesHeader } from './getColumns';
 
 export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
-  const mapData = (Array.isArray(data) ? data : []).map((item) => {
-    const lastEvent = getLastEvent(item);
+  const mapData = useMemo(() => {
+    return (Array.isArray(data) ? data : []).map((item) => {
+      const lastEvent = getLastEvent(item);
 
-    return {
-      id: item.id,
-      [ValuesHeader.DATE_OCCURRENT]: Formatters.formatISODate(item.startedAt) ?? '-',
-      [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.createdBy) ?? '-',
-      [ValuesHeader.TC]: item.vehicleRecord
-        ? Formatters.carNameFormatter(item.vehicleRecord, true)
-        : '-',
-      [ValuesHeader.GOS_NUMBER]: item.vehicleRecord?.registrationNumber ?? '-',
-      [ValuesHeader.TYPE_OF_EVENT]: lastEvent,
-    };
-  });
+      // Используйте данные из массива events
+      const event = item.events && item.events.length > 0 ? item.events[0] : null;
 
-  const returnData = useMemo(() => mapData, [data]);
-  return returnData;
+      return {
+        id: item.id,
+        [ValuesHeader.DATE_OCCURRENT]: event ? Formatters.formatISODate(event.occurredAt) ?? '-' : '-', 
+        [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.createdBy) ?? '-',
+        [ValuesHeader.TC]: item.vehicleRecord
+          ? Formatters.carNameFormatter(item.vehicleRecord, true)
+          : '-',
+        [ValuesHeader.GOS_NUMBER]: item.vehicleRecord?.registrationNumber ?? '-',
+        [ValuesHeader.TYPE_OF_EVENT]: lastEvent,
+      };
+    });
+  }, [data]);
+
+  return mapData;
 };

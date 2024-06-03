@@ -45,6 +45,8 @@ export const hasPermissionForThisPage = (
     return routerPermissions;
   }
   const permission = getPermissionsNumbersEntities(permissionsList);
+  console.log(permission);
+  
   routerPermissions[RoutePaths.events] = hasNoZeroPermissions(permission.eventPermission);
   routerPermissions[RoutePaths.users] = hasNoZeroPermissions(permission.userPermission);
   routerPermissions[RoutePaths.roles] = hasNoZeroPermissions(permission.rolePermission);
@@ -65,6 +67,9 @@ export const getFirstAvailableRouter = (permissionsList: Permissions[]) => {
   const permissionsPath = hasPermissionForThisPage(permissionsList);
   // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
   const array = Object.entries(permissionsPath).filter((perm) => perm[1] === true);
+console.log(permissionsPath);
+console.log(array);
+
 
   const availableRouter = array[0];
 

@@ -35,6 +35,7 @@ export class Formatters {
   }
 
   static nameFormatter(user: Partial<IUser>, withPlaceholder = true) {
+    
     const placeholder = withPlaceholder ? '-' : '';
     if (!user) return placeholder;
     const name = user?.firstName ?? '';

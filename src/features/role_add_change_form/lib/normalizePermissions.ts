@@ -91,10 +91,16 @@ const getArrayOfStringFromPermission = (
 };
 // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
 export const permissionForEntity = (permissionsList: Permissions[]) => {
+  console.log(permissionsList);
+  
   return function (entity: Entities): PermissionsStatus[] {
     const permissionStatus: PermissionsStatus[] = [];
     (permissionsList || []).map((item) => {
       const { entities, status } = getArrayOfStringFromPermission(item);
+      console.log(entities, status);
+      console.log(entity);
+      
+      
       if (entities === entity) {
         permissionStatus.push(PermissionsStatus[status]);
       }
@@ -112,6 +118,7 @@ export const getPermissionsNumbersEntities = (permissionsList: Permissions[]) =>
   const eventPermission = findPermissionForEntity(Entities.EVENT);
   const rolePermission = findPermissionForEntity(Entities.ROLE);
   const attachmentsPermission = findPermissionForEntity(Entities.ATTACHMENT);
+  // const driverPermition = findPermissionForEntity(Entities.SYSTEM_DRIVER_ACCOUNT);
   return {
     userPermission,
     devicePermission,
@@ -119,5 +126,6 @@ export const getPermissionsNumbersEntities = (permissionsList: Permissions[]) =>
     attachmentsPermission,
     rolePermission,
     eventPermission,
+    // driverPermition,
   };
 };

@@ -308,6 +308,7 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
+  occurredAt: any;
   createdAt: string;
   finishedAt: string;
   id: string;

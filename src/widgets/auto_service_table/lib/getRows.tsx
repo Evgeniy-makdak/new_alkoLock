@@ -91,7 +91,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
       id: item.id,
       idDevice: item?.device?.id,
       lastEvent: lastEvent,
-      finishedAt: item.finishedAt,
+      finishedAt: item.occurredAt,
       state: status,
       [ValuesHeader.DATE]: Formatters.formatISODate(item.createdAt) ?? '-',
       [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
