@@ -65,7 +65,7 @@ export const useGetColumns = (
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Дата установки',
+        headerName: 'Дата установки на ТС',
         field: ValuesHeader.DATA_INSTALLATION,
       },
       {

@@ -51,7 +51,7 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
       value: { label: name, copyble: name === '-' ? false : true },
     },
     {
-      label: 'Дата установки',
+      label: 'Дата установки на ТС',
       type: TypeOfRows.DATE,
       value: { label: date, copyble: date === '-' ? false : true },
     },

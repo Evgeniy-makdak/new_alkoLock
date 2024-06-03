@@ -57,7 +57,7 @@ export const getFields = (itemData: IAlcolock) => {
       },
     },
     {
-      label: 'Дата установки',
+      label: 'Дата установки на ТС',
       type: TypeOfRows.DATE,
       value: {
         label: date,
