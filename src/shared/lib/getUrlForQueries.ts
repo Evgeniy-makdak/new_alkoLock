@@ -524,15 +524,15 @@ if (sortBy || order) {
   }
 
   if (users) {
-    queries += `&any.events.user.id.in=${filterOptions.users}`;
+    queries += `&all.events.user.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
-    queries += `&any.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
+    queries += `&all.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
   }
 
   if (carsByLicense) {
-    queries += `&any.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
+    queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {
@@ -547,7 +547,7 @@ if (sortBy || order) {
       eventsByType.filter((elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest),
     );
     if (items.length > 1) {
-      queries += `&any.events.eventType.in=${items}`;
+      queries += `&all.events.eventType.in=${items}`;
     }
   }
 
