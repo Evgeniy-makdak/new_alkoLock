@@ -418,7 +418,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.DATE_OCCURRENT:
-      return `&sort=startedAt${orderStr}`;
+      return `&sort=events.occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
       return `&sort=createdBy.lastName${orderStr}`;
     default:
