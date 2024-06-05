@@ -455,19 +455,18 @@ export function getEventsHistoryURL({
     queries += `&all.device.id.in=${alcolockId}`;
   }
 
-if (sortBy || order) {
-  // Значения по умолчанию для сортировки
-  const sortByDefault = 'title'; // Укажите значение по умолчанию для поля сортировки
-  const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+  if (sortBy || order) {
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'title'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
 
-  // Использование значений по умолчанию, если sortBy и order не определены
-  const sortByFinal = sortBy || sortByDefault;
-  const orderFinal = order || orderDefault;
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
 
-  // Генерация строки запроса с сортировкой
-  queries += getSortQueryEvents(sortByFinal, orderFinal);
-}
-
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 50}${queries}`;
 }
@@ -504,20 +503,18 @@ export function getEventsApiURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-if (sortBy || order) {
-  // Значения по умолчанию для сортировки
-  const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
-  const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+  if (sortBy || order) {
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
 
-  // Использование значений по умолчанию, если sortBy и order не определены
-  const sortByFinal = sortBy || sortByDefault;
-  const orderFinal = order || orderDefault;
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
 
-  // Генерация строки запроса с сортировкой
-  queries += getSortQueryEvents(sortByFinal, orderFinal);
-}
-
-
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  }
   if (queryTrimmed.length) {
     queries += `&any.createdBy.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
@@ -541,12 +538,18 @@ if (sortBy || order) {
     ];
     if (testTypeEvent.length === 1) {
       const items = Formatters.getStringForQueryParams(testTypeEvent);
-      queries += `&all.type.in=${items}`;
+      if (items) {
+        // Проверка на наличие значений
+        queries += `&all.type.in=${items}`;
+      }
     }
-    const items = Formatters.getStringForQueryParams(
-      eventsByType.filter((elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest),
+
+    const otherEvents = eventsByType.filter(
+      (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
     );
-    if (items.length > 1) {
+    const items = Formatters.getStringForQueryParams(otherEvents);
+    if (items.length > 0) {
+      // Проверка на наличие значений
       queries += `&all.events.eventType.in=${items}`;
     }
   }
@@ -581,19 +584,18 @@ export function getEventListForAutoServiceURL({
     queries += `&all.events.occurredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-if (sortBy || order) {
-  // Значения по умолчанию для сортировки
-  const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
-  const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+  if (sortBy || order) {
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
 
-  // Использование значений по умолчанию, если sortBy и order не определены
-  const sortByFinal = sortBy || sortByDefault;
-  const orderFinal = order || orderDefault;
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
 
-  // Генерация строки запроса с сортировкой
-  queries += getSortQueryEvents(sortByFinal, orderFinal);
-}
-
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  }
 
   if (queryTrimmed.length) {
     queries += `&any.device.serialNumber.contains=${queryTrimmed}`;
