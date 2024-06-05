@@ -19,7 +19,7 @@
   text-wrap: nowrap;
   display: flex;
   align-items: center;
-  justify-content: start;
+  justify-content: flex-start;
   width: 50%;
   & svg {
     margin-left: 5px;
@@ -28,7 +28,7 @@
 .value {
   display: flex;
   align-items: center;
-  justify-content: start;
+  justify-content: flex-start;
   flex-wrap: wrap;
   width: 50%;
 }
