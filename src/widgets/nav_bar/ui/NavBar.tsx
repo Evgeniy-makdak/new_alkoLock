@@ -34,7 +34,7 @@ export const NavBar = () => {
       <div className={`${state ? style.navBarCollops : style.navBarOpen} ${style.wrapper}`}>
         <div className={`${style.logo} ${!state && style.between}`}>
           <Logo className={style.img} />
-          {/* {!state && <span className={style.logoText}>Лазерные системы</span>} */}
+          {!state && <span className={style.logoText}>Лазерные системы</span>}
         </div>
         <div className={`${state ? style.navBarCollops : style.navBarOpen} ${style.navBar}`}>
           <div className={style.navBarWrapper}>

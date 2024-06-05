@@ -46,7 +46,7 @@ export const useGetColumns = (
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Дата создание',
+        headerName: 'Дата создания',
         field: ValuesHeader.DATE_CREATE,
       },
       {

@@ -541,7 +541,7 @@ if (sortBy || order) {
     ];
     if (testTypeEvent.length === 1) {
       const items = Formatters.getStringForQueryParams(testTypeEvent);
-      queries += `&any.type.in=${items}`;
+      queries += `&all.type.in=${items}`;
     }
     const items = Formatters.getStringForQueryParams(
       eventsByType.filter((elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest),
