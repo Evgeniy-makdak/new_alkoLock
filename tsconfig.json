@@ -26,6 +26,7 @@
       "@layout/*": ["./src/layout/*"]
     },
     "lib": [
+          "es6",
           "ES2021.String",
           "dom"
         ]
