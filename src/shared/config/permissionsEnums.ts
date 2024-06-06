@@ -18,7 +18,6 @@ export enum Entities {
   ATTACHMENT = 'ATTACHMENT',
   ROLE = 'ROLE',
   GROUP = 'GROUP',
-  // SYSTEM_DRIVER_ACCOUNT = 'SYSTEM_DRIVER_ACCOUNT',
 }
 
 export enum Permissions {
