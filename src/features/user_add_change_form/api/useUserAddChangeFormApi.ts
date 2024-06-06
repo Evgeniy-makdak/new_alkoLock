@@ -55,11 +55,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
   });
 
-  // const { mutateAsync: deleteUserImages } = useMutation({
-  //   mutationFn: () => UsersApi.deleteUserImages(id),
-  //   onSuccess: () => update(updateQueries),
-  // });
-
   const hash = foto ? foto?.headers['content-md5'] : null;
 
   return {
