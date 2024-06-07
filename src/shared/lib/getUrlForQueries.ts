@@ -99,7 +99,7 @@ export function getAttachmentURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
 
@@ -193,7 +193,7 @@ export function getUserListURL(
     queries += `&any.email.contains=${trimmedQuery}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQuery(sortBy, order);
   }
 
@@ -261,7 +261,7 @@ export const getCarListURL = ({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQueryCar(sortBy, order);
   }
 
@@ -330,7 +330,7 @@ export function getAlcolocksURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQueryAlcoloks(sortBy, order);
   }
 
@@ -368,7 +368,7 @@ export function getAlcolockListURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQuery(sortBy, order);
   }
 
@@ -455,7 +455,7 @@ export function getEventsHistoryURL({
     queries += `&all.device.id.in=${alcolockId}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     const sortDirection = 'asc';
     queries += getSortQueryEvents(sortBy, sortDirection);
   }
@@ -494,7 +494,7 @@ export function getEventsApiURL({
     queries += `&all.events.occurredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     const sortDirection = 'asc';
     queries += getSortQueryEvents(sortBy, sortDirection);
   }
@@ -568,7 +568,7 @@ export function getEventListForAutoServiceURL({
     queries += `&all.events.occurredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     const sortDirection = 'asc';
     queries += getSortQueryEvents(sortBy, sortDirection);
   }
@@ -621,7 +621,7 @@ export const getBranchListUrl = ({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getBranchSortQuery(sortBy, order);
   }
 
@@ -642,7 +642,7 @@ export function getRolesListURL({ searchQuery, sortBy, order, page, limit }: Que
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   let queries = '';
 
-  if (sortBy && order) {
+  if (sortBy || order) {
     queries += getSortQuery(sortBy, order);
   }
 
