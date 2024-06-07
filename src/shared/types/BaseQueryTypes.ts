@@ -309,8 +309,8 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
-  occurredAt: any;
-  createdEventAt: any;
+  occurredAt: unknown;
+  createdEventAt: unknown;
   createdAt: string;
   finishedAt: string;
   id: string;
@@ -496,7 +496,6 @@ export type CreateUserData = {
   userPhotoDTO?: UserPhotoDTO;
   [key: string]: any; // Индексная сигнатура
 };
-
 
 export type CreateRoleData = {
   name: string;

@@ -10,4 +10,5 @@ export enum RoutePaths {
   alkozamki = '/alkozamki',
   attachments = '/attachments',
   autoService = '/auto_service',
+  historyAutoService = '/historyAutoService',
 }

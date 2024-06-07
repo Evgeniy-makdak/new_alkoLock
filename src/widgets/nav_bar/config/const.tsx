@@ -47,7 +47,7 @@ export const NAV_LINKS = [
     icon: <EngineeringOutlinedIcon />,
   },
   {
-    path: RoutePaths.events,
+    path: RoutePaths.historyAutoService,
     name: 'История сервисного режима',
     icon: <InsertLinkOutlinedIcon />,
   },
