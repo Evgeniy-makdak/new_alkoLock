@@ -99,7 +99,7 @@ export function getAttachmentURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
 
@@ -193,7 +193,7 @@ export function getUserListURL(
     queries += `&any.email.contains=${trimmedQuery}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
   }
 
@@ -261,7 +261,7 @@ export const getCarListURL = ({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQueryCar(sortBy, order);
   }
 
@@ -330,7 +330,7 @@ export function getAlcolocksURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQueryAlcoloks(sortBy, order);
   }
 
@@ -368,7 +368,7 @@ export function getAlcolockListURL({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
   }
 
@@ -456,9 +456,18 @@ export function getEventsHistoryURL({
   }
 
   if (sortBy || order) {
-    const sortDirection = 'asc';
-    queries += getSortQueryEvents(sortBy, sortDirection);
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'title'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
+
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
   }
+
   return `api/device-actions?page=${page || 0}&size=${limit || 50}${queries}`;
 }
 export function getEventsApiURL({
@@ -495,10 +504,17 @@ export function getEventsApiURL({
   }
 
   if (sortBy || order) {
-    const sortDirection = 'asc';
-    queries += getSortQueryEvents(sortBy, sortDirection);
-  }
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
 
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
+
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  }
   if (queryTrimmed.length) {
     queries += `&any.createdBy.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
@@ -569,8 +585,16 @@ export function getEventListForAutoServiceURL({
   }
 
   if (sortBy || order) {
-    const sortDirection = 'asc';
-    queries += getSortQueryEvents(sortBy, sortDirection);
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
+
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
   }
 
   if (queryTrimmed.length) {
@@ -621,7 +645,7 @@ export const getBranchListUrl = ({
     queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getBranchSortQuery(sortBy, order);
   }
 
@@ -642,7 +666,7 @@ export function getRolesListURL({ searchQuery, sortBy, order, page, limit }: Que
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   let queries = '';
 
-  if (sortBy || order) {
+  if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
   }
 
