@@ -13,12 +13,15 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
     return (Array.isArray(data) ? data : []).map((item) => {
       const lastEvent = getLastEvent(item);
 
-      // Используйте данные из массива events
-      const event = item.events && item.events.length > 0 ? item.events[0] : null;
+      // Проверяем, что createdEventAt - строка
+      const createdEventAt =
+        typeof item.createdEventAt === 'string' ? item.createdEventAt : undefined;
 
       return {
         id: item.id,
-        [ValuesHeader.DATE_OCCURRENT]: event ? Formatters.formatISODate(event.occurredAt) ?? '-' : '-', 
+        [ValuesHeader.DATE_OCCURRENT]: createdEventAt
+          ? Formatters.formatISODate(createdEventAt) ?? '-'
+          : '-',
         [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.createdBy) ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord, true)
