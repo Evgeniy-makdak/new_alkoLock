@@ -1,3 +1,4 @@
+import ClearIcon from '@mui/icons-material/Clear';
 import {
   IconButton,
   InputAdornment,
@@ -6,8 +7,8 @@ import {
   ThemeProvider,
   createTheme,
 } from '@mui/material';
-import { ClearIcon } from '@mui/x-date-pickers';
 
+// import { ResetFilters } from '../reset_filters/ResetFilters';
 import style from './SearchInput.module.scss';
 
 const theme = createTheme({
@@ -46,14 +47,15 @@ type SearchInputProps = TextFieldProps & {
 export const SearchInput = ({ setState, onClear, testId, ...rest }: SearchInputProps) => {
   return (
     <ThemeProvider theme={theme}>
+      {/* <ResetFilters title="Сбросить фильтры" reset={onClear} /> */}
       <TextField
         data-testid={testId}
-        placeholder={'Поиск'}
+        placeholder="Поиск"
         onChange={(e) => setState(e.target.value)}
         {...rest}
         className={style.searchInput}
         variant="outlined"
-        size={'medium'}
+        size="medium"
         focused={false}
         InputProps={{
           endAdornment: (

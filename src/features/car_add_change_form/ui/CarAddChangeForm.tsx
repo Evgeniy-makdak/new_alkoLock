@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import type { FC } from 'react';
 
 import { TextField, Typography } from '@mui/material';
@@ -38,6 +37,7 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
     onSelect,
     register,
     isLoadingCar,
+    isDataLoaded,
   } = useCarAddChangeForm(id, closeModal);
 
   return (
@@ -46,7 +46,7 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
         <Typography fontWeight={600} marginBottom={2} variant="h6">
           {id ? 'Редактирование ТС' : 'Добавление ТС'}
         </Typography>
-        {isLoadingCar ? null : (
+        {!isLoadingCar && isDataLoaded && (
           <>
             <InputsColumnWrapper>
               <TextField

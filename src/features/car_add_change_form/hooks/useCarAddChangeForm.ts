@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import dayjs, { Dayjs } from 'dayjs';
@@ -19,18 +20,22 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const { car, isLoadingCar, changeItem, createItem } = useCarAddChangeFormApi(id);
 
-  const defaultValues =
-    car && !isLoadingCar
-      ? {
-          mark: car?.manufacturer || '',
-          model: car?.model || '',
-          vin: car?.vin || '',
-          registrationNumber: car?.registrationNumber || '',
-          type: typeSelectValueFormatter(car?.type) || [],
-          color: colorSelectValueFormatter(car?.color) || [],
-          year: car?.year ? dateNow.year(car.year) : dateNow,
-        }
-      : null;
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+
+  const defaultValues = useMemo(() => {
+    if (car && !isLoadingCar) {
+      return {
+        mark: car?.manufacturer || '',
+        model: car?.model || '',
+        vin: car?.vin || '',
+        registrationNumber: car?.registrationNumber || '',
+        type: typeSelectValueFormatter(car?.type) || [],
+        color: colorSelectValueFormatter(car?.color) || [],
+        year: car?.year ? dateNow.year(car.year) : dateNow,
+      };
+    }
+    return null;
+  }, [car, isLoadingCar]);
 
   const {
     register,
@@ -38,9 +43,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     clearErrors,
     setValue,
     watch,
-    formState: {
-      errors: { mark, model, vin, registrationNumber, type, color, year },
-    },
+    formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -54,6 +57,12 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     values: defaultValues,
   });
 
+  useEffect(() => {
+    if (!isLoadingCar && defaultValues) {
+      setIsDataLoaded(true);
+    }
+  }, [isLoadingCar, defaultValues]);
+
   const onChangeDate = (value: Dayjs) => {
     clearErrors('year');
     setValue('year', value);
@@ -64,13 +73,8 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     setValue(type, values);
   };
 
-  const errorMark = mark ? mark.message.toString() : '';
-  const errorModel = model ? model.message.toString() : '';
-  const errorVin = vin ? vin.message.toString() : '';
-  const errorRegistrationNumber = registrationNumber ? registrationNumber.message.toString() : '';
-  const errorType = type ? type.message.toString() : '';
-  const errorColor = color ? color.message.toString() : '';
-  const errorYear = year ? year.message.toString() : '';
+  const getErrorMessage = (name: keyof Form) =>
+    errors[name] ? errors[name].message.toString() : '';
 
   const onSubmit = async (data: Form) => {
     const year = data?.year.year();
@@ -91,13 +95,13 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   };
 
   return {
-    errorMark,
-    errorModel,
-    errorVin,
-    errorRegistrationNumber,
-    errorYear,
-    errorType,
-    errorColor,
+    errorMark: getErrorMessage('mark'),
+    errorModel: getErrorMessage('model'),
+    errorVin: getErrorMessage('vin'),
+    errorRegistrationNumber: getErrorMessage('registrationNumber'),
+    errorType: getErrorMessage('type'),
+    errorColor: getErrorMessage('color'),
+    errorYear: getErrorMessage('year'),
     selectType: watch('type'),
     selectColor: watch('color'),
     handleSubmit: handleSubmit(onSubmit),
@@ -106,5 +110,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     register,
     yearValue: watch('year'),
     isLoadingCar,
+    isDataLoaded,
   };
 };
