@@ -95,7 +95,14 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
       setAvatar(initUser.initialAvatar);
     }
-  }, [avatar]);
+  }, [
+    id,
+    initUser.initialAvatar,
+    isLoading,
+    setAvatar,
+    stateOfForm?.state?.images?.length,
+    avatar,
+  ]);
 
   const onSubmit = async (data: Form) => {
     const licenseClass = (data?.licenseClass || []).length > 0;

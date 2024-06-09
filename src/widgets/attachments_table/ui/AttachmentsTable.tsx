@@ -56,7 +56,7 @@ export const AttachmentsTable = () => {
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (resetFilters(), filtersData.clearDates())}
+          reset={() => (resetFilters(), filtersData.clearDates(), filtersData.setInput(''))}
         />
       </TableHeaderWrapper>
       <AttachmentsFilterPanel open={filtersData.openFilters} />

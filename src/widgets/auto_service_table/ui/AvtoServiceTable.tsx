@@ -39,7 +39,10 @@ export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
           valueStartDatePicker={filterData.startDate}
           valueEndDatePicker={filterData.endDate}
         />
-        <ResetFilters title="Сбросить фильтры" reset={() => filterData.clearDates()} />
+        <ResetFilters
+          title="Сбросить фильтры"
+          reset={() => (filterData.clearDates(), filterData.setInput(''))}
+        />
       </TableHeaderWrapper>
       <Table
         sortingMode="server"
