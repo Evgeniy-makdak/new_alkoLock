@@ -114,10 +114,10 @@ export class UsersApi {
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
-  static deleteUserImages(ids: ID[], userId: ID) {
-    const url = `api/users/${userId}/photo`;
+  static deleteUserImages(userId: ID) {
+    const url = `api/users/${userId}/photos`;
 
-    const response = deleteQuery({ url, data: ids });
+    const response = deleteQuery({ url });
 
     return response;
   }

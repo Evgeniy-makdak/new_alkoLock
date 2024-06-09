@@ -45,7 +45,12 @@ export const VehiclesTable: FC<VehiclesTableProps> = ({ onClickRow }) => {
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters title="Сбросить фильтры" reset={() => filtersData.clearDates()} />
+        <ResetFilters
+          title="Сбросить фильтры"
+          reset={() => {
+            filtersData.clearDates(), filtersData.setInput('');
+          }}
+        />
       </TableHeaderWrapper>
       <Table
         // TODO => кол-во элементов должно приходить с бэка

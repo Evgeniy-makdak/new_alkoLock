@@ -8,7 +8,6 @@ import {
   createTheme,
 } from '@mui/material';
 
-// import { ResetFilters } from '../reset_filters/ResetFilters';
 import style from './SearchInput.module.scss';
 
 const theme = createTheme({
@@ -47,7 +46,6 @@ type SearchInputProps = TextFieldProps & {
 export const SearchInput = ({ setState, onClear, testId, ...rest }: SearchInputProps) => {
   return (
     <ThemeProvider theme={theme}>
-      {/* <ResetFilters title="Сбросить фильтры" reset={onClear} /> */}
       <TextField
         data-testid={testId}
         placeholder="Поиск"

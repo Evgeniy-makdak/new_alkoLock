@@ -39,7 +39,12 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick }) => {
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters title="Сбросить фильтры" reset={() => filtersData.clearDates()} />
+        <ResetFilters
+          title="Сбросить фильтры"
+          reset={() => {
+            filtersData.clearDates(), filtersData.setInput('');
+          }}
+        />
       </TableHeaderWrapper>
       <Table
         // TODO => кол-во элементов должно приходить с бэка

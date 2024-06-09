@@ -55,6 +55,10 @@ export const useUserAddChangeFormApi = (id: ID) => {
     mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
   });
 
+  const { mutateAsync: deleteFoto } = useMutation({
+    mutationFn: () => UsersApi.deleteUserImages(id),
+  });
+
   const hash = foto ? foto?.headers['content-md5'] : null;
 
   return {
@@ -65,6 +69,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     changeItem,
     createItem,
     changeFoto,
-    // deleteUserImages // Добавлен хук для удаления фото
+    deleteFoto,
   };
 };

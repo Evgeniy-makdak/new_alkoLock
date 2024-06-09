@@ -45,7 +45,9 @@ export const EventsTable = ({ handleClickRow }: EventsTable) => {
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (filtersData.resetFilters(), filtersData.clearDates())}
+          reset={() => (
+            filtersData.resetFilters(), filtersData.clearDates(), filtersData.setInput('')
+          )}
         />
       </TableHeaderWrapper>
       <EventsFilterPanel open={filtersData.openFilters} />

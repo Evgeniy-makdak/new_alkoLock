@@ -23,7 +23,7 @@ import { type Form, type KeyForm, schema } from '../lib/validate';
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const firstRender = useRef(true);
-  const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto } =
+  const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto, deleteFoto } =
     useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin } = groupsMapper(user, groups);
   const [alert, setAlert] = useState(false);
@@ -92,6 +92,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       firstRender.current
     ) {
       firstRender.current = false;
+
       setAvatar(initUser.initialAvatar);
     }
   }, [avatar]);
@@ -100,7 +101,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
     const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
-    const userID = id; 
+    const userID = id;
 
     if (
       stateOfForm.state.disableDriverInfo &&
@@ -119,7 +120,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
     try {
       if (!id) {
-        const response = await createItem(formData); 
+        const response = await createItem(formData);
         const isError = response.isError;
         if (isError) {
           enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
@@ -137,11 +138,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             if (isErrorChangeFoto) {
               enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
             }
+          } else {
+            const isErrorDeleteFoto = (await deleteFoto())?.isError;
+            if (isErrorDeleteFoto) {
+              enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
+            }
           }
         }
       }
     } catch (error) {
-      console.error('Непредвиденная ошибка:', error);
       enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
     }
   };
