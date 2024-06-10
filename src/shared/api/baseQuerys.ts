@@ -115,7 +115,7 @@ export class UsersApi {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
   static deleteUserImages(userId: ID) {
-    const url = `api/users/${userId}/photos`;
+    const url = `api/v1/users/photos/${userId}/delete-all`;
 
     const response = deleteQuery({ url });
 

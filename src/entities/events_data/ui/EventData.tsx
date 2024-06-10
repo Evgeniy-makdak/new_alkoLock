@@ -31,12 +31,12 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
             <div className={style.row}>
               <span>Водитель</span>
   
-              <span>{Formatters.nameFormatter(event?.createdBy)}</span> 
+              <span>{Formatters.nameFormatter(event?.userActionId)}</span> 
             </div>
             <div className={style.row}>
               <span>Почта</span>
   
-              <span>{event?.createdBy?.email}</span>
+              <span>{event?.userActionId?.email}</span>
             </div>
           </>
         )}

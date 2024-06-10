@@ -22,7 +22,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
         [ValuesHeader.DATE_OCCURRENT]: createdEventAt
           ? Formatters.formatISODate(createdEventAt) ?? '-'
           : '-',
-        [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.createdBy) ?? '-',
+        [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.userActionId) ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord, true)
           : '-',

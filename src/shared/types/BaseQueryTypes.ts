@@ -32,7 +32,7 @@ export type IEventsType = IEventType[];
 export interface Role {
   id: ID;
   createdAt: string;
-  createdBy: IUserDataMain;
+  userActionId: IUserDataMain;
   group: {
     createdAt: string;
     id: ID;
@@ -69,7 +69,7 @@ export interface IAccountUser {
               manuallyAssignable: boolean;
             };
             createdAt: string;
-            createdBy: {
+            userActionId: {
               id: ID;
               email: string;
               firstName: string;
@@ -80,7 +80,7 @@ export interface IAccountUser {
           },
         ];
         createdAt: string;
-        createdBy: IUserDataMain;
+        userActionId: IUserDataMain;
         lastModifiedAt: string;
         lastModifiedBy: IUserDataMain;
       };
@@ -100,24 +100,24 @@ export interface IAccountUser {
         assignment: {
           branch: IBranch;
           createdAt: string;
-          createdBy: IUserDataMain;
+          userActionId: IUserDataMain;
         };
         createdAt: string;
-        createdBy: IUserDataMain;
+        userActionId: IUserDataMain;
         lastModifiedAt: string;
         lastModifiedBy: IUserDataMain;
       };
       createdAt: string;
-      createdBy: IUserDataMain;
+      userActionId: IUserDataMain;
     },
   ];
   assignment: {
     branch: IBranch;
     createdAt: string;
-    createdBy: IUserDataMain;
+    userActionId: IUserDataMain;
   };
   createdAt: string;
-  createdBy: IUserDataMain;
+  userActionId: IUserDataMain;
   lastModifiedAt: string;
   lastModifiedBy: IUserDataMain;
   permissions: string[];
@@ -139,7 +139,7 @@ export interface IUser {
   assignment: {
     branch: Branch;
     createdAt: string;
-    createdBy: IUserDataMain;
+    userActionId: IUserDataMain;
   };
   driver: IDriver;
   disabled: boolean;
@@ -147,7 +147,7 @@ export interface IUser {
 
 export interface IAttachmentItems {
   createdAt: string;
-  createdBy: IUser;
+  userActionId: IUser;
   id: ID;
   driver: IDriver;
   vehicle: ICar;
@@ -203,7 +203,7 @@ interface IActiveActions {
   seen: boolean;
   events: IEvents;
   createdAt: string;
-  createdBy: IUser;
+  userActionId: IUser;
 }
 
 type IErrors = {
@@ -233,7 +233,7 @@ export interface IAlcolock {
   activeActions: IActiveActions[];
   createdAt: string;
   vehicleBind: {
-    createdBy: IUser;
+    userActionId: IUser;
     createdAt: string;
     vehicle: ICar;
   };
@@ -241,10 +241,10 @@ export interface IAlcolock {
   assignment: {
     branch: Branch;
     createdAt: string;
-    createdBy: IUserDataMain;
+    userActionId: IUserDataMain;
   };
 
-  createdBy: IUser;
+  userActionId: IUser;
 
   lastModifiedBy: {
     id: ID;
@@ -319,7 +319,7 @@ export interface IDeviceAction {
   status: string;
   type: string;
   uuid: string;
-  createdBy: IUser;
+  userActionId: IUser;
   device: IAlcolock;
   events: IEvents;
   summary: ISummary;
@@ -358,7 +358,7 @@ export interface Branch {
 interface Assignment {
   branch: Branch;
   createdAt: string;
-  createdBy: IUser;
+  userActionId: IUser;
 }
 
 interface GroupMembership {
@@ -388,7 +388,7 @@ export interface IBranch {
   parentOffice: string;
   childOffices: string[];
   createdAt: string;
-  createdBy: {
+  userActionId: {
     id: ID;
     email: string;
     firstName: string;
@@ -408,7 +408,7 @@ export interface IBranch {
 
 export interface IUserGroupPermission {
   createdAt: string;
-  createdBy: { id: ID; email: string; firstName: string; lastName: string };
+  userActionId: { id: ID; email: string; firstName: string; lastName: string };
   id: ID;
   permission: {
     manuallyAssignable: boolean;
@@ -420,7 +420,7 @@ export type IPermissions = Permissions[];
 
 export interface IRole {
   createdAt: string;
-  createdBy: { id: ID; email: string; firstName: string; lastName: string };
+  userActionId: { id: ID; email: string; firstName: string; lastName: string };
   id: ID;
   lastModifiedAt: string;
   lastModifiedBy: { id: ID; email: string; firstName: string; lastName: string };
@@ -518,7 +518,7 @@ export type AddPhotoItemResponse = {
   id: ID;
   fileName: string;
   createdAt: string;
-  createdBy: {
+  userActionId: {
     id: ID;
     email: string;
     firstName: string;

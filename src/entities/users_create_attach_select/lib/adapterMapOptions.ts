@@ -1,10 +1,10 @@
 import type { IAttachmentItems, ID } from '@shared/types/BaseQueryTypes';
 
 export const adapterMapOptions = (item: IAttachmentItems, arr: ID[]): [string, ID] | [] => {
-  if (arr.find((val) => val === item.createdBy.id)) return [];
-  arr.push(item.createdBy.id);
+  if (arr.find((val) => val === item.userActionId.id)) return [];
+  arr.push(item.userActionId.id);
   return [
-    `${item.createdBy.middleName} ${item.createdBy.firstName} ${item.createdBy.lastName} ${item.createdBy.email}`,
-    item.createdBy.id,
+    `${item.userActionId.middleName} ${item.userActionId.firstName} ${item.userActionId.lastName} ${item.userActionId.email}`,
+    item.userActionId.id,
   ];
 };

@@ -17,7 +17,7 @@ export const useGetRows = (data: IAttachmentItems[]): GridRowsProp => {
       [ValuesHeader.DRIVER]: item.driver?.userAccount
         ? Formatters.nameFormatter(item.driver.userAccount)
         : '-',
-      [ValuesHeader.WHO_LINK]: item.createdBy ? Formatters.nameFormatter(item.createdBy) : '-',
+      [ValuesHeader.WHO_LINK]: item.userActionId ? Formatters.nameFormatter(item.userActionId) : '-',
       [ValuesHeader.DATE_LINK]: item.createdAt ? Formatters.formatISODate(item.createdAt) : '-',
     };
   });

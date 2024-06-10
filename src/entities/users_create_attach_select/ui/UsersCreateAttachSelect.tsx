@@ -13,13 +13,13 @@ interface UsersCreateAttachSelectProps<T> {
 }
 
 export function UsersCreateAttachSelect<T>(props: UsersCreateAttachSelectProps<T>) {
-  const { createdBy, isLoading, onChange, onReset } = useUsersCreateAttachSelect();
+  const { userActionId, isLoading, onChange, onReset } = useUsersCreateAttachSelect();
   return (
     <SearchMultipleSelect
       onReset={onReset}
       onInputChange={onChange}
       isLoading={isLoading}
-      values={createdBy}
+      values={userActionId}
       {...props}
     />
   );

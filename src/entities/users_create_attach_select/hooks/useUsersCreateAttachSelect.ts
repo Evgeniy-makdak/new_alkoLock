@@ -25,9 +25,9 @@ export const useUsersCreateAttachSelect = () => {
   );
   const array: number[] = [];
 
-  const createdBy = useMemo(
+  const userActionId = useMemo(
     () => mapOptions<IAttachmentItems>(data?.data, (data) => adapterMapOptions(data, array)),
     [data],
   );
-  return { isLoading, onReset, onChange, createdBy };
+  return { isLoading, onReset, onChange, userActionId };
 };

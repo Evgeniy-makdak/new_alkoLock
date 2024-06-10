@@ -18,7 +18,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TC:
       return `&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber${orderStr}`;
     case SortTypes.USER_LAST_NAME:
-      return `&sort=createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.lastName${orderStr}`;
     case SortTypes.MARK:
       return `&sort=vehicleRecord.manufacturer${orderStr}`;
     case SortTypes.GOS_NUMBER:
@@ -26,7 +26,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName,createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -60,7 +60,7 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.DRIVER:
       return `&sort=driver.userAccount.firstName,driver.userAccount.lastName${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName,createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     default:
@@ -116,7 +116,7 @@ export function getAttachmentURL({
     queries += `&any.vehicle.registrationNumber.match=${tc}`;
   }
   if (createAttach) {
-    queries += `&any.vehicle.createdBy.id.in=${createAttach}`;
+    queries += `&any.vehicle.userActionId.id.in=${createAttach}`;
   }
   if (alcolock) {
     queries += `&any.vehicle.monitoringDevice.id.in=${alcolock}`;
@@ -289,7 +289,7 @@ const getSortQueryAlcoloks = (orderType: SortTypes | string, order: GridSortDire
     case SortTypes.TC:
       return `&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName,createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -337,7 +337,7 @@ export function getAlcolocksURL({
   if (queryTrimmed.length) {
     queries += `&any.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
     queries += `&any.match.contains=${queryTrimmed}`;
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
   }
   return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -375,7 +375,7 @@ export function getAlcolockListURL({
   if (queryTrimmed.length) {
     queries += `&any.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
     queries += `&any.match.contains=${queryTrimmed}`;
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
   }
 
   return `api/monitoring-devices?page=${page}&size=${limit}${queries}`;
@@ -410,7 +410,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName,createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -420,7 +420,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_OCCURRENT:
       return `&sort=createdEventAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=createdBy.lastName${orderStr}`;
+      return `&sort=userActionId.lastName${orderStr}`;
     default:
       return '';
   }
@@ -516,7 +516,7 @@ export function getEventsApiURL({
     queries += getSortQueryEvents(sortByFinal, orderFinal);
   }
   if (queryTrimmed.length) {
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
@@ -599,7 +599,7 @@ export function getEventListForAutoServiceURL({
 
   if (queryTrimmed.length) {
     queries += `&any.device.serialNumber.contains=${queryTrimmed}`;
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
@@ -615,7 +615,7 @@ const getBranchSortQuery = (orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.NAMING:
       return `&sort=name,${orderStr}`;
     case SortTypes.WHO_CREATE:
-      return `&sort=createdBy.lastName,${orderStr}`;
+      return `&sort=userActionId.middleName,${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt,${orderStr}`;
     default:

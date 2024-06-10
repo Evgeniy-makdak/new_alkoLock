@@ -13,7 +13,7 @@ export const useGetRows = (data: IBranch[]): GridRowsProp => {
       id: item?.id,
       disabledAction: item?.systemGenerated,
       [ValuesHeader.NAMING]: item?.name ?? '-',
-      [ValuesHeader.WHO_CREATE]: Formatters.nameFormatter(item.createdBy),
+      [ValuesHeader.WHO_CREATE]: Formatters.nameFormatter(item.userActionId),
       [ValuesHeader.DATE_CREATE]: Formatters.formatISODate(item.createdAt),
     };
   });
