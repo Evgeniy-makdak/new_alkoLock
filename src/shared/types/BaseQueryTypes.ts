@@ -279,7 +279,6 @@ export type IEvent = {
   latitude: number;
   longitude: number;
   occurredAt: string;
-  occuredAt: string;
   reportedAt: string;
   userRecord: {
     email: string;
@@ -310,7 +309,6 @@ export interface ISummary {
 
 export interface IDeviceAction {
   occurredAt: unknown;
-  occuredAt: unknown;
   createdAt: string;
   finishedAt: string;
   id: string;
