@@ -6,7 +6,7 @@ interface IUserDataMain {
   firstName: string;
   id: ID;
   lastName: string;
-  middleName: string;
+  surName: string;
 }
 
 interface IDriver {
@@ -46,7 +46,7 @@ export interface IAccountUser {
   id: ID;
   login: string;
   firstName: string;
-  middleName: string;
+  surName: string;
   lastName: string;
   email: string;
   phone: string;
@@ -73,7 +73,7 @@ export interface IAccountUser {
               id: ID;
               email: string;
               firstName: string;
-              middleName: string;
+              surName: string;
               lastName: string;
             };
             group: string;
@@ -88,7 +88,7 @@ export interface IAccountUser {
         id: ID;
         login: string;
         firstName: string;
-        middleName: string;
+        surName: string;
         lastName: string;
         email: string;
         phone: string;
@@ -125,7 +125,7 @@ export interface IAccountUser {
 
 export interface IUser {
   firstName: string;
-  middleName: string;
+  surName: string;
   lastName: string;
   activated: boolean;
   phone?: string;
@@ -250,7 +250,7 @@ export interface IAlcolock {
     id: ID;
     email: string;
     firstName: string;
-    middleName: string;
+    surName: string;
     lastName: string;
   };
 }
@@ -279,13 +279,13 @@ export type IEvent = {
   latitude: number;
   longitude: number;
   occurredAt: string;
-  createdEventAt: string;
+  occuredAt: string;
   reportedAt: string;
   userRecord: {
     email: string;
     firstName: string;
     lastName: string;
-    middleName: string | null;
+    surName: string | null;
   };
   user: { id: ID; branchId: ID };
 };
@@ -310,7 +310,7 @@ export interface ISummary {
 
 export interface IDeviceAction {
   occurredAt: unknown;
-  createdEventAt: unknown;
+  occuredAt: unknown;
   createdAt: string;
   finishedAt: string;
   id: string;
@@ -378,7 +378,7 @@ export interface IAccount {
   id: ID;
   lastName: string;
   login: string;
-  middleName: string;
+  surName: string;
   permissions: IPermissions;
 }
 
@@ -392,7 +392,7 @@ export interface IBranch {
     id: ID;
     email: string;
     firstName: string;
-    middleName: string;
+    surName: string;
     lastName: string;
   };
   lastModifiedAt: string;
@@ -400,7 +400,7 @@ export interface IBranch {
     id: ID;
     email: string;
     firstName: string;
-    middleName: string;
+    surName: string;
     lastName: string;
   };
   systemGenerated: boolean;
@@ -478,7 +478,7 @@ export type UserPhotoDTOs = UserPhotoDTO[];
 
 export type CreateUserData = {
   firstName: string;
-  middleName: string;
+  surName: string;
   lastName?: string;
   email: string;
   disabled: boolean;
@@ -522,7 +522,7 @@ export type AddPhotoItemResponse = {
     id: ID;
     email: string;
     firstName: string;
-    middleName: string;
+    surName: string;
     lastName: string;
   };
   userId: ID;

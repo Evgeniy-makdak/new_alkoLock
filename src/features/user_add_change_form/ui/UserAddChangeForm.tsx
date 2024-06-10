@@ -41,10 +41,10 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
             <div className={style.columnsWrapper}>
               <InputsColumnWrapper classN={style.inputsColumnWrapper}>
                 <TextField
-                  error={Boolean(state.errors.errorMiddleName)}
-                  helperText={state.errors.errorMiddleName}
+                  error={Boolean(state.errors.errorsurName)}
+                  helperText={state.errors.errorsurName}
                   label="Фамилия"
-                  {...state.register('middleName')}
+                  {...state.register('surName')}
                 />
                 <TextField
                   error={Boolean(state.errors.errorFirstName)}

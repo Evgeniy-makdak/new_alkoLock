@@ -418,9 +418,9 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.DATE_OCCURRENT:
-      return `&sort=createdEventAt${orderStr}`;
+      return `&sort=occuredAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.surName${orderStr}`;
     default:
       return '';
   }
@@ -496,11 +496,11 @@ export function getEventsApiURL({
 
   if (startDate) {
     const date = new Date(startDate).toISOString();
-    queries += `&all.createdEventAt.greaterThanOrEqual=${date}`;
+    queries += `&all.occuredAt.greaterThanOrEqual=${date}`;
   }
 
   if (endDate) {
-    queries += `&all.createdEventAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.occuredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy || order) {
@@ -577,11 +577,11 @@ export function getEventListForAutoServiceURL({
   });
   if (startDate) {
     const date = new Date(startDate).toISOString();
-    queries += `&all.createdEventAt.greaterThanOrEqual=${date}`;
+    queries += `&all.occuredAt.greaterThanOrEqual=${date}`;
   }
 
   if (endDate) {
-    queries += `&all.createdEventAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.occuredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy || order) {
@@ -615,7 +615,7 @@ const getBranchSortQuery = (orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.NAMING:
       return `&sort=name,${orderStr}`;
     case SortTypes.WHO_CREATE:
-      return `&sort=userActionId.middleName,${orderStr}`;
+      return `&sort=userActionId.surName,${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt,${orderStr}`;
     default:

@@ -39,12 +39,12 @@ export class Formatters {
     const placeholder = withPlaceholder ? '-' : '';
     if (!user) return placeholder;
     const name = user?.firstName ?? '';
-    const middleName = user?.middleName ?? '';
+    const surName = user?.surName ?? '';
     const lastName = user?.lastName ?? '';
 
-    if (!name.length && !middleName.length && !lastName.length) return placeholder;
+    if (!name.length && !surName.length && !lastName.length) return placeholder;
 
-    return `${middleName} ${name} ${lastName}`;
+    return `${surName} ${name} ${lastName}`;
   }
 
   static carNameFormatter(

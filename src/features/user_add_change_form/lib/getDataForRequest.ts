@@ -26,7 +26,7 @@ export const getDataForRequest = (
     disabled: data?.disabled === 'true' ? true : false,
     email: data.email,
     firstName: data?.firstName,
-    middleName: data?.middleName,
+    surName: data?.surName,
     lastName,
     userGroups,
   };
