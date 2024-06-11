@@ -420,7 +420,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_OCCURRENT:
       return `&sort=occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userActionId.surName${orderStr}`;
+      return `&sort=userActionId.surname${orderStr}`;
     default:
       return '';
   }
@@ -615,7 +615,7 @@ const getBranchSortQuery = (orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.NAMING:
       return `&sort=name,${orderStr}`;
     case SortTypes.WHO_CREATE:
-      return `&sort=userActionId.surName,${orderStr}`;
+      return `&sort=userActionId.surname,${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt,${orderStr}`;
     default:

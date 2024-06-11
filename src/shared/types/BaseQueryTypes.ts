@@ -6,7 +6,7 @@ interface IUserDataMain {
   firstName: string;
   id: ID;
   middleName: string;
-  surName: string;
+  surname: string;
 }
 
 interface IDriver {
@@ -46,7 +46,7 @@ export interface IAccountUser {
   id: ID;
   login: string;
   firstName: string;
-  surName: string;
+  surname: string;
   middleName: string;
   email: string;
   phone: string;
@@ -73,7 +73,7 @@ export interface IAccountUser {
               id: ID;
               email: string;
               firstName: string;
-              surName: string;
+              surname: string;
               middleName: string;
             };
             group: string;
@@ -88,7 +88,7 @@ export interface IAccountUser {
         id: ID;
         login: string;
         firstName: string;
-        surName: string;
+        surname: string;
         middleName: string;
         email: string;
         phone: string;
@@ -125,7 +125,7 @@ export interface IAccountUser {
 
 export interface IUser {
   firstName: string;
-  surName: string;
+  surname: string;
   middleName: string;
   activated: boolean;
   phone?: string;
@@ -250,7 +250,7 @@ export interface IAlcolock {
     id: ID;
     email: string;
     firstName: string;
-    surName: string;
+    surname: string;
     middleName: string;
   };
 }
@@ -284,7 +284,7 @@ export type IEvent = {
     email: string;
     firstName: string;
     middleName: string;
-    surName: string | null;
+    surname: string | null;
   };
   user: { id: ID; branchId: ID };
 };
@@ -376,7 +376,7 @@ export interface IAccount {
   id: ID;
   middleName: string;
   login: string;
-  surName: string;
+  surname: string;
   permissions: IPermissions;
 }
 
@@ -390,7 +390,7 @@ export interface IBranch {
     id: ID;
     email: string;
     firstName: string;
-    surName: string;
+    surname: string;
     middleName: string;
   };
   lastModifiedAt: string;
@@ -398,7 +398,7 @@ export interface IBranch {
     id: ID;
     email: string;
     firstName: string;
-    surName: string;
+    surname: string;
     middleName: string;
   };
   systemGenerated: boolean;
@@ -476,7 +476,7 @@ export type UserPhotoDTOs = UserPhotoDTO[];
 
 export type CreateUserData = {
   firstName: string;
-  surName: string;
+  surname: string;
   middleName?: string;
   email: string;
   disabled: boolean;
@@ -520,7 +520,7 @@ export type AddPhotoItemResponse = {
     id: ID;
     email: string;
     firstName: string;
-    surName: string;
+    surname: string;
     middleName: string;
   };
   userId: ID;

@@ -15,7 +15,7 @@ export const getFormState = (
   watch: UseFormWatch<{
     disabled?: ID;
     firstName?: string;
-    surName?: string;
+    surname?: string;
     middleName?: string;
     birthDate?: dayjs.Dayjs;
     phone?: string;
@@ -31,7 +31,7 @@ export const getFormState = (
 ) => {
   const {
     firstName,
-    surName,
+    surname,
     middleName,
     email,
     password,
@@ -44,7 +44,7 @@ export const getFormState = (
   } = formState.errors;
 
   const errorFirstName = firstName ? firstName.message.toString() : '';
-  const errorsurName = surName ? surName.message.toString() : '';
+  const errorsurname = surname ? surname.message.toString() : '';
   const errormiddleName = middleName ? middleName.message.toString() : '';
   const errorEmail = email ? email.message.toString() : '';
   const errorPassword = password ? password.message.toString() : '';
@@ -87,7 +87,7 @@ export const getFormState = (
       errorLicenseClass,
       errorFirstName,
       errormiddleName,
-      errorsurName,
+      errorsurname,
       errorUserGroups,
       errorLicenseCode,
       errorLicenseIssueDate,
@@ -130,7 +130,7 @@ export const getInitFormState = (
   const canSetDefaultValue = !isLoading && user && userId;
   const defaultValues: Form = {
     firstName: canSetDefaultValue ? user?.firstName : '',
-    surName: canSetDefaultValue ? user?.surName : '',
+    surname: canSetDefaultValue ? user?.surname : '',
     middleName: canSetDefaultValue ? user?.middleName : '',
     birthDate: birthDateInit,
     phone: canSetDefaultValue ? user?.phone : '',
