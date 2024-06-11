@@ -110,19 +110,19 @@ export function getAttachmentURL({
   }
 
   if (drivers) {
-    queries += `&any.vehicle.driver.id.in=${drivers}`;
+    queries += `&all.vehicle.driver.id.in=${drivers}`;
   }
   if (tc) {
-    queries += `&any.vehicle.registrationNumber.match=${tc}`;
+    queries += `&all.vehicle.registrationNumber.match=${tc}`;
   }
   if (createAttach) {
-    queries += `&any.vehicle.userActionId.id.in=${createAttach}`;
+    queries += `&all.vehicle.userActionId.id.in=${createAttach}`;
   }
   if (alcolock) {
-    queries += `&any.vehicle.monitoringDevice.id.in=${alcolock}`;
+    queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
   }
   if (dateLink) {
-    queries += `&any.vehicle.createdAt.match=${dateLink}`;
+    queries += `&all.vehicle.createdAt.match=${dateLink}`;
   }
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
 }
