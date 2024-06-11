@@ -1,14 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
 import dayjs, { Dayjs } from 'dayjs';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
-
 import { useCarAddChangeFormApi } from '../api/useCarAddChangeFormApi';
 import { colorSelectValueFormatter, typeSelectValueFormatter } from '../lib/helpers';
 import { type Form, schema } from '../lib/validate';
@@ -16,7 +13,6 @@ import { type Form, schema } from '../lib/validate';
 const dateNow = dayjs();
 
 export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
-  // TODO => потом убрать когда бэк научится брать это из кук
   const selectedBranch = appStore.getState().selectedBranchState;
   const { car, isLoadingCar, changeItem, createItem } = useCarAddChangeFormApi(id);
 
@@ -34,7 +30,15 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         year: car?.year ? dateNow.year(car.year) : dateNow,
       };
     }
-    return null;
+    return {
+      mark: '',
+      model: '',
+      vin: '',
+      registrationNumber: '',
+      type: [],
+      color: [],
+      year: dateNow,
+    };
   }, [car, isLoadingCar]);
 
   const {
@@ -46,27 +50,23 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     formState: { errors },
   } = useForm({
     resolver: yupResolver(schema),
-    defaultValues: {
-      mark: '',
-      model: '',
-      vin: '',
-      registrationNumber: '',
-      type: [],
-      color: [],
-    },
-    values: defaultValues,
+    defaultValues,
   });
 
   useEffect(() => {
     if (!isLoadingCar && defaultValues) {
+      Object.keys(defaultValues).forEach((key) => {
+        setValue(key as keyof Form, defaultValues[key as keyof Form]);
+      });
       setIsDataLoaded(true);
     }
-  }, [isLoadingCar, defaultValues]);
+  }, [isLoadingCar, defaultValues, setValue]);
 
   const onChangeDate = (value: Dayjs) => {
     clearErrors('year');
     setValue('year', value);
   };
+
   const onSelect = (type: 'type' | 'color', value: string | Value | (string | Value)[]) => {
     clearErrors(type);
     const values = ArrayUtils.getArrayValues(value);
