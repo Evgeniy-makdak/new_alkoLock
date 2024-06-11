@@ -53,10 +53,10 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   {...state.register('firstName')}
                 />
                 <TextField
-                  error={Boolean(state.errors.errorLastName)}
-                  helperText={state.errors.errorLastName}
+                  error={Boolean(state.errors.errormiddleName)}
+                  helperText={state.errors.errormiddleName}
                   label="Отчество"
-                  {...state.register('lastName')}
+                  {...state.register('middleName')}
                 />
                 <InputDate
                   label="Дата рождения"

@@ -12,7 +12,7 @@ import { ValidationRules } from '@shared/validations/validation_rules';
 export type Form = {
   firstName: string;
   surName: string;
-  lastName: string;
+  middleName: string;
   birthDate: Dayjs | null;
   phone: string;
   email: string;
@@ -121,7 +121,7 @@ export const schema = (id: ID): yup.ObjectSchema<Form> =>
     }),
     firstName: yup.string().required(ValidationMessages.required),
     surName: yup.string().required(ValidationMessages.required),
-    lastName: yup.string(),
+    middleName: yup.string(),
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     birthDate: yup.object().birthDate().nullable(),

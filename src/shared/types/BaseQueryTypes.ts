@@ -5,7 +5,7 @@ interface IUserDataMain {
   email: string;
   firstName: string;
   id: ID;
-  lastName: string;
+  middleName: string;
   surName: string;
 }
 
@@ -47,7 +47,7 @@ export interface IAccountUser {
   login: string;
   firstName: string;
   surName: string;
-  lastName: string;
+  middleName: string;
   email: string;
   phone: string;
   birthDate: string;
@@ -74,7 +74,7 @@ export interface IAccountUser {
               email: string;
               firstName: string;
               surName: string;
-              lastName: string;
+              middleName: string;
             };
             group: string;
           },
@@ -89,7 +89,7 @@ export interface IAccountUser {
         login: string;
         firstName: string;
         surName: string;
-        lastName: string;
+        middleName: string;
         email: string;
         phone: string;
         birthDate: string;
@@ -126,7 +126,7 @@ export interface IAccountUser {
 export interface IUser {
   firstName: string;
   surName: string;
-  lastName: string;
+  middleName: string;
   activated: boolean;
   phone?: string;
   createdAt: string;
@@ -251,7 +251,7 @@ export interface IAlcolock {
     email: string;
     firstName: string;
     surName: string;
-    lastName: string;
+    middleName: string;
   };
 }
 
@@ -283,7 +283,7 @@ export type IEvent = {
   userRecord: {
     email: string;
     firstName: string;
-    lastName: string;
+    middleName: string;
     surName: string | null;
   };
   user: { id: ID; branchId: ID };
@@ -374,7 +374,7 @@ export interface IAccount {
   firstName: string;
   groupMembership: GroupMembership[];
   id: ID;
-  lastName: string;
+  middleName: string;
   login: string;
   surName: string;
   permissions: IPermissions;
@@ -391,7 +391,7 @@ export interface IBranch {
     email: string;
     firstName: string;
     surName: string;
-    lastName: string;
+    middleName: string;
   };
   lastModifiedAt: string;
   lastModifiedBy: {
@@ -399,14 +399,14 @@ export interface IBranch {
     email: string;
     firstName: string;
     surName: string;
-    lastName: string;
+    middleName: string;
   };
   systemGenerated: boolean;
 }
 
 export interface IUserGroupPermission {
   createdAt: string;
-  userActionId: { id: ID; email: string; firstName: string; lastName: string };
+  userActionId: { id: ID; email: string; firstName: string; middleName: string };
   id: ID;
   permission: {
     manuallyAssignable: boolean;
@@ -418,10 +418,10 @@ export type IPermissions = Permissions[];
 
 export interface IRole {
   createdAt: string;
-  userActionId: { id: ID; email: string; firstName: string; lastName: string };
+  userActionId: { id: ID; email: string; firstName: string; middleName: string };
   id: ID;
   lastModifiedAt: string;
-  lastModifiedBy: { id: ID; email: string; firstName: string; lastName: string };
+  lastModifiedBy: { id: ID; email: string; firstName: string; middleName: string };
   name: string;
   systemGenerated: boolean;
   userGroupPermissions: IUserGroupPermission[];
@@ -477,7 +477,7 @@ export type UserPhotoDTOs = UserPhotoDTO[];
 export type CreateUserData = {
   firstName: string;
   surName: string;
-  lastName?: string;
+  middleName?: string;
   email: string;
   disabled: boolean;
   phone?: string;
@@ -521,7 +521,7 @@ export type AddPhotoItemResponse = {
     email: string;
     firstName: string;
     surName: string;
-    lastName: string;
+    middleName: string;
   };
   userId: ID;
   photoUrl: string;

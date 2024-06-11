@@ -16,7 +16,7 @@ export const getFormState = (
     disabled?: ID;
     firstName?: string;
     surName?: string;
-    lastName?: string;
+    middleName?: string;
     birthDate?: dayjs.Dayjs;
     phone?: string;
     email?: string;
@@ -32,7 +32,7 @@ export const getFormState = (
   const {
     firstName,
     surName,
-    lastName,
+    middleName,
     email,
     password,
     userGroups: userGroupsError,
@@ -45,7 +45,7 @@ export const getFormState = (
 
   const errorFirstName = firstName ? firstName.message.toString() : '';
   const errorsurName = surName ? surName.message.toString() : '';
-  const errorLastName = lastName ? lastName.message.toString() : '';
+  const errormiddleName = middleName ? middleName.message.toString() : '';
   const errorEmail = email ? email.message.toString() : '';
   const errorPassword = password ? password.message.toString() : '';
   const errorUserGroups = userGroupsError ? userGroupsError.message.toString() : '';
@@ -86,7 +86,7 @@ export const getFormState = (
     errors: {
       errorLicenseClass,
       errorFirstName,
-      errorLastName,
+      errormiddleName,
       errorsurName,
       errorUserGroups,
       errorLicenseCode,
@@ -131,7 +131,7 @@ export const getInitFormState = (
   const defaultValues: Form = {
     firstName: canSetDefaultValue ? user?.firstName : '',
     surName: canSetDefaultValue ? user?.surName : '',
-    lastName: canSetDefaultValue ? user?.lastName : '',
+    middleName: canSetDefaultValue ? user?.middleName : '',
     birthDate: birthDateInit,
     phone: canSetDefaultValue ? user?.phone : '',
     disabled: disabledInit,

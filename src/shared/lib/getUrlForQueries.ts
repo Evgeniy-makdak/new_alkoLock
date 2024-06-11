@@ -18,7 +18,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TC:
       return `&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber${orderStr}`;
     case SortTypes.USER_LAST_NAME:
-      return `&sort=userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.middleName${orderStr}`;
     case SortTypes.MARK:
       return `&sort=vehicleRecord.manufacturer${orderStr}`;
     case SortTypes.GOS_NUMBER:
@@ -26,7 +26,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.middleName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -34,7 +34,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.USER:
-      return `&sort=lastName${orderStr}`;
+      return `&sort=middleName${orderStr}`;
     case SortTypes.EMAIL:
       return `&sort=email${orderStr}`;
     default:
@@ -58,9 +58,9 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.TC:
       return `&sort=vehicle.manufacturer,vehicle.model,vehicle.registrationNumber${orderStr}`;
     case SortTypes.DRIVER:
-      return `&sort=driver.userAccount.firstName,driver.userAccount.lastName${orderStr}`;
+      return `&sort=driver.userAccount.firstName,driver.userAccount.middleName${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.middleName${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     default:
@@ -289,7 +289,7 @@ const getSortQueryAlcoloks = (orderType: SortTypes | string, order: GridSortDire
     case SortTypes.TC:
       return `&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.middleName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -410,7 +410,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=userActionId.firstName,userActionId.lastName${orderStr}`;
+      return `&sort=userActionId.firstName,userActionId.middleName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:

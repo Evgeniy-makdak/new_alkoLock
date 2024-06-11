@@ -4,7 +4,7 @@ export const adapterMapOptions = (item: IAttachmentItems, arr: ID[]): [string, I
   if (arr.find((val) => val === item.userActionId.id)) return [];
   arr.push(item.userActionId.id);
   return [
-    `${item.userActionId.surName} ${item.userActionId.firstName} ${item.userActionId.lastName} ${item.userActionId.email}`,
+    `${item.userActionId.surName} ${item.userActionId.firstName} ${item.userActionId.middleName} ${item.userActionId.email}`,
     item.userActionId.id,
   ];
 };

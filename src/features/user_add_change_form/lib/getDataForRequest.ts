@@ -11,7 +11,7 @@ export const getDataForRequest = (
   const userGroups = ArrayUtils.getArrayFromValues(data?.userGroups);
   const licenseCode = data?.licenseCode || '';
   const phone = data?.phone?.trim();
-  const lastName = data?.lastName || '';
+  const middleName = data?.middleName || '';
   const password = data?.password;
   const birthDate = data?.birthDate?.format('YYYY-MM-DD');
   const hasDriver = Boolean(licenseCode);
@@ -27,7 +27,7 @@ export const getDataForRequest = (
     email: data.email,
     firstName: data?.firstName,
     surName: data?.surName,
-    lastName,
+    middleName,
     userGroups,
   };
 

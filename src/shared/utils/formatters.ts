@@ -40,11 +40,11 @@ export class Formatters {
     if (!user) return placeholder;
     const name = user?.firstName ?? '';
     const surName = user?.surName ?? '';
-    const lastName = user?.lastName ?? '';
+    const middleName = user?.middleName ?? '';
 
-    if (!name.length && !surName.length && !lastName.length) return placeholder;
+    if (!name.length && !surName.length && !middleName.length) return placeholder;
 
-    return `${surName} ${name} ${lastName}`;
+    return `${surName} ${name} ${middleName}`;
   }
 
   static carNameFormatter(
