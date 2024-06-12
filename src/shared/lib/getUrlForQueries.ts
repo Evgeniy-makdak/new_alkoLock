@@ -96,7 +96,7 @@ export function getAttachmentURL({
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
@@ -185,7 +185,7 @@ export function getUserListURL(
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (trimmedQuery) {
@@ -258,7 +258,7 @@ export const getCarListURL = ({
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
@@ -327,7 +327,7 @@ export function getAlcolocksURL({
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
@@ -365,7 +365,7 @@ export function getAlcolockListURL({
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
@@ -500,7 +500,7 @@ export function getEventsApiURL({
   }
 
   if (endDate) {
-    queries += `&all.occurredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.occurredAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy || order) {
@@ -581,7 +581,7 @@ export function getEventListForAutoServiceURL({
   }
 
   if (endDate) {
-    queries += `&all.occurredAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.occurredAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy || order) {
@@ -642,7 +642,7 @@ export const getBranchListUrl = ({
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThan=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
