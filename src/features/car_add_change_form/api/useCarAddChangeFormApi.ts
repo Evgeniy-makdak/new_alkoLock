@@ -19,12 +19,13 @@ const onError = (error: AxiosError<IError>) => {
   const status = error?.response?.data?.status || error?.response?.status;
   const message = messageCode[status];
   if (message) {
-    enqueueSnackbar({ message: message, variant: 'error' });
+    enqueueSnackbar({ message, variant: 'error' });
   }
 };
 
 export const useCarAddChangeFormApi = (id?: ID) => {
   const update = useUpdateQueries();
+
   const { data, isLoading } = useConfiguredQuery([QueryKeys.CAR_ITEM], CarsApi.getCar, {
     options: id,
     settings: {
@@ -32,9 +33,24 @@ export const useCarAddChangeFormApi = (id?: ID) => {
     },
   });
 
+  const handleError = (e: unknown) => {
+    if (e instanceof AxiosError) {
+      onError(e);
+    }
+  };
+
   const { mutateAsync: changeItem } = useMutation({
-    mutationFn: (changeData: ChangeCarBody) => CarsApi.changeCar(changeData, id),
-    onSuccess: () => update(updateQueries),
+    mutationFn: async (changeData: ChangeCarBody) => {
+      try {
+        return await CarsApi.changeCar(changeData, id);
+      } catch (e) {
+        handleError(e);
+      }
+    },
+    onSuccess: () => {
+      update(updateQueries);
+    },
+    onError: handleError,
   });
 
   const { mutateAsync: createItem } = useMutation({
@@ -52,16 +68,10 @@ export const useCarAddChangeFormApi = (id?: ID) => {
         }
         return response;
       } catch (e) {
-        if (e instanceof AxiosError) {
-          onError(e);
-        }
+        handleError(e);
       }
     },
-    onError: (error) => {
-      if (error instanceof AxiosError) {
-        onError(error);
-      }
-    },
+    onError: handleError,
     onSuccess: () => {
       update(updateQueries);
     },

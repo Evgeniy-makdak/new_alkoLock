@@ -23,7 +23,7 @@ export const useEventsHistory = (options: EventsOptions, type: HistoryTypes) => 
     setEventsAcc([]);
 
     fetchList(0);
-  }, [options.userId]);
+  }, [options.userId, options.carId, options.alcolockId]);
 
   const handleEnd = async () => {
     setPage((prev) => prev + 1);

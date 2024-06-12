@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
+
 import dayjs, { Dayjs } from 'dayjs';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
+
 import { useCarAddChangeFormApi } from '../api/useCarAddChangeFormApi';
 import { colorSelectValueFormatter, typeSelectValueFormatter } from '../lib/helpers';
 import { type Form, schema } from '../lib/validate';
@@ -16,7 +19,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const { car, isLoadingCar, changeItem, createItem } = useCarAddChangeFormApi(id);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const [alreadyShownError, setAlreadyShownError] = useState(false);
 
   const defaultValues = useMemo(() => {
     if (car && !isLoadingCar) {
@@ -95,11 +97,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
       closeModal && closeModal();
     } catch (error) {
       console.error('Error occurred during form submission:', error);
-      if (!alreadyShownError) {
-        // Показать пользователю сообщение об ошибке только если оно еще не было показано
-        setAlreadyShownError(true);
-        // Здесь можно добавить логику для вывода сообщения об ошибке пользователю
-      }
     }
   };
 
