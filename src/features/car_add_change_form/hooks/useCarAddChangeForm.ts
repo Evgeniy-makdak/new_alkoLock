@@ -15,8 +15,8 @@ const dateNow = dayjs();
 export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const { car, isLoadingCar, changeItem, createItem } = useCarAddChangeFormApi(id);
-
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [alreadyShownError, setAlreadyShownError] = useState(false);
 
   const defaultValues = useMemo(() => {
     if (car && !isLoadingCar) {
@@ -77,21 +77,30 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     errors[name] ? errors[name].message.toString() : '';
 
   const onSubmit = async (data: Form) => {
-    const year = data?.year.year();
+    try {
+      const year = data?.year.year();
 
-    const payload = {
-      branchId: selectedBranch?.id,
-      color: data.color[0]?.value,
-      type: data?.type[0]?.value,
-      manufacturer: data.mark,
-      year,
-      model: data.model,
-      registrationNumber: data.registrationNumber,
-      vin: data.vin,
-    };
+      const payload = {
+        branchId: selectedBranch?.id,
+        color: data.color[0]?.value,
+        type: data?.type[0]?.value,
+        manufacturer: data.mark,
+        year,
+        model: data.model,
+        registrationNumber: data.registrationNumber,
+        vin: data.vin,
+      };
 
-    id ? await changeItem(payload) : await createItem(payload);
-    closeModal && closeModal();
+      id ? await changeItem(payload) : await createItem(payload);
+      closeModal && closeModal();
+    } catch (error) {
+      console.error('Error occurred during form submission:', error);
+      if (!alreadyShownError) {
+        // Показать пользователю сообщение об ошибке только если оно еще не было показано
+        setAlreadyShownError(true);
+        // Здесь можно добавить логику для вывода сообщения об ошибке пользователю
+      }
+    }
   };
 
   return {

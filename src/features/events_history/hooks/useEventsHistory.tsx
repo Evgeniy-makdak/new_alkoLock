@@ -19,9 +19,11 @@ export const useEventsHistory = (options: EventsOptions, type: HistoryTypes) => 
   const fetchList = fetchNewList(setEventsAcc, setIsLoading, options);
 
   useEffect(() => {
-    if (page !== 0) return;
+    setPage(0);
+    setEventsAcc([]);
+
     fetchList(0);
-  }, []);
+  }, [options.userId]);
 
   const handleEnd = async () => {
     setPage((prev) => prev + 1);

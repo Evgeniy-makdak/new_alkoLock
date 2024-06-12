@@ -54,6 +54,7 @@ export const useAlkolocksTable = () => {
   };
 
   const rows = useGetRows(data);
+
   const headers = useGetColumns(
     refetch,
     handleClickDeletetAlcolock,
