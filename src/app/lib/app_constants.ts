@@ -281,11 +281,11 @@ export class AppConstants {
 
     {
       value: 'SERVICE_MODE_ACTIVATE',
-      label: 'Переход в сервисный режим',
+      label: 'Заявка на переход в сервисный режим',
     },
     {
       value: 'SERVICE_MODE_DEACTIVATE',
-      label: 'Выход из сервисного режима',
+      label: 'Заявка на выход из сервисного режима',
     },
     {
       value: this.EVENT_TYPES.alcolockEventStartedMaintenanceMode,
@@ -305,7 +305,7 @@ export class AppConstants {
     },
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOff,
-      label: 'Выход из сервисного режима',
+      label: 'Заявка на выход из сервисного режима',
     },
     {
       value: this.EVENT_TYPES.alcolockEventEmergencyModeOn,
@@ -349,7 +349,7 @@ export class AppConstants {
 
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOn,
-      label: 'Переход в сервисный режим',
+      label: 'Заявка на переход в сервисный режим',
     },
   ];
 
