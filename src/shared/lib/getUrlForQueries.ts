@@ -110,7 +110,7 @@ export function getAttachmentURL({
   }
 
   if (drivers) {
-    queries += `&all.vehicle.driver.id.in=${drivers}`;
+    queries += `&all.driver.userAccount.id.in=${drivers}`;
   }
   if (tc) {
     queries += `&all.vehicle.registrationNumber.match=${tc}`;
@@ -122,7 +122,7 @@ export function getAttachmentURL({
     queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
   }
   if (dateLink) {
-    queries += `&all.vehicle.createdAt.match=${dateLink}`;
+    queries += `&all.createdAt.match=${dateLink}`;
   }
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
 }
