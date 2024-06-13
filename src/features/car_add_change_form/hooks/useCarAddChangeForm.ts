@@ -93,7 +93,12 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         vin: data.vin,
       };
 
-      id ? await changeItem(payload) : await createItem(payload);
+      if (id) {
+        await changeItem(payload);
+      } else {
+        await createItem(payload);
+      }
+
       closeModal && closeModal();
     } catch (error) {
       console.error('Error occurred during form submission:', error);

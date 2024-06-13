@@ -33,24 +33,20 @@ export const useCarAddChangeFormApi = (id?: ID) => {
     },
   });
 
-  const handleError = (e: unknown) => {
-    if (e instanceof AxiosError) {
-      onError(e);
-    }
-  };
-
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: async (changeData: ChangeCarBody) => {
       try {
         return await CarsApi.changeCar(changeData, id);
       } catch (e) {
-        handleError(e);
+        if (e instanceof AxiosError) {
+          onError(e);
+        }
+        throw e; // Убедимся, что ошибка всё ещё выбрасывается
       }
     },
     onSuccess: () => {
       update(updateQueries);
     },
-    onError: handleError,
   });
 
   const { mutateAsync: createItem } = useMutation({
@@ -68,10 +64,12 @@ export const useCarAddChangeFormApi = (id?: ID) => {
         }
         return response;
       } catch (e) {
-        handleError(e);
+        if (e instanceof AxiosError) {
+          onError(e);
+        }
+        throw e; // Убедимся, что ошибка всё ещё выбрасывается
       }
     },
-    onError: handleError,
     onSuccess: () => {
       update(updateQueries);
     },
