@@ -122,7 +122,7 @@ export function getAttachmentURL({
     queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
   }
   if (dateLink) {
-    queries += `&all.createdAt.match=${dateLink}`;
+    queries += `&all.createdAt.eq=${dateLink}`;
   }
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
 }
@@ -521,7 +521,7 @@ export function getEventsApiURL({
   }
 
   if (users) {
-    queries += `&all.events.user.id.in=${filterOptions.users}`;
+    queries += `&all.userActionId.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
