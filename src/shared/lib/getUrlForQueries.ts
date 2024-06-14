@@ -444,7 +444,7 @@ export function getEventsHistoryURL({
   });
 
   if (userId) {
-    queries += `&all.events.user.id.equals=${userId}`;
+    queries += `&all.userActionId.id.in=${userId}`;
   }
 
   if (carId) {
