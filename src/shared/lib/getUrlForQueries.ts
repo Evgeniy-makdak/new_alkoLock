@@ -335,9 +335,9 @@ export function getAlcolocksURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
+    // queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
     queries += `&all.match.contains=${queryTrimmed}`;
-    queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    // queries += `&all.userActionId.match.contains=${queryTrimmed}`;
   }
   return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -373,9 +373,9 @@ export function getAlcolockListURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
+    // queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
     queries += `&all.match.contains=${queryTrimmed}`;
-    queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    // queries += `&all.userActionId.match.contains=${queryTrimmed}`;
   }
 
   return `api/monitoring-devices?page=${page}&size=${limit}${queries}`;
