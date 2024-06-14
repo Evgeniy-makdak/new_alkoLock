@@ -113,7 +113,7 @@ export function getAttachmentURL({
     queries += `&all.driver.userAccount.id.in=${drivers}`;
   }
   if (tc) {
-    queries += `&all.vehicle.registrationNumber.match=${tc}`;
+    queries += `&all.vehicle.id.in=${tc}`;
   }
   if (createAttach) {
     queries += `&all.vehicle.userActionId.id.in=${createAttach}`;
@@ -269,7 +269,7 @@ export const getCarListURL = ({
     queries += `&any.match.contains=${queryTrimmed}`;
     // TODO написать более подходящую реализацию формирования query параметров
     // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
-    !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
+    // !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
   }
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
