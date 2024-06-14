@@ -7,6 +7,7 @@ export const getFields = (carData: ICar) => {
   const vin = carData?.vin ?? '-';
   const gosNumber = carData?.registrationNumber ?? '-';
   const dateRegistry = Formatters.formatISODate(carData?.createdAt);
+  const serialNumberAlko = carData?.registrationNumber;
 
   return [
     {
@@ -55,6 +56,14 @@ export const getFields = (carData: ICar) => {
       value: {
         label: Formatters.formatISODate(carData?.createdAt),
         copyble: dateRegistry === '-' ? false : true,
+      },
+    },
+    {
+      label: 'Установленный алкозамок',
+      type: TypeOfRows.SERIAL_NUMBER,
+      value: {
+        label: carData && carData.monitoringDevice ? carData.monitoringDevice.serialNumber : '-',
+        copyble: serialNumberAlko === '-' ? false : true,
       },
     },
   ];
