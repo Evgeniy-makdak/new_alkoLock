@@ -36,7 +36,17 @@ export const useCarAddChangeFormApi = (id?: ID) => {
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: async (changeData: ChangeCarBody) => {
       try {
-        return await CarsApi.changeCar(changeData, id);
+        const response = await CarsApi.changeCar(changeData, id);
+        if (response.status >= 400) {
+          throw new AxiosError(
+            `Request failed with status code ${response.status}`,
+            undefined,
+            response.config,
+            response.request,
+            response,
+          );
+        }
+        return response;
       } catch (e) {
         if (e instanceof AxiosError) {
           onError(e);

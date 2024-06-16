@@ -30,11 +30,23 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
-  const { register, control, handleSubmit, watch, clearErrors, setValue, getValues, formState } =
-    useForm({
-      resolver: yupResolver(schema(id)),
-      defaultValues: initUser.defaultValues,
-    });
+  const {
+    register,
+    control,
+    handleSubmit,
+    watch,
+    clearErrors,
+    setValue,
+    getValues,
+    formState,
+    reset,
+  } = useForm({
+    resolver: yupResolver(schema(id)),
+    defaultValues: initUser.defaultValues,
+  });
+  useEffect(() => {
+    reset(initUser.defaultValues);
+  }, [initUser]);
   const stateOfForm = getFormState(formState, watch);
 
   const onSelectLicenseClass = (value: string) => {
@@ -108,7 +120,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
     const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
-    const userID = id;
+    // const userID = id;
 
     if (
       stateOfForm.state.disableDriverInfo &&
