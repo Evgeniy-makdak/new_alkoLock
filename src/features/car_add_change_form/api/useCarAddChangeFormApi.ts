@@ -51,7 +51,7 @@ export const useCarAddChangeFormApi = (id?: ID) => {
         if (e instanceof AxiosError) {
           onError(e);
         }
-        throw e; // Убедимся, что ошибка всё ещё выбрасывается
+        throw e;
       }
     },
     onSuccess: () => {
@@ -77,7 +77,7 @@ export const useCarAddChangeFormApi = (id?: ID) => {
         if (e instanceof AxiosError) {
           onError(e);
         }
-        throw e; // Убедимся, что ошибка всё ещё выбрасывается
+        throw e;
       }
     },
     onSuccess: () => {

@@ -1,12 +1,10 @@
 import { useForm } from 'react-hook-form';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 import { Formatters } from '@shared/utils/formatters';
-
 import { useAlkozamkiFormApi } from '../api/useAlkozamkiFormApi';
 import { type Form, schema } from '../lib/validate';
 
@@ -44,7 +42,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
     resolver: yupResolver(schema),
-    values: defaultValues,
+    defaultValues,
   });
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
@@ -66,9 +64,21 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
       vehicleId: car,
     };
 
-    id ? await changeItem(payload) : await createItem(payload);
-    closeModal();
+    try {
+      if (id) {
+        await changeItem(payload);
+      } else {
+        await createItem(payload);
+      }
+      if (closeModal) {
+        closeModal(); // Закрываем модальное окно только в случае успешного выполнения
+      }
+    } catch (error) {
+      // Обработку ошибок мы уже реализовали в хуке, поэтому здесь ничего не нужно делать
+      // Не вызываем closeModal здесь
+    }
   };
+
   return {
     errorName,
     errorSerialNumber,
