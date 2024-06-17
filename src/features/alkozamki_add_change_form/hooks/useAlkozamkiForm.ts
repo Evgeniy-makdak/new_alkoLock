@@ -1,13 +1,15 @@
+import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 import { Formatters } from '@shared/utils/formatters';
+
 import { useAlkozamkiFormApi } from '../api/useAlkozamkiFormApi';
 import { type Form, schema } from '../lib/validate';
-import { useEffect, useMemo } from 'react';
 
 export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -53,7 +55,10 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   useEffect(() => {
     if (id) {
       if (alkolock && !isLoadingAlkolock) {
-        setValue('name', alkolock?.name || '');
+        console.log('useEffect: id:', id);
+        console.log('useEffect: alkolock:', alkolock);
+        console.log('useEffect: isLoadingAlkolock:'), setValue('name', alkolock?.name || '');
+        console.log('useEffect: car:', car);
         setValue('serialNumber', alkolock?.serialNumber || '');
         setValue('uid', alkolock?.serviceId || '');
         setValue('tc', car ? [{ label: Formatters.carNameFormatter(car), value: car?.id }] : []);
@@ -90,7 +95,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
         closeModal();
       }
     } catch (error) {
-      // Обработка ошибок в хуке 
+      // Обработка ошибок в хуке
     }
   };
 

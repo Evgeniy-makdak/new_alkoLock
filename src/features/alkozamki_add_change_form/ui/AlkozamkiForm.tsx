@@ -57,9 +57,11 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
               />
               <CarsSelect
                 name={LABEL_TEXT.vehicle.name}
-                testid={testids.page_alcolocks.alcolocks_popup_add_alcolock.ALCOLOCK_ADD_ATTACH_INPUT_CAR}
-                value={tc}
-                setValueStore={onSelect}
+                testid={
+                  testids.page_alcolocks.alcolocks_popup_add_alcolock.ALCOLOCK_ADD_ATTACH_INPUT_CAR
+                }
+                value={tc} // Используем tc
+                setValueStore={onSelect} // Обновляем значение tc
                 label={LABEL_TEXT.vehicle.label}
               />
             </InputsColumnWrapper>
