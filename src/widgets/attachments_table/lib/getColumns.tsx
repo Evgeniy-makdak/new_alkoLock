@@ -39,7 +39,7 @@ export const useGetColumns = (
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'Алкозамок',
         field: ValuesHeader.ALCOLOKS,
-        sortable: false,
+        // sortable: false,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,

@@ -51,6 +51,8 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
   const orderStr = ',' + order.toUpperCase();
 
   switch (orderType) {
+    case SortTypes.ALCOLOKS:
+      return `&sort=vehicle.monitoringDevice.name${orderStr}`;
     case SortTypes.SERIAL_NUMBER:
       return `&sort=vehicle.monitoringDevice.serialNumber${orderStr}`;
     case SortTypes.NAMING:

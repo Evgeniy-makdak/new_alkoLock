@@ -63,7 +63,7 @@ export const AttachmentsTable = () => {
       <Table
         // TODO => кол-во элементов должно приходить с бэка
         sortingMode="server"
-        rowCount={100}
+        rowCount={500}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
