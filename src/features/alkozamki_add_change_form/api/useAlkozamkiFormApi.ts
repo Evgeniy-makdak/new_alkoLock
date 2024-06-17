@@ -1,5 +1,5 @@
 import { AxiosError } from 'axios';
-import { useSnackbar } from 'notistack';
+import { enqueueSnackbar } from 'notistack';
 
 import { AlcolocksApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
@@ -19,23 +19,29 @@ const messageCode: { [key: number]: string } = {
   [StatusCode.CONFLICT]: 'Алкозамок с данным серийным номером уже существует',
 };
 
-export const useAlkozamkiFormApi = (id?: ID, onSuccessCallback?: () => void) => {
-  const { enqueueSnackbar } = useSnackbar();
-  const update = useUpdateQueries();
+const onError = (error: AxiosError<IError>) => {
+  const status = error?.response?.data?.status || error?.response?.status;
+  const message = messageCode[status] || 'Произошла ошибка. Попробуйте еще раз.';
+  if (message) {
+    enqueueSnackbar(message, { variant: 'error' });
+  }
+};
 
-  const onError = (error: AxiosError<IError>) => {
-    const status = error?.response?.data?.status || error?.response?.status;
-    const message = messageCode[status] || 'Произошла ошибка. Попробуйте еще раз.';
-    if (message) {
-      enqueueSnackbar(message, { variant: 'error' });
-    }
-  };
+export const useAlkozamkiFormApi = (id?: ID) => {
+  const update = useUpdateQueries();
 
   const { data, isLoading } = useConfiguredQuery(
     [QueryKeys.ALKOLOCK_ITEM],
     AlcolocksApi.getAlkolock,
     { options: id, settings: { enabled: !!id } },
   );
+
+  const handleError = (e: unknown) => {
+    if (e instanceof AxiosError) {
+      onError(e);
+    }
+    throw e; // Ensure error is propagated
+  };
 
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: async (changeData: CreateAlcolockData) => {
@@ -51,11 +57,10 @@ export const useAlkozamkiFormApi = (id?: ID, onSuccessCallback?: () => void) => 
       }
       return response;
     },
-    onError,
     onSuccess: () => {
       update(updateQueries);
-      if (onSuccessCallback) onSuccessCallback();
     },
+    onError: handleError,
   });
 
   const { mutateAsync: createItem } = useMutation({
@@ -72,11 +77,10 @@ export const useAlkozamkiFormApi = (id?: ID, onSuccessCallback?: () => void) => 
       }
       return response;
     },
-    onError,
     onSuccess: () => {
       update(updateQueries);
-      if (onSuccessCallback) onSuccessCallback();
     },
+    onError: handleError,
   });
 
   return { alkolock: data?.data, isLoadingAlkolock: isLoading, changeItem, createItem };

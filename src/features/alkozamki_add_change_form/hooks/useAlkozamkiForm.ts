@@ -7,28 +7,32 @@ import ArrayUtils from '@shared/utils/ArrayUtils';
 import { Formatters } from '@shared/utils/formatters';
 import { useAlkozamkiFormApi } from '../api/useAlkozamkiFormApi';
 import { type Form, schema } from '../lib/validate';
+import { useEffect, useMemo } from 'react';
 
 export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const { alkolock, isLoadingAlkolock, changeItem, createItem } = useAlkozamkiFormApi(id);
   const car = alkolock?.vehicleBind?.vehicle;
 
-  const defaultValues =
-    alkolock && !isLoadingAlkolock
-      ? {
-          name: alkolock?.name || '',
-          serialNumber: alkolock?.serialNumber || '',
-          uid: alkolock?.serviceId || '',
-          tc: car
-            ? [
-                {
-                  label: Formatters.carNameFormatter(car),
-                  value: car?.id,
-                },
-              ]
-            : [],
-        }
-      : null;
+  // Используем useMemo для defaultValues
+  const defaultValues = useMemo(() => {
+    if (alkolock && !isLoadingAlkolock) {
+      return {
+        name: alkolock?.name || '',
+        serialNumber: alkolock?.serialNumber || '',
+        uid: alkolock?.serviceId || '',
+        tc: car
+          ? [
+              {
+                label: Formatters.carNameFormatter(car),
+                value: car?.id,
+              },
+            ]
+          : [],
+      };
+    }
+    return null;
+  }, [alkolock, isLoadingAlkolock, car]);
 
   const {
     register,
@@ -44,6 +48,18 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     resolver: yupResolver(schema),
     defaultValues,
   });
+
+  // Обновляем форму при изменении id
+  useEffect(() => {
+    if (id) {
+      if (alkolock && !isLoadingAlkolock) {
+        setValue('name', alkolock?.name || '');
+        setValue('serialNumber', alkolock?.serialNumber || '');
+        setValue('uid', alkolock?.serviceId || '');
+        setValue('tc', car ? [{ label: Formatters.carNameFormatter(car), value: car?.id }] : []);
+      }
+    }
+  }, [id, alkolock, isLoadingAlkolock, car, setValue]);
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
@@ -71,11 +87,10 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
         await createItem(payload);
       }
       if (closeModal) {
-        closeModal(); // Закрываем модальное окно только в случае успешного выполнения
+        closeModal();
       }
     } catch (error) {
-      // Обработку ошибок мы уже реализовали в хуке, поэтому здесь ничего не нужно делать
-      // Не вызываем closeModal здесь
+      // Обработка ошибок в хуке 
     }
   };
 
