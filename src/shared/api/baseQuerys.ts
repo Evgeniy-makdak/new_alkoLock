@@ -11,6 +11,7 @@ import {
   getCarSwitchBranchUrl,
   getCreateAlkolocksURL,
   getCreateAttachmentApiURL,
+  getEventListCountForAutoServiceURL,
   getEventListForAutoServiceURL,
   getEventsApiURL,
   getEventsHistoryURL,
@@ -235,6 +236,10 @@ export class EventsApi {
   }
   static getEventListForAutoService(options: QueryOptions) {
     return getQuery<IDeviceAction[]>({ url: getEventListForAutoServiceURL(options) });
+  }
+
+  static getEventListCountForAutoServiceURL(options: QueryOptions) {
+    return getQuery<number>({ url: getEventListCountForAutoServiceURL(options) });
   }
 
   static getEventsHistory(options: EventsOptions) {

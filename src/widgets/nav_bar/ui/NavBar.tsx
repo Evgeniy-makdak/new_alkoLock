@@ -45,7 +45,8 @@ export const NavBar = () => {
 
             <div className={style.links}>
               {NAV_LINKS.filter(permissionsFilter).map((link, i) => {
-                const notification = link.path === RoutePaths.autoService ? length : null;
+                const notification =
+                  link.path === RoutePaths.autoService ? (length as number) : null;
 
                 return (
                   <Tooltip

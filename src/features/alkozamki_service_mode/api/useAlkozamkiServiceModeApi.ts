@@ -24,6 +24,7 @@ const onError = (error: AxiosError<IError>) => {
 const updateQueries = [
   QueryKeys.AVTOSERVISE_EVENTS_ITEM,
   QueryKeys.AUTO_SERVICE_EVENTS_LIST,
+  QueryKeys.AUTO_SERVICE_COUNT_EVENTS_LIST,
   QueryKeys.ALCOLOCK_LIST,
   QueryKeys.ALKOLOCK_ITEM,
   QueryKeys.ALKOLOCK_LIST_TABLE,

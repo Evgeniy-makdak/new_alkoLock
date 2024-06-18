@@ -15,16 +15,23 @@ export const useNavBarApi = () => {
     triggerOnBranchChange: false,
   });
   // TODO => нужно заменить на ручку которая вернут просто кол-во событий
-  const { data: auto } = useConfiguredQuery(
-    [QueryKeys.AUTO_SERVICE_EVENTS_LIST],
-    EventsApi.getEventListForAutoService,
+  // const { data: auto } = useConfiguredQuery(
+  //   [QueryKeys.AUTO_SERVICE_EVENTS_LIST],
+  //   EventsApi.getEventListForAutoService,
+  //   {},
+  // );
+
+  const { data: count } = useConfiguredQuery(
+    [QueryKeys.AUTO_SERVICE_COUNT_EVENTS_LIST],
+    EventsApi.getEventListCountForAutoServiceURL,
     {},
   );
+
   return {
     refetchAccountData,
     userData: data?.data,
     isLoadingAccountData,
-    length: auto?.data?.length || 0,
+    length: count?.data || 0,
     error,
   };
 };

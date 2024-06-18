@@ -147,13 +147,13 @@ export interface IUser {
 
 export interface IAttachmentItems {
   createdAt: string;
-  createdBy : {
-    id : number,
-    email : string,
-    firstName : string,
-    surname : string,
-    middleName : string
-  }
+  createdBy: {
+    id: number;
+    email: string;
+    firstName: string;
+    surname: string;
+    middleName: string;
+  };
   userActionId: IUser;
   id: ID;
   driver: IDriver;
@@ -238,11 +238,11 @@ export interface IAlcolock {
   modeUpdatedAt: string;
   lastModifiedAt: string;
   activeActions: IActiveActions[];
-  createdBy : {
-    id : number,
-    email : string,
-    firstName : string
-  },
+  createdBy: {
+    id: number;
+    email: string;
+    firstName: string;
+  };
   createdAt: string;
   vehicleBind: {
     userActionId: IUser;
@@ -398,12 +398,12 @@ export interface IBranch {
   parentOffice: string;
   childOffices: string[];
   createdAt: string;
-  createdBy : {
-    id : number,
-    email : string,
-    firstName : string,
-    middleName : string
-  },
+  createdBy: {
+    id: number;
+    email: string;
+    firstName: string;
+    middleName: string;
+  };
   userActionId: {
     id: ID;
     email: string;

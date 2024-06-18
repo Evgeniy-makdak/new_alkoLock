@@ -60,7 +60,7 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.TC:
       return `&sort=vehicle.manufacturer,vehicle.model,vehicle.registrationNumber${orderStr}`;
     case SortTypes.DRIVER:
-      return `&sort=driver.userAccount.firstName,driver.userAccount.middleName${orderStr}`;
+      return `&sort=driver.userAccount.surname,driver.userAccount.firstName${orderStr}`;
     case SortTypes.WHO_LINK:
       return `&sort=createdBy.firstName${orderStr}`;
     case SortTypes.DATE_CREATE:
@@ -156,7 +156,7 @@ const getSelectBranchQueryUrl = ({
 export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {
   const query = getSelectBranchQueryUrl({
     parameters:
-      '?&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.events.eventType.notEquals=TIMEOUT&all.status.notIn=INVALID',
+      '?&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&&all.status.notIn=INVALID',
     branchId,
     page: 'device',
   });
@@ -573,7 +573,7 @@ export function getEventListForAutoServiceURL({
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
     parameters:
-      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.events.eventType.notEquals=TIMEOUT&all.status.notIn=INVALID',
+      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
     branchId,
     page: 'device',
   });
@@ -606,6 +606,55 @@ export function getEventListForAutoServiceURL({
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
+}
+
+export function getEventListCountForAutoServiceURL({
+  page,
+  limit,
+  searchQuery,
+  startDate,
+  endDate,
+  order,
+  sortBy,
+  filterOptions,
+}: QueryOptions) {
+  const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
+  const branchId = filterOptions?.branchId;
+  let queries = getSelectBranchQueryUrl({
+    parameters:
+      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
+    branchId,
+    page: 'device',
+  });
+  if (startDate) {
+    const date = new Date(startDate).toISOString();
+    queries += `&all.occurredAt.greaterThanOrEqual=${date}`;
+  }
+
+  if (endDate) {
+    queries += `&all.occurredAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
+  }
+
+  if (sortBy || order) {
+    // Значения по умолчанию для сортировки
+    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
+    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+
+    // Использование значений по умолчанию, если sortBy и order не определены
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
+
+    // Генерация строки запроса с сортировкой
+    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  }
+
+  if (queryTrimmed.length) {
+    queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
+    queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&all.vehicleRecord.match.contains=${queryTrimmed}`;
+  }
+
+  return `api/device-actions/count?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 //////////////////////////////////====================================================================BranchAPi
