@@ -29,9 +29,6 @@ type UserAddChangeFormProps = {
 export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
   const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control } =
     useUserAddChangeForm(id, closeModal);
-    // console.log({...state.register('firstName')});
-    // console.log(state);
-    
 
   return (
     <Loader isLoading={isLoading}>

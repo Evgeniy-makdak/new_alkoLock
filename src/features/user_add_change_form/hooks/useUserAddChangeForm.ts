@@ -46,7 +46,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   });
   useEffect(() => {
     reset(initUser.defaultValues);
-  }, [initUser]);
+  }, [isLoading]);
   const stateOfForm = getFormState(formState, watch);
 
   const onSelectLicenseClass = (value: string) => {
