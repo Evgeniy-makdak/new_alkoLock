@@ -604,7 +604,6 @@ export function getEventListForAutoServiceURL({
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
     queries += `&all.vehicleRecord.match.contains=${queryTrimmed}`;
   }
-
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
@@ -622,7 +621,7 @@ export function getEventListCountForAutoServiceURL({
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
     parameters:
-      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
+      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID&',
     branchId,
     page: 'device',
   });
