@@ -623,7 +623,7 @@ export function getEventListCountForAutoServiceURL({
   let queries = '';
 
   if (branchId) {
-    queries += `&all.device.branchId.in=${branchId}`;
+    queries += `?all.device.branchId.in=${branchId}`;
   }
 
   queries += getSelectBranchQueryUrl({

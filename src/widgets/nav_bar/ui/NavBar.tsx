@@ -45,8 +45,7 @@ export const NavBar = () => {
 
             <div className={style.links}>
               {NAV_LINKS.filter(permissionsFilter).map((link, i) => {
-                const notification =
-                  link.path === RoutePaths.autoService ? (length as number) : null;
+                const notification = link.path === RoutePaths.autoService;
 
                 return (
                   <Tooltip
@@ -63,9 +62,7 @@ export const NavBar = () => {
                       to={link.path}>
                       {!state && <span>{link.name}</span>}
                       <span>{link.icon}</span>
-                      {!!notification && (
-                        <span className={style.notifications}>{notification}</span>
-                      )}
+                      {notification && <span className={style.notifications}>{length}</span>}
                     </NavLink>
                   </Tooltip>
                 );

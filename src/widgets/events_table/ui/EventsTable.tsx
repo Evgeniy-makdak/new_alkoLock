@@ -1,4 +1,5 @@
-// import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
@@ -16,24 +17,24 @@ interface EventsTable {
 
 export const EventsTable = ({ handleClickRow }: EventsTable) => {
   const { filtersData, tableData } = useEventsTable();
-  // const [totalRowCount, setTotalRowCount] = useState(100);
+  const [totalRowCount, setTotalRowCount] = useState(100);
 
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
-  //       );
-  //       const totalRowCountHeader = response.headers.get('X-Total-Count');
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
+        );
+        const totalRowCountHeader = response.headers.get('X-Total-Count');
 
-  //       setTotalRowCount(parseInt(totalRowCountHeader));
-  //     } catch (error) {
-  //       console.error('Ошибка при получении данных:', error);
-  //     }
-  //   };
+        setTotalRowCount(parseInt(totalRowCountHeader));
+      } catch (error) {
+        // console.error('Ошибка при получении данных:', error);
+      }
+    };
 
-  //   fetchData();
-  // }, [setTotalRowCount]);
+    fetchData();
+  }, [setTotalRowCount]);
 
   return (
     <>
@@ -72,8 +73,8 @@ export const EventsTable = ({ handleClickRow }: EventsTable) => {
       <EventsFilterPanel open={filtersData.openFilters} />
       <Table
         sortingMode="server"
-        // rowCount={totalRowCount}
-        rowCount={100}
+        rowCount={totalRowCount}
+        // rowCount={100}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}

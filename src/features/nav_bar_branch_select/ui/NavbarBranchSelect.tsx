@@ -24,6 +24,7 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
   tooltipProps,
 }) => {
   const { isGlobalAdmin, onChangeBranch, value } = useNavbarBranchSelect();
+
   return (
     <>
       {isCollops ? (

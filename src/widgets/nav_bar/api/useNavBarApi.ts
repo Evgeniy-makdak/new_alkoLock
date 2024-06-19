@@ -1,8 +1,10 @@
 import { AccountApi, EventsApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
+import { appStore } from '@shared/model/app_store/AppStore';
 
 export const useNavBarApi = () => {
+  const { selectedBranchState } = appStore((state) => state);
   const {
     data,
     isLoading: isLoadingAccountData,
@@ -24,7 +26,7 @@ export const useNavBarApi = () => {
   const { data: count } = useConfiguredQuery(
     [QueryKeys.AUTO_SERVICE_COUNT_EVENTS_LIST],
     EventsApi.getEventListCountForAutoServiceURL,
-    {},
+    { options: { filterOptions: { branchId: selectedBranchState?.id } } },
   );
 
   return {

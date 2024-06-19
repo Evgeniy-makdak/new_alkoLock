@@ -13,6 +13,7 @@ export const useNavbarBranchSelect = () => {
   const { selectedBranchState, setState, isAdmin, assignmentBranch, auth } = appStore(
     (state) => state,
   );
+
   const { isLoading, branchList } = useUserDataApi();
 
   const { state: office, setItemState: setOffice } = useLocalStorage({
