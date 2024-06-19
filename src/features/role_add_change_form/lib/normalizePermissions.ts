@@ -91,16 +91,11 @@ const getArrayOfStringFromPermission = (
 };
 // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
 export const permissionForEntity = (permissionsList: Permissions[]) => {
-  console.log(permissionsList);
-  
   return function (entity: Entities): PermissionsStatus[] {
     const permissionStatus: PermissionsStatus[] = [];
     (permissionsList || []).map((item) => {
       const { entities, status } = getArrayOfStringFromPermission(item);
-      console.log(entities, status);
-      console.log(entity);
-      
-      
+
       if (entities === entity) {
         permissionStatus.push(PermissionsStatus[status]);
       }

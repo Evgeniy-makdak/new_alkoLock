@@ -154,13 +154,14 @@ const getSelectBranchQueryUrl = ({
 };
 
 export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {
-  const query = getSelectBranchQueryUrl({
-    parameters:
-      '?&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&&all.status.notIn=INVALID',
-    branchId,
-    page: 'device',
-  });
-  // TODO => нужно понять как эту ручку правильно использовать, сейчас возвращается ошибка 500.
+  let query = '?';
+
+  if (branchId) {
+    query += `all.device.branchId.in=${branchId}&`;
+  }
+
+  query += `all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID`;
+
   return `api/device-actions/count${query}`;
 }
 
@@ -619,12 +620,19 @@ export function getEventListCountForAutoServiceURL({
 }: QueryOptions) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = filterOptions?.branchId;
-  let queries = getSelectBranchQueryUrl({
+  let queries = '';
+
+  if (branchId) {
+    queries += `&all.device.branchId.in=${branchId}`;
+  }
+
+  queries += getSelectBranchQueryUrl({
     parameters:
       '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID&',
     branchId,
     page: 'device',
   });
+
   if (startDate) {
     const date = new Date(startDate).toISOString();
     queries += `&all.occurredAt.greaterThanOrEqual=${date}`;
