@@ -61,7 +61,7 @@ export const useAlkozamkiServiceModeApi = () => {
   const { mutate: seenMutate } = useMutation({
     mutationKey: [],
     mutationFn: (id: ID) => {
-      return EventsApi.rejectActivateService(id);
+      return EventsApi.seenAutoService(id);
     },
     onError: onError,
     onSuccess: () => update(updateQueries),
