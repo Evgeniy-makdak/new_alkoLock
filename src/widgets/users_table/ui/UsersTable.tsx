@@ -42,7 +42,8 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick }) => {
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
-            filtersData.clearDates(), filtersData.setInput('');
+            filtersData.clearDates();
+            filtersData.setInput('');
           }}
         />
       </TableHeaderWrapper>
@@ -78,6 +79,7 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick }) => {
           <DeleteUserForm
             user={deleteUserModalData.deleteUser}
             closeModal={deleteUserModalData.closeDeleteModal}
+            closeAside={deleteUserModalData.closeAside} // Передача closeAside
           />
         }
         onCloseModal={deleteUserModalData.closeDeleteModal}

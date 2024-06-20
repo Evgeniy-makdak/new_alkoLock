@@ -10,11 +10,12 @@ import { UserFoto } from '@widgets/user_foto';
 import { UserInfo } from '@widgets/users_info';
 
 export const useUsers = () => {
-  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [selectedUserId, setSelectedUserId] = useState<ID | null>(null);
 
   const onClickRow = (id: ID) => setSelectedUserId(id);
   const handleCloseAside = () => setSelectedUserId(null);
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.USER_LIST_TABLE]);
+
   const tabs = [
     {
       testid: testids.page_users.users_widget_info.USERS_WIDGET_INFO_TAB_BUTTON_INFO,

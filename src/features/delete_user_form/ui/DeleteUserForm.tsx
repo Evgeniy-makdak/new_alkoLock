@@ -12,10 +12,11 @@ import { useDeleteUserForm } from '../hooks/useDeleteUserForm';
 type DeleteUserFormProps = {
   user: { id: ID; text: ReactNode };
   closeModal: () => void;
+  closeAside: () => void;
 };
 
-export const DeleteUserForm: FC<DeleteUserFormProps> = ({ user, closeModal }) => {
-  const handleDelete = useDeleteUserForm(user.id, closeModal);
+export const DeleteUserForm: FC<DeleteUserFormProps> = ({ user, closeModal, closeAside }) => {
+  const handleDelete = useDeleteUserForm(user.id, closeModal, closeAside);
   return (
     <>
       <Typography marginBottom={2} fontWeight={700} variant="h6">

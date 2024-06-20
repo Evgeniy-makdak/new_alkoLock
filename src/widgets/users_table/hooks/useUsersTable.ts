@@ -1,5 +1,6 @@
 import { type ReactNode, useState } from 'react';
 
+import { useUsers } from '@pages/users/hooks/useUsers';
 import { InputSearchDelay } from '@shared/config/permissionsEnums';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -37,6 +38,8 @@ export const useUsersTable = () => {
     sortBy: state?.sortModel[0]?.field,
     order: state?.sortModel[0]?.sort,
   });
+
+  const { handleCloseAside } = useUsers(); // Получаем handleCloseAside из useUsers
 
   const handleClickDeletetUser = (id: ID, text?: ReactNode) => {
     setDeleteUser({
@@ -97,6 +100,7 @@ export const useUsersTable = () => {
     closeDeleteModal,
     deleteUser,
     isOpen: !!deleteUser,
+    closeAside: handleCloseAside, // Добавляем closeAside
   };
 
   return {
