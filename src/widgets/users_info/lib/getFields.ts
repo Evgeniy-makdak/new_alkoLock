@@ -13,6 +13,8 @@ export const getFields = (userData: IUser): Field[] => {
     : '-';
   const numberVU = userData?.driver?.licenseCode;
   const name = Formatters.nameFormatter(userData);
+  console.log(userData.firstName[0], userData.middleName[0]);
+  
 
   const role: GetTypeOfRowIconValueProps[] = (userData?.groupMembership || []).map((group) => {
     return {

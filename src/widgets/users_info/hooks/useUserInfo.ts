@@ -19,6 +19,6 @@ export const useUserInfo = (id: ID, closeTab: () => void) => {
     }
   }, [notFoundUser, closeTab]);
 
-  const firstLetter = (userData?.firstName[0] || userData?.middleName[0])?.toUpperCase();
+  const firstLetter = (userData?.firstName?.[0] || userData?.middleName?.[0])?.toUpperCase();
   return { fields, isLoading, src, open, toggle, firstLetter };
 };
