@@ -25,6 +25,9 @@ export const useAuthorization = () => {
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
     const detail = data?.detail || '';
+    const message = data?.message || '';
+    console.log(data.message);
+    
 
     cookieManager.removeAll();
     setState({ auth: false });
@@ -35,6 +38,9 @@ export const useAuthorization = () => {
     } else if (data.data.response?.status === 401) {
       // Используем текст ошибки из ответа сервера
       enqueueSnackbar(detail, { variant: 'error' });
+    } else if (data.data.response?.status === 403) {
+      // Используем текст ошибки из ответа сервера
+      enqueueSnackbar(message, { variant: 'error' });
     }
     const idToken = data?.data?.idToken;
     if (idToken) {

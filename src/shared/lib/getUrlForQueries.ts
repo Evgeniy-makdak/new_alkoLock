@@ -106,7 +106,7 @@ export function getAttachmentURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    queries += `&all.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
     queries += `&any.vehicle.match.contains=${queryTrimmed}`;
     queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
   }
@@ -264,16 +264,17 @@ export const getCarListURL = ({
     queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy && order) {
-    queries += getSortQueryCar(sortBy, order);
-  }
-
   if (queryTrimmed.length) {
     queries += `&any.match.contains=${queryTrimmed}`;
     // TODO написать более подходящую реализацию формирования query параметров
     // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
     // !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
   }
+
+  if (sortBy && order) {
+    queries += getSortQueryCar(sortBy, order);
+  }
+
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
 

@@ -24,9 +24,10 @@ export const useAuthApi = (
     onError(error: AxiosError<IError>) {
       const response = viewResErrors<IAuthenticate>(error);
       const detail = response?.detail || 'Неверные учетные данные пользователя';
+      const message = response?.message || 'User is disabled'; 
       console.log(detail);
 
-      enqueueSnackbar(detail, { variant: 'error' });
+      enqueueSnackbar(detail || message, { variant: 'error' });
     },
     onSuccess: (data) => onSuccess(data),
   });
