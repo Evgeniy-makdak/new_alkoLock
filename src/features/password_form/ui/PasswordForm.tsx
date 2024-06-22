@@ -21,7 +21,7 @@ export const PasswordForm: FC<PasswordForm> = ({ close }) => {
       <InputsColumnWrapper>
         <InputPassword
           error={!!currentPasswordError}
-          helperText={currentPasswordError || ' '} // выводим текст ошибки
+          helperText={currentPasswordError || ' '} 
           {...register('currentPassword')}
           name="currentPassword"
           control={control}
@@ -33,7 +33,7 @@ export const PasswordForm: FC<PasswordForm> = ({ close }) => {
         />
         <InputPassword
           error={!!newPasswordError}
-          helperText={newPasswordError || ' '} // выводим текст ошибки
+          helperText={newPasswordError || ' '} 
           {...register('newPassword')}
           name="newPassword"
           control={control}

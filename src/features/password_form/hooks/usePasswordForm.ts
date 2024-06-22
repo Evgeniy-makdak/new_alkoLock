@@ -5,6 +5,8 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { usePasswordFormApi } from '../api/usePasswordFormApi';
 import { Form, schema } from '../lib/validate';
 
+import { StatusCode } from '@shared/const/statusCode';
+
 export const usePasswordForm = (close: () => void) => {
   const {
     register,
@@ -25,9 +27,9 @@ export const usePasswordForm = (close: () => void) => {
 
   const onSubmit = async (data: Form) => {
     const response = await changePassword(data);
-    if (response.status === 400) {
+    if (response.status === StatusCode.BAD_REQUEST) {
       setError('currentPassword', { type: 'custom', message: response.detail });
-      setError('newPassword', { type: 'custom', message: response.detail });
+      // setError('newPassword', { type: 'custom', message: response.detail });
       return;
     }
     close();

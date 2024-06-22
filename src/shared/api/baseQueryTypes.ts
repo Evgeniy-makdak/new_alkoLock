@@ -55,6 +55,7 @@ function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
         variant: 'error',
       });
     });
+    
   return {
     data: null,
     message,

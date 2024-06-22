@@ -25,11 +25,12 @@ export const useAuthorization = () => {
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
+
     cookieManager.removeAll();
     setState({ auth: false });
     if (errors.length > 0) {
       errors.map((error: AuthError) => {
-        enqueueSnackbar(`Поле ${error.field} ${error?.message}`, { variant: 'error' });
+        enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
     }
     const idToken = data?.data?.idToken;
@@ -128,7 +129,6 @@ export const useAuthorization = () => {
     handleSubmit: handleSubmit(handleAuthorization),
     isLoading,
     register,
-
     errorPassword,
     errorUsername,
     control,
