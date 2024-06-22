@@ -2,6 +2,7 @@ import { type AxiosError } from 'axios';
 import { enqueueSnackbar } from 'notistack';
 
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
+import { viewResErrors } from '@shared/api/baseQueryTypes';
 import { AccountApi, UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
@@ -21,9 +22,11 @@ export const useAuthApi = (
   } = useMutation({
     mutationFn: (data: UserDataLogin) => UsersApi.authenticate(data),
     onError(error: AxiosError<IError>) {
-      enqueueSnackbar(`${error?.response?.data?.detail} ${error?.response?.data.status}`, {
-        variant: 'error',
-      });
+      const response = viewResErrors<IAuthenticate>(error);
+      const detail = response?.detail || 'Неверные учетные данные пользователя';
+      console.log(detail);
+
+      enqueueSnackbar(detail, { variant: 'error' });
     },
     onSuccess: (data) => onSuccess(data),
   });

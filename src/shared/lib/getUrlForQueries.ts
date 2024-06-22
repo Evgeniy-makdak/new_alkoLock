@@ -520,7 +520,7 @@ export function getEventsApiURL({
   }
   if (queryTrimmed.length) {
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 
   if (users) {
@@ -603,7 +603,7 @@ export function getEventListForAutoServiceURL({
   if (queryTrimmed.length) {
     queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
   }
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -658,7 +658,7 @@ export function getEventListCountForAutoServiceURL({
   if (queryTrimmed.length) {
     queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 
   return `api/device-actions/count?page=${page || 0}&size=${limit || 20}${queries}`;

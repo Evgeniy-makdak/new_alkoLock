@@ -24,12 +24,12 @@ let countOfSnacksOfAuthError = 0;
 axios.defaults.timeout = 1000000;
 axios.defaults.maxRedirects = 10;
 
-function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
+export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
   const data = error?.response?.data;
   const message = typeof data === 'string' ? data : '';
-  const fieldErrors = error?.response?.data?.fieldErrors;
-  const status = error?.status || error?.response?.status;
-  const detail = error?.response?.data.detail || '';
+  const fieldErrors = data?.fieldErrors;
+  const status = error?.response?.status;
+  const detail = data?.detail || '';
   const isAuthError = status === StatusCode.UNAUTHORIZED;
   const url = window.location.href;
   const isAuthPage = url.includes(RoutePaths.auth);
@@ -55,12 +55,12 @@ function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
         variant: 'error',
       });
     });
-    
+
   return {
     data: null,
     message,
-    detail,
-    status: status,
+    detail,  // Добавляем detail в возвращаемый объект
+    status,
     config: error?.config,
     headers: error?.request,
     statusText: error?.response?.statusText,

@@ -1,3 +1,4 @@
+import { SnackbarMessage } from 'notistack';
 import { Permissions } from '../config/permissionsEnums';
 import type { QueryOptions } from './QueryTypes';
 
@@ -216,11 +217,15 @@ interface IActiveActions {
 type IErrors = {
   field: string;
   message: string;
+  detail?: string;
 };
 
 export type IAuthenticate = {
   response: {
+    detail: SnackbarMessage;
+    status: number;
     data: {
+      detail: SnackbarMessage;
       fieldErrors: IErrors[];
     };
   };

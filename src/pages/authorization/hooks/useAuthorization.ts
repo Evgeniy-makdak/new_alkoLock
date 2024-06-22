@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// Импортируем useLocation
 import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -25,6 +24,7 @@ export const useAuthorization = () => {
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
+    const detail = data?.detail || '';
 
     cookieManager.removeAll();
     setState({ auth: false });
@@ -32,6 +32,9 @@ export const useAuthorization = () => {
       errors.map((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
+    } else if (data.data.response?.status === 401) {
+      // Используем текст ошибки из ответа сервера
+      enqueueSnackbar(detail, { variant: 'error' });
     }
     const idToken = data?.data?.idToken;
     if (idToken) {
