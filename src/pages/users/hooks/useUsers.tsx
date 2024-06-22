@@ -22,6 +22,7 @@ export const useUsers = () => {
       name: 'ИНФО',
       content: <UserInfo closeTab={closeTabWidthUpdate} selectedUserId={selectedUserId} />,
     },
+
     {
       testid: testids.page_users.users_widget_info.USERS_WIDGET_INFO_TAB_BUTTON_HISTORY,
       name: 'ИСТОРИЯ',

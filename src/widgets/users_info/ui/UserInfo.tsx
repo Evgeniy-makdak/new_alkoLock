@@ -21,6 +21,7 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
     selectedUserId,
     closeTab,
   );
+
   return (
     <Loader isLoading={isLoading}>
       <Stack maxWidth={'580px'} padding={2}>

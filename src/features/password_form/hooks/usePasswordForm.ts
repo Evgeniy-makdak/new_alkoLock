@@ -13,6 +13,7 @@ export const usePasswordForm = (close: () => void) => {
       errors: { currentPassword, newPassword },
     },
     control,
+    setError,
   } = useForm({
     resolver: yupResolver(schema),
   });
@@ -23,9 +24,20 @@ export const usePasswordForm = (close: () => void) => {
   const { changePassword } = usePasswordFormApi();
 
   const onSubmit = async (data: Form) => {
-    await changePassword(data);
+    const response = await changePassword(data);
+    if (response.status === 400) {
+      setError('currentPassword', { type: 'custom', message: response.detail });
+      setError('newPassword', { type: 'custom', message: response.detail });
+      return;
+    }
     close();
   };
 
-  return { currentPasswordError, newPasswordError, register, handleSubmit: handleSubmit(onSubmit), control };
+  return {
+    currentPasswordError,
+    newPasswordError,
+    register,
+    handleSubmit: handleSubmit(onSubmit),
+    control,
+  };
 };

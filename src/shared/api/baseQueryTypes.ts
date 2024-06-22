@@ -17,6 +17,7 @@ import { cookieManager } from '@shared/utils/cookie_manager';
 export type AppAxiosResponse<T> = {
   isError?: boolean;
   message?: string;
+  detail?: string;
 } & AxiosResponse<T, IError>;
 
 let countOfSnacksOfAuthError = 0;
@@ -28,6 +29,7 @@ function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
   const message = typeof data === 'string' ? data : '';
   const fieldErrors = error?.response?.data?.fieldErrors;
   const status = error?.status || error?.response?.status;
+  const detail = error?.response?.data.detail || '';
   const isAuthError = status === StatusCode.UNAUTHORIZED;
   const url = window.location.href;
   const isAuthPage = url.includes(RoutePaths.auth);
@@ -56,6 +58,7 @@ function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
   return {
     data: null,
     message,
+    detail,
     status: status,
     config: error?.config,
     headers: error?.request,

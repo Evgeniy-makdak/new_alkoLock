@@ -21,7 +21,7 @@ export const useUsersCreateAttachSelect = () => {
   const { data, isLoading } = useConfiguredQuery(
     [QueryKeys.ATTACHMENT_LIST],
     AttachmentsApi.getList,
-    { options: searchQuery },
+    { options: { searchQuery } },
   );
   const array: number[] = [];
 
