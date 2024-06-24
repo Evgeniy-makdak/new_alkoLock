@@ -1,11 +1,11 @@
 import { useForm } from 'react-hook-form';
 
 import { yupResolver } from '@hookform/resolvers/yup';
+import { StatusCode } from '@shared/const/statusCode';
+import { ValidationMessages } from '@shared/validations/validation_messages';
 
 import { usePasswordFormApi } from '../api/usePasswordFormApi';
 import { Form, schema } from '../lib/validate';
-
-import { StatusCode } from '@shared/const/statusCode';
 
 export const usePasswordForm = (close: () => void) => {
   const {
@@ -26,10 +26,17 @@ export const usePasswordForm = (close: () => void) => {
   const { changePassword } = usePasswordFormApi();
 
   const onSubmit = async (data: Form) => {
+    if (data.newPassword.length < 3) {
+      setError('newPassword', {
+        type: 'custom',
+        message: ValidationMessages.notValidPasswordLength,
+      });
+      return; // Прерываем отправку формы
+    }
+
     const response = await changePassword(data);
     if (response.status === StatusCode.BAD_REQUEST) {
       setError('currentPassword', { type: 'custom', message: response.detail });
-      // setError('newPassword', { type: 'custom', message: response.detail });
       return;
     }
     close();
