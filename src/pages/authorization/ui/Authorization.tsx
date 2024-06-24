@@ -51,6 +51,7 @@ export const Authorization = () => {
                 fullWidth
                 type={'text'}
                 variant={'outlined'}
+                label="Логин"
               />
               <InputPassword
                 helperText={errorPassword}
@@ -62,6 +63,7 @@ export const Authorization = () => {
                 fullWidth
                 type={'pass'}
                 variant={'outlined'}
+                label="Пароль"
               />
 
               <FormCheckbox
