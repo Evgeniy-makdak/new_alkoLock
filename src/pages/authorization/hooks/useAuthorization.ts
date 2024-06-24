@@ -38,10 +38,7 @@ export const useAuthorization = () => {
     } else if (data.data.response?.status === 401) {
       // Используем текст ошибки из ответа сервера
       enqueueSnackbar(detail, { variant: 'error' });
-    } else if (data.data.response?.status === 403) {
-      // Используем текст ошибки из ответа сервера
-      enqueueSnackbar(message, { variant: 'error' });
-    }
+    } 
     const idToken = data?.data?.idToken;
     if (idToken) {
       // TODO избавить приложение от использования токенов
