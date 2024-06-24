@@ -26,7 +26,7 @@ export const usePasswordForm = (close: () => void) => {
   const { changePassword } = usePasswordFormApi();
 
   const onSubmit = async (data: Form) => {
-    if (data.newPassword.length < 3) {
+    if (data.newPassword.length <= 3) {
       setError('newPassword', {
         type: 'custom',
         message: ValidationMessages.notValidPasswordLength,
