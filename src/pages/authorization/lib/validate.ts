@@ -7,6 +7,7 @@ import { ValidationRules } from '@shared/validations/validation_rules';
 export type Form = UserDataLogin;
 
 export const schema: yup.ObjectSchema<Form> = yup.object({
+  detail: yup.string().optional(),
   password: yup
     .string()
     .required(ValidationMessages.required)

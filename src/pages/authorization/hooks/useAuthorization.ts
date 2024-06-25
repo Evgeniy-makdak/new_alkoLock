@@ -1,10 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 import { enqueueSnackbar } from 'notistack';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -12,33 +9,35 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
-
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
+import { StatusCode } from '@shared/const/statusCode';
 
 export const useAuthorization = () => {
   const setState = appStore.setState;
   const [canLoadLoginData, setCanLoadLoginData] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const [errorDetail, setErrorDetail] = useState<string>('');
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
-    const detail = data?.detail || '';
-    const message = data?.message || '';
-    console.log(data.message);
-    
-
+    const detail = data?.detail;
+    setErrorDetail(detail || '');
+    console.log(data.detail);
+      
     cookieManager.removeAll();
     setState({ auth: false });
     if (errors.length > 0) {
       errors.map((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
-    } else if (data.data.response?.status === 401) {
+    } else if (data.data.response?.status === StatusCode.UNAUTHORIZED) {
       // Используем текст ошибки из ответа сервера
       enqueueSnackbar(detail, { variant: 'error' });
-    } 
+    } else if (data.data.response?.status === StatusCode.FORBIDDEN) {
+      enqueueSnackbar(detail, { variant: 'error' });
+    }
     const idToken = data?.data?.idToken;
     if (idToken) {
       // TODO избавить приложение от использования токенов
@@ -62,6 +61,12 @@ export const useAuthorization = () => {
     }
   };
 
+  const onErrorCallback = (detail: string) => {
+    console.log(`detail`, detail);
+    
+    enqueueSnackbar(detail || '', { variant: 'error' });
+  };
+
   const {
     mutate: enter,
     isLoading,
@@ -71,7 +76,7 @@ export const useAuthorization = () => {
     canEnter,
     isPlaceholderData,
     isSuccessGetAccountData,
-  } = useAuthApi(canLoadLoginData, onSuccess);
+  } = useAuthApi(canLoadLoginData, onSuccess, onErrorCallback);
 
   const {
     handleSubmit,
@@ -109,7 +114,7 @@ export const useAuthorization = () => {
     const isGlobalAdmin = accountData?.permissions?.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
     if (!firstAvailableRouter) {
-      enqueueSnackbar(`У вас нет доступа к Админ панели`, {
+      enqueueSnackbar('У вас нет доступа к Админ панели', {
         variant: 'error',
       });
       return;
@@ -123,7 +128,7 @@ export const useAuthorization = () => {
     });
     setCanLoadLoginData(false);
     navigate(firstAvailableRouter);
-  }, [canNotEnter, accountData]);
+  }, [errorDetail, canNotEnter, accountData]);
 
   const handleAuthorization = (data: UserDataLogin) => {
     enter(data);

@@ -1,6 +1,4 @@
 import { type AxiosError } from 'axios';
-import { enqueueSnackbar } from 'notistack';
-
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { viewResErrors } from '@shared/api/baseQueryTypes';
 import { AccountApi, UsersApi } from '@shared/api/baseQuerys';
@@ -12,6 +10,7 @@ import { useMutation } from '@tanstack/react-query';
 export const useAuthApi = (
   isSuccessLogin: boolean,
   onSuccess: (data: AppAxiosResponse<IAuthenticate>) => void,
+  onErrorCallback: (detail: string) => void,
 ) => {
   const {
     isPending,
@@ -23,11 +22,9 @@ export const useAuthApi = (
     mutationFn: (data: UserDataLogin) => UsersApi.authenticate(data),
     onError(error: AxiosError<IError>) {
       const response = viewResErrors<IAuthenticate>(error);
-      const detail = response?.detail || 'Неверные учетные данные пользователя';
-      const message = response?.message || 'User is disabled'; 
-      console.log(detail);
-
-      enqueueSnackbar(detail || message, { variant: 'error' });
+      console.log(`error` ,response.detail);
+      
+      onErrorCallback(response?.detail || '');
     },
     onSuccess: (data) => onSuccess(data),
   });
@@ -39,7 +36,6 @@ export const useAuthApi = (
     isFetching,
     isFetched,
     isRefetching,
-
     isSuccess: isSuccessGetAccountData,
   } = useConfiguredQuery([QueryKeys.ACCOUNT], AccountApi.getAccountData, {
     settings: {

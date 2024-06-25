@@ -529,6 +529,7 @@ export type ChangePasswordData = {
   newPassword: string;
 };
 export type UserDataLogin = {
+  detail: string;
   username: string | null;
   password: string | null;
   rememberMe: boolean;
