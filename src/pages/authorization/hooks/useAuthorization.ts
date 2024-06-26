@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { enqueueSnackbar } from 'notistack';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
+import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
+
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
-import { StatusCode } from '@shared/const/statusCode';
 
 export const useAuthorization = () => {
   const setState = appStore.setState;
@@ -21,7 +24,7 @@ export const useAuthorization = () => {
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
-    // console.log(data.detail); 
+    // console.log(data.detail);
     // console.log('Полный ответ:', data);
 
     cookieManager.removeAll();
@@ -32,10 +35,10 @@ export const useAuthorization = () => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
     } else if (data.status === StatusCode.UNAUTHORIZED) {
-      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' }); 
+      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
     } else if (data.status === StatusCode.FORBIDDEN) {
       enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
-    } else if (data.status === StatusCode.SUCCESS) { 
+    } else if (data.status === StatusCode.SUCCESS) {
       const idToken = data?.data?.idToken;
       if (idToken) {
         cookieManager.set('bearer', idToken);
@@ -58,7 +61,6 @@ export const useAuthorization = () => {
       console.warn('Неизвестный статус ответа:', data.data.response?.status);
     }
   };
-
 
   const {
     mutate: enter,

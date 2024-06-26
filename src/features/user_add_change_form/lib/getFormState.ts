@@ -29,8 +29,6 @@ export const getFormState = (
     userPhotoDTO?: ImageState[];
   }>,
 ) => {
-  console.log(formState);
-  
   const {
     firstName,
     surname,
@@ -71,8 +69,6 @@ export const getFormState = (
   const birthDate = watch('birthDate');
   const disabled = watch('disabled');
   const images = watch('userPhotoDTO');
-  console.log(userGroups);
-  
 
   const state = {
     state: {

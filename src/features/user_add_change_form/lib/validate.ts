@@ -89,7 +89,6 @@ yup.addMethod(object, 'licenseExpirationDate', function method(message) {
   );
 });
 
-
 yup.addMethod(object, 'birthDate', function method(message) {
   return this.test('birthDate', message, function validate(value: Dayjs, context: YupContext) {
     if (!value) return true;

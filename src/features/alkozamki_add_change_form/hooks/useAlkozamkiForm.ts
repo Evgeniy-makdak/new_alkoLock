@@ -55,10 +55,6 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   useEffect(() => {
     if (id) {
       if (alkolock && !isLoadingAlkolock) {
-        console.log('useEffect: id:', id);
-        console.log('useEffect: alkolock:', alkolock);
-        console.log('useEffect: isLoadingAlkolock:'), setValue('name', alkolock?.name || '');
-        console.log('useEffect: car:', car);
         setValue('serialNumber', alkolock?.serialNumber || '');
         setValue('uid', alkolock?.serviceId || '');
         setValue('tc', car ? [{ label: Formatters.carNameFormatter(car), value: car?.id }] : []);

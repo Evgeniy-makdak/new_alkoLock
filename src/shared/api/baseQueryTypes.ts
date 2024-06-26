@@ -59,7 +59,7 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   return {
     data: null,
     message,
-    detail,  
+    detail,
     status,
     config: error?.config,
     headers: error?.request,

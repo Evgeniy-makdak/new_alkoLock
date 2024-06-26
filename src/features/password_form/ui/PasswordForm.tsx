@@ -1,9 +1,12 @@
 import { type FC } from 'react';
+
 import { Typography } from '@mui/material';
-import { InputPassword } from '@shared/ui/InputPassword/Input';
+
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
+import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { Button, ButtonsType } from '@shared/ui/button';
+
 import { usePasswordForm } from '../hooks/usePasswordForm';
 
 type PasswordForm = {
@@ -11,7 +14,8 @@ type PasswordForm = {
 };
 
 export const PasswordForm: FC<PasswordForm> = ({ close }) => {
-  const { currentPasswordError, handleSubmit, newPasswordError, register, control } = usePasswordForm(close);
+  const { currentPasswordError, handleSubmit, newPasswordError, register, control } =
+    usePasswordForm(close);
   const isNotValidForm = !!currentPasswordError || !!newPasswordError;
   return (
     <>
@@ -21,7 +25,7 @@ export const PasswordForm: FC<PasswordForm> = ({ close }) => {
       <InputsColumnWrapper>
         <InputPassword
           error={!!currentPasswordError}
-          helperText={currentPasswordError || ' '} 
+          helperText={currentPasswordError || ' '}
           {...register('currentPassword')}
           name="currentPassword"
           control={control}
@@ -33,7 +37,7 @@ export const PasswordForm: FC<PasswordForm> = ({ close }) => {
         />
         <InputPassword
           error={!!newPasswordError}
-          helperText={newPasswordError || ' '} 
+          helperText={newPasswordError || ' '}
           {...register('newPassword')}
           name="newPassword"
           control={control}

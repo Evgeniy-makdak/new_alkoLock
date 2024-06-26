@@ -1,4 +1,5 @@
 import { SnackbarMessage } from 'notistack';
+
 import { Permissions } from '../config/permissionsEnums';
 import type { QueryOptions } from './QueryTypes';
 

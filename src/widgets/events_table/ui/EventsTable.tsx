@@ -1,5 +1,4 @@
 // import { useEffect, useState } from 'react';
-
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';

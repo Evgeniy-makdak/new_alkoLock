@@ -14,8 +14,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
       const lastEvent = getLastEvent(item);
 
       // Проверяем, что occurredAt - строка
-      const occurredAt =
-        typeof item.occurredAt === 'string' ? item.occurredAt : undefined;
+      const occurredAt = typeof item.occurredAt === 'string' ? item.occurredAt : undefined;
 
       return {
         id: item.id,

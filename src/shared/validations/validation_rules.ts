@@ -14,7 +14,7 @@ export class ValidationRules {
   static emailValidation(value: ValidateValue) {
     const re =
       // eslint-disable-next-line no-useless-escape
-      /^((?:[a-zA-Z0-9]+(?:[\.\-_][a-zA-Z0-9]+)*)|(".+"))@([a-zA-Z0-9]+(?:[\.\-_][a-zA-Z0-9]+)*\.[a-zA-Z]{2,})$|^((?:[а-яА-ЯёЁ0-9]+(?:[\.\-_][а-яА-ЯёЁ0-9]+)*)|(".+"))@([а-яА-ЯёЁ0-9]+(?:[\.\-_][а-яА-ЯёЁ0-9]+)*\.[а-яА-ЯёЁ]{2,})$/
+      /^((?:[a-zA-Z0-9]+(?:[\.\-_][a-zA-Z0-9]+)*)|(".+"))@([a-zA-Z0-9]+(?:[\.\-_][a-zA-Z0-9]+)*\.[a-zA-Z]{2,})$|^((?:[а-яА-ЯёЁ0-9]+(?:[\.\-_][а-яА-ЯёЁ0-9]+)*)|(".+"))@([а-яА-ЯёЁ0-9]+(?:[\.\-_][а-яА-ЯёЁ0-9]+)*\.[а-яА-ЯёЁ]{2,})$/;
     return re.test(String(value).toLowerCase()) ? [] : [ValidationMessages.notValidEmail];
   }
 

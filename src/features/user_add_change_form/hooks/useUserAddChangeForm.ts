@@ -141,15 +141,17 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       if (!id) {
         const response = await createItem(formData);
         const isError = response.isError;
+        
         if (isError) {
-          enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
+          enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           closeModal && closeModal();
         }
       } else {
+        const response = await changeItem(userData);
         const isErrorChangeItem = (await changeItem(userData))?.isError;
         if (isErrorChangeItem) {
-          enqueueSnackbar('Ошибка сохранения пользователя', { variant: 'error' });
+          enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           closeModal && closeModal();
           if (userFoto) {

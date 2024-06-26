@@ -20,27 +20,26 @@ type EventData = {
 
 export const EventData: FC<EventData> = ({ event, type, testid }) => {
   console.log('event', event);
-  
+
   const hasMapLink =
     !!(event?.events ?? [])[0] && !!event?.events[0].latitude && !!event?.events[0].longitude;
 
-    return (
-      <div className={style.td}>
-        {type !== HistoryTypes.byUser && (
-          <>
-            <div className={style.row}>
-              <span>Водитель</span>
-  
-              <span>{Formatters.nameFormatter(event?.userActionId)}</span> 
-            </div>
-            <div className={style.row}>
-              <span>Почта</span>
-  
-              <span>{event?.userActionId?.email}</span>
-            </div>
-          </>
-        )}
-  
+  return (
+    <div className={style.td}>
+      {type !== HistoryTypes.byUser && (
+        <>
+          <div className={style.row}>
+            <span>Водитель</span>
+
+            <span>{Formatters.nameFormatter(event?.userActionId)}</span>
+          </div>
+          <div className={style.row}>
+            <span>Почта</span>
+
+            <span>{event?.userActionId?.email}</span>
+          </div>
+        </>
+      )}
 
       {type === HistoryTypes.byCar && (
         <>
@@ -52,7 +51,7 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           <div className={style.row}>
             <span>Серийный номер алкозамка</span>
 
-            <span>{event?.device?.serialNumber ?? '-'}</span> 
+            <span>{event?.device?.serialNumber ?? '-'}</span>
           </div>
         </>
       )}
