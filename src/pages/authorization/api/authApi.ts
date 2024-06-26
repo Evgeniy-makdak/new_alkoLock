@@ -1,16 +1,13 @@
-import { type AxiosError } from 'axios';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
-import { viewResErrors } from '@shared/api/baseQueryTypes';
 import { AccountApi, UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
-import type { IAuthenticate, IError, UserDataLogin } from '@shared/types/BaseQueryTypes';
+import type { IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
 
 export const useAuthApi = (
   isSuccessLogin: boolean,
   onSuccess: (data: AppAxiosResponse<IAuthenticate>) => void,
-  onErrorCallback: (detail: string) => void,
 ) => {
   const {
     isPending,
@@ -20,12 +17,6 @@ export const useAuthApi = (
     data: loginData,
   } = useMutation({
     mutationFn: (data: UserDataLogin) => UsersApi.authenticate(data),
-    onError(error: AxiosError<IError>) {
-      const response = viewResErrors<IAuthenticate>(error);
-      console.log(`error` ,response.detail);
-      
-      onErrorCallback(response?.detail || '');
-    },
     onSuccess: (data) => onSuccess(data),
   });
 

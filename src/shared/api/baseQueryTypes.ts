@@ -34,11 +34,6 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   const url = window.location.href;
   const isAuthPage = url.includes(RoutePaths.auth);
 
-  console.log(data);
-  console.log(detail);
-  
-  
-
   if (isAuthError && countOfSnacksOfAuthError === 0 && !isAuthPage) {
     countOfSnacksOfAuthError += 1;
     const logout = appStore.getState().logout;

@@ -18,54 +18,47 @@ export const useAuthorization = () => {
   const [canLoadLoginData, setCanLoadLoginData] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [errorDetail, setErrorDetail] = useState<string>('');
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
-    const detail = data?.detail;
-    setErrorDetail(detail || '');
-    console.log(data.detail);
-      
+    // console.log(data.detail); 
+    // console.log('Полный ответ:', data);
+
     cookieManager.removeAll();
     setState({ auth: false });
+
     if (errors.length > 0) {
       errors.map((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
-    } else if (data.data.response?.status === StatusCode.UNAUTHORIZED) {
-      // Используем текст ошибки из ответа сервера
-      enqueueSnackbar(detail, { variant: 'error' });
-    } else if (data.data.response?.status === StatusCode.FORBIDDEN) {
-      enqueueSnackbar(detail, { variant: 'error' });
-    }
-    const idToken = data?.data?.idToken;
-    if (idToken) {
-      // TODO избавить приложение от использования токенов
-      // Токены должны быть только в cookie и бэк должен вернуть ошибку
-      // not auth например и приложение должно перекинуться на авторизацию
-      cookieManager.set('bearer', idToken);
+    } else if (data.status === StatusCode.UNAUTHORIZED) {
+      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' }); 
+    } else if (data.status === StatusCode.FORBIDDEN) {
+      enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
+    } else if (data.status === StatusCode.SUCCESS) { 
+      const idToken = data?.data?.idToken;
+      if (idToken) {
+        cookieManager.set('bearer', idToken);
+        const refreshToken = data.data?.refreshToken;
+        if (refreshToken) {
+          cookieManager.set('refresh', refreshToken);
+        }
 
-      const refreshToken = data.data?.refreshToken;
-      if (refreshToken) {
-        cookieManager.set('refresh', refreshToken);
+        setState({
+          auth: true,
+        });
+
+        setCanLoadLoginData(true);
+
+        // После успешной авторизации перезагружаем текущую страницу
+        navigate(location.pathname, { replace: true });
       }
-
-      setState({
-        auth: true,
-      });
-
-      setCanLoadLoginData(true);
-
-      // После успешной авторизации перезагружаем текущую страницу
-      navigate(location.pathname, { replace: true });
+    } else {
+      // Обработка других статусов ответа (необязательно)
+      console.warn('Неизвестный статус ответа:', data.data.response?.status);
     }
   };
 
-  const onErrorCallback = (detail: string) => {
-    console.log(`detail`, detail);
-    
-    enqueueSnackbar(detail || '', { variant: 'error' });
-  };
 
   const {
     mutate: enter,
@@ -76,7 +69,7 @@ export const useAuthorization = () => {
     canEnter,
     isPlaceholderData,
     isSuccessGetAccountData,
-  } = useAuthApi(canLoadLoginData, onSuccess, onErrorCallback);
+  } = useAuthApi(canLoadLoginData, onSuccess);
 
   const {
     handleSubmit,
@@ -128,7 +121,7 @@ export const useAuthorization = () => {
     });
     setCanLoadLoginData(false);
     navigate(firstAvailableRouter);
-  }, [errorDetail, canNotEnter, accountData]);
+  }, [canNotEnter, accountData]);
 
   const handleAuthorization = (data: UserDataLogin) => {
     enter(data);
