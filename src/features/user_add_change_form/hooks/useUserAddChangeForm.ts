@@ -7,6 +7,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
@@ -140,15 +141,19 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     try {
       if (!id) {
         const response = await createItem(formData);
-        const isError = response.isError;
-        
-        if (isError) {
-          enqueueSnackbar(response.detail, { variant: 'error' });
+        console.log('Response1:', response);
+        if (response.status === StatusCode.BAD_REQUEST) {
+          const messageStart =
+            response?.detail.split(',')[6].indexOf('message=') + 'message='.length;
+          enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
+            variant: 'error',
+          });
         } else {
           closeModal && closeModal();
         }
       } else {
         const response = await changeItem(userData);
+        console.log('Response2:', response);
         const isErrorChangeItem = (await changeItem(userData))?.isError;
         if (isErrorChangeItem) {
           enqueueSnackbar(response.detail, { variant: 'error' });
@@ -168,6 +173,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       }
     } catch (error) {
+      console.error('Error:', error);
       enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
     }
   };
