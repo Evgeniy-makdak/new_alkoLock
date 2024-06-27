@@ -1,4 +1,9 @@
+import { useState } from 'react';
+
+import { enqueueSnackbar } from 'notistack';
+
 import { RolesApi } from '@shared/api/baseQuerys';
+import { StatusCode } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
@@ -8,6 +13,7 @@ import { useMutation } from '@tanstack/react-query';
 const updateQueries = [QueryKeys.ROLES_LIST_TABLE];
 export const useRoleAddChangeFormApi = (id: ID) => {
   const update = useUpdateQueries();
+  const [isOpen, setIsOpen] = useState(false);
   const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLE_ITEM], RolesApi.getItem, {
     options: id,
     settings: {
@@ -16,14 +22,30 @@ export const useRoleAddChangeFormApi = (id: ID) => {
   });
 
   const { mutateAsync: changeRole } = useMutation({
-    mutationFn: ({ id, data }: { id: ID; data: ChangeRoleData }) => RolesApi.changeItem(data, id),
-    onSuccess: () => update(updateQueries),
+    mutationFn: async ({ id, data }: { id: ID; data: ChangeRoleData }) => {
+      const response = await RolesApi.changeItem(data, id);
+      if (response.status === StatusCode.CONFLICT) {
+        setIsOpen(true);
+        enqueueSnackbar(response.detail, { variant: 'warning' });
+      } else {
+        update(updateQueries);
+        setIsOpen(false);
+      }
+    },
   });
 
   const { mutateAsync: createRole } = useMutation({
-    mutationFn: (data: CreateRoleData) => RolesApi.createItem(data),
-    onSuccess: () => update(updateQueries),
+    mutationFn: async (data: CreateRoleData) => {
+      const response = await RolesApi.createItem(data);
+      if (response.status === StatusCode.CONFLICT) {
+        setIsOpen(true);
+        enqueueSnackbar(response.detail, { variant: 'warning' });
+      } else {
+        update(updateQueries);
+        setIsOpen(false);
+      }
+    },
   });
 
-  return { role: data?.data, isLoading, changeRole, createRole };
+  return { role: data?.data, isLoading, changeRole, createRole, isOpen, setIsOpen };
 };
