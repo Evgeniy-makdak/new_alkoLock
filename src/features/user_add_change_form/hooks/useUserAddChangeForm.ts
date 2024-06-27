@@ -121,7 +121,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
     const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
-    // const userID = id;
 
     if (
       stateOfForm.state.disableDriverInfo &&
@@ -141,7 +140,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     try {
       if (!id) {
         const response = await createItem(formData);
-        console.log('Response1:', response);
         if (response.status === StatusCode.BAD_REQUEST) {
           const messageStart =
             response?.detail.split(',')[6].indexOf('message=') + 'message='.length;
@@ -153,7 +151,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       } else {
         const response = await changeItem(userData);
-        console.log('Response2:', response);
         const isErrorChangeItem = (await changeItem(userData))?.isError;
         if (isErrorChangeItem) {
           enqueueSnackbar(response.detail, { variant: 'error' });
@@ -173,8 +170,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       }
     } catch (error) {
-      console.error('Error:', error);
-      enqueueSnackbar('Ошибка создания пользователя', { variant: 'error' });
+      const response = await createItem(formData);
+        if (response.status === StatusCode.BAD_REQUEST)
+      enqueueSnackbar(response.detail, { variant: 'error' });
     }
   };
 
