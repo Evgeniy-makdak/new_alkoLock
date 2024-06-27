@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 import { enqueueSnackbar } from 'notistack';
 
 import { RolesApi } from '@shared/api/baseQuerys';
@@ -13,7 +11,6 @@ import { useMutation } from '@tanstack/react-query';
 const updateQueries = [QueryKeys.ROLES_LIST_TABLE];
 export const useRoleAddChangeFormApi = (id: ID) => {
   const update = useUpdateQueries();
-  const [isOpen, setIsOpen] = useState(false);
   const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLE_ITEM], RolesApi.getItem, {
     options: id,
     settings: {
@@ -25,11 +22,9 @@ export const useRoleAddChangeFormApi = (id: ID) => {
     mutationFn: async ({ id, data }: { id: ID; data: ChangeRoleData }) => {
       const response = await RolesApi.changeItem(data, id);
       if (response.status === StatusCode.CONFLICT) {
-        setIsOpen(true);
         enqueueSnackbar(response.detail, { variant: 'warning' });
       } else {
         update(updateQueries);
-        setIsOpen(false);
       }
     },
   });
@@ -38,14 +33,12 @@ export const useRoleAddChangeFormApi = (id: ID) => {
     mutationFn: async (data: CreateRoleData) => {
       const response = await RolesApi.createItem(data);
       if (response.status === StatusCode.CONFLICT) {
-        setIsOpen(true);
         enqueueSnackbar(response.detail, { variant: 'warning' });
       } else {
         update(updateQueries);
-        setIsOpen(false);
       }
     },
   });
 
-  return { role: data?.data, isLoading, changeRole, createRole, isOpen, setIsOpen };
+  return { role: data?.data, isLoading, changeRole, createRole };
 };
