@@ -31,11 +31,21 @@ export const usePasswordForm = (close: () => void) => {
         type: 'custom',
         message: ValidationMessages.notValidPasswordLength,
       });
-      return; // Прерываем отправку формы
+      return;
     }
 
     const response = await changePassword(data);
-    if (response.status === StatusCode.BAD_REQUEST) {
+    if (response.status === StatusCode.BAD_REQUEST && data.currentPassword.length <= 3) {
+      const messageStart =
+        response?.detail.split(',')[6].indexOf('default message [') + 'default message ['.length;
+      const messageEnd = response?.detail.split(',')[6].indexOf(']]');
+      const correctResponse = response?.detail
+        .split(',')[6]
+        .substring(messageStart, messageEnd)
+        .trim();
+      setError('currentPassword', { type: 'custom', message: correctResponse });
+      return;
+    } else if (response.status === StatusCode.BAD_REQUEST) {
       setError('currentPassword', { type: 'custom', message: response.detail });
       return;
     }
