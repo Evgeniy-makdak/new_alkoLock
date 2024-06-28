@@ -1,13 +1,12 @@
-import { RolesApi } from '@shared/api/baseQuerys';
+import { enqueueSnackbar } from 'notistack';
 
+import { RolesApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
 import type { ChangeRoleData, CreateRoleData, ID } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
-
-import { enqueueSnackbar } from 'notistack';
 
 const updateQueries = [QueryKeys.ROLES_LIST_TABLE];
 export const useRoleAddChangeFormApi = (id: ID) => {
@@ -23,7 +22,7 @@ export const useRoleAddChangeFormApi = (id: ID) => {
     mutationFn: async ({ id, data }: { id: ID; data: ChangeRoleData }) => {
       const response = await RolesApi.changeItem(data, id);
       if (response.status === StatusCode.CONFLICT) {
-        enqueueSnackbar(response.detail, { variant: 'warning' });
+        enqueueSnackbar(response.detail, { variant: 'error' });
         return Promise.reject(response.detail);
       } else {
         update(updateQueries);
@@ -36,7 +35,7 @@ export const useRoleAddChangeFormApi = (id: ID) => {
     mutationFn: async (data: CreateRoleData) => {
       const response = await RolesApi.createItem(data);
       if (response.status === StatusCode.CONFLICT) {
-        enqueueSnackbar(response.detail, { variant: 'warning' });
+        enqueueSnackbar(response.detail, { variant: 'error' });
         return Promise.reject(response.detail);
       } else {
         update(updateQueries);

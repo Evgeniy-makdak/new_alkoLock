@@ -19,11 +19,19 @@ export const useGroupAddForm = (close: () => void, branch?: { id: ID; name: stri
     },
     resolver: yupResolver(schema),
   });
-  const { addGroup, editGroup } = useGroupAddFormApi();
+  const { addGroup, editGroup, isLoading } = useGroupAddFormApi(branch?.id);
 
-  const submit = handleSubmit(async (name: { name: string }) => {
-    branch?.id ? await editGroup({ name: name.name, id: branch?.id }) : await addGroup(name.name);
-    close();
+  const submit = handleSubmit(async (data: { name: string }) => {
+    try {
+      if (branch?.id) {
+        await editGroup({ name: data.name, id: branch?.id });
+      } else {
+        await addGroup(data.name);
+      }
+      close();
+    } catch (error) {
+      // console.error('Ошибка:', error);
+    }
   });
 
   return {
@@ -31,5 +39,6 @@ export const useGroupAddForm = (close: () => void, branch?: { id: ID; name: stri
     submit,
     error: !!name,
     message: typeof name?.message === 'string' ? name?.message : '',
+    isLoading,
   };
 };
