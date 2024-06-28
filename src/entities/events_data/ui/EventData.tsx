@@ -19,8 +19,6 @@ type EventData = {
 };
 
 export const EventData: FC<EventData> = ({ event, type, testid }) => {
-  console.log('event', event);
-
   const hasMapLink =
     !!(event?.events ?? [])[0] && !!event?.events[0].latitude && !!event?.events[0].longitude;
 

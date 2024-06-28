@@ -24,8 +24,6 @@ export const useAuthorization = () => {
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
-    // console.log(data.detail);
-    // console.log('Полный ответ:', data);
 
     cookieManager.removeAll();
     setState({ auth: false });
