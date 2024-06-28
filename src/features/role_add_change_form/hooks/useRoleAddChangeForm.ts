@@ -9,6 +9,7 @@ import { useRoleAddChangeFormApi } from '../api/useRoleAddChangeFormApi';
 import { RolesMapper } from '../lib/RolesMapper';
 import { normalizePermissions } from '../lib/normalizePermissions';
 import { type Form, schema } from '../lib/validate';
+import { createContext, useContext } from 'react';
 
 export enum TypesOfForm {
   alkolockPermission = 'alkolockPermission',
@@ -16,6 +17,20 @@ export enum TypesOfForm {
   carsPermission = 'carsPermission',
   usersPermission = 'usersPermission',
 }
+
+interface CloseContextType {
+  close: () => void;
+}
+
+const CloseContext = createContext<CloseContextType | null>(null);
+
+export const useCloseContext = (): CloseContextType => {
+  const context = useContext(CloseContext);
+  if (!context) {
+    throw new Error('useCloseContext must be used within a CloseContextProvider');
+  }
+  return context;
+};
 
 export const useRoleAddChangeForm = (id: ID, close: () => void) => {
   const { role, isLoading, changeRole, createRole } = useRoleAddChangeFormApi(id);
@@ -61,12 +76,16 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
   };
 
   const errorName = name ? name.message.toString() : '';
+  
 
   const onSubmit = async (data: Form) => {
     const payload = RolesMapper.toApi(data);
-
-    id ? await changeRole({ data: payload, id }) : await createRole(payload);
-    close();
+    try {
+      id ? await changeRole({ data: payload, id }) : await createRole(payload);
+      close(); 
+    } catch (error) {
+      console.error('Ошибка:', error);
+    }
   };
 
   return {
