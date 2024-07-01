@@ -53,7 +53,7 @@ export const MenuButton: FC<MenuButtonProps> = ({
     cookieManager.removeAll();
     close();
     setAnchorEl(null);
-    logout();
+    // logout();
   };
 
   return (
