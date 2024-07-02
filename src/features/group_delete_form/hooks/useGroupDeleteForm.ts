@@ -8,6 +8,7 @@ export const useGroupDeleteForm = (id: ID, close: () => void) => {
   const handleDelete = async () => {
     await mutateAsync(id);
     close();
+    window.location.reload();
   };
 
   return { handleDelete };
