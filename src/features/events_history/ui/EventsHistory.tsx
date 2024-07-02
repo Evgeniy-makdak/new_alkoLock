@@ -18,7 +18,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
   const { rows, data, handleEnd, isLoading } = useEventsHistory(props, type);
 
   const length = data?.length || 0;
-  
+
   return (
     <div className={style.minWidthWrapper}>
       <TableContainer className={style.hiddenWrapper}>
