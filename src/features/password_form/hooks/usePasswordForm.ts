@@ -22,6 +22,7 @@ export const usePasswordForm = (close: () => void) => {
 
   const currentPasswordError = currentPassword ? currentPassword?.message : '';
   const newPasswordError = newPassword ? newPassword?.message : '';
+  console.log(currentPassword);
 
   const { changePassword } = usePasswordFormApi();
 
@@ -32,7 +33,8 @@ export const usePasswordForm = (close: () => void) => {
         message: ValidationMessages.notValidPasswordLength,
       });
       return;
-    } else if (data.currentPassword.length <= 3) {
+    }
+    if (data.currentPassword.length <= 3) {
       setError('currentPassword', {
         type: 'custom',
         message: ValidationMessages.notValidPasswordLength,
@@ -41,7 +43,7 @@ export const usePasswordForm = (close: () => void) => {
     }
 
     const response = await changePassword(data);
-    if (response.status === StatusCode.BAD_REQUEST) {
+    if (response.status === StatusCode.BAD_REQUEST && data.currentPassword.length <= 3) {
       const messageStart =
         response?.detail.split(',')[6].indexOf('default message [') + 'default message ['.length;
       const messageEnd = response?.detail.split(',')[6].indexOf(']]');
@@ -50,6 +52,9 @@ export const usePasswordForm = (close: () => void) => {
         .substring(messageStart, messageEnd)
         .trim();
       setError('currentPassword', { type: 'custom', message: correctResponse });
+      return;
+    } else if (response.status === StatusCode.BAD_REQUEST) {
+      setError('currentPassword', { type: 'custom', message: response.detail });
       return;
     }
     close();
