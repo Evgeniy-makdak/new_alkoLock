@@ -66,7 +66,10 @@ export const hasPermissionForThisPage = (
     return routerPermissions;
   }
 
-  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_CREATE)) {
+  if (
+    permissionsList.includes(Permissions.PERMISSION_DEVICE_CREATE) &&
+    !permissionsList.includes(Permissions.SYSTEM_GLOBAL_ADMIN)
+  ) {
     routerPermissions[RoutePaths.groups] = false;
     routerPermissions[RoutePaths.events] = true;
     routerPermissions[RoutePaths.alkozamki] = true;
