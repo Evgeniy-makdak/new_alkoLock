@@ -8,13 +8,13 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import type { TypeNavLink } from '../config/const';
 import type { TypeNavPath } from './../config/const';
 
-// TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
+
 export const getPermissionsForPages = (permissionForThisPage: HasPermissionForThisPageReturn) => {
   return function (path: TypeNavLink) {
     return permissionForThisPage[path.path];
   };
 };
-// TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
+
 const hasNoZeroPermissions = (statuses: PermissionsStatus[]) => {
   return Math.max(...statuses) > PermissionsStatus.NO_PERMISSION;
 };
@@ -22,7 +22,7 @@ const hasNoZeroPermissions = (statuses: PermissionsStatus[]) => {
 type HasPermissionForThisPageReturn = Partial<{
   [key in TypeNavPath]: boolean;
 }>;
-// TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
+
 export const hasPermissionForThisPage = (
   permissionsList: Permissions[],
 ): HasPermissionForThisPageReturn => {
@@ -40,6 +40,34 @@ export const hasPermissionForThisPage = (
   if (!permissionsList) {
     return routerPermissions;
   }
+
+  if (permissionsList.includes(Permissions.SYSTEM_DRIVER_ACCOUNT)) {
+    routerPermissions[RoutePaths.groups] = false;
+    routerPermissions[RoutePaths.events] = true;
+    routerPermissions[RoutePaths.alkozamki] = false;
+    routerPermissions[RoutePaths.attachments] = false;
+    routerPermissions[RoutePaths.autoService] = false;
+    routerPermissions[RoutePaths.roles] = false;
+    routerPermissions[RoutePaths.tc] = false;
+    routerPermissions[RoutePaths.historyAutoService] = false;
+    routerPermissions[RoutePaths.users] = false;
+    return routerPermissions;
+  }
+
+  if (permissionsList.includes(Permissions.SYSTEM_SERVICE_ACCOUNT)) {
+    routerPermissions[RoutePaths.groups] = false;
+    routerPermissions[RoutePaths.events] = true;
+    routerPermissions[RoutePaths.alkozamki] = false;
+    routerPermissions[RoutePaths.attachments] = false;
+    routerPermissions[RoutePaths.autoService] = false;
+    routerPermissions[RoutePaths.roles] = false;
+    routerPermissions[RoutePaths.tc] = false;
+    routerPermissions[RoutePaths.historyAutoService] = false;
+    routerPermissions[RoutePaths.users] = false;
+    return routerPermissions;
+  }
+  
+
   const permissionsIncludes = permissionsListIncludes(permissionsList);
   const isGlobalAdmin = permissionsIncludes(Permissions.SYSTEM_GLOBAL_ADMIN);
   if (isGlobalAdmin) {
