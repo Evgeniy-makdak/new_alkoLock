@@ -8,7 +8,6 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import type { TypeNavLink } from '../config/const';
 import type { TypeNavPath } from './../config/const';
 
-
 export const getPermissionsForPages = (permissionForThisPage: HasPermissionForThisPageReturn) => {
   return function (path: TypeNavLink) {
     return permissionForThisPage[path.path];
@@ -66,7 +65,32 @@ export const hasPermissionForThisPage = (
     routerPermissions[RoutePaths.users] = false;
     return routerPermissions;
   }
-  
+
+  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_CREATE)) {
+    routerPermissions[RoutePaths.groups] = false;
+    routerPermissions[RoutePaths.events] = true;
+    routerPermissions[RoutePaths.alkozamki] = true;
+    routerPermissions[RoutePaths.attachments] = true;
+    routerPermissions[RoutePaths.autoService] = true;
+    routerPermissions[RoutePaths.roles] = false;
+    routerPermissions[RoutePaths.tc] = true;
+    routerPermissions[RoutePaths.historyAutoService] = true;
+    routerPermissions[RoutePaths.users] = true;
+    return routerPermissions;
+  }
+
+  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_READ)) {
+    routerPermissions[RoutePaths.groups] = false;
+    routerPermissions[RoutePaths.events] = true;
+    routerPermissions[RoutePaths.alkozamki] = true;
+    routerPermissions[RoutePaths.attachments] = true;
+    routerPermissions[RoutePaths.autoService] = true;
+    routerPermissions[RoutePaths.roles] = false;
+    routerPermissions[RoutePaths.tc] = true;
+    routerPermissions[RoutePaths.historyAutoService] = true;
+    routerPermissions[RoutePaths.users] = true;
+    return routerPermissions;
+  }
 
   const permissionsIncludes = permissionsListIncludes(permissionsList);
   const isGlobalAdmin = permissionsIncludes(Permissions.SYSTEM_GLOBAL_ADMIN);
