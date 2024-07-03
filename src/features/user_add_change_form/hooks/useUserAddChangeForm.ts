@@ -151,7 +151,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       } else {
         const response = await changeItem(userData);
-        const isErrorChangeItem = (await changeItem(userData))?.isError;
+        const isErrorChangeItem = response?.isError;
         if (isErrorChangeItem) {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {

@@ -41,6 +41,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: {
       errors: { name: nameAlkolock, serialNumber, uid },
     },
@@ -51,16 +52,21 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     defaultValues,
   });
 
-  // Обновляем форму при изменении id
   useEffect(() => {
     if (id) {
-      if (alkolock && !isLoadingAlkolock) {
-        setValue('serialNumber', alkolock?.serialNumber || '');
-        setValue('uid', alkolock?.serviceId || '');
-        setValue('tc', car ? [{ label: Formatters.carNameFormatter(car), value: car?.id }] : []);
-      }
+      reset(defaultValues);
     }
-  }, [id, alkolock, isLoadingAlkolock, car, setValue]);
+  }, [id, defaultValues, isLoadingAlkolock, car, setValue]);
+  // Обновляем форму при изменении id
+  // useEffect(() => {
+  //   if (id) {
+  //     if (alkolock && !isLoadingAlkolock) {
+  //       setValue('serialNumber', alkolock?.serialNumber || '');
+  //       setValue('uid', alkolock?.serviceId || '');
+  //       setValue('tc', car ? [{ label: Formatters.carNameFormatter(car), value: car?.id }] : []);
+  //     }
+  //   }
+  // }, [id, alkolock, isLoadingAlkolock, car, setValue]);
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);

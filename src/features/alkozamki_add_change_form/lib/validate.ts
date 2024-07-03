@@ -15,7 +15,7 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
   name: yup.string().required(ValidationMessages.required),
   serialNumber: yup
     .string()
-    .min(1, 'Минимальное количество символов 1')
+    .min(1, 'Обязательное поле')
     .max(20, 'Максимальное количество символов 20')
     .required(ValidationMessages.required),
   uid: yup
