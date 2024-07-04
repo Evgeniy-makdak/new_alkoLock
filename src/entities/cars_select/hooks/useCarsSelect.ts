@@ -5,6 +5,7 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 
 import { useCarListQuery } from '../api/useCarListQuery';
 import { adapterMapOptions } from '../lib/adapterMapOptions';
+// import { useAttachmentCarListQuery } from '../api/useAttachmentCarListQuery';
 
 export const useCarsSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID) => {
   const [searchQuery, setSearchQuery] = useState('');
