@@ -10,7 +10,7 @@ export const getFields = (itemData: IAlcolock) => {
   const serialNumber = itemData?.serialNumber ?? '-';
   const car = Formatters.carNameFormatter(itemData?.vehicleBind?.vehicle);
   const carForCopy = Formatters.carNameFormatter(itemData?.vehicleBind?.vehicle, false, false);
-  const name = Formatters.nameFormatter(itemData?.userActionId);
+  const name = Formatters.nameFormatter(itemData?.createdBy);
   const date = Formatters.formatISODate(itemData?.createdAt);
   const mode =
     AppConstants.alkolockWorkModes.find((mode) => mode.value === itemData?.mode)?.label ?? '-';
