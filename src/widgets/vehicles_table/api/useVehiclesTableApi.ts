@@ -6,7 +6,7 @@ import type { QueryOptions } from '@shared/types/QueryTypes';
 export const useVehiclesTableApi = (options: QueryOptions) => {
   const { data, refetch, isLoading } = useConfiguredQuery(
     [QueryKeys.VEHICLES_PAGE_TABLE],
-    CarsApi.getCarsList,
+    CarsApi.getAttachmentsCarList,
     { options },
   );
   return { cars: data?.data, isLoading, refetch };

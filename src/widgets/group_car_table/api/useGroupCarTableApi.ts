@@ -6,7 +6,7 @@ import type { QueryOptions } from '@shared/types/QueryTypes';
 export const useGroupCarTableApi = (options: QueryOptions) => {
   const { data, isLoading, refetch } = useConfiguredQuery(
     [QueryKeys.CAR_LIST],
-    CarsApi.getCarsList,
+    CarsApi.getAttachmentsCarList,
     { options },
   );
 
