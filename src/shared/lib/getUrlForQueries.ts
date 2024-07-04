@@ -275,7 +275,8 @@ export const getCarListURL = ({
     queries += getSortQueryCar(sortBy, order);
   }
 
-  return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}&all.monitoringDevice.vehicleBind.createdAt.specified=false`;
+  return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
+  // return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}&all.monitoringDevice.vehicleBind.createdAt.specified=false`;
 };
 
 export const getAttachmentsCarListURL = ({
