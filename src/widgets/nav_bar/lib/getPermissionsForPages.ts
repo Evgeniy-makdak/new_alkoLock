@@ -95,6 +95,19 @@ export const hasPermissionForThisPage = (
     return routerPermissions;
   }
 
+  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_EDIT)) {
+    routerPermissions[RoutePaths.groups] = false;
+    routerPermissions[RoutePaths.events] = true;
+    routerPermissions[RoutePaths.alkozamki] = false;
+    routerPermissions[RoutePaths.attachments] = false;
+    routerPermissions[RoutePaths.autoService] = true;
+    routerPermissions[RoutePaths.roles] = false;
+    routerPermissions[RoutePaths.tc] = false;
+    routerPermissions[RoutePaths.historyAutoService] = true;
+    routerPermissions[RoutePaths.users] = false;
+    return routerPermissions;
+  }
+
   const permissionsIncludes = permissionsListIncludes(permissionsList);
   const isGlobalAdmin = permissionsIncludes(Permissions.SYSTEM_GLOBAL_ADMIN);
   if (isGlobalAdmin) {
