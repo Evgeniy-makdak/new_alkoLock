@@ -254,6 +254,7 @@ export interface IAlcolock {
     userActionId: IUser;
     createdAt: string;
     vehicle: ICar;
+    createdBy: IUser;
   };
 
   assignment: {

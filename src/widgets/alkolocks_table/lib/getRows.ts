@@ -18,8 +18,8 @@ export const useGetRows = (data: IAlcolock[]): GridRowsProp => {
       [ValuesHeader.TC]: Formatters.carNameFormatter(car),
       [ValuesHeader.OPERATING_MODE]:
         AppConstants.alkolockWorkModes.find((mode) => mode.value === item.mode)?.label ?? '-',
-      [ValuesHeader.WHO_LINK]: Formatters.nameFormatter(item.createdBy),
-      [ValuesHeader.DATA_INSTALLATION]: Formatters.formatISODate(item.createdAt),
+      [ValuesHeader.WHO_LINK]: Formatters.nameFormatter(item?.vehicleBind?.createdBy),
+      [ValuesHeader.DATA_INSTALLATION]: Formatters.formatISODate(item?.vehicleBind?.createdAt),
     };
   });
 
