@@ -11,6 +11,7 @@ interface EventsFilterPanelStore {
   setFilters: (type: keyof EventsFilters, value: (string | Value)[] | Value) => void;
   resetFilters: () => void;
   hasActiveFilters: boolean;
+  selectedLabel: string | null; // Добавлено новое состояние
 }
 
 export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get) => ({
@@ -21,6 +22,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
     typeEvent: [],
   },
   hasActiveFilters: false,
+  selectedLabel: null, // Инициализация нового состояния
   setFilters(type, value) {
     const filters = get().filters;
     const readyValue = ArrayUtils.getArrayValues(value);
@@ -35,6 +37,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
     set(() => ({
       hasActiveFilters,
       filters: newState,
+      selectedLabel: readyValue.length > 0 ? readyValue[0].label : null, // Установка нового состояния
     }));
   },
   resetFilters() {
@@ -46,6 +49,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
         typeEvent: [],
         driverId: [],
       },
+      selectedLabel: null, // Сброс нового состояния
     }));
   },
 }));

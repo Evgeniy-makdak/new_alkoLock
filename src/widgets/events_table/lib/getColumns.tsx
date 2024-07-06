@@ -52,7 +52,7 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Тип события',
+        headerName: 'Тип событияrow',
         field: ValuesHeader.TYPE_OF_EVENT,
       },
       {
