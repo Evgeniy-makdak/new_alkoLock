@@ -18,9 +18,9 @@ export const findEarliestEvent = (events: IEvents) => {
 };
 
 export const getLastEvent = (event: IDeviceAction) => {
-  const lastEvent = findEarliestEvent(event?.events);
+  const lastEvent = findEarliestEvent(event?.events);  // сюда можно написать откуда нужно вытягивать значение событий.
   return (
-    AppConstants.eventTypesList.find((type) => {
+    AppConstants.eventTypesList.find((type) => {       //  AppConstants можно переписать чтобы расхардкодить.
       return type.value === lastEvent?.eventType || type.value === event?.type;
     })?.label ?? '-'
   );

@@ -2,6 +2,8 @@ import { useMemo } from 'react';
 
 import { useStore } from 'zustand';
 
+import { getLastEvent } from '@entities/type_event_select';
+
 import type { GridRowsProp } from '@mui/x-data-grid';
 
 import { eventsFilterPanelStore } from '@features/events_filter_panel/model/eventsFilterPanelStore';
@@ -16,6 +18,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
 
   const mapData = useMemo(() => {
     return (Array.isArray(data) ? data : []).map((item) => {
+      const lastEvent = getLastEvent(item);
       // Проверяем, что occurredAt - строка
       const occurredAt = typeof item.occurredAt === 'string' ? item.occurredAt : undefined;
 
@@ -29,7 +32,8 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
           ? Formatters.carNameFormatter(item.vehicleRecord, true)
           : '-',
         [ValuesHeader.GOS_NUMBER]: item.vehicleRecord?.registrationNumber ?? '-',
-        [ValuesHeader.TYPE_OF_EVENT]: selectedLabel ?? item.events[0].eventType, // Использование selectedLabel
+        // [ValuesHeader.TYPE_OF_EVENT]: selectedLabel ?? item.events[0].eventType, // Использование selectedLabel
+        [ValuesHeader.TYPE_OF_EVENT]: lastEvent,
       };
     });
   }, [data, selectedLabel]);
