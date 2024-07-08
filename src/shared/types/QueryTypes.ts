@@ -53,6 +53,7 @@ export type RefetchType<T> = () => Promise<
   @field  headers?: HeaderReq;
  */
 export type QueryOptions = {
+  specified?: boolean;
   page?: number;
   equals?: string;
   limit?: number | string;

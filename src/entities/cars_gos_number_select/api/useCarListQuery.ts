@@ -6,7 +6,7 @@ import type { QueryOptions } from '@shared/types/QueryTypes';
 export const useCarListQuery = (options: QueryOptions) => {
   const { data, isLoading } = useConfiguredQuery(
     [QueryKeys.CAR_LIST],
-    CarsApi.getAttachmentsCarList,
+    CarsApi.getCarsList,
     {
       options,
     },

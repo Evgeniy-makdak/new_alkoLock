@@ -16,7 +16,6 @@ import {
 
 import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { cookieManager } from '@shared/utils/cookie_manager';
 
 import style from './MenuButton.module.scss';
 
@@ -50,10 +49,8 @@ export const MenuButton: FC<MenuButtonProps> = ({
     setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
-    cookieManager.removeAll();
     close();
     setAnchorEl(null);
-    // logout();
   };
 
   return (

@@ -8,7 +8,6 @@ import {
   getAttachmentsDeleteItemURL,
   getBranchListUrl,
   getCarListURL,
-  getAttachmentsCarListURL,
   getCarSwitchBranchUrl,
   getCreateAlkolocksURL,
   getCreateAttachmentApiURL,
@@ -170,10 +169,6 @@ export class UsersApi {
 export class CarsApi {
   static getCarsList(options: QueryOptions) {
     return getQuery<ICar[]>({ url: getCarListURL(options) });
-  }
-
-  static getAttachmentsCarList(options: QueryOptions) {
-    return getQuery<ICar[]>({ url: getAttachmentsCarListURL(options) });
   }
 
   static getMarksCarList(options: QueryOptions) {

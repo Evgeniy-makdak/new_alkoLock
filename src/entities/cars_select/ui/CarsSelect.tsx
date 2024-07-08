@@ -14,15 +14,17 @@ interface CarsSelectProps<T> {
   branchId?: ID;
   notInBranch?: ID;
   vieBranch?: boolean;
+  specified?: boolean;
 }
 
 export function CarsSelect<T>({
+  specified,
   vieBranch = false,
   branchId,
   notInBranch,
   ...rest
 }: CarsSelectProps<T>) {
-  const { onChange, onReset, isLoading, carList } = useCarsSelect(vieBranch, branchId, notInBranch);
+  const { onChange, onReset, isLoading, carList } = useCarsSelect(vieBranch, branchId, notInBranch, specified);
 
   return (
     <SearchMultipleSelect

@@ -5,9 +5,8 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 
 import { useCarListQuery } from '../api/useCarListQuery';
 import { adapterMapOptions } from '../lib/adapterMapOptions';
-// import { useAttachmentCarListQuery } from '../api/useAttachmentCarListQuery';
 
-export const useCarsSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID) => {
+export const useCarsSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID, specified = true) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {
     setSearchQuery(value);
@@ -16,10 +15,13 @@ export const useCarsSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID
   const onReset = () => {
     setSearchQuery('');
   };
+  console.log({specified});
+  
 
   const { carList, isLoading } = useCarListQuery({
     searchQuery,
     filterOptions: { branchId: branchId, notBranchId: notInBranch },
+    specified,
   });
 
   const carListMapped = mapOptions(carList, (car) => adapterMapOptions(car, vieBranch));

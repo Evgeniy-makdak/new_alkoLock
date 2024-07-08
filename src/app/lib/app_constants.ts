@@ -305,7 +305,7 @@ export class AppConstants {
     },
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOff,
-      label: 'Заявка на выход из сервисного режима',
+      label: 'Выход из сервисного режима',
     },
     {
       value: this.EVENT_TYPES.alcolockEventEmergencyModeOn,
@@ -343,13 +343,13 @@ export class AppConstants {
     },
 
     {
-      value: 'ALCOLOCK_EVENT_IGNITION_STOPPED',
+      value: this.EVENT_TYPES.alcolockEventIgnitionStopped,
       label: 'Выключение зажигания',
     },
 
     {
       value: this.EVENT_TYPES.alcolockEventMaintenanceModeOn,
-      label: 'Заявка на переход в сервисный режим',
+      label: 'Переход в сервисный режим',
     },
   ];
 

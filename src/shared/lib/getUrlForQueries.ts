@@ -247,6 +247,7 @@ export const getCarListURL = ({
   startDate,
   endDate,
   filterOptions,
+  specified,
 }: QueryOptions): string => {
   const branchId = filterOptions && filterOptions?.branchId;
   const notBranchId = filterOptions && filterOptions?.notBranchId;
@@ -275,42 +276,8 @@ export const getCarListURL = ({
     queries += getSortQueryCar(sortBy, order);
   }
 
-  // return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
-  return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}&all.monitoringDevice.vehicleBind.createdAt.specified=false`;
-};
-
-export const getAttachmentsCarListURL = ({
-  page,
-  limit,
-  sortBy,
-  order,
-  searchQuery,
-  startDate,
-  endDate,
-  filterOptions,
-}: QueryOptions): string => {
-  const branchId = filterOptions && filterOptions?.branchId;
-  const notBranchId = filterOptions && filterOptions?.notBranchId;
-
-  const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
-
-  let queries = getSelectBranchQueryUrl({ branchId, notBranch: notBranchId });
-
-  if (startDate) {
-    const date = new Date(startDate).toISOString();
-    queries += `&all.createdAt.greaterThanOrEqual=${date}`;
-  }
-
-  if (endDate) {
-    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
-  }
-
-  if (queryTrimmed.length) {
-    queries += `&any.match.contains=${queryTrimmed}`;
-  }
-
-  if (sortBy && order) {
-    queries += getSortQueryCar(sortBy, order);
+  if (specified !== undefined) {
+    queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`
   }
 
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
