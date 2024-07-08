@@ -57,6 +57,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
       return;
     }
     cancelMutation(id);
+    window.location.reload();
   };
   const handleRejectActivateService = (id: ID) => {
     if (!id) {
