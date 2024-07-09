@@ -1,5 +1,9 @@
 import { useForm } from 'react-hook-form';
 
+import { enqueueSnackbar } from 'notistack';
+
+import { AttachmentsApi } from '@shared/api/baseQuerys';
+import { StatusCode } from '@shared/const/statusCode';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 
@@ -18,27 +22,32 @@ export const useAttachmentsForm = (closeModal: () => void) => {
         driverId: [],
       },
     });
+
   const mutation = useCreateAttachment();
-  // TODO перевести на Yup
   const onSelect = (type: keyof AttachmentAddForm, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
     clearErrors(['driverId', 'carId']);
     setValue(type, values);
   };
 
-  const onAddAtachment = () => {
+  const onAddAtachment = async () => {
     const driverId = getValues('driverId')[0]?.value;
     const vehicleId = getValues('carId')[0]?.value;
+
     if (!driverId || !vehicleId) {
       !driverId && setError('driverId', {});
       !vehicleId && setError('carId', {});
-      return;
+      enqueueSnackbar('Произошла ошибка при добавлении вложения', { variant: 'error' });
+    } else {
+      const data = { driverId, vehicleId };
+      const response = await AttachmentsApi.createItem(data);
+      if (response.status === StatusCode.BAD_REQUEST) {
+        enqueueSnackbar(response.detail, { variant: 'error' });
+      } else {
+        mutation(data);
+        closeModal();
+      }
     }
-    mutation({
-      driverId,
-      vehicleId,
-    });
-    closeModal();
   };
 
   return {
