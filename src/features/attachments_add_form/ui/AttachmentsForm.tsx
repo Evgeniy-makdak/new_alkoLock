@@ -7,6 +7,7 @@ import { Button } from '@shared/ui/button';
 import { Loader } from '@shared/ui/loader';
 
 import { useAttachmentsForm } from '../hooks/useAttachmentsForm';
+import style from './AttachmentsForm.module.scss';
 
 interface AttachmentAddFormProps {
   onClose: () => void;
@@ -29,7 +30,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           value={carId}
           setValueStore={onSelect}
         />
-
+        {errorCar && <span className={style.errorText}>Обязательное поле</span>}{' '}
         <UsersSelect
           needDriverId={true}
           value={driverId}
@@ -41,6 +42,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           label="Водитель"
           name="driverId"
         />
+        {errorDriver && <span className={style.errorText}>Обязательное поле</span>}{' '}
       </InputsColumnWrapper>
       <ButtonFormWrapper>
         <Button

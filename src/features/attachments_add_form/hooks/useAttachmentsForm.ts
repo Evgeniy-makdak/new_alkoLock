@@ -37,7 +37,6 @@ export const useAttachmentsForm = (closeModal: () => void) => {
     if (!driverId || !vehicleId) {
       !driverId && setError('driverId', {});
       !vehicleId && setError('carId', {});
-      enqueueSnackbar('Произошла ошибка при добавлении вложения', { variant: 'error' });
     } else {
       const data = { driverId, vehicleId };
       const response = await AttachmentsApi.createItem(data);
