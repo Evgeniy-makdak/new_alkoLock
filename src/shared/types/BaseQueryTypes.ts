@@ -148,6 +148,7 @@ export interface IUser {
 }
 
 export interface IAttachmentItems {
+  vehicleBind: any;
   createdAt: string;
   createdBy: {
     id: number;

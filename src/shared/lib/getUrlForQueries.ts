@@ -106,7 +106,7 @@ export function getAttachmentURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&all.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
     queries += `&any.vehicle.match.contains=${queryTrimmed}`;
     queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
   }
@@ -247,7 +247,6 @@ export const getCarListURL = ({
   startDate,
   endDate,
   filterOptions,
-  specified,
 }: QueryOptions): string => {
   const branchId = filterOptions && filterOptions?.branchId;
   const notBranchId = filterOptions && filterOptions?.notBranchId;
@@ -265,21 +264,16 @@ export const getCarListURL = ({
     queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (queryTrimmed.length) {
-    queries += `&any.match.contains=${queryTrimmed}`;
-    // TODO написать более подходящую реализацию формирования query параметров
-    // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
-    // !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
-  }
-
   if (sortBy && order) {
     queries += getSortQueryCar(sortBy, order);
   }
 
-  if (specified !== undefined) {
-    queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`
+  if (queryTrimmed.length) {
+    queries += `&any.match.contains=${queryTrimmed}`;
+    // TODO написать более подходящую реализацию формирования query параметров
+    // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
+    !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
   }
-
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
 
@@ -382,9 +376,9 @@ export function getAlcolockListURL({
   }
 
   if (queryTrimmed.length) {
-    // queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
-    queries += `&all.match.contains=${queryTrimmed}`;
-    // queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
+    queries += `&any.match.contains=${queryTrimmed}`;
+    queries += `&any.lastModifiedBy.match.contains=${queryTrimmed}`;
   }
 
   return `api/monitoring-devices?page=${page}&size=${limit}${queries}`;
@@ -512,33 +506,25 @@ export function getEventsApiURL({
     queries += `&all.occurredAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (sortBy || order) {
-    // Значения по умолчанию для сортировки
-    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
-    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
-
-    // Использование значений по умолчанию, если sortBy и order не определены
-    const sortByFinal = sortBy || sortByDefault;
-    const orderFinal = order || orderDefault;
-
-    // Генерация строки запроса с сортировкой
-    queries += getSortQueryEvents(sortByFinal, orderFinal);
+  if (sortBy && order) {
+    queries += getSortQueryEvents(sortBy, order);
   }
+
   if (queryTrimmed.length) {
-    queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
+    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
   if (users) {
-    queries += `&all.userActionId.id.in=${filterOptions.users}`;
+    queries += `&any.events.user.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
-    queries += `&all.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
+    queries += `&any.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
   }
 
   if (carsByLicense) {
-    queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
+    queries += `&any.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {
@@ -609,7 +595,7 @@ export function getEventListForAutoServiceURL({
   if (queryTrimmed.length) {
     queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
+    queries += `&any.vehicleRecord.in.contains=${queryTrimmed}`;
   }
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -664,7 +650,7 @@ export function getEventListCountForAutoServiceURL({
   if (queryTrimmed.length) {
     queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
     queries += `&all.userActionId.match.contains=${queryTrimmed}`;
-    queries += `&all.vehicleRecord.in.contains=${queryTrimmed}`;
+    queries += `&any.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 
   return `api/device-actions/count?page=${page || 0}&size=${limit || 20}${queries}`;
