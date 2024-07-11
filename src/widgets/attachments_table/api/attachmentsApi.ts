@@ -9,7 +9,7 @@ export const useAttachmentsApi = (options: QueryOptions) => {
     AttachmentsApi.getList,
     {
       options,
-      settings: { refetchInterval: 30000 },
+      settings: { refetchInterval: 10000 },
     },
   );
 

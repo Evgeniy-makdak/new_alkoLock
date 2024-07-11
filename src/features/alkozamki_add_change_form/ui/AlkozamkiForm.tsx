@@ -47,6 +47,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 label={LABEL_TEXT.name.label}
               />
               <TextField
+                disabled={!!id}
                 helperText={<span>{errorSerialNumber}</span>}
                 error={!!errorSerialNumber}
                 {...register('serialNumber')}
@@ -63,7 +64,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 testid={
                   testids.page_alcolocks.alcolocks_popup_add_alcolock.ALCOLOCK_ADD_ATTACH_INPUT_CAR
                 }
-                specified = {false}
+                specified={false}
                 value={tc}
                 setValueStore={onSelect}
                 label={LABEL_TEXT.vehicle.label}
