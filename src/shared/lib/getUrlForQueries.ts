@@ -269,7 +269,7 @@ export const getCarListURL = ({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.match.contains=${queryTrimmed}`;
+    queries += `&any.registrationNumber.contains=${queryTrimmed}`;
     // TODO написать более подходящую реализацию формирования query параметров
     // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
     !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
