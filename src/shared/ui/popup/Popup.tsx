@@ -35,6 +35,7 @@ export const Popup = ({
 }: PopupProps) => {
   const handleClickOutside = (e: React.SyntheticEvent<HTMLDivElement>) => {
     const { target } = e;
+    if (target === e.currentTarget) return;
     if (!('dataset' in target)) return;
     if (typeof target.dataset !== 'object') return;
     if (!('clickId' in target.dataset)) return;
