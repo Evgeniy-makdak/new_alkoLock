@@ -39,7 +39,9 @@ export const Popup = ({
     if (typeof target.dataset !== 'object') return;
     if (!('clickId' in target.dataset)) return;
     if (target?.dataset?.clickId && closeonClickSpace) {
+      e.stopPropagation();
       (onCloseModal ?? toggleModal)();
+      window.location.reload();
     }
   };
 
