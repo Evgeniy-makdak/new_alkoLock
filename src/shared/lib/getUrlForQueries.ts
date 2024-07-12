@@ -34,7 +34,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.USER:
-      return `&sort=surname${orderStr}`;
+      return `&sort=surname,firstName,middleName${orderStr}`;
     case SortTypes.EMAIL:
       return `&sort=email${orderStr}`;
     default:
