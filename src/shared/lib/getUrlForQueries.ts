@@ -26,7 +26,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName${orderStr}`;
+      return `&sort=vehicle.monitoringDevice.firstName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -62,7 +62,7 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.DRIVER:
       return `&sort=driver.userAccount.surname,driver.userAccount.firstName${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName${orderStr}`;
+      return `&sort=vehicle.monitoringDevice.firstName${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     default:
@@ -511,7 +511,7 @@ export function getEventsApiURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
