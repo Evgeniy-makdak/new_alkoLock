@@ -1,4 +1,3 @@
-import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -16,32 +15,28 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   const { alkolock, isLoadingAlkolock, changeItem, createItem } = useAlkozamkiFormApi(id);
   const car = alkolock?.vehicleBind?.vehicle;
 
-  // Используем useMemo для defaultValues
-  const defaultValues = useMemo(() => {
-    if (alkolock && !isLoadingAlkolock) {
-      return {
-        name: alkolock?.name || '',
-        serialNumber: alkolock?.serialNumber || '',
-        uid: alkolock?.serviceId || '',
-        tc: car
-          ? [
-              {
-                label: Formatters.carNameFormatter(car),
-                value: car?.id,
-              },
-            ]
-          : [],
-      };
-    }
-    return null;
-  }, [alkolock, isLoadingAlkolock, car]);
+  const defaultValues =
+    alkolock && !isLoadingAlkolock
+      ? {
+          name: alkolock?.name || '',
+          serialNumber: alkolock?.serialNumber || '',
+          uid: alkolock?.serviceId || '',
+          tc: car
+            ? [
+                {
+                  label: Formatters.carNameFormatter(car),
+                  value: car?.id,
+                },
+              ]
+            : [],
+        }
+      : null;
 
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    reset,
     formState: {
       errors: { name: nameAlkolock, serialNumber, uid },
     },
@@ -51,12 +46,6 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     resolver: yupResolver(schema),
     defaultValues,
   });
-
-  useEffect(() => {
-    if (id) {
-      reset(defaultValues);
-    }
-  }, [id, defaultValues, isLoadingAlkolock, car, setValue]);
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
