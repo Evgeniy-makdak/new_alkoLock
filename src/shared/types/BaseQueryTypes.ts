@@ -277,8 +277,8 @@ export interface IAlcolock {
 
 export enum EventType {
   APP_ACKNOWLEDGED = 'APP_ACKNOWLEDGED',
-  SERVER_REQUEST = 'SERVER_REQUEST',
-  APP_REQUEST = 'APP_REQUEST',
+  SERVER_REQUEST = 'Запрос сервера',
+  APP_REQUEST = 'Запрос приложения',
   REJECTED = 'REJECTED',
   ACCEPTED = 'ACCEPTED',
   OFFLINE_DEACTIVATION = 'OFFLINE_DEACTIVATION',

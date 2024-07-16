@@ -174,7 +174,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
               ) : (
                 '-'
               );
-            } else if (serviceModeInfo.requestType === 'APP_REQUEST') {
+            } else if (serviceModeInfo.requestType === 'Запрос приложения') {
               if (serviceModeInfo.isAcknowledged) {
                 return <span>Отклонение подтверждено приложением</span>;
               } else {

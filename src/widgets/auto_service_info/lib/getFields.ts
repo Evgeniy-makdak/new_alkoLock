@@ -13,7 +13,7 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
     false,
     false,
   );
-  const name = Formatters.nameFormatter(itemData?.device?.userActionId);
+  const name = Formatters.nameFormatter(itemData?.device?.lastModifiedBy);
   const date = Formatters.formatISODate(itemData?.device?.createdAt);
 
   return [

@@ -42,14 +42,14 @@ const getStatus = (item: IDeviceAction) => {
   );
   let status;
 
-  if (lastEvent?.eventType === 'SERVER_REQUEST') {
+  if (lastEvent?.eventType === 'Запрос сервера') {
     status = 'Ожидание водителя';
-  } else if (lastEvent?.eventType === 'APP_REQUEST') {
+  } else if (lastEvent?.eventType === 'Запрос приложения') {
     status = 'Ожидание оператора';
   } else if (lastEvent?.eventType === 'REJECTED') {
     if (isAcknowledged) {
       status = 'Оператор отклонил';
-    } else if (requestType === 'SERVER_REQUEST') {
+    } else if (requestType === 'Запрос сервера') {
       status = 'Водитель отклонил';
     } else {
       status = 'Оператор отклонил';
@@ -57,7 +57,7 @@ const getStatus = (item: IDeviceAction) => {
   } else if (lastEvent?.eventType === 'ACCEPTED') {
     if (isAcknowledged) {
       status = 'Оператор подтвердил';
-    } else if (requestType === 'SERVER_REQUEST') {
+    } else if (requestType === 'Запрос сервера') {
       status = 'Водитель подтвердил';
     } else {
       status = 'Оператор подтвердил';

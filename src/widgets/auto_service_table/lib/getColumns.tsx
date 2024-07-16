@@ -63,7 +63,7 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         field: ValuesHeader.STATE,
         minWidth: 220,
         renderCell: (params) => {
-          const state = params?.row?.state || '';
+          const state = params?.formattedValue || '';
           return <Chip className={style.chipFont} color={chipColor[state]} label={state} />;
         },
         sortable: false,
