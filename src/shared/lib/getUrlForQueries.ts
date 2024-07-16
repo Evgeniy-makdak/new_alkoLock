@@ -269,10 +269,12 @@ export const getCarListURL = ({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.registrationNumber.contains=${queryTrimmed}`;
+    queries += `&all.match.contains=${queryTrimmed}`;
     // TODO написать более подходящую реализацию формирования query параметров
     // сейчас у каждого запроса (машин или гос номеров) есть специфика по формированию параметров
-    !sortBy && (queries += `&any.vin.contains=${queryTrimmed}`);
+    // queries += `&any.vin.contains=${queryTrimmed}`;
+    // queries += `&any.models.match.contains=${queryTrimmed}`;
+    // queries += `&any.manufacturer.match.contains=${queryTrimmed}`;
   }
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
