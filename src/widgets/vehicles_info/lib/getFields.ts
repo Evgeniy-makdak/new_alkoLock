@@ -2,15 +2,12 @@ import { AppConstants } from '@app/index';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
-import type { VehicleColor } from '@shared/types/ColorTypes';
 
-export const getFields = (carData: ICar, vehicleColors: VehicleColor[]) => {
+export const getFields = (carData: ICar) => {
   const vin = carData?.vin ?? '-';
   const gosNumber = carData?.registrationNumber ?? '-';
   const dateRegistry = Formatters.formatISODate(carData?.createdAt);
   const serialNumberAlko = carData?.registrationNumber;
-
-  console.log('Vehicle Colors in getFields:', vehicleColors); // Проверка данных
 
   return [
     {
@@ -42,7 +39,8 @@ export const getFields = (carData: ICar, vehicleColors: VehicleColor[]) => {
       label: 'Цвет',
       type: TypeOfRows.COLOR,
       value: {
-        label: vehicleColors?.find((color) => color.value === carData?.color)?.label ?? '-',
+        label:
+          AppConstants.carColorsList.find((color) => color.value === carData?.color)?.label ?? '-',
       },
     },
     {
