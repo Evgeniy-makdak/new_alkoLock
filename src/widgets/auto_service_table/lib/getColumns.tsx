@@ -80,7 +80,6 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         field: ValuesHeader.EXPIRES,
         sortable: false,
         renderCell: (params) => {
-          console.log(params?.row.DATE_CREATE)
           return (
             <TimeCell
               refetch={refetch}

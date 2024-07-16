@@ -1,11 +1,10 @@
-import { AppConstants } from '@app/index';
 import type { IDeviceAction, IEvents } from '@shared/types/BaseQueryTypes';
 
 export const findEarliestEvent = (events: IEvents) => {
   if (!events || events.length === 0) {
     return null;
   }
-  let earliestEvent = events[0];
+  let earliestEvent = events.length > 3 ? events[3] : events[0];
   let earliestTime = new Date(earliestEvent.occurredAt);
   events.forEach((event) => {
     const eventTime = new Date(event.occurredAt);
@@ -14,14 +13,11 @@ export const findEarliestEvent = (events: IEvents) => {
       earliestEvent = event;
     }
   });
+
   return earliestEvent;
 };
 
 export const getLastEvent = (event: IDeviceAction) => {
-  const lastEvent = findEarliestEvent(event?.events);  // сюда можно написать откуда нужно вытягивать значение событий.
-  return (
-    AppConstants.eventTypesList.find((type) => {       //  AppConstants можно переписать чтобы расхардкодить.
-      return type.value === lastEvent?.eventType || type.value === event?.type;
-    })?.label ?? '-'
-  );
+  const lastEvent = findEarliestEvent(event?.events);
+  return lastEvent?.eventType;
 };
