@@ -271,6 +271,7 @@ export const getCarListURL = ({
   if (queryTrimmed.length) {
     queries += `&any.vin.contains=${queryTrimmed}`;
     queries += `&any.match.contains=${queryTrimmed}`;
+    queries += `&any.year.in=${queryTrimmed}`;
   }
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
