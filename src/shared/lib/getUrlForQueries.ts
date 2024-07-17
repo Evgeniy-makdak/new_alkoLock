@@ -247,6 +247,7 @@ export const getCarListURL = ({
   startDate,
   endDate,
   filterOptions,
+  specified,
 }: QueryOptions): string => {
   const branchId = filterOptions && filterOptions?.branchId;
   const notBranchId = filterOptions && filterOptions?.notBranchId;
@@ -272,6 +273,11 @@ export const getCarListURL = ({
     queries += `&any.vin.contains=${queryTrimmed}`;
     queries += `&any.match.contains=${queryTrimmed}`;
   }
+
+  if (specified !== undefined) {
+    queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`
+  }
+
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
 };
 
