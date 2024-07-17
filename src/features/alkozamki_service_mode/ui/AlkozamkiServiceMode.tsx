@@ -41,14 +41,13 @@ export const AlkozamkiServiceMode = ({
       <div className={style.alcolockServiceMode}>
         <Stack spacing={2} direction={'column'}>
           <span className={style.name}>Сервисный режим: </span>
-          {/* {getText()} */}
           {hasTime && (
             <Stack spacing={2} direction={'row'}>
               <Typography fontSize={22} fontWeight={600}>
                 Выключение через
               </Typography>
               <Typography fontSize={22} fontWeight={400}>
-                <TimeCell refetch={refetch} time={modeResetAt} id={alkolock.id} />
+                <TimeCell refetch={refetch} time={new Date(modeResetAt)} id={alkolock.id} />
               </Typography>
             </Stack>
           )}

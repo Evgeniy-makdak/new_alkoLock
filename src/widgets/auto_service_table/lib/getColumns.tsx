@@ -80,13 +80,18 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         field: ValuesHeader.EXPIRES,
         sortable: false,
         renderCell: (params) => {
+          const dateString = params?.row.DATE_CREATE;
+          const [datePart, timePart] = dateString.split(' ');
+          const [day, month, year] = datePart.split('.');
+          const [hour, minute, second] = timePart.split(':');
+          const date = new Date(year, month - 1, day, hour, minute, second);
+          date.setMinutes(date.getMinutes() + 15);
+
           return (
             <TimeCell
               refetch={refetch}
               key={params.id}
-              time={
-                params?.row?.lastEvent?.eventType !== 'REJECTED' ? params?.row.DATE_CREATE : null
-              }
+              time={params?.row?.lastEvent?.eventType !== 'REJECTED' ? date : null}
               id={params.id}
             />
           );

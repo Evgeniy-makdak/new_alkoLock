@@ -8,7 +8,7 @@ dayjs.extend(duration);
 dayjs.extend(utc);
 
 interface TimeCellProps {
-  time: string;
+  time: Date; // Изменено: теперь time - объект Date
   id: string | number;
   refetch?: () => void;
 }
@@ -18,15 +18,19 @@ export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
 
   useEffect(() => {
     if (!time) return;
+
+    // Парсинг time как объекта Date (уже сделано в renderCell)
+    const targetTime = dayjs(time).utc();
+
     const timer = setInterval(() => {
       const now = dayjs().utc();
-      const targetTime = dayjs(time).utc();
       const diff = targetTime.diff(now);
 
       if (diff <= 0) {
         setTimeDifference('');
         refetch && refetch();
         clearInterval(timer);
+        window.location.reload();
         return;
       }
 
@@ -36,7 +40,7 @@ export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
       const seconds = String(diffDuration.seconds()).padStart(2, '0');
 
       setTimeDifference(`${hours}:${minutes}:${seconds}`);
-    }, 300);
+    }, 15);
 
     return () => clearInterval(timer);
   }, [time, id]);
