@@ -600,6 +600,7 @@ export function getEventListForAutoServiceURL({
     queries += `&any.device.serialNumber.contains=${queryTrimmed}`;
     queries += `&any.device.vehicleBind.createdBy.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&any.events.userRecord.firstName.contains=${queryTrimmed}`;
   }
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
