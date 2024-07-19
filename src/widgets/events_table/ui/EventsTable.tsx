@@ -16,6 +16,7 @@ interface EventsTable {
 
 export const EventsTable = ({ handleClickRow }: EventsTable) => {
   const { filtersData, tableData } = useEventsTable();
+  
   // const [totalRowCount, setTotalRowCount] = useState(100);
 
   // useEffect(() => {
