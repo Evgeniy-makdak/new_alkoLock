@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -47,6 +48,23 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     defaultValues,
   });
 
+  useEffect(() => {
+    if (defaultValues) {
+      Object.keys(defaultValues).forEach((key) => {
+        setValue(key as keyof Form, defaultValues[key as keyof Form]);
+      });
+    }
+  }, [defaultValues, setValue]);
+
+  const customReset = () => {
+    setValue('tc', [
+      {
+        label: Formatters.carNameFormatter(car),
+        value: car?.id,
+      },
+    ]);
+  };
+
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
     setValue(type, values);
@@ -81,6 +99,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   };
 
   return {
+    reset: customReset,
     errorName,
     errorSerialNumber,
     errorUid,

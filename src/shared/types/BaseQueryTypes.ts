@@ -518,7 +518,7 @@ export type CreateUserData = {
   userGroups?: ID[];
   branchId: ID;
   userPhotoDTO?: UserPhotoDTO;
-  [key: string]: any; // Индексная сигнатура
+  [key: string]: any;
 };
 
 export type CreateRoleData = {

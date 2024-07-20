@@ -224,7 +224,7 @@ export class AlcolocksApi {
 
 export class EventsApi {
   static getList(options: QueryOptions) {
-    return getQuery<IDeviceAction[]>({
+    return getQuery<{content:IDeviceAction[], totalElements: number}>({
       url: getEventsApiURL(options),
     });
   }

@@ -29,6 +29,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
     errorSerialNumber,
     errorUid,
     isLoadingAlkolock,
+    reset,
   } = useAlkozamkiForm(id, closeModal);
 
   return (
@@ -68,6 +69,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 value={tc}
                 setValueStore={onSelect}
                 label={LABEL_TEXT.vehicle.label}
+                reset={reset}
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>

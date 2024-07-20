@@ -16,14 +16,14 @@ interface EventsTable {
 
 export const EventsTable = ({ handleClickRow }: EventsTable) => {
   const { filtersData, tableData } = useEventsTable();
-  
+
   // const [totalRowCount, setTotalRowCount] = useState(100);
 
   // useEffect(() => {
   //   const fetchData = async () => {
   //     try {
   //       const response = await fetch(
-  //         '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID',
+  //         'https://alcolock-test.lsystems.ru/events',
   //       );
   //       const totalRowCountHeader = response.headers.get('X-Total-Count');
 
@@ -74,7 +74,7 @@ export const EventsTable = ({ handleClickRow }: EventsTable) => {
       <Table
         sortingMode="server"
         // rowCount={totalRowCount}
-        rowCount={100}
+        rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
