@@ -73,7 +73,7 @@ export const EventsTable = ({ handleClickRow }: EventsTable) => {
       <EventsFilterPanel open={filtersData.openFilters} />
       <Table
         sortingMode="server"
-        // rowCount={totalRowCount}
+        // rowCount={500}
         rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

@@ -1,7 +1,7 @@
 import { type ReactNode, useState } from 'react';
 
 import { useUsers } from '@pages/users/hooks/useUsers';
-import { InputSearchDelay } from '@shared/config/permissionsEnums';
+import { InputSearchDelay, Permissions } from '@shared/config/permissionsEnums';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
@@ -13,11 +13,17 @@ import { useUsersTableApi } from '../api/useUsersTableApi';
 import { useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useUsersTableStore } from '../model/usersTableStore';
+import { appStore } from '@shared/model/app_store/AppStore';
 
 export const useUsersTable = () => {
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.USERS_TABLE,
   );
+
+  const permissions = appStore((state) => state.permissions);
+  const selectedBranchState = appStore((state) => state.selectedBranchState);
+  const isGlobalAdmin = !permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+  const isDisabledActionsColum = isGlobalAdmin || selectedBranchState?.id != 10;
 
   const [deleteUser, setDeleteUser] = useState(null);
   const [changeUserId, setChangeUserId] = useState<ID>(null);
@@ -62,6 +68,7 @@ export const useUsersTable = () => {
     handleClickDeletetUser,
     toggleAddUserModal,
     handleClickAddUser,
+    isDisabledActionsColum,
   );
 
   const closeEditModal = () => {

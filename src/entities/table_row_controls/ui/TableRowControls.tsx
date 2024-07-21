@@ -14,6 +14,7 @@ type TableRowControlsProps = {
   testidEdit?: string;
   testidDelete?: string;
   userRole?: number;
+  visible?: boolean;
 };
 
 export const TableRowControls: FC<TableRowControlsProps> = ({
@@ -21,11 +22,12 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   onClickEdit,
   testidDelete,
   testidEdit,
+  visible = true,
   arrowIcon = false,
 }) => {
   return (
     <div className={style.controls}>
-      {!!onClickEdit && (
+      {!!onClickEdit && visible && (
         <GridActionsCellItem
           data-testid={testidEdit}
           label="edit"
@@ -34,7 +36,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
           onClick={onClickEdit}
         />
       )}
-      {!!onClickDelete && (
+      {!!onClickDelete && visible && (
         <GridActionsCellItem
           onClick={onClickDelete}
           key={'delete'}
