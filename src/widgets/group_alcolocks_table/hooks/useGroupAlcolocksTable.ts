@@ -24,7 +24,7 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
 
   const [searchQuery] = useDebounce(input, InputSearchDelay);
 
-  const { alcolocks, isLoading, refetch } = useGroupAlcolocksTableApi({
+  const { alcolocks, totalCount, isLoading, refetch } = useGroupAlcolocksTableApi({
     searchQuery,
     page: state.page,
     limit: state.pageSize,
@@ -44,6 +44,7 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,

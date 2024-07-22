@@ -9,5 +9,5 @@ export const useGroupAlcolocksTableApi = (options: QueryOptions) => {
     AlcolocksApi.getListAlcolocks,
     { options },
   );
-  return { alcolocks: data?.data, isLoading, refetch };
+  return { alcolocks: data?.data?.content, totalCount: data?.data?.totalElements, isLoading, refetch };
 };

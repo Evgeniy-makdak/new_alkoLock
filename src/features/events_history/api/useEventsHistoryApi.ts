@@ -20,7 +20,7 @@ export const fetchNewList = (
     })
       .then((data) =>
         setNewData((prev) => {
-          const arr = data?.data || [];
+          const arr = data?.data?.content || [];
           if (arr.length === 0) return prev;
           return [...prev, ...arr];
         }),

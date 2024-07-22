@@ -150,7 +150,7 @@ const getSelectBranchQueryUrl = ({
     branch = `all.assignment.branch.id.notEquals=${notBranch}`;
   }
 
-  return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
+  return `${parameters ? parameters : ''}&${page ? page + '.' : ''}${branch}`;
 };
 
 export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {

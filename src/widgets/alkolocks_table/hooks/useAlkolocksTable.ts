@@ -53,7 +53,8 @@ export const useAlkolocksTable = () => {
     toggleAddAlcolockModal();
   };
 
-  const rows = useGetRows(data);
+  const rows = useGetRows(data?.content);
+  const totalCount = data?.totalElements || 0;
 
   const headers = useGetColumns(
     refetch,
@@ -69,6 +70,7 @@ export const useAlkolocksTable = () => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,

@@ -199,7 +199,7 @@ export class AlcolocksApi {
     return getQuery<IAlcolock[]>({ url: getAlcolocksURL(options) });
   }
   static getListAlcolocks(options: QueryOptions) {
-    return getQuery<IAlcolock[]>({ url: getAlcolockListURL(options) });
+    return getQuery<{content:IAlcolock[], totalElements: number}>({ url: getAlcolockListURL(options) });
   }
   static deleteAlkolock(id: ID) {
     return deleteQuery({ url: getAlkolockURL(id) });
@@ -243,7 +243,7 @@ export class EventsApi {
   }
 
   static getEventsHistory(options: EventsOptions) {
-    return getQuery<IDeviceAction[]>({ url: getEventsHistoryURL(options) });
+    return getQuery<{content: IDeviceAction[], totalElements: number}>({ url: getEventsHistoryURL(options) });
   }
 
   static getEventsTypeList() {
