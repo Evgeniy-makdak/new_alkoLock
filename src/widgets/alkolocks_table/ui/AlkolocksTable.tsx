@@ -49,7 +49,6 @@ export const AlkolocksTable = ({ handleClickRow }: AlkolocksTableProps) => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
