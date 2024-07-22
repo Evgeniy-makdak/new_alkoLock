@@ -47,7 +47,7 @@ export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
       <Table
         sortingMode="server"
         // TODO => кол-во элементов должно приходить с бэка
-        rowCount={100}
+        rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}

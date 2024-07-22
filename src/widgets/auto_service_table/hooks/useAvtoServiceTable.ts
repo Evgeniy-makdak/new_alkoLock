@@ -27,9 +27,9 @@ export const useAvtoServiceTable = () => {
     sortBy: state?.sortModel[0]?.field,
     order: state?.sortModel[0]?.sort,
   });
-  const deviceActions = data?.data;
   const columns = useGetColumns(refetch);
-  const rows = useGetRows(deviceActions);
+  const rows = useGetRows(data?.data?.content || []);
+  const totalCount = data?.data?.totalElements || 0;
 
   const filterData = {
     input,
@@ -43,6 +43,7 @@ export const useAvtoServiceTable = () => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     changeTableState,
     changeTableSorts,
