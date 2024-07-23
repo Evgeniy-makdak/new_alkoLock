@@ -48,8 +48,7 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick }) => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
-        rowCount={100}
+        rowCount={tableData.totalCount}
         getRowHeight={() => 'auto'}
         sortingMode="server"
         paginationMode="server"

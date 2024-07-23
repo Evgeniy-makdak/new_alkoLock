@@ -35,7 +35,7 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const rows = useGetRows(users);
+  const rows = useGetRows(users?.content);
   const headers = useGetColumns(refetch, toggleAddCarModal, setChangeUser);
 
   const closeEditModal = () => {

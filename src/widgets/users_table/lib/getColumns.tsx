@@ -34,7 +34,7 @@ export const useGetColumns = (
   refetch: RefetchType<IAlcolock[]>,
   toggleDelete: (id: string, text?: ReactNode) => void,
   toggle: () => void,
-  setChangeUserId: (id: ID) => void, 
+  setChangeUserId: (id: ID) => void,
   isDisabledActionsColum = true,
 ): GridColDef[] => {
   return useMemo(
@@ -91,8 +91,8 @@ export const useGetColumns = (
         align: 'center',
         renderCell: ({ row }) => {
           return (
-            <TableRowControls 
-            visible={isDisabledActionsColum}
+            <TableRowControls
+              visible={isDisabledActionsColum}
               testidDelete={
                 testids.page_users.users_widget_table.USERS_WIDGET_TABLE_BODY_ITEM_ACTION_DELETE
               }

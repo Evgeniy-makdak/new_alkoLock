@@ -8,5 +8,5 @@ export const useUserListQuery = (options: QueryOptions) => {
     options,
   });
 
-  return { data: data?.data || [], isLoading };
+  return { data: data?.data?.content || [], isLoading };
 };

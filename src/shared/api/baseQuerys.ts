@@ -124,7 +124,7 @@ export class UsersApi {
     return response;
   }
   static getList(options: QueryOptions, widthCars = false) {
-    return getQuery<IUser[]>({ url: getUserListURL(options, widthCars) });
+    return getQuery<{content: IUser[], totalElements: number}>({ url: getUserListURL(options, widthCars) });
   }
   static getUser(userId: ID) {
     if (!userId) return;

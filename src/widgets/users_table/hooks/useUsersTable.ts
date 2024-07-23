@@ -6,6 +6,7 @@ import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
 import { useToggle } from '@shared/hooks/useToggle';
+import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
@@ -13,7 +14,6 @@ import { useUsersTableApi } from '../api/useUsersTableApi';
 import { useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useUsersTableStore } from '../model/usersTableStore';
-import { appStore } from '@shared/model/app_store/AppStore';
 
 export const useUsersTable = () => {
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
@@ -45,7 +45,7 @@ export const useUsersTable = () => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const { handleCloseAside } = useUsers(); // Получаем handleCloseAside из useUsers
+  const { handleCloseAside } = useUsers(); 
 
   const handleClickDeletetUser = (id: ID, text?: ReactNode) => {
     setDeleteUser({
@@ -62,7 +62,8 @@ export const useUsersTable = () => {
     toggleAddUserModal();
   };
 
-  const rows = useGetRows(users);
+  const rows = useGetRows(users?.content);
+  const totalCount = users?.totalElements || 0;
   const headers = useGetColumns(
     refetch,
     handleClickDeletetUser,
@@ -78,6 +79,7 @@ export const useUsersTable = () => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,
@@ -107,7 +109,7 @@ export const useUsersTable = () => {
     closeDeleteModal,
     deleteUser,
     isOpen: !!deleteUser,
-    closeAside: handleCloseAside, // Добавляем closeAside
+    closeAside: handleCloseAside,
   };
 
   return {
