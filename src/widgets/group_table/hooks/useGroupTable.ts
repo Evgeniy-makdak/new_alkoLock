@@ -47,7 +47,8 @@ export const useGroupTable = () => {
     closeAddBranchModal();
   };
 
-  const rows = useGetRows(branchs);
+  const rows = useGetRows(branchs?.content);
+  const totalCount = branchs?.totalElements || 0;
   const headers = useGetColumns(
     refetch,
     handleClickDeleteBranch,
@@ -57,6 +58,7 @@ export const useGroupTable = () => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     isLoading,
     changeTableState,

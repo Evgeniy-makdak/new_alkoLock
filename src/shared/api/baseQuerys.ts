@@ -50,6 +50,7 @@ import {
   type UserDataLogin,
 } from '../types/BaseQueryTypes';
 import { deleteQuery, getQuery, postQuery, putQuery } from './baseQueryTypes';
+// import { number } from 'yup';
 
 export default class PhotosApi {
   static getItem(url: string) {
@@ -297,7 +298,11 @@ export class AccountApi {
 
 export class BranchApi {
   static getBranchList(options: QueryOptions) {
-    return getQuery<IBranch[]>({ url: getBranchListUrl(options) || '' });
+    return getQuery<{
+      find(arg0: (branchInBase: { id: ID; }) => boolean): unknown;
+
+      find(arg0: (branchInBase: { id: ID; }) => boolean): unknown;content: IBranch[], totalElements: number
+}>({ url: getBranchListUrl(options) || '' });
   }
   static createBranch(name: string) {
     return postQuery<IBranch, { name: string }>({ data: { name }, url: `api/branch-offices` });

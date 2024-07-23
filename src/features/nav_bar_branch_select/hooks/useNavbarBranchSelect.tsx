@@ -8,6 +8,7 @@ import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 
 import { useUserDataApi } from '../api/useUserDataApi';
+import { ID } from '@shared/types/BaseQueryTypes';
 
 export const useNavbarBranchSelect = () => {
   const { selectedBranchState, setState, isAdmin, assignmentBranch, auth } = appStore(
@@ -39,7 +40,7 @@ export const useNavbarBranchSelect = () => {
 
   useEffect(() => {
     if (isLoading || !branchList || !auth) return;
-    const hasBranch = branchList.find((branchInBase) => branchInBase?.id === office?.id);
+    const hasBranch = branchList.find((branchInBase: { id: ID; }) => branchInBase?.id === office?.id);
     setState({
       selectedBranchState: isAdmin && office && hasBranch ? office : assignmentBranch,
     });
