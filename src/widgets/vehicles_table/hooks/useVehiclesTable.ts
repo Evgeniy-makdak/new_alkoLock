@@ -53,7 +53,8 @@ export const useVehiclesTable = () => {
     toggleAddCarModal();
   };
 
-  const rows = useGetRows(cars);
+  const rows = useGetRows(cars?.content);
+  const totalCount = cars?.totalElements || 0;
   const headers = useGetColumns(
     refetch,
     handleClickDeletetCar,
@@ -68,6 +69,7 @@ export const useVehiclesTable = () => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,

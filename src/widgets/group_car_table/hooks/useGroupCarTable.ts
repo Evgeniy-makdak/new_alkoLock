@@ -35,8 +35,9 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const rows = useGetRows(cars);
+  const rows = useGetRows(cars?.content);
   const headers = useGetColumns(refetch, toggleAddCarModal, setChangeCar);
+  const totalCount = cars?.totalElements || 0;
 
   const closeEditModal = () => {
     setChangeCar(null);
@@ -44,6 +45,7 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,

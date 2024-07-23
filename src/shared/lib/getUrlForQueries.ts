@@ -275,7 +275,7 @@ export const getCarListURL = ({
   }
 
   if (specified !== undefined) {
-    queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`
+    queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`;
   }
 
   return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;

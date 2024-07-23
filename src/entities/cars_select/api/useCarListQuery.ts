@@ -7,5 +7,5 @@ export const useCarListQuery = (options: QueryOptions) => {
   const { data, isLoading } = useConfiguredQuery([QueryKeys.CAR_LIST], CarsApi.getCarsList, {
     options,
   });
-  return { carList: data?.data || [], isLoading };
+  return { carList: data?.data?.content || [], isLoading };
 };

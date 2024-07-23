@@ -168,7 +168,7 @@ export class UsersApi {
 
 export class CarsApi {
   static getCarsList(options: QueryOptions) {
-    return getQuery<ICar[]>({ url: getCarListURL(options) });
+    return getQuery<{ content: ICar[]; totalElements: number }>({ url: getCarListURL(options) });
   }
 
   static getMarksCarList(options: QueryOptions) {
@@ -199,7 +199,9 @@ export class AlcolocksApi {
     return getQuery<IAlcolock[]>({ url: getAlcolocksURL(options) });
   }
   static getListAlcolocks(options: QueryOptions) {
-    return getQuery<{content:IAlcolock[], totalElements: number}>({ url: getAlcolockListURL(options) });
+    return getQuery<{ content: IAlcolock[]; totalElements: number }>({
+      url: getAlcolockListURL(options),
+    });
   }
   static deleteAlkolock(id: ID) {
     return deleteQuery({ url: getAlkolockURL(id) });
@@ -224,7 +226,7 @@ export class AlcolocksApi {
 
 export class EventsApi {
   static getList(options: QueryOptions) {
-    return getQuery<{content:IDeviceAction[], totalElements: number}>({
+    return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
       url: getEventsApiURL(options),
     });
   }
@@ -235,7 +237,9 @@ export class EventsApi {
     return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });
   }
   static getEventListForAutoService(options: QueryOptions) {
-    return getQuery<{content: IDeviceAction[], totalElements: number}>({ url: getEventListForAutoServiceURL(options) });
+    return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
+      url: getEventListForAutoServiceURL(options),
+    });
   }
 
   static getEventListCountForAutoServiceURL(options: QueryOptions) {
@@ -243,7 +247,9 @@ export class EventsApi {
   }
 
   static getEventsHistory(options: EventsOptions) {
-    return getQuery<{content: IDeviceAction[], totalElements: number}>({ url: getEventsHistoryURL(options) });
+    return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
+      url: getEventsHistoryURL(options),
+    });
   }
 
   static getEventsTypeList() {

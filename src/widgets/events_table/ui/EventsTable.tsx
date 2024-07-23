@@ -1,4 +1,3 @@
-// import { useEffect, useState } from 'react';
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
@@ -16,25 +15,6 @@ interface EventsTable {
 
 export const EventsTable = ({ handleClickRow }: EventsTable) => {
   const { filtersData, tableData } = useEventsTable();
-
-  // const [totalRowCount, setTotalRowCount] = useState(100);
-
-  // useEffect(() => {
-  //   const fetchData = async () => {
-  //     try {
-  //       const response = await fetch(
-  //         'https://alcolock-test.lsystems.ru/events',
-  //       );
-  //       const totalRowCountHeader = response.headers.get('X-Total-Count');
-
-  //       setTotalRowCount(parseInt(totalRowCountHeader));
-  //     } catch (error) {
-  //       // console.error('Ошибка при получении данных:', error);
-  //     }
-  //   };
-
-  //   fetchData();
-  // }, [setTotalRowCount]);
 
   return (
     <>
@@ -73,7 +53,6 @@ export const EventsTable = ({ handleClickRow }: EventsTable) => {
       <EventsFilterPanel open={filtersData.openFilters} />
       <Table
         sortingMode="server"
-        // rowCount={500}
         rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

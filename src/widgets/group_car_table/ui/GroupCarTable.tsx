@@ -29,8 +29,7 @@ export const GroupCarTable: FC<GroupCarTable> = ({ groupInfo }) => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
-        rowCount={100}
+        rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
