@@ -1,0 +1,62 @@
+.buttonWrapper {
+  display: flex;
+  justify-content: center;
+  max-width: 48px;
+  border-bottom: none;
+}
+
+.bodyCellCreatedAt {
+  display: flex;
+  align-items: center;
+  text-align: right;
+  width: 170px;
+  border-bottom: none;
+}
+
+.bodyCellButtonWrapper {
+  border: none;
+  max-width: 48px;
+  width: 48px;
+}
+
+.headerCellDate {
+  width: 150px;
+  text-align: right;
+}
+
+.headerCell {
+  max-width: 48px;
+  width: 48px;
+}
+.hiddenWrapper {
+  height: calc(100vh - 100px);
+}
+.minWidthWrapper {
+  max-height: 100%;
+  min-width: 580px;
+}
+
+.typeOfEvent {
+  width: 250px;
+}
+
+.tr {
+  display: flex;
+  justify-content: space-between;
+  width: 570px;
+}
+
+.td {
+  display: flex;
+  align-items: center;
+  border-bottom: none;
+  width: 250px;
+}
+.tableVirtuoso {
+  width: 100%;
+  & table {
+    max-width: 570px;
+    display: flex;
+    flex-direction: column;
+  }
+}

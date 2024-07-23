@@ -1,0 +1,26 @@
+.large {
+  max-height: 90vh;
+  width: 792px;
+}
+
+.roleSpan {
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.16px;
+  line-height: 138.462%;
+  color: #000000de;
+  background: #00000014;
+  border-radius: 100px;
+  white-space: nowrap;
+}
+
+.wrapperName {
+  display: 'flex';
+  flex-wrap: 'wrap';
+  gap: '8px';
+}
+
+.marginControls {
+  margin: 10px 0;
+}

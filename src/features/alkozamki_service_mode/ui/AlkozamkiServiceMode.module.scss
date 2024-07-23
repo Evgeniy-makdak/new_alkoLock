@@ -1,0 +1,79 @@
+.alcolockServiceMode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 60px;
+
+  span {
+    text-align: center;
+    display: block;
+    max-width: 346px;
+    font-size: 24px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 123.5%;
+    letter-spacing: 0.25px;
+    color: #000000de;
+  }
+}
+
+.active {
+  background: #e0e0e0;
+  color: rgba(0, 0, 0, 0.87);
+  cursor: pointer;
+}
+.disabled {
+  background: #0000001f;
+  color: #00000061;
+  cursor: unset;
+}
+
+.toggles {
+  margin-top: 18px;
+
+  button {
+    width: 133px;
+    padding: 6px 16px;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 171.429%;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    box-shadow:
+      0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+      0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+      0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+
+    &:first-child {
+      border-bottom-left-radius: 4px;
+      border-top-left-radius: 4px;
+      border-right: 1px solid #bdbdbd;
+    }
+    &:last-child {
+      border-bottom-right-radius: 4px;
+      border-top-right-radius: 4px;
+    }
+  }
+}
+
+.accept {
+  color: white;
+  background: #2e7d32;
+  cursor: pointer;
+}
+
+.cancel {
+  color: white;
+  background: #d32f2f;
+  cursor: pointer;
+}
+
+.name {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.cursorDefault {
+  cursor: default;
+}
