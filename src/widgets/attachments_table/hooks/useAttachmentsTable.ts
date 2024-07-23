@@ -62,11 +62,13 @@ export const useAttachmentsTable = () => {
     setSelectDeleteAttachment(null);
   };
 
-  const rows = useGetRows(attachmentList);
+  const rows = useGetRows(attachmentList?.data?.content);
+  const totalCount = attachmentList?.data?.totalElements || 0;
   const headers = useGetColumns(toggleAddAttachModal, handleClickDeleteAttachment, refetch);
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,
