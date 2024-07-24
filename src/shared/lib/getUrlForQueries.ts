@@ -520,7 +520,7 @@ export function getEventsApiURL({
   }
 
   if (users) {
-    queries += `&any.events.user.id.in=${filterOptions.users}`;
+    queries += `&any.userActionId.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
