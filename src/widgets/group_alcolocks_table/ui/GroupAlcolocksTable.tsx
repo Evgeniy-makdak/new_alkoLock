@@ -29,7 +29,7 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
         />
       </TableHeaderWrapper>
       <Table
-        rowCount={tableData.totalCount}
+        rowCount={300}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}

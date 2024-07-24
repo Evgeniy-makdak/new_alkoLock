@@ -21,6 +21,6 @@ export const useDateOfLinkSelect = () => {
     setSearchQuery('');
   };
 
-  const dateCreate = mapOptions(data?.data, adapterMapOptions);
+  const dateCreate = mapOptions(data?.data?.content, adapterMapOptions);
   return { onChange, isLoading, onReset, dateCreate };
 };

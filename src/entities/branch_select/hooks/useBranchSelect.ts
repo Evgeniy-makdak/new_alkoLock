@@ -18,7 +18,7 @@ export const useBranchSelect = (filter?: ID) => {
   };
   const { branch, isLoading } = useBranchSelectApi({ searchQuery });
 
-  const branchList = mapOptions(branch?.content, adapterMapOptions).filter((item) => item.value !== filter);
+  const branchList = mapOptions(branch, adapterMapOptions).filter((item) => item.value !== filter);
 
   return { onChange, onReset, isLoading, branchList };
 };

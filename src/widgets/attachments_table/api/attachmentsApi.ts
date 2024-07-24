@@ -13,5 +13,5 @@ export const useAttachmentsApi = (options: QueryOptions) => {
     },
   );
 
-  return { attachmentList: data?.data || [], isLoading, refetch };
+  return { attachmentList: data, isLoading, refetch };
 };

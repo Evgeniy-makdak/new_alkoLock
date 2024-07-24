@@ -24,7 +24,7 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
 
   const [searchQuery] = useDebounce(input, InputSearchDelay);
 
-  const { alcolocks, totalCount, isLoading, refetch } = useGroupAlcolocksTableApi({
+  const { alcolocks, isLoading, refetch } = useGroupAlcolocksTableApi({
     searchQuery,
     page: state.page,
     limit: state.pageSize,
@@ -35,7 +35,8 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const rows = useGetRows(alcolocks);
+  const rows = useGetRows(alcolocks?.data?.content);
+  const totalCount = alcolocks?.data?.totalElements;
   const headers = useGetColumns(refetch, toggleAddAlcolockModal, setChangeAlcolock);
 
   const closeEditModal = () => {

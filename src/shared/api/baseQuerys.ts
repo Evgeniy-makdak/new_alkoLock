@@ -66,7 +66,7 @@ export class AttachmentsApi {
   static getList(options: QueryOptions) {
     const url = getAttachmentURL(options);
 
-    return getQuery<IAttachmentItems[]>({ url });
+    return getQuery<{ content: IAttachmentItems[]; totalElements: number }>({ url });
   }
 
   static createItem(data: AttachmentsCreateData, headers?: AxiosRequestConfig['headers']) {
@@ -298,11 +298,8 @@ export class AccountApi {
 
 export class BranchApi {
   static getBranchList(options: QueryOptions) {
-    return getQuery<{
-      find(arg0: (branchInBase: { id: ID; }) => boolean): unknown;
-
-      find(arg0: (branchInBase: { id: ID; }) => boolean): unknown;content: IBranch[], totalElements: number
-}>({ url: getBranchListUrl(options) || '' });
+    return getQuery<
+      IBranch[]>({ url: getBranchListUrl(options) || '' });
   }
   static createBranch(name: string) {
     return postQuery<IBranch, { name: string }>({ data: { name }, url: `api/branch-offices` });
