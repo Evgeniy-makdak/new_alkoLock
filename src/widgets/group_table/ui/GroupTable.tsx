@@ -48,7 +48,6 @@ export const GroupTable: FC<GroupTableProps> = ({ handleClickRow }) => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
         rowCount={100}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

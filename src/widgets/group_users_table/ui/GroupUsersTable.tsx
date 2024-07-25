@@ -28,8 +28,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
-        rowCount={100}
+        rowCount={tableData.totalCount}
         getRowHeight={() => 'auto'}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

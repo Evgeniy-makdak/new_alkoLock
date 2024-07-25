@@ -24,8 +24,7 @@ export const RolesTable: FC = () => {
         />
       </TableHeaderWrapper>
       <Table
-        // TODO => кол-во элементов должно приходить с бэка
-        rowCount={100}
+        rowCount={200}
         sortingMode="server"
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

@@ -36,6 +36,7 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
   });
 
   const rows = useGetRows(users?.content);
+  const totalCount = users?.totalElements || 0;
   const headers = useGetColumns(refetch, toggleAddCarModal, setChangeUser);
 
   const closeEditModal = () => {
@@ -44,6 +45,7 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
 
   const tableData = {
     ...state,
+    totalCount,
     apiRef,
     rows,
     headers,
