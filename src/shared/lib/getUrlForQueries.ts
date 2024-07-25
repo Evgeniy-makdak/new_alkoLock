@@ -106,23 +106,23 @@ export function getAttachmentURL({
   }
 
   if (queryTrimmed.length) {
-    // queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
-    // queries += `&any.vehicle.match.contains=${queryTrimmed}`;
-    // queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicle.match.contains=${queryTrimmed}`;
+    queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
     queries += `&any.createdBy.match.contains=${queryTrimmed}`;
-  }
+  } 
 
   if (drivers) {
-    queries += `&all.driver.userAccount.id.in=${drivers}`;
+    queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
   }
   if (tc) {
-    queries += `&all.vehicle.id.in=${tc}`;
+    queries += `&any.vehicle.match.contains=${queryTrimmed}`;
   }
   if (createAttach) {
-    queries += `&all.vehicle.userActionId.id.in=${createAttach}`;
+    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
   }
   if (alcolock) {
-    queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
+    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
   }
   if (dateLink) {
     queries += `&all.createdAt.eq=${dateLink}`;
@@ -343,9 +343,7 @@ export function getAlcolocksURL({
   }
 
   if (queryTrimmed.length) {
-    // queries += `&all.vehicleBind.vehicle.match.contains=${queryTrimmed}`;
-    queries += `&all.match.contains=${queryTrimmed}`;
-    // queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
   }
   return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}`;
 }
