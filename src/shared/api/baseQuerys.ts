@@ -50,6 +50,7 @@ import {
   type UserDataLogin,
 } from '../types/BaseQueryTypes';
 import { deleteQuery, getQuery, postQuery, putQuery } from './baseQueryTypes';
+
 // import { number } from 'yup';
 
 export default class PhotosApi {
@@ -124,7 +125,9 @@ export class UsersApi {
     return response;
   }
   static getList(options: QueryOptions, widthCars = false) {
-    return getQuery<{content: IUser[], totalElements: number}>({ url: getUserListURL(options, widthCars) });
+    return getQuery<{ content: IUser[]; totalElements: number }>({
+      url: getUserListURL(options, widthCars),
+    });
   }
   static getUser(userId: ID) {
     if (!userId) return;
@@ -298,8 +301,7 @@ export class AccountApi {
 
 export class BranchApi {
   static getBranchList(options: QueryOptions) {
-    return getQuery<
-      IBranch[]>({ url: getBranchListUrl(options) || '' });
+    return getQuery<IBranch[]>({ url: getBranchListUrl(options) || '' });
   }
   static createBranch(name: string) {
     return postQuery<IBranch, { name: string }>({ data: { name }, url: `api/branch-offices` });
@@ -326,10 +328,10 @@ export class BranchApi {
 
 export class RolesApi {
   static getList(options: QueryOptions) {
-    return getQuery<IRole[]>({
+    // return getQuery<IRole[]>({
+    //   url: getRolesListURL(options),
+    return getQuery<{ content: IRole[]; totalElements: number }>({
       url: getRolesListURL(options),
-      // return getQuery<{content: IRole[]; totalElements: number}>({
-      //   url: getRolesListURL(options),
     });
   }
   static getItem(id: ID) {

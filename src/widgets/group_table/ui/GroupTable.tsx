@@ -48,7 +48,7 @@ export const GroupTable: FC<GroupTableProps> = ({ handleClickRow }) => {
         />
       </TableHeaderWrapper>
       <Table
-        rowCount={100}
+        rowCount={tableData.rows.length}
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
