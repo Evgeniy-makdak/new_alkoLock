@@ -24,7 +24,7 @@ export const RolesTable: FC = () => {
         />
       </TableHeaderWrapper>
       <Table
-        rowCount={200}
+        rowCount={tableData.rows.length}
         sortingMode="server"
         paginationMode="server"
         onSortModelChange={tableData.changeTableSorts}

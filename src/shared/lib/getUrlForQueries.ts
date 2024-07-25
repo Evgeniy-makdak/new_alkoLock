@@ -106,9 +106,10 @@ export function getAttachmentURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
-    queries += `&any.vehicle.match.contains=${queryTrimmed}`;
-    queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
+    // queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    // queries += `&any.vehicle.match.contains=${queryTrimmed}`;
+    // queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
+    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
   }
 
   if (drivers) {
