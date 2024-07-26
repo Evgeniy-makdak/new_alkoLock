@@ -151,28 +151,35 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       } else {
         const response = await changeItem(userData);
-        const isErrorChangeItem = response?.isError;
-        if (isErrorChangeItem) {
-          enqueueSnackbar(response.detail, { variant: 'error' });
+        if (response.status === StatusCode.BAD_REQUEST) {
+          const messageStart =
+            response?.detail.split(',')[6].indexOf('message=') + 'message='.length;
+          enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
+            variant: 'error',
+          });
         } else {
           closeModal && closeModal();
-          if (userFoto) {
-            const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
-            if (isErrorChangeFoto) {
-              enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
-            }
-          } else {
-            const isErrorDeleteFoto = (await deleteFoto())?.isError;
-            if (isErrorDeleteFoto) {
-              enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
-            }
-          }
         }
+        // const isErrorChangeItem = response?.isError;
+        // if (isErrorChangeItem) {
+        //   enqueueSnackbar(response.detail, { variant: 'error' });
+        // } else {
+        //   closeModal && closeModal();
+        //   if (userFoto) {
+        //     const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
+        //     if (isErrorChangeFoto) {
+        //       enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+        //     }
+        //   } else {
+        //     const isErrorDeleteFoto = (await deleteFoto())?.isError;
+        //     if (isErrorDeleteFoto) {
+        //       enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
+        //     }
+        //   }
+        // }
       }
     } catch (error) {
-      const response = await createItem(formData);
-      if (response.status === StatusCode.BAD_REQUEST)
-        enqueueSnackbar(response.detail, { variant: 'error' });
+      console.error(error);
     }
   };
 
