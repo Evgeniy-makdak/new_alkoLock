@@ -54,7 +54,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
         setValue(key as keyof Form, defaultValues[key as keyof Form]);
       });
     }
-  }, [car, setValue]);
+  }, [alkolock?.name, car, setValue]);
 
   const customReset = () => {
     setValue('tc', [
