@@ -24,10 +24,12 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   testidEdit,
   visible = true,
   arrowIcon = false,
+  userRole = 0,
 }) => {
+  const isUserSuperAdmine = userRole === 100;
   return (
     <div className={style.controls}>
-      {!!onClickEdit && visible && (
+      {!!onClickEdit && !isUserSuperAdmine && (
         <GridActionsCellItem
           data-testid={testidEdit}
           label="edit"
