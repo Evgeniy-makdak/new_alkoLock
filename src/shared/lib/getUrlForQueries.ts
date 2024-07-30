@@ -715,30 +715,19 @@ export const getBranchListUrl = ({
 };
 
 ////////////////////////////////////////================================================================Roles Api
-
-export function getRolesListURL({
-  searchQuery,
-  sortBy,
-  order,
-  page,
-  limit,
-  branchOfficeId,
-}: QueryOptions) {
-  const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
+export function getRolesListURL({ sortBy, order, page, limit, filterOptions }: QueryOptions) {
+  const branchId = filterOptions?.branchId;
   let queries = '';
 
   if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
   }
 
-  queries += `&any.systemGenerated.in=true`;
+  queries += '&any.systemGenerated.in=true';
 
-  if (branchOfficeId) {
-    queries += `&branchOfficeId=${branchOfficeId}`;
+  if (branchId) {
+    queries += `&any.branchOffice.id.in=${branchId}`;
   }
 
-  if (queryTrimmed.length) {
-    queries += `&any.name.contains=${queryTrimmed}`;
-  }
   return `api/user-groups?page=${page || 0}&size=${limit || 25}${queries}`;
 }
