@@ -110,7 +110,7 @@ export function getAttachmentURL({
     queries += `&any.vehicle.match.contains=${queryTrimmed}`;
     queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
     queries += `&any.createdBy.match.contains=${queryTrimmed}`;
-  } 
+  }
 
   if (drivers) {
     queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
@@ -716,12 +716,25 @@ export const getBranchListUrl = ({
 
 ////////////////////////////////////////================================================================Roles Api
 
-export function getRolesListURL({ searchQuery, sortBy, order, page, limit }: QueryOptions) {
+export function getRolesListURL({
+  searchQuery,
+  sortBy,
+  order,
+  page,
+  limit,
+  branchOfficeId,
+}: QueryOptions) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   let queries = '';
 
   if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
+  }
+
+  queries += `&any.systemGenerated.in=true`;
+
+  if (branchOfficeId) {
+    queries += `&branchOfficeId=${branchOfficeId}`;
   }
 
   if (queryTrimmed.length) {

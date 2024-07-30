@@ -330,8 +330,6 @@ export class RolesApi {
   static getList(options: QueryOptions) {
     return getQuery<IRole[]>({
       url: getRolesListURL(options),
-      // return getQuery<{ content: IRole[]; totalElements: number }>({
-      //   url: getRolesListURL(options),
     });
   }
   static getItem(id: ID) {
