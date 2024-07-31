@@ -341,7 +341,8 @@ export class RolesApi {
   static changeItem(data: CreateRoleData, id: ID) {
     return putQuery({ url: `api/user-groups/${id}`, data });
   }
-  static createItem(data: CreateRoleData, branchId: QueryOptions) {
-    return postQuery({ url: `api/user-groups/${branchId}`, data });
+
+  static createItem(data: CreateRoleData) {
+    return postQuery({ url: `api/user-groups`, data });
   }
 }

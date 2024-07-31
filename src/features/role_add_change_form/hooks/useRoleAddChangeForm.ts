@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { createContext, useContext } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { AppConstants } from '@app/index';
@@ -9,7 +10,6 @@ import { useRoleAddChangeFormApi } from '../api/useRoleAddChangeFormApi';
 import { RolesMapper } from '../lib/RolesMapper';
 import { normalizePermissions } from '../lib/normalizePermissions';
 import { type Form, schema } from '../lib/validate';
-import { createContext, useContext } from 'react';
 
 export enum TypesOfForm {
   alkolockPermission = 'alkolockPermission',
@@ -76,13 +76,12 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
   };
 
   const errorName = name ? name.message.toString() : '';
-  
 
   const onSubmit = async (data: Form) => {
     const payload = RolesMapper.toApi(data);
     try {
       id ? await changeRole({ data: payload, id }) : await createRole(payload);
-      close(); 
+      close();
     } catch (error) {
       console.error('Ошибка:', error);
     }

@@ -53,6 +53,7 @@ export type RefetchType<T> = () => Promise<
   @field  headers?: HeaderReq;
  */
 export type QueryOptions = {
+  [x: string]: any;
   branchOfficeId?: number;
   specified?: boolean;
   page?: number;

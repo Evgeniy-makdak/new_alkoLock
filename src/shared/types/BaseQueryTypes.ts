@@ -524,6 +524,7 @@ export type CreateUserData = {
 export type CreateRoleData = {
   name: string;
   permissions: IPermissions;
+  branchOfficeId?: ID;
 };
 export type ChangeRoleData = CreateRoleData;
 
