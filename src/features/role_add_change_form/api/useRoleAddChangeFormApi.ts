@@ -33,7 +33,7 @@ export const useRoleAddChangeFormApi = (id: ID) => {
 
   const { mutateAsync: createRole } = useMutation({
     mutationFn: async (data: CreateRoleData) => {
-      const response = await RolesApi.createItem(data, id);
+      const response = await RolesApi.createItem(data, branchId);
       if (response.status === StatusCode.CONFLICT) {
         enqueueSnackbar(response.detail, { variant: 'error' });
         return Promise.reject(response.detail);

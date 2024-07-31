@@ -729,5 +729,5 @@ export function getRolesListURL({ sortBy, order, page, limit, filterOptions }: Q
     queries += `&any.branchOffice.id.in=${branchId}`;
   }
 
-  return `api/user-groups?page=${page || 0}&size=${limit || 25}${queries}`;
+  return `api/user-groups?page=${page || 0}&size=${limit || 25}${queries}&sort=name`;
 }
