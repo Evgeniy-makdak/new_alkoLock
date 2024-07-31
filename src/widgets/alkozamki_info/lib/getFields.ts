@@ -1,4 +1,3 @@
-import { AppConstants } from '@app/index';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IAlcolock } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
@@ -12,8 +11,7 @@ export const getFields = (itemData: IAlcolock) => {
   const carForCopy = Formatters.carNameFormatter(itemData?.vehicleBind?.vehicle, false, false);
   const name = Formatters.nameFormatter(itemData?.vehicleBind?.createdBy);
   const date = Formatters.formatISODate(itemData?.vehicleBind?.createdAt);
-  const mode =
-    AppConstants.alkolockWorkModes.find((mode) => mode.value === itemData?.mode)?.label ?? '-';
+  const mode = itemData?.mode ?? '-';
 
   return [
     {

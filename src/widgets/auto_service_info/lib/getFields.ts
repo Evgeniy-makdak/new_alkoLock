@@ -1,4 +1,3 @@
-import { AppConstants } from '@app/index';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
@@ -26,9 +25,7 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
       label: 'Режим работы',
       type: TypeOfRows.MODE,
       value: {
-        label:
-          AppConstants.alkolockWorkModes.find((mode) => mode.value === itemData?.device?.mode)
-            ?.label ?? '-',
+        label: itemData?.device?.mode ?? '-',
       },
     },
     {
