@@ -10,9 +10,8 @@ import { getFields } from '../lib/getFields';
 export const useUserInfo = (id: ID, closeTab: () => void) => {
   const [open, toggle] = useToggle();
   const { isLoading, userData, foto, notFoundUser } = useUserInfoApi(id);
-  const src = FilesUtils.getUrlFromBlob(foto);
+  const src = foto?.size !== 0 ? FilesUtils.getUrlFromBlob(foto) : null;
   const fields = getFields(userData);
-  // console.log({foto});
 
   useEffect(() => {
     if (notFoundUser) {
