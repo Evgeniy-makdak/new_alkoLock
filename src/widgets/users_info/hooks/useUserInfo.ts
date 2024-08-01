@@ -12,7 +12,7 @@ export const useUserInfo = (id: ID, closeTab: () => void) => {
   const { isLoading, userData, foto, notFoundUser } = useUserInfoApi(id);
   const src = foto?.size !== 0 ? FilesUtils.getUrlFromBlob(foto) : null;
   const fields = getFields(userData);
-  
+
   useEffect(() => {
     if (notFoundUser) {
       closeTab();

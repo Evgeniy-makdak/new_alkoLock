@@ -45,7 +45,7 @@ export const useUsersTable = () => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const { handleCloseAside } = useUsers(); 
+  const { handleCloseAside } = useUsers();
 
   const handleClickDeletetUser = (id: ID, text?: ReactNode) => {
     setDeleteUser({

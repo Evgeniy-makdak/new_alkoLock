@@ -1,8 +1,9 @@
+import { useEffect } from 'react';
+
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { SearchMultipleSelect, type Value, type Values } from '@shared/ui/search_multiple_select';
 
 import { useCarsSelect } from '../hooks/useCarsSelect';
-import { useEffect } from 'react';
 
 interface CarsSelectProps<T> {
   testid?: string;
@@ -27,15 +28,20 @@ export function CarsSelect<T>({
   reset,
   ...rest
 }: CarsSelectProps<T>) {
-  const {value} = rest
-  const { onChange, onReset, isLoading, carList } = useCarsSelect(vieBranch, branchId, notInBranch, specified);
-  
-useEffect(() => {
-  if (carList?.length && reset) {
-    reset()
-  }
-}, [carList.length])
-if (!value) return null;
+  const { value } = rest;
+  const { onChange, onReset, isLoading, carList } = useCarsSelect(
+    vieBranch,
+    branchId,
+    notInBranch,
+    specified,
+  );
+
+  useEffect(() => {
+    if (carList?.length && reset) {
+      reset();
+    }
+  }, [carList.length]);
+  if (!value) return null;
   return (
     <SearchMultipleSelect
       onReset={onReset}

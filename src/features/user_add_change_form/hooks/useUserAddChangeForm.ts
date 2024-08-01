@@ -152,16 +152,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         //   closeModal && closeModal();
         //   setTimeout(() => {
         //     window.location.reload();
-        // }, 500); 
+        // }, 500);
         // }
-
-
         else {
           enqueueSnackbar('Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
           closeModal && closeModal();
         }
-
-
       } else {
         const response = await changeItem(userData);
         if (response.status === StatusCode.BAD_REQUEST) {
@@ -176,9 +172,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         //   closeModal && closeModal();
         //   setTimeout(() => {
         //     window.location.reload();
-        // }, 500); 
+        // }, 500);
         // }
-
         else {
           enqueueSnackbar('Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
           closeModal && closeModal();
@@ -202,16 +197,14 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             //   closeModal && closeModal();
             //   setTimeout(() => {
             //     window.location.reload();
-            // }, 500); 
+            // }, 500);
             // }
-
             else {
               enqueueSnackbar('Фото профиля успешно обновлено!', { variant: 'success' }); // Уведомление об успехе
               setTimeout(() => {
                 window.location.reload();
               }, 500);
             }
-
           } else {
             const deleteResponse = await deleteFoto();
             const isErrorDeleteFoto = deleteResponse?.isError;
@@ -225,16 +218,14 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             //   closeModal && closeModal();
             //   setTimeout(() => {
             //     window.location.reload();
-            // }, 500); 
+            // }, 500);
             // }
-
             else {
               enqueueSnackbar('Фото профиля успешно удалено!', { variant: 'success' }); // Уведомление об успехе
               setTimeout(() => {
                 window.location.reload();
               }, 500);
             }
-
           }
         }
       }

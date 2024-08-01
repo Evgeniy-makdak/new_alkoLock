@@ -715,7 +715,14 @@ export const getBranchListUrl = ({
 };
 
 ////////////////////////////////////////================================================================Roles Api
-export function getRolesListURL({sortBy, order, page, limit, filterOptions, searchQuery}: QueryOptions) {
+export function getRolesListURL({
+  sortBy,
+  order,
+  page,
+  limit,
+  filterOptions,
+  searchQuery,
+}: QueryOptions) {
   const branchId = filterOptions?.branchId;
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   let queries = '';

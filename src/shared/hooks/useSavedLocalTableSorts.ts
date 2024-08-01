@@ -43,7 +43,6 @@ export const useSavedLocalTableSorts = (
       pageSize: apiRef?.current?.state?.pagination?.paginationModel?.pageSize || 25,
     },
   });
-  
 
   const changeTableState = (stateOfTable: GridPaginationModel) => {
     setItemState({
