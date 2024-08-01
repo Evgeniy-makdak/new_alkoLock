@@ -146,9 +146,22 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
-        } else {
+        }
+        // else if (response.status === StatusCode.SUCCESS) {
+        //   enqueueSnackbar(response?.detail || 'Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
+        //   closeModal && closeModal();
+        //   setTimeout(() => {
+        //     window.location.reload();
+        // }, 500); 
+        // }
+
+
+        else {
+          enqueueSnackbar('Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
           closeModal && closeModal();
         }
+
+
       } else {
         const response = await changeItem(userData);
         if (response.status === StatusCode.BAD_REQUEST) {
@@ -157,29 +170,76 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
-        } else {
+        }
+        // else if (response.status === StatusCode.SUCCESS) {
+        //   enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
+        //   closeModal && closeModal();
+        //   setTimeout(() => {
+        //     window.location.reload();
+        // }, 500); 
+        // }
+
+        else {
+          enqueueSnackbar('Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
           closeModal && closeModal();
         }
-        // const isErrorChangeItem = response?.isError;
-        // if (isErrorChangeItem) {
-        //   enqueueSnackbar(response.detail, { variant: 'error' });
-        // } else {
-        //   closeModal && closeModal();
-        //   if (userFoto) {
-        //     const isErrorChangeFoto = (await changeFoto(userFoto))?.isError;
-        //     if (isErrorChangeFoto) {
-        //       enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
-        //     }
-        //   } else {
-        //     const isErrorDeleteFoto = (await deleteFoto())?.isError;
-        //     if (isErrorDeleteFoto) {
-        //       enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
-        //     }
-        //   }
-        // }
+
+        const isErrorChangeItem = response?.isError;
+        if (isErrorChangeItem) {
+          enqueueSnackbar(response.detail, { variant: 'error' });
+        } else {
+          closeModal && closeModal();
+          if (userFoto) {
+            const fotoResponse = await changeFoto(userFoto);
+            const isErrorChangeFoto = fotoResponse?.isError;
+            if (isErrorChangeFoto) {
+              enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+            }
+            // else if (fotoResponse.status === StatusCode.SUCCESS) {
+            //   enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
+            //     variant: 'success',
+            //   }); // Уведомление об успехе
+            //   closeModal && closeModal();
+            //   setTimeout(() => {
+            //     window.location.reload();
+            // }, 500); 
+            // }
+
+            else {
+              enqueueSnackbar('Фото профиля успешно обновлено!', { variant: 'success' }); // Уведомление об успехе
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            }
+
+          } else {
+            const deleteResponse = await deleteFoto();
+            const isErrorDeleteFoto = deleteResponse?.isError;
+            if (isErrorDeleteFoto) {
+              enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
+            }
+            // else if (deleteResponse.status === StatusCode.SUCCESS) {
+            //   enqueueSnackbar(deleteResponse?.detail || 'Фото профиля успешно удалено!', {
+            //     variant: 'success',
+            //   }); // Уведомление об успехе
+            //   closeModal && closeModal();
+            //   setTimeout(() => {
+            //     window.location.reload();
+            // }, 500); 
+            // }
+
+            else {
+              enqueueSnackbar('Фото профиля успешно удалено!', { variant: 'success' }); // Уведомление об успехе
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            }
+
+          }
+        }
       }
     } catch (error) {
-      console.error(error);
+      enqueueSnackbar('Произошла ошибка при обработке запроса', { variant: 'error' });
     }
   };
 

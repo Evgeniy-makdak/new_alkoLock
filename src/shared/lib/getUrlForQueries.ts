@@ -715,12 +715,17 @@ export const getBranchListUrl = ({
 };
 
 ////////////////////////////////////////================================================================Roles Api
-export function getRolesListURL({ sortBy, order, page, limit, filterOptions }: QueryOptions) {
+export function getRolesListURL({sortBy, order, page, limit, filterOptions, searchQuery}: QueryOptions) {
   const branchId = filterOptions?.branchId;
+  const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   let queries = '';
 
   if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
+  }
+
+  if (queryTrimmed.length) {
+    queries += `&any.name.contains=${queryTrimmed}`;
   }
 
   queries += '&any.systemGenerated.in=true';
