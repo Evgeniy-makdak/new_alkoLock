@@ -20,7 +20,7 @@ export const useUserInfo = (id: ID, closeTab: () => void) => {
     }
   }, [notFoundUser, closeTab]);
 
-  const firstLetter = (userData?.surname?.[0] || userData?.middleName?.[0])?.toUpperCase();
+  const firstLetter = userData?.surname?.[0] + userData?.firstName?.[0];
 
   return { fields, isLoading, src, open, toggle, firstLetter };
 };

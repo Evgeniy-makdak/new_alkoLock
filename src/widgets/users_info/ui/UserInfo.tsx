@@ -22,7 +22,7 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
     closeTab,
   );
 
-  console.log(src);
+  // console.log(src);
 
   return (
     <Loader isLoading={isLoading}>
@@ -35,6 +35,7 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
                 onClick={toggle}
                 className={`${style.avatar} ${src && style.paper} ${src && IMAGE_PREVIEW_WRAPPER_STYLE}`}>
                 {src ? <img src={src} /> : firstLetter}
+                {/* {firstLetter} */}
                 {src && <ImagePreview src={src} open={open} close={toggle} />}
               </Avatar>
             </Stack>
