@@ -279,7 +279,7 @@ export const getCarListURL = ({
     queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`;
   }
 
-  return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/vehicles?page=${page || 0}&size=${limit || 20}${queries}&sort=manufacturer`;
 };
 
 export const getCarSwitchBranchUrl = (options: QueryOptions, isPairSwitch: boolean) => {
