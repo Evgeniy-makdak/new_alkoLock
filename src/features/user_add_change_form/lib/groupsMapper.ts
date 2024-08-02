@@ -5,7 +5,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 export const groupsMapper = (
   user: IUser | null,
   groups: IRole[] | null,
-): { values: Values; isGlobalAdmin: boolean; isUserDriver: boolean; } => {
+): { values: Values; isGlobalAdmin: boolean; isUserDriver: boolean } => {
   let isGlobalAdmin = false;
   let isUserDriver = false;
   if (!user || !groups) return { values: [], isGlobalAdmin, isUserDriver };
