@@ -29,6 +29,10 @@ type UserAddChangeFormProps = {
 export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
   const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control } =
     useUserAddChangeForm(id, closeModal);
+    // export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
+    //   const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
+    //     useUserAddChangeForm(id, closeModal);
+
 
   return (
     <Loader isLoading={isLoading}>
@@ -41,24 +45,28 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
             <div className={style.columnsWrapper}>
               <InputsColumnWrapper classN={style.inputsColumnWrapper}>
                 <TextField
+                  disabled={isGlobalAdmin}
                   error={Boolean(state.errors.errorsurname)}
                   helperText={state.errors.errorsurname}
                   label="Фамилия"
                   {...state.register('surname')}
                 />
                 <TextField
+                  disabled={isGlobalAdmin}
                   error={Boolean(state.errors.errorFirstName)}
                   helperText={state.errors.errorFirstName}
                   label="Имя"
                   {...state.register('firstName')}
                 />
                 <TextField
+                  disabled={isGlobalAdmin}
                   error={Boolean(state.errors.errormiddleName)}
                   helperText={state.errors.errormiddleName}
                   label="Отчество"
                   {...state.register('middleName')}
                 />
                 <InputDate
+                  disabled={isGlobalAdmin}
                   label="Дата рождения"
                   testid={
                     testids.page_users.users_widget_add_user_popup
@@ -136,6 +144,8 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disableCloseOnSelect
                 />
                 <TextField
+                  disabled={isGlobalAdmin}
+                  // disabled={isGlobalAdmin || !isUserDriver}
                   helperText={state.errors.errorLicenseCode}
                   error={Boolean(state.errors.errorLicenseCode)}
                   label={'Номер ВУ'}
