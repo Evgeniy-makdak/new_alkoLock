@@ -7,7 +7,6 @@ export const findEarliestEvent = (events: IEvents) => {
 
   let earliestEvent = events.length > 3 ? events[3] : events[0];
   let earliestTime = new Date(earliestEvent.reportedAt);
-  console.log(earliestTime);
 
   events.forEach((event) => {
     const eventTime = new Date(event.occurredAt);
