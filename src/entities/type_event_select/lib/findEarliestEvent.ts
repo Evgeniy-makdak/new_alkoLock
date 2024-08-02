@@ -4,8 +4,12 @@ export const findEarliestEvent = (events: IEvents) => {
   if (!events || events.length === 0) {
     return null;
   }
+
   let earliestEvent = events.length > 3 ? events[3] : events[0];
-  let earliestTime = new Date(earliestEvent.occurredAt);
+  let earliestTime = new Date(earliestEvent.reportedAt);
+  console.log(earliestTime);
+
+
   events.forEach((event) => {
     const eventTime = new Date(event.occurredAt);
     if (eventTime < earliestTime) {
@@ -19,5 +23,11 @@ export const findEarliestEvent = (events: IEvents) => {
 
 export const getLastEvent = (event: IDeviceAction) => {
   const lastEvent = findEarliestEvent(event?.events);
-  return lastEvent?.eventType;
+
+  if (lastEvent) {
+    const eventType = lastEvent.eventType as string;
+    return eventType === 'Тестирование пройдено' ? 'Тестирование' : eventType;
+  }
+
+  return null;
 };

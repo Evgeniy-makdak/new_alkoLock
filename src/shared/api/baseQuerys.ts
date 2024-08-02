@@ -331,6 +331,9 @@ export class RolesApi {
     return getQuery<IRole[]>({
       url: getRolesListURL(options),
     });
+    // return getQuery<{content: IRole[], totalElements: number}>({
+    //   url: getRolesListURL(options),
+    // });
   }
   static getItem(id: ID) {
     return getQuery<IRole>({ url: `api/user-groups/${id}` });

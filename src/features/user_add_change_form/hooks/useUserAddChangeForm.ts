@@ -27,6 +27,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto, deleteFoto } =
     useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin } = groupsMapper(user, groups);
+  // const { values, isGlobalAdmin } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
