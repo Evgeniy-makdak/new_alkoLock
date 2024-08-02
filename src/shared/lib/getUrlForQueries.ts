@@ -732,7 +732,7 @@ export function getRolesListURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.name.contains=${queryTrimmed}`;
+    queries += `&all.name.contains=${queryTrimmed}`;
   }
 
   queries += '&any.systemGenerated.in=true';
