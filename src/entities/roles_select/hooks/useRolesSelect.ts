@@ -16,10 +16,10 @@ export const useRolesSelect = (notShowGlobalAdminRole = true) => {
   const onReset = () => {
     setSearchQuery('');
   };
-console.log('isLoading:' ,isLoading);
+  console.log('isLoading:', isLoading);
 
   const roles = mapOptions(data, (role) => adapterMapOptions(role, notShowGlobalAdminRole));
-  console.log('roles:' ,roles);
-  console.log('data:' ,data);
+  console.log('roles:', roles);
+  console.log('data:', data);
   return { onChange, isLoading, onReset, roles };
 };

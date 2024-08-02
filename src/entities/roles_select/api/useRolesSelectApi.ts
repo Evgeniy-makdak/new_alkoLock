@@ -7,7 +7,7 @@ export const useRolesSelectApi = (options: QueryOptions) => {
   const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLES_LIST], RolesApi.getList, {
     options,
   });
-console.log('dataIn:' , data);
+  console.log('dataIn:', data);
 
   return { data: data?.data || [], isLoading };
   // return { data: data?.data.content || [], isLoading };
