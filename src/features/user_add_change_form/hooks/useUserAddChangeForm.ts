@@ -7,6 +7,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
@@ -118,6 +119,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     avatar,
   ]);
 
+  async function clearCache() {
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      await caches.delete(cacheName);
+    }
+  }
+
   const onSubmit = async (data: Form) => {
     const licenseClass = (data?.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data?.licenseIssueDate);
@@ -147,6 +155,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
+          clearCache();
         }
         // else if (response.status === StatusCode.SUCCESS) {
         //   enqueueSnackbar(response?.detail || 'Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
@@ -157,7 +166,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         // }
         else {
           enqueueSnackbar('Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
-          closeModal && closeModal();
+          await caches.open('v1').then(function(cache) {
+            cache.delete('/images/image.png').then(function(_) {
+              closeModal && closeModal();
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            });
+            clearCache();
+          });
         }
       } else {
         const response = await changeItem(userData);
@@ -169,10 +186,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           });
         } else if (response.status === StatusCode.SUCCESS) {
           enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
-          closeModal && closeModal();
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+          await caches.open('v1').then(function(cache) {
+            cache.delete('/images/image.png').then(function(_) {
+              closeModal && closeModal();
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            });
+            clearCache();
+          });
         }
         // else {
         //   enqueueSnackbar('Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
@@ -183,7 +205,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         if (isErrorChangeItem) {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
-          closeModal && closeModal();
+          await caches.open('v1').then(function(cache) {
+            cache.delete('/images/image.png').then(function(_) {
+              closeModal && closeModal();
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            });
+            clearCache();
+          });
           if (userFoto) {
             const fotoResponse = await changeFoto(userFoto);
             const isErrorChangeFoto = fotoResponse?.isError;
@@ -192,11 +222,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             } else if (fotoResponse.status === StatusCode.SUCCESS) {
               enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
                 variant: 'success',
-              }); // Уведомление об успехе
-              closeModal && closeModal();
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
+              }); 
+              await caches.open('v1').then(function(cache) {
+                cache.delete('/images/image.png').then(function(_) {
+                  closeModal && closeModal();
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 500);
+                });
+                clearCache();
+              });
             } else {
               // enqueueSnackbar('Фото профиля успешно обновлено!', { variant: 'success' }); // Уведомление об успехе
               // setTimeout(() => {
@@ -211,16 +246,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             } else if (deleteResponse.status === StatusCode.SUCCESS) {
               enqueueSnackbar(deleteResponse?.detail || 'Фото профиля успешно удалено!', {
                 variant: 'success',
-              }); // Уведомление об успехе
-              closeModal && closeModal();
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
-            } else {
-              enqueueSnackbar('Фото профиля успешно удалено!', { variant: 'success' }); // Уведомление об успехе
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
+              });
+              
+              await caches.open('v1').then(function(cache) {
+                cache.delete('/images/image.png').then(function(_) {
+                  closeModal && closeModal();
+                  // setTimeout(() => {
+                  //   window.location.reload();
+                  // }, 500);
+                });
+              });
             }
           }
         }
@@ -253,12 +288,18 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     },
   };
 
+  const isDriver =
+    isUserDriver ||
+    stateOfForm.state.userGroups?.find((elem) =>
+      elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
+    );
+
   return {
     control,
     state,
     isLoading,
     isGlobalAdmin,
-    isUserDriver,
+    isUserDriver: isDriver,
     accessList: initUser.accessList,
     closeAlert,
     alert,

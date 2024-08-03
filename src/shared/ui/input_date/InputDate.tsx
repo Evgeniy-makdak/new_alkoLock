@@ -12,6 +12,7 @@ import { MuiLocalizationProvider } from '@shared/components/mui_localization_pro
 interface InputDateProps extends DatePickerProps<Dayjs> {
   testid?: string;
 }
+
 dayjs.extend(updateLocale);
 dayjs.updateLocale('ru', {
   weekStart: 1,
@@ -84,15 +85,17 @@ const newTheme = (theme?: Theme) => ({
 });
 
 export const InputDate: FC<MyInputDateProps> = (props) => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const theme = props.theme || {};
   const myTheme = createTheme(newTheme() as Theme);
   const textFieldProps = props?.slotProps?.textField || {};
+  const maxDate = dayjs().subtract(1, 'day');
+
   return (
     <MuiLocalizationProvider>
       <ThemeProvider theme={{ ...myTheme, ...theme }}>
         <DatePicker
           {...props}
+          maxDate={maxDate}
           slots={{
             actionBar: CustomMenuItem,
           }}
@@ -100,30 +103,29 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
             field: { clearable: true },
             actionBar: {
               actions: ['clear'],
-              id: `ACTION_BAR`,
+              id: 'ACTION_BAR',
             },
             popper: {
               id: `POPER ${props.testid}_POPER`,
             },
-
             openPickerButton: {
-              id: `OPEN_PICKER_BUTTON`,
+              id: 'OPEN_PICKER_BUTTON',
             },
             nextIconButton: {
-              id: `NEXT_ICON_BUTTON`,
+              id: 'NEXT_ICON_BUTTON',
             },
             previousIconButton: {
-              id: `PREVIOUS_ICON_BUTTON`,
+              id: 'PREVIOUS_ICON_BUTTON',
             },
             switchViewButton: {
-              id: `SWITCH_VIEW_BUTTON`,
+              id: 'SWITCH_VIEW_BUTTON',
             },
             textField: {
               ...textFieldProps,
               id: `TEXT_FIELD ${props.testid}_TEXT_FIELD`,
             },
             clearButton: {
-              id: `CLEAR_BUTTON`,
+              id: 'CLEAR_BUTTON',
             },
           }}
         />

@@ -27,11 +27,8 @@ type UserAddChangeFormProps = {
 };
 
 export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
-  const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control } =
+  const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
     useUserAddChangeForm(id, closeModal);
-  // export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
-  //   const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
-  //     useUserAddChangeForm(id, closeModal);
 
   return (
     <Loader isLoading={isLoading}>
@@ -143,8 +140,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disableCloseOnSelect
                 />
                 <TextField
-                  disabled={isGlobalAdmin}
-                  // disabled={isGlobalAdmin || !isUserDriver}
+                  disabled={isGlobalAdmin || !isUserDriver}
                   helperText={state.errors.errorLicenseCode}
                   error={Boolean(state.errors.errorLicenseCode)}
                   label={'Номер ВУ'}
