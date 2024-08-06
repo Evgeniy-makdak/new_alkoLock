@@ -43,7 +43,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     formState,
     reset,
   } = useForm({
-    resolver: yupResolver(schema(id)),
+    resolver: yupResolver(schema(id, isGlobalAdmin)),
     defaultValues: initUser.defaultValues,
   });
   useEffect(() => {

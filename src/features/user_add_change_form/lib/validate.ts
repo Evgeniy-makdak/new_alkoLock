@@ -107,7 +107,7 @@ const mustBeDate = (context: YupContext) => {
   return licenseCode && licenseCode?.trim() > 0;
 };
 
-export const schema = (id: ID): yup.ObjectSchema<Form> =>
+export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =>
   yup.object({
     licenseClass: yup.array().test({
       name: 'licenseClass',
@@ -119,7 +119,7 @@ export const schema = (id: ID): yup.ObjectSchema<Form> =>
       },
     }),
     firstName: yup.string().required(ValidationMessages.required),
-    surname: yup.string().required(ValidationMessages.required),
+    surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //@ts-ignore
