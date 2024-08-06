@@ -9,6 +9,7 @@ export const useDeleteUserForm = (id: ID, closeModal: () => void, closeAside: ()
     await mutate(id);
     closeModal();
     closeAside();
+    window.location.reload();
   };
 
   return handleDelete;
