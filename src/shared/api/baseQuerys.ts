@@ -328,12 +328,9 @@ export class BranchApi {
 
 export class RolesApi {
   static getList(options: QueryOptions) {
-    return getQuery<IRole[]>({
+    return getQuery<{content: IRole[], totalElements: number}>({
       url: getRolesListURL(options),
     });
-    // return getQuery<{content: IRole[], totalElements: number}>({
-    //   url: getRolesListURL(options),
-    // });
   }
   static getItem(id: ID) {
     return getQuery<IRole>({ url: `api/user-groups/${id}` });

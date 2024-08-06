@@ -14,6 +14,7 @@ import { AppAlert } from '@shared/ui/alert';
 import { Button } from '@shared/ui/button';
 import { FieldSelect } from '@shared/ui/field_select';
 import { InputDate } from '@shared/ui/input_date/InputDate';
+import { InputDateBirth } from '@shared/ui/input_date/InputDateBirth';
 import { Loader } from '@shared/ui/loader';
 import { PhoneInput } from '@shared/ui/phone_input';
 
@@ -61,7 +62,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   label="Отчество"
                   {...state.register('middleName')}
                 />
-                <InputDate
+                <InputDateBirth
                   disabled={isGlobalAdmin}
                   label="Дата рождения"
                   testid={
@@ -109,7 +110,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                       .USERS_WIDGET_ADD_USER_POPUP_ACCESS_INPUT
                   }
                   onChange={state.handlers.onChangeAccess}
-                  selectProps={{ value: state.state.disabled }}
+                  selectProps={{ disabled: isGlobalAdmin, value: state.state.disabled }}
                   options={accessList}
                 />
                 <UploadImg

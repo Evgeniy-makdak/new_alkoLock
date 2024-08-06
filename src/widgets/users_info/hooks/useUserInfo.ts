@@ -19,7 +19,11 @@ export const useUserInfo = (id: ID, closeTab: () => void) => {
     }
   }, [notFoundUser, closeTab]);
 
-  const firstLetter = userData?.surname?.[0] + userData?.firstName?.[0];
+  // Условный рендеринг инициалов
+  const firstLetter =
+    userData && userData.surname && userData.firstName
+      ? userData.surname[0] + userData.firstName[0]
+      : null;
 
   return { fields, isLoading, src, open, toggle, firstLetter };
 };
