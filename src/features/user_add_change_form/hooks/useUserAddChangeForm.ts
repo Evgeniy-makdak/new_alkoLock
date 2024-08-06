@@ -155,24 +155,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
           clearCache();
-        } else if (response.status === StatusCode.SUCCESS) {
-          enqueueSnackbar(response?.detail || 'Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
-          closeModal && closeModal();
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-          // }
-          // else {
-          //   enqueueSnackbar('Профиль успешно создан!', { variant: 'success' }); // Уведомление об успехе
-          //   await caches.open('v1').then(function(cache) {
-          //     cache.delete('/images/image.png').then(function(_) {
-          //       closeModal && closeModal();
-          //       setTimeout(() => {
-          //         window.location.reload();
-          //       }, 500);
-          // });
-          //   clearCache();
-          // });
+        } else {
+          await caches.open('v1').then(function (cache) {
+            cache.delete('/images/image.png').then(function (_) {
+              closeModal && closeModal();
+            });
+            clearCache();
+          });
         }
       } else {
         const response = await changeItem(userData);
@@ -183,7 +172,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
+          // enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
           await caches.open('v1').then(function (cache) {
             cache.delete('/images/image.png').then(function (_) {
               closeModal && closeModal();
@@ -194,10 +183,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             clearCache();
           });
         }
-        // else {
-        //   enqueueSnackbar('Профиль успешно обновлён!', { variant: 'success' }); // Уведомление об успехе
-        //   closeModal && closeModal();
-        // }
 
         const isErrorChangeItem = response?.isError;
         if (isErrorChangeItem) {
@@ -216,11 +201,11 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             const fotoResponse = await changeFoto(userFoto);
             const isErrorChangeFoto = fotoResponse?.isError;
             if (isErrorChangeFoto) {
-              enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+              // enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
             } else if (fotoResponse.status === StatusCode.SUCCESS) {
-              enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
-                variant: 'success',
-              });
+              // enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
+              //   variant: 'success',
+              // });
               await caches.open('v1').then(function (cache) {
                 cache.delete('/images/image.png').then(function (_) {
                   closeModal && closeModal();
@@ -232,19 +217,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
               });
             } else {
               // enqueueSnackbar('Фото профиля успешно обновлено!', { variant: 'success' }); // Уведомление об успехе
-              // setTimeout(() => {
-              //   window.location.reload();
-              // }, 500);
             }
           } else {
             const deleteResponse = await deleteFoto();
             const isErrorDeleteFoto = deleteResponse?.isError;
             if (isErrorDeleteFoto) {
-              enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
+              // enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
             } else if (deleteResponse.status === StatusCode.SUCCESS) {
-              enqueueSnackbar(deleteResponse?.detail || 'Фото профиля успешно удалено!', {
-                variant: 'success',
-              });
+              // enqueueSnackbar(deleteResponse?.detail || 'Фото профиля успешно удалено!', {
+              //   variant: 'success',
+              // });
 
               await caches.open('v1').then(function (cache) {
                 cache.delete('/images/image.png').then(function (_) {
