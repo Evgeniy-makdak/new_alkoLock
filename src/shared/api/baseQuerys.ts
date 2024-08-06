@@ -301,7 +301,11 @@ export class AccountApi {
 
 export class BranchApi {
   static getBranchList(options: QueryOptions) {
-    return getQuery<IBranch[]>({ url: getBranchListUrl(options) || '' });
+    return getQuery<{
+      find(arg0: (branchInBase: { id: ID }) => boolean): unknown;
+      content: IBranch[];
+      totalElements: number;
+    }>({ url: getBranchListUrl(options) || '' });
   }
   static createBranch(name: string) {
     return postQuery<IBranch, { name: string }>({ data: { name }, url: `api/branch-offices` });
@@ -328,7 +332,7 @@ export class BranchApi {
 
 export class RolesApi {
   static getList(options: QueryOptions) {
-    return getQuery<{content: IRole[], totalElements: number}>({
+    return getQuery<{ content: IRole[]; totalElements: number }>({
       url: getRolesListURL(options),
     });
   }
