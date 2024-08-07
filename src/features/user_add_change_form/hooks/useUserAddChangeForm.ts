@@ -176,9 +176,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           await caches.open('v1').then(function (cache) {
             cache.delete('/images/image.png').then(function (_) {
               closeModal && closeModal();
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
             });
             clearCache();
           });
@@ -191,9 +188,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           await caches.open('v1').then(function (cache) {
             cache.delete('/images/image.png').then(function (_) {
               closeModal && closeModal();
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
             });
             clearCache();
           });
@@ -209,9 +203,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
               await caches.open('v1').then(function (cache) {
                 cache.delete('/images/image.png').then(function (_) {
                   closeModal && closeModal();
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 500);
                 });
                 clearCache();
               });
@@ -231,9 +222,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
               await caches.open('v1').then(function (cache) {
                 cache.delete('/images/image.png').then(function (_) {
                   closeModal && closeModal();
-                  // setTimeout(() => {
-                  //   window.location.reload();
-                  // }, 500);
                 });
               });
             }

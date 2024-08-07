@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Button, Stack, Tooltip, Typography } from '@mui/material';
+
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
+import { Button, Stack, Tooltip, Typography } from '@mui/material';
 
 import { MenuButton } from '@features/menu_button';
 import { NavbarBranchSelect } from '@features/nav_bar_branch_select';
@@ -34,9 +35,9 @@ export const NavBar = () => {
 
   useEffect(() => {
     fetch('/api/backend-version')
-      .then(response => response.json())
-      .then(data => setBackendVersion(data.version))
-      .catch(error => console.error('Error fetching backend version:', error));
+      .then((response) => response.json())
+      .then((data) => setBackendVersion(data.version))
+      .catch((error) => console.error('Error fetching backend version:', error));
   }, []);
 
   return (
@@ -78,6 +79,8 @@ export const NavBar = () => {
                 );
               })}
             </div>
+          </div>
+          <div>
             {!state && (
               <div className={style.versionContainer}>
                 <div className={style.versionItem}>
@@ -92,26 +95,26 @@ export const NavBar = () => {
                 </div>
               </div>
             )}
+            <Stack gap={1}>
+              <MenuButton
+                tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
+                collops={state}
+                email={email}
+                close={close}
+                toggleModal={toggle}
+              />
+              <Button
+                onClick={handleCollops}
+                className={`${style.navBarButton} ${!state && style.between}`}>
+                {!state && (
+                  <span className={`${state && style.textCollops} ${style.text}`}>Скрыть</span>
+                )}
+                <span className={`${state && style.collops} ${style.openedCollops}`}>
+                  <ArrowBackIosNewOutlinedIcon />
+                </span>
+              </Button>
+            </Stack>
           </div>
-          <Stack gap={1}>
-            <MenuButton
-              tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
-              collops={state}
-              email={email}
-              close={close}
-              toggleModal={toggle}
-            />
-            <Button
-              onClick={handleCollops}
-              className={`${style.navBarButton} ${!state && style.between}`}>
-              {!state && (
-                <span className={`${state && style.textCollops} ${style.text}`}>Скрыть</span>
-              )}
-              <span className={`${state && style.collops} ${style.openedCollops}`}>
-                <ArrowBackIosNewOutlinedIcon />
-              </span>
-            </Button>
-          </Stack>
         </div>
       </div>
       <Popup
