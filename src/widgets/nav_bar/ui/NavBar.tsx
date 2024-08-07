@@ -1,7 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-
+import { Button, Stack, Tooltip, Typography } from '@mui/material';
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
-import { Button, Stack, Tooltip } from '@mui/material';
 
 import { MenuButton } from '@features/menu_button';
 import { NavbarBranchSelect } from '@features/nav_bar_branch_select';
@@ -14,7 +14,7 @@ import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
 import { Popup } from '@shared/ui/popup';
 
-import { NAV_LINKS } from '../config/const';
+import { NAV_LINKS, frontendVersion } from '../config/const';
 import { tooltipStyle } from '../config/styles';
 import { useNavBar } from '../hooks/useNavBar';
 import style from './NavBar.module.scss';
@@ -29,6 +29,16 @@ export const NavBar = () => {
   const handleCollops = () => {
     setItemState(!state);
   };
+
+  const [backendVersion, setBackendVersion] = useState('');
+
+  useEffect(() => {
+    fetch('/api/backend-version')
+      .then(response => response.json())
+      .then(data => setBackendVersion(data.version))
+      .catch(error => console.error('Error fetching backend version:', error));
+  }, []);
+
   return (
     <>
       <div className={`${state ? style.navBarCollops : style.navBarOpen} ${style.wrapper}`}>
@@ -68,6 +78,20 @@ export const NavBar = () => {
                 );
               })}
             </div>
+            {!state && (
+              <div className={style.versionContainer}>
+                <div className={style.versionItem}>
+                  <Typography variant="inherit" className={style.versionText}>
+                    frontend v: {frontendVersion}
+                  </Typography>
+                </div>
+                <div className={style.versionItem}>
+                  <Typography variant="inherit" className={style.versionText}>
+                    backend v: {backendVersion}
+                  </Typography>
+                </div>
+              </div>
+            )}
           </div>
           <Stack gap={1}>
             <MenuButton
