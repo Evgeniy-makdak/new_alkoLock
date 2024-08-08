@@ -1,4 +1,3 @@
-import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
 import type { ImageState, ImageStateInStore, ImagesStateInStore } from '@entities/upload_img';
@@ -56,30 +55,29 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const notSavedImage = userImages.filter((image) => !image.isSavedInDataBase);
     const savedImage = userImages.filter((image) => image.isSavedInDataBase);
     if (notSavedImage.length !== imagesIds.length) {
-      enqueueSnackbar('Ошибка сохранения фотографий', { variant: 'error' });
-
       set((prev) => ({ ...prev, usersImages: { ...state, [userId]: savedImage } }));
       return;
     }
-
     const newState: ImagesStateInStore = [];
     for (const image of notSavedImage) {
       const imageId = imagesIds.find((imageId) => {
         return imageId.hash === image.hash;
       });
-
+  
       if (!imageId) {
-        enqueueSnackbar('Ошибка сохранения фотографий', { variant: 'error' });
         state[userId] = savedImage;
         set({ usersImages: { ...state, [userId]: savedImage } });
         return;
       }
-      newState.push({
-        ...image,
-        isSavedInDataBase: true,
-        hash: imageId?.hash,
-        id: imageId?.id,
-      });
+  
+      if (imageId) {
+        newState.push({
+          ...image,
+          isSavedInDataBase: true,
+          hash: imageId.hash, 
+          id: imageId.id, 
+        });
+      }
     }
 
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: [...newState, ...savedImage] } }));
@@ -98,9 +96,8 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newImageState } }));
   },
-  imageHasNoUpload: (userId, message) => {
+  imageHasNoUpload: (userId) => {
     if (!userId) return;
-    enqueueSnackbar(message ? message : 'Ошибка загрузки фотографий', { variant: 'error' });
     const state = get().usersImages;
     const newImages = (state[userId] || []).filter((imageState) => imageState.isSavedInDataBase);
 

@@ -7,6 +7,7 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
+import { enqueueSnackbar } from 'notistack';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
@@ -16,29 +17,40 @@ export const useUserAddFoto = (userId: ID) => {
     setUploadImage([]);
   };
 
+  async function clearCache() {
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      await caches.delete(cacheName);
+    }
+  }
+
   const onSubmit = async () => {
     setNotSavedImageInDataBase(uploadImage, userId);
-    const reqBody = new FormData();
+
     for (const image of uploadImage) {
+      const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
+
+      const result = await addPhoto(reqBody);
+      const status = result?.status;
+      const message = result?.detail;
+      const isErrorStatus =
+        status === StatusCode.BAD_REQUEST ||
+        status === StatusCode.SERVER_ERROR ||
+        status === StatusCode.NOT_FOUND;
+      if (result?.isError || isErrorStatus) {
+        imageHasNoUpload(userId, message);
+        clearCache();
+        enqueueSnackbar(message, { variant: 'error' });
+      } else {
+        imageHasUpload(result?.data, userId);
+      }
     }
 
-    const result = await addPhoto(reqBody);
-    const status = result?.status;
-    const message = result?.message;
-    const isErrorStatus =
-      status === StatusCode.BAD_REQUEST ||
-      status === StatusCode.SERVER_ERROR ||
-      status === StatusCode.NOT_FOUND;
-    if (result?.isError || isErrorStatus) {
-      imageHasNoUpload(userId, message);
-    } else {
-      imageHasUpload(result?.data, userId);
-      reset();
-    }
+    reset();
   };
-
+  
   return {
     uploadImage,
     setUploadImage,

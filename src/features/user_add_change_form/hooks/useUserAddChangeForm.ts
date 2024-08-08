@@ -25,7 +25,7 @@ import { type Form, type KeyForm, schema } from '../lib/validate';
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const firstRender = useRef(true);
-  const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto, deleteFoto } =
+  const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto } =
     useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
@@ -154,14 +154,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
-          clearCache();
         } else {
-          await caches.open('v1').then(function (cache) {
-            cache.delete('/images/image.png').then(function (_) {
-              closeModal && closeModal();
-            });
-            clearCache();
-          });
+          closeModal && closeModal();
         }
       } else {
         const response = await changeItem(userData);
@@ -173,58 +167,24 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           });
         } else if (response.status === StatusCode.SUCCESS) {
           // enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
-          await caches.open('v1').then(function (cache) {
-            cache.delete('/images/image.png').then(function (_) {
-              closeModal && closeModal();
-            });
-            clearCache();
-          });
+          closeModal && closeModal();
         }
-
         const isErrorChangeItem = response?.isError;
         if (isErrorChangeItem) {
-          // enqueueSnackbar('response.detail', { variant: 'error' }); // ТУТ УБРАТЬ!
+          enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
-          await caches.open('v1').then(function (cache) {
-            cache.delete('/images/image.png').then(function (_) {
-              closeModal && closeModal();
-            });
-            clearCache();
-          });
+          closeModal && closeModal();
           if (userFoto) {
             const fotoResponse = await changeFoto(userFoto);
             const isErrorChangeFoto = fotoResponse?.isError;
             if (isErrorChangeFoto) {
-              // enqueueSnackbar('Ошибка сохранения фото профиля', { variant: 'error' });
+              //
             } else if (fotoResponse.status === StatusCode.SUCCESS) {
               // enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
               //   variant: 'success',
               // });
-              await caches.open('v1').then(function (cache) {
-                cache.delete('/images/image.png').then(function (_) {
-                  closeModal && closeModal();
-                });
-                clearCache();
-              });
-            } else {
-              // enqueueSnackbar('Фото профиля успешно обновлено!', { variant: 'success' }); // Уведомление об успехе
-            }
-          } else {
-            const deleteResponse = await deleteFoto();
-            const isErrorDeleteFoto = deleteResponse?.isError;
-            if (isErrorDeleteFoto) {
-              // enqueueSnackbar('Ошибка удаления фото профиля', { variant: 'error' });
-            } else if (deleteResponse.status === StatusCode.SUCCESS) {
-              // enqueueSnackbar(deleteResponse?.detail || 'Фото профиля успешно удалено!', {
-              //   variant: 'success',
-              // });
-
-              await caches.open('v1').then(function (cache) {
-                cache.delete('/images/image.png').then(function (_) {
-                  closeModal && closeModal();
-                });
-              });
-            }
+              clearCache();
+            } 
           }
         }
       }

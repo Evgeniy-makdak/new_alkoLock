@@ -117,13 +117,13 @@ export class UsersApi {
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
-  static deleteUserImages(userId: ID) {
-    const url = `api/v1/users/photos/${userId}/delete-all`;
+  // static deleteUserImages(userId: ID) {
+  //   const url = `api/v1/users/photos/${userId}/delete-all`;
 
-    const response = deleteQuery({ url });
+  //   const response = deleteQuery({ url });
 
-    return response;
-  }
+  //   return response;
+  // }
   static getList(options: QueryOptions, widthCars = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
       url: getUserListURL(options, widthCars),
