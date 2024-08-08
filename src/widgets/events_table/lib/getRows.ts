@@ -12,8 +12,12 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
     return (Array.isArray(data) ? data : []).map((item) => {
       const occurredAt = typeof item.occurredAt === 'string' ? item.occurredAt : undefined;
       const typeOfEvent: string = item.events[3]?.eventType ?? item.events[0].eventType;
+
+      // Замена на "Тестирование"
       const formattedTypeOfEvent =
-        typeOfEvent === 'Тестирование пройдено' ? 'Тестирование' : typeOfEvent;
+        typeOfEvent === 'Тестирование пройдено' || typeOfEvent === 'Ошибка при тестировании'
+          ? 'Тестирование'
+          : typeOfEvent;
 
       return {
         id: item.id,
