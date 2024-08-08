@@ -63,19 +63,19 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       const imageId = imagesIds.find((imageId) => {
         return imageId.hash === image.hash;
       });
-  
+
       if (!imageId) {
         state[userId] = savedImage;
         set({ usersImages: { ...state, [userId]: savedImage } });
         return;
       }
-  
+
       if (imageId) {
         newState.push({
           ...image,
           isSavedInDataBase: true,
-          hash: imageId.hash, 
-          id: imageId.id, 
+          hash: imageId.hash,
+          id: imageId.id,
         });
       }
     }

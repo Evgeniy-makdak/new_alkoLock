@@ -38,7 +38,6 @@ export const useUploadImg = (
   const [stateDrop, setDropState] = useState<DragState>(DragState.LEAVE);
 
   const handleLoadImg = async (files: FileList) => {
-    
     if (!files || files?.length < 1) return;
     const filesLength = files.length;
     const stateLength = images?.length;
