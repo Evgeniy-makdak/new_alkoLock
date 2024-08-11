@@ -87,7 +87,8 @@ export const NavBar = () => {
                 </div>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    {/* backend v: {data} */}
+                    backend v:
+                     {/* {data}  */}
                   </Typography>
                 </div>
               </div>
