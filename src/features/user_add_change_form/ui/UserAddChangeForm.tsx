@@ -153,7 +153,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_ADD_INPUT
                   }
-                  disabled={state?.state.disableDriverInfo}
+                  disabled={state?.state.disableDriverInfo || !isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseIssueDate),
@@ -170,7 +170,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_END_INPUT
                   }
-                  disabled={state.state.disableDriverInfo}
+                  disabled={state.state.disableDriverInfo || !isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseExpirationDate),

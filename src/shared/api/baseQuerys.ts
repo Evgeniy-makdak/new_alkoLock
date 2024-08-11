@@ -297,6 +297,10 @@ export class AccountApi {
   static getAccountData() {
     return getQuery<IAccount>({ url: `api/account` });
   }
+
+  static getBackandVersion() {
+    return getQuery<unknown>({ url: `api/backend-version` });
+  }
 }
 
 export class BranchApi {

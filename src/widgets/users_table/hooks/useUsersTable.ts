@@ -1,6 +1,5 @@
 import { type ReactNode, useState } from 'react';
 
-import { useUsers } from '@pages/users/hooks/useUsers';
 import { InputSearchDelay, Permissions } from '@shared/config/permissionsEnums';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
@@ -15,7 +14,7 @@ import { useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useUsersTableStore } from '../model/usersTableStore';
 
-export const useUsersTable = () => {
+export const useUsersTable = (handleCloseAside: () => void) => {
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.USERS_TABLE,
   );
@@ -45,7 +44,7 @@ export const useUsersTable = () => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const { handleCloseAside } = useUsers();
+  // const { handleCloseAside } = useUsers();
 
   const handleClickDeletetUser = (id: ID, text?: ReactNode) => {
     setDeleteUser({

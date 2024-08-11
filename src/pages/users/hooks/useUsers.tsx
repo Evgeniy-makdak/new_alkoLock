@@ -13,7 +13,9 @@ export const useUsers = () => {
   const [selectedUserId, setSelectedUserId] = useState<ID | null>(null);
 
   const onClickRow = (id: ID) => setSelectedUserId(id);
-  const handleCloseAside = () => setSelectedUserId(null);
+  const handleCloseAside = () => {
+    setSelectedUserId(null);
+  };
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.USER_LIST_TABLE]);
 
   const tabs = [
