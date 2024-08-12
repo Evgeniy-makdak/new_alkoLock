@@ -36,6 +36,8 @@ export const NavBar = () => {
     triggerOnBranchChange: false,
   });
 
+  const backendVersion = data?.data as string;
+
   return (
     <>
       <div className={`${state ? style.navBarCollops : style.navBarOpen} ${style.wrapper}`}>
@@ -86,8 +88,7 @@ export const NavBar = () => {
                 </div>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    backend v:
-                    {data?.detail}
+                    backend v: {backendVersion}
                   </Typography>
                 </div>
               </div>
