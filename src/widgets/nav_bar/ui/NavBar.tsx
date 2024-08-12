@@ -35,7 +35,6 @@ export const NavBar = () => {
   const { data } = useConfiguredQuery([QueryKeys.BACKEND_VERSION], AccountApi.getBackandVersion, {
     triggerOnBranchChange: false,
   });
-  console.log(data);
 
   return (
     <>
@@ -88,7 +87,7 @@ export const NavBar = () => {
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
                     backend v:
-                     {/* {data}  */}
+                    {data?.detail}
                   </Typography>
                 </div>
               </div>
