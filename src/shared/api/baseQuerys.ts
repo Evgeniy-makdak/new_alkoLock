@@ -299,7 +299,7 @@ export class AccountApi {
   }
 
   static getBackandVersion() {
-    return getQuery<unknown>({ url: `api/backend-version` });
+    return getQuery<unknown>({ url: `api/v1/backend-version` });
   }
 }
 
