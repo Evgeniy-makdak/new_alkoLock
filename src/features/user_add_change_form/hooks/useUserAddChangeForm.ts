@@ -31,7 +31,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const [alert, setAlert] = useState(false);
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
-  console.log(isUserDriver);
 
   const {
     register,
@@ -232,8 +231,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     stateOfForm.state.userGroups?.find((elem) =>
       elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
     );
-
-  console.log(isDriver);
 
   return {
     control,

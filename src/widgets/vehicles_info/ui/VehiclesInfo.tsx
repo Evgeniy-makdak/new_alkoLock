@@ -17,7 +17,7 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
   const { isLoading, fields } = useVehiclesInfo(selectedCarId, closeTab);
 
   useEffect(() => {
-    console.log('Fields in VehiclesInfo:', fields);
+    // console.log('Fields in VehiclesInfo:', fields);
   }, [fields]);
 
   return (

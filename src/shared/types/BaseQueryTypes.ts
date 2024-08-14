@@ -469,6 +469,12 @@ export interface ChangeCarBody {
   color: ID;
 }
 
+export interface VehicleColor {
+  key: any;
+  label: string;
+  value: number;
+}
+
 export interface CreateAlcolockData {
   vehicleId?: ID;
   branchId: ID;

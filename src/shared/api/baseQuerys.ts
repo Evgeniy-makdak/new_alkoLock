@@ -196,6 +196,10 @@ export class CarsApi {
   static switchBranch(options: QueryOptions, isPairSwitch: boolean) {
     return postQuery<ICar, unknown>({ url: getCarSwitchBranchUrl(options, isPairSwitch) });
   }
+  static async getVehicleColors() {
+    const response = await getQuery({ url: `api/v1/front-data/vehicle-color` });
+    return response.data;
+  }
 }
 
 export class AlcolocksApi {

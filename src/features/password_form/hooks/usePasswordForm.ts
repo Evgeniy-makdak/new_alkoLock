@@ -22,7 +22,6 @@ export const usePasswordForm = (close: () => void) => {
 
   const currentPasswordError = currentPassword ? currentPassword?.message : '';
   const newPasswordError = newPassword ? newPassword?.message : '';
-  console.log(currentPassword);
 
   const { changePassword } = usePasswordFormApi();
 
