@@ -270,14 +270,14 @@ export class EventsApi {
   }: ActivateServiceModeOptions) {
     const requestData = isDeactivate
       ? {
-        deviceId,
-        type: 'SERVICE_MODE_DEACTIVATE',
-      }
+          deviceId,
+          type: 'SERVICE_MODE_DEACTIVATE',
+        }
       : {
-        duration: duration * 3600,
-        deviceId,
-        type: 'SERVICE_MODE_ACTIVATE',
-      };
+          duration: duration * 3600,
+          deviceId,
+          type: 'SERVICE_MODE_ACTIVATE',
+        };
     return postQuery<IDeviceAction, unknown>({ url: `api/device-actions`, data: requestData });
   }
   static cancelActivateService(id: ID) {

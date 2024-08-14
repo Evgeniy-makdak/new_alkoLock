@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
+
+import { CarsApi } from '@shared/api/baseQuerys';
 import { ID } from '@shared/types/BaseQueryTypes';
-import { CarsApi } from '@shared/api/baseQuerys'; // Импортируйте CarsApi из нужного пути
+
+// Импортируйте CarsApi из нужного пути
 import { useVehiclesInfoApi } from '../api/useVehiclesInfoApi';
 import { getFields } from '../lib/getFields';
 
@@ -19,12 +22,15 @@ export const useVehiclesInfo = (id: ID, closeTab: () => void) => {
       try {
         const response = await CarsApi.getVehicleColors();
         const colors = response.data as unknown as Color[];
-        const colorMapping = colors.reduce<{ [key: string]: string }>((acc: { [x: string]: any; }, color: { key: string | number; value: any; }) => {
-          acc[color.key] = color.value;
-console.log(color);
+        const colorMapping = colors.reduce<{ [key: string]: string }>(
+          (acc: { [x: string]: any }, color: { key: string | number; value: any }) => {
+            acc[color.key] = color.value;
+            console.log(color);
 
-          return acc;
-        }, {});
+            return acc;
+          },
+          {},
+        );
         setColorMap(colorMapping);
       } catch (error) {
         console.error('Error fetching vehicle colors:', error);
