@@ -4,16 +4,19 @@ import type { ICar } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
 export const getFields = (carData: ICar) => {
-  const vin = carData?.vin ?? '-';
-  const gosNumber = carData?.registrationNumber ?? '-';
+  const vin = carData?.vin;
+  const gosNumber = carData?.registrationNumber;
   const dateRegistry = Formatters.formatISODate(carData?.createdAt);
   const serialNumberAlko = carData?.registrationNumber;
+  const manufacturer = carData?.manufacturer;
+  const year = carData?.year;
+  const color = carData?.color;
 
   return [
     {
       label: 'Марка',
       type: TypeOfRows.MARK,
-      value: { label: carData?.manufacturer ?? '-' },
+      value: { label: manufacturer ?? '-' },
     },
     {
       label: 'Модель',
@@ -23,7 +26,7 @@ export const getFields = (carData: ICar) => {
     {
       label: 'VIN',
       type: TypeOfRows.SERIAL_NUMBER,
-      value: { label: carData?.vin ?? '-', copyble: vin === '-' ? false : true },
+      value: { label: vin ?? '-', copyble: vin === '-' ? false : true },
     },
     {
       label: 'Государственный номер',
@@ -33,15 +36,12 @@ export const getFields = (carData: ICar) => {
     {
       label: 'Год выпуска',
       type: TypeOfRows.DATE,
-      value: { label: carData?.year ?? '-' },
+      value: { label: year ?? '-' },
     },
     {
       label: 'Цвет',
       type: TypeOfRows.COLOR,
-      value: {
-        label:
-          AppConstants.carColorsList.find((color) => color.value === carData?.color)?.label ?? '-',
-      },
+      value: { label: color },
     },
     {
       label: 'Тип',
