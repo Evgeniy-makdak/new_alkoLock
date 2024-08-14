@@ -1,11 +1,30 @@
-import { AppConstants } from '@app/index';
-import { mapOptions } from '@shared/ui/search_multiple_select';
+import { useEffect, useState } from 'react';
+
+import { CarsApi } from '@shared/api/baseQuerys';
+
+interface ColorOption {
+  key: string;
+  value: string;
+}
 
 export const useCarColorSelect = () => {
-  // TODO => должна быть ручка api а не хардкожен в массиве
-  const colorCarList = mapOptions(AppConstants.carColorsList, (color) => [
-    color.label,
-    color.value,
-  ]);
+  const [colorCarList, setColorCarList] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchColors = async () => {
+      try {
+        const response = (await CarsApi.getVehicleColors()) as ColorOption[];
+        const colors = response;
+
+        const mappedColors = colors.map((color: { value: any }) => color.value);
+        setColorCarList(mappedColors);
+      } catch (error) {
+        // console.error('Error fetching vehicle colors:', error);
+      }
+    };
+
+    fetchColors();
+  }, []);
+
   return { colorCarList };
 };

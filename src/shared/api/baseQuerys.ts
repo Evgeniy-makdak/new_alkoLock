@@ -54,6 +54,9 @@ import { deleteQuery, getQuery, postQuery, putQuery } from './baseQueryTypes';
 // import { number } from 'yup';
 
 export default class PhotosApi {
+  url() {
+    throw new Error('Method not implemented.');
+  }
   static getItem(url: string) {
     return getQuery<Blob>({
       url: `api/photos/${url}`,
@@ -196,8 +199,11 @@ export class CarsApi {
   static switchBranch(options: QueryOptions, isPairSwitch: boolean) {
     return postQuery<ICar, unknown>({ url: getCarSwitchBranchUrl(options, isPairSwitch) });
   }
+  static async getVehicleColors() {
+    const response = await getQuery({ url: `api/v1/front-data/vehicle-color` });
+    return response.data;
+  }
 }
-
 export class AlcolocksApi {
   static getList(options: QueryOptions) {
     return getQuery<IAlcolock[]>({ url: getAlcolocksURL(options) });
@@ -296,6 +302,10 @@ export class EventsApi {
 export class AccountApi {
   static getAccountData() {
     return getQuery<IAccount>({ url: `api/account` });
+  }
+
+  static getBackandVersion() {
+    return getQuery<unknown>({ url: `api/v1/backend-version` });
   }
 }
 

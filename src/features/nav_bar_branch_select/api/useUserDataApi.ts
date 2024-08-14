@@ -15,6 +15,6 @@ export const useUserDataApi = () => {
 
   return {
     isLoading: isLoadingBranchList,
-    branchList: branchListResponse?.data.content,
+    branchList: branchListResponse?.data?.content,
   };
 };

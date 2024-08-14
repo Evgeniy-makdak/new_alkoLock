@@ -10,7 +10,7 @@ const Users = () => {
   return (
     <>
       <PageWrapper>
-        <UsersTable onRowClick={onClickRow} />
+        <UsersTable onRowClick={onClickRow} handleCloseAside={handleCloseAside} />
       </PageWrapper>
 
       {selectedUserId && (

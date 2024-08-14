@@ -16,10 +16,12 @@ import { useUsersTable } from '../hooks/useUsersTable';
 
 type UsersTableProps = {
   onRowClick: (id: ID) => void;
+  handleCloseAside: () => void;
 };
 
-export const UsersTable: FC<UsersTableProps> = ({ onRowClick }) => {
-  const { filtersData, tableData, addModalData, deleteUserModalData } = useUsersTable();
+export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }) => {
+  const { filtersData, tableData, addModalData, deleteUserModalData } =
+    useUsersTable(handleCloseAside);
 
   return (
     <>

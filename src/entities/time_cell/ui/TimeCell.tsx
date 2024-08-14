@@ -30,7 +30,6 @@ export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
         setTimeDifference('');
         refetch && refetch();
         clearInterval(timer);
-        window.location.reload();
         return;
       }
 

@@ -1,4 +1,3 @@
-import type React from 'react';
 import { useState } from 'react';
 
 import {
@@ -21,7 +20,6 @@ import {
   renderOptions,
 } from './helpers';
 
-// TODO => почистить тип пропсов, очень много лишнего (не используется)
 export type SearchMultipleSelectProps<T> = {
   testid?: string;
   error?: boolean;
@@ -120,6 +118,15 @@ export function SearchMultipleSelect<T>({
         filterOptions={serverFilter ? (op) => op : createFilterOptions()}
         onInputChange={onInputChangeHandler}
         loadingText={'Загрузка...'}
+        getOptionLabel={(option) => {
+          if (typeof option === 'object' && option !== null && 'length' in option) {
+            return option[0] as string;
+          } else if (typeof option === 'string') {
+            return option;
+          } else {
+            return (option as Value).label as string;
+          }
+        }}
         renderOption={(props, option) => renderOptions(props, option as Value, testid)}
         renderInput={renderInput}
         noOptionsText={'Ничего не найдено'}

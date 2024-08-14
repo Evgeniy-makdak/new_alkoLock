@@ -153,7 +153,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_ADD_INPUT
                   }
-                  disabled={state?.state.disableDriverInfo}
+                  disabled={state?.state.disableDriverInfo || !isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseIssueDate),
@@ -170,7 +170,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_END_INPUT
                   }
-                  disabled={state.state.disableDriverInfo}
+                  disabled={state.state.disableDriverInfo || !isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseExpirationDate),
@@ -190,7 +190,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                         <Checkbox
                           checked={state.state.licenseClass?.includes(category.value)}
                           onClick={() => state.handlers.onSelectLicenseClass(category.value)}
-                          disabled={state.state.disableDriverInfo}
+                          disabled={state.state.disableDriverInfo || !isUserDriver}
                         />
                         <span>{category.label}</span>
                       </div>
@@ -215,7 +215,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
             {
               <AppAlert
                 severity="warning"
-                title="Введенные данные ВУ будут удалены"
+                title='При удалении у пользователя роли "Водитель" все его привязки к ТС и данные ВУ будут удалены'
                 type="submit"
                 onClose={closeAlert}
                 open={alert}

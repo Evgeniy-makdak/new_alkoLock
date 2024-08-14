@@ -20,5 +20,8 @@ type CarColorSelectProps<T> = {
 
 export function CarColorSelect<T>(props: CarColorSelectProps<T>) {
   const { colorCarList } = useCarColorSelect();
-  return <SearchMultipleSelect values={colorCarList} {...props} />;
+
+  const formattedColors = colorCarList.map((color) => ({ value: color, label: color }));
+
+  return <SearchMultipleSelect values={formattedColors} {...props} />;
 }

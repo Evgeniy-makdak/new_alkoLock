@@ -459,6 +459,12 @@ export interface CreateCarBody extends ChangeCarBody {
   branchId: ID;
 }
 
+export interface VehicleColor {
+  key: any;
+  label: string;
+  value: number;
+}
+
 export interface ChangeCarBody {
   registrationNumber: string;
   manufacturer: string;

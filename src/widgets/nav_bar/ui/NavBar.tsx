@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
@@ -7,9 +6,11 @@ import { Button, Stack, Tooltip, Typography } from '@mui/material';
 import { MenuButton } from '@features/menu_button';
 import { NavbarBranchSelect } from '@features/nav_bar_branch_select';
 import { PasswordForm } from '@features/password_form';
+import { AccountApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
-import { StorageKeys } from '@shared/const/storageKeys';
+import { QueryKeys, StorageKeys } from '@shared/const/storageKeys';
 import { testids } from '@shared/const/testid';
+import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useLocalStorage } from '@shared/hooks/useLocalStorage';
 import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
@@ -31,14 +32,11 @@ export const NavBar = () => {
     setItemState(!state);
   };
 
-  const [backendVersion, setBackendVersion] = useState('');
+  const { data } = useConfiguredQuery([QueryKeys.BACKEND_VERSION], AccountApi.getBackandVersion, {
+    triggerOnBranchChange: false,
+  });
 
-  useEffect(() => {
-    fetch('/api/backend-version')
-      .then((response) => response.json())
-      .then((data) => setBackendVersion(data.version))
-      .catch((error) => console.error('Error fetching backend version:', error));
-  }, []);
+  const backendVersion = data?.data as string;
 
   return (
     <>
@@ -85,12 +83,12 @@ export const NavBar = () => {
               <div className={style.versionContainer}>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    frontend v: {frontendVersion}
+                    frontend: v {frontendVersion}
                   </Typography>
                 </div>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    backend v: {backendVersion}
+                    backend: v {backendVersion}
                   </Typography>
                 </div>
               </div>

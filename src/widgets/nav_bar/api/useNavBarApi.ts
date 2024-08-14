@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 import { AccountApi, EventsApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
@@ -16,18 +18,27 @@ export const useNavBarApi = () => {
     },
     triggerOnBranchChange: false,
   });
-  // TODO => нужно заменить на ручку которая вернут просто кол-во событий
-  // const { data: auto } = useConfiguredQuery(
-  //   [QueryKeys.AUTO_SERVICE_EVENTS_LIST],
-  //   EventsApi.getEventListForAutoService,
-  //   {},
-  // );
 
-  const { data: count } = useConfiguredQuery(
+  // Используем useRef, чтобы хранить интервал и избежать утечки памяти
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { data: count, refetch: refetchCount } = useConfiguredQuery(
     [QueryKeys.AUTO_SERVICE_COUNT_EVENTS_LIST],
     EventsApi.getEventListCountForAutoServiceURL,
     { options: { filterOptions: { branchId: selectedBranchState?.id } } },
   );
+
+  useEffect(() => {
+    if (count?.data > 0) {
+      intervalRef.current = setInterval(() => {
+        refetchCount();
+      }, 10000);
+    } else {
+      clearInterval(intervalRef.current);
+    }
+
+    return () => clearInterval(intervalRef.current);
+  }, [count?.data, refetchCount]);
 
   return {
     refetchAccountData,
