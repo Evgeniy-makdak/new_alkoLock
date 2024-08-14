@@ -144,7 +144,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       isUserDriver &&
       !stateOfForm.state.userGroups?.find((elem) =>
         elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
-      ) && !alert
+      ) &&
+      !alert
     ) {
       setAlert(true);
       return;
@@ -227,14 +228,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     },
   };
 
-  const isDriver =
-    // isUserDriver &&
+  const isDriver = // isUserDriver &&
     stateOfForm.state.userGroups?.find((elem) =>
       elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
     );
 
-    console.log(isDriver);
-    
+  console.log(isDriver);
 
   return {
     control,

@@ -215,7 +215,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
             {
               <AppAlert
                 severity="warning"
-                title="Все привязки пользователя к ТС и данные ВУ будут удалены."
+                title='При удалении у пользователя роли "Водитель" все его привязки к ТС и данные ВУ будут удалены'
                 type="submit"
                 onClose={closeAlert}
                 open={alert}
