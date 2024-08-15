@@ -94,11 +94,11 @@ export function getAttachmentURL({
 
   if (startDate) {
     const date = new Date(startDate).toISOString();
-    queries += `&all.createdAt.greaterThanOrEqual=${date}`;
+    queries += '&all.createdAt.greaterThanOrEqual=' + encodeURIComponent(date);
   }
 
   if (endDate) {
-    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
   }
 
   if (sortBy && order) {
@@ -106,26 +106,26 @@ export function getAttachmentURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
-    queries += `&any.vehicle.match.contains=${queryTrimmed}`;
+    queries += '&any.vehicle.monitoringDevice.match.contains=' + encodeURIComponent(queryTrimmed);
+    queries += '&any.vehicle.match.contains=' + encodeURIComponent(queryTrimmed);
     queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += '&any.createdBy.match.contains=' + encodeURIComponent(queryTrimmed);
   }
 
   if (drivers) {
-    queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
+    queries += `&any.driver.userAccount.match.contains=${filterOptions.drivers}`;
   }
   if (tc) {
-    queries += `&any.vehicle.match.contains=${queryTrimmed}`;
+    queries += '&any.vehicle.match.contains=' + encodeURIComponent(filterOptions.cars);
   }
   if (createAttach) {
-    queries += `&any.createdBy.match.contains=${queryTrimmed}`;
+    queries += '&any.createdBy.match.contains=' + encodeURIComponent(filterOptions.createLink);
   }
   if (alcolock) {
-    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    queries += '&any.vehicle.monitoringDevice.match.contains=' + encodeURIComponent(filterOptions.alcolock);
   }
   if (dateLink) {
-    queries += `&all.createdAt.eq=${dateLink}`;
+    queries += '&all.createdAt.eq=' + encodeURIComponent(filterOptions.dateLink);
   }
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
 }
@@ -542,14 +542,14 @@ export function getEventsApiURL({
       }
     }
 
-    const otherEvents = eventsByType.filter(
-      (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
-    );
-    const items = Formatters.getStringForQueryParams(otherEvents);
-    if (items.length > 0) {
-      // Проверка на наличие значений
-      queries += `&all.events.eventType.in=${items}`;
-    }
+    // const otherEvents = eventsByType.filter(
+    //   (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
+    // );
+    // const items = Formatters.getStringForQueryParams(otherEvents);
+    // if (items.length > 0) {
+    //   // Проверка на наличие значений
+    //   queries += `&all.events.eventType.in=${items}`;
+    // }
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
