@@ -98,7 +98,8 @@ export function getAttachmentURL({
   }
 
   if (endDate) {
-    queries += '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
+    queries +=
+      '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
   }
 
   if (sortBy && order) {
@@ -122,7 +123,8 @@ export function getAttachmentURL({
     queries += '&any.createdBy.match.contains=' + encodeURIComponent(filterOptions.createLink);
   }
   if (alcolock) {
-    queries += '&any.vehicle.monitoringDevice.match.contains=' + encodeURIComponent(filterOptions.alcolock);
+    queries +=
+      '&any.vehicle.monitoringDevice.match.contains=' + encodeURIComponent(filterOptions.alcolock);
   }
   if (dateLink) {
     queries += '&all.createdAt.eq=' + encodeURIComponent(filterOptions.dateLink);
