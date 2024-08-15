@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { CarsApi } from '@shared/api/baseQuerys';
 import { mapOptions } from '@shared/ui/search_multiple_select';
-import { useEffect, useState } from 'react';
 
 export const useTransportTypeSelect = () => {
   const [typeTransportList, setTypeTransportList] = useState<any[]>([]);
@@ -10,7 +11,7 @@ export const useTransportTypeSelect = () => {
         const response = await CarsApi.getVehicleTypes();
         const types = response.data.map((type) => ({
           label: type.value,
-          value: type.key
+          value: type.key,
         }));
 
         setTypeTransportList(mapOptions(types, (type) => [type.label, type.value]));

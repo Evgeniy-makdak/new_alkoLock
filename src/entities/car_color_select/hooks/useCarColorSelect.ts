@@ -1,6 +1,7 @@
-import { mapOptions } from '@shared/ui/search_multiple_select';
-import { CarsApi } from '@shared/api/baseQuerys'
 import { useEffect, useState } from 'react';
+
+import { CarsApi } from '@shared/api/baseQuerys';
+import { mapOptions } from '@shared/ui/search_multiple_select';
 
 export const useCarColorSelect = () => {
   const [colorCarList, setColorCarList] = useState<any[]>([]);
@@ -11,7 +12,7 @@ export const useCarColorSelect = () => {
         const response = await CarsApi.getVehicleColors();
         const colors = response.data.map((color) => ({
           label: color.value,
-          value: color.key
+          value: color.key,
         }));
 
         setColorCarList(mapOptions(colors, (color) => [color.label, color.value]));

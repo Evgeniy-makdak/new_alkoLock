@@ -30,7 +30,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         type: typeSelectValueFormatter(car?.type) || [],
         color: colorSelectValueFormatter(car?.color) || [],
         year: car?.year ? dateNow.year(car.year) : dateNow,
-      };      
+      };
     }
     return {
       mark: '',

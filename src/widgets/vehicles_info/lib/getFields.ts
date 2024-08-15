@@ -10,7 +10,7 @@ export const getFields = (carData: ICar) => {
   const manufacturer = carData?.manufacturer;
   const year = carData?.year;
   const color = carData?.color;
-  const type = carData?.type
+  const type = carData?.type;
 
   return [
     {
