@@ -197,7 +197,16 @@ export class CarsApi {
     return postQuery<ICar, unknown>({ url: getCarSwitchBranchUrl(options, isPairSwitch) });
   }
   static getVehicleColors() {
-    return getQuery<string[]>({ url: 'api/v1/front-data/vehicle-color' });
+    return getQuery<{
+      value: string;
+      key: string; colors: { label: string, value: string }
+    }[]>({ url: 'api/v1/front-data/vehicle-color' });
+  }
+  static getVehicleTypes() {
+    return getQuery<{
+      value: string;
+      key: string; types: { label: string, value: string }
+    }[]>({ url: 'api/v1/front-data/vehicle-types' });
   }
 }
 
@@ -270,14 +279,14 @@ export class EventsApi {
   }: ActivateServiceModeOptions) {
     const requestData = isDeactivate
       ? {
-          deviceId,
-          type: 'SERVICE_MODE_DEACTIVATE',
-        }
+        deviceId,
+        type: 'SERVICE_MODE_DEACTIVATE',
+      }
       : {
-          duration: duration * 3600,
-          deviceId,
-          type: 'SERVICE_MODE_ACTIVATE',
-        };
+        duration: duration * 3600,
+        deviceId,
+        type: 'SERVICE_MODE_ACTIVATE',
+      };
     return postQuery<IDeviceAction, unknown>({ url: `api/device-actions`, data: requestData });
   }
   static cancelActivateService(id: ID) {

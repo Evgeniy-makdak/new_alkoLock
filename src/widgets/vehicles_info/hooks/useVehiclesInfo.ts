@@ -25,8 +25,6 @@ export const useVehiclesInfo = (id: ID, closeTab: () => void) => {
         const colorMapping = colors.reduce<{ [key: string]: string }>(
           (acc: { [x: string]: any }, color: { key: string | number; value: any }) => {
             acc[color.key] = color.value;
-            console.log(color);
-
             return acc;
           },
           {},

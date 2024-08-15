@@ -1,11 +1,26 @@
-import { AppConstants } from '@app/index';
+import { CarsApi } from '@shared/api/baseQuerys';
 import { mapOptions } from '@shared/ui/search_multiple_select';
+import { useEffect, useState } from 'react';
 
 export const useTransportTypeSelect = () => {
-  // TODO => должна быть ручка api а не хардкожен в массиве
-  const typeTransportList = mapOptions(AppConstants.carTypesList, (data) => [
-    data.label,
-    data.value,
-  ]);
+  const [typeTransportList, setTypeTransportList] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const response = await CarsApi.getVehicleTypes();
+        const types = response.data.map((type) => ({
+          label: type.value,
+          value: type.key
+        }));
+
+        setTypeTransportList(mapOptions(types, (type) => [type.label, type.value]));
+      } catch (error) {
+        console.error('Ошибка при получении цветов:', error);
+      }
+    };
+
+    fetchTypes();
+  }, []);
+
   return { typeTransportList };
 };

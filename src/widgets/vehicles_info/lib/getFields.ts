@@ -1,4 +1,3 @@
-import { AppConstants } from '@app/index';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
@@ -11,6 +10,7 @@ export const getFields = (carData: ICar) => {
   const manufacturer = carData?.manufacturer;
   const year = carData?.year;
   const color = carData?.color;
+  const type = carData?.type
 
   return [
     {
@@ -46,9 +46,7 @@ export const getFields = (carData: ICar) => {
     {
       label: 'Тип',
       type: TypeOfRows.CATEGORY,
-      value: {
-        label: AppConstants.carTypesList.find((type) => type.value === carData?.type)?.label ?? '-',
-      },
+      value: { label: type },
     },
     {
       label: 'Дата регистрации',
