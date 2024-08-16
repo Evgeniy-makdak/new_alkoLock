@@ -27,7 +27,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const firstRender = useRef(true);
   const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto } =
     useUserAddChangeFormApi(id);
-  const { values, isGlobalAdmin, isUserDriver } = groupsMapper(user, groups?.content);
+  const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
@@ -238,6 +238,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     isLoading,
     isGlobalAdmin,
     isUserDriver: isDriver,
+    isReadOnly,
     accessList: initUser.accessList,
     closeAlert,
     alert,

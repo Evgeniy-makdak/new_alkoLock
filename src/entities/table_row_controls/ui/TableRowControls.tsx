@@ -6,6 +6,7 @@ import ModeEditIcon from '@mui/icons-material/ModeEdit';
 import { GridActionsCellItem } from '@mui/x-data-grid';
 
 import style from './TableRowControls.module.scss';
+import { Permissions } from '@shared/config/permissionsEnums';
 
 type TableRowControlsProps = {
   arrowIcon?: boolean;
@@ -15,6 +16,7 @@ type TableRowControlsProps = {
   testidDelete?: string;
   userRole?: number;
   visible?: boolean;
+  permission?: string;
 };
 
 export const TableRowControls: FC<TableRowControlsProps> = ({
@@ -25,11 +27,13 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   visible = true,
   arrowIcon = false,
   userRole = 0,
+  permission,
 }) => {
   const isUserSuperAdmine = userRole === 100;
+  const hasReadOnly = permission === Permissions.PERMISSION_USER_READ
   return (
     <div className={style.controls}>
-      {!!onClickEdit && !isUserSuperAdmine && (
+      {!!onClickEdit && !isUserSuperAdmine && !hasReadOnly && (
         <GridActionsCellItem
           data-testid={testidEdit}
           label="edit"

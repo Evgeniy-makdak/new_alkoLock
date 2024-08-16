@@ -5,10 +5,11 @@ import type { Values } from '@shared/ui/search_multiple_select';
 export const groupsMapper = (
   user: IUser | null,
   groups: IRole[] | null,
-): { values: Values; isGlobalAdmin: boolean; isUserDriver: boolean } => {
+): { values: Values; isGlobalAdmin: boolean; isUserDriver: boolean; isReadOnly: boolean } => {
   let isGlobalAdmin = false;
   let isUserDriver = false;
-  if (!user || !groups) return { values: [], isGlobalAdmin, isUserDriver };
+  let isReadOnly = false;
+  if (!user || !groups) return { values: [], isGlobalAdmin, isUserDriver, isReadOnly };
 
   // TODO => убрать мэтчинг двух списков когда бэк начнет возвращать в user permissions
   const values = user.groupMembership.map((item) => {
@@ -22,6 +23,18 @@ export const groupsMapper = (
             ? group?.permission?.name === Permissions.SYSTEM_GLOBAL_ADMIN
             : isGlobalAdmin;
         }
+        if (group?.permission?.name === Permissions.PERMISSION_EVENTS_READ) {
+          isReadOnly = true;
+        }
+        if (group?.permission?.name === Permissions.PERMISSION_VEHICLE_READ) {
+          isReadOnly = true;
+        }
+        if (group?.permission?.name === Permissions.PERMISSION_DEVICE_READ) {
+          isReadOnly = true;
+        }
+        if (group?.permission?.name === Permissions.PERMISSION_USER_READ) {
+          isReadOnly = true;
+        }
         if (group?.permission?.name === Permissions.SYSTEM_DRIVER_ACCOUNT) {
           isUserDriver = true;
         }
@@ -30,5 +43,5 @@ export const groupsMapper = (
     }
     return { value: item?.group?.id, label: item?.group?.name, permissions: permissions };
   });
-  return { values, isGlobalAdmin, isUserDriver };
+  return { values, isGlobalAdmin, isUserDriver, isReadOnly };
 };
