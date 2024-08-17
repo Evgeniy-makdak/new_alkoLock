@@ -32,6 +32,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
+const close = () => {
+  const event = new CustomEvent('user_change_sucsess')
+  document.dispatchEvent(event)
+  closeModal && closeModal()
+}
+
   const {
     register,
     control,
@@ -166,7 +172,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else {
-          closeModal && closeModal();
+          close();
         }
       } else {
         const response = await changeItem(userData);
@@ -178,13 +184,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           });
         } else if (response.status === StatusCode.SUCCESS) {
           // enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
-          closeModal && closeModal();
+          close();
         }
         const isErrorChangeItem = response?.isError;
         if (isErrorChangeItem) {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
-          closeModal && closeModal();
+          close();
           if (userFoto) {
             const fotoResponse = await changeFoto(userFoto);
             const isErrorChangeFoto = fotoResponse?.isError;

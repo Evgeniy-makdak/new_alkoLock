@@ -50,6 +50,7 @@ export const UploadImg: FC<UploadImgProps> = ({
   limit,
   testId,
 }) => {
+  const INPUT_ID = "contained-button-file" + Date.now()
   const refDiv = useRef();
   const {
     preview,
@@ -88,14 +89,14 @@ export const UploadImg: FC<UploadImgProps> = ({
               multiple
               accept={ACCEPT_FORMATS}
               className={style.input}
-              id="contained-button-file"
+              id={INPUT_ID}
               {...textFieldProps}
               type="file"
             />
             <label
               data-testid={testids.UPLOAD_FILE_LABEL}
               className={`${labelStyle} ${style.label} ${style[stateDrop]}`}
-              htmlFor="contained-button-file">
+              htmlFor={INPUT_ID}>
               <span className={style.uploadText}>загрузить</span>
             </label>
           </form>
