@@ -32,11 +32,11 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
-const close = () => {
-  const event = new CustomEvent('user_change_sucsess')
-  document.dispatchEvent(event)
-  closeModal && closeModal()
-}
+  const close = () => {
+    const event = new CustomEvent('user_change_sucsess');
+    document.dispatchEvent(event);
+    closeModal && closeModal();
+  };
 
   const {
     register,

@@ -50,7 +50,7 @@ export const UploadImg: FC<UploadImgProps> = ({
   limit,
   testId,
 }) => {
-  const INPUT_ID = "contained-button-file" + Date.now()
+  const INPUT_ID = 'contained-button-file' + Date.now();
   const refDiv = useRef();
   const {
     preview,
