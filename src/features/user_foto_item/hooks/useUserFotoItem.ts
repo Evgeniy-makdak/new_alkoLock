@@ -59,7 +59,7 @@ export const useUserFotoItem = (
     const res = await changeAvatar(imageId);
     const isError = res?.isError || res?.status !== StatusCode.SUCCESS;
     if (isError) {
-      enqueueSnackbar('Ошибка обновления фотографии профиля', { variant: 'error' });
+      enqueueSnackbar(res?.detail, { variant: 'error' });
       return;
     }
     changeAvatarMemo(image?.id);
