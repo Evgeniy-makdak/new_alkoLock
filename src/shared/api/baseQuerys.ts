@@ -82,7 +82,7 @@ export class AttachmentsApi {
 export class UsersApi {
   static getAvatar(id: ID) {
     return getQuery<Blob>({
-      url: `api/v1/users/photos/${id}/user`,
+      url: `api/v1/users/photos/${id}/user?t=${new Date().getTime()}`,
       config: {
         responseType: 'blob',
       },
