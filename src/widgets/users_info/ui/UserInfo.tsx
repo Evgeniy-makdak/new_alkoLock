@@ -23,7 +23,6 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
   );
 
   console.log('selected user', selectedUserId);
-  
 
   return (
     <Loader isLoading={isLoading}>
