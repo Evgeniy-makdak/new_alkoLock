@@ -18,6 +18,6 @@ export const useDeleteUserForm = (id: ID, closeModal: () => void, closeAside: ()
     closeAside();
     clearCache();
   };
-
+  console.log('for delete', id);
   return handleDelete;
 };

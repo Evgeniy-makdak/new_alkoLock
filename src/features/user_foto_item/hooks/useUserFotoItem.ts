@@ -41,6 +41,13 @@ export const useUserFotoItem = (
     });
   }, [imageRes, needSendRequest]);
 
+  async function clearCache() {
+    const cacheNames = await caches.keys();
+    for (const cacheName of cacheNames) {
+      await caches.delete(cacheName);
+    }
+  }
+
   const handleDeleteImage = async () => {
     const imageId = imageRes?.id || image?.id;
     if (!imageId) return;
@@ -50,11 +57,13 @@ export const useUserFotoItem = (
       return;
     }
     deleteImage(image?.id);
+    clearCache();
   };
 
   const handleChangeAvatar = async () => {
     const imageId = imageRes?.id || image?.id;
     if (!imageId) return;
+    clearCache();
 
     const res = await changeAvatar(imageId);
     const isError = res?.isError || res?.status !== StatusCode.SUCCESS;
@@ -63,6 +72,7 @@ export const useUserFotoItem = (
       return;
     }
     changeAvatarMemo(image?.id);
+    clearCache();
   };
 
   return {
