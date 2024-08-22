@@ -9,8 +9,7 @@ import StyledEngineProvider from '@mui/material/StyledEngineProvider';
 import { ErrorBoundary } from '@layout/error_boundary';
 import { routers } from '@shared/config/routers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-import { UserContextProvider } from '@widgets/users_info/UserContext'; 
+import { UserContextProvider } from '@widgets/users_info/UserContext';
 
 import './index.scss';
 

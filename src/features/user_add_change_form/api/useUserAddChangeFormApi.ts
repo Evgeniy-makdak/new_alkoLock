@@ -45,7 +45,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     mutationFn: (data: FormData) => UsersApi.changeUser(data, id),
     onSuccess: () => update(updateQueries),
   });
-  
 
   const { mutateAsync: createItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.createUser(data),

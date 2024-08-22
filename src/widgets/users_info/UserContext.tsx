@@ -1,4 +1,5 @@
-import { createContext, useContext, FC, useState, ReactNode } from 'react';
+import { FC, ReactNode, createContext, useContext, useState } from 'react';
+
 import type { ID } from '@shared/types/BaseQueryTypes';
 
 type UserContextType = {
