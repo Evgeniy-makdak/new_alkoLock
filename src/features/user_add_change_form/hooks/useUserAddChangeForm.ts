@@ -25,7 +25,7 @@ import { type Form, type KeyForm, schema } from '../lib/validate';
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const firstRender = useRef(true);
-  const { user, isLoading, changeItem, createItem, groups, avatar, changeFoto } =
+  const { user, isLoading, changeItem, createItem, groups, avatar } =
     useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
@@ -191,18 +191,18 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           close();
-          if (userFoto) {
-            const fotoResponse = await changeFoto(userFoto);
-            const isErrorChangeFoto = fotoResponse?.isError;
-            if (isErrorChangeFoto) {
-              //
-            } else if (fotoResponse.status === StatusCode.SUCCESS) {
-              // enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
-              //   variant: 'success',
-              // });
-              clearCache();
-            }
-          }
+          // if (userFoto) {
+          //   const fotoResponse = await changeFoto(userFoto);
+          //   const isErrorChangeFoto = fotoResponse?.isError;
+          //   if (isErrorChangeFoto) {
+          //     //
+          //   } else if (fotoResponse.status === StatusCode.SUCCESS) {
+          //     // enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
+          //     //   variant: 'success',
+          //     // });
+          //     clearCache();
+          //   }
+          // }
         }
       }
     } catch (error) {

@@ -52,9 +52,9 @@ export const useUserAddChangeFormApi = (id: ID) => {
     onSuccess: () => update(updateQueries),
   });
 
-  const { mutateAsync: changeFoto } = useMutation({
-    mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
-  });
+  // const { mutateAsync: changeFoto } = useMutation({
+  //   mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
+  // });
 
   const hash = foto ? foto?.headers['content-md5'] : null;
 
@@ -65,6 +65,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     isLoading: isLoading || isLoadingUserGroups || isLoadingFoto,
     changeItem,
     createItem,
-    changeFoto,
+    // changeFoto,
   };
 };
