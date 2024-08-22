@@ -220,7 +220,7 @@ export class CarsApi {
 
 export class AlcolocksApi {
   static getList(options: QueryOptions) {
-    return getQuery<IAlcolock[]>({ url: getAlcolocksURL(options) });
+    return getQuery<{content: IAlcolock[]; totalElements: number}>({ url: getAlcolocksURL(options) });
   }
   static getListAlcolocks(options: QueryOptions) {
     return getQuery<{ content: IAlcolock[]; totalElements: number }>({

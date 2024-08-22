@@ -17,7 +17,7 @@ type TableRowControlsProps = {
   testidDelete?: string;
   userRole?: number;
   visible?: boolean;
-  permission?: string;
+  permission?: string[];
 };
 
 export const TableRowControls: FC<TableRowControlsProps> = ({
@@ -27,14 +27,16 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   testidEdit,
   visible = true,
   arrowIcon = false,
-  userRole = 0,
+  // userRole,
   permission,
 }) => {
-  const isUserSuperAdmine = userRole === 100;
-  const hasReadOnly = permission === Permissions.PERMISSION_USER_READ;
+  const isUserSuperAdmine = permission && permission.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+  // const hasReadOnly = permission === Permissions.PERMISSION_USER_READ;
+  // console.log(isUserSuperAdmine);
+  
   return (
     <div className={style.controls}>
-      {!!onClickEdit && !isUserSuperAdmine && !hasReadOnly && (
+      {!!onClickEdit && !isUserSuperAdmine && (
         <GridActionsCellItem
           data-testid={testidEdit}
           label="edit"

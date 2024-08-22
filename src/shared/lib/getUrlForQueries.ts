@@ -123,7 +123,7 @@ export function getAttachmentURL({
     queries += `&all.createdBy.id.in=${createAttach}`;
   }
   if (alcolock) {
-    queries += `&all.monitoringDevice.id.in=${alcolock}`;
+    queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
   }
   if (dateLink) {
     queries += `&all.createdAt.id.in=${dateLink}`;
