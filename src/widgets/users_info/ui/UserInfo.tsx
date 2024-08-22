@@ -1,12 +1,13 @@
-import type { FC } from 'react';
+import { FC, useEffect } from 'react';
 
 import { Avatar, Stack } from '@mui/material';
 
 import { Info } from '@entities/info';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { ImagePreview } from '@shared/ui/image_preview/ui/ImagePreview';
 import { IMAGE_PREVIEW_WRAPPER_STYLE } from '@shared/ui/image_view';
 import { Loader } from '@shared/ui/loader';
+import { useUserContext } from '@widgets/users_info/UserContext';
 
 import { useUserInfo } from '../hooks/useUserInfo';
 import style from './UserInfo.module.scss';
@@ -21,8 +22,11 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
     selectedUserId,
     closeTab,
   );
+  const { setSelectedUserId } = useUserContext(); // Достаем setSelectedUserId из контекста
 
-  console.log('selected user', selectedUserId);
+  useEffect(() => {
+    setSelectedUserId(selectedUserId); // Устанавливаем selectedUserId в контексте
+  }, [selectedUserId, setSelectedUserId]);
 
   return (
     <Loader isLoading={isLoading}>

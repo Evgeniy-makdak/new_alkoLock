@@ -10,6 +10,8 @@ import { ErrorBoundary } from '@layout/error_boundary';
 import { routers } from '@shared/config/routers';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+import { UserContextProvider } from '@widgets/users_info/UserContext'; 
+
 import './index.scss';
 
 const queryClient = new QueryClient();
@@ -19,14 +21,16 @@ root.render(
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <StyledEngineProvider injectFirst>
-        <SnackbarProvider
-          action={(snackbarId) => (
-            <CloseIcon className="CloseIcon" onClick={() => closeSnackbar(snackbarId)} />
-          )}
-          maxSnack={3}
-          anchorOrigin={{ horizontal: 'right', vertical: 'top' }}>
-          <RouterProvider router={routers} />
-        </SnackbarProvider>
+        <UserContextProvider>
+          <SnackbarProvider
+            action={(snackbarId) => (
+              <CloseIcon className="CloseIcon" onClick={() => closeSnackbar(snackbarId)} />
+            )}
+            maxSnack={3}
+            anchorOrigin={{ horizontal: 'right', vertical: 'top' }}>
+            <RouterProvider router={routers} />
+          </SnackbarProvider>
+        </UserContextProvider>
       </StyledEngineProvider>
     </QueryClientProvider>
   </ErrorBoundary>,
