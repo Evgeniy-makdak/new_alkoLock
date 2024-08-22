@@ -175,7 +175,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           close();
         }
       } else {
-        const response = await changeItem(userData);
+        const response = await changeItem(formData);
         if (response.status === StatusCode.BAD_REQUEST) {
           const messageStart =
             response?.detail.split(',')[6].indexOf('message=') + 'message='.length;

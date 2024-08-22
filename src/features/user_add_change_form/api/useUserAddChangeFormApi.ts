@@ -2,7 +2,7 @@ import { RolesApi, UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
-import type { CreateUserData, ID } from '@shared/types/BaseQueryTypes';
+import type { ID } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
 
 const updateQueries = [QueryKeys.USER_LIST_TABLE, QueryKeys.USER_LIST, QueryKeys.USER_ITEM];
@@ -42,9 +42,10 @@ export const useUserAddChangeFormApi = (id: ID) => {
   );
 
   const { mutateAsync: changeItem } = useMutation({
-    mutationFn: (changeData: CreateUserData) => UsersApi.changeUser(changeData, id),
+    mutationFn: (data: FormData) => UsersApi.changeUser(data, id),
     onSuccess: () => update(updateQueries),
   });
+  
 
   const { mutateAsync: createItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.createUser(data),

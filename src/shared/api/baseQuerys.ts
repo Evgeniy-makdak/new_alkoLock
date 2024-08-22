@@ -31,8 +31,7 @@ import {
   type ChangePasswordData,
   type CreateAlcolockData,
   type CreateCarBody,
-  type CreateRoleData,
-  type CreateUserData,
+  type CreateRoleData, // type CreateUserData,
   type EventsOptions,
   type IAccount,
   type IAccountUser,
@@ -145,10 +144,13 @@ export class UsersApi {
       },
     });
   }
-  static changeUser(data: CreateUserData, userId: ID) {
+  static changeUser(data: FormData, userId: ID) {
     return putQuery<IUser, unknown>({
       url: `api/users/${userId}`,
       data,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
   }
   static deleteUser(userId: ID) {
