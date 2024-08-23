@@ -1,0 +1,77 @@
+.authorization {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  position: relative;
+}
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  & > span {
+    display: block;
+    margin-bottom: 16px;
+  }
+}
+
+.form {
+  width: 350px;
+  margin-bottom: 25px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.button {
+  background: #e0e0e0;
+  padding: 8px 22px;
+  border-radius: 4px;
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 173.333%;
+  letter-spacing: 0.46px;
+  text-transform: uppercase;
+  box-shadow:
+    0px 3px 1px -2px rgba(0, 0, 0, 0.2),
+    0px 2px 2px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 5px 0px rgba(0, 0, 0, 0.12);
+
+  &:disabled {
+    opacity: -0.7;
+  }
+}
+
+.title {
+  text-align: center;
+  font-size: 34px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 123.5%;
+  letter-spacing: 0.25px;
+  margin-bottom: 30px;
+}
+
+.inputsWrapper {
+  height: 186px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.logo {
+  position: absolute;
+  top: 32px;
+  left: 30px;
+  width: 220px;
+}
+.loader {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+}
