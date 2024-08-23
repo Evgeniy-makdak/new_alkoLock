@@ -16,7 +16,7 @@ export const useUserFotoApi = (userId: ID) => {
   });
   useEffect(() => {
     const callback = () => {
-      setTimeout(refetch, 500);
+      setTimeout(refetch, 100);
     };
     document.addEventListener('user_change_sucsess', callback);
     return () => {

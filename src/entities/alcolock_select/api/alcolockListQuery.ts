@@ -8,7 +8,5 @@ export const useAlcolockListQuery = (options: QueryOptions) => {
     options,
   });
 
-  console.log(data);
-
   return { alcolocks: data?.data.content || [], isLoading };
 };

@@ -43,7 +43,6 @@ export const UserFoto: FC<UserFoto> = ({ userId }) => {
           <TouchLoader />
         ) : (
           <Stack className={style.listWrapper} direction={'row'} flexWrap={'wrap'} gap={1}>
-            {/* TODO => если нужно реализовать потом виртуализацию списка */}
             {images.map((img) => {
               return (
                 <ItemWrapper key={img?.url}>

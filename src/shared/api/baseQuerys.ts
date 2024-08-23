@@ -113,9 +113,9 @@ export class UsersApi {
       url: `api/v1/users/photos/${userId}/reference`,
     });
   }
-  // static changeAvatar(data: FormData, userId: ID) {
-  //   return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
-  // }
+  static changeAvatar(data: FormData, userId: ID) {
+    return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
+  }
   // static deleteUserImages(userId: ID) {
   //   const url = `api/v1/users/photos/${userId}/delete-all`;
 
