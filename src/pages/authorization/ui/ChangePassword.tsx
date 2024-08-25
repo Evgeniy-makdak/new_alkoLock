@@ -4,7 +4,7 @@ import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { Loader } from '@shared/ui/loader';
 import { Logo } from '@shared/ui/logo';
 
-import { useAuthorization } from '../hooks/useAuthorization';
+import { useChangePassword } from '../hooks/useChangePassword';
 import style from './Authorization.module.scss';
 
 export const ChangePassword = () => {
@@ -14,7 +14,7 @@ export const ChangePassword = () => {
     register,
     control,
     errorPassword,
-  } = useAuthorization();
+  } = useChangePassword();
 
   return (
     <div className={style.authorization}>

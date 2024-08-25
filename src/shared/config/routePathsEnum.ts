@@ -11,4 +11,5 @@ export enum RoutePaths {
   attachments = '/attachments',
   autoService = '/auto_service',
   historyAutoService = '/historyAutoService',
+  changePassword = '/changePassword',
 }

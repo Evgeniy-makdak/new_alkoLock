@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
@@ -16,11 +17,11 @@ import { getFirstAvailableRouter } from '@widgets/nav_bar';
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
 
-export const useAuthorization = () => {
+export const useChangePassword = () => {
   const setState = appStore.setState;
   const [canLoadLoginData, setCanLoadLoginData] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
+  // const location = useLocation();
 
   const onSuccess = (data: AppAxiosResponse<IAuthenticate>) => {
     const errors = data?.data?.response?.data?.fieldErrors || [];
@@ -51,8 +52,7 @@ export const useAuthorization = () => {
 
         setCanLoadLoginData(true);
 
-        // После успешной авторизации перезагружаем текущую страницу
-        navigate(location.pathname, { replace: true });
+        navigate(RoutePaths.auth);
       }
     } else {
       // Обработка других статусов ответа (необязательно)
@@ -73,23 +73,15 @@ export const useAuthorization = () => {
 
   const {
     handleSubmit,
-    setValue,
     register,
     watch,
     control,
     formState: {
-      errors: { password, username },
+      errors: { password },
     },
   } = useForm({
-    defaultValues: {
-      rememberMe: false,
-    },
     resolver: yupResolver(schema),
   });
-
-  const handleChangeRemeber = (value: boolean) => {
-    setValue('rememberMe', value);
-  };
 
   const canNotEnter =
     !isSuccessGetAccountData ||
@@ -128,15 +120,12 @@ export const useAuthorization = () => {
   };
 
   const errorPassword = password ? password?.message : '';
-  const errorUsername = username ? username?.message : '';
   return {
     handleSubmit: handleSubmit(handleAuthorization),
     isLoading,
     register,
     errorPassword,
-    errorUsername,
     control,
     rememberMe: watch('rememberMe'),
-    handleChangeRemeber,
   };
 };
