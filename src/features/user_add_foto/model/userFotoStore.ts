@@ -144,9 +144,14 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newState = prevImage.filter((item) => item?.id !== idImage);
-
+    
+    console.log('Deleting image:', idImage, 'for user:', userId);
+    console.log('Previous images:', prevImage);
+    console.log('New state after deletion:', newState);
+    
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
   },
+  
   changeAvatar: (idImage, idUser) => {
     if (!idUser || !idImage) return;
     const state = get().usersImages;

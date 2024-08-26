@@ -84,6 +84,7 @@ export class UsersApi {
       url: `api/v1/users/photos/${id}/user`,
       config: {
         responseType: 'blob',
+        headers: {'Cache-Control': 'no-cache'}
       },
     });
   }

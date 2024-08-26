@@ -70,6 +70,8 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
 
 const returnHeaders = (headers: HeaderReq): HeaderReq => {
   const isAuth = headers?.isAuth ?? true;
+  console.log('heders', headers);
+  
   return new AxiosHeaders({
     ...headers,
     Authorization: isAuth ? `Bearer ${cookieManager.get('bearer')}` : '',
@@ -89,10 +91,11 @@ export function getQuery<T>({
   const requestUrl = widthApiUrl ? `${API_URL}${url}` : url;
   const headersReg = returnHeaders(config?.headers);
 
+
   return axios
     .get<IError, AppAxiosResponse<T>>(requestUrl, {
-      headers: { ...config?.headers, ...headersReg },
       ...config,
+      headers: headersReg,
     })
     .catch((e) => {
       return viewResErrors(e);
