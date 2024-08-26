@@ -15,6 +15,7 @@ import { Spinner } from '@shared/ui/spinner';
 
 import { App } from '../../app';
 import { RoutePaths } from './routePathsEnum';
+
 // import { ChangePassword } from '@pages/authorization';
 
 export const routers = createBrowserRouter([
