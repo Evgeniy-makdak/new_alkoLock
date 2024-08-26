@@ -155,7 +155,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       return;
     }
 
-    const { formData, userData, userFoto } = getDataForRequest(
+    const { formData } = getDataForRequest(
       data,
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
@@ -190,18 +190,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           close();
-          // if (userFoto) {
-          //   const fotoResponse = await changeFoto(userFoto);
-          //   const isErrorChangeFoto = fotoResponse?.isError;
-          //   if (isErrorChangeFoto) {
-          //     //
-          //   } else if (fotoResponse.status === StatusCode.SUCCESS) {
-          //     // enqueueSnackbar(fotoResponse?.detail || 'Фото профиля успешно обновлено!', {
-          //     //   variant: 'success',
-          //     // });
-          //     clearCache();
-          //   }
-          // }
         }
       }
     } catch (error) {
