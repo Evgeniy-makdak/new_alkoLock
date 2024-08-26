@@ -101,10 +101,14 @@ export const getFormState = (
 };
 
 export const getInitFormState = (
-isLoading: boolean, values: Values, userId?: ID, user?: IUser, avatar?: {
-  img: Blob;
-  hash: string;
-} | null, 
+  isLoading: boolean,
+  values: Values,
+  userId?: ID,
+  user?: IUser,
+  avatar?: {
+    img: Blob;
+    hash: string;
+  } | null,
 ) => {
   const accessList = AppConstants.accessList.map((val) => ({
     value: `${val.value}`,
