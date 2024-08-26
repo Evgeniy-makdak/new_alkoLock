@@ -81,7 +81,7 @@ export class AttachmentsApi {
 export class UsersApi {
   static getAvatar(id: ID) {
     return getQuery<Blob>({
-      url: `api/v1/users/photos/${id}/user?t=${new Date().getTime()}`,
+      url: `api/v1/users/photos/${id}/user`,
       config: {
         responseType: 'blob',
       },
@@ -116,13 +116,13 @@ export class UsersApi {
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
-  // static deleteUserImages(userId: ID) {
-  //   const url = `api/v1/users/photos/${userId}/delete-all`;
+  static deleteUserImages(userId: ID) {
+    const url = `api/v1/users/photos/${userId}/delete-all`;
 
-  //   const response = deleteQuery({ url });
+    const response = deleteQuery({ url });
 
-  //   return response;
-  // }
+    return response;
+  }
   static getList(options: QueryOptions, widthCars = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
       url: getUserListURL(options, widthCars),
