@@ -86,6 +86,8 @@ export const getDataForRequest = (
     userFoto = new FormData();
     userFoto.append('image', image?.image || '');
     userFoto.append('hash', image?.hash || '');
+    formData.append('userPhoto.hash', image.hash);
+    formData.append('userPhoto.image', image.image);
   }
 
   return { formData, userData: reqBody, userFoto };

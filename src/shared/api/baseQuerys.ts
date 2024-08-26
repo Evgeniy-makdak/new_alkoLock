@@ -129,7 +129,6 @@ export class UsersApi {
     });
   }
   static getUser(userId: ID) {
-    if (!userId) return;
     return getQuery<IUser>({ url: `api/users/${userId}` });
   }
   static switchBranch({ id: userId, filterOptions: { branchId } }: QueryOptions) {
