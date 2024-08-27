@@ -52,7 +52,6 @@ export const useUserFotoItem = (
       console.error('Ошибка при очистке кэша:', error);
     }
   }
-  
 
   const handleDeleteImage = async () => {
     const imageId = imageRes?.id || image?.id;

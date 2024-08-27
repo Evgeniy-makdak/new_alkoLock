@@ -84,7 +84,7 @@ export class UsersApi {
       url: `api/v1/users/photos/${id}/user`,
       config: {
         responseType: 'blob',
-        headers: {'Cache-Control': 'no-cache'}
+        headers: { 'Cache-Control': 'no-cache' },
       },
     });
   }
@@ -112,12 +112,12 @@ export class UsersApi {
       config: {
         responseType: 'blob',
         headers: {
-          'Cache-Control': 'no-cache'
-        }
-      }
+          'Cache-Control': 'no-cache',
+        },
+      },
     });
   }
-  
+
   static getPhotoUrlsFromGallery(userId: ID) {
     return getQuery<PhotoUrlsFromGalleryResponse[]>({
       url: `api/v1/users/photos/${userId}/reference`,
