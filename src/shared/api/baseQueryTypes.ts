@@ -70,7 +70,6 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
 
 const returnHeaders = (headers: HeaderReq): HeaderReq => {
   const isAuth = headers?.isAuth ?? true;
-  console.log('heders', headers);
   
   return new AxiosHeaders({
     ...headers,
