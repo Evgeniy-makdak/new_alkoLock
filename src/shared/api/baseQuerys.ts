@@ -104,7 +104,15 @@ export class UsersApi {
     return putQuery({ url: `api/v1/users/photos/${userId}/update/${photoId}` });
   }
   static deletePhotosFromGallery(fotos: string) {
-    return deleteQuery({ url: `api/v1/users/photos/delete?photoIds=${fotos}`, data: fotos });
+    return deleteQuery({
+      url: `api/v1/users/photos/delete?photoIds=${fotos}`,
+      data: fotos,
+      config: {
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      },
+    });
   }
   static getPhotoFromGallery(url: string) {
     return getQuery<Blob>({

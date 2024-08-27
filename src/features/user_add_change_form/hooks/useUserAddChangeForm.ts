@@ -185,17 +185,21 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           // enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
           close();
         }
-        const isErrorChangeItem = response?.isError;
-        if (isErrorChangeItem) {
-          enqueueSnackbar(response.detail, { variant: 'error' });
-        } else {
-          close();
-        }
+        // const isErrorChangeItem = response?.isError;
+        // if (isErrorChangeItem) {
+        //   enqueueSnackbar(response.detail, { variant: 'error' });
+        // } else {
+        //   close();
+        // }
       }
     } catch (error) {
-      const response = await createItem(formData);
-      if (response.status === StatusCode.BAD_REQUEST) {
-        enqueueSnackbar(response?.detail, { variant: 'error' });
+      const responseCreate = await createItem(formData);
+      const responseChange = await changeItem(formData);
+
+      if (!id && responseCreate.status === StatusCode.BAD_REQUEST) {
+        enqueueSnackbar(responseCreate?.detail, { variant: 'error' });
+      } else {
+        enqueueSnackbar(responseChange?.detail, { variant: 'error' });
       }
     }
   };

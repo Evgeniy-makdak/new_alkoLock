@@ -142,14 +142,17 @@ export function deleteQuery<T>({
   headers,
   url,
   data,
+  config,
 }: {
   headers?: HeaderReq;
   url: string;
   data?: unknown;
+  config?: AxiosRequestConfig;
 }) {
   const requestUrl = `${API_URL}${url}`;
   return axios
     .delete<IError, AppAxiosResponse<T>>(requestUrl, {
+      ...config,
       httpsAgent: 'fetch',
       data,
       headers: returnHeaders(headers),
