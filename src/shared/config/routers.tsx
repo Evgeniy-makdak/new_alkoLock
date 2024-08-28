@@ -4,6 +4,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { Alkozamki } from '@pages/alkozamki';
 import { Attachments } from '@pages/attachments';
 import { Authorization } from '@pages/authorization/ui/Authorization';
+import { ChangePassword } from '@pages/authorization/ui/ChangePassword';
 import { AutoService } from '@pages/auto_service';
 import { Events } from '@pages/events';
 import { Groups } from '@pages/groups';
@@ -16,7 +17,6 @@ import { Spinner } from '@shared/ui/spinner';
 import { App } from '../../app';
 import { RoutePaths } from './routePathsEnum';
 
-// import { ChangePassword } from '@pages/authorization';
 
 export const routers = createBrowserRouter([
   {
@@ -68,8 +68,8 @@ export const routers = createBrowserRouter([
     path: RoutePaths.auth,
     element: <Authorization />,
   },
-  // {
-  //   path: RoutePaths.changePassword,
-  //   element: <ChangePassword />,
-  // },
+  {
+    path: RoutePaths.changePassword,
+    element: <ChangePassword />,
+  },
 ]);

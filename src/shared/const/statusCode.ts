@@ -6,4 +6,5 @@ export enum StatusCode {
   CONFLICT = 409,
   SUCCESS = 200 || 201,
   SERVER_ERROR = 500,
+  PASSWORD_CHANGE = 426,
 }

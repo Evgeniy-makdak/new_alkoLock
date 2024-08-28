@@ -15,6 +15,7 @@ import { getFirstAvailableRouter } from '@widgets/nav_bar';
 
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 
 export const useAuthorization = () => {
   const setState = appStore.setState;
@@ -32,7 +33,12 @@ export const useAuthorization = () => {
       errors.map((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
-    } else if (data.status === StatusCode.UNAUTHORIZED) {
+
+    } 
+    else if (data.status === StatusCode.PASSWORD_CHANGE) {
+        navigate(RoutePaths.changePassword, {state: {username}})
+    }
+    else if (data.status === StatusCode.UNAUTHORIZED) {
       enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
     } else if (data.status === StatusCode.FORBIDDEN) {
       enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
