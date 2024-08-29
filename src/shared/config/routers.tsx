@@ -17,7 +17,6 @@ import { Spinner } from '@shared/ui/spinner';
 import { App } from '../../app';
 import { RoutePaths } from './routePathsEnum';
 
-
 export const routers = createBrowserRouter([
   {
     path: RoutePaths.root,

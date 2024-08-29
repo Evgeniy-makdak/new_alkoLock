@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { enqueueSnackbar } from 'notistack';
+
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -11,6 +13,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
+
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
 
@@ -75,7 +78,9 @@ export const useAuthorization = () => {
     register,
     watch,
     control,
-    formState: { errors: { password, username } },
+    formState: {
+      errors: { password, username },
+    },
   } = useForm({
     defaultValues: {
       rememberMe: false,

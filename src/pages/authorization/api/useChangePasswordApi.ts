@@ -11,10 +11,10 @@ export const useChangePasswordApi = (onSuccess?: (data: AppAxiosResponse<unknown
 
   const { isPending, mutate, isError, isSuccess, data } = useMutation({
     mutationFn: (data: ChangePasswordData) => UsersApi.changePassword(data),
-    onSuccess: (data) => {
-      if (onSuccess) {
-        onSuccess(data);
-      }
+    onSuccess: () => {
+      // if (onSuccess) {
+      //   onSuccess(data);
+      // }
       navigate(RoutePaths.auth);
     },
   });
