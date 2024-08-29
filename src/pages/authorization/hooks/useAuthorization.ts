@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 import { enqueueSnackbar } from 'notistack';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -13,7 +11,6 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
-
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
 
@@ -30,11 +27,11 @@ export const useAuthorization = () => {
     setState({ auth: false });
 
     if (errors.length > 0) {
-      errors.map((error: AuthError) => {
+      errors.forEach((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
     } else if (data.status === StatusCode.PASSWORD_CHANGE) {
-      navigate(RoutePaths.changePassword, { state: { data } });
+      navigate(RoutePaths.changePassword, { state: { data: null } });
     } else if (data.status === StatusCode.UNAUTHORIZED) {
       enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
     } else if (data.status === StatusCode.FORBIDDEN) {
@@ -54,11 +51,9 @@ export const useAuthorization = () => {
 
         setCanLoadLoginData(true);
 
-        // После успешной авторизации перезагружаем текущую страницу
         navigate(location.pathname, { replace: true });
       }
     } else {
-      // Обработка других статусов ответа (необязательно)
       console.warn('Неизвестный статус ответа:', data.data.response?.status);
     }
   };
@@ -80,9 +75,7 @@ export const useAuthorization = () => {
     register,
     watch,
     control,
-    formState: {
-      errors: { password, username },
-    },
+    formState: { errors: { password, username } },
   } = useForm({
     defaultValues: {
       rememberMe: false,
@@ -90,7 +83,7 @@ export const useAuthorization = () => {
     resolver: yupResolver(schema),
   });
 
-  const handleChangeRemeber = (value: boolean) => {
+  const handleChangeRemember = (value: boolean) => {
     setValue('rememberMe', value);
   };
 
@@ -105,7 +98,6 @@ export const useAuthorization = () => {
 
   useEffect(() => {
     if (canNotEnter) return;
-    // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
     const { firstAvailableRouter } = getFirstAvailableRouter(accountData?.permissions);
     const isGlobalAdmin = accountData?.permissions?.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
@@ -130,8 +122,9 @@ export const useAuthorization = () => {
     enter(data);
   };
 
-  const errorPassword = password ? password?.message : '';
-  const errorUsername = username ? username?.message : '';
+  const errorPassword = password ? password.message : '';
+  const errorUsername = username ? username.message : '';
+
   return {
     handleSubmit: handleSubmit(handleAuthorization),
     isLoading,
@@ -140,6 +133,6 @@ export const useAuthorization = () => {
     errorUsername,
     control,
     rememberMe: watch('rememberMe'),
-    handleChangeRemeber,
+    handleChangeRemember,
   };
 };

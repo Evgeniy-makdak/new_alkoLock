@@ -538,6 +538,7 @@ export type ChangePasswordData = {
   currentPassword: string;
   newPassword: string;
 };
+
 export type UserDataLogin = {
   detail: string;
   username: string | null;
