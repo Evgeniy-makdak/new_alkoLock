@@ -539,6 +539,12 @@ export type ChangePasswordData = {
   newPassword: string;
 };
 
+export type ChangePassword = {
+  currentPassword: string;
+  newPassword: string;
+  repeatNewPassword: string;
+};
+
 export type UserDataLogin = {
   detail: string;
   username: string | null;
