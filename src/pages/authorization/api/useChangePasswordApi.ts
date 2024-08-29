@@ -18,7 +18,6 @@ export const useChangePasswordApi = (onSuccess?: (data: AppAxiosResponse<unknown
       navigate(RoutePaths.auth);
     },
   });
-console.log(data);
 
   return {
     mutate,
