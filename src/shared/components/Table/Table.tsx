@@ -1,5 +1,4 @@
 import { memo } from 'react';
-
 import { ThemeProvider, createTheme } from '@mui/material';
 import { ruRU as coreRuRU } from '@mui/material/locale';
 import { type DataGridProps, type GridColumnHeaderParams, ruRU } from '@mui/x-data-grid';
@@ -7,6 +6,7 @@ import { ruRU as pickersruRU } from '@mui/x-date-pickers/locales';
 
 import style from './Table.module.scss';
 import { CustomNoRowsOverlay, StyledDataGrid, getStyle } from './styledTable';
+import CustomPagination from '@shared/lib/CustomPagination'; 
 
 interface TableProps extends DataGridProps {
   styles?: string;
@@ -15,6 +15,7 @@ interface TableProps extends DataGridProps {
   pageNumber?: number;
   pointer?: boolean;
 }
+
 const theme = createTheme(
   {},
   ruRU, // x-data-grid translations
@@ -60,6 +61,7 @@ export const Table = memo(
             getRowClassName={() => `super-app-theme`}
             slots={{
               noResultsOverlay: CustomNoRowsOverlay,
+              pagination: CustomPagination, // Добавляем кастомную пагинацию
             }}
             initialState={{
               pagination: {

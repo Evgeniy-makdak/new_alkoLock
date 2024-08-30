@@ -9,11 +9,11 @@ import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useEventsTable } from '../hooks/useEventsTable';
 
-interface EventsTable {
+interface EventsTableProps {
   handleClickRow: (id: string | number) => void;
 }
 
-export const EventsTable = ({ handleClickRow }: EventsTable) => {
+export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
 
   return (
