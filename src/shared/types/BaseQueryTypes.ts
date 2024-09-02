@@ -233,6 +233,7 @@ export type IAuthenticate = {
   };
   idToken: string;
   refreshToken: string;
+  needChangePassword: boolean;
 };
 
 export interface IAlcolock {

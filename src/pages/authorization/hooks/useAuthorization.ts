@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
-
 import { enqueueSnackbar } from 'notistack';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -13,7 +11,6 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
-
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
 
@@ -33,14 +30,10 @@ export const useAuthorization = () => {
       errors.forEach((error: AuthError) => {
         enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
       });
-    } else if (data.status === StatusCode.PASSWORD_CHANGE) {
-      navigate(RoutePaths.changePassword, { state: { data: null } });
-    } else if (data.status === StatusCode.UNAUTHORIZED) {
-      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
-    } else if (data.status === StatusCode.FORBIDDEN) {
-      enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
     } else if (data.status === StatusCode.SUCCESS) {
       const idToken = data?.data?.idToken;
+      const needChangePassword = data?.data?.needChangePassword;
+
       if (idToken) {
         cookieManager.set('bearer', idToken);
         const refreshToken = data.data?.refreshToken;
@@ -48,14 +41,22 @@ export const useAuthorization = () => {
           cookieManager.set('refresh', refreshToken);
         }
 
-        setState({
-          auth: true,
-        });
+        if (needChangePassword === true) {
+          navigate(RoutePaths.changePassword, { state: { data: null } });
+        } else {
+          setState({
+            auth: true,
+          });
 
-        setCanLoadLoginData(true);
+          setCanLoadLoginData(true);
 
-        navigate(location.pathname, { replace: true });
+          navigate(location.pathname, { replace: true });
+        }
       }
+    } else if (data.status === StatusCode.UNAUTHORIZED) {
+      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
+    } else if (data.status === StatusCode.FORBIDDEN) {
+      enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
     } else {
       console.warn('Неизвестный статус ответа:', data.data.response?.status);
     }
