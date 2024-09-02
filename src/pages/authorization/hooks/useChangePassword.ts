@@ -1,16 +1,15 @@
 import { useForm } from 'react-hook-form';
-
-import { usePasswordFormApi } from '@features/password_form/api/usePasswordFormApi';
-// import { useLocation } from 'react-router-dom';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { useNavigate } from 'react-router-dom';
+
+import { useChangePasswordApi } from '@pages/authorization/api/useChangePasswordApi';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
-
-// import type { UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { Form, schema } from '../lib/validateChange';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 
 export const useChangePassword = () => {
-  // const { state } = useLocation(); // Переменная state для возможного использования в будущем
+  const navigate = useNavigate();
 
   const {
     handleSubmit,
@@ -20,21 +19,11 @@ export const useChangePassword = () => {
     formState: {
       errors: { currentPassword, newPassword, repeatNewPassword },
     },
-  } = useForm({
+  } = useForm<Form>({
     resolver: yupResolver(schema),
   });
 
-  // const handleAuthorization = (data: UserDataLogin) => {
-  //   console.log(data);
-  // };
-
-  const isLoading = false;
-
-  const errorCurrentPassword = currentPassword ? currentPassword.message : '';
-  const errorNewPassword = newPassword ? newPassword.message : '';
-  const errorRepeatNewPassword = repeatNewPassword ? repeatNewPassword.message : '';
-
-  const { changePassword } = usePasswordFormApi();
+  const { mutate, isLoading } = useChangePasswordApi();
 
   const onSubmit = async (data: Form) => {
     if (data.newPassword.length <= 3) {
@@ -52,31 +41,31 @@ export const useChangePassword = () => {
       return;
     }
 
-    const response = await changePassword(data);
-    if (response.status === StatusCode.BAD_REQUEST && data.currentPassword.length <= 3) {
-      const messageStart =
-        response?.detail.split(',')[6].indexOf('default message [') + 'default message ['.length;
-      const messageEnd = response?.detail.split(',')[6].indexOf(']]');
-      const correctResponse = response?.detail
-        .split(',')[6]
-        .substring(messageStart, messageEnd)
-        .trim();
-      setError('currentPassword', { type: 'custom', message: correctResponse });
-      return;
-    } else if (response.status === StatusCode.BAD_REQUEST) {
-      setError('currentPassword', { type: 'custom', message: response.detail });
-      return;
-    }
-    close();
+    mutate(data, {
+      onError: (error) => {
+        // Преобразуем ошибку к нужному типу
+        if (error instanceof Error) {
+          if ((error as any).status === StatusCode.BAD_REQUEST) {
+            setError('currentPassword', {
+              type: 'custom',
+              message: (error as any).detail || ValidationMessages.defaultError,
+            });
+          }
+        }
+      },
+      onSuccess: () => {
+        navigate(RoutePaths.auth);
+      },
+    });
   };
 
   return {
     handleSubmit: handleSubmit(onSubmit),
     isLoading,
     register,
-    errorCurrentPassword,
-    errorNewPassword,
-    errorRepeatNewPassword,
+    errorCurrentPassword: currentPassword?.message || '',
+    errorNewPassword: newPassword?.message || '',
+    errorRepeatNewPassword: repeatNewPassword?.message || '',
     control,
   };
 };

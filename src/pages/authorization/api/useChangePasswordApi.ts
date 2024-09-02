@@ -1,22 +1,10 @@
-import { useNavigate } from 'react-router-dom';
-
-import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { UsersApi } from '@shared/api/baseQuerys';
-import { RoutePaths } from '@shared/config/routePathsEnum';
 import type { ChangePasswordData } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
 
-export const useChangePasswordApi = (onSuccess?: (data: AppAxiosResponse<unknown>) => void) => {
-  const navigate = useNavigate();
-
+export const useChangePasswordApi = () => {
   const { isPending, mutate, isError, isSuccess, data } = useMutation({
     mutationFn: (data: ChangePasswordData) => UsersApi.changePassword(data),
-    onSuccess: () => {
-      // if (onSuccess) {
-      //   onSuccess(data);
-      // }
-      navigate(RoutePaths.auth);
-    },
   });
 
   return {
