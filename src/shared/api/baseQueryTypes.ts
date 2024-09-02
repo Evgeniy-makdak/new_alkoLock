@@ -27,7 +27,7 @@ axios.defaults.maxRedirects = 10;
 export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T> {
   const data = error?.response?.data;
   const message = typeof data === 'string' ? data : '';
-  // const fieldErrors = data?.fieldErrors;
+  const fieldErrors = data?.fieldErrors;
   const status = error?.response?.status;
   const detail = data?.detail || '';
   const isAuthError = status === StatusCode.UNAUTHORIZED;
@@ -47,14 +47,14 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
       variant: 'error',
     });
   }
-  // fieldErrors &&
-  //   !isAuthError &&
-  //   fieldErrors.map((e) => {
-  //     enqueueSnackbar(e.message, {
-  //       preventDuplicate: true,
-  //       variant: 'error',
-  //     });
-  //   });
+  fieldErrors &&
+    !isAuthError &&
+    fieldErrors.map((e) => {
+      enqueueSnackbar(e.message, {
+        preventDuplicate: true,
+        variant: 'error',
+      });
+    });
 
   return {
     data: null,

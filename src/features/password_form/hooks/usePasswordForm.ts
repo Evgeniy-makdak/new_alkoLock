@@ -1,31 +1,31 @@
 import { useForm } from 'react-hook-form';
-
 import { yupResolver } from '@hookform/resolvers/yup';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
-
 import { usePasswordFormApi } from '../api/usePasswordFormApi';
-import { Form, schema } from '../lib/validate';
+import { schema } from '../lib/validate';
+import { ChangePasswordData } from '@shared/types/BaseQueryTypes';
 
 export const usePasswordForm = (close: () => void) => {
   const {
     register,
     handleSubmit,
     formState: {
-      errors: { currentPassword, newPassword },
+      errors: { currentPassword, newPassword, confirmNewPassword },
     },
     control,
     setError,
-  } = useForm({
-    resolver: yupResolver(schema),
+  } = useForm<ChangePasswordData>({
+    resolver: yupResolver(schema) as any,
   });
 
-  const currentPasswordError = currentPassword ? currentPassword?.message : '';
-  const newPasswordError = newPassword ? newPassword?.message : '';
+  const currentPasswordError = currentPassword ? currentPassword.message : '';
+  const newPasswordError = newPassword ? newPassword.message : '';
+  const confirmNewPasswordError = confirmNewPassword ? confirmNewPassword.message : '';
 
   const { changePassword } = usePasswordFormApi();
 
-  const onSubmit = async (data: Form) => {
+  const onSubmit = async (data: ChangePasswordData) => {
     if (data.newPassword.length <= 3) {
       setError('newPassword', {
         type: 'custom',
@@ -41,18 +41,16 @@ export const usePasswordForm = (close: () => void) => {
       return;
     }
 
-    const response = await changePassword(data);
-    if (response.status === StatusCode.BAD_REQUEST && data.currentPassword.length <= 3) {
-      const messageStart =
-        response?.detail.split(',')[6].indexOf('default message [') + 'default message ['.length;
-      const messageEnd = response?.detail.split(',')[6].indexOf(']]');
-      const correctResponse = response?.detail
-        .split(',')[6]
-        .substring(messageStart, messageEnd)
-        .trim();
-      setError('currentPassword', { type: 'custom', message: correctResponse });
+    if (data.newPassword !== data.confirmNewPassword) {
+      setError('confirmNewPassword', {
+        type: 'custom',
+        message: ValidationMessages.passwordsMustMatch,
+      });
       return;
-    } else if (response.status === StatusCode.BAD_REQUEST) {
+    }
+
+    const response = await changePassword(data);
+    if (response.status === StatusCode.BAD_REQUEST) {
       setError('currentPassword', { type: 'custom', message: response.detail });
       return;
     }
@@ -62,6 +60,7 @@ export const usePasswordForm = (close: () => void) => {
   return {
     currentPasswordError,
     newPasswordError,
+    confirmNewPasswordError,
     register,
     handleSubmit: handleSubmit(onSubmit),
     control,

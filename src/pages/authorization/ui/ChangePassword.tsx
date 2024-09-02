@@ -48,7 +48,7 @@ export const ChangePassword = () => {
                 control={control}
                 autoComplete="off"
                 fullWidth
-                type="pass"
+                type="password"
                 variant="outlined"
                 label="Текущий пароль"
               />
@@ -60,7 +60,7 @@ export const ChangePassword = () => {
                 control={control}
                 autoComplete="off"
                 fullWidth
-                type="pass"
+                type="password"
                 variant="outlined"
                 label="Новый пароль"
               />
@@ -72,7 +72,7 @@ export const ChangePassword = () => {
                 control={control}
                 autoComplete="off"
                 fullWidth
-                type="pass"
+                type="password"
                 variant="outlined"
                 label="Подтверждение пароля"
               />

@@ -61,7 +61,7 @@ export const Authorization = () => {
                 control={control}
                 autoComplete="off"
                 fullWidth
-                type={'pass'}
+                type={'password'}
                 variant={'outlined'}
                 label="Пароль"
               />

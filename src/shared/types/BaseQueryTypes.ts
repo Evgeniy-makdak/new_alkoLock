@@ -538,12 +538,14 @@ export type ChangeRoleData = CreateRoleData;
 export type ChangePasswordData = {
   currentPassword: string;
   newPassword: string;
+  confirmNewPassword: string;
 };
 
 export type ChangePassword = {
   currentPassword: string;
   newPassword: string;
   repeatNewPassword: string;
+  confirmNewPassword: string;
 };
 
 export type UserDataLogin = {

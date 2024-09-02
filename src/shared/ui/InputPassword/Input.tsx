@@ -7,7 +7,7 @@ import { IconButton, InputAdornment, TextField, TextFieldProps } from '@mui/mate
 import { useToggle } from '@shared/hooks/useToggle';
 
 type InputPasswordProps<T> = {
-  type?: 'pass' | 'text';
+  type?: 'password' | 'text';
   control: Control<T>;
   name: Path<T>;
 } & Omit<TextFieldProps, 'name' | 'type'>;
@@ -15,7 +15,7 @@ type InputPasswordProps<T> = {
 export const InputPassword = <T,>({
   name,
   control,
-  type = 'pass',
+  type = 'password',
   ...rest
 }: InputPasswordProps<T>): JSX.Element => {
   const [showPassword, toggleShowPassword] = useToggle(false);
@@ -27,7 +27,7 @@ export const InputPassword = <T,>({
         control={control}
         render={({ field: { onChange, value }, fieldState: { error } }) => (
           <>
-            {type === 'pass' ? (
+            {type === 'password' ? (
               <TextField
                 {...rest}
                 onChange={onChange}
