@@ -103,6 +103,19 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   label={'Пароль'}
                   name={'password'}
                 />
+                <InputPassword
+                  inputProps={{
+                    autocomplete: 'new-password',
+                    form: {
+                      autocomplete: 'off',
+                    },
+                  }}
+                  control={control}
+                  helperText={state.errors.errorPassword}
+                  error={Boolean(state.errors.errorPassword)}
+                  label={'Повторить пароль'}
+                  name={'password'}
+                />
                 <FieldSelect
                   labelText="Доступ"
                   testId={
