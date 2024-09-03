@@ -1,6 +1,5 @@
 import type { Dayjs } from 'dayjs';
 import * as yup from 'yup';
-import { object } from 'yup';
 
 import type { ImageState } from '@entities/upload_img';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -8,6 +7,11 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
+
+
+// const isSameDate = (val1: Dayjs, val2: Dayjs) => {
+//   return val1.date() === val2.date() && val1.month() === val2.month() && val1.year() === val2.year();
+// };
 
 export type Form = {
   firstName: string;
@@ -17,6 +21,7 @@ export type Form = {
   phone: string;
   email: string;
   password: string;
+  repeatPassword: string;
   userGroups: Values;
   licenseCode: string;
   licenseIssueDate: Dayjs | null;
@@ -30,70 +35,41 @@ export type KeyForm = keyof Form;
 
 type YupContext = yup.TestContext<Form>;
 
-// const isSameDate = (val1: Dayjs, val2: Dayjs) => {
-//   return val1.date() === val2.date() && val1.month() === val2.month() && val1.year() === val2.year();
-// };
+yup.addMethod(yup.object, 'licenseIssueDate', function method(message) {
+  return this.test('licenseIssueDate', message, function validate(value: Dayjs | null, context: YupContext) {
+    if (!mustBeDate(context)) return true;
+    if (!value || !value.isValid()) {
+      return context.createError({ message: ValidationMessages.notValidData });
+    }
 
-yup.addMethod(object, 'licenseIssueDate', function method(message) {
-  return this.test(
-    'licenseIssueDate',
-    message,
-    function validate(value: Dayjs, context: YupContext) {
-      if (!mustBeDate(context)) return true;
-      if (!value) {
-        return context.createError({ message: ValidationMessages.required });
-      }
-      const isValid = 'isValid' in value && value.isValid();
-      if (!isValid) {
-        return context.createError({ message: ValidationMessages.notValidData });
-      }
-
-      const parent = context.parent;
-      const licenseExpirationDate = parent?.licenseExpirationDate as Dayjs;
-      const isValidExpirationDate =
-        licenseExpirationDate &&
-        'isValid' in licenseExpirationDate &&
-        licenseExpirationDate.isValid();
-      if (!isValidExpirationDate) return true;
-      if (!value.isBefore(licenseExpirationDate)) {
-        return context.createError({ message: ValidationMessages.similarDateOfLicense });
-      }
-      return true;
-    },
-  );
+    const parent = context.parent;
+    const licenseExpirationDate = parent?.licenseExpirationDate as Dayjs | null;
+    if (licenseExpirationDate && licenseExpirationDate.isValid() && !value.isBefore(licenseExpirationDate)) {
+      return context.createError({ message: ValidationMessages.similarDateOfLicense });
+    }
+    return true;
+  });
 });
 
-yup.addMethod(object, 'licenseExpirationDate', function method(message) {
-  return this.test(
-    'licenseExpirationDate',
-    message,
-    function validate(value: Dayjs, context: YupContext) {
-      if (!mustBeDate(context)) return true;
-      if (!value) {
-        return context.createError({ message: ValidationMessages.required });
-      }
-      const isValid = 'isValid' in value && value.isValid();
-      if (!isValid) {
-        return context.createError({ message: ValidationMessages.notValidData });
-      }
-      const parent = context.parent;
-      const licenseIssueDate = parent?.licenseIssueDate;
-      const isValidIssueDate =
-        licenseIssueDate && 'isValid' in licenseIssueDate && licenseIssueDate.isValid();
-      if (!isValidIssueDate) return true;
-      if (!licenseIssueDate.isBefore(value)) {
-        return context.createError({ message: ValidationMessages.similarDateOfLicense });
-      }
-      return true;
-    },
-  );
+yup.addMethod(yup.object, 'licenseExpirationDate', function method(message) {
+  return this.test('licenseExpirationDate', message, function validate(value: Dayjs | null, context: YupContext) {
+    if (!mustBeDate(context)) return true;
+    if (!value || !value.isValid()) {
+      return context.createError({ message: ValidationMessages.notValidData });
+    }
+    
+    const parent = context.parent;
+    const licenseIssueDate = parent?.licenseIssueDate as Dayjs | null;
+    if (licenseIssueDate && licenseIssueDate.isValid() && !licenseIssueDate.isBefore(value)) {
+      return context.createError({ message: ValidationMessages.similarDateOfLicense });
+    }
+    return true;
+  });
 });
 
-yup.addMethod(object, 'birthDate', function method(message) {
-  return this.test('birthDate', message, function validate(value: Dayjs, context: YupContext) {
-    if (!value) return true;
-    const isValid = 'isValid' in value && value.isValid();
-    if (!isValid) {
+yup.addMethod(yup.object, 'birthDate', function method(message) {
+  return this.test('birthDate', message, function validate(value: Dayjs | null, context: YupContext) {
+    if (value && !value.isValid()) {
       return context.createError({ message: ValidationMessages.notValidData });
     }
     return true;
@@ -103,8 +79,7 @@ yup.addMethod(object, 'birthDate', function method(message) {
 const mustBeDate = (context: YupContext) => {
   const parent = context.parent;
   const licenseCode = parent?.licenseCode;
-
-  return licenseCode && licenseCode?.trim() > 0;
+  return licenseCode && licenseCode.trim().length > 0;
 };
 
 export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =>
@@ -121,9 +96,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     firstName: yup.string().required(ValidationMessages.required),
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-ignore
-    birthDate: yup.object().birthDate().nullable(),
+    birthDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
     phone: yup.string().test({
       name: 'phone',
       test(value, context) {
@@ -140,6 +113,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     email: yup
       .string()
       .required(ValidationMessages.required)
+      .email(ValidationMessages.notValidEmail)
       .test({
         name: 'email',
         test(value, context) {
@@ -171,6 +145,15 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         return true;
       },
     }),
+    repeatPassword: yup.string().test({
+      name: 'repeatPassword',
+      test(value, context) {
+        if (value !== context.parent.password) {
+          return context.createError({ message: ValidationMessages.passwordsNotMustMatch });
+        }
+        return true;
+      },
+    }),
     disabled: yup.string().required(ValidationMessages.required),
     licenseCode: yup.string().test({
       name: 'licenseCode',
@@ -184,22 +167,8 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         return true;
       },
     }),
-    licenseIssueDate: yup
-      .object()
-      // TODO => разобраться с типами
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      .licenseIssueDate()
-      .typeError(ValidationMessages.notValidData)
-      .nullable(),
-    licenseExpirationDate: yup
-      .object()
-      // TODO => разобраться с типами
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      //@ts-ignore
-      .licenseExpirationDate()
-      .nullable()
-      .typeError(ValidationMessages.notValidData),
+    licenseIssueDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
+    licenseExpirationDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
     userGroups: yup.array().test({
       name: 'userGroups',
       test(value, context) {
@@ -216,6 +185,31 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
       },
     }),
   });
+
+// TODO => переработать работу с ролями когда изменится api на бэке
+export const isDisabledAdminRole = (value: Value, roles: Values): boolean => {
+  const permissions = value?.permissions || [];
+
+  const selectedRolesPermissions = roles.reduce((prev, curr) => {
+    const permissionsCurr = curr.permissions;
+
+    if (!Array.isArray(permissionsCurr)) return prev;
+    permissionsCurr.map((per) => {
+      prev.push(per);
+    });
+    return prev;
+  }, []);
+
+  const hasSelectedRoles = selectedRolesPermissions.length > 0;
+  const isGlobalAdminRoleSelect = selectedRolesPermissions.includes(
+    Permissions.SYSTEM_GLOBAL_ADMIN,
+  );
+  const isNotGlobalAdminRole = !permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+
+  if (isNotGlobalAdminRole && isGlobalAdminRoleSelect) return true;
+  else if (hasSelectedRoles && !isNotGlobalAdminRole && !isGlobalAdminRoleSelect) return true;
+  return false;
+};
 // TODO => переработать работу с ролями когда изменится api на бэке
 export const isDisabledAdminRole = (value: Value, roles: Values): boolean => {
   const permissions = value?.permissions || [];
