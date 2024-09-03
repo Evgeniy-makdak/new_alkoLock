@@ -51,14 +51,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     resolver: yupResolver(schema(id, isGlobalAdmin)),
     defaultValues: initUser.defaultValues,
   });
+
   useEffect(() => {
     reset(initUser.defaultValues);
   }, [isLoading]);
+
   const stateOfForm = getFormState(formState, watch);
 
   const onSelectLicenseClass = (value: string) => {
     const licenseClass = getValues()?.licenseClass || [];
-    const newLicenseClass = licenseClass?.includes(value)
+    const newLicenseClass = licenseClass.includes(value)
       ? licenseClass.filter((val: string) => val !== value)
       : [...licenseClass, value];
     setValue('licenseClass', newLicenseClass);
@@ -92,7 +94,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   };
 
   const setLicenseCode = (value: string | undefined) => {
-    if (!value || value?.length === 0) {
+    if (!value || value.length === 0) {
       clearErrors(['licenseClass', 'licenseExpirationDate', 'licenseIssueDate', 'licenseCode']);
     }
     const error = ValidationRules.driverLicenseValidation(value);
@@ -106,22 +108,14 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     if (
       avatar &&
       !isLoading &&
-      stateOfForm?.state?.images?.length === 0 &&
+      stateOfForm.state.images.length === 0 &&
       id &&
       firstRender.current
     ) {
       firstRender.current = false;
-
       setAvatar(initUser.initialAvatar);
     }
-  }, [
-    id,
-    initUser.initialAvatar,
-    isLoading,
-    setAvatar,
-    stateOfForm?.state?.images?.length,
-    avatar,
-  ]);
+  }, [id, initUser.initialAvatar, isLoading, setAvatar, stateOfForm.state.images.length, avatar]);
 
   async function clearCache() {
     const cacheNames = await caches.keys();
@@ -131,9 +125,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   }
 
   const onSubmit = async (data: Form) => {
-    const licenseClass = (data?.licenseClass || []).length > 0;
-    const licenseIssueDate = Boolean(data?.licenseIssueDate);
-    const licenseExpirationDate = Boolean(data?.licenseExpirationDate);
+    const licenseClass = (data.licenseClass || []).length > 0;
+    const licenseIssueDate = Boolean(data.licenseIssueDate);
+    const licenseExpirationDate = Boolean(data.licenseExpirationDate);
 
     if (
       stateOfForm.state.disableDriverInfo &&
@@ -147,7 +141,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     if (
       isUserDriver &&
       !stateOfForm.state.userGroups?.find((elem) =>
-        elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
+        elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never)
       ) &&
       !alert
     ) {
@@ -158,7 +152,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const { formData } = getDataForRequest(
       data,
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
-      id,
+      id
     );
 
     try {
@@ -166,8 +160,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         const response = await createItem(formData);
         if (response.status === StatusCode.BAD_REQUEST) {
           const messageStart =
-            response?.detail.split(',')[6].indexOf('message=') + 'message='.length;
-          enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
+            response.detail.split(',')[6].indexOf('message=') + 'message='.length;
+          enqueueSnackbar(response.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
         } else {
@@ -177,30 +171,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         const response = await changeItem(formData);
         if (response.status === StatusCode.BAD_REQUEST) {
           const messageStart =
-            response?.detail.split(',')[6].indexOf('message=') + 'message='.length;
-          enqueueSnackbar(response?.detail.split(',')[6].substring(messageStart).trim(), {
+            response.detail.split(',')[6].indexOf('message=') + 'message='.length;
+          enqueueSnackbar(response.detail.split(',')[6].substring(messageStart).trim(), {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          // enqueueSnackbar(response?.detail || 'Профиль успешно обновлён!', { variant: 'success' });
           close();
         }
-        // const isErrorChangeItem = response?.isError;
-        // if (isErrorChangeItem) {
-        //   enqueueSnackbar(response.detail, { variant: 'error' });
-        // } else {
-        //   close();
-        // }
       }
     } catch (error) {
-      const responseCreate = await createItem(formData);
-      const responseChange = await changeItem(formData);
-
-      if (!id && responseCreate.status === StatusCode.BAD_REQUEST) {
-        enqueueSnackbar(responseCreate?.detail, { variant: 'error' });
-      } else {
-        enqueueSnackbar(responseChange?.detail, { variant: 'error' });
-      }
+      enqueueSnackbar('An error occurred while submitting the form', { variant: 'error' });
     }
   };
 
@@ -224,10 +204,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     },
   };
 
-  const isDriver = // isUserDriver &&
-    stateOfForm.state.userGroups?.find((elem) =>
-      elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
-    );
+  const isDriver = stateOfForm.state.userGroups?.find((elem) =>
+    elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never)
+  );
 
   return {
     control,

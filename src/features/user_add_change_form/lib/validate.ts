@@ -111,7 +111,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     firstName: yup.string().required(ValidationMessages.required),
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
-    birthDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
+    birthDate: yup.mixed<Dayjs>().nullable().typeError(ValidationMessages.notValidData),
     phone: yup.string().test({
       name: 'phone',
       test(value, context) {
@@ -182,8 +182,8 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         return true;
       },
     }),
-    licenseIssueDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
-    licenseExpirationDate: yup.date().nullable().typeError(ValidationMessages.notValidData),
+    licenseIssueDate: yup.mixed<Dayjs>().nullable().typeError(ValidationMessages.notValidData),
+    licenseExpirationDate: yup.mixed<Dayjs>().nullable().typeError(ValidationMessages.notValidData),
     userGroups: yup.array().test({
       name: 'userGroups',
       test(value, context) {
