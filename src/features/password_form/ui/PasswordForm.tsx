@@ -62,7 +62,7 @@ export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
           fullWidth
           type="password"
           variant="outlined"
-          label="Повторите пароль"
+          label="Подтвердите пароль"
         />
       </InputsColumnWrapper>
       <ButtonFormWrapper>

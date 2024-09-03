@@ -11,6 +11,6 @@ export enum ValidationMessages {
   notValidSerialNumber = 'Серийный номер должен содержать от 1 до 20 символов',
   similarDateOfLicense = 'Дата получения прав должна быть меньше даты истечения срока прав',
   defaultError = "defaultError",
-  passwordsMustMatch ="Пароли не могут быть одинаковыми",
+  passwordsMustMatch ="Новый пароль не должен совпадать с текущим",
   passwordsNotMustMatch ="Пароли не совпадают",
 }
