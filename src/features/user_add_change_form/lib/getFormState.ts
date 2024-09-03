@@ -137,6 +137,7 @@ export const getInitFormState = (
     disabled: disabledInit,
     email: canSetDefaultValue ? user?.email : '',
     password: '',
+    repeatPassword: '',
     licenseExpirationDate: licenseExpirationDateInit,
     licenseIssueDate: licenseIssueDateInit,
     licenseClass: canSetDefaultValue ? user?.driver?.licenseClass : [],
