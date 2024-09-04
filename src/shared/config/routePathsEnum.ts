@@ -12,4 +12,6 @@ export enum RoutePaths {
   autoService = '/auto_service',
   historyAutoService = '/historyAutoService',
   changePassword = '/changePassword',
+  forgetPassword = '/forgetPassword',
+  resetPassword = '/resetPassword',
 }

@@ -16,6 +16,8 @@ import { Spinner } from '@shared/ui/spinner';
 
 import { App } from '../../app';
 import { RoutePaths } from './routePathsEnum';
+import { ForgetPassword } from '@pages/authorization/ui/ForgetPassword';
+import { ResetPassword } from '@pages/authorization/ui/ResetPassword';
 
 export const routers = createBrowserRouter([
   {
@@ -70,5 +72,13 @@ export const routers = createBrowserRouter([
   {
     path: RoutePaths.changePassword,
     element: <ChangePassword />,
+  },
+  {
+    path: RoutePaths.forgetPassword,
+    element: <ForgetPassword />,
+  },
+  {
+    path: RoutePaths.resetPassword,
+    element: <ResetPassword />,
   },
 ]);
