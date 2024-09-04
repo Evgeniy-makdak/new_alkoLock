@@ -70,7 +70,7 @@ export const useChangePassword = () => {
             type: 'custom',
             message: errorMessage,
           });
-          enqueueSnackbar(errorMessage, { variant: 'error' });
+          // enqueueSnackbar(errorMessage, { variant: 'error' });
         }
       },
       onError: (error) => {
@@ -79,7 +79,7 @@ export const useChangePassword = () => {
           type: 'custom',
           message: errorMessage,
         });
-        enqueueSnackbar(errorMessage, { variant: 'error' });
+        // enqueueSnackbar(errorMessage, { variant: 'error' });
       },
     });
   };
