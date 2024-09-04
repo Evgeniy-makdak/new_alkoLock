@@ -41,7 +41,17 @@ export const useChangePassword = () => {
       return;
     }
 
+    if (data.currentPassword === data.newPassword) {
+      // enqueueSnackbar(ValidationMessages.passwordsMustMatch, { variant: 'error' });
+      setError('newPassword', {
+        type: 'custom',
+        message: ValidationMessages.passwordsMustMatch,
+      });
+      return;
+    }
+
     if (data.newPassword !== data.repeatNewPassword) {
+      // enqueueSnackbar(ValidationMessages.passwordsMustMatch, { variant: 'error' });
       setError('repeatNewPassword', {
         type: 'custom',
         message: ValidationMessages.passwordsMustMatch,
@@ -50,20 +60,26 @@ export const useChangePassword = () => {
     }
 
     mutate(data, {
-      onError: (error) => {
-        if (error instanceof Error) {
-          if ((error as any).status === StatusCode.BAD_REQUEST) {
-            const errorMessage = (error as any).detail || ValidationMessages.defaultError;
-            setError('currentPassword', {
-              type: 'custom',
-              message: errorMessage,
-            });
-            enqueueSnackbar(errorMessage, { variant: 'error' });
-          }
+      onSuccess: (response) => {
+        if (response?.status === StatusCode.SUCCESS) {
+          enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
+          navigate(RoutePaths.auth);
+        } else {
+          const errorMessage = response?.detail || ValidationMessages.defaultError;
+          setError('currentPassword', {
+            type: 'custom',
+            message: errorMessage,
+          });
+          enqueueSnackbar(errorMessage, { variant: 'error' });
         }
       },
-      onSuccess: () => {
-        navigate(RoutePaths.auth);
+      onError: (error) => {
+        const errorMessage = (error as any)?.detail || ValidationMessages.defaultError;
+        setError('currentPassword', {
+          type: 'custom',
+          message: errorMessage,
+        });
+        enqueueSnackbar(errorMessage, { variant: 'error' });
       },
     });
   };
