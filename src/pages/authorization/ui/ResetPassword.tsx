@@ -1,6 +1,6 @@
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { testids } from '@shared/const/testid';
-import { InputPassword } from '@shared/ui/InputPassword/Input';
+import { TextField } from '@mui/material';
 import { Loader } from '@shared/ui/loader';
 import { Logo } from '@shared/ui/logo';
 
@@ -12,8 +12,7 @@ export const ResetPassword = () => {
     isLoading,
     handleSubmit,
     register,
-    control,
-    errorNewPassword,
+    errorEmail, 
   } = useResetPassword();
 
   return (
@@ -24,7 +23,7 @@ export const ResetPassword = () => {
       <div className={style.wrapper}>
         <h1 className={style.title}>Восстановление пароля</h1>
         <p className={style.changePassword}>
-          Введите e-mail зарегистрированный в системе
+          Введите e-mail, зарегистрированный в системе
         </p>
         <Loader
           isLoading={isLoading}
@@ -36,15 +35,14 @@ export const ResetPassword = () => {
             className={style.form}
             onSubmit={handleSubmit}>
             <InputsColumnWrapper>
-              <InputPassword
-                helperText={errorNewPassword as React.ReactNode}
-                error={!!errorNewPassword}
-                {...register('newPassword')}
-                name="newPassword"
-                control={control}
+              <TextField 
+                helperText={errorEmail as React.ReactNode}
+                error={!!errorEmail}
+                {...register('email')} 
+                name="email"
                 autoComplete="off"
                 fullWidth
-                type="text"
+                type="email"
                 variant="outlined"
                 label="e-mail"
               />

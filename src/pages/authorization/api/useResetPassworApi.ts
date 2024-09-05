@@ -1,17 +1,18 @@
-// import { UsersApi } from '@shared/api/baseQuerys';
-// import type { ChangePasswordData } from '@shared/types/BaseQueryTypes';
-// import { useMutation } from '@tanstack/react-query';
+import { UsersApi } from '@shared/api/baseQuerys';
+import { useMutation } from '@tanstack/react-query';
 
-// export const useResetPasswordApi = () => {
-//   const { isPending, mutate, isError, isSuccess, data } = useMutation({
-//     mutationFn: (data: ChangePasswordData) => UsersApi.changePassword(data),
-//   });
+export type ResetPasswordData = { email: string };
 
-//   return {
-//     mutate,
-//     isLoading: isPending,
-//     isError,
-//     isSuccess,
-//     data,
-//   };
-// };
+export const useResetPasswordApi = () => {
+  const { isPending, mutate, isError, isSuccess, data } = useMutation({
+    mutationFn: (data: ResetPasswordData) => UsersApi.resetPassword(data), // Отправляем запрос с email
+  });
+
+  return {
+    mutate,
+    isLoading: isPending,
+    isError,
+    isSuccess,
+    data,
+  };
+};

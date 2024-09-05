@@ -541,6 +541,10 @@ export type ChangePasswordData = {
   confirmNewPassword: string;
 };
 
+export type ResetPasswordData = {
+  email: string;
+};
+
 export type ChangePassword = {
   currentPassword: string;
   newPassword: string;

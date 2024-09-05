@@ -31,7 +31,7 @@ import {
   type ChangePasswordData,
   type CreateAlcolockData,
   type CreateCarBody,
-  type CreateRoleData, // type CreateUserData,
+  type CreateRoleData,
   type EventsOptions,
   type IAccount,
   type IAccountUser,
@@ -46,6 +46,7 @@ import {
   type IRole,
   IUser,
   type PhotoUrlsFromGalleryResponse,
+  type ResetPasswordData,
   type UserDataLogin,
 } from '../types/BaseQueryTypes';
 import { deleteQuery, getQuery, postQuery, putQuery } from './baseQueryTypes';
@@ -179,6 +180,9 @@ export class UsersApi {
 
   static changePassword(data: ChangePasswordData) {
     return postQuery({ url: `api/account/change-password`, data });
+  }
+  static resetPassword(data: ResetPasswordData) {
+    return postQuery({ url: `api/account`, data });
   }
   static authenticate(data: UserDataLogin) {
     return postQuery<IAuthenticate, unknown>({

@@ -9,6 +9,8 @@ import { Logo } from '@shared/ui/logo';
 
 import { useAuthorization } from '../hooks/useAuthorization';
 import style from './Authorization.module.scss';
+import { useNavigate } from 'react-router-dom';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 
 export const Authorization = () => {
   const {
@@ -21,6 +23,12 @@ export const Authorization = () => {
     rememberMe,
     handleChangeRemember,
   } = useAuthorization();
+
+  const navigate = useNavigate(); 
+
+  const handleResetPassword = () => {
+    navigate(RoutePaths.resetPassword); 
+  };
 
   return (
     <div className={style.authorization}>
@@ -85,7 +93,8 @@ export const Authorization = () => {
               data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
               className={style.button_forget}
               disabled={isLoading}
-              type="reset">
+              type="button"
+              onClick={handleResetPassword}>
               Восстановить пароль
             </button>
           </form>
