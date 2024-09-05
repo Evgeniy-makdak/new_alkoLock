@@ -8,17 +8,25 @@ import { adapterMapOptions } from '../lib/adapterMapOptions';
 
 export const useAlcolockSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID) => {
   const [searchQuery, setSearchQuery] = useState('');
+  
   const onChange = (value: string) => {
     setSearchQuery(value);
   };
+
   const { alcolocks, isLoading } = useAlcolockListQuery({
     searchQuery,
     filterOptions: { branchId, notBranchId: notInBranch },
   });
+
+  const filteredAlcolocks = alcolocks.filter((alcolock) =>
+    alcolock.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const onReset = () => {
     setSearchQuery('');
   };
 
-  const alcolockList = mapOptions(alcolocks, (alcolock) => adapterMapOptions(alcolock, vieBranch));
+  const alcolockList = mapOptions(filteredAlcolocks, (alcolock) => adapterMapOptions(alcolock, vieBranch));
+
   return { onChange, isLoading, onReset, alcolockList };
 };
