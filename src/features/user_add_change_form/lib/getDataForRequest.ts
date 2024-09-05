@@ -13,7 +13,7 @@ export const getDataForRequest = (
   const phone = data?.phone?.trim();
   const middleName = data?.middleName || '';
   const password = data?.password;
-  const birthDate = data?.birthDate?.format('YYYY-MM-DD');
+  const birthDate = data?.birthDate ? data.birthDate.format('YYYY-MM-DD') : '';
   const hasDriver = Boolean(licenseCode);
   const licenseExpirationDate = hasDriver
     ? data?.licenseExpirationDate?.format('YYYY-MM-DD')
@@ -29,6 +29,7 @@ export const getDataForRequest = (
     surname: data?.surname,
     middleName,
     userGroups,
+    birthDate,
   };
 
   if (hasDriver) {
@@ -80,7 +81,7 @@ export const getDataForRequest = (
     formData.append('userPhotoDTO.hash', image.hash);
     formData.append('userPhotoDTO.image', image.image);
   }
-
+  
   let userFoto: FormData | null = null;
   if (image && userID) {
     userFoto = new FormData();

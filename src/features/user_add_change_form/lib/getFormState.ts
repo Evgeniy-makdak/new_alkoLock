@@ -132,7 +132,7 @@ export const getInitFormState = (
     firstName: canSetDefaultValue ? user?.firstName : '',
     surname: canSetDefaultValue ? user?.surname : '',
     middleName: canSetDefaultValue ? user?.middleName : '',
-    birthDate: birthDateInit,
+    birthDate: birthDateInit || null,
     phone: canSetDefaultValue ? user?.phone : '',
     disabled: disabledInit,
     email: canSetDefaultValue ? user?.email : '',

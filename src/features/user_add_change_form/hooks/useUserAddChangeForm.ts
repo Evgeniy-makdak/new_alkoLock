@@ -117,13 +117,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     }
   }, [id, initUser.initialAvatar, isLoading, setAvatar, stateOfForm.state.images.length, avatar]);
 
-  async function clearCache() {
-    const cacheNames = await caches.keys();
-    for (const cacheName of cacheNames) {
-      await caches.delete(cacheName);
-    }
-  }
-
   const onSubmit = async (data: Form) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);

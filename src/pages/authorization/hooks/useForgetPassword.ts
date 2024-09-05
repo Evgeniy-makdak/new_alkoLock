@@ -16,9 +16,7 @@ export const useForgetPassword = () => {
     register,
     control,
     setError,
-    formState: {
-      errors: { newPassword, repeatNewPassword },
-    },
+    formState: { errors: { newPassword, repeatNewPassword } },
   } = useForm<Form>({
     resolver: yupResolver(schema),
   });
@@ -46,7 +44,7 @@ export const useForgetPassword = () => {
       onSuccess: (response) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
-          navigate(RoutePaths.auth);
+          navigate(RoutePaths.auth);  // Перенаправление на страницу входа
         } else {
           const errorMessage = response?.detail || ValidationMessages.defaultError;
           setError('newPassword', {
