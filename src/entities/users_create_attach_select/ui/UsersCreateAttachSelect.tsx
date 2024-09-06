@@ -1,5 +1,4 @@
 import { SearchMultipleSelect, type Value, type Values } from '@shared/ui/search_multiple_select';
-
 import { useUsersCreateAttachSelect } from '../hooks/useUsersCreateAttachSelect';
 
 interface UsersCreateAttachSelectProps<T> {

@@ -25,7 +25,7 @@ export class FilesUtils {
           notValidFormat.add(format);
           const formatView = format.split('/')[1];
 
-          enqueueSnackbar(`Недопустимый формат файла ${formatView}`, { variant: 'error' });
+          enqueueSnackbar(`Недопустимый формат файла ${formatView}`, { variant: 'info' });
         } else {
           filterArr.push(file);
         }

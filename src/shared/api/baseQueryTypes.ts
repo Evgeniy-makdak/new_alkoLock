@@ -49,12 +49,12 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   }
   fieldErrors &&
     !isAuthError &&
-    fieldErrors.map((e) => {
-      enqueueSnackbar(e.message, {
+    // fieldErrors.map((e) => {
+      enqueueSnackbar(detail, {
         preventDuplicate: true,
         variant: 'error',
       });
-    });
+    // });
 
   return {
     data: null,

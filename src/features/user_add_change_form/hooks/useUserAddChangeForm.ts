@@ -154,7 +154,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         if (response.status === StatusCode.BAD_REQUEST) {
           const messageStart =
             response.detail.split(',')[6].indexOf('message=') + 'message='.length;
-          enqueueSnackbar(response.detail.split(',')[6].substring(messageStart).trim(), {
+          enqueueSnackbar(response.detail, {
             variant: 'error',
           });
         } else {
@@ -173,7 +173,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       }
     } catch (error) {
-      enqueueSnackbar('An error occurred while submitting the form', { variant: 'error' });
+      // enqueueSnackbar('An error occurred while submitting the form', { variant: 'error' });
     }
   };
 
