@@ -23,8 +23,5 @@ export const useDeleteUserForm = (id: ID, closeModal: () => void, closeAside: ()
     clearCache();
   };
 
-  console.log('for delete', id);
-  console.log('selectedUserId from context', selectedUserId);
-
   return handleDelete;
 };

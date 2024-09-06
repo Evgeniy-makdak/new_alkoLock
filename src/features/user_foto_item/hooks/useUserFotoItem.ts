@@ -46,7 +46,6 @@ export const useUserFotoItem = (
       const cacheNames = await caches.keys();
       for (const cacheName of cacheNames) {
         await caches.delete(cacheName);
-        console.log(`Кэш ${cacheName} был удален`);
       }
     } catch (error) {
       console.error('Ошибка при очистке кэша:', error);
