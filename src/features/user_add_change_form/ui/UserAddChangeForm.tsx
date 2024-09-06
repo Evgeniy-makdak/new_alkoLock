@@ -1,4 +1,4 @@
-import { type FC } from 'react';
+import { FC } from 'react';
 
 import { Checkbox, TextField, Typography } from '@mui/material';
 
@@ -8,7 +8,7 @@ import { UploadImg } from '@entities/upload_img';
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper';
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { AppAlert } from '@shared/ui/alert';
 import { Button } from '@shared/ui/button';
@@ -197,18 +197,16 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                 />
                 <div
                   className={`${style.wrapperCategories} ${state.state.disableDriverInfo ? style.disabledDriverData : ''}`}>
-                  {AppConstants.categoryTypesList.map((category) => {
-                    return (
-                      <div className={style.categoriesItem} key={category.label}>
-                        <Checkbox
-                          checked={state.state.licenseClass?.includes(category.value)}
-                          onClick={() => state.handlers.onSelectLicenseClass(category.value)}
-                          disabled={state.state.disableDriverInfo || !isUserDriver}
-                        />
-                        <span>{category.label}</span>
-                      </div>
-                    );
-                  })}
+                  {AppConstants.categoryTypesList.map((category) => (
+                    <div className={style.categoriesItem} key={category.label}>
+                      <Checkbox
+                        checked={state.state.licenseClass?.includes(category.value)}
+                        onClick={() => state.handlers.onSelectLicenseClass(category.value)}
+                        disabled={state.state.disableDriverInfo || !isUserDriver}
+                      />
+                      <span>{category.label}</span>
+                    </div>
+                  ))}
                   {Boolean(state.errors.errorLicenseClass) && (
                     <span className={style.error}>{state.errors.errorLicenseClass}</span>
                   )}
@@ -225,15 +223,13 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                 </Button>
               </ButtonFormWrapper>
             )}
-            {
-              <AppAlert
-                severity="warning"
-                title='При удалении у пользователя роли "Водитель" все его привязки к ТС и данные ВУ будут удалены'
-                type="submit"
-                onClose={closeAlert}
-                open={alert}
-              />
-            }
+            <AppAlert
+              severity="warning"
+              title='При удалении у пользователя роли "Водитель" все его привязки к ТС и данные ВУ будут удалены'
+              type="submit"
+              onClose={closeAlert}
+              open={alert}
+            />
           </>
         )}
       </form>

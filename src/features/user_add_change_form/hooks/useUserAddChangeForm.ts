@@ -66,10 +66,24 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     setValue('licenseClass', newLicenseClass);
   };
 
+  const onRemoveDriverRole = () => {
+    // Очистка полей при снятии роли "Водитель"
+    setValue('licenseCode', '');
+    setValue('licenseIssueDate', null);
+    setValue('licenseExpirationDate', null);
+    setValue('licenseClass', []);
+  };
+
   const onSelectUserGroups = (type: KeyForm, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
     clearErrors(type);
     setValue(type, values);
+
+    // Проверка, выбрана ли роль "Водитель"
+    const isDriverRoleSelected = isUserDriver;
+    if (!isDriverRoleSelected) {
+      onRemoveDriverRole(); // Очищаем поля при снятии роли
+    }
   };
 
   const setAvatar = (avatar: ImageState[]) => {
@@ -134,7 +148,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     if (
       isUserDriver &&
       !stateOfForm.state.userGroups?.find((elem) =>
-        elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never)
+        elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
       ) &&
       !alert
     ) {
@@ -145,18 +159,14 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const { formData } = getDataForRequest(
       data,
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
-      id
+      id,
     );
 
     try {
       if (!id) {
         const response = await createItem(formData);
         if (response.status === StatusCode.BAD_REQUEST) {
-          const messageStart =
-            response.detail.split(',')[6].indexOf('message=') + 'message='.length;
-          enqueueSnackbar(response.detail, {
-            variant: 'error',
-          });
+          enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           close();
         }
@@ -173,7 +183,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         }
       }
     } catch (error) {
-      // enqueueSnackbar('An error occurred while submitting the form', { variant: 'error' });
+      //*
     }
   };
 
@@ -198,7 +208,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   };
 
   const isDriver = stateOfForm.state.userGroups?.find((elem) =>
-    elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never)
+    elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
   );
 
   return {
