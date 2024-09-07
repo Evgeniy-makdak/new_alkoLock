@@ -23,6 +23,11 @@ export const useUserInfoApi = (id: ID) => {
     },
   });
 
+  console.log(userInfo);
+  console.log(avatar);
+  
+  
+
   const notFoundUser =
     error?.status === StatusCode.NOT_FOUND || userInfo?.status === StatusCode.NOT_FOUND;
   return { userData: userInfo?.data, isLoading, foto: avatar?.data, notFoundUser };

@@ -542,15 +542,15 @@ export function getEventsApiURL({
         queries += `&all.type.in=${items}`;
       }
     }
-
-    // const otherEvents = eventsByType.filter(
-    //   (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
-    // );
-    // const items = Formatters.getStringForQueryParams(otherEvents);
-    // if (items.length > 0) {
-    //   // Проверка на наличие значений
-    //   queries += `&all.events.eventType.in=${items}`;
-    // }
+// Поменять хардкорд на ответ от сервера!
+    const otherEvents = eventsByType.filter(
+      (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
+    );
+    const items = Formatters.getStringForQueryParams(otherEvents);
+    if (items.length > 0) {
+      // Проверка на наличие значений
+      queries += `&all.events.eventType.in=${items}`;
+    }
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;

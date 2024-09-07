@@ -65,6 +65,7 @@ export const UploadImg: FC<UploadImgProps> = ({
     handleLoadImg,
     inputRef,
   } = useUploadImg(multiple, images, setImage, limit);
+
   return (
     <>
       <Stack data-testid={testId} gap={1}>

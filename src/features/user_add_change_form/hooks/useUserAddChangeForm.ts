@@ -67,7 +67,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   };
 
   const onRemoveDriverRole = () => {
-    // Очистка полей при снятии роли "Водитель"
     setValue('licenseCode', '');
     setValue('licenseIssueDate', null);
     setValue('licenseExpirationDate', null);
@@ -79,10 +78,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     clearErrors(type);
     setValue(type, values);
 
-    // Проверка, выбрана ли роль "Водитель"
     const isDriverRoleSelected = isUserDriver;
     if (!isDriverRoleSelected) {
-      onRemoveDriverRole(); // Очищаем поля при снятии роли
+      onRemoveDriverRole();
     }
   };
 

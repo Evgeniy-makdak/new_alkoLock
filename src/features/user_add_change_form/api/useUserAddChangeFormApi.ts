@@ -5,7 +5,12 @@ import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
 
-const updateQueries = [QueryKeys.USER_LIST_TABLE, QueryKeys.USER_LIST, QueryKeys.USER_ITEM];
+const updateQueries = [
+  QueryKeys.USER_LIST_TABLE,
+  QueryKeys.USER_LIST,
+  QueryKeys.USER_ITEM,
+  QueryKeys.AVATAR,
+];
 
 export const useUserAddChangeFormApi = (id: ID) => {
   const enabled = Boolean(id);
