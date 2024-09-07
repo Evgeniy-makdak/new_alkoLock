@@ -48,13 +48,14 @@ export const useGetColumns = (
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'VIN',
+        maxWidth: 250,
         field: ValuesHeader.VIN,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'Государственный номер',
         field: ValuesHeader.GOS_NUMBER,
-        maxWidth: 143,
+        maxWidth: 243,
       },
       {
         maxWidth: 110,
