@@ -91,43 +91,55 @@ export function getAttachmentURL({
   const dateLink = filterOptions?.dateLink;
   const branch = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({ page: 'vehicle', branchId: branch });
-
+  // Фильтрация по дате начала и окончания
   if (startDate) {
     const date = new Date(startDate).toISOString();
     queries += '&all.createdAt.greaterThanOrEqual=' + encodeURIComponent(date);
   }
 
   if (endDate) {
-    queries +=
-      '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
+    queries += '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
   }
 
+  // Сортировка
   if (sortBy && order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
 
-  if (queryTrimmed.length) {
-    queries += '&any.vehicle.monitoringDevice.match.contains=' + encodeURIComponent(queryTrimmed);
-    queries += '&any.vehicle.match.contains=' + encodeURIComponent(queryTrimmed);
-    queries += `&any.driver.userAccount.match.contains=${queryTrimmed}`;
-    queries += '&any.createdBy.match.contains=' + encodeURIComponent(queryTrimmed);
+  // Общий поиск (все параметры)
+  if (queryTrimmed.length && !createAttach) {
+    // Если фильтр по "создавшему привязку" не используется, выполняем общий поиск
+    queries += `&any.vehicle.monitoringDevice.match.contains=${encodeURIComponent(queryTrimmed)}`;
+    queries += `&any.vehicle.match.contains=${encodeURIComponent(queryTrimmed)}`;
+    queries += `&any.driver.userAccount.match.contains=${encodeURIComponent(queryTrimmed)}`;
+    queries += `&any.createdBy.match.contains=${encodeURIComponent(queryTrimmed)}`;
   }
 
-  if (drivers) {
+  // Фильтрация по водителю
+  if (drivers && drivers.length > 0) {
     queries += `&all.driver.userAccount.id.in=${drivers}`;
   }
-  if (tc) {
+
+  // Фильтрация по транспортному средству
+  if (tc && tc.length > 0) {
     queries += `&all.vehicle.id.in=${tc}`;
   }
-  if (createAttach) {
+
+  // Фильтрация по создателю привязки (работает отдельно от общего поиска)
+  if (createAttach && createAttach.length > 0) {
     queries += `&all.createdBy.id.in=${createAttach}`;
   }
-  if (alcolock) {
+
+  // Фильтрация по алкозамку
+  if (alcolock && alcolock.length > 0) {
     queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
   }
+
+  // Фильтрация по дате привязки
   if (dateLink) {
-    queries += `&all.createdAt.id.in=${dateLink}`;
+    queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
+
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
 }
 
@@ -542,7 +554,7 @@ export function getEventsApiURL({
         queries += `&all.type.in=${items}`;
       }
     }
-// Поменять хардкорд на ответ от сервера!
+    // Поменять хардкорд на ответ от сервера!
     const otherEvents = eventsByType.filter(
       (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
     );
