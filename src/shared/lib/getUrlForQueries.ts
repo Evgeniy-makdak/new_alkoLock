@@ -108,7 +108,6 @@ export function getAttachmentURL({
 
   // Общий поиск (все параметры)
   if (queryTrimmed.length && !createAttach) {
-    // Если фильтр по "создавшему привязку" не используется, выполняем общий поиск
     queries += `&any.vehicle.monitoringDevice.match.contains=${encodeURIComponent(queryTrimmed)}`;
     queries += `&any.vehicle.match.contains=${encodeURIComponent(queryTrimmed)}`;
     queries += `&any.driver.userAccount.match.contains=${encodeURIComponent(queryTrimmed)}`;
@@ -358,7 +357,7 @@ export function getAlcolocksURL({
   if (queryTrimmed.length) {
     queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
   }
-  return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}&sort=name`;
 }
 
 export function getAlcolockListURL({

@@ -26,6 +26,7 @@ export const getLastEvent = (event: IDeviceAction) => {
     const eventType = lastEvent.eventType as string;
     return eventType === 'Тестирование пройдено' ||
       eventType === 'Ошибка при тестировании' ||
+      eventType === 'Начало тестирования' ||
       eventType === 'Сканирование QR кода'
       ? 'Тестирование'
       : eventType;

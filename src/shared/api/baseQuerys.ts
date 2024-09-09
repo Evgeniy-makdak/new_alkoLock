@@ -137,9 +137,7 @@ export class UsersApi {
   }
   static deleteUserImages(data: FormData, userId: ID) {
     const url = `api/v1/users/photos/${userId}/delete-all`;
-
     const response = deleteQuery({ url, data });
-
     return response;
   }
   static getList(options: QueryOptions, widthCars = false) {

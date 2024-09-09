@@ -21,12 +21,7 @@ export const useUserInfoApi = (id: ID) => {
     settings: {
       enabled: enabled,
     },
-  });
-
-  console.log(userInfo);
-  console.log(avatar);
-  
-  
+  }); 
 
   const notFoundUser =
     error?.status === StatusCode.NOT_FOUND || userInfo?.status === StatusCode.NOT_FOUND;
