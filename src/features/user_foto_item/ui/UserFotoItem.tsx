@@ -51,8 +51,6 @@ export const UserFotoItem = ({
   const showSkeleton = isLoadingImage && !imageItem?.src && !isDeleteImage;
   const showError = !imageItem?.src && !isLoadingImage && isError;
   const isAvatar = imageItem?.isAvatar || false;
-  console.log(isAvatar);
-  
 
   if (showSkeleton) {
     return <Skeleton className={style.skeleton} animation="wave" />;

@@ -23,9 +23,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   setImageToStoreAfterLoading: (image, userId) => {
     if (!userId) return;
     const state = get().usersImages;
-
     const userImages = state[userId] ? state[userId] : [];
-
     const newState = userImages.map((storeImage) => {
       if (storeImage?.url === image?.url) {
         return {

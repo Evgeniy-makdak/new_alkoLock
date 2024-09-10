@@ -29,7 +29,7 @@ export const useUserFotoItem = (
   } = useUserFotoItemApi(image?.url, needSendRequest, userId);
 
   useEffect(() => {
-    if (!needSendRequest || !imageRes?.id || !imageRes?.blob) return;
+    if (!needSendRequest || !imageRes?.id || !imageRes?.blob) return;  
     setImageToStoreAfterLoadingMemo({
       isSavedInDataBase: true,
       image: imageRes?.blob,

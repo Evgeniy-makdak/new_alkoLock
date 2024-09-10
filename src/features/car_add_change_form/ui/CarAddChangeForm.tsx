@@ -39,7 +39,6 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
     isLoadingCar,
     isDataLoaded,
   } = useCarAddChangeForm(id, closeModal);
-console.log(isLoadingCar);
 
   return (
     <Loader isLoading={isLoadingCar}>

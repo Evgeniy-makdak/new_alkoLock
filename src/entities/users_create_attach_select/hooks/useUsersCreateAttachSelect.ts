@@ -30,7 +30,6 @@ export const useUsersCreateAttachSelect = () => {
       mapOptions<IAttachmentItems>(data?.data.content, (data) => adapterMapOptions(data, array)),
     [data],
   );  
-  console.log(data?.data);
   
   return { isLoading, onReset, onChange, userActionId };
 };
