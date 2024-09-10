@@ -18,29 +18,36 @@ type GroupAlcolocksTable = {
 
 export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
   const { addModalData, tableData, filtersData, editModalData } = useGroupAlcolocksTable(groupInfo);
+  
   return (
     <>
       <TableHeaderWrapper>
         <SearchInput
           testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_INPUT_SEARCH}
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+          }}
         />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        sortingMode="server"
+        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={tableData.changeTableState} // Пагинация сохраняется при навигации
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
         rows={tableData.rows}
         disableColumnSelector
         disableRowSelectionOnClick
-        sortingMode="server"
       />
       <Popup
         body={

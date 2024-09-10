@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { eventsFilterPanelStore } from '@features/events_filter_panel';
 import { InputSearchDelay } from '@shared/config/permissionsEnums';
@@ -58,6 +58,14 @@ export const useEventsTable = () => {
   const columns = useGetColumns(refetch);
   const totalCount = data?.data?.totalElements || 0;
 
+  // Состояние для управления страницей
+  const [page, setPage] = useState(0);
+
+  // Сброс страницы при изменении фильтров или поискового запроса
+  useEffect(() => {
+    setPage(0);
+  }, [filters, searchQuery, endDate, startDate]);
+
   const tableData = {
     totalCount,
     rows,
@@ -67,6 +75,8 @@ export const useEventsTable = () => {
     changeTableState,
     changeTableSorts,
     isLoading,
+    page,
+    setPage,
   };
 
   const filtersData = {
@@ -82,6 +92,7 @@ export const useEventsTable = () => {
     setInput: setSearchQuery,
     resetFilters,
   };
+
   return {
     filtersData,
     tableData,

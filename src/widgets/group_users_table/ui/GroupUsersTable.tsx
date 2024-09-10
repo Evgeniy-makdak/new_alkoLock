@@ -17,30 +17,37 @@ type GroupUsersTableProps = {
 
 export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
   const { filtersData, tableData, addModalData, editModalData } = useGroupUsersTable(groupInfo);
+
   return (
     <>
       <TableHeaderWrapper>
         <SearchInput
           testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_TABLE}
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+          }}
         />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}
         getRowHeight={() => 'auto'}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        sortingMode="server"
+        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={tableData.changeTableState} // Пагинация сохраняется при навигации
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
         rows={tableData.rows}
         disableColumnSelector
         disableRowSelectionOnClick
-        sortingMode="server"
       />
       <Popup
         isOpen={addModalData.openAddCarModal}

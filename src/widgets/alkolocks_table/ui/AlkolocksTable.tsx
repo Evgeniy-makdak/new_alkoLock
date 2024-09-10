@@ -27,40 +27,67 @@ export const AlkolocksTable = ({ handleClickRow }: AlkolocksTableProps) => {
               .ATTACHMENTS_WIDGET_HEADER_SEARCH_INPUT
           }
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
         />
         <InputsDates
-          onClear={filtersData.clearDates}
+          onClear={() => {
+            filtersData.clearDates();
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
           inputStartTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FROM_DATE
           }
           inputEndTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_TO_DATE
           }
-          onChangeStartDate={filtersData.changeStartDate}
-          onChangeEndDate={filtersData.changeEndDate}
+          onChangeStartDate={(date) => {
+            filtersData.changeStartDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
+          onChangeEndDate={(date) => {
+            filtersData.changeEndDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (filtersData.clearDates(), filtersData.setInput(''))}
+          reset={() => {
+            filtersData.clearDates();
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице
+          }}
         />
       </TableHeaderWrapper>
       <Table
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        onSortModelChange={(sortModel) => {
+          // Изменение сортировки не сбрасывает пагинацию
+          tableData.changeTableSorts(sortModel);
+        }}
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={(paginationModel) => {
+          // Обновляем пагинацию при изменении страницы или размера страницы
+          tableData.changeTableState(paginationModel);
+          // Не сбрасываем пагинацию здесь, т.к. это событие обрабатывает навигацию по страницам
+        }}
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
         rows={tableData.rows}
         onRowClick={(params) => handleClickRow(params?.id)}
       />
+
       <Popup
         body={
           <AlkozamkiForm

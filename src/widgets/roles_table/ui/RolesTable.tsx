@@ -11,16 +11,22 @@ import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { useRolesTable } from '../hooks/useRolesTable';
 
 export const RolesTable: FC = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { addModalData, deleteRoleModalData, filtersData, tableData } = useRolesTable();
+
   return (
     <>
       <TableHeaderWrapper>
         <SearchInput
           testId={testids.page_roles.roles_widget_header.ROLES_WIDGET_HEADER_SEARCH_INPUT}
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+          }}
         />
       </TableHeaderWrapper>
       <Table

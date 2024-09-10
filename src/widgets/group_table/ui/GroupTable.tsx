@@ -26,33 +26,52 @@ export const GroupTable: FC<GroupTableProps> = ({ handleClickRow }) => {
         <SearchInput
           testId={testids.page_groups.groups_widget_header.GROUPS_WIDGET_HEADER_SEARCH_INPUT}
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+          }}
         />
         <InputsDates
-          onClear={filtersData.clearDates}
+          onClear={() => {
+            filtersData.clearDates();
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при сбросе дат
+          }}
           inputStartTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FROM_DATE
           }
           inputEndTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_TO_DATE
           }
-          onChangeStartDate={filtersData.changeStartDate}
-          onChangeEndDate={filtersData.changeEndDate}
+          onChangeStartDate={(date) => {
+            filtersData.changeStartDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении начальной даты
+          }}
+          onChangeEndDate={(date) => {
+            filtersData.changeEndDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении конечной даты
+          }}
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (filtersData.clearDates(), filtersData.setInput(''))}
+          reset={() => {
+            filtersData.clearDates();
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при сбросе всех фильтров
+          }}
         />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={tableData.changeTableState} // Навигация по страницам
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}

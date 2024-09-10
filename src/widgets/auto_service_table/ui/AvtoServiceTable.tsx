@@ -14,26 +14,36 @@ interface AvtoServiceTableProps {
 
 export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
   const { filterData, tableData } = useAvtoServiceTable();
+
+  // Функция для сброса пагинации
+  const resetPagination = () => {
+    if (tableData.apiRef.current) {
+      tableData.apiRef.current.setPage(0);
+    }
+  };
+
   return (
     <>
       <TableHeaderWrapper>
         <SearchInput
-          testId={
-            testids.page_avto_service.avto_service_widget_header
-              .AVTO_SERVICE_WIDGET_HEADER_SEARCH_INPUT
-          }
+          testId={testids.page_avto_service.avto_service_widget_header.AVTO_SERVICE_WIDGET_HEADER_SEARCH_INPUT}
           value={filterData.input}
-          onClear={() => filterData.setInput('')}
-          setState={filterData.setInput}
+          onClear={() => {
+            filterData.setInput('');
+            resetPagination();
+          }}
+          setState={(value) => {
+            filterData.setInput(value);
+            resetPagination();
+          }}
         />
         <InputsDates
-          onClear={filterData.clearDates}
-          inputStartTestId={
-            testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FROM_DATE
-          }
-          inputEndTestId={
-            testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_TO_DATE
-          }
+          onClear={() => {
+            filterData.clearDates();
+            resetPagination();
+          }}
+          inputStartTestId={testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FROM_DATE}
+          inputEndTestId={testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_TO_DATE}
           onChangeStartDate={filterData.changeStartDate}
           onChangeEndDate={filterData.changeEndDate}
           valueStartDatePicker={filterData.startDate}
@@ -41,7 +51,11 @@ export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (filterData.clearDates(), filterData.setInput(''))}
+          reset={() => {
+            filterData.clearDates();
+            filterData.setInput('');
+            resetPagination();
+          }}
         />
       </TableHeaderWrapper>
       <Table

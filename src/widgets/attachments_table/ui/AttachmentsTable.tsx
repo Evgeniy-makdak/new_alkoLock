@@ -29,19 +29,34 @@ export const AttachmentsTable = () => {
               .ATTACHMENTS_WIDGET_HEADER_SEARCH_INPUT
           }
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации к первой странице при изменении поиска
+          }}
         />
         <InputsDates
-          onClear={filtersData.clearDates}
+          onClear={() => {
+            filtersData.clearDates();
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке дат
+          }}
           inputStartTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FROM_DATE
           }
           inputEndTestId={
             testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_TO_DATE
           }
-          onChangeStartDate={filtersData.changeStartDate}
-          onChangeEndDate={filtersData.changeEndDate}
+          onChangeStartDate={(date) => {
+            filtersData.changeStartDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении даты начала
+          }}
+          onChangeEndDate={(date) => {
+            filtersData.changeEndDate(date);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении даты окончания
+          }}
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
@@ -56,7 +71,12 @@ export const AttachmentsTable = () => {
         />
         <ResetFilters
           title="Сбросить фильтры"
-          reset={() => (resetFilters(), filtersData.clearDates(), filtersData.setInput(''))}
+          reset={() => {
+            resetFilters();
+            filtersData.clearDates();
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при сбросе всех фильтров
+          }}
         />
       </TableHeaderWrapper>
       <AttachmentsFilterPanel open={filtersData.openFilters} />
@@ -64,9 +84,9 @@ export const AttachmentsTable = () => {
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки не сбрасывает пагинацию
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}

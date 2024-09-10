@@ -12,28 +12,35 @@ import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { useGroupCarTable } from '../hooks/useGroupCarTable';
 
-type GroupCarTable = {
+type GroupCarTableProps = {
   groupInfo: IBranch;
 };
 
-export const GroupCarTable: FC<GroupCarTable> = ({ groupInfo }) => {
+export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
   const { addModalData, tableData, filtersData, editModalData } = useGroupCarTable(groupInfo);
+
   return (
     <>
       <TableHeaderWrapper>
         <SearchInput
           testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_CARS_TABLE}
           value={filtersData.input}
-          onClear={() => filtersData.setInput('')}
-          setState={filtersData.setInput}
+          onClear={() => {
+            filtersData.setInput('');
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+          }}
+          setState={(value) => {
+            filtersData.setInput(value);
+            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+          }}
         />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
+        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState}
+        onPaginationModelChange={tableData.changeTableState} // Навигация по страницам
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
