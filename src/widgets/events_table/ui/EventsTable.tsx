@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
@@ -15,11 +16,22 @@ interface EventsTableProps {
 
 export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
+  const prevRowCountRef = useRef(tableData.totalCount);
 
-  // Храним состояние пагинации отдельно
   const handleFilterChange = () => {
-    tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении фильтров
+    tableData.apiRef.current.setPage(0); 
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (prevRowCountRef.current !== tableData.totalCount) {
+        tableData.apiRef.current.setPage(0);
+        prevRowCountRef.current = tableData.totalCount;
+      }
+    }, 1000); 
+
+    return () => clearTimeout(timer);
+  }, [tableData.totalCount]);
 
   return (
     <>
