@@ -42,6 +42,7 @@ export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) =
           value={cars}
           setValueStore={onSelect}
           label="Поиск по ТС"
+          specified = {undefined}
         />
         {error && <span className={style.errorText}>Обязательное поле</span>}
 

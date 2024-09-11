@@ -11,6 +11,7 @@ import style from './AttachmentsForm.module.scss';
 
 interface AttachmentAddFormProps {
   onClose: () => void;
+  specified?: boolean,
 }
 
 export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
@@ -29,6 +30,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           label="TC"
           value={carId}
           setValueStore={onSelect}
+          specified={true}
         />
         {errorCar && <span className={style.errorText}>Обязательное поле</span>}{' '}
         <UsersSelect

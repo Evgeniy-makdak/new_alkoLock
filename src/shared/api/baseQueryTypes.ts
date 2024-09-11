@@ -126,6 +126,7 @@ export function putQuery<T, D>({
 }: {
   headers?: HeaderReq;
   url: string;
+  config?: AxiosRequestConfig;
   data?: D;
 }) {
   const requestUrl = `${API_URL}${url}`;

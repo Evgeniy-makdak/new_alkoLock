@@ -1,3 +1,4 @@
+import { idID } from '@mui/material/locale';
 import type { GridSortDirection } from '@mui/x-data-grid';
 
 import { AppConstants } from '@app/index';
@@ -98,7 +99,8 @@ export function getAttachmentURL({
   }
 
   if (endDate) {
-    queries += '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
+    queries +=
+      '&all.createdAt.lessThanOrEqual=' + encodeURIComponent(DateUtils.getEndFilterDate(endDate));
   }
 
   // Сортировка
@@ -160,7 +162,7 @@ const getSelectBranchQueryUrl = ({
   if (branchId && !notBranch) {
     branch = `assignment.branch.id.in=${branchId}`;
   } else if (notBranch) {
-    branch = `all.assignment.branch.id.notEquals=${notBranch}`;
+    branch = `assignment.branch.id.notEquals=${notBranch}`;
   }
 
   return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
@@ -217,7 +219,7 @@ export function getUserListURL(
     queries += `&all.driver.vehicleAllotments.include=true`;
   }
 
-  return `api/users?page=${page || 0}&size=${limit || 20}${queries}&id.notEquals=1`;
+  if (idID) return `api/users?page=${page || 0}&size=${limit || 20}${queries}&id.notEquals=1`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

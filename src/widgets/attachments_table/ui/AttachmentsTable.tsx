@@ -98,7 +98,7 @@ export const AttachmentsTable = () => {
         headerTitle="Привязка Алкозамка"
         onCloseModal={addModalData.closeAddAttachModal}
         isOpen={addModalData.openAddAttachModal}
-        body={<AttachmentAddForm onClose={addModalData.closeAddAttachModal} />}
+        body={<AttachmentAddForm onClose={addModalData.closeAddAttachModal} specified={true} />}
       />
       <Popup
         closeonClickSpace={false}

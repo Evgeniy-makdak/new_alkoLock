@@ -10,7 +10,7 @@ export const useCarsSelect = (
   vieBranch = false,
   branchId?: ID,
   notInBranch?: ID,
-  specified = true,
+  specified?: boolean,
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {

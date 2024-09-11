@@ -90,7 +90,13 @@ export class UsersApi {
     });
   }
   static changeAvatarById(photoId: ID, userId: ID) {
-    return putQuery({ url: `api/v1/users/photos/${userId}/update/${photoId}` });
+    return putQuery({
+      url: `api/v1/users/photos/${userId}/update/${photoId}`,
+      config: {
+        responseType: 'blob',
+        headers: { 'Cache-Control': 'no-cache' },
+      },
+    });
   }
   static addPhoto(data: FormData, id: ID) {
     return postQuery<AddPhotoResponse, FormData>({
@@ -135,10 +141,13 @@ export class UsersApi {
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
-  static deleteUserImages(data: FormData, userId: ID) {
-    const url = `api/v1/users/photos/${userId}/delete-all`;
-    const response = deleteQuery({ url, data });
-    return response;
+  // static deleteUserImages(data: FormData, userId: ID) {
+  //   const url = `api/v1/users/photos/${userId}/delete-all`;
+  //   const response = deleteQuery({ url, data });
+  //   return response;
+  // }
+  static deleteUserImages(ids: ID[], userId: ID) {
+    return deleteQuery({ url: `api/users/${userId}/photo`, data: ids });
   }
   static getList(options: QueryOptions, widthCars = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
