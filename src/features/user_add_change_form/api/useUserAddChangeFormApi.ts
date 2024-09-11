@@ -22,7 +22,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
       enabled: enabled,
     },
   });
-  // TODO => убрать запрос когда бэк начнет возвращать permissions в user
+
   const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
     [QueryKeys.ROLES_LIST],
     RolesApi.getList,
@@ -60,6 +60,11 @@ export const useUserAddChangeFormApi = (id: ID) => {
     mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
   });
 
+  const { mutateAsync: deleteUserFoto } = useMutation({
+    mutationFn: (data: FormData) => UsersApi.deleteUserImages(data, id),
+    onSuccess: () => update(updateQueries),
+  });
+
   const hash = foto ? foto?.headers['content-md5'] : null;
 
   return {
@@ -70,5 +75,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     changeItem,
     createItem,
     changeFoto,
+    deleteUserFoto,
   };
 };

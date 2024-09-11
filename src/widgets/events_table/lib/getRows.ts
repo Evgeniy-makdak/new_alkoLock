@@ -14,10 +14,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
       const typeOfEvent: string = item.events[3]?.eventType ?? item.events[0].eventType;
 
       const formattedTypeOfEvent =
-        typeOfEvent === 'Тестирование пройдено' ||
-        typeOfEvent === 'Начало тестирования' ||
-        typeOfEvent === 'Ошибка при тестировании' ||
-        typeOfEvent === 'Сканирование QR кода'
+        item.events.length > 1
           ? 'Тестирование'
           : typeOfEvent;
 

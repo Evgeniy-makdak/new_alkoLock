@@ -141,14 +141,11 @@ export class UsersApi {
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }
-  // static deleteUserImages(data: FormData, userId: ID) {
-  //   const url = `api/v1/users/photos/${userId}/delete-all`;
-  //   const response = deleteQuery({ url, data });
-  //   return response;
-  // }
-  static deleteUserImages(ids: ID[], userId: ID) {
-    return deleteQuery({ url: `api/users/${userId}/photo`, data: ids });
+
+  static deleteUserImages(data: FormData, userId: ID) {
+    return deleteQuery({ url: `api/users/${userId}/photo`, data });
   }
+
   static getList(options: QueryOptions, widthCars = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
       url: getUserListURL(options, widthCars),

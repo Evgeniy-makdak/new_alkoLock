@@ -22,10 +22,10 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
     selectedUserId,
     closeTab,
   );
-  const { setSelectedUserId } = useUserContext(); // Достаем setSelectedUserId из контекста
+  const { setSelectedUserId } = useUserContext(); 
 
   useEffect(() => {
-    setSelectedUserId(selectedUserId); // Устанавливаем selectedUserId в контексте
+    setSelectedUserId(selectedUserId); 
   }, [selectedUserId, setSelectedUserId]);
 
   return (

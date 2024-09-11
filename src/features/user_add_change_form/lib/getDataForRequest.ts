@@ -81,7 +81,7 @@ export const getDataForRequest = (
     formData.append('userPhotoDTO.hash', image.hash);
     formData.append('userPhotoDTO.image', image.image);
   }
-  
+
   let userFoto: FormData | null = null;
   if (image && userID) {
     userFoto = new FormData();
