@@ -48,37 +48,25 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   },
   imageHasUpload: (imagesIds, userId) => {
     if (!userId) return;
+
     const state = get().usersImages;
     const userImages = state[userId] || [];
-    const notSavedImage = userImages.filter((image) => !image.isSavedInDataBase);
-    const savedImage = userImages.filter((image) => image.isSavedInDataBase);
-    if (notSavedImage.length !== imagesIds.length) {
-      set((prev) => ({ ...prev, usersImages: { ...state, [userId]: savedImage } }));
-      return;
-    }
-    const newState: ImagesStateInStore = [];
-    for (const image of notSavedImage) {
-      const imageId = imagesIds.find((imageId) => {
-        return imageId.hash === image.hash;
-      });
 
-      if (!imageId) {
-        state[userId] = savedImage;
-        set({ usersImages: { ...state, [userId]: savedImage } });
-        return;
-      }
+    const updatedImages = userImages.map((image) => {
+      const uploadedImage = imagesIds.find((imgId) => imgId.hash === image.hash);
 
-      if (imageId) {
-        newState.push({
+      if (uploadedImage) {
+        return {
           ...image,
           isSavedInDataBase: true,
-          hash: imageId.hash,
-          id: imageId.id,
-        });
+          id: uploadedImage.id,
+        };
       }
-    }
 
-    set((prev) => ({ ...prev, usersImages: { ...state, [userId]: [...newState, ...savedImage] } }));
+      return image;
+    });
+
+    set({ usersImages: { ...state, [userId]: updatedImages } });
   },
   setNotSavedImageInDataBase: (imageList, userId) => {
     if (!userId) return;

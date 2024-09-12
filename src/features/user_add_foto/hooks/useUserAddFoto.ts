@@ -18,13 +18,6 @@ export const useUserAddFoto = (userId: ID) => {
     setUploadImage([]);
   };
 
-  async function clearCache() {
-    const cacheNames = await caches.keys();
-    for (const cacheName of cacheNames) {
-      await caches.delete(cacheName);
-    }
-  }
-
   const onSubmit = async () => {
     setNotSavedImageInDataBase(uploadImage, userId);
 
@@ -42,10 +35,11 @@ export const useUserAddFoto = (userId: ID) => {
         status === StatusCode.NOT_FOUND;
       if (result?.isError || isErrorStatus) {
         imageHasNoUpload(userId, message);
-        clearCache();
         enqueueSnackbar(message, { variant: 'error' });
       } else {
-        imageHasUpload(result?.data, userId);
+        setTimeout(() => {
+          imageHasUpload(result?.data, userId);
+        }, 0);
       }
     }
 
