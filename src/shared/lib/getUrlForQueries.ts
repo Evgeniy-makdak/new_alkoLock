@@ -219,7 +219,7 @@ export function getUserListURL(
     queries += `&all.driver.vehicleAllotments.include=true`;
   }
 
-  if (idID) return `api/users?page=${page || 0}&size=${limit || 20}${queries}&id.notEquals=1`;
+  if (idID) return `api/users?page=${page || 0}&size=${limit || 20}${queries}&all.id.notIn=1`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================
