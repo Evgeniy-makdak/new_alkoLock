@@ -12,16 +12,33 @@ import { userFotoStore } from '../model/userFotoStore';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
-  const { imageHasUpload, setNotSavedImageInDataBase, imageHasNoUpload } = userFotoStore();
+  const { imageHasUpload, setNotSavedImageInDataBase, imageHasNoUpload, usersImages } =
+    userFotoStore();
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
   const reset = () => {
     setUploadImage([]);
   };
 
   const onSubmit = async () => {
-    setNotSavedImageInDataBase(uploadImage, userId);
+    const existingImages = usersImages[userId] || [];
 
-    for (const image of uploadImage) {
+    // Фильтрация загружаемых изображений, чтобы не добавлять уже существующие
+    const newImages = uploadImage.filter((image) => {
+      const isDuplicate = existingImages.some((existingImage) => existingImage.hash === image.hash);
+      if (isDuplicate) {
+        const fileName = (image.image as File).name;
+        enqueueSnackbar(`Фото ${fileName} уже существует в системе`, { variant: 'error' });
+      }
+      return !isDuplicate;
+    });
+    if (newImages.length === 0) {
+      enqueueSnackbar('Нет новых фото для загрузки', { variant: 'warning' });
+      return;
+    }
+
+    setNotSavedImageInDataBase(newImages, userId);
+
+    for (const image of newImages) {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
@@ -33,6 +50,7 @@ export const useUserAddFoto = (userId: ID) => {
         status === StatusCode.BAD_REQUEST ||
         status === StatusCode.SERVER_ERROR ||
         status === StatusCode.NOT_FOUND;
+
       if (result?.isError || isErrorStatus) {
         imageHasNoUpload(userId, message);
         enqueueSnackbar(message, { variant: 'error' });

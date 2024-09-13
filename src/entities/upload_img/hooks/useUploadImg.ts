@@ -17,6 +17,7 @@ export type ImageState = {
   src: string;
   image: File | Blob | null;
   id?: ID;
+  name?: string
 };
 
 export type ImageStateInStore = Partial<ImageState> & {
