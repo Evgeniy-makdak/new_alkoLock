@@ -56,6 +56,7 @@ export const useUserFotoItem = (
     const imageId = imageRes?.id || image?.id;
     if (!imageId) return;
     await clearCache();
+console.log(imageId);
 
     const res = await deleteFotos(imageId);
     if (res?.isError) {

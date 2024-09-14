@@ -5,6 +5,7 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import { Stack, Typography } from '@mui/material';
 
+import { UsersApi } from '@shared/api/baseQuerys';
 import { testids } from '@shared/const/testid';
 import { ImagePreview } from '@shared/ui/image_preview/ui/ImagePreview';
 import { ImageView } from '@shared/ui/image_view';
@@ -39,6 +40,8 @@ type UploadImgProps = {
   limit?: number;
   testId?: string;
 };
+
+const deleteImage = UsersApi.deletePhotosFromGallery;
 
 export const UploadImg: FC<UploadImgProps> = ({
   textFieldProps,
@@ -114,7 +117,14 @@ export const UploadImg: FC<UploadImgProps> = ({
                   key={file.src}>
                   <DeleteForeverOutlinedIcon
                     data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
-                    onClick={() => handleDeleteImg(file.src)}
+                    onClick={async () => {
+                      try {
+                        await deleteImage('44439');
+                        handleDeleteImg(file.src);
+                      } catch (error) {
+                        // console.error('Ошибка при удалении изображения:', error);
+                      }
+                    }}
                     className={style.deleteIcon}
                   />
                   <RemoveRedEyeOutlinedIcon
