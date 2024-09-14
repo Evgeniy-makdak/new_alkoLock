@@ -107,6 +107,11 @@ export function getAttachmentURL({
   if (sortBy && order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
+// console.log(createAttach);
+// console.log(queryTrimmed);
+// console.log(alcolock);
+
+
 
   // Общий поиск (все параметры)
   if (queryTrimmed.length && !createAttach) {

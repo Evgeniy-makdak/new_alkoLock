@@ -6,6 +6,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { routers } from '@shared/config/routers';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
+import { StorageKeys } from '@shared/const/storageKeys';
 
 export type SelectedBranchState = {
   id: ID;
@@ -81,5 +82,6 @@ export const appStore = create<AppStore>()((set, get) => ({
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
     window.location.reload();
+    localStorage.removeItem(StorageKeys.OFFICE)
   },
 }));

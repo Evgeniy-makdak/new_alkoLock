@@ -16,7 +16,6 @@ export const useNavbarBranchSelect = () => {
   );
 
   const { isLoading, branchList } = useUserDataApi();
-
   const { state: office, setItemState: setOffice } = useLocalStorage({
     key: StorageKeys.OFFICE,
     value: assignmentBranch,
@@ -43,8 +42,10 @@ export const useNavbarBranchSelect = () => {
     const hasBranch = branchList.find(
       (branchInBase: { id: ID }) => branchInBase?.id === office?.id,
     );
+    const value = (isAdmin && hasBranch) ? {id: hasBranch?.id, name: hasBranch?.name} : {id: branchList[0].id, name: branchList[0].name}
+    setOffice(value)
     setState({
-      selectedBranchState: isAdmin && office && hasBranch ? office : assignmentBranch,
+      selectedBranchState: value,
     });
   }, [isLoading, auth]);
 
