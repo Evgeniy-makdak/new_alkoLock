@@ -36,7 +36,6 @@ export const useAttachmentsTable = () => {
   } = useAttachmentsStore();
   const filters = attachmentsFilterPanelStore((state) => state.filters);
   const [searchQuery] = useDebounce(input, InputSearchDelay);
-
   const { attachmentList, isLoading, refetch } = useAttachmentsApi({
     searchQuery,
     endDate: Formatters.formatToISODate(endDate),

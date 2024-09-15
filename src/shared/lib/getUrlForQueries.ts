@@ -83,6 +83,7 @@ export function getAttachmentURL({
   sortBy,
   startDate,
   filterOptions,
+  attachSearchQuery,
 }: QueryOptions) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const drivers = filterOptions?.drivers;
@@ -108,13 +109,11 @@ export function getAttachmentURL({
     queries += getSortQueryAttachments(sortBy, order);
   }
 // console.log(createAttach);
-// console.log(queryTrimmed);
+console.log(queryTrimmed);
 // console.log(alcolock);
 
-
-
   // Общий поиск (все параметры)
-  if (queryTrimmed.length && !createAttach) {
+  if (queryTrimmed.length) {
     queries += `&any.vehicle.monitoringDevice.match.contains=${encodeURIComponent(queryTrimmed)}`;
     queries += `&any.vehicle.match.contains=${encodeURIComponent(queryTrimmed)}`;
     queries += `&any.driver.userAccount.match.contains=${encodeURIComponent(queryTrimmed)}`;
@@ -136,6 +135,11 @@ export function getAttachmentURL({
     queries += `&all.createdBy.id.in=${createAttach}`;
   }
 
+  // Поиск по создателю привязки
+  if (attachSearchQuery?.length) {
+    queries += `&any.createdBy.match.contains=${encodeURIComponent(attachSearchQuery)}`;
+  }
+
   // Фильтрация по алкозамку
   if (alcolock && alcolock.length > 0) {
     queries += `&all.vehicle.monitoringDevice.id.in=${alcolock}`;
@@ -146,7 +150,7 @@ export function getAttachmentURL({
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
-  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 25}${queries}`;
+  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit}${queries}`;
 }
 
 /////////////////////////////////////////////===========================branch==========================================

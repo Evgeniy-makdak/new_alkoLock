@@ -66,7 +66,6 @@ export default class PhotosApi {
 export class AttachmentsApi {
   static getList(options: QueryOptions) {
     const url = getAttachmentURL(options);
-
     return getQuery<{ content: IAttachmentItems[]; totalElements: number }>({ url });
   }
 

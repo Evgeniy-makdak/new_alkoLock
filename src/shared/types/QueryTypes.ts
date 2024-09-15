@@ -61,6 +61,7 @@ export type QueryOptions = {
   limit?: number | string;
   sortBy?: SortTypes | string;
   searchQuery?: string;
+  attachSearchQuery?: string;
   order?: GridSortDirection;
   startDate?: string;
   endDate?: string;
