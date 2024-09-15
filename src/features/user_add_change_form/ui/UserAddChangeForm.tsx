@@ -134,6 +134,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   images={state.state.images}
                   setImage={state.handlers.setAvatar}
                   title="Загрузить аватар профиля"
+                  userId={id}
                 />
               </InputsColumnWrapper>
               <InputsColumnWrapper>

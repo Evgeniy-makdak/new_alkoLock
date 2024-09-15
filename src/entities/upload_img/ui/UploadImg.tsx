@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import React, { type FC, type ReactNode, useRef } from 'react';
+import { type FC, type ReactNode, useMemo, useRef } from 'react';
 
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
@@ -14,6 +14,9 @@ import { ACCEPT_FORMATS } from '../configs/const';
 import { type ImageState, useUploadImg } from '../hooks/useUploadImg';
 import { handleScroll } from '../lib/helpers';
 import style from './UploadImg.module.scss';
+import { ID } from '@shared/types/BaseQueryTypes';
+import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
+import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 
 /**
  * @prop textFieldProps - пропсы для input
@@ -39,6 +42,7 @@ type UploadImgProps = {
   images: ImageState[];
   limit?: number;
   testId?: string;
+  userId?: ID;
 };
 
 const deleteImage = UsersApi.deletePhotosFromGallery;
@@ -52,6 +56,7 @@ export const UploadImg: FC<UploadImgProps> = ({
   images,
   limit,
   testId,
+  userId,
 }) => {
   const INPUT_ID = 'contained-button-file' + Date.now();
   const refDiv = useRef();
@@ -68,6 +73,19 @@ export const UploadImg: FC<UploadImgProps> = ({
     handleLoadImg,
     inputRef,
   } = useUploadImg(multiple, images, setImage, limit);
+ 
+const photoData = useUserFoto(userId)
+const {setImageToStoreAfterLoadingMemo} = useUserFoto(userId)
+useUserFotoItem(
+  photoData.images[0],
+  setImageToStoreAfterLoadingMemo,
+  () => {},
+  () => {},
+  userId,
+);
+
+const avatar = useMemo(() => photoData.images[0], [photoData])
+// console.log({avatar});
 
   return (
     <>
@@ -110,7 +128,8 @@ export const UploadImg: FC<UploadImgProps> = ({
             onWheel={(e) => handleScroll(e, refDiv)}
             className={style.imageListWrapper}>
             <Stack className={style.imageList} gap={1} display={'flex'} direction={'row'}>
-              {images?.map((file) => (
+              {images?.map((file) => {
+                return(
                 <div
                   data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM}
                   className={style.reletive}
@@ -119,7 +138,7 @@ export const UploadImg: FC<UploadImgProps> = ({
                     data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
                     onClick={async () => {
                       try {
-                        await deleteImage('44439');
+                        await deleteImage(avatar.id.toString());
                         handleDeleteImg(file.src);
                       } catch (error) {
                         // console.error('Ошибка при удалении изображения:', error);
@@ -139,7 +158,7 @@ export const UploadImg: FC<UploadImgProps> = ({
                     src={file.src}
                   />
                 </div>
-              ))}
+              )})}
             </Stack>
           </div>
         </Stack>
