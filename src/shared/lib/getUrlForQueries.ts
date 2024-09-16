@@ -150,7 +150,7 @@ export function getAttachmentURL({
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
-  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 30}${queries}`;
 }
 
 /////////////////////////////////////////////===========================branch==========================================
