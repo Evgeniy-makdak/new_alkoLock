@@ -108,9 +108,9 @@ export function getAttachmentURL({
   if (sortBy && order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
-// console.log(createAttach);
-console.log(queryTrimmed);
-// console.log(alcolock);
+  // console.log(createAttach);
+  console.log(queryTrimmed);
+  // console.log(alcolock);
 
   // Общий поиск (все параметры)
   if (queryTrimmed.length) {
@@ -150,7 +150,7 @@ console.log(queryTrimmed);
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
-  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit}${queries}`;
+  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 /////////////////////////////////////////////===========================branch==========================================
