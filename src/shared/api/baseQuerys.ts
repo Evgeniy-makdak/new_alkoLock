@@ -120,6 +120,7 @@ export class UsersApi {
       },
     });
   }
+
   static getPhotoFromGallery(url: string) {
     return getQuery<Blob>({
       url: `api/v1/users/photos/${url}`,

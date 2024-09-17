@@ -108,9 +108,6 @@ export function getAttachmentURL({
   if (sortBy && order) {
     queries += getSortQueryAttachments(sortBy, order);
   }
-  // console.log(createAttach);
-  console.log(queryTrimmed);
-  // console.log(alcolock);
 
   // Общий поиск (все параметры)
   if (queryTrimmed.length) {
@@ -170,10 +167,11 @@ const getSelectBranchQueryUrl = ({
 
   if (branchId && !notBranch) {
     branch = `assignment.branch.id.in=${branchId}`;
-  } else if (notBranch) {
+  } else if (notBranch && branchId !== 20) {
     branch = `assignment.branch.id.notEquals=${notBranch}`;
+  } else if (notBranch) {
+    branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
   }
-
   return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
 };
 
@@ -228,7 +226,9 @@ export function getUserListURL(
     queries += `&all.driver.vehicleAllotments.include=true`;
   }
 
-  if (idID) return `api/users?page=${page || 0}&size=${limit || 20}${queries}&all.id.notIn=1`;
+  if (idID && branchId === 1) {
+    return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
+  } else return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

@@ -5,18 +5,18 @@ import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import { Stack, Typography } from '@mui/material';
 
+import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { testids } from '@shared/const/testid';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { ImagePreview } from '@shared/ui/image_preview/ui/ImagePreview';
 import { ImageView } from '@shared/ui/image_view';
+import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
 
 import { ACCEPT_FORMATS } from '../configs/const';
 import { type ImageState, useUploadImg } from '../hooks/useUploadImg';
 import { handleScroll } from '../lib/helpers';
 import style from './UploadImg.module.scss';
-import { ID } from '@shared/types/BaseQueryTypes';
-import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
-import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 
 /**
  * @prop textFieldProps - пропсы для input
@@ -73,19 +73,31 @@ export const UploadImg: FC<UploadImgProps> = ({
     handleLoadImg,
     inputRef,
   } = useUploadImg(multiple, images, setImage, limit);
- 
-const photoData = useUserFoto(userId)
-const {setImageToStoreAfterLoadingMemo} = useUserFoto(userId)
-useUserFotoItem(
-  photoData.images[0],
-  setImageToStoreAfterLoadingMemo,
-  () => {},
-  () => {},
-  userId,
-);
 
-const avatar = useMemo(() => photoData.images[0], [photoData])
-// console.log({avatar});
+  // Реализация функции для вытягивания id фото, когда бэк предоставит данное поле. В строке await deleteImage(avatar.toString()); 
+  // надо будет заменить avatar на userPhotoId:
+  // const handleDeleteUserPhoto = async () => {
+  //   try {
+  //     const response = await UsersApi.getUser(userId);
+  //     const userPhotoId = response.data.id;
+  //     console.log(userPhotoId);
+  //   } catch (error) {
+  //     console.error('photoId не найдено', error);
+  //   }
+  // };
+  // handleDeleteUserPhoto();
+
+  const photoData = useUserFoto(userId);
+  const { setImageToStoreAfterLoadingMemo } = useUserFoto(userId);
+  useUserFotoItem(
+    photoData.images[0],
+    setImageToStoreAfterLoadingMemo,
+    () => {},
+    () => {},
+    userId,
+  );
+
+  const avatar = useMemo(() => photoData.images[0], [photoData]);
 
   return (
     <>
@@ -129,36 +141,37 @@ const avatar = useMemo(() => photoData.images[0], [photoData])
             className={style.imageListWrapper}>
             <Stack className={style.imageList} gap={1} display={'flex'} direction={'row'}>
               {images?.map((file) => {
-                return(
-                <div
-                  data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM}
-                  className={style.reletive}
-                  key={file.src}>
-                  <DeleteForeverOutlinedIcon
-                    data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
-                    onClick={async () => {
-                      try {
-                        await deleteImage(avatar.id.toString());
-                        handleDeleteImg(file.src);
-                      } catch (error) {
-                        // console.error('Ошибка при удалении изображения:', error);
-                      }
-                    }}
-                    className={style.deleteIcon}
-                  />
-                  <RemoveRedEyeOutlinedIcon
-                    data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_VIEW}
-                    onClick={() => openPreview(file.src)}
-                    className={style.eyeIcon}
-                  />
-                  <ImageView
-                    styleImage={style.img}
-                    styleWrapper={style.paper}
-                    onClick={() => openPreview(file.src)}
-                    src={file.src}
-                  />
-                </div>
-              )})}
+                return (
+                  <div
+                    data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM}
+                    className={style.reletive}
+                    key={file.src}>
+                    <DeleteForeverOutlinedIcon
+                      data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
+                      onClick={async () => {
+                        try {
+                          await deleteImage(avatar.toString());
+                          handleDeleteImg(file.src);
+                        } catch (error) {
+                          // console.error('Ошибка при удалении изображения:', error);
+                        }
+                      }}
+                      className={style.deleteIcon}
+                    />
+                    <RemoveRedEyeOutlinedIcon
+                      data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_VIEW}
+                      onClick={() => openPreview(file.src)}
+                      className={style.eyeIcon}
+                    />
+                    <ImageView
+                      styleImage={style.img}
+                      styleWrapper={style.paper}
+                      onClick={() => openPreview(file.src)}
+                      src={file.src}
+                    />
+                  </div>
+                );
+              })}
             </Stack>
           </div>
         </Stack>
