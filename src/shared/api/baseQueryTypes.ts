@@ -50,11 +50,11 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   fieldErrors &&
     !isAuthError &&
     // fieldErrors.map((e) => {
-      enqueueSnackbar(detail, {
-        preventDuplicate: true,
-        variant: 'error',
-      });
-    // });
+    enqueueSnackbar(detail, {
+      preventDuplicate: true,
+      variant: 'error',
+    });
+  // });
 
   return {
     data: null,
@@ -156,6 +156,29 @@ export function deleteQuery<T>({
       ...config,
       httpsAgent: 'fetch',
       data,
+      headers: returnHeaders(headers),
+    })
+    .catch((e) => {
+      return viewResErrors(e);
+    });
+}
+
+export function patchQuery<T>({
+  headers,
+  url,
+  data,
+  config,
+}: {
+  headers?: HeaderReq;
+  url: string;
+  data?: unknown;
+  config?: AxiosRequestConfig;
+}) {
+  const requestUrl = `${API_URL}${url}`;
+
+  return axios
+    .patch<IError, AppAxiosResponse<T>>(requestUrl, data, {
+      ...config,
       headers: returnHeaders(headers),
     })
     .catch((e) => {

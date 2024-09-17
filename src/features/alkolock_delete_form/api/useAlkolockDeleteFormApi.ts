@@ -12,7 +12,7 @@ const updateQueries = [
 export const useAlkolockDeleteFormApi = () => {
   const update = useUpdateQueries();
   const { mutateAsync: deleteAlkolock } = useMutation({
-    mutationFn: (id: ID) => AlcolocksApi.deleteAlkolock(id),
+    mutationFn: (id: ID) => AlcolocksApi.deactivateAlkolock(id),
     onSuccess: () => update(updateQueries),
   });
   return { deleteAlkolock };

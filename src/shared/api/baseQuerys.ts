@@ -49,7 +49,7 @@ import {
   type ResetPasswordData,
   type UserDataLogin,
 } from '../types/BaseQueryTypes';
-import { deleteQuery, getQuery, postQuery, putQuery } from './baseQueryTypes';
+import { deleteQuery, getQuery, patchQuery, postQuery, putQuery } from './baseQueryTypes';
 
 // import { number } from 'yup';
 
@@ -178,6 +178,20 @@ export class UsersApi {
   static deleteUser(userId: ID) {
     return deleteQuery({ url: `api/users/${userId}` });
   }
+
+  static deactivateUser(userId: ID) {
+    return patchQuery({
+      url: `api/users/${userId}/deactivate-user`,
+      data: { isActive: false },
+    });
+  }
+
+  static activateUser(userId: ID) {
+    return patchQuery({
+      url: `api/users/${userId}/activate-user`,
+      data: { isActive: true },
+    });
+  }
   static getInfo() {
     return getQuery<IAccountUser>({ url: `api/account` });
   }
@@ -215,7 +229,23 @@ export class CarsApi {
     return putQuery({ url: `api/vehicles/${carId}`, data });
   }
   static deleteCar(carId: ID) {
-    return deleteQuery({ url: `api/vehicles/${carId}` });
+    return deleteQuery({
+      url: `api/vehicles/${carId}`,
+    });
+  }
+
+  static deactivateCar(carId: ID) {
+    return patchQuery({
+      url: `api/vehicles/${carId}/deactivate-vehicle`,
+      data: { isActive: false },
+    });
+  }
+
+  static activateCar(carId: ID) {
+    return patchQuery({
+      url: `api/vehicles/${carId}/activate-vehicle`,
+      data: { isActive: true },
+    });
   }
   static createCar(data: CreateCarBody) {
     return postQuery({ url: `api/vehicles`, data });
@@ -257,7 +287,18 @@ export class AlcolocksApi {
   static deleteAlkolock(id: ID) {
     return deleteQuery({ url: getAlkolockURL(id) });
   }
-
+  static deactivateAlkolock(id: ID) {
+    return patchQuery({
+      url: `api/monitoring-devices/${id}/deactivate-device`,
+      data: { isActive: false },
+    });
+  }
+  static activateAlkolock(id: ID) {
+    return patchQuery({
+      url: `api/monitoring-devices/${id}/activate-device`,
+      data: { isActive: true },
+    });
+  }
   static getAlkolock(id: ID) {
     return getQuery<IAlcolock>({ url: getAlkolockURL(id) });
   }

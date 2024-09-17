@@ -9,7 +9,7 @@ export const useDeleteUserFormApi = () => {
   const update = useUpdateQueries();
   const { mutateAsync } = useMutation({
     mutationFn: (id: ID) => {
-      return UsersApi.deleteUser(id);
+      return UsersApi.deactivateUser(id);
     },
     onSuccess: () => update(updateQueries),
   });

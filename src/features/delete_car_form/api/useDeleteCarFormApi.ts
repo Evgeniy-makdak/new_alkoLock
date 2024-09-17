@@ -10,7 +10,7 @@ export const useDeleteCarFormApi = () => {
   const update = useUpdateQueries();
   const { mutateAsync } = useMutation({
     mutationFn: (id: ID) => {
-      return CarsApi.deleteCar(id);
+      return CarsApi.deactivateCar(id);
     },
     onSuccess: () => update(updateQueries),
   });
