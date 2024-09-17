@@ -63,7 +63,7 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.DRIVER:
       return `&sort=driver.userAccount.surname,driver.userAccount.firstName${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=vehicle.monitoringDevice.firstName${orderStr}`;
+      return `&sort=vehicle.assignment.createdBy.surname,createdBy.firstName,createdBy.middleName${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     default:
@@ -147,7 +147,7 @@ export function getAttachmentURL({
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
-  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 30}${queries}`;
+  return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 /////////////////////////////////////////////===========================branch==========================================
@@ -439,7 +439,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=events.eventType${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=createdBy.firstName,createdBy.firstName${orderStr}`;
+      return `&sort=createdBy.assignment.createdBy.firstName${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -449,7 +449,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_OCCURRENT:
       return `&sort=occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userActionId.surname${orderStr}`;
+      return `&sort=userActionId.surname,firstName,middleName${orderStr}`;
     default:
       return '';
   }
