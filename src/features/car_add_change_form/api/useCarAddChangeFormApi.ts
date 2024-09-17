@@ -14,12 +14,16 @@ const updateQueries = [QueryKeys.VEHICLES_PAGE_TABLE, QueryKeys.CAR_LIST, QueryK
 export const useCarAddChangeFormApi = (id?: ID) => {
   const update = useUpdateQueries();
 
-  const { data, isLoading } = useConfiguredQuery([QueryKeys.CAR_ITEM], CarsApi.getCar, {
-    options: id,
-    settings: {
-      enabled: !!id,
+  const { data, isLoading } = useConfiguredQuery(
+    [QueryKeys.CAR_ITEM],
+    CarsApi.getCarForDeactivate,
+    {
+      options: id,
+      settings: {
+        enabled: !!id,
+      },
     },
-  });
+  );
 
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: async (changeData: ChangeCarBody) => {

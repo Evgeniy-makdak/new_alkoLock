@@ -225,6 +225,9 @@ export class CarsApi {
   static getCar(carId: ID) {
     return getQuery<ICar>({ url: `api/vehicles/${carId}` });
   }
+  static getCarForDeactivate(carId: ID) {
+    if (carId) return getQuery<ICar>({ url: `api/vehicles/${carId}` });
+  }
   static changeCar(data: ChangeCarBody, carId: ID) {
     return putQuery({ url: `api/vehicles/${carId}`, data });
   }

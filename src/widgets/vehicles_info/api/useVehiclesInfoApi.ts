@@ -9,7 +9,7 @@ export const useVehiclesInfoApi = (id: ID) => {
     data: carResponse,
     isLoading,
     error,
-  } = useConfiguredQuery([QueryKeys.CAR_ITEM], CarsApi.getCar, {
+  } = useConfiguredQuery([QueryKeys.CAR_ITEM], CarsApi.getCarForDeactivate, {
     options: id,
   });
   const notFoundCar =
