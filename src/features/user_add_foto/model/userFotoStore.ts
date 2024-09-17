@@ -35,6 +35,12 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
           isAvatar: image?.isAvatar,
         };
       }
+      if (image?.isAvatar && storeImage.isAvatar) {
+        return {
+          ...storeImage, 
+          isAvatar: false,
+        }
+      }
       return storeImage;
     });
 
