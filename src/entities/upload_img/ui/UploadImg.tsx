@@ -74,19 +74,6 @@ export const UploadImg: FC<UploadImgProps> = ({
     inputRef,
   } = useUploadImg(multiple, images, setImage, limit);
 
-  // Реализация функции для вытягивания id фото, когда бэк предоставит данное поле. В строке await deleteImage(avatar.toString()); 
-  // надо будет заменить avatar на userPhotoId:
-  // const handleDeleteUserPhoto = async () => {
-  //   try {
-  //     const response = await UsersApi.getUser(userId);
-  //     const userPhotoId = response.data.id;
-  //     console.log(userPhotoId);
-  //   } catch (error) {
-  //     console.error('photoId не найдено', error);
-  //   }
-  // };
-  // handleDeleteUserPhoto();
-
   const photoData = useUserFoto(userId);
   const { setImageToStoreAfterLoadingMemo } = useUserFoto(userId);
   useUserFotoItem(
@@ -96,10 +83,14 @@ export const UploadImg: FC<UploadImgProps> = ({
     () => {},
     userId,
   );
-console.log(photoData.images);
 
-  const avatar = photoData.images[0]?.id;
-console.log({avatar});
+  const sortedImages = [...photoData.images].sort((a, b) => {
+    if (a.isAvatar) return -1;
+    if (b.isAvatar) return 1;
+    return 0;
+  });
+
+  const avatar = sortedImages[0]?.id;
 
   return (
     <>
