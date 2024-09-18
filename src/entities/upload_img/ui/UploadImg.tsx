@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type FC, type ReactNode, useMemo, useRef } from 'react';
+import { type FC, type ReactNode, useRef } from 'react';
 
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
@@ -96,8 +96,10 @@ export const UploadImg: FC<UploadImgProps> = ({
     () => {},
     userId,
   );
+console.log(photoData.images);
 
-  const avatar = useMemo(() => photoData.images[0], [photoData]);
+  const avatar = photoData.images[0]?.id;
+console.log({avatar});
 
   return (
     <>

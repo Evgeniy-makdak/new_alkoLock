@@ -4,7 +4,7 @@ export enum StatusCode {
   FORBIDDEN = 403,
   NOT_FOUND = 404,
   CONFLICT = 409,
-  SUCCESS = 200 || 201,
   SERVER_ERROR = 500,
   PASSWORD_CHANGE = 426,
+  SUCCESS = 200 || 201,
 }
