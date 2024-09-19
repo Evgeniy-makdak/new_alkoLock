@@ -99,7 +99,7 @@ export class UsersApi {
   }
   static addPhoto(data: FormData, id: ID) {
     return postQuery<AddPhotoResponse, FormData>({
-      url: `api/v1/users/photos/${id}/upload`,
+      url: `api/v1/users/photos/${id}`,
       data,
       headers: {
         'Content-Type': 'multipart/form-data',
