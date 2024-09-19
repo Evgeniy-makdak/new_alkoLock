@@ -27,7 +27,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=type${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=vehicle.monitoringDevice.firstName${orderStr}`;
+      return `&sort=vehicleBind.createdBy.surname${orderStr}`;
     case SortTypes.OPERATING_MODE:
       return `&sort=mode${orderStr}`;
     case SortTypes.DATA_INSTALLATION:
@@ -35,7 +35,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.USER:
-      return `&sort=surname,firstName,middleName${orderStr}&all.disabled.in=false`;
+      return `&sort=userActionId.surname,userActionId.firstName,userActionId.middleName${orderStr}&all.disabled.in=false`;
     case SortTypes.EMAIL:
       return `&sort=email${orderStr}`;
     default:
@@ -449,7 +449,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_OCCURRENT:
       return `&sort=occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userActionId.surname,firstName,middleName${orderStr}`;
+      return `&sort=userActionId.surname,userActionId.firstName,userActionId.middleName${orderStr}`;
     default:
       return '';
   }
