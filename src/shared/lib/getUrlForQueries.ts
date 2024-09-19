@@ -63,7 +63,7 @@ function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortD
     case SortTypes.DRIVER:
       return `&sort=driver.userAccount.surname,driver.userAccount.firstName${orderStr}`;
     case SortTypes.WHO_LINK:
-      return `&sort=vehicle.assignment.createdBy.surname,createdBy.firstName,createdBy.middleName${orderStr}`;
+      return `&sort=createdBy.surname,createdBy.firstName,createdBy.middleName${orderStr}`;
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     default:

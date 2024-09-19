@@ -21,7 +21,6 @@ import { getDataForRequest } from '../lib/getDataForRequest';
 import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
-import { responsiveFontSizes } from '@mui/material';
 
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -183,7 +182,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       }
     } catch (error) {
       const response = await changeItem(formData);
-      enqueueSnackbar(response?.detail, {variant: 'error'})
+      enqueueSnackbar(response?.detail, { variant: 'error' });
     }
   };
 

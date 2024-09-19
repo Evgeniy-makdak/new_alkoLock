@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type FC, type ReactNode, useRef } from 'react';
+import { type FC, type ReactNode, useRef, useState } from 'react';
 
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
@@ -91,6 +91,7 @@ export const UploadImg: FC<UploadImgProps> = ({
   });
 
   const avatar = sortedImages[0]?.id;
+  const [isAvatar, setisAvatar] = useState(avatar);
 
   return (
     <>
@@ -141,14 +142,7 @@ export const UploadImg: FC<UploadImgProps> = ({
                     key={file.src}>
                     <DeleteForeverOutlinedIcon
                       data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
-                      onClick={async () => {
-                        try {
-                          await deleteImage(avatar.toString());
-                          handleDeleteImg(file.src);
-                        } catch (error) {
-                          // console.error('Ошибка при удалении изображения:', error);
-                        }
-                      }}
+                      onClick={() => handleDeleteImg(file.src)}
                       className={style.deleteIcon}
                     />
                     <RemoveRedEyeOutlinedIcon
