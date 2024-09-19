@@ -81,7 +81,7 @@ export class AttachmentsApi {
 export class UsersApi {
   static getAvatar(id: ID) {
     return getQuery<Blob>({
-      url: `api/v1/users/photos/${id}/user`,
+      url: `api/v1/users/photos/photos/${id}`,
       config: {
         responseType: 'blob',
         headers: { 'Cache-Control': 'no-cache' },
@@ -90,7 +90,7 @@ export class UsersApi {
   }
   static changeAvatarById(photoId: ID, userId: ID) {
     return putQuery({
-      url: `api/v1/users/photos/${userId}/update/${photoId}`,
+      url: `api/v1/users/photos/${userId}/photos/${photoId}`,
       config: {
         responseType: 'blob',
         headers: { 'Cache-Control': 'no-cache' },
@@ -107,11 +107,11 @@ export class UsersApi {
     });
   }
   static setPhotoAsAvatar(photoId: ID, userId: ID) {
-    return putQuery({ url: `api/v1/users/photos/${userId}/update/${photoId}` });
+    return putQuery({ url: `api/v1/users/photos/${userId}/photos/${photoId}` });
   }
   static deletePhotosFromGallery(fotos: string) {
     return deleteQuery({
-      url: `api/v1/users/photos/delete?photoIds=${fotos}`,
+      url: `api/v1/users/photos?photoIds=${fotos}`,
       data: fotos,
       config: {
         headers: {
@@ -135,7 +135,7 @@ export class UsersApi {
 
   static getPhotoUrlsFromGallery(userId: ID) {
     return getQuery<PhotoUrlsFromGalleryResponse[]>({
-      url: `api/v1/users/photos/${userId}/reference`,
+      url: `api/v1/users/photos/reference/${userId}`,
     });
   }
   static changeAvatar(data: FormData, userId: ID) {
