@@ -6,6 +6,7 @@ import { type Dayjs } from 'dayjs';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
+import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
@@ -15,6 +16,7 @@ import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
+import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
 
 import { useUserAddChangeFormApi } from '../api/useUserAddChangeFormApi';
 import { getDataForRequest } from '../lib/getDataForRequest';
@@ -29,6 +31,29 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
 
+  const photoData = useUserFoto(user?.id);
+  const { setImageToStoreAfterLoadingMemo } = useUserFoto(user?.id);
+
+  useUserFotoItem(
+    photoData.images[0],
+    setImageToStoreAfterLoadingMemo,
+    () => {},
+    () => {},
+    user?.id,
+  );
+
+  const sortedImages = [...photoData.images].sort((a, b) => {
+    if (a.isAvatar) return -1;
+    if (b.isAvatar) return 1;
+    return 0;
+  });
+
+  console.log(sortedImages);
+
+  const changeStatusImage = () => {
+    return sortedImages[0].isAvatar === false
+  }
+  
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
   const close = () => {
@@ -177,6 +202,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
+          changeStatusImage
           close();
         }
       }

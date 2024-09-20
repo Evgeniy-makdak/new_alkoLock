@@ -1,17 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type FC, type ReactNode, useRef, useState } from 'react';
+import { type FC, type ReactNode, useRef } from 'react';
 
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import { Stack, Typography } from '@mui/material';
 
-import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
-import { UsersApi } from '@shared/api/baseQuerys';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { ImagePreview } from '@shared/ui/image_preview/ui/ImagePreview';
 import { ImageView } from '@shared/ui/image_view';
-import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
 
 import { ACCEPT_FORMATS } from '../configs/const';
 import { type ImageState, useUploadImg } from '../hooks/useUploadImg';
@@ -45,8 +42,6 @@ type UploadImgProps = {
   userId?: ID;
 };
 
-const deleteImage = UsersApi.deletePhotosFromGallery;
-
 export const UploadImg: FC<UploadImgProps> = ({
   textFieldProps,
   title,
@@ -56,7 +51,6 @@ export const UploadImg: FC<UploadImgProps> = ({
   images,
   limit,
   testId,
-  userId,
 }) => {
   const INPUT_ID = 'contained-button-file' + Date.now();
   const refDiv = useRef();
@@ -73,25 +67,6 @@ export const UploadImg: FC<UploadImgProps> = ({
     handleLoadImg,
     inputRef,
   } = useUploadImg(multiple, images, setImage, limit);
-
-  const photoData = useUserFoto(userId);
-  const { setImageToStoreAfterLoadingMemo } = useUserFoto(userId);
-  useUserFotoItem(
-    photoData.images[0],
-    setImageToStoreAfterLoadingMemo,
-    () => {},
-    () => {},
-    userId,
-  );
-
-  const sortedImages = [...photoData.images].sort((a, b) => {
-    if (a.isAvatar) return -1;
-    if (b.isAvatar) return 1;
-    return 0;
-  });
-
-  const avatar = sortedImages[0]?.id;
-  const [isAvatar, setisAvatar] = useState(avatar);
 
   return (
     <>
