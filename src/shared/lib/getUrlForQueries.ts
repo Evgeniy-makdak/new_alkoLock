@@ -153,7 +153,7 @@ export function getAttachmentURL({
 /////////////////////////////////////////////===========================branch==========================================
 
 const getSelectBranchQueryUrl = ({
-  page,
+  // page,
   parameters,
   branchId,
   notBranch,
@@ -172,14 +172,14 @@ const getSelectBranchQueryUrl = ({
   } else if (notBranch) {
     branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
   }
-  return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
+  return `${parameters ? parameters : ''}&all.${branch}`;
 };
 
 export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {
   let query = '?';
 
   if (branchId) {
-    query += `all.device.branchId.in=${branchId}&`;
+    query += `all.device.branchId.in=${branchId}`;
   }
 
   query += `all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID`;
@@ -253,15 +253,31 @@ const getSortQueryCar = (orderType: SortTypes | string, order: GridSortDirection
       return '';
   }
 };
-export const getMarksCarURL = ({ page, limit, searchQuery }: QueryOptions) => {
+export const getMarksCarURL = ({
+  page,
+  limit,
+  searchQuery,
+  filterOptions,
+}: QueryOptions & { filterOptions?: { branchId?: ID; notBranchId?: ID } }) => {
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
-  let queries = '&sort=match,ASC';
+
+  // let queries = '&sort=match,ASC';
+
+  const branchId = filterOptions?.branchId;
+  const notBranchId = filterOptions?.notBranchId;
+
+  let queries = getSelectBranchQueryUrl({
+    branchId: branchId,
+    notBranch: notBranchId,
+  });
 
   if (trimmedQuery) {
     queries += `&match=${trimmedQuery}`;
   }
-  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}`;
+
+  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&sort=match,ASC`;
 };
+
 export const getCarListURL = ({
   page,
   limit,
