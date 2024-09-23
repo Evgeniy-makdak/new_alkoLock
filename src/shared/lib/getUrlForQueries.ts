@@ -168,10 +168,11 @@ const getSelectBranchQueryUrl = ({
   if (branchId && !notBranch) {
     branch = `assignment.branch.id.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    // branch = `assignment.branch.id.notEquals=${notBranch}`;
+    branch = `assignment.branch.id.notEquals=${notBranch}`;
   } else if (notBranch) {
     branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
   }
+
   return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
 };
 
