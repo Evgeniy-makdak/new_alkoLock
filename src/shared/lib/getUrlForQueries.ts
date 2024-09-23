@@ -153,7 +153,7 @@ export function getAttachmentURL({
 /////////////////////////////////////////////===========================branch==========================================
 
 const getSelectBranchQueryUrl = ({
-  // page,
+  page,
   parameters,
   branchId,
   notBranch,
@@ -168,11 +168,11 @@ const getSelectBranchQueryUrl = ({
   if (branchId && !notBranch) {
     branch = `assignment.branch.id.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    branch = `assignment.branch.id.notEquals=${notBranch}`;
+    // branch = `assignment.branch.id.notEquals=${notBranch}`;
   } else if (notBranch) {
     branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
   }
-  return `${parameters ? parameters : ''}&all.${branch}`;
+  return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
 };
 
 export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {
@@ -260,9 +260,6 @@ export const getMarksCarURL = ({
   filterOptions,
 }: QueryOptions & { filterOptions?: { branchId?: ID; notBranchId?: ID } }) => {
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
-
-  // let queries = '&sort=match,ASC';
-
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
 
@@ -275,7 +272,7 @@ export const getMarksCarURL = ({
     queries += `&match=${trimmedQuery}`;
   }
 
-  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&sort=match,ASC`;
+  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&branchId=${branchId}`;
 };
 
 export const getCarListURL = ({
@@ -448,8 +445,8 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
       return `&sort=name${orderStr}`;
     case SortTypes.SERIAL_NUMBER:
       return `&sort=device.serialNumber${orderStr}`;
-    case SortTypes.MARK:
-      return `&sort=vehicleRecord.manufacturer${orderStr}`;
+    case SortTypes.TC:
+      return `&sort=vehicleRecord.manufacturer,vehicleRecord.model${orderStr}`;
     case SortTypes.GOS_NUMBER:
       return `&sort=vehicleRecord.registrationNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
