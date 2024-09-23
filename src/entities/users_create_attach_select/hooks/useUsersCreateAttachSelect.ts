@@ -13,7 +13,7 @@ export const useUsersCreateAttachSelect = () => {
   const onChange = (value: string) => {
     setSearchQuery(value);
   };
-  
+
   const onReset = () => {
     setSearchQuery('');
   };
@@ -21,7 +21,12 @@ export const useUsersCreateAttachSelect = () => {
   const { data, isLoading } = useConfiguredQuery(
     [QueryKeys.ATTACHMENT_LIST],
     AttachmentsApi.getList,
-    { options: { attachSearchQuery: searchQuery } },
+    {
+      options: {
+        attachSearchQuery: searchQuery,
+        distinct: true,
+      },
+    },
   );
   const array: number[] = [];
 
@@ -29,7 +34,7 @@ export const useUsersCreateAttachSelect = () => {
     () =>
       mapOptions<IAttachmentItems>(data?.data.content, (data) => adapterMapOptions(data, array)),
     [data],
-  );  
-  
+  );
+
   return { isLoading, onReset, onChange, userActionId };
 };

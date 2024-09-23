@@ -147,6 +147,9 @@ export function getAttachmentURL({
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
+  // Добавляем параметр для возврата уникальных значений в выпадающем списке
+  queries += '&distinct=true';
+
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
