@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
@@ -19,7 +20,7 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const prevRowCountRef = useRef(tableData.totalCount);
 
   const handleFilterChange = () => {
-    tableData.apiRef.current.setPage(0); 
+    tableData.apiRef.current.setPage(0);
   };
 
   useEffect(() => {
@@ -28,7 +29,7 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
         tableData.apiRef.current.setPage(0);
         prevRowCountRef.current = tableData.totalCount;
       }
-    }, 1000); 
+    }, 800);
 
     return () => clearTimeout(timer);
   }, [tableData.totalCount]);
@@ -71,7 +72,8 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           open={filtersData.openFilters}
           toggle={filtersData.toggleFilters}
           testid={
-            testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
+            testids.page_attachments.attachments_widget_header
+              .ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
           }
         />
         <ResetFilters

@@ -54,7 +54,7 @@ export const useEventsTable = () => {
     order: state?.sortModel[0]?.sort,
   });
 
-  const rows = useGetRows(data?.data?.content || []);
+  const rows = useGetRows(data?.data?.content);
   const columns = useGetColumns(refetch);
   const totalCount = data?.data?.totalElements;
 
