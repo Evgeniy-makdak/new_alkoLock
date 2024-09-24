@@ -272,9 +272,9 @@ export const getMarksCarURL = ({
     notBranch: notBranchId,
   });
 
-  if (trimmedQuery) {
-    queries += `&match=${trimmedQuery}`;
-  }
+if (trimmedQuery) {
+  queries += `&search=${encodeURIComponent(trimmedQuery)}`;
+}
 
   return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&branchId=${branchId}`;
 };
@@ -559,15 +559,15 @@ export function getEventsApiURL({
   }
 
   if (users) {
-    queries += `&any.userActionId.id.in=${filterOptions.users}`;
+    queries += `&all.userActionId.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
-    queries += `&any.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
+    queries += `&all.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
   }
 
   if (carsByLicense) {
-    queries += `&any.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
+    queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {
