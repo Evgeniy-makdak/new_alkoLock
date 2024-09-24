@@ -62,7 +62,7 @@ export const useUsersTable = (handleCloseAside: () => void) => {
   };
 
   const rows = useGetRows(users?.content);
-  const totalCount = users?.totalElements || 0;
+  const totalCount = users?.totalElements;
   const headers = useGetColumns(
     refetch,
     handleClickDeletetUser,

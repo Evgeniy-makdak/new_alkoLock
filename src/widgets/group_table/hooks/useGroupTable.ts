@@ -48,7 +48,7 @@ export const useGroupTable = () => {
   };
 
   const rows = useGetRows(branchs?.content);
-  const totalCount = branchs?.totalElements || 0;
+  const totalCount = branchs?.totalElements;
   const headers = useGetColumns(
     refetch,
     handleClickDeleteBranch,

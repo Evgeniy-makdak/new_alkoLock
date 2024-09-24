@@ -49,7 +49,7 @@ export const useRolesTable = () => {
   };
 
   const rows = useGetRows(roles?.content);
-  const totalCount = roles?.totalElements || 0;
+  const totalCount = roles?.totalElements;
   const headers = useGetColumns(
     refetch,
     handleClickDeletetRole,

@@ -37,7 +37,7 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
 
   const rows = useGetRows(cars?.content);
   const headers = useGetColumns(refetch, toggleAddCarModal, setChangeCar);
-  const totalCount = cars?.totalElements || 0;
+  const totalCount = cars?.totalElements;
 
   const closeEditModal = () => {
     setChangeCar(null);

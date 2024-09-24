@@ -61,7 +61,7 @@ export const Table = memo(
             getRowClassName={() => `super-app-theme`}
             slots={{
               noResultsOverlay: CustomNoRowsOverlay,
-              pagination: CustomPagination, // Добавляем кастомную пагинацию
+              pagination: CustomPagination,
             }}
             initialState={{
               pagination: {

@@ -56,12 +56,10 @@ export const useEventsTable = () => {
 
   const rows = useGetRows(data?.data?.content || []);
   const columns = useGetColumns(refetch);
-  const totalCount = data?.data?.totalElements || 0;
+  const totalCount = data?.data?.totalElements;
 
-  // Состояние для управления страницей
   const [page, setPage] = useState(0);
 
-  // Сброс страницы при изменении фильтров или поискового запроса
   useEffect(() => {
     setPage(0);
   }, [filters, searchQuery, endDate, startDate]);

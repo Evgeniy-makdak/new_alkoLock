@@ -148,7 +148,7 @@ export function getAttachmentURL({
   }
 
   // Добавляем параметр для возврата уникальных значений в выпадающем списке
-  queries += '&distinct=true';
+  // queries += '&distinct=true';
 
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -272,9 +272,9 @@ export const getMarksCarURL = ({
     notBranch: notBranchId,
   });
 
-if (trimmedQuery) {
-  queries += `&search=${encodeURIComponent(trimmedQuery)}`;
-}
+  if (trimmedQuery) {
+    queries += `&search=${encodeURIComponent(trimmedQuery)}`;
+  }
 
   return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&branchId=${branchId}`;
 };

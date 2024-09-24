@@ -29,7 +29,7 @@ export const useAvtoServiceTable = () => {
   });
   const columns = useGetColumns(refetch);
   const rows = useGetRows(data?.data?.content || []);
-  const totalCount = data?.data?.totalElements || 0;
+  const totalCount = data?.data?.totalElements;
 
   const filterData = {
     input,

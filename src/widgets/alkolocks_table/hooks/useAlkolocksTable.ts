@@ -54,7 +54,7 @@ export const useAlkolocksTable = () => {
   };
 
   const rows = useGetRows(data?.content);
-  const totalCount = data?.totalElements || 0;
+  const totalCount = data?.totalElements;
 
   const headers = useGetColumns(
     refetch,

@@ -54,7 +54,7 @@ export const useVehiclesTable = () => {
   };
 
   const rows = useGetRows(cars?.content);
-  const totalCount = cars?.totalElements || 0;
+  const totalCount = cars?.totalElements;
   const headers = useGetColumns(
     refetch,
     handleClickDeletetCar,

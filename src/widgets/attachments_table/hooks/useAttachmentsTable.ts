@@ -62,7 +62,7 @@ export const useAttachmentsTable = () => {
   };
 
   const rows = useGetRows(attachmentList?.data?.content);
-  const totalCount = attachmentList?.data?.totalElements || 0;
+  const totalCount = attachmentList?.data?.totalElements;
   const headers = useGetColumns(toggleAddAttachModal, handleClickDeleteAttachment, refetch);
 
   const tableData = {

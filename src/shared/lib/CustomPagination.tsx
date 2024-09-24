@@ -1,5 +1,3 @@
-import React from 'react';
-
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
@@ -39,7 +37,7 @@ const CustomPagination = () => {
   const handleLastPageButtonClick = () => {
     if (apiRef.current) {
       const { pageSize } = apiRef.current.state.pagination.paginationModel;
-      const totalRows = apiRef.current.state.rows.totalRowCount;
+      const totalRows = apiRef.current.state.rows.totalRowCount;  
       const totalPages = Math.ceil(totalRows / pageSize);
       apiRef.current.setPage(totalPages - 1);
     }

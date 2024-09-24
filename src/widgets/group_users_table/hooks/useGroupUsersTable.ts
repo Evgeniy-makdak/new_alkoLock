@@ -36,7 +36,7 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
   });
 
   const rows = useGetRows(users?.content);
-  const totalCount = users?.totalElements || 0;
+  const totalCount = users?.totalElements;
   const headers = useGetColumns(refetch, toggleAddCarModal, setChangeUser);
 
   const closeEditModal = () => {
