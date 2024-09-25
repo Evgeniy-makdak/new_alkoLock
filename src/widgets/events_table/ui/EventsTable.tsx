@@ -18,11 +18,12 @@ interface EventsTableProps {
 export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
-  const [isFiltersChanged, setIsFiltersChanged] = useState(false); 
+  const pageSize = useRef(tableData.pageSize);
+  const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
   const handleFilterChange = () => {
     setIsFiltersChanged(true);
-    tableData.apiRef.current.setPage(0); 
+    tableData.apiRef.current.setPage(0);
   };
 
   useEffect(() => {
@@ -35,6 +36,12 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
       setIsFiltersChanged(false);
     }
   }, [tableData.totalCount, isFiltersChanged]);
+
+  useEffect(() => {
+    if (pageSize.current !== tableData.pageSize) {
+      handleFilterChange();
+    }
+  }, [tableData.pageSize]);
 
   return (
     <>
@@ -73,7 +80,10 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           active={filtersData.hasActiveFilters}
           open={filtersData.openFilters}
           toggle={filtersData.toggleFilters}
-          testid={testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON}
+          testid={
+            testids.page_attachments.attachments_widget_header
+              .ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
+          }
         />
         <ResetFilters
           title="Сбросить фильтры"
@@ -85,15 +95,12 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           }}
         />
       </TableHeaderWrapper>
-      <EventsFilterPanel
-        open={filtersData.openFilters}
-        onFilterChange={handleFilterChange} 
-      />
+      <EventsFilterPanel open={filtersData.openFilters} onFilterChange={handleFilterChange} />
       <Table
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} 
+        onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
         onPaginationModelChange={(paginationModel) => {
           tableData.changeTableState(paginationModel);
