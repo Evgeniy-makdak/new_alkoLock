@@ -1,5 +1,4 @@
 import type { Values } from '@shared/ui/search_multiple_select';
-
 import { eventsFilterPanelStore } from '../model/eventsFilterPanelStore';
 
 export interface EventsFilters {
@@ -10,7 +9,11 @@ export interface EventsFilters {
 }
 
 export const useEventsFilterPanel = () => {
-  const { filters, setFilters } = eventsFilterPanelStore();
+  const { filters, setFilters: setFiltersStore } = eventsFilterPanelStore();
+
+  const setFilters = (name: keyof EventsFilters, value: Values) => {
+    setFiltersStore(name, value); 
+  };
 
   return { filters, setFilters };
 };

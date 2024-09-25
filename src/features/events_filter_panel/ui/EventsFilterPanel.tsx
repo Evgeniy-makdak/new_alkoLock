@@ -5,10 +5,21 @@ import { TypeEventSelect } from '@entities/type_event_select';
 import { UsersSelect } from '@entities/users_select';
 import { testids } from '@shared/const/testid';
 
-import { useEventsFilterPanel } from '../hooks/useEventsFilterPanel';
+import { EventsFilters, useEventsFilterPanel } from '../hooks/useEventsFilterPanel';
 
-export const EventsFilterPanel = ({ open }: { open: boolean }) => {
+interface EventsFilterPanelProps {
+  open: boolean;
+  onFilterChange: () => void; 
+}
+
+export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelProps) => {
   const { filters, setFilters } = useEventsFilterPanel();
+
+  const handleChange = (name: keyof EventsFilters, value: any) => {
+    setFilters(name, value);
+    onFilterChange(); 
+  };
+
   return (
     <>
       {open && (
@@ -16,41 +27,33 @@ export const EventsFilterPanel = ({ open }: { open: boolean }) => {
           <UsersSelect
             multiple={true}
             name="driverId"
-            setValueStore={setFilters}
+            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.driverId}
-            testid={
-              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
-            }
+            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER}
             label="Поиск по водителю"
           />
           <MarksCarSelect
             multiple={true}
             name="markCar"
-            setValueStore={setFilters}
+            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.markCar}
-            testid={
-              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_BRAND_CAR
-            }
+            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_BRAND_CAR}
             label="Поиск по марке"
           />
           <CarsGosNumberSelect
             multiple={true}
             name="gosNumber"
-            setValueStore={setFilters}
+            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.gosNumber}
-            testid={
-              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_GOS_NUMBER
-            }
+            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_GOS_NUMBER}
             label="Поиск по гос.номеру"
           />
           <TypeEventSelect
             multiple={true}
             name="typeEvent"
-            setValueStore={setFilters}
+            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.typeEvent}
-            testid={
-              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_TYPE_EVENT
-            }
+            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_TYPE_EVENT}
             label="Тип события"
           />
         </FilterPanel>

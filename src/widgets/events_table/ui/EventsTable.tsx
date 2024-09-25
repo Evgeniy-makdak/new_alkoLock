@@ -18,23 +18,21 @@ interface EventsTableProps {
 export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
-  const [isFiltersChanged, setIsFiltersChanged] = useState(false); // отслеживаем изменения фильтров
-
-  // Устанавливаем начальное состояние страницы на 0 при первом рендере
-  useEffect(() => {
-    tableData.apiRef.current.setPage(0); // Устанавливаем первую страницу
-  }, []);
+  const [isFiltersChanged, setIsFiltersChanged] = useState(false); 
 
   const handleFilterChange = () => {
-    setIsFiltersChanged(true); // фильтры изменены
-    tableData.apiRef.current.setPage(0); // сбрасываем на первую страницу
+    setIsFiltersChanged(true);
+    tableData.apiRef.current.setPage(0); 
   };
 
-  // Сброс страницы при изменении количества строк только при изменении фильтров
+  useEffect(() => {
+    tableData.apiRef.current.setPage(0);
+  }, []);
+
   useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
       prevRowCountRef.current = tableData.totalCount;
-      setIsFiltersChanged(false); // сброс флага после обновления данных
+      setIsFiltersChanged(false);
     }
   }, [tableData.totalCount, isFiltersChanged]);
 
@@ -46,27 +44,27 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           value={filtersData.input}
           onClear={() => {
             filtersData.setInput('');
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
           setState={(value) => {
             filtersData.setInput(value);
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
         />
         <InputsDates
           onClear={() => {
             filtersData.clearDates();
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
           inputStartTestId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE}
           inputEndTestId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE}
           onChangeStartDate={(date) => {
             filtersData.changeStartDate(date);
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
           onChangeEndDate={(date) => {
             filtersData.changeEndDate(date);
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
@@ -83,19 +81,21 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
             filtersData.resetFilters();
             filtersData.clearDates();
             filtersData.setInput('');
-            handleFilterChange(); // Сброс пагинации
+            handleFilterChange();
           }}
         />
       </TableHeaderWrapper>
-      <EventsFilterPanel open={filtersData.openFilters} />
+      <EventsFilterPanel
+        open={filtersData.openFilters}
+        onFilterChange={handleFilterChange} 
+      />
       <Table
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки не сбрасывает пагинацию
+        onSortModelChange={tableData.changeTableSorts} 
         apiRef={tableData.apiRef}
         onPaginationModelChange={(paginationModel) => {
-          // Обновляем состояние пагинации без сброса
           tableData.changeTableState(paginationModel);
         }}
         pageNumber={tableData.page}
