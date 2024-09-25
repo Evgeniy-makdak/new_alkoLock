@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
@@ -18,21 +18,25 @@ interface EventsTableProps {
 export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
+  const [isFiltersChanged, setIsFiltersChanged] = useState(false); // отслеживаем изменения фильтров
+
+  // Устанавливаем начальное состояние страницы на 0 при первом рендере
+  useEffect(() => {
+    tableData.apiRef.current.setPage(0); // Устанавливаем первую страницу
+  }, []);
 
   const handleFilterChange = () => {
-    tableData.apiRef.current.setPage(0);
+    setIsFiltersChanged(true); // фильтры изменены
+    tableData.apiRef.current.setPage(0); // сбрасываем на первую страницу
   };
 
+  // Сброс страницы при изменении количества строк только при изменении фильтров
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (prevRowCountRef.current !== tableData.totalCount) {
-        tableData.apiRef.current.setPage(0);
-        prevRowCountRef.current = tableData.totalCount;
-      }
-    }, 800);
-
-    return () => clearTimeout(timer);
-  }, [tableData.totalCount]);
+    if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
+      prevRowCountRef.current = tableData.totalCount;
+      setIsFiltersChanged(false); // сброс флага после обновления данных
+    }
+  }, [tableData.totalCount, isFiltersChanged]);
 
   return (
     <>
@@ -71,10 +75,7 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           active={filtersData.hasActiveFilters}
           open={filtersData.openFilters}
           toggle={filtersData.toggleFilters}
-          testid={
-            testids.page_attachments.attachments_widget_header
-              .ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
-          }
+          testid={testids.page_attachments.attachments_widget_header.ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON}
         />
         <ResetFilters
           title="Сбросить фильтры"
