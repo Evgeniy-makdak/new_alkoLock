@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { type Dayjs } from 'dayjs';
@@ -32,27 +32,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const [alert, setAlert] = useState(false);
 
   const photoData = useUserFoto(user?.id);
-  const { setImageToStoreAfterLoadingMemo } = useUserFoto(user?.id);
-
-  useUserFotoItem(
-    photoData.images[0],
-    setImageToStoreAfterLoadingMemo,
-    () => {},
-    () => {},
-    user?.id,
-  );
-
-  const sortedImages = [...photoData.images].sort((a, b) => {
-    if (a.isAvatar) return -1;
-    if (b.isAvatar) return 1;
-    return 0;
-  });
-
-  console.log(sortedImages);
-
-  const changeStatusImage = () => {
-    return sortedImages[0].isAvatar === false
-  }
+  const { setImageToStoreAfterLoadingMemo, changeAvatarMemo } = useUserFoto(user?.id);
+  const avatarImage = useMemo(() => {
+  return photoData.images.find(img => img.isAvatar)
+}, [photoData])
   
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
@@ -202,7 +185,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          changeStatusImage
+          if (avatarImage && !formData.get('userPhoto.hash')) {
+            changeAvatarMemo(avatarImage.id, false)
+          }
           close();
         }
       }

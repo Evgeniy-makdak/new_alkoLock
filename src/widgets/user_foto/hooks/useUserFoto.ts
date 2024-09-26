@@ -23,7 +23,7 @@ export const useUserFoto = (userId: ID) => {
     (image: ImageStateInStore) => setImageToStoreAfterLoading(image, userId),
     [userId],
   );
-  const changeAvatarMemo = useCallback((idImage: ID) => changeAvatar(idImage, userId), [userId]);
+  const changeAvatarMemo = useCallback((idImage: ID, isAvatar?: boolean) => changeAvatar(idImage, userId, isAvatar), [userId]);
   const client = useQueryClient();
   const deleteImageMemo = useCallback(
     (imageID: ID) => {

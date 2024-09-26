@@ -15,7 +15,7 @@ type UsersFotoStore = {
   imageHasNoUpload: (userId: ID, message?: string) => void;
   setUserImagesUrl: (urls: string[], userId: ID) => void;
   deleteImage: (idImage: ID, userId: ID) => void;
-  changeAvatar: (idImage: ID, isUser: ID) => void;
+  changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
 };
 
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
@@ -140,7 +140,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
   },
 
-  changeAvatar: (idImage, idUser) => {
+  changeAvatar: (idImage, idUser, isAvatar=true) => {
     if (!idUser || !idImage) return;
     const state = get().usersImages;
     const prevImage = state[idUser] || [];
@@ -148,7 +148,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       if (image?.id === idImage) {
         return {
           ...image,
-          isAvatar: true,
+          isAvatar,
         };
       }
 
