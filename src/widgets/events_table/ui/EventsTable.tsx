@@ -39,6 +39,7 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
 
   useEffect(() => {
     if (pageSize.current !== tableData.pageSize) {
+      pageSize.current = tableData.pageSize;
       handleFilterChange();
     }
   }, [tableData.pageSize]);
