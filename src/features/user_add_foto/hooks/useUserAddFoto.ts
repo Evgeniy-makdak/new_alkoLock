@@ -1,12 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
-
 import { enqueueSnackbar } from 'notistack';
-
 import type { ImageState } from '@entities/upload_img';
 import { StatusCode } from '@shared/const/statusCode';
 import type { ID } from '@shared/types/BaseQueryTypes';
-
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
 
@@ -31,6 +28,7 @@ export const useUserAddFoto = (userId: ID) => {
       }
       return !isDuplicate;
     });
+
     if (newImages.length === 0) {
       enqueueSnackbar('Нет новых фото для загрузки', { variant: 'warning' });
       return;
@@ -38,29 +36,37 @@ export const useUserAddFoto = (userId: ID) => {
 
     setNotSavedImageInDataBase(newImages, userId);
 
-    for (const image of newImages) {
+    // Создание массива для асинхронной обработки загрузки каждого изображения
+    const uploadPromises = newImages.map(async (image) => {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
 
-      const result = await addPhoto(reqBody);
-      const status = result?.status;
-      const message = result?.detail;
-      const isErrorStatus =
-        status === StatusCode.BAD_REQUEST ||
-        status === StatusCode.SERVER_ERROR ||
-        status === StatusCode.NOT_FOUND;
+      try {
+        const result = await addPhoto(reqBody);
+        const status = result?.status;
+        const isErrorStatus =
+          status === StatusCode.BAD_REQUEST ||
+          status === StatusCode.SERVER_ERROR ||
+          status === StatusCode.NOT_FOUND;
 
-      if (result?.isError || isErrorStatus) {
-        imageHasNoUpload(userId, message);
-        enqueueSnackbar(message, { variant: 'error' });
-      } else {
-        setTimeout(() => {
+        if (isErrorStatus || result?.isError) {
+          const message = result?.detail || 'Ошибка загрузки фото';
+          imageHasNoUpload(userId, message);
+          enqueueSnackbar(message, { variant: 'error' });
+        } else {
+          // Обновляем галерею пользователя сразу после успешной загрузки изображения
           imageHasUpload(result?.data, userId);
-        }, 0);
+        }
+      } catch (error) {
+        enqueueSnackbar('Ошибка загрузки фото', { variant: 'error' });
       }
-    }
+    });
 
+    // Ожидание загрузки всех изображений
+    await Promise.all(uploadPromises);
+
+    // Сброс формы после завершения всех операций
     reset();
   };
 
