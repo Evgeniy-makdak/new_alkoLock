@@ -562,7 +562,7 @@ export type UserDataLogin = {
 export type AddPhotoItemResponse = {
   hash: string;
   id: ID;
-  fileName: string;
+  fileName?: string;
   createdAt: string;
   userActionId: {
     id: ID;

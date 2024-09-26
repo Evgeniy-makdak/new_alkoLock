@@ -1,9 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from 'react';
+
 import { enqueueSnackbar } from 'notistack';
+
 import type { ImageState } from '@entities/upload_img';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 import type { ID } from '@shared/types/BaseQueryTypes';
+
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
 
@@ -12,14 +16,13 @@ export const useUserAddFoto = (userId: ID) => {
   const { imageHasUpload, setNotSavedImageInDataBase, imageHasNoUpload, usersImages } =
     userFotoStore();
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
+
   const reset = () => {
     setUploadImage([]);
   };
 
   const onSubmit = async () => {
     const existingImages = usersImages[userId] || [];
-
-    // Фильтрация загружаемых изображений, чтобы не добавлять уже существующие
     const newImages = uploadImage.filter((image) => {
       const isDuplicate = existingImages.some((existingImage) => existingImage.hash === image.hash);
       if (isDuplicate) {
@@ -36,7 +39,6 @@ export const useUserAddFoto = (userId: ID) => {
 
     setNotSavedImageInDataBase(newImages, userId);
 
-    // Создание массива для асинхронной обработки загрузки каждого изображения
     const uploadPromises = newImages.map(async (image) => {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
@@ -44,29 +46,52 @@ export const useUserAddFoto = (userId: ID) => {
 
       try {
         const result = await addPhoto(reqBody);
-        const status = result?.status;
-        const isErrorStatus =
-          status === StatusCode.BAD_REQUEST ||
-          status === StatusCode.SERVER_ERROR ||
-          status === StatusCode.NOT_FOUND;
 
-        if (isErrorStatus || result?.isError) {
+        if (result?.status >= StatusCode.BAD_REQUEST) {
           const message = result?.detail || 'Ошибка загрузки фото';
           imageHasNoUpload(userId, message);
           enqueueSnackbar(message, { variant: 'error' });
         } else {
-          // Обновляем галерею пользователя сразу после успешной загрузки изображения
           imageHasUpload(result?.data, userId);
+          enqueueSnackbar('Фото успешно загружено', { variant: 'success' });
+
+          // Логирование результата, чтобы увидеть точно, что в нём есть
+          console.log('Результат загрузки фото:', result?.data);
+
+          const photoUrl = result?.data[0]?.fileName;
+
+          // Логируем значение photoUrl
+          console.log('photoUrl:', photoUrl);
+
+          if (photoUrl) {
+            try {
+              // Лог перед вызовом функции
+              console.log('Вызов getPhotoFromGallery с photoUrl:', photoUrl);
+
+              await UsersApi.getPhotoFromGallery(photoUrl);
+
+              enqueueSnackbar('Фото загружено и обновлено из галереи', { variant: 'info' });
+            } catch (error) {
+              console.error('Ошибка при получении фото из галереи:', error);
+              enqueueSnackbar('Ошибка при обновлении фото из галереи', { variant: 'error' });
+            }
+          } else {
+            console.error('photoUrl отсутствует или пуст');
+          }
         }
       } catch (error) {
-        enqueueSnackbar('Ошибка загрузки фото', { variant: 'error' });
+        imageHasNoUpload(userId, 'Ошибка загрузки фото');
       }
     });
 
-    // Ожидание загрузки всех изображений
-    await Promise.all(uploadPromises);
+    const results = await Promise.allSettled(uploadPromises);
 
-    // Сброс формы после завершения всех операций
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        console.error(`Ошибка загрузки фото ${newImages[index].hash}:`, result.reason);
+      }
+    });
+
     reset();
   };
 
