@@ -21,6 +21,11 @@ export const useUserAddFoto = (userId: ID) => {
     setUploadImage([]);
   };
 
+  const clearCache = (photoUrl: string) => {
+    const img = new Image();
+    img.src = photoUrl + '?cache_bust=' + Date.now(); 
+  };
+
   const onSubmit = async () => {
     const existingImages = usersImages[userId] || [];
     const newImages = uploadImage.filter((image) => {
@@ -46,46 +51,32 @@ export const useUserAddFoto = (userId: ID) => {
 
       try {
         const result = await addPhoto(reqBody);
-
         if (result?.status >= StatusCode.BAD_REQUEST) {
-          const message = result?.detail || 'Ошибка загрузки фото';
+          const message = result?.detail;
           imageHasNoUpload(userId, message);
           enqueueSnackbar(message, { variant: 'error' });
         } else {
           imageHasUpload(result?.data, userId);
-          enqueueSnackbar('Фото успешно загружено', { variant: 'success' });
-
-          // Логирование результата, чтобы увидеть точно, что в нём есть
           console.log('Результат загрузки фото:', result?.data);
-
           const photoUrl = result?.data[0]?.fileName;
-
-          // Логируем значение photoUrl
           console.log('photoUrl:', photoUrl);
-
           if (photoUrl) {
             try {
-              // Лог перед вызовом функции
               console.log('Вызов getPhotoFromGallery с photoUrl:', photoUrl);
-
               await UsersApi.getPhotoFromGallery(photoUrl);
-
-              enqueueSnackbar('Фото загружено и обновлено из галереи', { variant: 'info' });
+              clearCache(photoUrl);
             } catch (error) {
-              console.error('Ошибка при получении фото из галереи:', error);
-              enqueueSnackbar('Ошибка при обновлении фото из галереи', { variant: 'error' });
+              //
             }
           } else {
-            console.error('photoUrl отсутствует или пуст');
+            //
           }
         }
       } catch (error) {
-        imageHasNoUpload(userId, 'Ошибка загрузки фото');
+        //
       }
     });
-
     const results = await Promise.allSettled(uploadPromises);
-
     results.forEach((result, index) => {
       if (result.status === 'rejected') {
         console.error(`Ошибка загрузки фото ${newImages[index].hash}:`, result.reason);
