@@ -6,6 +6,7 @@ import type { AddPhotoResponse, ID } from '@shared/types/BaseQueryTypes';
 type UsersImages = {
   [K in ID]: ImagesStateInStore;
 };
+
 type UsersFotoStore = {
   usersImages: UsersImages;
   setImageToStoreAfterLoading: (image: ImageStateInStore, userId: ID) => void;
@@ -16,6 +17,7 @@ type UsersFotoStore = {
   setUserImagesUrl: (urls: string[], userId: ID) => void;
   deleteImage: (idImage: ID, userId: ID) => void;
   changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
+  updateUserImages: (userId: ID, images: ImageStateInStore[]) => void; // Новый метод для обновления изображений
 };
 
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
@@ -37,9 +39,9 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       }
       if (image?.isAvatar && storeImage.isAvatar) {
         return {
-          ...storeImage, 
+          ...storeImage,
           isAvatar: false,
-        }
+        };
       }
       return storeImage;
     });
@@ -140,7 +142,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
   },
 
-  changeAvatar: (idImage, idUser, isAvatar=true) => {
+  changeAvatar: (idImage, idUser, isAvatar = true) => {
     if (!idUser || !idImage) return;
     const state = get().usersImages;
     const prevImage = state[idUser] || [];
@@ -159,5 +161,19 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     });
 
     set((prev) => ({ ...prev, usersImages: { ...state, [idUser]: newImages } }));
+  },
+  updateUserImages: (userId, newImages) => {
+    const state = get().usersImages;
+    const currentImages = state[userId] || []; 
+    const nonDuplicateImages = newImages.filter(
+      (newImage) =>
+        !currentImages.some(
+          (currentImage) => currentImage.hash === newImage.hash || currentImage.id === newImage.id,
+        ),
+    );
+
+    if (nonDuplicateImages.length === 0) return;
+    const updatedImages = [...currentImages, ...nonDuplicateImages];
+    set({ usersImages: { ...state, [userId]: updatedImages } });
   },
 }));

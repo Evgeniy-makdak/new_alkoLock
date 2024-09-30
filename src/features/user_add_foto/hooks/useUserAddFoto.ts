@@ -1,8 +1,8 @@
 import { useState } from 'react';
-
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
+import type { ImageStateInStore } from '@entities/upload_img/index';
 import { StatusCode } from '@shared/const/statusCode';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
@@ -11,15 +11,21 @@ import { userFotoStore } from '../model/userFotoStore';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
-  const [validImages, setValidImages] = useState<ImageState[]>([]); // Состояние для валидных фото
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); // Хранит хеши загружаемых фото
 
-  const { imageHasUpload, setNotSavedImageInDataBase, imageHasNoUpload, usersImages } =
-    userFotoStore();
+  const {
+    imageHasUpload,
+    setNotSavedImageInDataBase,
+    imageHasNoUpload,
+    usersImages,
+    updateUserImages,
+  } = userFotoStore();
+
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
 
   const reset = () => {
     setUploadImage([]);
-    setValidImages([]); // Сброс валидных изображений
+    setLoadingImages(new Set());
   };
 
   const onSubmit = async () => {
@@ -47,34 +53,48 @@ export const useUserAddFoto = (userId: ID) => {
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
 
+      // Добавляем фото в состояние загрузки
+      setLoadingImages((prev) => new Set(prev).add(image.hash));
+
       try {
         const result = await addPhoto(reqBody);
         if (result?.status >= StatusCode.BAD_REQUEST) {
           const message = result?.detail || 'Ошибка загрузки фото';
           imageHasNoUpload(userId, message);
           enqueueSnackbar(message, { variant: 'error' });
-
-          // Удаляем ошибочное изображение из состояния
           setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
         } else {
           imageHasUpload(result?.data, userId);
-          validImagesToUpload.push(image); // Добавляем валидное фото в массив
+          validImagesToUpload.push(image);
         }
       } catch (error) {
-        console.error('Ошибка загрузки изображения:', error);
+        enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
+      } finally {
+        // Убираем фото из состояния загрузки
+        setLoadingImages((prev) => {
+          const newLoadingImages = new Set(prev);
+          newLoadingImages.delete(image.hash);
+          return newLoadingImages;
+        });
       }
     });
 
     await Promise.all(uploadPromises);
 
-    // Обновляем список валидных фото сразу
-    setValidImages((prevValidImages) => [...prevValidImages, ...validImagesToUpload]);
+    const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
+      ...image,
+      isSavedInDataBase: true,
+      isAvatar: false,
+    }));
+
+    updateUserImages(userId, validImagesInStore);
+    reset();
   };
 
   return {
     uploadImage,
-    validImages,
     setUploadImage,
+    loadingImages, // Массив с хешами загружаемых фото
     lengthMoreZero: uploadImage?.length > 0,
     isLoading,
     onSubmit,
