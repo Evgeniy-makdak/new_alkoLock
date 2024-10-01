@@ -7,6 +7,7 @@ import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { useAvtoServiceTable } from '../hooks/useAvtoServiceTable';
+import { useEffect } from 'react';
 
 interface AvtoServiceTableProps {
   handleClickRow: (id: string | number, idDevice: string | number) => void;
@@ -21,6 +22,12 @@ export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
       tableData.apiRef.current.setPage(0);
     }
   };
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>

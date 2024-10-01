@@ -17,7 +17,7 @@ type UsersFotoStore = {
   setUserImagesUrl: (urls: string[], userId: ID) => void;
   deleteImage: (idImage: ID, userId: ID) => void;
   changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
-  updateUserImages: (userId: ID, images: ImageStateInStore[]) => void; // Новый метод для обновления изображений
+  updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
 };
 
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
@@ -164,7 +164,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   },
   updateUserImages: (userId, newImages) => {
     const state = get().usersImages;
-    const currentImages = state[userId] || []; 
+    const currentImages = state[userId] || [];
     const nonDuplicateImages = newImages.filter(
       (newImage) =>
         !currentImages.some(

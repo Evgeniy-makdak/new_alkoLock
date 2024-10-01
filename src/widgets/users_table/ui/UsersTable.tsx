@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { DeleteUserForm } from '@features/delete_user_form';
 import { UserAddChangeForm } from '@features/user_add_change_form';
@@ -22,6 +22,12 @@ type UsersTableProps = {
 export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }) => {
   const { filtersData, tableData, addModalData, deleteUserModalData } =
     useUsersTable(handleCloseAside);
+
+    useEffect(() => {
+      if(tableData.sortModel) {
+        tableData.apiRef.current.setPage(0);
+      }
+    }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -70,7 +76,7 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }
         getRowHeight={() => 'auto'}
         sortingMode="server"
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки без сброса пагинации
+        onSortModelChange={tableData.changeTableSorts} 
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
         pageNumber={tableData.page}

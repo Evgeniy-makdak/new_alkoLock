@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { GroupUserAddForm } from '@features/group_user_add_form';
 import { GroupUserMoveForm } from '@features/group_user_move_form';
@@ -17,6 +17,12 @@ type GroupUsersTableProps = {
 
 export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
   const { filtersData, tableData, addModalData, editModalData } = useGroupUsersTable(groupInfo);
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -39,7 +45,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
         getRowHeight={() => 'auto'}
         paginationMode="server"
         sortingMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
+        onSortModelChange={tableData.changeTableSorts} 
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Пагинация сохраняется при навигации
         pageNumber={tableData.page}

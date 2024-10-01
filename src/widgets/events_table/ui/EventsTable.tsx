@@ -31,6 +31,12 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   }, []);
 
   useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
+
+  useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
       prevRowCountRef.current = tableData.totalCount;
       setIsFiltersChanged(false);

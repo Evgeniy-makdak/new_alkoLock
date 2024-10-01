@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { GroupCarAddForm } from '@features/group_car_add_form';
 import { GroupCarMoveForm } from '@features/group_car_move_form';
@@ -18,6 +18,12 @@ type GroupCarTableProps = {
 
 export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
   const { addModalData, tableData, filtersData, editModalData } = useGroupCarTable(groupInfo);
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -38,7 +44,7 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
       <Table
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Сортировка без сброса пагинации
+        onSortModelChange={tableData.changeTableSorts} 
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Навигация по страницам
         pageNumber={tableData.page}

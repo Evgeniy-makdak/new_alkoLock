@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { RoleAddChangeForm } from '@features/role_add_change_form';
 import { RoleDeleteForm } from '@features/role_delete_form';
@@ -12,6 +12,12 @@ import { useRolesTable } from '../hooks/useRolesTable';
 
 export const RolesTable: FC = () => {
   const { addModalData, deleteRoleModalData, filtersData, tableData } = useRolesTable();
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>

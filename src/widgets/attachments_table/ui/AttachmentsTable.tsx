@@ -14,11 +14,18 @@ import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useAttachmentsTable } from '../hooks/useAttachmentsTable';
+import { useEffect } from 'react';
 
 export const AttachmentsTable = () => {
   const { addModalData, deleteAttachModalData, filtersData, tableData } = useAttachmentsTable();
   const resetFilters = attachmentsFilterPanelStore((state) => state.resetFilters);
   const hasActiveFilters = attachmentsFilterPanelStore((state) => state.hasActiveFilters);
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -84,7 +91,7 @@ export const AttachmentsTable = () => {
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки не сбрасывает пагинацию
+        onSortModelChange={tableData.changeTableSorts} 
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
         pageNumber={tableData.page}

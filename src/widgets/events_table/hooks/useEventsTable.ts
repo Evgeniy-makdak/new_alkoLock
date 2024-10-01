@@ -51,7 +51,7 @@ export const useEventsTable = () => {
       eventsByType: filters.typeEvent,
     },
     sortBy: state?.sortModel[0]?.field,
-    order: state?.sortModel[0]?.sort,
+    order: state?.sortModel[0]?.sort,  
   });
 
   const rows = useGetRows(data?.data?.content);

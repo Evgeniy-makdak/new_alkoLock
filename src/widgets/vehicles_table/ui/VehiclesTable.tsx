@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { CarAddChangeForm } from '@features/car_add_change_form';
 import { DeleteCarForm } from '@features/delete_car_form';
@@ -20,6 +20,12 @@ type VehiclesTableProps = {
 
 export const VehiclesTable: FC<VehiclesTableProps> = ({ onClickRow }) => {
   const { filtersData, tableData, addModalData, deleteCarModalData } = useVehiclesTable();
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -73,7 +79,7 @@ export const VehiclesTable: FC<VehiclesTableProps> = ({ onClickRow }) => {
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки не сбрасывает пагинацию
+        onSortModelChange={tableData.changeTableSorts} // Изменение сортировки пагиннация сбрасывается
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
         pageNumber={tableData.page}

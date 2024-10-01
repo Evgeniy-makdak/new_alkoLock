@@ -10,6 +10,7 @@ import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { useAlkolocksTable } from '../hooks/useAlkolocksTable';
+import { useEffect } from 'react';
 
 interface AlkolocksTableProps {
   handleClickRow: (id: ID) => void;
@@ -17,6 +18,12 @@ interface AlkolocksTableProps {
 
 export const AlkolocksTable = ({ handleClickRow }: AlkolocksTableProps) => {
   const { filtersData, tableData, addModalData, deleteAlcolockModalData } = useAlkolocksTable();
+
+  useEffect(() => {
+    if(tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
 
   return (
     <>
@@ -72,7 +79,6 @@ export const AlkolocksTable = ({ handleClickRow }: AlkolocksTableProps) => {
         rowCount={tableData.totalCount}
         paginationMode="server"
         onSortModelChange={(sortModel) => {
-          // Изменение сортировки не сбрасывает пагинацию
           tableData.changeTableSorts(sortModel);
         }}
         apiRef={tableData.apiRef}
