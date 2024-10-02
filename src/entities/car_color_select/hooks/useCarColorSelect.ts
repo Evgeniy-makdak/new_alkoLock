@@ -5,6 +5,7 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 
 export const useCarColorSelect = () => {
   const [colorCarList, setColorCarList] = useState<any[]>([]);
+  const [filteredColors, setFilteredColors] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -15,7 +16,9 @@ export const useCarColorSelect = () => {
           value: color.key,
         }));
 
-        setColorCarList(mapOptions(colors, (color) => [color.label, color.value]));
+        const mappedColors = mapOptions(colors, (color) => [color.label, color.value]);
+        setColorCarList(mappedColors);
+        setFilteredColors(mappedColors); 
       } catch (error) {
         console.error('Ошибка при получении цветов:', error);
       }
@@ -24,5 +27,20 @@ export const useCarColorSelect = () => {
     fetchColors();
   }, []);
 
-  return { colorCarList };
+  const onChange = (inputValue: string) => {
+    if (inputValue) {
+      const filtered = colorCarList.filter((color) =>
+        color.label.toLowerCase().includes(inputValue.toLowerCase())
+      );
+      setFilteredColors(filtered);
+    } else {
+      setFilteredColors(colorCarList); 
+    }
+  };
+
+  const onReset = () => {
+    setFilteredColors(colorCarList); 
+  };
+
+  return { colorCarList: filteredColors, onChange, onReset };
 };

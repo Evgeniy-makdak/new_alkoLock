@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import {
   SearchMultipleSelect,
   type SearchMultipleSelectProps,
@@ -16,9 +18,27 @@ type CarColorSelectProps<T> = {
   name: keyof T;
   value?: Values;
   setValueStore?: (type: keyof T, value: string | Value | (string | Value)[]) => void;
+  reset?: () => void; 
 } & Partial<SearchMultipleSelectProps<T>>;
 
 export function CarColorSelect<T>(props: CarColorSelectProps<T>) {
-  const { colorCarList } = useCarColorSelect();
-  return <SearchMultipleSelect values={colorCarList} {...props} />;
+  const { value, reset } = props;
+  const { colorCarList, onChange, onReset } = useCarColorSelect();
+
+  useEffect(() => {
+    if (colorCarList?.length && reset) {
+      reset();
+    }
+  }, [colorCarList.length, reset]);
+
+  if (!value) return null;
+
+  return (
+    <SearchMultipleSelect
+      onReset={onReset}
+      onInputChange={onChange} 
+      values={colorCarList} 
+      {...props}
+    />
+  );
 }
