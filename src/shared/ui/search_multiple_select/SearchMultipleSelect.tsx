@@ -1,4 +1,3 @@
-import type React from 'react';
 import { useState } from 'react';
 
 import {
@@ -95,25 +94,26 @@ export function SearchMultipleSelect<T>({
   };
 
   const onChange: OnChange = (_event, value, reason) => {
-    if (reason === 'clear') {
+    if (reason === 'clear' || !value) {
       setValueStore(name, []);
       setInputState('');
       return;
     }
     setValueStore(name, value);
-  };
+  };  
 
-  const readyValue = multiple ? value : value[0];
+  const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
+
   return (
     <div className={style.searchSelect}>
       <Autocomplete
         {...rest}
-        inputValue={inputState}
+        inputValue={inputState || ''}
         multiple={multiple}
         onChange={onChange}
         fullWidth
         freeSolo
-        value={readyValue}
+        value={readyValue || null} 
         isOptionEqualToValue={isOptionEqualToValue}
         options={!isLoading ? values : []}
         loading={isLoading}

@@ -81,7 +81,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const onSubmit = async (data: Form) => {
     try {
       const year = data?.year.year();
-
       const payload = {
         branchId: selectedBranch?.id,
         color: data.color[0]?.value,
@@ -92,6 +91,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         registrationNumber: data.registrationNumber,
         vin: data.vin,
       };
+      console.log("Submitting form with data:", payload);
 
       if (id) {
         await changeItem(payload);

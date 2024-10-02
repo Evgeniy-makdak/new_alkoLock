@@ -22,7 +22,7 @@ type TransportTypeSelect<T> = {
 } & Partial<SearchMultipleSelectProps<T>>;
 
 export function TransportTypeSelect<T>(props: TransportTypeSelect<T>) {
-  const { value, reset } = props;
+  const { value = [], reset } = props;
   const { typeTransportList, filteredTypes, onChange, onReset } = useTransportTypeSelect();
 
   useEffect(() => {
