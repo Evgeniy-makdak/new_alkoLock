@@ -1,8 +1,6 @@
-import { useEffect } from 'react';
-
+import { useEffect, useState } from 'react';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { SearchMultipleSelect, type Value, type Values } from '@shared/ui/search_multiple_select';
-
 import { useCarsSelect } from '../hooks/useCarsSelect';
 
 interface CarsSelectProps<T> {
@@ -17,7 +15,8 @@ interface CarsSelectProps<T> {
   notInBranch?: ID;
   vieBranch?: boolean;
   specified?: boolean;
-  reset?: any;
+  reset?: () => void;
+  isOpen?: boolean;
 }
 
 export function CarsSelect<T>({
@@ -26,28 +25,47 @@ export function CarsSelect<T>({
   branchId,
   notInBranch,
   reset,
+  isOpen,
   ...rest
 }: CarsSelectProps<T>) {
   const { value } = rest;
-  const { onChange, onReset, isLoading, carList } = useCarsSelect(
-    vieBranch,
-    branchId,
-    notInBranch,
-    specified,
-  );
+  const { onReset, isLoading, carList } = useCarsSelect(vieBranch, branchId, notInBranch, specified);
+
+  const [inputValue, setInputValue] = useState<string>('');
+  const [filteredCars, setFilteredCars] = useState<Values>(carList);
 
   useEffect(() => {
-    if (carList?.length && reset) {
+    if (isOpen) {
+      setInputValue('');
+      setFilteredCars(carList);
+    }
+  }, [isOpen, carList]);
+
+  useEffect(() => {
+    if (inputValue) {
+      const filtered = carList.filter(car =>
+        car.label.toLowerCase().includes(inputValue.toLowerCase())
+      );
+      setFilteredCars(filtered);
+    } else {
+      setFilteredCars(carList);
+    }
+  }, [inputValue, carList]);
+
+  useEffect(() => {
+    if (reset) {
       reset();
     }
-  }, [carList.length]);
-  if (!value) return null;
+  }, [carList]);
+
+  if (!value) return ' ';
+
   return (
     <SearchMultipleSelect
       onReset={onReset}
-      onInputChange={onChange}
+      onInputChange={setInputValue}
       isLoading={isLoading}
-      values={carList}
+      values={filteredCars}
       {...rest}
     />
   );

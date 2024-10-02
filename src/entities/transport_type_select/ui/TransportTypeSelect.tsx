@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import {
   SearchMultipleSelect,
   type SearchMultipleSelectProps,
@@ -16,9 +18,27 @@ type TransportTypeSelect<T> = {
   name: keyof T;
   value?: Values;
   setValueStore?: (type: keyof T, value: string | Value | (string | Value)[]) => void;
+  reset?: () => void; 
 } & Partial<SearchMultipleSelectProps<T>>;
 
 export function TransportTypeSelect<T>(props: TransportTypeSelect<T>) {
-  const { typeTransportList } = useTransportTypeSelect();
-  return <SearchMultipleSelect values={typeTransportList} {...props} />;
+  const { value, reset } = props;
+  const { typeTransportList, filteredTypes, onChange, onReset } = useTransportTypeSelect();
+
+  useEffect(() => {
+    if (typeTransportList.length && reset) {
+      reset();
+    }
+  }, [typeTransportList.length, reset]);
+
+  if (!value) return null;
+
+  return (
+    <SearchMultipleSelect
+      onInputChange={onChange}
+      onReset={onReset}
+      values={filteredTypes}
+      {...props}
+    />
+  );
 }

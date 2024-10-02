@@ -5,6 +5,8 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 
 export const useTransportTypeSelect = () => {
   const [typeTransportList, setTypeTransportList] = useState<any[]>([]);
+  const [filteredTypes, setFilteredTypes] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchTypes = async () => {
       try {
@@ -14,14 +16,31 @@ export const useTransportTypeSelect = () => {
           value: type.key,
         }));
 
-        setTypeTransportList(mapOptions(types, (type) => [type.label, type.value]));
+        const mappedTypes = mapOptions(types, (type) => [type.label, type.value]);
+        setTypeTransportList(mappedTypes);
+        setFilteredTypes(mappedTypes);
       } catch (error) {
-        console.error('Ошибка при получении цветов:', error);
+        console.error('Ошибка при получении типов:', error);
       }
     };
 
     fetchTypes();
   }, []);
 
-  return { typeTransportList };
+  const onChange = (inputValue: string) => {
+    if (inputValue) {
+      const filtered = typeTransportList.filter((type) =>
+        type.label.toLowerCase().includes(inputValue.toLowerCase())
+      );
+      setFilteredTypes(filtered);
+    } else {
+      setFilteredTypes(typeTransportList);
+    }
+  };
+
+  const onReset = () => {
+    setFilteredTypes(typeTransportList);
+  };
+
+  return { typeTransportList, filteredTypes, onChange, onReset };
 };

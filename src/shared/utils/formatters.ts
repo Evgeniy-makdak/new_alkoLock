@@ -52,7 +52,7 @@ export class Formatters {
     read = true,
     vieBranch = false,
   ) {
-    if (!car) return '-';
+    if (!car) return '';
 
     const getBrnach = (string: string) => {
       if (!vieBranch) return string;
