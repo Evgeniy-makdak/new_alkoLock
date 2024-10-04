@@ -13,12 +13,21 @@ export const useCarsSelect = (
   specified?: boolean,
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const onChange = (value: string) => {
+  const [inputValue, setInputValue] = useState('');
+
+  const onInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setInputValue(value);
     setSearchQuery(value);
   };
 
-  const onReset = () => {
-    setSearchQuery('');
+  const onChange = (value: string) => {
+    setInputValue(value);
+  };
+
+  const onReset = (value: string) => {
+    setInputValue(value);
+    setSearchQuery(value);
   };
 
   const { carList, isLoading } = useCarListQuery({
@@ -27,6 +36,13 @@ export const useCarsSelect = (
     specified,
   });
 
-  const carListMapped = mapOptions(carList, (car) => adapterMapOptions(car, vieBranch));
-  return { onChange, onReset, isLoading, carList: carListMapped };
+  const carListMapped = mapOptions(carList, (car) => {
+    return adapterMapOptions(car, vieBranch);
+  });
+
+  const filteredCarList = carListMapped.filter((car) =>
+    car.label.toLowerCase().includes(inputValue.toLowerCase()),
+  );
+
+  return { onChange, onReset, isLoading, carList: filteredCarList, inputValue, onInputChange };
 };

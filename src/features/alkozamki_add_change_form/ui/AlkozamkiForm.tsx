@@ -1,4 +1,4 @@
-import { FC, useEffect } from 'react';
+import { FC } from 'react';
 import { TextField, Typography } from '@mui/material';
 import { CarsSelect } from '@entities/cars_select';
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
@@ -28,12 +28,6 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
     isLoadingAlkolock,
     reset,
   } = useAlkozamkiForm(id, closeModal);
-
-  useEffect(() => {
-    return () => {
-      reset();
-    };
-  }, [closeModal, reset]);
 
   return (
     <Loader isLoading={isLoadingAlkolock}>
