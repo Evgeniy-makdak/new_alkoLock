@@ -273,7 +273,7 @@ export const getMarksCarURL = ({
   });
 
   if (trimmedQuery) {
-    queries += `&search=${encodeURIComponent(trimmedQuery)}`;
+    queries += `&content.match.contain=${encodeURIComponent(trimmedQuery)}`;
   }
 
   return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&branchId=${branchId}`;
