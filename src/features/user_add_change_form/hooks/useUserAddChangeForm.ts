@@ -23,6 +23,7 @@ import { getDataForRequest } from '../lib/getDataForRequest';
 import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
+import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -141,7 +142,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
-
+    const updateGalary = UsersApi.getPhotoFromGallery;
     if (
       stateOfForm.state.disableDriverInfo &&
       (licenseClass || licenseIssueDate || licenseExpirationDate) &&
@@ -187,6 +188,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
         } else if (response.status === StatusCode.SUCCESS) {
           if (avatarImage && !formData.get('userPhoto.hash')) {
             changeAvatarMemo(avatarImage.id, false)
+            updateGalary(avatarImage.url)
           }
           close();
         }
