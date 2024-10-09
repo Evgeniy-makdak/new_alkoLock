@@ -21,7 +21,7 @@ export const useUserSelect = (
   const { data, isLoading } = useUserListQuery({
     searchQuery,
     filterOptions: { branchId: branchId, notBranchId: notInBranch },
-    sortBy: SortTypes.USER,
+    sortBy: SortTypes.USER_ATTACH,
     order: SortsTypes.asc,
   });
 

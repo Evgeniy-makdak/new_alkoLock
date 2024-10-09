@@ -1,4 +1,4 @@
-import { idID } from '@mui/material/locale';
+// import { idID } from '@mui/material/locale';
 import type { GridSortDirection } from '@mui/x-data-grid';
 
 import { AppConstants } from '@app/index';
@@ -35,6 +35,8 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.USER:
+      return `&sort=surname,firstName,middleName${orderStr}`;
+    case SortTypes.USER_ATTACH:
       return `&sort=surname,firstName,middleName${orderStr}&all.disabled.in=false`;
     case SortTypes.EMAIL:
       return `&sort=email${orderStr}`;
@@ -192,6 +194,7 @@ export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOpt
 export function getUserListURL(
   { page, limit, searchQuery, filterOptions, sortBy, order, startDate, endDate }: QueryOptions,
   widthCars: boolean,
+  // excludeDisabledUsers: boolean, // добавляем новый параметр
 ) {
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
@@ -227,9 +230,59 @@ export function getUserListURL(
     queries += `&all.driver.vehicleAllotments.include=true`;
   }
 
-  if (idID && branchId === 1) {
-    return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
-  } else return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
+  // Добавляем параметр excludeDisabledUsers для исключения пользователей с isActive=false
+  // if (excludeDisabledUsers && !(sortBy && order)) {
+  //   queries += `&all.disabled.in=false&all.disabled.in=true`;
+  // }
+
+  return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
+}
+//////////////////
+export function getUserListURLToAttachments(
+  { page, limit, searchQuery, filterOptions, sortBy, order, startDate, endDate }: QueryOptions,
+  widthCars: boolean,
+  excludeDisabledUsers: boolean, // добавляем новый параметр
+) {
+  const branchId = filterOptions?.branchId;
+  const notBranchId = filterOptions?.notBranchId;
+  const driverSpecified = filterOptions?.driverSpecified;
+
+  const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
+
+  let queries = getSelectBranchQueryUrl({
+    parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
+    branchId,
+    notBranch: notBranchId,
+  });
+
+  if (startDate) {
+    const date = new Date(startDate).toISOString();
+    queries += `&all.createdAt.greaterThanOrEqual=${date}`;
+  }
+
+  if (endDate) {
+    queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
+  }
+
+  if (trimmedQuery) {
+    queries += `&any.match.contains=${trimmedQuery}`;
+    queries += `&any.email.contains=${trimmedQuery}`;
+  }
+
+  if (sortBy && order) {
+    queries += getSortQuery(sortBy, order);
+  }
+
+  if (widthCars) {
+    queries += `&all.driver.vehicleAllotments.include=true`;
+  }
+
+  // Добавляем параметр excludeDisabledUsers для исключения пользователей с isActive=false
+  if (excludeDisabledUsers) {
+    queries += `&all.disabled.in=false`;
+  }
+
+  return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

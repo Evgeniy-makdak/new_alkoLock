@@ -15,6 +15,7 @@ export enum SortTypes {
   DATE_CREATE = 'DATE_CREATE',
   WHO_CREATE = 'WHO_CREATE',
   USER = 'USER',
+  USER_ATTACH = 'USER_ATTACH',
   EMAIL = 'EMAIL',
   CAR_LINK = 'CAR_LINK',
   MARK = 'MARK',

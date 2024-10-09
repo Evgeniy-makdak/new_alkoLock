@@ -20,6 +20,7 @@ import {
   getRolesListURL,
   getUrlCountEventsQuery,
   getUserListURL,
+  getUserListURLToAttachments,
 } from '@shared/lib/getUrlForQueries';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 
@@ -151,6 +152,13 @@ export class UsersApi {
       url: getUserListURL(options, widthCars),
     });
   }
+
+  static getListToAttachments(options: QueryOptions, widthCars = false) {
+    return getQuery<{ content: IUser[]; totalElements: number }>({
+      url: getUserListURLToAttachments(options, widthCars, false),
+    });
+  }
+
   static getUser(userId: ID) {
     return getQuery<IUser>({ url: `api/users/${userId}` });
   }

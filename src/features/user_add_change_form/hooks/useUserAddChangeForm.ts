@@ -8,6 +8,7 @@ import { enqueueSnackbar } from 'notistack';
 import type { ImageState } from '@entities/upload_img';
 import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -23,7 +24,6 @@ import { getDataForRequest } from '../lib/getDataForRequest';
 import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
-import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -35,7 +35,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const photoData = useUserFoto(user?.id);
   const { setImageToStoreAfterLoadingMemo, changeAvatarMemo } = useUserFoto(user?.id);
   const avatarImage = useMemo(() => {
-    return photoData.images.find(img => img.isAvatar);
+    return photoData.images.find((img) => img.isAvatar);
   }, [photoData]);
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
@@ -142,8 +142,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
-    
-    const updateGallery = UsersApi.getPhotoFromGallery;  // Запрос на получение галереи фото
+
+    const updateGallery = UsersApi.getPhotoFromGallery; // Запрос на получение галереи фото
     const avatarExists = !!avatarImage;
 
     if (
@@ -190,12 +190,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           });
         } else if (response.status === StatusCode.SUCCESS) {
           // Если фото выбрано, но нет хеша фото, обновить галерею
-          if (avatarExists && !formData.get('userPhoto.hash')) {
-            changeAvatarMemo(avatarImage.id, false);
-            updateGallery(avatarImage.url);
-            console.log('here');
-            
-          }
+          // if (!formData.get('userPhoto.hash')) {
+          changeAvatarMemo(avatarImage?.id, false);
+          // }
           close();
         }
       }
