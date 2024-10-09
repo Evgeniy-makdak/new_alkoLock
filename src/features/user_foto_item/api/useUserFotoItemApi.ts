@@ -35,14 +35,18 @@ export const useUserFotoItemApi = (url: string, sendRequest: boolean, userId: ID
   const id = imageResponse?.headers?.id;
   const isAvatar = imageResponse?.headers?.isavatar === 'true' ? true : false;
   const blob = imageResponse?.data;
-  const hash = imageResponse?.headers['content-md5'];
-
+  const hash = imageResponse?.headers['content-md5'] || [];
+  // console.log('AAAAAAAAqKwA' + hash);
+  console.log({imageResponse});
+  
+  
   return {
     image: {
       blob,
       isAvatar,
       id,
       hash,
+      url,
     },
     isLoadingImage: isLoadingImage,
     deleteFotos,

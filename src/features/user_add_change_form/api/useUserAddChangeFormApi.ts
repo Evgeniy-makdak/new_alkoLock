@@ -58,6 +58,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   const { mutateAsync: changeFoto } = useMutation({
     mutationFn: (data: FormData) => UsersApi.changeAvatar(data, id),
+    onSuccess: () => update(updateQueries),
   });
 
   const { mutateAsync: deleteUserFoto } = useMutation({

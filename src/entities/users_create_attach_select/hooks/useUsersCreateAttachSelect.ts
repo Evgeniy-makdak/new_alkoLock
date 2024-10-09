@@ -37,6 +37,10 @@ export const useUsersCreateAttachSelect = () => {
 
   const array: number[] = [];
 
+  // const userActionId = useMemo(() => {
+  //   const filteredData = data?.data.content.filter(item => item.driver.isActive); // фильтрация по полю isActive
+  //   return mapOptions<IAttachmentItems>(filteredData, (data) => adapterMapOptions(data, array));
+  // }, [data]);  
   const userActionId = useMemo(
     () =>
       mapOptions<IAttachmentItems>(data?.data.content, (data) => adapterMapOptions(data, array)),

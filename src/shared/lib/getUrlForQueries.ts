@@ -147,9 +147,6 @@ export function getAttachmentURL({
     queries += `&all.createdAt.id.in=${encodeURIComponent(dateLink)}`;
   }
 
-  // Добавляем параметр для возврата уникальных значений в выпадающем списке
-  // queries += '&distinct=true';
-
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
@@ -264,19 +261,21 @@ export const getMarksCarURL = ({
   filterOptions,
 }: QueryOptions & { filterOptions?: { branchId?: ID; notBranchId?: ID } }) => {
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
+
   const branchId = filterOptions?.branchId;
-  const notBranchId = filterOptions?.notBranchId;
-
-  let queries = getSelectBranchQueryUrl({
-    branchId: branchId,
-    notBranch: notBranchId,
-  });
-
+  // const notBranchId = filterOptions?.notBranchId;
+  // Если есть поисковый запрос, возвращаем только URL с match
   if (trimmedQuery) {
-    queries += `&any.content.match.contains=${encodeURIComponent(trimmedQuery)}`;
+    return `api/vehicles/manufacturers?match=${encodeURIComponent(trimmedQuery)}&branchId=${branchId}`;
   }
 
-  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}${queries}&branchId=${branchId}`;
+  // Иначе возвращаем стандартный запрос с фильтрами
+  // const queries = getSelectBranchQueryUrl({
+  //   branchId: branchId,
+  //   notBranch: notBranchId,
+  // });
+
+  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}&branchId=${branchId}`;
 };
 
 export const getCarListURL = ({

@@ -12,6 +12,7 @@ interface IUserDataMain {
 }
 
 interface IDriver {
+  isActive: boolean;
   id: ID;
   licenseCode: string;
   licenseIssueDate: string;

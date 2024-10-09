@@ -35,9 +35,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const photoData = useUserFoto(user?.id);
   const { setImageToStoreAfterLoadingMemo, changeAvatarMemo } = useUserFoto(user?.id);
   const avatarImage = useMemo(() => {
-  return photoData.images.find(img => img.isAvatar)
-}, [photoData])
-  
+    return photoData.images.find(img => img.isAvatar);
+  }, [photoData]);
+
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
   const close = () => {
@@ -142,7 +142,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
-    const updateGalary = UsersApi.getPhotoFromGallery;
+    
+    const updateGallery = UsersApi.getPhotoFromGallery;  // Запрос на получение галереи фото
+    const avatarExists = !!avatarImage;
+
     if (
       stateOfForm.state.disableDriverInfo &&
       (licenseClass || licenseIssueDate || licenseExpirationDate) &&
@@ -186,16 +189,18 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          if (avatarImage && !formData.get('userPhoto.hash')) {
-            changeAvatarMemo(avatarImage.id, false)
-            updateGalary(avatarImage.url)
+          // Если фото выбрано, но нет хеша фото, обновить галерею
+          if (avatarExists && !formData.get('userPhoto.hash')) {
+            changeAvatarMemo(avatarImage.id, false);
+            updateGallery(avatarImage.url);
+            console.log('here');
+            
           }
           close();
         }
       }
     } catch (error) {
-      const response = await changeItem(formData);
-      enqueueSnackbar(response?.detail, { variant: 'error' });
+      enqueueSnackbar(error.message, { variant: 'error' });
     }
   };
 

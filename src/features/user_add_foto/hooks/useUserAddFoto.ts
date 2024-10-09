@@ -8,10 +8,11 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
+import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
-  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); // Хранит хеши загружаемых фото
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); 
 
   const {
     imageHasUpload,
@@ -22,6 +23,7 @@ export const useUserAddFoto = (userId: ID) => {
   } = userFotoStore();
 
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
+  const updateGalery = UsersApi.getPhotoFromGallery
 
   const reset = () => {
     setUploadImage([]);
@@ -56,6 +58,8 @@ export const useUserAddFoto = (userId: ID) => {
       // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
 
+      // console.log('нужный мне url', 'AAAAAAAAqKwA' + image.hash);
+
       try {
         const result = await addPhoto(reqBody);
         if (result?.status >= StatusCode.BAD_REQUEST) {
@@ -74,6 +78,7 @@ export const useUserAddFoto = (userId: ID) => {
         setLoadingImages((prev) => {
           const newLoadingImages = new Set(prev);
           newLoadingImages.delete(image.hash);
+          updateGalery('AAAAAAAAqKwA' + image.hash)
           return newLoadingImages;
         });
       }
