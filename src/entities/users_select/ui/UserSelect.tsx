@@ -12,8 +12,8 @@ type UsersSelectProps<T> = {
   vieBranch?: boolean;
   branchId?: ID;
   notInBranch?: ID;
-  // TODO => убрать needDriverId когда уберут ID у поля driver в сущности User => user: {driver: {id: ID}}
   needDriverId?: boolean;
+  useUserAttachSort?: boolean; // Добавлен флаг для управления сортировкой
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
@@ -21,14 +21,15 @@ export const UsersSelect = <T,>({
   branchId,
   notInBranch,
   needDriverId,
+  useUserAttachSort = false, // По умолчанию сортировка по USER
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
   const { onChange, isLoading, onReset, driversList } = useUserSelect(
     vieBranch,
     branchId,
     notInBranch,
-    // TODO => убрать needDriverId когда уберут ID у поля driver в сущности User => user: {driver: {id: ID}}
     needDriverId,
+    useUserAttachSort, // Передаем флаг в хук
   );
 
   return (

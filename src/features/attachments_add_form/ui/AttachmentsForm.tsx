@@ -11,7 +11,7 @@ import style from './AttachmentsForm.module.scss';
 
 interface AttachmentAddFormProps {
   onClose: () => void;
-  specified?: boolean,
+  specified?: boolean;
 }
 
 export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
@@ -43,6 +43,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           error={errorDriver}
           label="Водитель"
           name="driverId"
+          useUserAttachSort={true} // Указан флаг для сортировки по USER_ATTACH
         />
         {errorDriver && <span className={style.errorText}>Обязательное поле</span>}{' '}
       </InputsColumnWrapper>

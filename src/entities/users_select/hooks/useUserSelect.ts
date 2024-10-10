@@ -11,24 +11,25 @@ export const useUserSelect = (
   vieBranch = false,
   branchId?: ID,
   notInBranch?: ID,
-  // TODO => убрать needDriverId когда уберут ID у поля driver в сущности User => user: {driver: {id: ID}}
   needDriverId = false,
+  useUserAttachSort = false, // Добавлен флаг для сортировки
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {
     setSearchQuery(value);
   };
+
   const { data, isLoading } = useUserListQuery({
     searchQuery,
     filterOptions: { branchId: branchId, notBranchId: notInBranch },
-    sortBy: SortTypes.USER_ATTACH,
+    sortBy: useUserAttachSort ? SortTypes.USER_ATTACH : SortTypes.USER, // Выбор сортировки
     order: SortsTypes.asc,
   });
 
   const onReset = () => {
     setSearchQuery('');
   };
-  // TODO => убрать needDriverId когда уберут ID у поля driver в сущности User => user: {driver: {id: ID}}
+
   const driversList = mapOptions(data, (user) => adapterMapOptions(user, vieBranch, needDriverId));
 
   return { onChange, isLoading, onReset, driversList };
