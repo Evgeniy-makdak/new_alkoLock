@@ -16,24 +16,40 @@ export const useUserAddChangeFormApi = (id: ID) => {
   const enabled = Boolean(id);
 
   const update = useUpdateQueries();
-  const { data, isLoading } = useConfiguredQuery([QueryKeys.USER_ITEM], UsersApi.getUser, {
-    options: id,
-    settings: {
-      enabled: enabled,
-    },
-  });
 
+  // Получаем информацию о пользователе
+  const { data, isLoading } = useConfiguredQuery(
+    [QueryKeys.ROLES_SELECT_LIST],
+    UsersApi.getUser,
+    {
+      options: id,
+      settings: {
+        enabled: enabled,
+      },
+    }
+  );
+
+  // Получаем список ролей (пользовательских групп)
   const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
     [QueryKeys.ROLES_LIST],
     RolesApi.getList,
     {
+      options: {
+        page: 0,
+        size: 25,
+        sort: 'name',
+        filters: {
+          systemGenerated: true,
+        },
+      },
       settings: {
         enabled: enabled,
         networkMode: 'offlineFirst',
       },
-    },
+    }
   );
 
+  // Получаем аватар пользователя
   const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(
     [QueryKeys.AVATAR],
     UsersApi.getAvatar,
@@ -43,9 +59,10 @@ export const useUserAddChangeFormApi = (id: ID) => {
         enabled: enabled,
         networkMode: 'offlineFirst',
       },
-    },
+    }
   );
 
+  // Мутации для изменения данных пользователя, создания пользователя, изменения аватара и удаления фото
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.changeUser(data, id),
     onSuccess: () => update(updateQueries),
@@ -66,6 +83,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
     onSuccess: () => update(updateQueries),
   });
 
+  // Получаем хеш аватара
   const hash = foto ? foto?.headers['content-md5'] : null;
 
   return {

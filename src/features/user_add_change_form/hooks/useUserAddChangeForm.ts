@@ -175,17 +175,16 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     try {
       if (!id) {
         const response = await createItem(formData);
-        if (response.status === StatusCode.BAD_REQUEST) {
+        if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           close();
         }
       } else {
         const response = await changeItem(formData);
-        if (response.status === StatusCode.BAD_REQUEST) {
-          const messageStart =
-            response.detail.split(',')[6].indexOf('message=') + 'message='.length;
-          enqueueSnackbar(response.detail.split(',')[6].substring(messageStart).trim(), {
+        if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
+          
+          enqueueSnackbar(response.detail, {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {

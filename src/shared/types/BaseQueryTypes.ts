@@ -130,6 +130,7 @@ export interface IUser {
   firstName: string;
   surname: string;
   middleName: string;
+  branchOffice: any;
   activated: boolean;
   phone?: string;
   createdAt: string;
