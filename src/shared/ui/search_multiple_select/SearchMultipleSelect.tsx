@@ -95,12 +95,21 @@ export function SearchMultipleSelect<T>({
 
   const onChange: OnChange = (_event, value, reason) => {
     if (reason === 'clear' || !value) {
+      // Очистить значение при сбросе или отсутствии значения
       setValueStore(name, []);
       setInputState('');
       return;
     }
+
+    if (reason === 'selectOption') {
+      // Очистить inputState при выборе опции
+      setInputState('');
+      debouncedFunc('');
+    }
+
+    // Установить значение при выборе
     setValueStore(name, value);
-  };  
+  };
 
   const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
 
@@ -113,7 +122,7 @@ export function SearchMultipleSelect<T>({
         onChange={onChange}
         fullWidth
         freeSolo
-        value={readyValue || null} 
+        value={readyValue || null}
         isOptionEqualToValue={isOptionEqualToValue}
         options={!isLoading ? values : []}
         loading={isLoading}
