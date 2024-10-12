@@ -9,7 +9,7 @@ import { EventsFilters, useEventsFilterPanel } from '../hooks/useEventsFilterPan
 
 interface EventsFilterPanelProps {
   open: boolean;
-  onFilterChange: () => void; 
+  onFilterChange: () => void;
 }
 
 export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelProps) => {
@@ -17,7 +17,7 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
 
   const handleChange = (name: keyof EventsFilters, value: any) => {
     setFilters(name, value);
-    onFilterChange(); 
+    onFilterChange();
   };
 
   return (
@@ -29,7 +29,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             name="driverId"
             setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.driverId}
-            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER}
+            testid={
+              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
+            }
             label="Поиск по водителю"
           />
           <MarksCarSelect
@@ -37,7 +39,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             name="markCar"
             setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.markCar}
-            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_BRAND_CAR}
+            testid={
+              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_BRAND_CAR
+            }
             label="Поиск по марке"
           />
           <CarsGosNumberSelect
@@ -45,7 +49,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             name="gosNumber"
             setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.gosNumber}
-            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_GOS_NUMBER}
+            testid={
+              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_GOS_NUMBER
+            }
             label="Поиск по гос.номеру"
           />
           <TypeEventSelect
@@ -53,7 +59,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             name="typeEvent"
             setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.typeEvent}
-            testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_TYPE_EVENT}
+            testid={
+              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_TYPE_EVENT
+            }
             label="Тип события"
           />
         </FilterPanel>

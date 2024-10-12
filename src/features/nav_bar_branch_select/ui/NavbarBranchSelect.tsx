@@ -16,12 +16,14 @@ import { useNavbarBranchSelect } from '../hooks/useNavbarBranchSelect';
  */
 type NavbarBranchSelectProps = {
   isCollops?: boolean;
+  allowCustomEvents?: boolean;
   tooltipProps?: Omit<TooltipProps, 'title' | 'children'>;
 };
 const LABEL = 'Филиал';
 export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
   isCollops = false,
   tooltipProps,
+  allowCustomEvents = true,
 }) => {
   const { isGlobalAdmin, onChangeBranch, value } = useNavbarBranchSelect();
 
@@ -36,6 +38,7 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
           value={value}
           disabled={!isGlobalAdmin}
           setValueStore={onChangeBranch}
+          allowCustomEvents={allowCustomEvents}
           label={LABEL}
           name="navbarBranchSelect"
           testid={testids.widget_navbar.NAVBAR_INPUT_CHOOSE_FILIAL_OPEN_LIST_ITEM}

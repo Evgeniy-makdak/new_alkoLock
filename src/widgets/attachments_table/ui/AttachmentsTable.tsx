@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 import { AttachmentDeleteForm } from '@features/attachment_delete_form';
 import { AttachmentAddForm } from '@features/attachments_add_form';
 import {
@@ -14,7 +16,6 @@ import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useAttachmentsTable } from '../hooks/useAttachmentsTable';
-import { useEffect } from 'react';
 
 export const AttachmentsTable = () => {
   const { addModalData, deleteAttachModalData, filtersData, tableData } = useAttachmentsTable();
@@ -22,10 +23,10 @@ export const AttachmentsTable = () => {
   const hasActiveFilters = attachmentsFilterPanelStore((state) => state.hasActiveFilters);
 
   useEffect(() => {
-    if(tableData.sortModel) {
+    if (tableData.sortModel) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
 
   return (
     <>
@@ -79,6 +80,8 @@ export const AttachmentsTable = () => {
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
+            const event = new CustomEvent('resetFilters');
+            window.dispatchEvent(event);
             resetFilters();
             filtersData.clearDates();
             filtersData.setInput('');
@@ -91,7 +94,7 @@ export const AttachmentsTable = () => {
         sortingMode="server"
         rowCount={tableData.totalCount}
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} 
+        onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
         onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
         pageNumber={tableData.page}

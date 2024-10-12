@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Autocomplete,
@@ -38,6 +38,7 @@ export type SearchMultipleSelectProps<T> = {
   ) => void;
   helperText?: string;
   serverFilter?: boolean;
+  allowCustomEvents?: boolean;
 } & Partial<
   Omit<AutocompleteProps<Value, boolean, boolean, boolean>, 'onInputChange' | 'value' | 'name'>
 >;
@@ -52,6 +53,7 @@ export function SearchMultipleSelect<T>({
   multiple,
   name,
   helperText,
+  allowCustomEvents,
   setValueStore,
   onInputChange,
   serverFilter = true,
@@ -59,7 +61,17 @@ export function SearchMultipleSelect<T>({
 }: SearchMultipleSelectProps<T>) {
   const [inputState, setInputState] = useState('');
   const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
+  useEffect(() => {
+    if (allowCustomEvents) return;
+    const onReset = () => {
+      setInputState('');
+    };
+    window.addEventListener('resetFilters', onReset);
 
+    return () => {
+      window.removeEventListener('resetFilters', onReset);
+    };
+  }, []);
   const renderInput = (params: AutocompleteRenderInputParams) => {
     const prop = {
       ...params,

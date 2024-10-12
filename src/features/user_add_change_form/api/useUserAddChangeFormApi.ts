@@ -18,16 +18,12 @@ export const useUserAddChangeFormApi = (id: ID) => {
   const update = useUpdateQueries();
 
   // Получаем информацию о пользователе
-  const { data, isLoading } = useConfiguredQuery(
-    [QueryKeys.ROLES_SELECT_LIST],
-    UsersApi.getUser,
-    {
-      options: id,
-      settings: {
-        enabled: enabled,
-      },
-    }
-  );
+  const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLES_SELECT_LIST], UsersApi.getUser, {
+    options: id,
+    settings: {
+      enabled: enabled,
+    },
+  });
 
   // Получаем список ролей (пользовательских групп)
   const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
@@ -43,10 +39,10 @@ export const useUserAddChangeFormApi = (id: ID) => {
         },
       },
       settings: {
-        enabled: enabled,
+        enabled: false,
         networkMode: 'offlineFirst',
       },
-    }
+    },
   );
 
   // Получаем аватар пользователя
@@ -59,7 +55,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
         enabled: enabled,
         networkMode: 'offlineFirst',
       },
-    }
+    },
   );
 
   // Мутации для изменения данных пользователя, создания пользователя, изменения аватара и удаления фото
@@ -85,6 +81,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   // Получаем хеш аватара
   const hash = foto ? foto?.headers['content-md5'] : null;
+  console.log('useUserAddChangeFormApi');
 
   return {
     avatar: foto?.data && hash ? { img: foto?.data, hash } : null,

@@ -31,10 +31,10 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   }, []);
 
   useEffect(() => {
-    if(tableData.sortModel) {
+    if (tableData.sortModel) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
 
   useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
@@ -95,6 +95,8 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
+            const event = new CustomEvent('resetFilters');
+            window.dispatchEvent(event);
             filtersData.resetFilters();
             filtersData.clearDates();
             filtersData.setInput('');
