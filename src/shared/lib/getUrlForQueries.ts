@@ -152,6 +152,14 @@ export function getAttachmentURL({
   return `api/vehicle-driver-allotments?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
+export function getDriverAllotmentsByBranchId({
+  limit,
+  filterOptions,
+  page,
+}: QueryOptions) {
+  const branchId = filterOptions?.branchId;
+  return `api/vehicle-driver-allotments/list?branchId=${branchId}&page=${page || 0}&size=${limit || 20}`
+}
 /////////////////////////////////////////////===========================branch==========================================
 
 const getSelectBranchQueryUrl = ({
@@ -836,3 +844,4 @@ export function getRolesListURL({
 
   return `api/user-groups?page=${page || 0}&size=${limit || 25}${queries}&sort=name`;
 }
+

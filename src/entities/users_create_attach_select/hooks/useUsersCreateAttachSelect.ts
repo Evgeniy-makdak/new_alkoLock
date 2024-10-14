@@ -31,6 +31,18 @@ export const useUsersCreateAttachSelect = () => {
     },
   );
 
+  // const { data, isLoading } = useConfiguredQuery(
+  //   [QueryKeys.DRIVER_ATTACHMENTS],
+  //   AttachmentsApi.getDriverAllotments,
+  //   {
+  //     options: {
+  //       attachSearchQuery: searchQuery,
+  //       limit: limit,
+  //       filterOptions: {branchId: 20}
+  //     },
+  //   },
+  // );
+
   useEffect(() => {
     if (data?.data.totalElements) {
       setLimit(data.data.totalElements);

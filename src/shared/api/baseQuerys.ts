@@ -11,6 +11,7 @@ import {
   getCarSwitchBranchUrl,
   getCreateAlkolocksURL,
   getCreateAttachmentApiURL,
+  getDriverAllotmentsByBranchId,
   getEventListCountForAutoServiceURL,
   getEventListForAutoServiceURL,
   getEventsApiURL,
@@ -76,6 +77,11 @@ export class AttachmentsApi {
 
   static deleteItem(id: ID, headers?: AxiosRequestConfig['headers']) {
     return deleteQuery<void>({ url: getAttachmentsDeleteItemURL(id), headers });
+  }
+
+  static getDriverAllotments(options: QueryOptions) {
+    const url = getDriverAllotmentsByBranchId(options);
+    return getQuery({url})
   }
 }
 

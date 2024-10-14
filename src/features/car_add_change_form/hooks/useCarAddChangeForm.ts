@@ -91,7 +91,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         registrationNumber: data.registrationNumber,
         vin: data.vin,
       };
-      console.log("Submitting form with data:", payload);
 
       if (id) {
         await changeItem(payload);

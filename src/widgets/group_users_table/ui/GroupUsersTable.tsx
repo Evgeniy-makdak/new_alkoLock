@@ -65,7 +65,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
         toggleModal={editModalData.closeEditModal}
         body={
           <GroupUserMoveForm
-            targetBranch={groupInfo.id}
+            targetBranch={groupInfo?.id}
             close={editModalData.closeEditModal}
             user={editModalData.changeUser}
           />

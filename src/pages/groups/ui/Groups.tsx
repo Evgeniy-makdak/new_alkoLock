@@ -24,7 +24,7 @@ const Groups = () => {
               <div className={style.name}>
                 <span>{groupName}</span>
               </div>
-              {!isLoading && <RowTableInfo tabs={tabs} />}
+              <RowTableInfo tabs={tabs} />
             </div>
           </Aside>
         </Loader>

@@ -24,6 +24,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
       enabled: enabled,
     },
   });
+// console.log('ROLES_SELECT_LIST', data);
 
   // Получаем список ролей (пользовательских групп)
   const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
@@ -44,6 +45,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
       },
     },
   );
+// console.log('ROLES_LIST', data);
 
   // Получаем аватар пользователя
   const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(
@@ -81,7 +83,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   // Получаем хеш аватара
   const hash = foto ? foto?.headers['content-md5'] : null;
-  console.log('useUserAddChangeFormApi');
+console.log(data?.data);
 
   return {
     avatar: foto?.data && hash ? { img: foto?.data, hash } : null,
