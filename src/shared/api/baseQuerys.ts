@@ -458,4 +458,8 @@ export class RolesApi {
   static createItem(data: CreateRoleData) {
     return postQuery({ url: `api/user-groups`, data });
   }
+
+  static getDriverRole(id: ID) {
+    return getQuery<IRole>({ url: `api/user/check-driver-role/${id}` });
+  }
 }

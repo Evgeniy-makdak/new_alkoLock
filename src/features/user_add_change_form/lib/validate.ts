@@ -8,10 +8,6 @@ import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
 
-// const isSameDate = (val1: Dayjs, val2: Dayjs) => {
-//   return val1.date() === val2.date() && val1.month() === val2.month() && val1.year() === val2.year();
-// };
-
 export type Form = {
   firstName: string;
   surname: string;
@@ -91,12 +87,14 @@ yup.addMethod(yup.object, 'birthDate', function method(message) {
   );
 });
 
+// Проверка, нужно ли проверять даты
 const mustBeDate = (context: YupContext) => {
   const parent = context.parent;
   const licenseCode = parent?.licenseCode;
   return licenseCode && licenseCode.trim().length > 0;
 };
 
+// Обновлённая схема валидации
 export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =>
   yup.object({
     licenseClass: yup.array().test({
@@ -111,7 +109,15 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     firstName: yup.string().required(ValidationMessages.required),
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
-    birthDate: yup.mixed<any>().nullable().typeError(ValidationMessages.notValidData),
+    birthDate: yup
+      .mixed<any>()
+      .nullable()
+      .typeError(ValidationMessages.notValidData)
+      .test('is-valid-birth-date', ValidationMessages.notValidData, (value) => {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1); // Вчерашний день
+        return !value || (value.isValid() && value.isBefore(yesterday));
+      }),
     phone: yup.string().test({
       name: 'phone',
       test(value, context) {
@@ -182,8 +188,22 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         return true;
       },
     }),
-    licenseIssueDate: yup.mixed<any>().nullable().typeError(ValidationMessages.notValidData),
-    licenseExpirationDate: yup.mixed<any>().nullable().typeError(ValidationMessages.notValidData),
+    licenseIssueDate: yup
+      .mixed<any>()
+      .nullable()
+      .typeError(ValidationMessages.notValidData)
+      .test('is-valid-issue-date', ValidationMessages.notValidData, (value) => {
+        const today = new Date();
+        return !value || (value.isValid() && value.isBefore(today));
+      }),
+    licenseExpirationDate: yup
+      .mixed<any>()
+      .nullable()
+      .typeError(ValidationMessages.notValidData)
+      .test('is-valid-expiration-date', ValidationMessages.notValidData, (value) => {
+        const today = new Date();
+        return !value || (value.isValid() && value.isAfter(today));
+      }),
     userGroups: yup.array().test({
       name: 'userGroups',
       test(value, context) {
@@ -201,7 +221,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     }),
   });
 
-// TODO => переработать работу с ролями когда изменится api на бэке
+// Проверка ролей администратора
 export const isDisabledAdminRole = (value: Value, roles: Values): boolean => {
   const permissions = value?.permissions || [];
 

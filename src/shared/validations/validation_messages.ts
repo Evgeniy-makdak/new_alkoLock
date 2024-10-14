@@ -10,7 +10,10 @@ export enum ValidationMessages {
   notValidPasswordLength = 'Длина пароля должна быть от 4 до 100 символов',
   notValidSerialNumber = 'Серийный номер должен содержать от 1 до 20 символов',
   similarDateOfLicense = 'Дата получения прав должна быть меньше даты истечения срока прав',
-  defaultError = "defaultError",
-  passwordsMustMatch ="Новый пароль не должен совпадать с текущим",
-  passwordsNotMustMatch ="Пароли не совпадают",
+  defaultError = 'defaultError',
+  passwordsMustMatch = 'Новый пароль не должен совпадать с текущим',
+  passwordsNotMustMatch = 'Пароли не совпадают',
+  dateIssueMaxToday = 'dateIssueMaxToday',
+  dateExpirationMinToday = 'dateExpirationMinToday',
+  expirationDateBeforeIssue = 'expirationDateBeforeIssue',
 }

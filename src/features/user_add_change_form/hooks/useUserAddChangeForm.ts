@@ -6,9 +6,9 @@ import { type Dayjs } from 'dayjs';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
-import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
+// import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { UsersApi } from '@shared/api/baseQuerys';
+import { RolesApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -33,7 +33,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const [alert, setAlert] = useState(false);
 
   const photoData = useUserFoto(user?.id);
-  const { setImageToStoreAfterLoadingMemo, changeAvatarMemo } = useUserFoto(user?.id);
+  const { changeAvatarMemo } = useUserFoto(user?.id);
   const avatarImage = useMemo(() => {
     return photoData.images.find((img) => img.isAvatar);
   }, [photoData]);
@@ -142,9 +142,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
-
-    const updateGallery = UsersApi.getPhotoFromGallery; // Запрос на получение галереи фото
-    const avatarExists = !!avatarImage;
 
     if (
       stateOfForm.state.disableDriverInfo &&
