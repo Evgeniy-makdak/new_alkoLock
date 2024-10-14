@@ -81,7 +81,7 @@ export class AttachmentsApi {
 
   static getDriverAllotments(options: QueryOptions) {
     const url = getDriverAllotmentsByBranchId(options);
-    return getQuery({url})
+    return getQuery<{ content: IAttachmentItems[]; totalElements: number }>({ url });
   }
 }
 

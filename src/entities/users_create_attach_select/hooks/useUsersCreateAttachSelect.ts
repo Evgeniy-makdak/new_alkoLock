@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { AttachmentsApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
@@ -10,7 +10,7 @@ import { adapterMapOptions } from '../lib/adapterMapOptions';
 
 export const useUsersCreateAttachSelect = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [limit, setLimit] = useState(20);
+  const [limit] = useState(20);
 
   const onChange = (value: string) => {
     setSearchQuery(value);
@@ -21,33 +21,16 @@ export const useUsersCreateAttachSelect = () => {
   };
 
   const { data, isLoading } = useConfiguredQuery(
-    [QueryKeys.ATTACHMENT_LIST],
-    AttachmentsApi.getList,
+    [QueryKeys.DRIVER_ATTACHMENTS],
+    AttachmentsApi.getDriverAllotments,
     {
       options: {
         attachSearchQuery: searchQuery,
         limit: limit,
+        // filterOptions: {branchId: 20}
       },
     },
   );
-
-  // const { data, isLoading } = useConfiguredQuery(
-  //   [QueryKeys.DRIVER_ATTACHMENTS],
-  //   AttachmentsApi.getDriverAllotments,
-  //   {
-  //     options: {
-  //       attachSearchQuery: searchQuery,
-  //       limit: limit,
-  //       filterOptions: {branchId: 20}
-  //     },
-  //   },
-  // );
-
-  useEffect(() => {
-    if (data?.data.totalElements) {
-      setLimit(data.data.totalElements);
-    }
-  }, [data]);
 
   const array: number[] = [];
 
@@ -56,6 +39,7 @@ export const useUsersCreateAttachSelect = () => {
       mapOptions<IAttachmentItems>(data?.data.content, (data) => adapterMapOptions(data, array)),
     [data],
   );
+  console.log(data);
 
   return { isLoading, onReset, onChange, userActionId };
 };

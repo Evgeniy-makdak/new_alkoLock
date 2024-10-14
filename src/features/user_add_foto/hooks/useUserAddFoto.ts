@@ -1,4 +1,5 @@
 import { useState } from 'react';
+
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
@@ -8,11 +9,10 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
-import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
-  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set()); 
+  const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
 
   const {
     imageHasUpload,
@@ -23,7 +23,6 @@ export const useUserAddFoto = (userId: ID) => {
   } = userFotoStore();
 
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
-  const updateGalery = UsersApi.getPhotoFromGallery
 
   const reset = () => {
     setUploadImage([]);
@@ -46,19 +45,19 @@ export const useUserAddFoto = (userId: ID) => {
       return;
     }
 
+    // Устанавливаем не сохраненные изображения в стейт
     setNotSavedImageInDataBase(newImages, userId);
 
+    // Фильтруем изображения для загрузки и начинаем процесс загрузки
     const validImagesToUpload: ImageState[] = [];
 
-    const uploadPromises = newImages.map(async (image) => {
+    for (const image of newImages) {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
 
       // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
-
-      // console.log('нужный мне url', 'AAAAAAAAqKwA' + image.hash);
 
       try {
         const result = await addPhoto(reqBody);
@@ -69,7 +68,7 @@ export const useUserAddFoto = (userId: ID) => {
           setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
         } else {
           imageHasUpload(result?.data, userId);
-          validImagesToUpload.push(image);
+          validImagesToUpload.push(image); // Добавляем только успешно загруженные фото
         }
       } catch (error) {
         enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
@@ -78,13 +77,10 @@ export const useUserAddFoto = (userId: ID) => {
         setLoadingImages((prev) => {
           const newLoadingImages = new Set(prev);
           newLoadingImages.delete(image.hash);
-          updateGalery('AAAAAAAAqKwA' + image.hash)
           return newLoadingImages;
         });
       }
-    });
-
-    await Promise.all(uploadPromises);
+    }
 
     const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
       ...image,

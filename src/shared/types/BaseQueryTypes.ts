@@ -163,6 +163,10 @@ export interface IAttachmentItems {
   id: ID;
   driver: IDriver;
   vehicle: ICar;
+  surname: string;
+  firstName: string;
+  middleName: string;
+  email: string;
 }
 
 export interface AttachmentsCreateData {
