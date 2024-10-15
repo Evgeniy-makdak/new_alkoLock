@@ -179,6 +179,7 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disableFuture
                   onChange={(value) => state.handlers.onChangeDate('licenseIssueDate', value)}
                 />
+
                 <InputDate
                   testid={
                     testids.page_users.users_widget_add_user_popup
@@ -194,8 +195,10 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disablePast
                   label="Дата окончания действия"
                   value={state.state.licenseExpirationDate}
+                  minDateFlag // Устанавливаем флаг для минимальной даты
                   onChange={(value) => state.handlers.onChangeDate('licenseExpirationDate', value)}
                 />
+
                 <div
                   className={`${style.wrapperCategories} ${state.state.disableDriverInfo ? style.disabledDriverData : ''}`}>
                   {AppConstants.categoryTypesList.map((category) => (

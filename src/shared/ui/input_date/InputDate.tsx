@@ -1,11 +1,11 @@
-import { type FC, useId } from 'react';
+import { FC, useId } from 'react';
 
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/ru';
 import updateLocale from 'dayjs/plugin/updateLocale';
 
-import { MenuItem, type Theme, ThemeProvider, createTheme } from '@mui/material';
-import { DatePicker, type DatePickerProps, type PickersActionBarProps } from '@mui/x-date-pickers';
+import { MenuItem, Theme, ThemeProvider, createTheme } from '@mui/material';
+import { DatePicker, DatePickerProps, PickersActionBarProps } from '@mui/x-date-pickers';
 
 import { MuiLocalizationProvider } from '@shared/components/mui_localization_provider';
 
@@ -24,9 +24,7 @@ const CustomMenuItem = (props: PickersActionBarProps) => {
   return (
     <MenuItem
       data-mui-test="clear-action-button"
-      onClick={() => {
-        onClear();
-      }}
+      onClick={() => onClear()}
       style={{
         alignSelf: 'center',
         backgroundColor: '#e6e6e6',
@@ -41,6 +39,7 @@ const CustomMenuItem = (props: PickersActionBarProps) => {
 
 type MyInputDateProps = {
   theme?: Theme;
+  minDateFlag?: boolean; // Флаг для установки минимальной даты (завтрашний день)
 } & InputDateProps;
 
 const newTheme = (theme?: Theme) => ({
@@ -89,11 +88,14 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
   const myTheme = createTheme(newTheme() as Theme);
   const textFieldProps = props?.slotProps?.textField || {};
 
+  const minDate = props.minDateFlag ? dayjs().add(1, 'day') : undefined;
+
   return (
     <MuiLocalizationProvider>
       <ThemeProvider theme={{ ...myTheme, ...theme }}>
         <DatePicker
           {...props}
+          minDate={minDate}
           slots={{
             actionBar: CustomMenuItem,
           }}
