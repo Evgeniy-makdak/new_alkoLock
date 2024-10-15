@@ -88,14 +88,12 @@ export const InputDateBirth: FC<MyInputDateProps> = (props) => {
   const theme = props.theme || {};
   const myTheme = createTheme(newTheme() as Theme);
   const textFieldProps = props?.slotProps?.textField || {};
-  const maxDate = dayjs().subtract(1, 'day');
 
   return (
     <MuiLocalizationProvider>
       <ThemeProvider theme={{ ...myTheme, ...theme }}>
         <DatePicker
           {...props}
-          maxDate={maxDate}
           slots={{
             actionBar: CustomMenuItem,
           }}
