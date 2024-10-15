@@ -74,18 +74,18 @@ yup.addMethod(yup.object, 'licenseExpirationDate', function method(message) {
   );
 });
 
-yup.addMethod(yup.object, 'birthDate', function method(message) {
-  return this.test(
-    'birthDate',
-    message,
-    function validate(value: Dayjs | null, context: YupContext) {
-      if (value && !value.isValid()) {
-        return context.createError({ message: ValidationMessages.notValidData });
-      }
-      return true;
-    },
-  );
-});
+// yup.addMethod(yup.object, 'birthDate', function method(message) {
+//   return this.test(
+//     'birthDate',
+//     message,
+//     function validate(value: Dayjs | null, context: YupContext) {
+//       if (value && !value.isValid()) {
+//         return context.createError({ message: ValidationMessages.notValidData });
+//       }
+//       return true;
+//     },
+//   );
+// });
 
 // Проверка, нужно ли проверять даты
 const mustBeDate = (context: YupContext) => {
