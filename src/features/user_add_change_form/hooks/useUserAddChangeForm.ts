@@ -168,7 +168,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
     );
-
     try {
       if (!id) {
         const response = await createItem(formData);
@@ -178,9 +177,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           close();
         }
       } else {
+        console.log('formData' ,formData);
+        
         const response = await changeItem(formData);
         if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
-          
           enqueueSnackbar(response.detail, {
             variant: 'error',
           });

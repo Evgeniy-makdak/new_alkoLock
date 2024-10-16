@@ -18,7 +18,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
   const update = useUpdateQueries();
 
   // Получаем информацию о пользователе
-  const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLES_SELECT_LIST], UsersApi.getUser, {
+  const { data, isLoading } = useConfiguredQuery([QueryKeys.USER_ITEM], UsersApi.getUser, {
     options: id,
     settings: {
       enabled: enabled,

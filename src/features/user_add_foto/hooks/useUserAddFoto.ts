@@ -31,6 +31,9 @@ export const useUserAddFoto = (userId: ID) => {
 
   const onSubmit = async () => {
     const existingImages = usersImages[userId] || [];
+    // console.log('existingImages' ,existingImages);
+    // console.log('uploadImage' ,uploadImage);
+    
     const newImages = uploadImage.filter((image) => {
       const isDuplicate = existingImages.some((existingImage) => existingImage.hash === image.hash);
       if (isDuplicate) {

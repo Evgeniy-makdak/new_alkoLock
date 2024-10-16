@@ -110,14 +110,14 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
     birthDate: yup
-      .mixed<any>()
-      .nullable()
+    .mixed<any>()
+    .nullable()
       .typeError(ValidationMessages.notValidData)
       .test('is-valid-birth-date', ValidationMessages.notValidData, (value) => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         return !value || (value.isValid() && value.isBefore(yesterday));
-      }),
+    }),
     phone: yup.string().test({
       name: 'phone',
       test(value, context) {
