@@ -17,7 +17,7 @@ export const getFormState = (
     firstName?: string;
     surname?: string;
     middleName?: string;
-    birthDate?: dayjs.Dayjs;
+    birthDate?: dayjs.Dayjs; // Обратите внимание, что это уже добавлено
     phone?: string;
     email?: string;
     password?: string;
@@ -27,7 +27,7 @@ export const getFormState = (
     licenseExpirationDate?: dayjs.Dayjs;
     licenseClass?: string[];
     userPhotoDTO?: ImageState[];
-  }>,
+  }>
 ) => {
   const {
     firstName,
@@ -40,6 +40,7 @@ export const getFormState = (
     licenseIssueDate: licenseIssueDateError,
     licenseExpirationDate: licenseExpirationDateError,
     phone: phoneError,
+    birthDate: birthDateError, // Добавляем обработку ошибки для даты рождения
     licenseClass: licenseClassError,
   } = formState.errors;
 
@@ -51,12 +52,9 @@ export const getFormState = (
   const errorUserGroups = userGroupsError ? userGroupsError.message.toString() : '';
   const errorLicenseCode = licenseCodeError ? licenseCodeError.message.toString() : '';
   const errorPhone = phoneError ? phoneError.message.toString() : '';
-  const errorLicenseIssueDate = licenseIssueDateError
-    ? licenseIssueDateError.message.toString()
-    : '';
-  const errorLicenseExpirationDate = licenseExpirationDateError
-    ? licenseExpirationDateError.message.toString()
-    : '';
+  const errorBirthDate = birthDateError ? birthDateError.message.toString() : ''; // Здесь получаем ошибку для даты рождения
+  const errorLicenseIssueDate = licenseIssueDateError ? licenseIssueDateError.message.toString() : '';
+  const errorLicenseExpirationDate = licenseExpirationDateError ? licenseExpirationDateError.message.toString() : '';
   const errorLicenseClass = licenseClassError ? licenseClassError.message?.toString() : '';
 
   const userGroups = watch('userGroups');
@@ -84,6 +82,7 @@ export const getFormState = (
       disableDriverInfo,
     },
     errors: {
+      errorBirthDate, // Добавляем ошибку для даты рождения
       errorLicenseClass,
       errorFirstName,
       errormiddleName,

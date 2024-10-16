@@ -42,15 +42,11 @@ yup.addMethod(yup.object, 'licenseIssueDate', function method(message) {
 
       const parent = context.parent;
       const licenseExpirationDate = parent?.licenseExpirationDate as Dayjs | null;
-      if (
-        licenseExpirationDate &&
-        licenseExpirationDate.isValid() &&
-        !value.isBefore(licenseExpirationDate)
-      ) {
+      if (licenseExpirationDate && licenseExpirationDate.isValid() && !value.isBefore(licenseExpirationDate)) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
-    },
+    }
   );
 });
 
@@ -70,20 +66,29 @@ yup.addMethod(yup.object, 'licenseExpirationDate', function method(message) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
-    },
+    }
   );
 });
 
+// Добавляем метод для валидации даты рождения с отображением сообщения "Некорректное значение"
 yup.addMethod(yup.object, 'birthDate', function method(message) {
   return this.test(
     'birthDate',
     message,
     function validate(value: Dayjs | null, context: YupContext) {
-      if (value && !value.isValid()) {
+      if (!value || !value.isValid()) {
         return context.createError({ message: ValidationMessages.notValidData });
       }
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1); // Устанавливаем вчерашнюю дату для проверки
+
+      if (value && !value.isBefore(yesterday)) {
+        return context.createError({ message: 'Некорректное значение' });
+      }
+
       return true;
-    },
+    }
   );
 });
 
@@ -110,14 +115,14 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
     birthDate: yup
-    .mixed<any>()
-    .nullable()
+      .mixed<any>()
+      .nullable()
       .typeError(ValidationMessages.notValidData)
-      .test('is-valid-birth-date', ValidationMessages.notValidData, (value) => {
+      .test('is-valid-birth-date', 'Некорректное значение', (value) => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         return !value || (value.isValid() && value.isBefore(yesterday));
-    }),
+      }),
     phone: yup.string().test({
       name: 'phone',
       test(value, context) {
@@ -158,7 +163,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
           (value ?? '').length,
           4,
           100,
-          ValidationMessages.notValidPasswordLength,
+          ValidationMessages.notValidPasswordLength
         );
         if (errors.length > 0) {
           return context.createError({ message: errors[0] });
@@ -236,12 +241,8 @@ export const isDisabledAdminRole = (value: Value, roles: Values): boolean => {
   }, []);
 
   const hasSelectedRoles = selectedRolesPermissions.length > 0;
-  const isGlobalAdminRoleSelect = selectedRolesPermissions.includes(
-    Permissions.SYSTEM_GLOBAL_ADMIN,
-  );
+  const isGlobalAdminRoleSelect = selectedRolesPermissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
   const isNotGlobalAdminRole = !permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
-  if (isNotGlobalAdminRole && isGlobalAdminRoleSelect) return true;
-  else if (hasSelectedRoles && !isNotGlobalAdminRole && !isGlobalAdminRoleSelect) return true;
-  return false;
+  return hasSelectedRoles && isNotGlobalAdminRole && isGlobalAdminRoleSelect;
 };

@@ -2,7 +2,7 @@ export enum ValidationMessages {
   required = 'Обязательное поле',
   notValidEmail = 'Введено некорректное имя почтового ящика . Допустимо использовать только латинские или кириллические буквы, цифры, знак подчеркивания, точку, минус и знак @.',
   notValidPhone = 'Некорректный номер',
-  notValidData = 'Невалидное значение',
+  notValidData = 'Некорректное значение',
   notValidUUID4 = 'Некорректный uuid4',
   notValidMacAddress = 'Некорректный MAC-адрес',
   notValidName = 'Не соответствует формату ФИО',

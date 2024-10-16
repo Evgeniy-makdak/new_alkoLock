@@ -30,6 +30,7 @@ type UserAddChangeFormProps = {
 export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }) => {
   const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
     useUserAddChangeForm(id, closeModal);
+console.log(state?.errors);
 
   return (
     <Loader isLoading={isLoading}>
@@ -71,6 +72,12 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   }
                   value={state.state.birthDate}
                   disableFuture
+                  slotProps={{
+                    textField: {
+                      error: Boolean(state.errors.errorBirthDate), // Показываем ошибку, если есть
+                      helperText: state.errors.errorBirthDate, // Сообщение об ошибке
+                    },
+                  }}
                   onChange={(value) => state.handlers.onChangeDate('birthDate', value)}
                 />
                 <PhoneInput
