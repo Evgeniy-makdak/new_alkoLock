@@ -103,13 +103,14 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       },
     }));
   },
-  setUserImagesUrl: (urls, userId) => { // setUserImagesUrl: (hashs, userId) => {
+  setUserImagesUrl: (urls, userId) => {
+    // setUserImagesUrl: (hashs, userId) => {
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-// console.log('prevImage', prevImage);
 
-    for (const url of urls) { // for (const hash of hashs) {
+    for (const url of urls) {
+      // for (const hash of hashs) {
       const hasImgInStore = prevImage.find((item) => {
         if (!item?.url) return false;
         return item.url === url; // return item.hash === hash
@@ -117,7 +118,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
       if (hasImgInStore) continue;
       const img: ImageStateInStore = {
-        url,    //  убрать возможно
+        url,
         hash: null,
         isSavedInDataBase: true,
         src: null,
@@ -129,8 +130,8 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     }
 
     if (newImage.length < 1) return;
-    console.log('newImage', newImage);
-    console.log('prevImage', prevImage);
+    // console.log('newImage', newImage);
+    // console.log('prevImage', prevImage);
     set((prev) => ({
       ...prev,
       usersImages: { ...state, [userId]: [...newImage, ...prevImage] },

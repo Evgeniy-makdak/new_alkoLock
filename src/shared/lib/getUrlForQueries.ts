@@ -344,7 +344,7 @@ export const getMarksCarURL = ({
   //   notBranch: notBranchId,
   // });
 
-  return `api/vehicles/manufacturers?page=${page || 0}&size=${limit || 20}&branchId=${branchId}${queries}`;
+  return `api/vehicles/branches/manufacturers?branchId=${branchId}&page=${page || 0}&size=${limit || 20}`;
 };
 
 export const getCarListURL = ({

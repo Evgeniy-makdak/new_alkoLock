@@ -18,7 +18,10 @@ export const useMarksCarSelect = () => {
     setSearchQuery('');
   };
 
-  const marksCarList = mapOptions(isLoading ? [] : (data?.data as string[]), adapterMapOptions);
+  const marksCarList = mapOptions(
+    isLoading ? [] : Array.isArray(data?.data) ? data?.data : data?.data.content || [],
+    adapterMapOptions,
+  );
 
   return { onChange, isLoading, onReset, marksCarList };
 };

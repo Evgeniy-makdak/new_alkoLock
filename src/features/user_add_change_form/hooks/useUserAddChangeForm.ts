@@ -6,9 +6,8 @@ import { type Dayjs } from 'dayjs';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
-// import { useUserFotoItem } from '@features/user_foto_item/hooks/useUserFotoItem';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { RolesApi } from '@shared/api/baseQuerys';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -41,7 +40,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const initUser = getInitFormState(isLoading, values, id, user, avatar);
 
   const close = () => {
-    const event = new CustomEvent('user_change_sucsess');
+    const event = new CustomEvent('user_change_success');
     document.dispatchEvent(event);
     closeModal && closeModal();
   };
@@ -168,6 +167,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
     );
+console.log('formData', {formData});
+
     try {
       if (!id) {
         const response = await createItem(formData);
@@ -177,8 +178,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           close();
         }
       } else {
-        console.log('formData' ,formData);
-        
         const response = await changeItem(formData);
         if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
           enqueueSnackbar(response.detail, {
@@ -186,9 +185,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           });
         } else if (response.status === StatusCode.SUCCESS) {
           // Если фото выбрано, но нет хеша фото, обновить галерею
-          // if (!formData.get('userPhoto.hash')) {
-          changeAvatarMemo(avatarImage?.id, false);
-          // }
+          if (!formData.get('userPhoto.hash')) {
+            changeAvatarMemo(avatarImage?.id, false);
+          }
+
+          // Обновляем галерею перед закрытием
+          // await UsersApi.getPhotoFromGallery(newImage);
           close();
         }
       }

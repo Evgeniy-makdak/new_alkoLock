@@ -31,9 +31,6 @@ export const useUserAddFoto = (userId: ID) => {
 
   const onSubmit = async () => {
     const existingImages = usersImages[userId] || [];
-    // console.log('existingImages' ,existingImages);
-    // console.log('uploadImage' ,uploadImage);
-    
     const newImages = uploadImage.filter((image) => {
       const isDuplicate = existingImages.some((existingImage) => existingImage.hash === image.hash);
       if (isDuplicate) {
@@ -47,10 +44,8 @@ export const useUserAddFoto = (userId: ID) => {
       enqueueSnackbar('Нет новых фото для загрузки', { variant: 'warning' });
       return;
     }
-
     // Устанавливаем не сохраненные изображения в стейт
     setNotSavedImageInDataBase(newImages, userId);
-
     // Фильтруем изображения для загрузки и начинаем процесс загрузки
     const validImagesToUpload: ImageState[] = [];
 
@@ -58,10 +53,8 @@ export const useUserAddFoto = (userId: ID) => {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
-
       // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
-
       try {
         const result = await addPhoto(reqBody);
         if (result?.status >= StatusCode.BAD_REQUEST) {

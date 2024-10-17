@@ -23,7 +23,10 @@ export const useUserFoto = (userId: ID) => {
     (image: ImageStateInStore) => setImageToStoreAfterLoading(image, userId),
     [userId],
   );
-  const changeAvatarMemo = useCallback((idImage: ID, isAvatar?: boolean) => changeAvatar(idImage, userId, isAvatar), [userId]);
+  const changeAvatarMemo = useCallback(
+    (idImage: ID, isAvatar?: boolean) => changeAvatar(idImage, userId, isAvatar),
+    [userId],
+  );
   const client = useQueryClient();
   const deleteImageMemo = useCallback(
     (imageID: ID) => {
@@ -36,7 +39,7 @@ export const useUserFoto = (userId: ID) => {
   useEffect(() => {
     if (!userId || !listUrl || isLoadingListUrl) return;
     // console.log('listUrl', listUrl);
-    
+
     setUserImagesUrl(
       listUrl?.map((item) => item.body), // listUrl?.map((item) => item.hash
       userId,

@@ -231,7 +231,7 @@ export class CarsApi {
   }
 
   static getMarksCarList(options: QueryOptions) {
-    return getQuery<string[]>({ url: getMarksCarURL(options) });
+    return getQuery<any>({ url: getMarksCarURL(options) });
   }
   static getGetManufacturer() {
     return getQuery<string[]>({ url: `api/vehicles/manufacturers` });

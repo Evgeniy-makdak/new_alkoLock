@@ -1,17 +1,26 @@
-import { AppConstants } from '@app/index';
+import { useState } from 'react';
+
 import { mapOptions } from '@shared/ui/search_multiple_select';
 
 import { useTypeEventSelectApi } from '../api/useTypeEventSelectApi';
 
 export const useTypeEventSelect = () => {
   const { events, isLoading, isError } = useTypeEventSelectApi();
-  // TODO => поле data.event поменять на data.value когда на бэке поменяется api
-  // TODO => убрать isError когда поменяется  api => сейчас с 2-разных бэков приходит поля либо
-  // event либо value соответственно, поэтому сделан такой вариант  isError ? data.value : data.event
-  const marksCarList = mapOptions(isError ? AppConstants.eventTypesList : events, (data) => [
-    data.label,
-    isError ? data.value : data.event,
-  ]);
+  const [, setSearchQuery] = useState('');
 
-  return { marksCarList, isLoading };
+  const onChange = (value: string) => {
+    setSearchQuery(value);
+  };
+
+  const onReset = () => {
+    setSearchQuery('');
+  };
+
+  if (isError) {
+    return { marksCarList: [], isLoading, onChange, onReset };
+  }
+
+  const marksCarList = mapOptions(events, (data) => [data.label, data.value]);
+
+  return { marksCarList, isLoading, onChange, onReset };
 };
