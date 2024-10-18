@@ -9,7 +9,8 @@ const updateQueries = [QueryKeys.BRANCH_LIST_TABLE, QueryKeys.BRANCH_LIST_SELECT
 export const useGroupDeleteFormApi = () => {
   const refetchQueries = useUpdateQueries();
   const { mutateAsync } = useMutation({
-    mutationFn: (id: ID) => BranchApi.deleteBranch(id),
+    mutationFn: ({ id, deactivateRecords }: { id: ID; deactivateRecords: boolean }) =>
+      BranchApi.deleteBranch(id, deactivateRecords),
     onSuccess: () => refetchQueries(updateQueries),
   });
 

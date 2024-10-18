@@ -24,10 +24,16 @@ export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal }
       <Stack gap={3}>
         <Typography>
           Вы действительно хотите удалить группу <b>{branch.text}?</b>
+          <br />
+          При удалении группы с сохранением содержимого все её пользователи, ТС, алкозамки и
+          привязки переносятся в Основной филиал.
         </Typography>
         <ButtonFormWrapper>
-          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={handleDelete}>
+          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(true)}>
             удалить
+          </Button>
+          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(false)}>
+            удалить с переносом содержимого
           </Button>
           <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
             отмена

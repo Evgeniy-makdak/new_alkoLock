@@ -5,8 +5,8 @@ import { useGroupDeleteFormApi } from '../api/useGroupDeleteFormApi';
 export const useGroupDeleteForm = (id: ID, close: () => void) => {
   const { mutateAsync } = useGroupDeleteFormApi();
 
-  const handleDelete = async () => {
-    await mutateAsync(id);
+  const handleDelete = async (deactivateRecords: boolean) => {
+    await mutateAsync({ id, deactivateRecords });
     close();
     window.location.reload();
   };

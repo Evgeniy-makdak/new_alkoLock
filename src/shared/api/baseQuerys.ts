@@ -419,8 +419,10 @@ export class BranchApi {
   static createBranch(name: string) {
     return postQuery<IBranch, { name: string }>({ data: { name }, url: `api/branch-offices` });
   }
-  static deleteBranch(id: ID) {
-    return deleteQuery<unknown>({ url: `api/branch-offices/${id}` });
+  static deleteBranch(id: ID, deactivateRecords: boolean) {
+    return deleteQuery<unknown>({
+      url: `api/branch-offices/${id}?deactivateRecords=${deactivateRecords}`,
+    });
   }
   static editBranch(id: ID, name: string) {
     return putQuery<IBranch, { id: ID; name: string }>({
