@@ -5,8 +5,8 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 import { useTypeEventSelectApi } from '../api/useTypeEventSelectApi';
 
 export const useTypeEventSelect = () => {
-  const { events, isLoading, isError } = useTypeEventSelectApi();
-  const [, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const { events, isLoading, isError } = useTypeEventSelectApi(searchQuery);
 
   const onChange = (value: string) => {
     setSearchQuery(value);

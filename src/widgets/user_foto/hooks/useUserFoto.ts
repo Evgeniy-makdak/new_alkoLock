@@ -39,6 +39,7 @@ export const useUserFoto = (userId: ID) => {
   useEffect(() => {
     if (!userId || !listUrl || isLoadingListUrl) return;
     // console.log('listUrl', listUrl);
+console.log('listUrl', listUrl);
 
     setUserImagesUrl(
       listUrl?.map((item) => item.body), // listUrl?.map((item) => item.hash

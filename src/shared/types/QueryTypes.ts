@@ -84,6 +84,7 @@ export type QueryOptions = {
     groupId?: string;
     excludeId?: ID;
     driverSpecified?: boolean;
+    match?: string;
   };
   id?: ID;
   headers?: HeaderReq;

@@ -43,6 +43,8 @@ export const UserFotoItem = ({
     changeAvatarMemo,
     userId,
   );
+  console.log('imageItem', imageItem);
+  
   const isSavedInDataBase = imageItem?.isSavedInDataBase || false;
 
   const showImage = isSavedInDataBase && imageItem?.src && !isDeleteImage;

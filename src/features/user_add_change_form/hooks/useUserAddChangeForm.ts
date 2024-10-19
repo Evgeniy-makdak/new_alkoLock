@@ -167,7 +167,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
     );
-console.log('formData', {formData});
 
     try {
       if (!id) {

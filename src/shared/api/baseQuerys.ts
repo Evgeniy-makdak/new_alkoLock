@@ -16,7 +16,7 @@ import {
   getEventListForAutoServiceURL,
   getEventsApiURL,
   getEventsHistoryURL,
-  getEventsTypeUrl,
+  // getEventsTypeUrl,
   getMarksCarURL,
   getRolesListURL,
   getUrlCountEventsQuery,
@@ -361,8 +361,12 @@ export class EventsApi {
     });
   }
 
-  static getEventsTypeList() {
-    return getQuery<IEventsType>({ url: getEventsTypeUrl() });
+  static getEventsTypeList(options: QueryOptions) {
+    console.log(options);
+    
+    let url = `api/v1/front-data/event-types`
+    if (options?.filterOptions?.match) url += `?match=${options?.filterOptions?.match}`
+    return getQuery<IEventsType>({ url });
   }
 
   static activateServiceMode({

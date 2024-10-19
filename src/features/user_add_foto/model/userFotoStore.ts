@@ -27,6 +27,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const userImages = state[userId] ? state[userId] : [];
     const newState = userImages.map((storeImage) => {
+      // Убрать url заменить на hash
       if (storeImage?.url === image?.url) {
         return {
           ...storeImage,
@@ -108,6 +109,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
+console.log(prevImage);
 
     for (const url of urls) {
       // for (const hash of hashs) {
@@ -129,7 +131,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       newImage.push(img);
     }
 
-    if (newImage.length < 1) return;
+    // if (newImage.length < 1) return;
     // console.log('newImage', newImage);
     // console.log('prevImage', prevImage);
     set((prev) => ({

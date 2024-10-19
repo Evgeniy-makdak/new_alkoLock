@@ -45,8 +45,9 @@ export const UserFoto: FC<UserFoto> = ({ userId }) => {
           <Stack className={style.listWrapper} direction={'row'} flexWrap={'wrap'} gap={1}>
             {/* TODO => если нужно реализовать потом виртуализацию списка */}
             {images.map((img) => {
+              // Не верно использовать в качестве ключа url. Что то должно быть уникальным
               return (
-                <ItemWrapper key={img?.url}>
+                <ItemWrapper key={img?.url}>  
                   <UserFotoItem
                     changeAvatarMemo={changeAvatarMemo}
                     userId={userId}
