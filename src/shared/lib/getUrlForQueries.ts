@@ -1,9 +1,8 @@
 // import { idID } from '@mui/material/locale';
 import type { GridSortDirection } from '@mui/x-data-grid';
 
-import { AppConstants } from '@app/index';
 import { SortTypes } from '@shared/config/queryParamsEnums';
-import type { EventsOptions, ID } from '@shared/types/BaseQueryTypes';
+import { type EventsOptions, type ID } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 import { DateUtils } from '@shared/utils/DateUtils';
 import { Formatters } from '@shared/utils/formatters';
@@ -183,11 +182,11 @@ const getSelectBranchQueryUrl = ({
   let branch = '';
 
   if (branchId && !notBranch) {
-    branch = `assignment.branch.id.in=${branchId}`;
+    branch = `events.eventType.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    branch = `assignment.branch.id.notEquals=${notBranch}`;
+    branch = `events.eventType.notEquals=${notBranch}`;
   } else if (notBranch) {
-    branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
+    branch = `events.eventType.notEquals=${notBranch}&all.id.notIn=1`;
   }
 
   return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
@@ -637,27 +636,13 @@ export function getEventsApiURL({
   if (carsByLicense) {
     queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
-
+  ///////////////
   if (eventsByType && eventsByType.length > 0) {
-    const testTypeEvent = [
-      eventsByType.find((elem) => elem.value === AppConstants.EVENT_TYPES.sobrietyTest),
-    ];
-    if (testTypeEvent.length === 1) {
-      const items = Formatters.getStringForQueryParams(testTypeEvent);
-      if (items) {
-        // Проверка на наличие значений
-        queries += `&all.type.in=${items}`;
-      }
-    }
-    // Поменять хардкорд на ответ от сервера!
-    const otherEvents = eventsByType.filter(
-      (elem) => elem.value !== AppConstants.EVENT_TYPES.sobrietyTest,
-    );
-    const items = Formatters.getStringForQueryParams(otherEvents);
-    if (items.length > 0) {
-      // Проверка на наличие значений
-      queries += `&all.events.eventType.in=${items}`;
-    }
+    const trimmedQuery = eventsByType.map((event) => event.label);
+    // console.log('eventsByType', eventsByType);
+    // console.log('queryTrimmed', queryTrimmed);
+
+    return `api/device-actions?page=${page || 0}&size=${limit || 20}&all.type.notIn=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.events.eventType.in=${trimmedQuery}`;
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
