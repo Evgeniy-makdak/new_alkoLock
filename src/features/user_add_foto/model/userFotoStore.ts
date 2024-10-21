@@ -109,12 +109,12 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-console.log(prevImage);
+console.log('prevImage', prevImage);
 
     for (const url of urls) {
       // for (const hash of hashs) {
       const hasImgInStore = prevImage.find((item) => {
-        if (!item?.url) return false;
+        if (!item?.url) return true;
         return item.url === url; // return item.hash === hash
       });
 
@@ -131,9 +131,7 @@ console.log(prevImage);
       newImage.push(img);
     }
 
-    // if (newImage.length < 1) return;
-    // console.log('newImage', newImage);
-    // console.log('prevImage', prevImage);
+    if (newImage.length < 1) return;
     set((prev) => ({
       ...prev,
       usersImages: { ...state, [userId]: [...newImage, ...prevImage] },

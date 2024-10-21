@@ -83,8 +83,8 @@ export const useUserAddFoto = (userId: ID) => {
       isSavedInDataBase: true,
       isAvatar: false,
     }));
-
-    updateUserImages(userId, validImagesInStore);
+window.location.reload()
+    // updateUserImages(userId, validImagesInStore);
     reset();
   };
 

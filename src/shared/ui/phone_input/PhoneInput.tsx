@@ -16,6 +16,14 @@ type PhoneInputProps = {
 } & DefaultInputComponentProps;
 
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
+  const handleChange = (phoneValue: string | undefined) => {
+    if (phoneValue && phoneValue.length <= 4) {
+      setValue(undefined);
+    } else {
+      setValue(phoneValue);
+    }
+  };
+
   return (
     <div>
       <PhoneInput
@@ -31,10 +39,10 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
           padding: 14,
         }}
         defaultCountry="RU"
-        onChange={setValue}
+        onChange={handleChange}
         className={style.input}
       />
-      {error && <span className={style.error}>{error}</span>}
+      {error && value && value.length > 4 && <span className={style.error}>{error}</span>}
     </div>
   );
 };
