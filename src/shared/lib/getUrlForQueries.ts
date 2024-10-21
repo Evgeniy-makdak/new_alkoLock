@@ -638,9 +638,9 @@ export function getEventsApiURL({
   }
   ///////////////
   if (eventsByType && eventsByType.length > 0) {
-    const trimmedQuery = eventsByType.map((event) => event.label);
-    // console.log('eventsByType', eventsByType);
-    // console.log('queryTrimmed', queryTrimmed);
+    const trimmedQuery = eventsByType.map((event) => event.label).join(',');
+    console.log('eventsByType', eventsByType);
+    console.log('trimmedQuery', trimmedQuery[0]);
 
     return `api/device-actions?page=${page || 0}&size=${limit || 20}&all.type.notIn=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.events.eventType.in=${trimmedQuery}`;
   }
