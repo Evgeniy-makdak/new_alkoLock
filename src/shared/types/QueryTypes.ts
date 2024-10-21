@@ -85,6 +85,7 @@ export type QueryOptions = {
     excludeId?: ID;
     driverSpecified?: boolean;
     match?: string;
+    trimmedQuery?: string;
   };
   id?: ID;
   headers?: HeaderReq;

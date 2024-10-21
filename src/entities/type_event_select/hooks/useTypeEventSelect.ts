@@ -20,7 +20,7 @@ export const useTypeEventSelect = () => {
     return { marksCarList: [], isLoading, onChange, onReset };
   }
 
-  const marksCarList = mapOptions(events, (data) => [data.label, data.value]);
+  const marksCarList = mapOptions(events, (data) => [data.label, data.event]);
 
   return { marksCarList, isLoading, onChange, onReset };
 };

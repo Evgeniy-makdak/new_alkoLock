@@ -636,12 +636,9 @@ export function getEventsApiURL({
   if (carsByLicense) {
     queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
-  console.log(filterOptions.carsByLicense);
-  
-  ///////////////
-  if (eventsByType && eventsByType.length > 0) {
-    const trimmedQuery = eventsByType.map((event) => event.label).join(',');
 
+  if (eventsByType && eventsByType.length > 0) {
+    const trimmedQuery = eventsByType.map((event) => event.label);
     return `api/device-actions?page=${page || 0}&size=${limit || 20}&all.type.notIn=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.events.eventType.in=${trimmedQuery}`;
   }
 
