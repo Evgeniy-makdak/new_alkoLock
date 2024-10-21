@@ -1,6 +1,6 @@
 import { type FC, useState } from 'react';
 import PhoneInput, {
-  type CountryCode,
+  type Country,
   type DefaultInputComponentProps,
 } from 'react-phone-number-input';
 import ru from 'react-phone-number-input/locale/ru.json';
@@ -19,7 +19,7 @@ type PhoneInputProps = {
 } & DefaultInputComponentProps;
 
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
-  const [currentCountry, setCurrentCountry] = useState<CountryCode>('RU');
+  const [currentCountry, setCurrentCountry] = useState<Country>('RU');
 
   const handleChange = (phoneValue: string | undefined) => {
     if (phoneValue && phoneValue.length <= 4) {
@@ -29,7 +29,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
     }
   };
 
-  const handleCountryChange = (newCountry: CountryCode | undefined) => {
+  const handleCountryChange = (newCountry: Country | undefined) => {
     setCurrentCountry(newCountry);
   };
 
