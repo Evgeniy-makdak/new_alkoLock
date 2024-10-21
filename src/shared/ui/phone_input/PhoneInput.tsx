@@ -1,5 +1,8 @@
-import { type FC } from 'react';
-import PhoneInput, { type DefaultInputComponentProps } from 'react-phone-number-input';
+import { type FC, useState } from 'react';
+import PhoneInput, {
+  type CountryCode,
+  type DefaultInputComponentProps,
+} from 'react-phone-number-input';
 import ru from 'react-phone-number-input/locale/ru.json';
 import 'react-phone-number-input/style.css';
 
@@ -16,12 +19,18 @@ type PhoneInputProps = {
 } & DefaultInputComponentProps;
 
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
+  const [currentCountry, setCurrentCountry] = useState<CountryCode>('RU');
+
   const handleChange = (phoneValue: string | undefined) => {
     if (phoneValue && phoneValue.length <= 4) {
       setValue(undefined);
     } else {
       setValue(phoneValue);
     }
+  };
+
+  const handleCountryChange = (newCountry: CountryCode | undefined) => {
+    setCurrentCountry(newCountry);
   };
 
   return (
@@ -35,12 +44,13 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
         labels={ru}
         placeholder="Введите номер телефона"
         value={value}
+        defaultCountry={currentCountry}
+        onCountryChange={handleCountryChange}
+        onChange={handleChange}
+        className={style.input}
         style={{
           padding: 14,
         }}
-        defaultCountry="RU"
-        onChange={handleChange}
-        className={style.input}
       />
       {error && value && value.length > 4 && <span className={style.error}>{error}</span>}
     </div>
