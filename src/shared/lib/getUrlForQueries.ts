@@ -379,8 +379,9 @@ export const getCarListURL = ({
 
   if (queryTrimmed.length) {
     queries += `&any.vin.contains=${queryTrimmed}`;
-    queries += `&any.match.contains=${queryTrimmed}`;
+    queries += `&all.match.contains=${queryTrimmed}`;
   }
+console.log(searchQuery);
 
   if (specified !== undefined) {
     queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`;
@@ -639,7 +640,7 @@ export function getEventsApiURL({
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);
-    return `api/device-actions?page=${page || 0}&size=${limit || 20}&all.type.notIn=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.events.eventType.in=${trimmedQuery}`;
+    return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}&all.events.eventType.in=${trimmedQuery}`;
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
