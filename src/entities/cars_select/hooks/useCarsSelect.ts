@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { mapOptions } from '@shared/ui/search_multiple_select';
@@ -12,13 +12,22 @@ export const useCarsSelect = (
   notInBranch?: ID,
   specified?: boolean,
 ) => {
-  const [searchQuery, setSearchQuery] = useState('');
   const [inputValue, setInputValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearchQuery(inputValue);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [inputValue]);
 
   const onInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setInputValue(value);
-    setSearchQuery(value);
   };
 
   const onChange = (value: string) => {

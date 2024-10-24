@@ -23,7 +23,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
 
   const handleChange = (value: string | undefined) => {
     if (value && value.length > 15) {
-      error;
+      setValue(value.slice(0, 15));
     } else {
       setValue(value);
     }
