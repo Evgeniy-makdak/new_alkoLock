@@ -2,21 +2,21 @@
 import { RowTableInfo } from '@entities/row_table_info';
 import { PageWrapper } from '@layout/page_wrapper';
 import { Aside } from '@shared/ui/aside';
-// import { EventInfo } from '@widgets/events_info';
-import { EventsTable } from '@widgets/events_table';
+// import { HistoryInfo } from '@widgets/history_info';
+import { HistoryTable } from '@widgets/history_table';
 
-import { useEventsPage } from '../hooks/useEventsPage';
+import { useHistoryPage } from '../hooks/useHistoryPage';
 
-const Events = () => {
-  const { handleClickRow, handleCloseAside, selectedEventId, tabs } = useEventsPage();
+const History = () => {
+  const { handleClickRow, handleCloseAside, selectedHistoryId, tabs } = useHistoryPage();
 
   return (
     <>
       <PageWrapper>
-        <EventsTable handleClickRow={handleClickRow} />
+        <HistoryTable handleClickRow={handleClickRow} />
       </PageWrapper>
 
-      {selectedEventId && (
+      {selectedHistoryId && (
         <Aside onClose={handleCloseAside}>
           <RowTableInfo tabs={tabs} />
         </Aside>
@@ -25,4 +25,4 @@ const Events = () => {
   );
 };
 
-export default Events;
+export default History;

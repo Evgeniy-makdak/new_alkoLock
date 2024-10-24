@@ -109,7 +109,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-console.log('prevImage', prevImage);
+    console.log('Получение фото из стора', prevImage);
 
     for (const url of urls) {
       // for (const hash of hashs) {

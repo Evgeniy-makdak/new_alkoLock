@@ -114,7 +114,13 @@ export class UsersApi {
     });
   }
   static setPhotoAsAvatar(photoId: ID, userId: ID) {
-    return putQuery({ url: `api/v1/users/photos/${userId}/photos/${photoId}` });
+    return putQuery({
+      url: `api/v1/users/photos/${userId}/photos/${photoId}`,
+      config: {
+        responseType: 'blob',
+        headers: { 'Cache-Control': 'no-cache' },
+      },
+    });
   }
   static deletePhotosFromGallery(fotos: string) {
     return deleteQuery({

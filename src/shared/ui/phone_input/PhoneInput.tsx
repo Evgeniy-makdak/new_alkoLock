@@ -21,11 +21,11 @@ type PhoneInputProps = {
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
 
-  const handleChange = (phoneValue: string | undefined) => {
-    if (phoneValue && phoneValue.length <= 4) {
-      setValue(undefined);
+  const handleChange = (value: string | undefined) => {
+    if (value && value.length > 15) {
+      error;
     } else {
-      setValue(phoneValue);
+      setValue(value);
     }
   };
 
@@ -52,7 +52,9 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
           padding: 14,
         }}
       />
-      {error && value && value.length > 4 && <span className={style.error}>{error}</span>}
+      {error && value && (handleChange.length !== value?.length || value.length > 15) && (
+        <span className={style.error}>{error}</span>
+      )}
     </div>
   );
 };
