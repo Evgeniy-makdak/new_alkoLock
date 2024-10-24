@@ -642,7 +642,14 @@ export function getEventsApiURL({
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);
-    return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}&all.events.eventType.in=${trimmedQuery}`;
+    let eventQuery = `api/device-actions?page=${page || 0}&size=${limit || 20}&all.events.eventType.in=${trimmedQuery}`;
+
+    // Добавляем сортировку, если заданы поля sortBy и order
+    if (sortBy && order) {
+      eventQuery += getSortQueryEvents(sortBy, order);
+    }
+
+    return eventQuery;
   }
 
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
