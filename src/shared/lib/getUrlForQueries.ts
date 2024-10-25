@@ -644,7 +644,6 @@ export function getEventsApiURL({
     const trimmedQuery = eventsByType.map((event) => event.label);
     let eventQuery = `api/device-actions?page=${page || 0}&size=${limit || 20}&all.events.eventType.in=${trimmedQuery}`;
 
-    // Добавляем сортировку, если заданы поля sortBy и order
     if (sortBy && order) {
       eventQuery += getSortQueryEvents(sortBy, order);
     }

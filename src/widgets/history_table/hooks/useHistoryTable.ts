@@ -18,7 +18,7 @@ export const useHistoryTable = () => {
     StorageKeys.EVENTS_TABLE_SORTS,
     [
       {
-        field: ValuesHeader.DATE_OCCURRENT,
+        field: ValuesHeader.DATE,
         sort: SortsTypes.desc,
       },
     ],

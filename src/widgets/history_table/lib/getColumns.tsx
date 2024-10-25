@@ -10,7 +10,7 @@ import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
 export enum ValuesHeader {
-  DATE_OCCURRENT = SortTypes.DATE_OCCURRENT,
+  DATE = SortTypes.DATE_CREATE,
   EXEQUTOR = SortTypes.CREATED_BY,
   TC = SortTypes.TC,
   GOS_NUMBER = SortTypes.GOS_NUMBER,
@@ -33,8 +33,8 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
     () => [
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Дата события',
-        field: ValuesHeader.DATE_OCCURRENT,
+        headerName: 'Дата',
+        field: ValuesHeader.DATE,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,

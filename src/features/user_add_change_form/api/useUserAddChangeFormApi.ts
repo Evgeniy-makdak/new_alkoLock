@@ -44,6 +44,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
       },
     },
   );
+console.log('useUserAddChangeFormApi');
 
   // Получаем аватар пользователя
   const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(

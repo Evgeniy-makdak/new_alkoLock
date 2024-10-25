@@ -297,6 +297,7 @@ export enum EventType {
  *  @field eventType - тип события
  *  */
 export type IEvent = {
+  timestamp: string | number | Date;
   eventType: EventType;
   extra: {
     qrCode: string;

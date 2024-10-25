@@ -20,7 +20,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
 
       return {
         id: item.id,
-        [ValuesHeader.DATE_OCCURRENT]: occurredAt
+        [ValuesHeader.DATE]: occurredAt
           ? Formatters.formatISODate(occurredAt) ?? '-'
           : '-',
         [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userActionId) ?? '-',

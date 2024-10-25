@@ -5,16 +5,21 @@ export const findEarliestEvent = (events: IEvents) => {
     return null;
   }
 
-  let earliestEvent = events.length > 3 ? events[3] : events[0];
-  let earliestTime = new Date(earliestEvent.reportedAt);
+  // const getOccurredAt = (deviceAction: IDeviceAction) => {
+  //   console.log(deviceAction.occurredAt);
+  //   return deviceAction.occurredAt;
+  // };
 
-  events.forEach((event) => {
-    const eventTime = new Date(event.occurredAt);
-    if (eventTime < earliestTime) {
-      earliestTime = eventTime;
-      earliestEvent = event;
-    }
-  });
+  const earliestEvent = events.length > 3 ? events[3] : events[0];
+  // let earliestTime = new Date(earliestEvent.occurredAt);
+
+  // events.forEach((event) => {
+  //   const eventTime = new Date(event.occurredAt);
+  //   // if (eventTime < earliestTime) {
+  //     // earliestTime = eventTime;
+  //     earliestEvent = event;
+  //   // }
+  // });
 
   return earliestEvent;
 };
@@ -23,11 +28,14 @@ export const getLastEvent = (event: IDeviceAction) => {
   const lastEvent = findEarliestEvent(event?.events);
 
   if (lastEvent) {
+    const acceptedRequest = event.events.some((e) => e.eventType.toString() === 'Заявка принята');
+    const rejectedRequest = event.events.some((e) => e.eventType.toString() === 'Заявка отклонена');
+
+    if (acceptedRequest) return 'Заявка принята';
+    if (rejectedRequest) return 'Заявка отклонена';
+
     const eventType = lastEvent.eventType as string;
-    return eventType === 'Тестирование пройдено' ||
-    event?.events.length > 1
-      ? 'Тестирование'
-      : eventType;
+    return eventType;
   }
 
   return null;

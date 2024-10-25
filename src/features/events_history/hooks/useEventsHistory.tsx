@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { ReactNode, useEffect, useState } from 'react';
 
 import { EventData, type HistoryTypes } from '@entities/events_data';
 import { getLastEvent } from '@entities/type_event_select';
@@ -44,7 +44,7 @@ export const useEventsHistory = (options: EventsOptions, type: HistoryTypes) => 
         className={style.tr}
         key={event.id}
         data-testid={testids.EVENT_HISTORY_TABLE_ITEM}>
-        <StyledTable.BodyCell className={style.td}>{getLastEvent(event)}</StyledTable.BodyCell>
+        <StyledTable.BodyCell className={style.td}>{getLastEvent(event) as ReactNode}</StyledTable.BodyCell>
 
         <StyledTable.BodyCell className={style.bodyCellCreatedAt}>
           {date(event)}

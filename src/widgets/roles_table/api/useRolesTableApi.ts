@@ -9,6 +9,7 @@ export const useRolesTableApi = (options: QueryOptions) => {
     RolesApi.getList,
     { options },
   );
+console.log('useRolesTableApi');
 
   return { roles: data?.data, isLoading, refetch };
 };
