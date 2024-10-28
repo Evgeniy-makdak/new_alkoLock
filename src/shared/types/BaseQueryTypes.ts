@@ -336,7 +336,7 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
-  occurredAt: unknown;
+  occurredAt: string | Date;
   createdAt: string;
   finishedAt: string;
   id: string;

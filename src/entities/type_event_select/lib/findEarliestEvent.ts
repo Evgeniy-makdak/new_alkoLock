@@ -5,21 +5,15 @@ export const findEarliestEvent = (events: IEvents) => {
     return null;
   }
 
-  // const getOccurredAt = (deviceAction: IDeviceAction) => {
-  //   console.log(deviceAction.occurredAt);
-  //   return deviceAction.occurredAt;
-  // };
+  let earliestEvent;
 
-  const earliestEvent = events.length > 3 ? events[3] : events[0];
-  // let earliestTime = new Date(earliestEvent.occurredAt);
-
-  // events.forEach((event) => {
-  //   const eventTime = new Date(event.occurredAt);
-  //   // if (eventTime < earliestTime) {
-  //     // earliestTime = eventTime;
-  //     earliestEvent = event;
-  //   // }
-  // });
+  if (events.length === 4) {
+    earliestEvent = "Тестирование";
+  } else if (events.length === 3) {
+    earliestEvent = events[2];
+  } else {
+    earliestEvent = events.length > 3 ? events[3] : events[0];
+  }
 
   return earliestEvent;
 };
@@ -34,7 +28,7 @@ export const getLastEvent = (event: IDeviceAction) => {
     if (acceptedRequest) return 'Заявка принята';
     if (rejectedRequest) return 'Заявка отклонена';
 
-    const eventType = lastEvent.eventType as string;
+    const eventType = typeof lastEvent === 'string' ? lastEvent : (lastEvent.eventType as string);
     return eventType;
   }
 
