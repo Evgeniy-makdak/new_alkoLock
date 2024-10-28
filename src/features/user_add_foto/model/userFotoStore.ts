@@ -20,15 +20,17 @@ type UsersFotoStore = {
   updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
 };
 
+const HASH_PREFIX = 'AAAAAAAAqKwA';
+
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   usersImages: {},
+
   setImageToStoreAfterLoading: (image, userId) => {
     if (!userId) return;
     const state = get().usersImages;
     const userImages = state[userId] ? state[userId] : [];
 
     const newState = userImages.map((storeImage) => {
-      // Убрать url заменить на hash
       if (storeImage?.url === image?.url) {
         return {
           ...storeImage,
@@ -50,12 +52,13 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
     set({ usersImages: { ...state, [userId]: newState } });
   },
+
   resetImageStore: (userId) => {
     if (!userId) return;
     const state = get().usersImages;
-    state[userId] = [];
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: [] } }));
   },
+
   imageHasUpload: (imagesIds, userId) => {
     if (!userId) return;
 
@@ -72,12 +75,12 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
           id: uploadedImage.id,
         };
       }
-
       return image;
     });
 
     set({ usersImages: { ...state, [userId]: updatedImages } });
   },
+
   setNotSavedImageInDataBase: (imageList, userId) => {
     if (!userId) return;
 
@@ -92,6 +95,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newImageState } }));
   },
+
   imageHasNoUpload: (userId) => {
     if (!userId) return;
     const state = get().usersImages;
@@ -105,23 +109,22 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       },
     }));
   },
+
   getUserImages: (urls, userId) => {
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-    console.log('urls', urls);
     console.log('prevImage', prevImage);
 
     for (const url of urls) {
-      // const hasImgInStore = prevImage.find((item) => {
-      //   if (!item?.url) return false;
-      //   return item.url === url; // return item.hash === hash
-      // });
       const hasImgInStore = prevImage.find((item) => {
-        return item.url === url;
+        if (!item?.url && !item?.hash) return false;
+        // Сравнение по `url` и `hash` с добавлением префикса
+        return item.url === url || (item.hash && HASH_PREFIX + item.hash === url);
       });
 
       if (hasImgInStore) continue;
+
       const img: ImageStateInStore = {
         url,
         hash: null,
@@ -134,12 +137,12 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       newImage.push(img);
     }
 
-    // if (newImage.length < 1) return;
     set((prev) => ({
       ...prev,
       usersImages: { ...state, [userId]: [...newImage, ...prevImage] },
     }));
   },
+
   deleteImage: (idImage, userId) => {
     const state = get().usersImages;
     const prevImage = state[userId] || [];
@@ -168,6 +171,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
     set((prev) => ({ ...prev, usersImages: { ...state, [idUser]: newImages } }));
   },
+
   updateUserImages: (userId, newImages) => {
     const state = get().usersImages;
     const currentImages = state[userId] || [];
