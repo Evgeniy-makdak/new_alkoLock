@@ -32,7 +32,6 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
 }) => {
   const isUserSuperAdmine = permission && permission.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
   // const hasReadOnly = permission === Permissions.PERMISSION_USER_READ;
-  // console.log(isUserSuperAdmine);
 
   return (
     <div className={style.controls}>

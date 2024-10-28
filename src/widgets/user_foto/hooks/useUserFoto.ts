@@ -14,7 +14,7 @@ export const useUserFoto = (userId: ID) => {
   const { isLoadingListUrl, listUrl } = useUserFotoApi(userId);
 
   const images = userFotoStore((state) => state.usersImages[userId]) || [];
-  const setUserImagesUrl = userFotoStore((state) => state.setUserImagesUrl);
+  const getUserImages = userFotoStore((state) => state.getUserImages);
   const setImageToStoreAfterLoading = userFotoStore((state) => state.setImageToStoreAfterLoading);
   const deleteImage = userFotoStore((state) => state.deleteImage);
   const changeAvatar = userFotoStore((state) => state.changeAvatar);
@@ -38,9 +38,9 @@ export const useUserFoto = (userId: ID) => {
 
   useEffect(() => {
     if (!userId || !listUrl || isLoadingListUrl) return;
-    console.log('Загрузка из редактирования (карандаш)', listUrl);
+console.log('listUrl', listUrl);
 
-    setUserImagesUrl(
+    getUserImages(
       listUrl?.map((item) => item.body), // listUrl?.map((item) => item.hash
       userId,
     );

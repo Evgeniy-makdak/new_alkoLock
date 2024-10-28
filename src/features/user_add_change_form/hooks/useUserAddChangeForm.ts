@@ -23,6 +23,8 @@ import { getDataForRequest } from '../lib/getDataForRequest';
 import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
+import { QueryKeys } from '@shared/const/storageKeys';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -65,6 +67,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   }, [isLoading]);
 
   const stateOfForm = getFormState(formState, watch);
+
+  const client = useQueryClient();
+
 
   const onSelectLicenseClass = (value: string) => {
     const licenseClass = getValues()?.licenseClass || [];
@@ -195,6 +200,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       }
     } catch (error) {
       enqueueSnackbar(error.message, { variant: 'error' });
+    } finally {
+        client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
     }
   };
 

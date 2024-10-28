@@ -14,7 +14,7 @@ type UsersFotoStore = {
   imageHasUpload: (imagesIds: AddPhotoResponse, userId: ID) => void;
   setNotSavedImageInDataBase: (imageList: ImageState[], userId: ID) => void;
   imageHasNoUpload: (userId: ID, message?: string) => void;
-  setUserImagesUrl: (urls: string[], userId: ID) => void;
+  getUserImages: (urls: string[], userId: ID) => void;
   deleteImage: (idImage: ID, userId: ID) => void;
   changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
   updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
@@ -26,6 +26,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     if (!userId) return;
     const state = get().usersImages;
     const userImages = state[userId] ? state[userId] : [];
+
     const newState = userImages.map((storeImage) => {
       // Убрать url заменить на hash
       if (storeImage?.url === image?.url) {
@@ -104,18 +105,20 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       },
     }));
   },
-  setUserImagesUrl: (urls, userId) => {
-    // setUserImagesUrl: (hashs, userId) => {
+  getUserImages: (urls, userId) => {
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-    console.log('Получение фото из стора', prevImage);
+    console.log('urls', urls);
+    console.log('prevImage', prevImage);
 
     for (const url of urls) {
-      // for (const hash of hashs) {
+      // const hasImgInStore = prevImage.find((item) => {
+      //   if (!item?.url) return false;
+      //   return item.url === url; // return item.hash === hash
+      // });
       const hasImgInStore = prevImage.find((item) => {
-        if (!item?.url) return true;
-        return item.url === url; // return item.hash === hash
+        return item.url === url;
       });
 
       if (hasImgInStore) continue;
@@ -131,7 +134,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
       newImage.push(img);
     }
 
-    if (newImage.length < 1) return;
+    // if (newImage.length < 1) return;
     set((prev) => ({
       ...prev,
       usersImages: { ...state, [userId]: [...newImage, ...prevImage] },

@@ -36,7 +36,6 @@ export const useUserFotoItemApi = (url: string, sendRequest: boolean, userId: ID
   const isAvatar = imageResponse?.headers?.isavatar === 'true' ? true : false;
   const blob = imageResponse?.data;
   const hash = imageResponse?.headers['content-md5'] || [];
-  // console.log('AAAAAAAAqKwA' + hash);
 
   return {
     image: {

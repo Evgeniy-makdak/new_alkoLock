@@ -9,10 +9,14 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
+// import { useQueryClient } from '@tanstack/react-query';
+// import { QueryKeys } from '@shared/const/storageKeys';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
+
+  // const client = useQueryClient();
 
   const {
     imageHasUpload,
@@ -55,6 +59,7 @@ export const useUserAddFoto = (userId: ID) => {
       reqBody.append('image', image.image);
       // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
+      
       try {
         const result = await addPhoto(reqBody);
         if (result?.status >= StatusCode.BAD_REQUEST) {
@@ -65,16 +70,19 @@ export const useUserAddFoto = (userId: ID) => {
         } else {
           imageHasUpload(result?.data, userId);
           validImagesToUpload.push(image); // Добавляем только успешно загруженные фото
+          // client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
         }
       } catch (error) {
         enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
       } finally {
+        // client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
         // Убираем фото из состояния загрузки
         setLoadingImages((prev) => {
           const newLoadingImages = new Set(prev);
           newLoadingImages.delete(image.hash);
           return newLoadingImages;
         });
+
       }
     }
 

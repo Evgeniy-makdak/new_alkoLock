@@ -43,7 +43,6 @@ export const UserFotoItem = ({
     changeAvatarMemo,
     userId,
   );
-  console.log('Загрузка из галереи', imageItem);
   
   const isSavedInDataBase = imageItem?.isSavedInDataBase || false;
 
