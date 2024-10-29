@@ -9,6 +9,7 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
+
 // import { useQueryClient } from '@tanstack/react-query';
 // import { QueryKeys } from '@shared/const/storageKeys';
 
@@ -21,7 +22,7 @@ export const useUserAddFoto = (userId: ID) => {
   const {
     imageHasUpload,
     setNotSavedImageInDataBase,
-    imageHasNoUpload,
+    // imageHasNoUpload,
     usersImages,
     updateUserImages,
   } = userFotoStore();
@@ -59,30 +60,33 @@ export const useUserAddFoto = (userId: ID) => {
       reqBody.append('image', image.image);
       // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
-      
+
       try {
         const result = await addPhoto(reqBody);
+
         if (result?.status >= StatusCode.BAD_REQUEST) {
           const message = result?.detail || 'Ошибка загрузки фото';
-          imageHasNoUpload(userId, message);
           enqueueSnackbar(message, { variant: 'error' });
           setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
+          setLoadingImages((prev) => {
+            const newLoadingImages = new Set(prev);
+            newLoadingImages.delete(image.hash);
+            return newLoadingImages;
+          });
         } else {
+          // Если загрузка успешна, добавляем фото в стор
           imageHasUpload(result?.data, userId);
-          validImagesToUpload.push(image); // Добавляем только успешно загруженные фото
-          // client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
+          validImagesToUpload.push(image);
         }
       } catch (error) {
-        enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
+        // enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
       } finally {
-        // client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
-        // Убираем фото из состояния загрузки
-        setLoadingImages((prev) => {
-          const newLoadingImages = new Set(prev);
-          newLoadingImages.delete(image.hash);
-          return newLoadingImages;
-        });
-
+        // Убираем фото из состояния загрузки, если оно всё ещё там
+        // setLoadingImages((prev) => {
+        //   const newLoadingImages = new Set(prev);
+        //   newLoadingImages.delete(image.hash);
+        //   return newLoadingImages;
+        // });
       }
     }
 
