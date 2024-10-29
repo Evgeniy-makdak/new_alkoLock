@@ -20,8 +20,6 @@ type UsersFotoStore = {
   updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
 };
 
-const HASH_PREFIX = 'AAAAAAAAqKwA';
-
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   usersImages: {},
 
@@ -114,13 +112,13 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-    console.log('prevImage', prevImage);
+    // console.log('prevImage', prevImage);
 
     for (const url of urls) {
       const hasImgInStore = prevImage.find((item) => {
+        const urlWithoutPrefix = url.slice(12);
         if (!item?.url && !item?.hash) return false;
-        // Сравнение по `url` и `hash` с добавлением префикса
-        return item.url === url || (item.hash && HASH_PREFIX + item.hash === url);
+        return item.url === url || (item.hash && item.hash === urlWithoutPrefix);
       });
 
       if (hasImgInStore) continue;
