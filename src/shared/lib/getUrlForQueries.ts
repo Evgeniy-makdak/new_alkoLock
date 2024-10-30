@@ -524,7 +524,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.GOS_NUMBER:
       return `&sort=vehicleRecord.registrationNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
-      return `&all.distinct=true,sort=events.eventType${orderStr}`;
+      return `&sort=events.eventType${orderStr}`;
     case SortTypes.WHO_LINK:
       return `&sort=createdBy.assignment.createdBy.firstName${orderStr}`;
     case SortTypes.OPERATING_MODE:

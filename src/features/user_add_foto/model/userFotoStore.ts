@@ -112,7 +112,6 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newImage: ImageStateInStore[] = [];
-    // console.log('prevImage', prevImage);
 
     for (const url of urls) {
       const hasImgInStore = prevImage.find((item) => {

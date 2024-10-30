@@ -10,14 +10,9 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
 
-// import { useQueryClient } from '@tanstack/react-query';
-// import { QueryKeys } from '@shared/const/storageKeys';
-
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
   const [loadingImages, setLoadingImages] = useState<Set<string>>(new Set());
-
-  // const client = useQueryClient();
 
   const {
     imageHasUpload,
@@ -49,23 +44,24 @@ export const useUserAddFoto = (userId: ID) => {
       enqueueSnackbar('Нет новых фото для загрузки', { variant: 'warning' });
       return;
     }
-    // Устанавливаем не сохраненные изображения в стейт
+
     setNotSavedImageInDataBase(newImages, userId);
-    // Фильтруем изображения для загрузки и начинаем процесс загрузки
+
     const validImagesToUpload: ImageState[] = [];
 
     for (const image of newImages) {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
       reqBody.append('image', image.image);
-      // Добавляем фото в состояние загрузки
       setLoadingImages((prev) => new Set(prev).add(image.hash));
 
-      try {
-        const result = await addPhoto(reqBody);
+      let result; 
 
-        if (result?.status >= StatusCode.BAD_REQUEST) {
-          const message = result?.detail || 'Ошибка загрузки фото';
+      try {
+        result = await addPhoto(reqBody);
+
+        if (result?.status === StatusCode.BAD_REQUEST) {
+          const message = result?.detail;
           enqueueSnackbar(message, { variant: 'error' });
           setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
           setLoadingImages((prev) => {
@@ -74,19 +70,21 @@ export const useUserAddFoto = (userId: ID) => {
             return newLoadingImages;
           });
         } else {
-          // Если загрузка успешна, добавляем фото в стор
           imageHasUpload(result?.data, userId);
           validImagesToUpload.push(image);
         }
       } catch (error) {
-        // enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
+        enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
       } finally {
-        // Убираем фото из состояния загрузки, если оно всё ещё там
-        // setLoadingImages((prev) => {
-        //   const newLoadingImages = new Set(prev);
-        //   newLoadingImages.delete(image.hash);
-        //   return newLoadingImages;
-        // });
+        if (result?.status === StatusCode.BAD_REQUEST) {
+          setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
+          setLoadingImages((prev) => {
+            const newLoadingImages = new Set(prev);
+            newLoadingImages.delete(image.hash);
+            return newLoadingImages;
+          });
+          // userFotoStore.getState().imageHasNoUpload(userId);
+        }
       }
     }
 
@@ -103,7 +101,7 @@ export const useUserAddFoto = (userId: ID) => {
   return {
     uploadImage,
     setUploadImage,
-    loadingImages, // Массив с хешами загружаемых фото
+    loadingImages,
     lengthMoreZero: uploadImage?.length > 0,
     isLoading,
     onSubmit,
