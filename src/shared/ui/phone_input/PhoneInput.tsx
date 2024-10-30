@@ -25,6 +25,8 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
   const handleChange = (newValue: string | undefined) => {
     if (value?.startsWith('+8612') && value.length > 14) {
       setValue(value.slice(0, 14));
+    } else if (value?.startsWith('+7') && value.length > 12) {
+      setValue(value.slice(0, 12));
     } else if (newValue && newValue.length >= 15 && isValidPhoneNumber(newValue)) {
       setValue(newValue);
     } else {

@@ -55,7 +55,7 @@ export const useUserAddFoto = (userId: ID) => {
       reqBody.append('image', image.image);
       setLoadingImages((prev) => new Set(prev).add(image.hash));
 
-      let result; 
+      let result;
 
       try {
         result = await addPhoto(reqBody);
