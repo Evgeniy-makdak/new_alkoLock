@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import PhoneInput, {
   Country,
   DefaultInputComponentProps,
@@ -21,6 +21,7 @@ type PhoneInputProps = {
 
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
+  const [prevCountry, setPrevCountry] = useState<Country>(currentCountry);
 
   const handleChange = (newValue: string | undefined) => {
     if (value?.startsWith('+8612') && value.length > 14) {
@@ -35,8 +36,24 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
   };
 
   const handleCountryChange = (newCountry: Country | undefined) => {
-    setCurrentCountry(newCountry);
+    if (value && isValidPhoneNumber(value)) {
+      setPrevCountry(currentCountry); 
+    } 
+    else {
+      setValue(''); // Если номер не валиден, очищаем его при смене страны
+    }
+    setCurrentCountry(newCountry); // Обновляем текущее значение страны
   };
+  
+  useEffect(() => {
+      if (prevCountry !== currentCountry) {
+        if (value) {
+          setValue(undefined);
+        }
+    }
+  }, [currentCountry, prevCountry]);
+  console.log(value);
+  
 
   return (
     <div>
@@ -57,9 +74,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
           padding: 14,
         }}
       />
-      {error && value && !isValidPhoneNumber(value) && handleChange.length !== value?.length && (
-        <span className={style.error}>{error}</span>
-      )}
+      {error && value && !isValidPhoneNumber(value) && <span className={style.error}>{error}</span>}
     </div>
   );
 };

@@ -3,12 +3,13 @@ import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
-import type { ImageStateInStore } from '@entities/upload_img/index';
+// import type { ImageStateInStore } from '@entities/upload_img/index';
 import { StatusCode } from '@shared/const/statusCode';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
+import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
@@ -19,10 +20,12 @@ export const useUserAddFoto = (userId: ID) => {
     setNotSavedImageInDataBase,
     // imageHasNoUpload,
     usersImages,
-    updateUserImages,
+    // updateUserImages,
   } = userFotoStore();
 
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
+
+  const updateGalary = UsersApi.getPhotoUrlsFromGallery;
 
   const reset = () => {
     setUploadImage([]);
@@ -83,20 +86,21 @@ export const useUserAddFoto = (userId: ID) => {
             newLoadingImages.delete(image.hash);
             return newLoadingImages;
           });
-          // userFotoStore.getState().imageHasNoUpload(userId);
+          userFotoStore.getState().imageHasNoUpload(userId);
         }
       }
     }
 
-    const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
-      ...image,
-      isSavedInDataBase: true,
-      isAvatar: false,
-    }));
-    // window.location.reload();
-    updateUserImages(userId, validImagesInStore);
+    // const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
+    //   ...image,
+    //   isSavedInDataBase: true,
+    //   isAvatar: false,
+    // }));
+    // updateUserImages(userId, validImagesInStore);
+    updateGalary(userId);
     reset();
   };
+  // updateGalary(userId);
 
   return {
     uploadImage,
