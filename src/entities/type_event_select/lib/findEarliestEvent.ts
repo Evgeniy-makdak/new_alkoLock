@@ -12,7 +12,7 @@ export const findEarliestEvent = (events: IEvents) => {
   } else if (events.length === 3) {
     earliestEvent = events[2];
   } else if (events.length === 2) {
-    earliestEvent = "Запрос сервера";
+    earliestEvent = events[1];
   } else {
     earliestEvent = events.length > 3 ? events[3] : events[0];
   }
