@@ -23,37 +23,49 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
   const [prevCountry, setPrevCountry] = useState<Country>(currentCountry);
 
+  const [innerValue, setInnerValue] = useState(value);
+  const [countryCode, setCountryCode] = useState('');
+
   const handleChange = (newValue: string | undefined) => {
-    if (value?.startsWith('+8612') && value.length > 14) {
-      setValue(value.slice(0, 14));
-    } else if (value?.startsWith('+7') && value.length > 12) {
-      setValue(value.slice(0, 12));
-    } else if (newValue && newValue.length >= 15 && isValidPhoneNumber(newValue)) {
-      setValue(newValue);
-    } else {
-      setValue(newValue);
+    if (newValue?.startsWith('+8612')) {
+      setValue(newValue.slice(0, 12));
+      return;
     }
+
+    if (newValue?.startsWith('+7') && newValue.length > 12) {
+      setValue(null);
+      return;
+    }
+
+    setInnerValue(newValue);
+    setValue(newValue);
   };
+
+  useEffect(() => {
+    if (prevCountry !== currentCountry) {
+      setPrevCountry(currentCountry);
+      setCountryCode(innerValue);
+
+      return;
+    }
+  }, [currentCountry, innerValue]);
+
+  useEffect(() => {
+    if (countryCode !== innerValue) {
+      setValue(innerValue);
+      return;
+    }
+
+    setValue('');
+  }, [countryCode, innerValue]);
 
   const handleCountryChange = (newCountry: Country | undefined) => {
     if (value && isValidPhoneNumber(value)) {
-      setPrevCountry(currentCountry); 
-    } 
-    else {
-      setValue(''); // Если номер не валиден, очищаем его при смене страны
+      setPrevCountry(currentCountry);
     }
-    setCurrentCountry(newCountry); // Обновляем текущее значение страны
+
+    setCurrentCountry(newCountry);
   };
-  
-  useEffect(() => {
-      if (prevCountry !== currentCountry) {
-        if (value) {
-          setValue(undefined);
-        }
-    }
-  }, [currentCountry, prevCountry]);
-  console.log(value);
-  
 
   return (
     <div>
@@ -64,7 +76,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
         useNationalFormatForDefaultCountryValue
         labels={ru}
         placeholder="Введите номер телефона"
-        value={value}
+        value={innerValue}
         defaultCountry={currentCountry}
         onCountryChange={handleCountryChange}
         onChange={handleChange}

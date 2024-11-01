@@ -11,6 +11,7 @@ type UsersFotoStore = {
   usersImages: UsersImages;
   setImageToStoreAfterLoading: (image: ImageStateInStore, userId: ID) => void;
   resetImageStore: (userId: ID) => void;
+  deleteImageByHash: (idImage: ID, userId: ID) => void;
   imageHasUpload: (imagesIds: AddPhotoResponse, userId: ID) => void;
   setNotSavedImageInDataBase: (imageList: ImageState[], userId: ID) => void;
   imageHasNoUpload: (userId: ID, message?: string) => void;
@@ -84,7 +85,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
 
     const newState = imageList.map((image) => ({
       ...image,
-      isSavedInDataBase: false,
+      isSavedInDataBase: true,
       isAvatar: false,
     }));
     const state = get().usersImages;
@@ -144,6 +145,13 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const state = get().usersImages;
     const prevImage = state[userId] || [];
     const newState = prevImage.filter((item) => item?.id !== idImage);
+
+    set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
+  },
+  deleteImageByHash: (hash, userId) => {
+    const state = get().usersImages;
+    const prevImage = state[userId] || [];
+    const newState = prevImage.filter((item) => item?.hash !== hash);
 
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
   },

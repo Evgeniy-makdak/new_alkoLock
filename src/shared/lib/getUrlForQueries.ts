@@ -361,7 +361,6 @@ export const getCarListURL = ({
   const notBranchId = filterOptions && filterOptions?.notBranchId;
 
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
-  // console.log('Trimmed query:', queryTrimmed); // Лог для отслеживания обрезанного поискового запроса
 
   let queries = getSelectBranchQueryUrl({ branchId, notBranch: notBranchId });
 
@@ -386,8 +385,6 @@ export const getCarListURL = ({
   if (specified !== undefined) {
     queries += `&all.monitoringDevice.vehicleBind.createdAt.specified=${specified}`;
   }
-
-  // console.log('Final query string:', queries); // Лог для отслеживания финального запроса
 
   return `api/vehicles?page=${page || 0}&size=${limit || 20}&sort=manufacturer${queries}`;
 };

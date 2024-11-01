@@ -3,13 +3,13 @@ import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
-// import type { ImageStateInStore } from '@entities/upload_img/index';
+import type { ImageStateInStore } from '@entities/upload_img/index';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
 import { useUserAddFotoApi } from '../api/useUserAddFotoApi';
 import { userFotoStore } from '../model/userFotoStore';
-import { UsersApi } from '@shared/api/baseQuerys';
 
 export const useUserAddFoto = (userId: ID) => {
   const [uploadImage, setUploadImage] = useState<ImageState[]>([]);
@@ -18,13 +18,12 @@ export const useUserAddFoto = (userId: ID) => {
   const {
     imageHasUpload,
     setNotSavedImageInDataBase,
-    // imageHasNoUpload,
     usersImages,
-    // updateUserImages,
+    updateUserImages,
+    deleteImageByHash,
   } = userFotoStore();
 
   const { addPhoto, isLoading } = useUserAddFotoApi(userId);
-
   const updateGalary = UsersApi.getPhotoUrlsFromGallery;
 
   const reset = () => {
@@ -34,6 +33,7 @@ export const useUserAddFoto = (userId: ID) => {
 
   const onSubmit = async () => {
     const existingImages = usersImages[userId] || [];
+
     const newImages = uploadImage.filter((image) => {
       const isDuplicate = existingImages.some((existingImage) => existingImage.hash === image.hash);
       if (isDuplicate) {
@@ -51,7 +51,6 @@ export const useUserAddFoto = (userId: ID) => {
     setNotSavedImageInDataBase(newImages, userId);
 
     const validImagesToUpload: ImageState[] = [];
-
     for (const image of newImages) {
       const reqBody = new FormData();
       reqBody.append('hash', image.hash);
@@ -72,6 +71,7 @@ export const useUserAddFoto = (userId: ID) => {
             newLoadingImages.delete(image.hash);
             return newLoadingImages;
           });
+          deleteImageByHash(image?.hash, userId);
         } else {
           imageHasUpload(result?.data, userId);
           validImagesToUpload.push(image);
@@ -80,7 +80,7 @@ export const useUserAddFoto = (userId: ID) => {
         enqueueSnackbar('Ошибка сети при загрузке', { variant: 'error' });
       } finally {
         if (result?.status === StatusCode.BAD_REQUEST) {
-          setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
+          // setUploadImage((prev) => prev.filter((img) => img.hash !== image.hash));
           setLoadingImages((prev) => {
             const newLoadingImages = new Set(prev);
             newLoadingImages.delete(image.hash);
@@ -91,16 +91,16 @@ export const useUserAddFoto = (userId: ID) => {
       }
     }
 
-    // const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
-    //   ...image,
-    //   isSavedInDataBase: true,
-    //   isAvatar: false,
-    // }));
-    // updateUserImages(userId, validImagesInStore);
+    const validImagesInStore: ImageStateInStore[] = validImagesToUpload.map((image) => ({
+      ...image,
+      isSavedInDataBase: true,
+      isAvatar: false,
+    }));
+
+    updateUserImages(userId, validImagesInStore);
     updateGalary(userId);
     reset();
   };
-  // updateGalary(userId);
 
   return {
     uploadImage,
