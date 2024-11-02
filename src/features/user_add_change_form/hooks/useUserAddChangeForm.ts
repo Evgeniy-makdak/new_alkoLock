@@ -7,15 +7,16 @@ import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { UsersApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
+import { QueryKeys } from '@shared/const/storageKeys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
+import { useQueryClient } from '@tanstack/react-query';
 import { useUserFoto } from '@widgets/user_foto/hooks/useUserFoto';
 
 import { useUserAddChangeFormApi } from '../api/useUserAddChangeFormApi';
@@ -23,8 +24,6 @@ import { getDataForRequest } from '../lib/getDataForRequest';
 import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
-import { QueryKeys } from '@shared/const/storageKeys';
-import { useQueryClient } from '@tanstack/react-query';
 
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -69,7 +68,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const stateOfForm = getFormState(formState, watch);
 
   const client = useQueryClient();
-
 
   const onSelectLicenseClass = (value: string) => {
     const licenseClass = getValues()?.licenseClass || [];
@@ -146,6 +144,18 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
+    const usersImagesInGalary = photoData?.images;
+
+    // const imgHash = data.userPhotoDTO[0]?.hash;
+
+    const isDuplicate = usersImagesInGalary.some((img) => {
+      const imgHash = img?.url?.slice(12);
+      return imgHash === data.userPhotoDTO[0]?.hash;
+    });
+    if (isDuplicate) {
+      enqueueSnackbar(`Это фото уже добавлено пользователю`, { variant: 'error' });
+      return; // Прекращаем выполнение функции, чтобы не отправлять запрос на сервер
+    }
 
     if (
       stateOfForm.state.disableDriverInfo &&
@@ -176,14 +186,20 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     try {
       if (!id) {
         const response = await createItem(formData);
-        if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
+        if (
+          response.status === StatusCode.BAD_REQUEST ||
+          response.status === StatusCode.SERVER_ERROR
+        ) {
           enqueueSnackbar(response.detail, { variant: 'error' });
         } else {
           close();
         }
       } else {
         const response = await changeItem(formData);
-        if (response.status === StatusCode.BAD_REQUEST || response.status === StatusCode.SERVER_ERROR) {
+        if (
+          response.status === StatusCode.BAD_REQUEST ||
+          response.status === StatusCode.SERVER_ERROR
+        ) {
           enqueueSnackbar(response.detail, {
             variant: 'error',
           });
@@ -201,7 +217,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     } catch (error) {
       enqueueSnackbar(error.message, { variant: 'error' });
     } finally {
-        client.invalidateQueries({queryKey:[QueryKeys.IMAGE_URL_LIST]})
+      client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_URL_LIST] });
     }
   };
 
