@@ -154,7 +154,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     });
     if (isDuplicate) {
       enqueueSnackbar(`Это фото уже добавлено пользователю`, { variant: 'error' });
-      return; // Прекращаем выполнение функции, чтобы не отправлять запрос на сервер
+      return false; 
     }
 
     if (
