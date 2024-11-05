@@ -146,15 +146,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
     const usersImagesInGalary = photoData?.images;
 
-    // const imgHash = data.userPhotoDTO[0]?.hash;
+    const imgHashToUpload = data.userPhotoDTO[0]?.hash;
 
-    const isDuplicate = usersImagesInGalary.some((img) => {
-      const imgHash = img?.url?.slice(12);
-      return imgHash === data.userPhotoDTO[0]?.hash;
-    });
-    if (isDuplicate) {
-      enqueueSnackbar(`Это фото уже добавлено пользователю`, { variant: 'error' });
-      return false; 
+    for (let i = 0; i < usersImagesInGalary?.length; i++) {
+      if (imgHashToUpload === usersImagesInGalary[i]?.hash) {
+        enqueueSnackbar('Это фото уже добавлено пользователю', { variant: 'error' });
+        return false;
+      }
     }
 
     if (
