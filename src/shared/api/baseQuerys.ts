@@ -16,7 +16,6 @@ import {
   getEventListForAutoServiceURL,
   getEventsApiURL,
   getEventsHistoryURL,
-  // getEventsTypeUrl,
   getMarksCarURL,
   getRolesListURL,
   getUrlCountEventsQuery,
@@ -368,8 +367,8 @@ export class EventsApi {
   }
 
   static getEventsTypeList(options: QueryOptions) {
-    let url = `api/v1/front-data/event-types`
-    if (options?.filterOptions?.match) url += `?match=${options?.filterOptions?.match}`
+    let url = `api/v1/front-data/event-types`;
+    if (options?.filterOptions?.match) url += `?match=${options?.filterOptions?.match}`;
     return getQuery<IEventsType>({ url });
   }
 
@@ -471,5 +470,12 @@ export class RolesApi {
 
   static getDriverRole(id: ID) {
     return getQuery<IRole>({ url: `api/user/check-driver-role/${id}` });
+  }
+
+  static checkDriverRole(ids: ID) {
+    return getQuery<{ hasDriverRole: boolean }>({
+      url: `api/users/check-driver-role`,
+      config: { params: { ids } },
+    });
   }
 }

@@ -6,6 +6,7 @@ import { type Dayjs } from 'dayjs';
 import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
+import { useUserRolesStore } from '@features/user_add_change_form/userRolesStore';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Permissions } from '@shared/config/permissionsEnums';
 import { StatusCode } from '@shared/const/statusCode';
@@ -31,6 +32,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { user, isLoading, changeItem, createItem, groups, avatar } = useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups?.content);
   const [alert, setAlert] = useState(false);
+
+  const setSelectedRoleIds = useUserRolesStore((state) => state.setSelectedRoleIds);
 
   const photoData = useUserFoto(user?.id);
   const { changeAvatarMemo } = useUserFoto(user?.id);
@@ -89,6 +92,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     clearErrors(type);
     setValue(type, values);
 
+    const valueIds = values.map((item: Value) => String(item.value));
+    setSelectedRoleIds(valueIds);
     const isDriverRoleSelected = isUserDriver;
     if (!isDriverRoleSelected) {
       onRemoveDriverRole();
@@ -202,13 +207,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          // Если фото выбрано, но нет хеша фото, обновить галерею
           if (!formData.get('userPhoto.hash')) {
             changeAvatarMemo(avatarImage?.id, false);
           }
-
-          // Обновляем галерею перед закрытием
-          // await UsersApi.getPhotoFromGallery(newImage);
           close();
         }
       }

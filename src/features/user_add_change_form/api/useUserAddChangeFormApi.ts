@@ -17,7 +17,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   const update = useUpdateQueries();
 
-  // Получаем информацию о пользователе
   const { data, isLoading } = useConfiguredQuery([QueryKeys.USER_ITEM], UsersApi.getUser, {
     options: id,
     settings: {
@@ -25,7 +24,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     },
   });
 
-  // Получаем список ролей (пользовательских групп)
   const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
     [QueryKeys.ROLES_LIST],
     RolesApi.getList,
@@ -44,9 +42,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
       },
     },
   );
-console.log('useUserAddChangeFormApi');
-
-  // Получаем аватар пользователя
+  // console.log('useUserAddChangeFormApi');
   const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(
     [QueryKeys.AVATAR],
     UsersApi.getAvatar,
@@ -59,7 +55,6 @@ console.log('useUserAddChangeFormApi');
     },
   );
 
-  // Мутации для изменения данных пользователя, создания пользователя, изменения аватара и удаления фото
   const { mutateAsync: changeItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.changeUser(data, id),
     onSuccess: () => update(updateQueries),
@@ -80,7 +75,6 @@ console.log('useUserAddChangeFormApi');
     onSuccess: () => update(updateQueries),
   });
 
-  // Получаем хеш аватара
   const hash = foto ? foto?.headers['content-md5'] : null;
 
   return {
