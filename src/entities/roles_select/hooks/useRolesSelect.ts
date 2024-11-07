@@ -12,9 +12,18 @@ export const useRolesSelect = (
   onDriverRoleCheck?: (hasDriverRole: boolean) => void,
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { selectedRoleIds, setSelectedRoleIds } = useUserRolesStore(); 
+  const { selectedRoleIds, setSelectedRoleIds } = useUserRolesStore();
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const [isUserDriver, setIsUserDriver] = useState<boolean>(false);
+
+  const { data, isLoading } = useRolesSelectApi({
+    searchQuery,
+  });
+  console.log(selectedRoleIds);
+
+  useEffect(() => {
+    setSelectedRoleIds([]);
+  }, [setSelectedRoleIds]);
 
   useEffect(() => {
     if (selectedRoleIds.length > 0) {
@@ -22,10 +31,12 @@ export const useRolesSelect = (
       const fetchRoleData = async () => {
         try {
           const response = await RolesApi.checkDriverRole(selectedRoleIdsString);
-          setIsUserDriver(response.data.hasDriverRole); 
+          setIsUserDriver(response.data.hasDriverRole);
           onDriverRoleCheck?.(response.data.hasDriverRole);
         } catch (error) {
           console.error('Ошибка проверки роли "Водитель":', error);
+        } finally {
+          setSelectedRoleIds([]);
         }
       };
       fetchRoleData();
@@ -34,15 +45,16 @@ export const useRolesSelect = (
 
   const onChange = (value: string) => {
     setSearchQuery(value);
-    setSelectedRoleIds([value]); 
+    setSelectedRoleIds([value]);
   };
 
-  const { data, isLoading } = useRolesSelectApi({
-    searchQuery,
-  });
+  // const { data, isLoading } = useRolesSelectApi({
+  //   searchQuery,
+  // });
 
   const onReset = () => {
     setSearchQuery('');
+    setSelectedRoleIds([]);
   };
 
   const roles = mapOptions(data, (role) => adapterMapOptions(role, notShowGlobalAdminRole));
