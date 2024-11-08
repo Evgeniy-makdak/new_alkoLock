@@ -11,6 +11,7 @@ export const useBranchSelect = (filter?: ID) => {
 
   const onChange = (value: string) => {
     setSearchQuery(value);
+    window.location.reload();
   };
 
   const onReset = () => {

@@ -331,17 +331,9 @@ export const getMarksCarURL = ({
   const queries = '&sort=match,ASC';
 
   const branchId = filterOptions?.branchId;
-  // const notBranchId = filterOptions?.notBranchId;
-  // Если есть поисковый запрос, возвращаем только URL с match
   if (trimmedQuery) {
     return `api/vehicles/manufacturers?match=${encodeURIComponent(trimmedQuery)}&branchId=${branchId}${queries}`;
   }
-
-  // Иначе возвращаем стандартный запрос с фильтрами
-  // const queries = getSelectBranchQueryUrl({
-  //   branchId: branchId,
-  //   notBranch: notBranchId,
-  // });
 
   return `api/vehicles/branches/manufacturers?branchId=${branchId}&page=${page || 0}&size=${limit || 20}`;
 };
