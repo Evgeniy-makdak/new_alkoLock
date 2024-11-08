@@ -322,20 +322,17 @@ const getSortQueryCar = (orderType: SortTypes | string, order: GridSortDirection
   }
 };
 export const getMarksCarURL = ({
-  page,
-  limit,
   searchQuery,
   filterOptions,
 }: QueryOptions & { filterOptions?: { branchId?: ID; notBranchId?: ID } }) => {
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
-  const queries = '&sort=match,ASC';
 
   const branchId = filterOptions?.branchId;
   if (trimmedQuery) {
-    return `api/vehicles/manufacturers?match=${encodeURIComponent(trimmedQuery)}&branchId=${branchId}${queries}`;
+    return `api/vehicles/manufacturers?match=${encodeURIComponent(trimmedQuery)}&branchId=${branchId}`;
   }
 
-  return `api/vehicles/manufacturers?branchId=${branchId}&page=${page || 0}&size=${limit || 20}&match=${trimmedQuery}`;
+  return `api/vehicles/manufacturers?branchId=${branchId}&match=${trimmedQuery}`;
 };
 
 export const getCarListURL = ({
