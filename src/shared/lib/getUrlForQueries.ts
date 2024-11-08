@@ -335,7 +335,7 @@ export const getMarksCarURL = ({
     return `api/vehicles/manufacturers?match=${encodeURIComponent(trimmedQuery)}&branchId=${branchId}${queries}`;
   }
 
-  return `api/vehicles/branches/manufacturers?branchId=${branchId}&page=${page || 0}&size=${limit || 20}`;
+  return `api/vehicles/manufacturers?branchId=${branchId}&page=${page || 0}&size=${limit || 20}&match=${trimmedQuery}`;
 };
 
 export const getCarListURL = ({
