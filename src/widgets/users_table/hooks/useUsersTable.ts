@@ -21,8 +21,8 @@ export const useUsersTable = (handleCloseAside: () => void) => {
 
   const permissions = appStore((state) => state.permissions);
   const selectedBranchState = appStore((state) => state.selectedBranchState);
-  const isGlobalAdmin = !permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
-  const isDisabledActionsColum = isGlobalAdmin || selectedBranchState?.id != 10;
+  const isGlobalAdmin = permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+  const isVisibleActionsColum = selectedBranchState?.id === 20 && isGlobalAdmin;
 
   const [deleteUser, setDeleteUser] = useState(null);
   const [changeUserId, setChangeUserId] = useState<ID>(null);
@@ -68,7 +68,7 @@ export const useUsersTable = (handleCloseAside: () => void) => {
     handleClickDeletetUser,
     toggleAddUserModal,
     handleClickAddUser,
-    isDisabledActionsColum,
+    isVisibleActionsColum,
   );
 
   const closeEditModal = () => {

@@ -5,8 +5,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
 import { GridActionsCellItem } from '@mui/x-data-grid';
 
-import { Permissions } from '@shared/config/permissionsEnums';
-
 import style from './TableRowControls.module.scss';
 
 type TableRowControlsProps = {
@@ -17,7 +15,7 @@ type TableRowControlsProps = {
   testidDelete?: string;
   userRole?: number;
   visible?: boolean;
-  permission?: string[];
+  roles?:string[];
 };
 
 export const TableRowControls: FC<TableRowControlsProps> = ({
@@ -25,17 +23,15 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   onClickEdit,
   testidDelete,
   testidEdit,
-  visible = true,
+  visible = false,
   arrowIcon = false,
-  // userRole,
-  permission,
+  roles,
 }) => {
-  const isUserSuperAdmine = permission && permission.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
-  // const hasReadOnly = permission === Permissions.PERMISSION_USER_READ;
+const isGlobalAdmin = roles.includes('Администратор системы')
 
   return (
     <div className={style.controls}>
-      {!!onClickEdit && !isUserSuperAdmine && (
+      {!!onClickEdit &&  (!isGlobalAdmin || visible) && (
         <GridActionsCellItem
           data-testid={testidEdit}
           label="edit"
@@ -44,7 +40,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
           onClick={onClickEdit}
         />
       )}
-      {!!onClickDelete && visible && (
+      {!!onClickDelete && !isGlobalAdmin && (
         <GridActionsCellItem
           onClick={onClickDelete}
           key={'delete'}

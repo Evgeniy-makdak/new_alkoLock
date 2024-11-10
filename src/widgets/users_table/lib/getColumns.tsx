@@ -92,6 +92,7 @@ export const useGetColumns = (
         renderCell: ({ row }) => {
           return (
             <TableRowControls
+              roles={row.ROLE}
               visible={isDisabledActionsColum}
               testidDelete={
                 testids.page_users.users_widget_table.USERS_WIDGET_TABLE_BODY_ITEM_ACTION_DELETE
