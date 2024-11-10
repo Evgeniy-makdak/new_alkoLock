@@ -6,8 +6,9 @@ import type { QueryOptions } from '@shared/types/QueryTypes';
 export const useRolesSelectApi = (options: QueryOptions) => {
   const { data, isLoading } = useConfiguredQuery([QueryKeys.ROLES_LIST], RolesApi.getList, {
     options,
+    settings: {
+      staleTime: Infinity,
+    }
   });
-// console.log('useRoleSelectApi');
-
   return { data: data?.data?.content || [], isLoading };
 };

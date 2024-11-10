@@ -27,7 +27,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   arrowIcon = false,
   roles,
 }) => {
-const isGlobalAdmin = roles.includes('Администратор системы')
+const isGlobalAdmin = roles?.includes('Администратор системы')
 
   return (
     <div className={style.controls}>

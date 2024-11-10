@@ -19,7 +19,6 @@ export const useRolesSelect = (
   const { data, isLoading } = useRolesSelectApi({
     searchQuery,
   });
-  console.log(selectedRoleIds);
 
   useEffect(() => {
     setSelectedRoleIds([]);
