@@ -762,8 +762,8 @@ const getBranchSortQuery = (orderType: SortTypes | string, order: GridSortDirect
   }
 };
 export const getBranchListUrl = ({
-  page,
-  limit,
+  page = 0,
+  limit = 25,
   sortBy,
   order,
   searchQuery,
