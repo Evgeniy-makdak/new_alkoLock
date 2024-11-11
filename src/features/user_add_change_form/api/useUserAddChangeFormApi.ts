@@ -1,9 +1,10 @@
-import { RolesApi, UsersApi } from '@shared/api/baseQuerys';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
+import { useRolesSelectApi } from '@entities/roles_select/api/useRolesSelectApi';
 
 const updateQueries = [
   QueryKeys.USER_LIST_TABLE,
@@ -24,25 +25,15 @@ export const useUserAddChangeFormApi = (id: ID) => {
     },
   });
 
-  const { data: userGroups, isLoading: isLoadingUserGroups } = useConfiguredQuery(
-    [QueryKeys.ROLES_LIST],
-    RolesApi.getList,
-    {
-      options: {
-        page: 0,
-        size: 25,
-        sort: 'name',
-        filters: {
-          systemGenerated: true,
-        },
-      },
-      settings: {
-        enabled: true,
-        networkMode: 'offlineFirst',
-      },
+  const { data: userGroups, isLoading: isLoadingUserGroups } = useRolesSelectApi({
+    page: 0,
+    size: 25,
+    sort: 'name',
+    filters: {
+      systemGenerated: true,
     },
-  );
-  // console.log('useUserAddChangeFormApi');
+  });
+
   const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(
     [QueryKeys.AVATAR],
     UsersApi.getAvatar,
@@ -79,7 +70,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   return {
     avatar: foto?.data && hash ? { img: foto?.data, hash } : null,
-    groups: userGroups?.data,
+    groups: userGroups,
     user: data?.data,
     isLoading: isLoading || isLoadingUserGroups || isLoadingFoto,
     changeItem,

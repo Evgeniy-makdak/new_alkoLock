@@ -30,7 +30,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const firstRender = useRef(true);
   const { user, isLoading, changeItem, createItem, groups, avatar } = useUserAddChangeFormApi(id);
-  const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups?.content);
+  const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups);
   const [alert, setAlert] = useState(false);
 
   const setSelectedRoleIds = useUserRolesStore((state) => state.setSelectedRoleIds);
