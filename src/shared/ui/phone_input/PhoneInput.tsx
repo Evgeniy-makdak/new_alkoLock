@@ -22,48 +22,52 @@ type PhoneInputProps = {
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
   const [prevCountry, setPrevCountry] = useState<Country>(currentCountry);
-
   const [innerValue, setInnerValue] = useState(value);
   const [countryCode, setCountryCode] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [previousValidValue, setPreviousValidValue] = useState(value || '');
 
   const handleChange = (newValue: string | undefined) => {
-    if (newValue?.startsWith('+8612')) {
-      setValue(newValue.slice(0, 12));
+    if (newValue?.startsWith('+86123') && newValue.length > 13) {
+      setValidationError('Некорректный номер');
+      setInnerValue(previousValidValue);
+      setValue(previousValidValue);
       return;
     }
 
     if (newValue?.startsWith('+7') && newValue.length > 12) {
+      setValidationError('Некорректный номер');
+      setInnerValue(previousValidValue);
       setValue(null);
       return;
     }
 
+    // Если номер корректный, сохраняем его как предыдущее значение и сбрасываем ошибки
+    setValidationError(null);
     setInnerValue(newValue);
+    setPreviousValidValue(newValue || ''); // Обновляем предыдущее корректное значение
     setValue(newValue);
   };
 
   useEffect(() => {
     if (prevCountry !== currentCountry) {
       setPrevCountry(currentCountry);
-      setCountryCode(innerValue);
-
-      return;
+      setCountryCode(innerValue || '');
     }
   }, [currentCountry, innerValue]);
 
   useEffect(() => {
     if (countryCode !== innerValue) {
       setValue(innerValue);
-      return;
+    } else {
+      setValue('');
     }
-
-    setValue('');
   }, [countryCode, innerValue]);
 
   const handleCountryChange = (newCountry: Country | undefined) => {
     if (value && isValidPhoneNumber(value)) {
       setPrevCountry(currentCountry);
     }
-
     setCurrentCountry(newCountry);
   };
 
@@ -82,11 +86,12 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
         onChange={handleChange}
         limitMaxLength
         className={style.input}
-        style={{
-          padding: 14,
-        }}
+        style={{ padding: 14 }}
       />
-      {error && value && !isValidPhoneNumber(value) && <span className={style.error}>{error}</span>}
+      {/* Если номер некорректен, выводим сообщение об ошибке */}
+      {(validationError || (error && innerValue && !isValidPhoneNumber(innerValue))) && (
+        <span className={style.error}>{validationError || error}</span>
+      )}
     </div>
   );
 };
