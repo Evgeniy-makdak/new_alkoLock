@@ -628,12 +628,7 @@ export function getEventsApiURL({
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);
-    let eventQuery = `api/device-actions?page=${page || 0}&size=${limit || 20}&all.events.eventType.in=${trimmedQuery}${queries}`;
-
-    if (sortBy && order) {
-      eventQuery += getSortQueryEvents(sortBy, order);
-    }
-
+    const eventQuery = `api/device-actions?page=${page || 0}&size=${limit || 20}&all.events.eventType.in=${trimmedQuery}${queries}`;
     return eventQuery;
   }
 

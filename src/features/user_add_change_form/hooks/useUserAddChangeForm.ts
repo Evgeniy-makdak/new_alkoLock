@@ -149,9 +149,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
+    const licenseCode = Boolean(data.licenseCode);
     const usersImagesInGalary = photoData?.images;
 
     const imgHashToUpload = data.userPhotoDTO[0]?.hash;
+
+    if (!licenseCode || !licenseIssueDate || !licenseExpirationDate) {
+      enqueueSnackbar('Обязательное поле', { variant: 'error' });
+      return;
+    }
 
     for (let i = 0; i < usersImagesInGalary?.length; i++) {
       if (imgHashToUpload === usersImagesInGalary[i]?.hash) {
