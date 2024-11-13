@@ -21,13 +21,27 @@ type PhoneInputProps = {
 
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
-  const [prevCountry, setPrevCountry] = useState<Country>(currentCountry);
-  const [innerValue, setInnerValue] = useState(value);
-  const [countryCode, setCountryCode] = useState('');
+  const [innerValue, setInnerValue] = useState(value || '');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [previousValidValue, setPreviousValidValue] = useState(value || '');
+  const [isCountryChanging, setIsCountryChanging] = useState(false); // Флаг для отслеживания смены страны
+
+  useEffect(() => {
+    if (value !== innerValue) {
+      setInnerValue(value || '');
+      setPreviousValidValue(value || '');
+    }
+  }, [value]);
 
   const handleChange = (newValue: string | undefined) => {
+    if (isCountryChanging) {
+      // Если идет смена страны, не валидируем номер
+      setValidationError(null);
+      setInnerValue(newValue || '');
+      setValue(newValue);
+      return;
+    }
+
     if (newValue?.startsWith('+86123') && newValue.length > 13) {
       setValidationError('Некорректный номер');
       setInnerValue(previousValidValue);
@@ -42,33 +56,18 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
       return;
     }
 
-    // Если номер корректный, сохраняем его как предыдущее значение и сбрасываем ошибки
     setValidationError(null);
-    setInnerValue(newValue);
-    setPreviousValidValue(newValue || ''); // Обновляем предыдущее корректное значение
+    setInnerValue(newValue || '');
+    setPreviousValidValue(newValue || '');
     setValue(newValue);
   };
 
-  useEffect(() => {
-    if (prevCountry !== currentCountry) {
-      setPrevCountry(currentCountry);
-      setCountryCode(innerValue || '');
-    }
-  }, [currentCountry, innerValue]);
-
-  useEffect(() => {
-    if (countryCode !== innerValue) {
-      setValue(innerValue);
-    } else {
-      setValue('');
-    }
-  }, [countryCode, innerValue]);
-
   const handleCountryChange = (newCountry: Country | undefined) => {
-    if (value && isValidPhoneNumber(value)) {
-      setPrevCountry(currentCountry);
-    }
+    setIsCountryChanging(true); // Устанавливаем флаг смены страны
     setCurrentCountry(newCountry);
+    setTimeout(() => {
+      setIsCountryChanging(false); // Ожидаем завершения смены страны
+    }, 300); // Фиксируем задержку для корректного перехода
   };
 
   return (

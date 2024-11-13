@@ -215,6 +215,8 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
         const today = new Date();
 
+        if (!isUserDriver) return true;
+
         if (isUserDriver && !value) {
           return context.createError({ message: ValidationMessages.required });
         }
@@ -230,13 +232,14 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
         const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
         const today = new Date();
 
+        if (!isUserDriver) return true;
+
         if (isUserDriver && !value) {
           return context.createError({ message: ValidationMessages.required });
         }
 
         return !value || (value.isValid() && value.isAfter(today));
       }),
-
     userGroups: yup.array().test({
       name: 'userGroups',
       test(value, context) {

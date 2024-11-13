@@ -153,10 +153,24 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
     const imgHashToUpload = data.userPhotoDTO[0]?.hash;
 
-    if ((!data.licenseCode && isDriver) || (!data.licenseIssueDate && isDriver) || (!data.licenseExpirationDate && isDriver)) {
+    if (
+      (!data.licenseCode && isDriver) ||
+      (!data.licenseIssueDate && isDriver) ||
+      (!data.licenseExpirationDate && isDriver)
+    ) {
       // enqueueSnackbar('вместо снекбара вывести в подсказку', { variant: 'error' })
       return;
     }
+
+    const userPhotosUnchanged =
+      data.userPhotoDTO.length === usersImagesInGalary?.length &&
+      data.userPhotoDTO.every((photo) =>
+        usersImagesInGalary.some(
+          (image) => image.hash === photo.hash && image.isAvatar === photo.isAvatar,
+        ),
+      );
+
+    console.log(userPhotosUnchanged);
 
     for (let i = 0; i < usersImagesInGalary?.length; i++) {
       if (imgHashToUpload === usersImagesInGalary[i]?.hash) {
