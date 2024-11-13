@@ -168,16 +168,13 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   value={state.state.licenseCode}
                   onChange={(e) => state.handlers.setLicenseCode(e?.target?.value)}
                 />
-                {Boolean(state.errors.errorLicenseCode) && (
-                  <span className={style.error}>{state.errors.errorLicenseCode}</span>
-                )}
 
                 <InputDate
                   testid={
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_ADD_INPUT
                   }
-                  disabled={state?.state.disableDriverInfo || !isUserDriver}
+                  disabled={!isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseIssueDate),
@@ -189,16 +186,13 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disableFuture
                   onChange={(value) => state.handlers.onChangeDate('licenseIssueDate', value)}
                 />
-                {Boolean(state.errors.errorLicenseIssueDate) && (
-                  <span className={style.error}>{state.errors.errorLicenseIssueDate}</span>
-                )}
 
                 <InputDate
                   testid={
                     testids.page_users.users_widget_add_user_popup
                       .USERS_WIDGET_ADD_USER_POPUP_DATE_PERMIT_END_INPUT
                   }
-                  disabled={state.state.disableDriverInfo || !isUserDriver}
+                  disabled={!isUserDriver}
                   slotProps={{
                     textField: {
                       error: Boolean(state.errors.errorLicenseExpirationDate),
@@ -208,21 +202,17 @@ export const UserAddChangeForm: FC<UserAddChangeFormProps> = ({ closeModal, id }
                   disablePast
                   label="Дата окончания действия"
                   value={state.state.licenseExpirationDate}
-                  minDateFlag // Устанавливаем флаг для минимальной даты
+                  minDateFlag
                   onChange={(value) => state.handlers.onChangeDate('licenseExpirationDate', value)}
                 />
-                {Boolean(state.errors.errorLicenseExpirationDate) && (
-                  <span className={style.error}>{state.errors.errorLicenseExpirationDate}</span>
-                )}
 
-                <div
-                  className={`${style.wrapperCategories} ${state.state.disableDriverInfo ? style.disabledDriverData : ''}`}>
+                <div className={`${style.wrapperCategories} : ''}`}>
                   {AppConstants.categoryTypesList.map((category) => (
                     <div className={style.categoriesItem} key={category.label}>
                       <Checkbox
                         checked={state.state.licenseClass?.includes(category.value)}
                         onClick={() => state.handlers.onSelectLicenseClass(category.value)}
-                        disabled={state.state.disableDriverInfo || !isUserDriver}
+                        disabled={!isUserDriver}
                       />
                       <span>{category.label}</span>
                     </div>

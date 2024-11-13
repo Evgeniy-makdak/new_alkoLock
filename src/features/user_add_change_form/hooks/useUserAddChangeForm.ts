@@ -149,13 +149,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (data.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(data.licenseIssueDate);
     const licenseExpirationDate = Boolean(data.licenseExpirationDate);
-    const licenseCode = Boolean(data.licenseCode);
     const usersImagesInGalary = photoData?.images;
 
     const imgHashToUpload = data.userPhotoDTO[0]?.hash;
 
-    if (!licenseCode || !licenseIssueDate || !licenseExpirationDate) {
-      enqueueSnackbar('Обязательное поле', { variant: 'error' });
+    if ((!data.licenseCode && isDriver) || (!data.licenseIssueDate && isDriver) || (!data.licenseExpirationDate && isDriver)) {
+      // enqueueSnackbar('вместо снекбара вывести в подсказку', { variant: 'error' })
       return;
     }
 

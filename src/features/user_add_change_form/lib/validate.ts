@@ -42,11 +42,15 @@ yup.addMethod(yup.object, 'licenseIssueDate', function method(message) {
 
       const parent = context.parent;
       const licenseExpirationDate = parent?.licenseExpirationDate as Dayjs | null;
-      if (licenseExpirationDate && licenseExpirationDate.isValid() && !value.isBefore(licenseExpirationDate)) {
+      if (
+        licenseExpirationDate &&
+        licenseExpirationDate.isValid() &&
+        !value.isBefore(licenseExpirationDate)
+      ) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
-    }
+    },
   );
 });
 
@@ -66,7 +70,7 @@ yup.addMethod(yup.object, 'licenseExpirationDate', function method(message) {
         return context.createError({ message: ValidationMessages.similarDateOfLicense });
       }
       return true;
-    }
+    },
   );
 });
 
@@ -88,7 +92,7 @@ yup.addMethod(yup.object, 'birthDate', function method(message) {
       }
 
       return true;
-    }
+    },
   );
 });
 
@@ -99,18 +103,20 @@ const mustBeDate = (context: YupContext) => {
   return licenseCode && licenseCode.trim().length > 0;
 };
 
-// Обновлённая схема валидации
 export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =>
   yup.object({
     licenseClass: yup.array().test({
       name: 'licenseClass',
-      test(value, context: YupContext) {
-        if (mustBeDate(context) && value?.length === 0) {
+      test(value, context) {
+        const userGroups = context?.parent?.userGroups || [];
+        const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
+        if (isUserDriver && (!value || value.length === 0)) {
           return context.createError({ message: ValidationMessages.required });
         }
         return true;
       },
     }),
+
     firstName: yup.string().required(ValidationMessages.required),
     surname: isGlobalAdmin ? yup.string() : yup.string().required(ValidationMessages.required),
     middleName: yup.string(),
@@ -163,7 +169,7 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
           (value ?? '').length,
           4,
           100,
-          ValidationMessages.notValidPasswordLength
+          ValidationMessages.notValidPasswordLength,
         );
         if (errors.length > 0) {
           return context.createError({ message: errors[0] });
@@ -184,6 +190,13 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     licenseCode: yup.string().test({
       name: 'licenseCode',
       test(value, context) {
+        const userGroups = context?.parent?.userGroups || [];
+        const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
+
+        if (isUserDriver && !value) {
+          return context.createError({ message: ValidationMessages.required });
+        }
+
         if (!value) return true;
         const licenseCode = (value || '')?.trim();
         const error = ValidationRules.driverLicenseValidation(licenseCode);
@@ -197,18 +210,33 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
       .mixed<any>()
       .nullable()
       .typeError(ValidationMessages.notValidData)
-      .test('is-valid-issue-date', ValidationMessages.notValidData, (value) => {
+      .test('is-valid-issue-date', ValidationMessages.notValidData, (value, context) => {
+        const userGroups = context?.parent?.userGroups || [];
+        const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
         const today = new Date();
+
+        if (isUserDriver && !value) {
+          return context.createError({ message: ValidationMessages.required });
+        }
+
         return !value || (value.isValid() && value.isBefore(today));
       }),
     licenseExpirationDate: yup
       .mixed<any>()
       .nullable()
       .typeError(ValidationMessages.notValidData)
-      .test('is-valid-expiration-date', ValidationMessages.notValidData, (value) => {
+      .test('is-valid-expiration-date', ValidationMessages.notValidData, (value, context) => {
+        const userGroups = context?.parent?.userGroups || [];
+        const isUserDriver = userGroups.some((group: { value: number }) => group.value === 200);
         const today = new Date();
+
+        if (isUserDriver && !value) {
+          return context.createError({ message: ValidationMessages.required });
+        }
+
         return !value || (value.isValid() && value.isAfter(today));
       }),
+
     userGroups: yup.array().test({
       name: 'userGroups',
       test(value, context) {
@@ -241,7 +269,9 @@ export const isDisabledAdminRole = (value: Value, roles: Values): boolean => {
   }, []);
 
   const hasSelectedRoles = selectedRolesPermissions.length > 0;
-  const isGlobalAdminRoleSelect = selectedRolesPermissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+  const isGlobalAdminRoleSelect = selectedRolesPermissions.includes(
+    Permissions.SYSTEM_GLOBAL_ADMIN,
+  );
   const isNotGlobalAdminRole = !permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
   return hasSelectedRoles && isNotGlobalAdminRole && isGlobalAdminRoleSelect;
