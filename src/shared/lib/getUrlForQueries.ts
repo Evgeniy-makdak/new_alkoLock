@@ -166,6 +166,44 @@ export function getDriverAllotmentsByBranchId({
   return `api/vehicle-driver-allotments/list?branchId=${branchId}&page=${page || 0}&size=${limit || 20}`;
 }
 
+/////////////////////////////////////////////===========Для сортировки по водителю в Событиях==========================================
+
+const getSelectBranchToQueryUrl = ({
+  page,
+  parameters,
+  branchId,
+  notBranch,
+}: {
+  page?: string;
+  parameters?: string;
+  branchId?: ID;
+  notBranch?: ID;
+}) => {
+  let branch = '';
+
+  if (branchId && !notBranch) {
+    branch = `branchId=${branchId}`;
+  } else if (notBranch && branchId !== 20) {
+    branch = `branchId=${notBranch}`;
+  } else if (notBranch) {
+    branch = `branchId=${notBranch}&all.id.notIn=1`;
+  }
+
+  return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
+};
+
+export function getUrlCountEventsToQuery({ filterOptions: { branchId } }: QueryOptions) {
+  let query = '?';
+
+  if (branchId) {
+    query += `branchId=${branchId}`;
+  }
+
+  query += `all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID`;
+
+  return `api/device-actions/count${query}`;
+}
+
 /////////////////////////////////////////////===========================branch==========================================
 
 const getSelectBranchQueryUrl = ({
@@ -253,7 +291,7 @@ export function getUserListURL(
 }
 //////////////////
 export function getUserListURLToAttachments(
-  { page, limit, searchQuery, filterOptions, sortBy, order, startDate, endDate }: QueryOptions,
+  { searchQuery, filterOptions, startDate, endDate }: QueryOptions,
   widthCars: boolean,
   excludeDisabledUsers: boolean, // добавляем новый параметр
 ) {
@@ -263,7 +301,7 @@ export function getUserListURLToAttachments(
 
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
-  let queries = getSelectBranchQueryUrl({
+  let queries = getSelectBranchToQueryUrl({
     parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
     branchId,
     notBranch: notBranchId,
@@ -278,14 +316,14 @@ export function getUserListURLToAttachments(
     queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  if (trimmedQuery) {
-    queries += `&any.match.contains=${trimmedQuery}`;
-    queries += `&any.email.contains=${trimmedQuery}`;
-  }
+  // if (trimmedQuery) {
+  //   queries += `&any.match.contains=${trimmedQuery}`;
+  //   queries += `&any.email.contains=${trimmedQuery}`;
+  // }
 
-  if (sortBy && order) {
-    queries += getSortQuery(sortBy, order);
-  }
+  // if (sortBy && order) {
+  //   queries += getSortQuery(sortBy, order);
+  // }
 
   if (widthCars) {
     queries += `&all.driver.vehicleAllotments.include=true`;
@@ -296,7 +334,7 @@ export function getUserListURLToAttachments(
     queries += `&all.disabled.in=false`;
   }
 
-  return `api/users?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/users/full-name?${queries}&match=${trimmedQuery}`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

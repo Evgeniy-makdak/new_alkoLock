@@ -52,7 +52,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
     if (newValue?.startsWith('+7') && newValue.length > 12) {
       setValidationError('Некорректный номер');
       setInnerValue(previousValidValue);
-      setValue(null);
+      setValue(previousValidValue);
       return;
     }
 

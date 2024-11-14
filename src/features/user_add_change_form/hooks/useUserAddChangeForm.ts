@@ -162,15 +162,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       return;
     }
 
-    const userPhotosUnchanged =
-      data.userPhotoDTO.length === usersImagesInGalary?.length &&
-      data.userPhotoDTO.every((photo) =>
-        usersImagesInGalary.some(
-          (image) => image.hash === photo.hash && image.isAvatar === photo.isAvatar,
-        ),
-      );
-
-    console.log(userPhotosUnchanged);
+    // const userPhotosUnchanged =
+    //   data.userPhotoDTO.length === usersImagesInGalary?.length &&
+    //   data.userPhotoDTO.every((photo) =>
+    //     usersImagesInGalary.some(
+    //       (image) => image.hash === photo.hash && image.isAvatar === photo.isAvatar,
+    //     ),
+    //   );
 
     for (let i = 0; i < usersImagesInGalary?.length; i++) {
       if ((imgHashToUpload === usersImagesInGalary[i]?.hash) && !usersImagesInGalary[i].isAvatar) {
