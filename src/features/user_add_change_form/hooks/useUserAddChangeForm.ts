@@ -173,7 +173,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     console.log(userPhotosUnchanged);
 
     for (let i = 0; i < usersImagesInGalary?.length; i++) {
-      if (imgHashToUpload === usersImagesInGalary[i]?.hash) {
+      if ((imgHashToUpload === usersImagesInGalary[i]?.hash) && !usersImagesInGalary[i].isAvatar) {
         enqueueSnackbar('Это фото уже добавлено пользователю', { variant: 'error' });
         return false;
       }
