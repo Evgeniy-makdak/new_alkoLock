@@ -18,7 +18,7 @@ const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) =
     case SortTypes.TC:
       return `&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber${orderStr}`;
     case SortTypes.USER_LAST_NAME:
-      return `&sort=userActionId.middleName${orderStr}`;
+      return `&sort=userAction.middleName${orderStr}`;
     case SortTypes.MARK:
       return `&sort=vehicleRecord.manufacturer${orderStr}`;
     case SortTypes.GOS_NUMBER:
@@ -560,7 +560,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_OCCURRENT:
       return `&sort=occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userActionId.surname,userActionId.firstName,userActionId.middleName${orderStr}`;
+      return `&sort=userAction.surname,userAction.firstName,userAction.middleName${orderStr}`;
     default:
       return '';
   }
@@ -584,7 +584,7 @@ export function getEventsHistoryURL({
   });
 
   if (userId) {
-    queries += `&all.userActionId.id.in=${userId}`;
+    queries += `&all.userAction.id.in=${userId}`;
   }
 
   if (carId) {
@@ -648,12 +648,12 @@ export function getEventsApiURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&any.userAction.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
   if (users) {
-    queries += `&all.userActionId.id.in=${filterOptions.users}`;
+    queries += `&all.userAction.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
@@ -715,9 +715,9 @@ export function getEventListForAutoServiceURL({
 
   if (queryTrimmed.length) {
     queries += `&any.device.serialNumber.contains=${queryTrimmed}`;
-    queries += `&any.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&any.userAction.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
-    queries += `&any.userActionId.firstName.contains=${queryTrimmed}`;
+    queries += `&any.userAction.firstName.contains=${queryTrimmed}`;
   }
   return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
@@ -771,7 +771,7 @@ export function getEventListCountForAutoServiceURL({
 
   if (queryTrimmed.length) {
     queries += `&all.device.serialNumber.contains=${queryTrimmed}`;
-    queries += `&all.userActionId.match.contains=${queryTrimmed}`;
+    queries += `&all.userAction.match.contains=${queryTrimmed}`;
     queries += `&any.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 

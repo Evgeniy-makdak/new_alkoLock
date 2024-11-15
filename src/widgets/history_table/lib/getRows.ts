@@ -13,17 +13,12 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
       const occurredAt = typeof item.occurredAt === 'string' ? item.occurredAt : undefined;
       const typeOfEvent: string = item.events[3]?.eventType ?? item.events[0].eventType;
 
-      const formattedTypeOfEvent =
-        item.events.length > 1
-          ? 'Тестирование'
-          : typeOfEvent;
+      const formattedTypeOfEvent = item.events.length > 1 ? 'Тестирование' : typeOfEvent;
 
       return {
         id: item.id,
-        [ValuesHeader.DATE]: occurredAt
-          ? Formatters.formatISODate(occurredAt) ?? '-'
-          : '-',
-        [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userActionId) ?? '-',
+        [ValuesHeader.DATE]: occurredAt ? (Formatters.formatISODate(occurredAt) ?? '-') : '-',
+        [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userAction) ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord, true)
           : '-',

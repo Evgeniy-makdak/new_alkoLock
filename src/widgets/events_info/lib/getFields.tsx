@@ -14,7 +14,7 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   const exhaleError = (data.summary?.exhaleError ||
     data?.summary?.result) as TypeSummaryExhaleResult;
 
-  const name = Formatters.nameFormatter(data?.userActionId) || '';
+  const name = Formatters.nameFormatter(data?.userAction) || '';
 
   const stateErrorCode = data?.summary?.stateErrorCode;
   const stateError = data?.summary?.stateError;
