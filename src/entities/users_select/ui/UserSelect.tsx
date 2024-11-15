@@ -17,19 +17,19 @@ type UsersSelectProps<T> = {
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
-  vieBranch,
+  // vieBranch,
   branchId,
   notInBranch,
-  needDriverId,
-  useUserAttachSort = false, // По умолчанию сортировка по USER
+  // needDriverId,
+  // useUserAttachSort = false, // По умолчанию сортировка по USER
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
   const { onChange, isLoading, onReset, driversList } = useUserSelect(
-    vieBranch,
+    // vieBranch,
     branchId,
     notInBranch,
-    needDriverId,
-    useUserAttachSort, // Передаем флаг в хук
+    // needDriverId,
+    // useUserAttachSort, // Передаем флаг в хук
   );
 
   return (

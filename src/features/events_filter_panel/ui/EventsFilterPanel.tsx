@@ -27,7 +27,7 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
           <UsersSelect
             multiple={true}
             name="driverId"
-            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
+            setValueStore={(name: string, value: any) => handleChange(name as keyof EventsFilters, value)}
             value={filters.driverId}
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER

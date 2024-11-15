@@ -4,9 +4,13 @@ import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 
 export const useUserListQuery = (options: QueryOptions) => {
-  const { data, isLoading } = useConfiguredQuery([QueryKeys.USER_LIST], UsersApi.getListToAttachments, {
-    options,
-  });
+  const { data, isLoading } = useConfiguredQuery(
+    [QueryKeys.USER_LIST],
+    UsersApi.getListToAttachments,
+    {
+      options,
+    },
+  );
 
-  return { data: data?.data?.content || [], isLoading };
+  return { data: (data?.data as any) || [], isLoading };
 };
