@@ -61,7 +61,7 @@ export const useUsersTable = (handleCloseAside: () => void) => {
     toggleAddUserModal();
   };
 
-  const rows = useGetRows(users?.content);
+  const rows = useGetRows({ data: users?.content, excludeUserIds: [2] });
   const totalCount = users?.totalElements;
   const headers = useGetColumns(
     refetch,

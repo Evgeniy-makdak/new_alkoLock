@@ -35,7 +35,7 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
             }
-            label="Поиск по водителю"
+            label="Поиск по пользователю"
           />
           <MarksCarSelect
             multiple={true}

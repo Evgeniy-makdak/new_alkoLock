@@ -49,9 +49,6 @@ export const useUserSelect = (
 
 
   const driversList = mapOptions(filteredData, adapterMapOptions);
-  console.log("Filtered data before mapping:", filteredData);
-  console.log("Mapped options:", driversList);
   
-
   return { onChange, isLoading, onReset, driversList };
 };
