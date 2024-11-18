@@ -26,6 +26,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
         <FilterPanel>
           <UsersSelect
             multiple={true}
+            excludeUserWithId2={false} // false-false Отображаются и id=2 и водители (все пользователи без исключений)
+            onlyWithDriverId={false} // false-false Отображаются и id=2 и водители (все пользователи без исключений)
+            // needDriverId={true}
             name="driverId"
             setValueStore={(name: string, value: any) => handleChange(name as keyof EventsFilters, value)}
             value={filters.driverId}

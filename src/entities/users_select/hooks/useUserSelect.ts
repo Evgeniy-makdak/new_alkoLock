@@ -10,7 +10,9 @@ import { adapterMapOptions } from '../lib/adapterMapOptions';
 export const useUserSelect = (
   branchId?: ID,
   notInBranch?: ID,
-  useUserAttachSort = false, // Добавлен флаг для сортировки
+  useUserAttachSort = false, 
+  excludeUserWithId2 = true, 
+  onlyWithDriverId = true 
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {
@@ -20,7 +22,7 @@ export const useUserSelect = (
   const { data, isLoading } = useUserListQuery({
     searchQuery,
     filterOptions: { branchId: branchId, notBranchId: notInBranch },
-    sortBy: useUserAttachSort ? SortTypes.USER_ATTACH : SortTypes.USER, // Выбор сортировки
+    sortBy: useUserAttachSort ? SortTypes.USER_ATTACH : SortTypes.USER,
     order: SortsTypes.asc,
   });
 
@@ -28,12 +30,28 @@ export const useUserSelect = (
     setSearchQuery('');
   };
 
-  // Исключаем пользователя с id = 2
   const filteredData = Array.isArray(data)
-    ? data.filter((user) => user.id !== 2)
-    : data?.content?.filter((user: { id: number }) => user.id !== 2) || [];
+  ? data.filter((user) => {
+      // Исключаем только если флаг активен и user.id === 2
+      const excludeId2 = excludeUserWithId2 ? user.id !== 2 : true;
+
+      // Фильтруем по driverId только если флаг активен
+      const includeWithDriverId = onlyWithDriverId ? user.driverId != null : true;
+
+      return excludeId2 && includeWithDriverId;
+    })
+  : data?.content?.filter((user: { id: number; driverId?: number }) => {
+      const excludeId2 = excludeUserWithId2 ? user.id !== 2 : true;
+      const includeWithDriverId = onlyWithDriverId ? user.driverId != null : true;
+
+      return excludeId2 && includeWithDriverId;
+    }) || [];
+
 
   const driversList = mapOptions(filteredData, adapterMapOptions);
+  console.log("Filtered data before mapping:", filteredData);
+  console.log("Mapped options:", driversList);
+  
 
   return { onChange, isLoading, onReset, driversList };
 };

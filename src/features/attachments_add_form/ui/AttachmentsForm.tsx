@@ -34,7 +34,9 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
         />
         {errorCar && <span className={style.errorText}>Обязательное поле</span>}{' '}
         <UsersSelect
-          needDriverId={true}
+          // needDriverId={false}
+          excludeUserWithId2={true}
+          onlyWithDriverId={true} 
           value={driverId}
           setValueStore={onSelect}
           testid={
@@ -43,7 +45,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           error={errorDriver}
           label="Водитель"
           name="driverId"
-          useUserAttachSort={true} // Указан флаг для сортировки по USER_ATTACH
+          useUserAttachSort={true} 
         />
         {errorDriver && <span className={style.errorText}>Обязательное поле</span>}{' '}
       </InputsColumnWrapper>

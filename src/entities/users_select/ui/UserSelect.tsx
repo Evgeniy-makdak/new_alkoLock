@@ -14,13 +14,17 @@ type UsersSelectProps<T> = {
   notInBranch?: ID;
   needDriverId?: boolean;
   useUserAttachSort?: boolean; // Добавлен флаг для управления сортировкой
+  excludeUserWithId2?: boolean;
+  onlyWithDriverId?: boolean;
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
   // vieBranch,
   branchId,
   notInBranch,
-  // needDriverId,
+  excludeUserWithId2,
+  onlyWithDriverId,
+  needDriverId,
   // useUserAttachSort = false, // По умолчанию сортировка по USER
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
@@ -28,8 +32,10 @@ export const UsersSelect = <T,>({
     // vieBranch,
     branchId,
     notInBranch,
-    // needDriverId,
+    needDriverId,
     // useUserAttachSort, // Передаем флаг в хук
+    excludeUserWithId2,
+    onlyWithDriverId,
   );
 
   return (
