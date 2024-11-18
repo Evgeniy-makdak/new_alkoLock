@@ -8,10 +8,8 @@ import { useUserListQuery } from '../api/userListQuery';
 import { adapterMapOptions } from '../lib/adapterMapOptions';
 
 export const useUserSelect = (
-  // vieBranch = false,
   branchId?: ID,
   notInBranch?: ID,
-  // needDriverId = false,
   useUserAttachSort = false, // Добавлен флаг для сортировки
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,10 +28,12 @@ export const useUserSelect = (
     setSearchQuery('');
   };
 
-  const driversList = mapOptions(
-    Array.isArray(data) ? data : data?.content || [],
-    adapterMapOptions
-  );
+  // Исключаем пользователя с id = 2
+  const filteredData = Array.isArray(data)
+    ? data.filter((user) => user.id !== 2)
+    : data?.content?.filter((user: { id: number }) => user.id !== 2) || [];
+
+  const driversList = mapOptions(filteredData, adapterMapOptions);
 
   return { onChange, isLoading, onReset, driversList };
 };

@@ -5,13 +5,12 @@ import { useCloseTab } from '@entities/row_table_info';
 import { EventsHistory } from '@features/events_history';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { testids } from '@shared/const/testid';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import { type ID } from '@shared/types/BaseQueryTypes';
 import { UserFoto } from '@widgets/user_foto';
 import { UserInfo } from '@widgets/users_info';
 
 export const useUsers = () => {
   const [selectedUserId, setSelectedUserId] = useState<ID | null>(null);
-
   const onClickRow = (id: ID) => setSelectedUserId(id);
   const handleCloseAside = () => {
     setSelectedUserId(null);
