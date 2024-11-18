@@ -35,7 +35,6 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
 
   const handleChange = (newValue: string | undefined) => {
     if (isCountryChanging) {
-      // Если идет смена страны, не валидируем номер
       setValidationError(null);
       setInnerValue(newValue || '');
       setValue(newValue);
@@ -63,11 +62,14 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
   };
 
   const handleCountryChange = (newCountry: Country | undefined) => {
-    setIsCountryChanging(true); // Устанавливаем флаг смены страны
+    setIsCountryChanging(true);
     setCurrentCountry(newCountry);
     setTimeout(() => {
-      setIsCountryChanging(false); // Ожидаем завершения смены страны
-    }, 300); // Фиксируем задержку для корректного перехода
+      setIsCountryChanging(false);
+      setInnerValue('');
+      setValue('');
+      setPreviousValidValue('');
+    }, 300);
   };
 
   return (

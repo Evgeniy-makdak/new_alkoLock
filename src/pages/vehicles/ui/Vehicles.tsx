@@ -4,9 +4,20 @@ import { Aside } from '@shared/ui/aside';
 import { VehiclesTable } from '@widgets/vehicles_table';
 
 import { useVehicles } from '../hooks/useVehicles';
+import { useRef } from 'react';
+import { appStore } from '@shared/model/app_store/AppStore';
 
 const Vehicles = () => {
+  const prevBranch = useRef(null);
   const { handleCloseAside, onClickRow, tabs, selectedCarId } = useVehicles();
+  const { selectedBranchState } = appStore(
+    (state) => state,
+  );
+
+  if (prevBranch.current !== selectedBranchState?.id) {
+    prevBranch.current = selectedBranchState?.id;
+    handleCloseAside();
+  }
 
   return (
     <>

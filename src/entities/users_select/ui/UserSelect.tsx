@@ -13,7 +13,7 @@ type UsersSelectProps<T> = {
   branchId?: ID;
   notInBranch?: ID;
   needDriverId?: boolean;
-  useUserAttachSort?: boolean; // Добавлен флаг для управления сортировкой
+  useUserAttachSort?: boolean; 
   excludeUserWithId2?: boolean;
   onlyWithDriverId?: boolean;
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;

@@ -4,9 +4,21 @@ import { Aside } from '@shared/ui/aside';
 import { UsersTable } from '@widgets/users_table';
 
 import { useUsers } from '../hooks/useUsers';
+import { appStore } from '@shared/model/app_store/AppStore';
+import { useRef } from 'react';
 
 const Users = () => {
+  const prevBranch = useRef(null);
   const { tabs, onClickRow, selectedUserId, handleCloseAside } = useUsers();
+  const { selectedBranchState } = appStore(
+    (state) => state,
+  );
+
+  if (prevBranch.current !== selectedBranchState?.id) {
+    prevBranch.current = selectedBranchState?.id;
+    handleCloseAside();
+  }
+
   return (
     <>
       <PageWrapper>

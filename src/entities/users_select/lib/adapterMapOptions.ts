@@ -1,8 +1,8 @@
 import type { ID } from '@shared/types/BaseQueryTypes';
 
 export const adapterMapOptions = (
-  driver: { id: ID; fullName: string },
+  driver: { driverId: ID; fullName: string },
 ): [string, ID] | [] => {
-  if (!driver.id) return [];
-  return [driver.fullName, driver.id];
+  if (!driver.driverId) return [];
+  return [driver.fullName, driver.driverId];
 };
