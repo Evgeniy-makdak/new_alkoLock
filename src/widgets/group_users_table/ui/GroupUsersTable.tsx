@@ -17,6 +17,7 @@ type GroupUsersTableProps = {
 
 export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
   const { filtersData, tableData, addModalData, editModalData } = useGroupUsersTable(groupInfo);
+  const filteredRows = tableData.rows.filter((row) => row.id !== 2);
 
   useEffect(() => {
     if(tableData.sortModel) {
@@ -51,7 +52,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
-        rows={tableData.rows}
+        rows={filteredRows}
         disableColumnSelector
         disableRowSelectionOnClick
       />
