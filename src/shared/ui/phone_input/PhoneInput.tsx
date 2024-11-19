@@ -66,9 +66,9 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
     setCurrentCountry(newCountry);
     setTimeout(() => {
       setIsCountryChanging(false);
-      setInnerValue('');
+      // setInnerValue('');
       setValue('');
-      setPreviousValidValue('');
+      // setPreviousValidValue('');
     }, 300);
   };
 
@@ -81,7 +81,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
         useNationalFormatForDefaultCountryValue
         labels={ru}
         placeholder="Введите номер телефона"
-        value={innerValue}
+        value={value}
         defaultCountry={currentCountry}
         onCountryChange={handleCountryChange}
         onChange={handleChange}

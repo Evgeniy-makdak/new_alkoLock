@@ -17,7 +17,8 @@ type GroupUserAddFormProps = {
 };
 const alertText = (
   <>
-    При перемещении выбранных пользователей все их текущие связи с ТС будут <b>разорваны</b>, а также будут отозваны все несистемные роли.
+    При перемещении выбранных пользователей все их текущие связи с ТС будут <b>разорваны</b>, а
+    также будут отозваны все несистемные роли.
     <br />
     <br />
     Пожалуйста, подтвердите действие.
@@ -34,6 +35,8 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
       </Typography>
       <Stack gap={3}>
         <UsersSelect
+          excludeUserWithId2={false} 
+          onlyWithDriverId={false}
           notInBranch={branchId}
           vieBranch
           multiple

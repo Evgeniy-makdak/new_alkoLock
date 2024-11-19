@@ -2,8 +2,8 @@ import { useForm } from 'react-hook-form';
 
 import { enqueueSnackbar } from 'notistack';
 
-import { AttachmentsApi } from '@shared/api/baseQuerys';
-import { StatusCode } from '@shared/const/statusCode';
+// import { AttachmentsApi } from '@shared/api/baseQuerys';
+// import { StatusCode } from '@shared/const/statusCode';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 
@@ -33,19 +33,20 @@ export const useAttachmentsForm = (closeModal: () => void) => {
   const onAddAtachment = async () => {
     const driverId = getValues('driverId')[0]?.value;
     const vehicleId = getValues('carId')[0]?.value;
-
+  
     if (!driverId || !vehicleId) {
       !driverId && setError('driverId', {});
       !vehicleId && setError('carId', {});
     } else {
       const data = { driverId, vehicleId };
-      const response = await AttachmentsApi.createItem(data);
-      if (response.status === StatusCode.BAD_REQUEST) {
-        enqueueSnackbar(response.detail, { variant: 'error' });
-      } else {
-        mutation(data);
-        closeModal();
-      }
+      mutation(data, {
+        onSuccess: () => {
+          closeModal();
+        },
+        onError: (error) => {
+          enqueueSnackbar(error?.message || 'Произошла ошибка', { variant: 'error' });
+        },
+      });
     }
   };
 
