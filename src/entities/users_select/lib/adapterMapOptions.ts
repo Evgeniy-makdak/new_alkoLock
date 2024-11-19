@@ -6,3 +6,10 @@ export const adapterMapOptions = (
   if (!driver.driverId) return [];
   return [driver.fullName, driver.driverId];
 };
+
+export const adapterMapOptionsForList = (
+  driver: { id: ID; fullName: string },
+): [string, ID] | [] => {
+  if (!driver.id) return [];
+  return [driver.fullName, driver.id];
+};

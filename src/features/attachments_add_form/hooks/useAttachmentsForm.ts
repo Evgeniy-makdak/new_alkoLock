@@ -44,7 +44,7 @@ export const useAttachmentsForm = (closeModal: () => void) => {
           closeModal();
         },
         onError: (error) => {
-          enqueueSnackbar(error?.message || 'Произошла ошибка', { variant: 'error' });
+          enqueueSnackbar(error?.message, { variant: 'error' });
         },
       });
     }
