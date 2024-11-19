@@ -12,21 +12,23 @@ import { appStore } from '@shared/model/app_store/AppStore';
 const Events = () => {
   const { handleClickRow, handleCloseAside, selectedEventId, tabs } = useEventsPage();
   const prevBranch = useRef(null);
-  const { selectedBranchState } = appStore(
-    (state) => state,
-  );
+  const { selectedBranchState } = appStore((state) => state);
+
+  const handleBranchChange = () => {
+    const event = new CustomEvent('resetFilters'); // Генерируем событие сброса фильтров
+    window.dispatchEvent(event);
+  };
 
   if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
     handleCloseAside();
+    handleBranchChange();
   }
-
-
 
   return (
     <>
       <PageWrapper>
-        <EventsTable handleClickRow={handleClickRow} />
+        <EventsTable handleClickRow={handleClickRow} onBranchChange={handleBranchChange} />
       </PageWrapper>
 
       {selectedEventId && (

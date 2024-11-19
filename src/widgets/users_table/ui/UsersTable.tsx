@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, type FC } from 'react';
+import { useEffect, useRef, type FC, useState } from 'react';
 
 import { DeleteUserForm } from '@features/delete_user_form';
 import { UserAddChangeForm } from '@features/user_add_change_form';
@@ -17,17 +17,62 @@ import { useUsersTable } from '../hooks/useUsersTable';
 type UsersTableProps = {
   onRowClick: (id: ID) => void;
   handleCloseAside: () => void;
+  onBranchChange: () => void;
 };
 
-export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }) => {
+export const UsersTable: FC<UsersTableProps> = ({
+  onRowClick,
+  handleCloseAside,
+  onBranchChange,
+}) => {
   const { filtersData, tableData, addModalData, deleteUserModalData } =
     useUsersTable(handleCloseAside);
+  const prevRowCountRef = useRef(tableData.totalCount);
+  const pageSize = useRef(tableData.pageSize);
+  const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
-    useEffect(() => {
-      if(tableData.sortModel) {
-        tableData.apiRef.current.setPage(0);
-      }
-    }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
+  const handleFilterChange = () => {
+    setIsFiltersChanged(true);
+    tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении фильтров
+  };
+
+  // Добавляем слушатель для сброса фильтров
+  useEffect(() => {
+    const resetFiltersListener = () => {
+      filtersData.clearDates();
+      filtersData.setInput('');
+      handleFilterChange();
+    };
+    window.addEventListener('resetFilters', resetFiltersListener);
+
+    return () => {
+      window.removeEventListener('resetFilters', resetFiltersListener);
+    };
+  }, [filtersData]);
+
+  useEffect(() => {
+    onBranchChange(); // Сброс фильтров при изменении филиала
+  }, [onBranchChange]);
+
+  useEffect(() => {
+    if (tableData.sortModel) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
+
+  useEffect(() => {
+    if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
+      prevRowCountRef.current = tableData.totalCount;
+      setIsFiltersChanged(false);
+    }
+  }, [tableData.totalCount, isFiltersChanged]);
+
+  useEffect(() => {
+    if (pageSize.current !== tableData.pageSize) {
+      pageSize.current = tableData.pageSize;
+      handleFilterChange();
+    }
+  }, [tableData.pageSize]);
 
   return (
     <>
@@ -37,27 +82,27 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }
           value={filtersData.input}
           onClear={() => {
             filtersData.setInput('');
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке поиска
+            handleFilterChange();
           }}
           setState={(value) => {
             filtersData.setInput(value);
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
+            handleFilterChange();
           }}
         />
         <InputsDates
           onClear={() => {
             filtersData.clearDates();
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при очистке дат
+            handleFilterChange();
           }}
           inputStartTestId={testids.page_users.users_widget_header.USERS_WIDGET_HEADER_FROM_DATE}
           inputEndTestId={testids.page_users.users_widget_header.USERS_WIDGET_HEADER_TO_DATE}
           onChangeStartDate={(date) => {
             filtersData.changeStartDate(date);
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении даты начала
+            handleFilterChange();
           }}
           onChangeEndDate={(date) => {
             filtersData.changeEndDate(date);
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении даты окончания
+            handleFilterChange();
           }}
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
@@ -65,9 +110,8 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            tableData.apiRef.current.setPage(0); // Сброс пагинации при сбросе всех фильтров
+            const event = new CustomEvent('resetFilters');
+            window.dispatchEvent(event);
           }}
         />
       </TableHeaderWrapper>
@@ -76,9 +120,9 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }
         getRowHeight={() => 'auto'}
         sortingMode="server"
         paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts} 
+        onSortModelChange={tableData.changeTableSorts}
         apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState} // Пагинация не сбрасывается при изменении страницы
+        onPaginationModelChange={tableData.changeTableState}
         pageNumber={tableData.page}
         loading={tableData.isLoading}
         columns={tableData.headers}
@@ -102,7 +146,7 @@ export const UsersTable: FC<UsersTableProps> = ({ onRowClick, handleCloseAside }
           <DeleteUserForm
             user={deleteUserModalData.deleteUser}
             closeModal={deleteUserModalData.closeDeleteModal}
-            closeAside={deleteUserModalData.closeAside} // Передача closeAside
+            closeAside={deleteUserModalData.closeAside}
           />
         }
         onCloseModal={deleteUserModalData.closeDeleteModal}

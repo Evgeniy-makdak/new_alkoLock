@@ -13,9 +13,10 @@ import { useEventsTable } from '../hooks/useEventsTable';
 
 interface EventsTableProps {
   handleClickRow: (id: string | number) => void;
+  onBranchChange: () => void;
 }
 
-export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
+export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
@@ -25,6 +26,25 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
     setIsFiltersChanged(true);
     tableData.apiRef.current.setPage(0);
   };
+
+  // Добавляем слушатель для сброса фильтров
+  useEffect(() => {
+    const resetFiltersListener = () => {
+      filtersData.resetFilters();
+      filtersData.clearDates();
+      filtersData.setInput('');
+      handleFilterChange();
+    };
+    window.addEventListener('resetFilters', resetFiltersListener);
+
+    return () => {
+      window.removeEventListener('resetFilters', resetFiltersListener);
+    };
+  }, [filtersData]);
+
+  useEffect(() => {
+    onBranchChange(); // Вызываем очистку фильтров при изменении филиала
+  }, [onBranchChange]);
 
   useEffect(() => {
     tableData.apiRef.current.setPage(0);
@@ -97,10 +117,6 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
           reset={() => {
             const event = new CustomEvent('resetFilters');
             window.dispatchEvent(event);
-            filtersData.resetFilters();
-            filtersData.clearDates();
-            filtersData.setInput('');
-            handleFilterChange();
           }}
         />
       </TableHeaderWrapper>
