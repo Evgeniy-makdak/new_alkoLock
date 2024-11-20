@@ -2,7 +2,6 @@
 import { RowTableInfo } from '@entities/row_table_info';
 import { PageWrapper } from '@layout/page_wrapper';
 import { Aside } from '@shared/ui/aside';
-// import { EventInfo } from '@widgets/events_info';
 import { EventsTable } from '@widgets/events_table';
 
 import { useEventsPage } from '../hooks/useEventsPage';

@@ -31,8 +31,6 @@ export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps
   useEffect(() => {
     const resetFiltersListener = () => {
       filtersData.resetFilters();
-      filtersData.clearDates();
-      filtersData.setInput('');
       handleFilterChange();
     };
     window.addEventListener('resetFilters', resetFiltersListener);
@@ -115,6 +113,8 @@ export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
+            filtersData.clearDates();
+            filtersData.setInput('');
             const event = new CustomEvent('resetFilters');
             window.dispatchEvent(event);
           }}
