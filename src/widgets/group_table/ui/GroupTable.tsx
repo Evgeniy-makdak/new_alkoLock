@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import { useEffect, type FC } from 'react';
 
 import { GroupAddForm } from '@features/group_add_form';
 import { GroupDeleteForm } from '@features/group_delete_form';
@@ -15,10 +15,15 @@ import { useGroupTable } from '../hooks/useGroupTable';
 
 type GroupTableProps = {
   handleClickRow: (id: ID) => void;
+  onBranchChange: () => void;
 };
 
-export const GroupTable: FC<GroupTableProps> = ({ handleClickRow }) => {
+export const GroupTable: FC<GroupTableProps> = ({ handleClickRow, onBranchChange }: GroupTableProps) => {
   const { filtersData, tableData, addModalData, deleteModalData } = useGroupTable();
+
+  useEffect(() => {
+    onBranchChange(); // Вызываем очистку фильтров при изменении филиала
+  }, [onBranchChange]);
 
   return (
     <>

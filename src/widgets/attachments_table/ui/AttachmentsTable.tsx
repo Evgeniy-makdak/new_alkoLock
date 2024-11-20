@@ -17,16 +17,45 @@ import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useAttachmentsTable } from '../hooks/useAttachmentsTable';
 
-export const AttachmentsTable = () => {
+interface AttachmentsTableProps {
+  onBranchChange: () => void;
+}
+
+export const AttachmentsTable = ({ onBranchChange }: AttachmentsTableProps) => {
   const { addModalData, deleteAttachModalData, filtersData, tableData } = useAttachmentsTable();
   const resetFilters = attachmentsFilterPanelStore((state) => state.resetFilters);
   const hasActiveFilters = attachmentsFilterPanelStore((state) => state.hasActiveFilters);
+  // const [isFiltersChanged, setIsFiltersChanged] = useState(false);
+
+
+  const handleFilterChange = () => {
+    if (tableData.apiRef.current) {
+      tableData.apiRef.current.setPage(0);
+    }
+  };
+
+  // Добавляем слушатель для сброса фильтров
+  useEffect(() => {
+    const resetFiltersListener = () => {
+      filtersData.resetFilters();
+      handleFilterChange();
+    };
+    window.addEventListener('resetFilters', resetFiltersListener);
+
+    return () => {
+      window.removeEventListener('resetFilters', resetFiltersListener);
+    };
+  }, [filtersData]);
 
   useEffect(() => {
     if (tableData.sortModel) {
       tableData.apiRef.current.setPage(0);
     }
   }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
+
+  useEffect(() => {
+    onBranchChange(); // Вызываем очистку фильтров при изменении филиала
+  }, [onBranchChange]);
 
   return (
     <>

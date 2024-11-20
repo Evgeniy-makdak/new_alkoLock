@@ -4,6 +4,8 @@ import { Aside } from '@shared/ui/aside';
 import { AvtoServiceTable } from '@widgets/auto_service_table';
 
 import { useAutoService } from '../hooks/useAutoService';
+import { useRef } from 'react';
+import { appStore } from '@shared/model/app_store/AppStore';
 
 const AutoService = () => {
   const {
@@ -16,10 +18,23 @@ const AutoService = () => {
     // toggleUpdateAfterTimeout,
     handleCloseAside,
   } = useAutoService();
+  const prevBranch = useRef(null);
+  const { selectedBranchState } = appStore((state) => state);
+
+  const handleBranchChange = () => {
+    const event = new CustomEvent('resetFilters'); // Генерируем событие сброса фильтров
+    window.dispatchEvent(event);
+  };
+
+  if (prevBranch.current !== selectedBranchState?.id) {
+    prevBranch.current = selectedBranchState?.id;
+    handleCloseAside();
+    handleBranchChange();
+  }
   return (
     <>
       <PageWrapper>
-        <AvtoServiceTable handleClickRow={onClickRow} />
+        <AvtoServiceTable handleClickRow={onClickRow} onBranchChange={handleBranchChange} />
       </PageWrapper>
 
       {selectedItemId && (

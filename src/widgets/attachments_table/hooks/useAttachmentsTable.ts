@@ -86,6 +86,7 @@ export const useAttachmentsTable = () => {
     toggleFilters,
     setInput,
     input,
+    resetFilters: attachmentsFilterPanelStore((state) => state.resetFilters),
   };
 
   const addModalData = {

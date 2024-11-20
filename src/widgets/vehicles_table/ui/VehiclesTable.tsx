@@ -16,9 +16,10 @@ import { useVehiclesTable } from '../hooks/useVehiclesTable';
 
 type VehiclesTableProps = {
   onClickRow: (id: ID) => void;
+  onBranchChange: () => void;
 };
 
-export const VehiclesTable: FC<VehiclesTableProps> = ({ onClickRow }) => {
+export const VehiclesTable: FC<VehiclesTableProps> = ({ onClickRow, onBranchChange }) => {
   const { filtersData, tableData, addModalData, deleteCarModalData } = useVehiclesTable();
 
   useEffect(() => {

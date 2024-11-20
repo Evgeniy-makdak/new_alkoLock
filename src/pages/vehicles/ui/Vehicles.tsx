@@ -14,15 +14,21 @@ const Vehicles = () => {
     (state) => state,
   );
 
+  const handleBranchChange = () => {
+    const event = new CustomEvent('resetFilters'); // Генерируем событие сброса фильтров
+    window.dispatchEvent(event);
+  };
+
   if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
     handleCloseAside();
+    handleBranchChange();
   }
 
   return (
     <>
       <PageWrapper>
-        <VehiclesTable onClickRow={onClickRow} />
+        <VehiclesTable onClickRow={onClickRow} onBranchChange={handleBranchChange} />
       </PageWrapper>
 
       {selectedCarId && (

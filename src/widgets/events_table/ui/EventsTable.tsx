@@ -23,8 +23,10 @@ export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
   const handleFilterChange = () => {
-    setIsFiltersChanged(true);
-    tableData.apiRef.current.setPage(0);
+    if (tableData.apiRef.current) {
+      setIsFiltersChanged(true);
+      tableData.apiRef.current.setPage(0);
+    }
   };
 
   // Добавляем слушатель для сброса фильтров

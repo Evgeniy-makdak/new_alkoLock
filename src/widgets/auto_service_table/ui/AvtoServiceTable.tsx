@@ -11,9 +11,10 @@ import { useEffect } from 'react';
 
 interface AvtoServiceTableProps {
   handleClickRow: (id: string | number, idDevice: string | number) => void;
+  onBranchChange: () => void;
 }
 
-export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
+export const AvtoServiceTable = ({ handleClickRow, onBranchChange }: AvtoServiceTableProps) => {
   const { filterData, tableData } = useAvtoServiceTable();
 
   // Функция для сброса пагинации
@@ -28,6 +29,10 @@ export const AvtoServiceTable = ({ handleClickRow }: AvtoServiceTableProps) => {
       tableData.apiRef.current.setPage(0);
     }
   }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field])
+
+  useEffect(() => {
+    onBranchChange(); // Вызываем очистку фильтров при изменении филиала
+  }, [onBranchChange]);
 
   return (
     <>

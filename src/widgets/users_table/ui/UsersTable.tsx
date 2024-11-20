@@ -39,8 +39,6 @@ export const UsersTable: FC<UsersTableProps> = ({
   // Добавляем слушатель для сброса фильтров
   useEffect(() => {
     const resetFiltersListener = () => {
-      filtersData.clearDates();
-      filtersData.setInput('');
       handleFilterChange();
     };
     window.addEventListener('resetFilters', resetFiltersListener);
@@ -110,6 +108,8 @@ export const UsersTable: FC<UsersTableProps> = ({
         <ResetFilters
           title="Сбросить фильтры"
           reset={() => {
+            filtersData.clearDates();
+            filtersData.setInput('');
             const event = new CustomEvent('resetFilters');
             window.dispatchEvent(event);
           }}
