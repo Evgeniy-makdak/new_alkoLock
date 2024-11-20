@@ -64,12 +64,13 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
   const handleCountryChange = (newCountry: Country | undefined) => {
     setIsCountryChanging(true);
     setCurrentCountry(newCountry);
+    setIsCountryChanging(true);
+    setInnerValue('');
+    setValue(previousValidValue);
+    setPreviousValidValue('');
     setTimeout(() => {
-      setIsCountryChanging(true);
-      setInnerValue('');
       setValue(previousValidValue);
-      setPreviousValidValue('');
-    }, 300);
+    }, 500);
   };
 
   return (
