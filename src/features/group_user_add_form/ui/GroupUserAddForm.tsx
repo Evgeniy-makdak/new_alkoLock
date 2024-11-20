@@ -35,8 +35,8 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
       </Typography>
       <Stack gap={3}>
         <UsersSelect
-          excludeUserWithId2={false} 
-          onlyWithDriverId={false}
+          excludeUserWithId2={true} 
+          onlyWithDriverId={true}
           notInBranch={branchId}
           vieBranch
           multiple

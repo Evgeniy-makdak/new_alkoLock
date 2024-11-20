@@ -1,5 +1,4 @@
 import { CarsSelect } from '@entities/cars_select';
-import { UsersSelect } from '@entities/users_select';
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
@@ -8,6 +7,7 @@ import { Loader } from '@shared/ui/loader';
 
 import { useAttachmentsForm } from '../hooks/useAttachmentsForm';
 import style from './AttachmentsForm.module.scss';
+import { UsersSelectForPost } from '@entities/users_select/ui/UserSelectForPost';
 
 interface AttachmentAddFormProps {
   onClose: () => void;
@@ -33,10 +33,10 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           specified={true}
         />
         {errorCar && <span className={style.errorText}>Обязательное поле</span>}{' '}
-        <UsersSelect
-          // needDriverId={false}
-          excludeUserWithId2={true}
-          onlyWithDriverId={true} 
+        <UsersSelectForPost
+          needDriverId={true}
+          excludeUserWithId2={true} // Во вкладке Привязки в окне Привязка алкозамка
+          onlyWithDriverId={true} // При false отображает только водителей.
           value={driverId}
           setValueStore={onSelect}
           testid={

@@ -15,6 +15,8 @@ export const useCreateAttachment = () => {
   const { mutate } = useMutation({
     mutationFn: async (data: AttachmentsCreateData) => {
       const response = await AttachmentsApi.createItem(data);
+      // console.log(data);
+      
 
       if (response?.isError || response?.status === StatusCode.BAD_REQUEST) {
         const errorDetail = response?.detail;

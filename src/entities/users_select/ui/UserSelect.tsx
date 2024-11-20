@@ -7,6 +7,7 @@ import {
 } from '@shared/ui/search_multiple_select';
 
 import { useUserSelect } from '../hooks/useUserSelect';
+import { adapterMapOptionsForList } from '../lib/adapterMapOptions';
 
 type UsersSelectProps<T> = {
   vieBranch?: boolean;
@@ -36,6 +37,7 @@ export const UsersSelect = <T,>({
     // useUserAttachSort, // Передаем флаг в хук
     excludeUserWithId2,
     onlyWithDriverId,
+    adapterMapOptionsForList,
   );
 
   return (

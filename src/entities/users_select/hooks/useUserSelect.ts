@@ -10,9 +10,10 @@ import { adapterMapOptions } from '../lib/adapterMapOptions';
 export const useUserSelect = (
   branchId?: ID,
   notInBranch?: ID,
-  useUserAttachSort = false,
-  excludeUserWithId2 = true,
+  useUserAttachSort = true,
+  excludeUserWithId2 = false,
   onlyWithDriverId = true,
+  getOptions: (driver: any) => [string, ID] | [] = adapterMapOptions,
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {
@@ -47,7 +48,7 @@ export const useUserSelect = (
         return excludeId2 && includeWithDriverId;
       }) || [];
 
-  const driversList = mapOptions(filteredData, adapterMapOptions);
+      const driversList = mapOptions(filteredData, getOptions);
 
   return { onChange, isLoading, onReset, driversList };
 };

@@ -16,8 +16,8 @@ export const AttachmentsFilterPanel = ({ open }: { open: boolean }) => {
         <FilterPanel>
           <UsersSelect
             multiple={true}
-            excludeUserWithId2={true} // true-true не отображаются id=2 и НЕ водители (только водители)
-            onlyWithDriverId={true}  // true-true не отображаются id=2 и НЕ водители (только водители)
+            excludeUserWithId2={false} // Отображение во вкладке Привязки
+            onlyWithDriverId={true}  // в выпадающем фильтре
             name="driverId"
             setValueStore={setFilters}
             value={filters.driverId}
