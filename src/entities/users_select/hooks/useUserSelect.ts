@@ -48,7 +48,7 @@ export const useUserSelect = (
         return excludeId2 && includeWithDriverId;
       }) || [];
 
-      const driversList = mapOptions(filteredData, getOptions);
+  const driversList = mapOptions(filteredData, getOptions);
 
   return { onChange, isLoading, onReset, driversList };
 };
