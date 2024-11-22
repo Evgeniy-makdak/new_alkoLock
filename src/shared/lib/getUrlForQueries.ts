@@ -719,7 +719,7 @@ export function getEventListForAutoServiceURL({
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
     queries += `&any.userAction.firstName.contains=${queryTrimmed}`;
   }
-  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 export function getEventListCountForAutoServiceURL({
@@ -775,7 +775,7 @@ export function getEventListCountForAutoServiceURL({
     queries += `&any.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 
-  return `api/device-events/count?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-actions/count?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 //////////////////////////////////====================================================================BranchAPi

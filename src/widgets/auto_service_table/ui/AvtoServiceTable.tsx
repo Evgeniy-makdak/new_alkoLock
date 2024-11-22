@@ -84,7 +84,7 @@ export const AvtoServiceTable = ({ handleClickRow, onBranchChange }: AvtoService
           return '';
         }}
         rows={tableData.rows}
-        onRowClick={(params) => {
+        onRowClick={(params: { id: string | number; row: { idDevice: string | number; }; }) => {
           handleClickRow(params?.id, params?.row?.idDevice);
         }}
       />

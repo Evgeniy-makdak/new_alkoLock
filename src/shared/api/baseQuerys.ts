@@ -350,6 +350,9 @@ export class EventsApi {
   static getEventItem(id: ID) {
     return getQuery<IDeviceAction>({ url: `api/device-events/${id}` });
   }
+  static getEventItemForAutoServise(id: ID) {
+    return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });
+  }
   static getEventListForAutoService(options: QueryOptions) {
     return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
       url: getEventListForAutoServiceURL(options),

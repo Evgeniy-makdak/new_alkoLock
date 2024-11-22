@@ -363,6 +363,7 @@ export interface IDeviceAction {
   device: IAlcolock;
   events: IEvents;
   summary: ISummary;
+  vehicleRecord: ICar;
   action: {
     device: any;
     vehicleRecord: ICar;
