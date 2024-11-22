@@ -56,7 +56,6 @@ export function mapOptions<T>(values: T[], adapter: (data: T) => AdapterReturn):
   const readyArr: Values = [];
   values.map((data) => {
     const vals = adapter(data);
-
     if (!vals.length) return;
     const [label, value, permissions] = vals;
     readyArr.push({
@@ -65,5 +64,6 @@ export function mapOptions<T>(values: T[], adapter: (data: T) => AdapterReturn):
       permissions,
     });
   });
+
   return readyArr;
 }

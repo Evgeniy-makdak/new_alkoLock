@@ -12,6 +12,7 @@ interface EventInfo {
 
 export const EventInfo = ({ selectedEventId }: EventInfo) => {
   const { data, isLoading, fields } = useEventInfo(selectedEventId);
+  
   return (
     <Loader isLoading={isLoading}>
       <Stack overflow={'auto'} padding={2}>

@@ -59,22 +59,22 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           <div className={style.row}>
             <span>Марка ТС</span>
 
-            <span>{event?.vehicleRecord?.manufacturer ?? '-'}</span>
+            <span>{event?.action.vehicleRecord?.manufacturer ?? '-'}</span>
           </div>
           <div className={style.row}>
             <span>Модель ТС</span>
 
-            <span>{event?.vehicleRecord?.model ?? '-'}</span>
+            <span>{event?.action.vehicleRecord?.model ?? '-'}</span>
           </div>
           <div className={style.row}>
             <span>Государственный номер</span>
 
-            <span>{event?.vehicleRecord?.registrationNumber ?? '-'}</span>
+            <span>{event?.action.vehicleRecord?.registrationNumber ?? '-'}</span>
           </div>
         </>
       )}
 
-      {event?.action?.type === 'SOBRIETY_TEST' && type !== HistoryTypes.byAlcolock && (
+      {event?.action?.vehicleRecord.type === 'SOBRIETY_TEST' && type !== HistoryTypes.byAlcolock && (
         <div className={style.row}>
           <span>Результат тестирования</span>
 

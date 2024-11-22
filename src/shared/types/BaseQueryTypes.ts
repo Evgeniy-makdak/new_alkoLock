@@ -197,6 +197,11 @@ export interface ICar {
     branch: Branch;
     createdAt: string;
   };
+  action?: {
+    device: {
+      serialNumber: string;
+    }
+  }
 }
 
 interface IActiveActions {
@@ -316,6 +321,9 @@ export type IEvent = {
     surname: string | null;
   };
   user: { id: ID; branchId: ID };
+  action: {
+    eventType: string;
+  }
 };
 
 export type IEvents = IEvent[];
@@ -337,7 +345,11 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
+  eventType: string;
+  latitude: number;
+  longitude: number;
   occurredAt: string | Date;
+  timestamp: string | Date;
   createdAt: string;
   finishedAt: string;
   id: string;
@@ -347,11 +359,14 @@ export interface IDeviceAction {
   type: string;
   uuid: string;
   userAction: IUser;
+  userRecord: IUser;
   device: IAlcolock;
   events: IEvents;
   summary: ISummary;
-  vehicleRecord: ICar;
-  action: { type: string };
+  action: {
+    device: any;
+    vehicleRecord: ICar;
+  }
 }
 
 type FieldError = {

@@ -8,18 +8,17 @@ import { Formatters } from '@shared/utils/formatters';
 export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   if (!data) return [];
 
-  const car = data?.vehicleRecord;
+  const car = data?.action.vehicleRecord;
   const carString = Formatters.carNameFormatter(car);
   const carForCopy = Formatters.carNameFormatter(car, false, false);
   const exhaleError = (data.summary?.exhaleError ||
     data?.summary?.result) as TypeSummaryExhaleResult;
 
-  const name = Formatters.nameFormatter(data?.userAction) || '';
+  const name = Formatters.nameFormatter(data?.userRecord) || '';
 
   const stateErrorCode = data?.summary?.stateErrorCode;
   const stateError = data?.summary?.stateError;
-  const longitude =
-    !!(data?.events ?? [])[0] && !!data?.events[0].latitude && !!data?.events[0].longitude;
+  const longitude = !!data && !!data?.latitude && !!data?.longitude;
   const fields: Field[] = [
     {
       label: 'Пользователь',
@@ -46,7 +45,7 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
       type: TypeOfRows.SERIAL_NUMBER,
       value: {
         copyble: true,
-        label: data?.device?.serialNumber || '',
+        label: data?.action?.device.serialNumber || '',
       },
     },
     stateErrorCode
@@ -95,8 +94,8 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
         label: longitude ? (
           <MapLink
             testid={testids.page_events.events_widget_info.EVENTS_WIDGET_INFO_MAPLINK}
-            latitude={data?.events[0]?.latitude}
-            longitude={data?.events[0]?.longitude}
+            latitude={data?.latitude}
+            longitude={data?.longitude}
           />
         ) : (
           '-'

@@ -201,7 +201,7 @@ export function getUrlCountEventsToQuery({ filterOptions: { branchId } }: QueryO
 
   query += `all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID`;
 
-  return `api/device-actions/count${query}`;
+  return `api/device-events/count${query}`;
 }
 
 /////////////////////////////////////////////===========================branch==========================================
@@ -239,7 +239,7 @@ export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOpt
 
   query += `all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID`;
 
-  return `api/device-actions/count${query}`;
+  return `api/device-events/count${query}`;
 }
 
 /////////////////////////////////////////////////////////////////////////UsersApi
@@ -544,11 +544,11 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.SERIAL_NUMBER:
       return `&sort=device.serialNumber${orderStr}`;
     case SortTypes.TC:
-      return `&sort=vehicleRecord.manufacturer,vehicleRecord.model${orderStr}`;
+      return `&sort=action.vehicleRecord.manufacturer,action.vehicleRecord.model${orderStr}`;
     case SortTypes.GOS_NUMBER:
-      return `&sort=vehicleRecord.registrationNumber${orderStr}`;
+      return `&sort=action.vehicleRecord.registrationNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
-      return `&sort=events.eventType${orderStr}`;
+      return `&sort=eventsForFront.label${orderStr}`;
     case SortTypes.WHO_LINK:
       return `&sort=createdBy.assignment.createdBy.firstName${orderStr}`;
     case SortTypes.OPERATING_MODE:
@@ -558,14 +558,14 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.DATE_OCCURRENT:
-      return `&sort=occurredAt${orderStr}`;
+      return `&sort=timestamp${orderStr}`;
     case SortTypes.CREATED_BY:
-      return `&sort=userAction.surname,userAction.firstName,userAction.middleName${orderStr}`;
+      return `&sort=userRecord.surname,userRecord.firstName,userRecord.middleName${orderStr}`;
     default:
       return '';
   }
 }
-const EVENTS_TYPES_BLACKLIST = ['SERVICE_MODE_ACTIVATE', 'SERVICE_MODE_DEACTIVATE'];
+// const EVENTS_TYPES_BLACKLIST = ['SERVICE_MODE_ACTIVATE', 'SERVICE_MODE_DEACTIVATE'];
 
 // TODO => написать общую функцию по формированию query параметров
 export function getEventsHistoryURL({
@@ -584,7 +584,7 @@ export function getEventsHistoryURL({
   });
 
   if (userId) {
-    queries += `&all.userAction.id.in=${userId}`;
+    queries += `userAction.id.in=${userId}`;
   }
 
   if (carId) {
@@ -592,7 +592,7 @@ export function getEventsHistoryURL({
   }
 
   if (alcolockId) {
-    queries += `&all.device.id.in=${alcolockId}`;
+    queries += `device.id.in=${alcolockId}`;
   }
 
   if (sortBy || order) {
@@ -608,7 +608,7 @@ export function getEventsHistoryURL({
     queries += getSortQueryEvents(sortByFinal, orderFinal);
   }
 
-  return `api/device-actions?page=${page || 0}&size=${limit || 50}${queries}`;
+  return `api/device-events?page=${page || 0}&size=${limit || 50}${queries}`;
 }
 export function getEventsApiURL({
   page,
@@ -621,11 +621,11 @@ export function getEventsApiURL({
   filterOptions,
 }: QueryOptions) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
-  const blacklistEventsTypes = EVENTS_TYPES_BLACKLIST.join(',');
+  // const blacklistEventsTypes = EVENTS_TYPES_BLACKLIST.join(',');
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
-    parameters: `&all.type.notIn=${blacklistEventsTypes}`,
-    page: 'device',
+    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,25,26,27,28,29,30,31,32,33`,
+    page: 'action.device',
     branchId,
   });
 
@@ -636,11 +636,11 @@ export function getEventsApiURL({
 
   if (startDate) {
     const date = new Date(startDate).toISOString();
-    queries += `&all.occurredAt.greaterThanOrEqual=${date}`;
+    queries += `&all.timestamp.greaterThanOrEqual=${date}`;
   }
 
   if (endDate) {
-    queries += `&all.occurredAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
+    queries += `&all.timestamp.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
   if (sortBy && order) {
@@ -648,29 +648,29 @@ export function getEventsApiURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.userAction.match.contains=${queryTrimmed}`;
-    queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&any.userRecord.match.contains=${queryTrimmed}`;
+    queries += `&any.action.vehicleRecord.match.contains=${queryTrimmed}`;
   }
 
   if (users) {
-    queries += `&all.userAction.id.in=${filterOptions.users}`;
+    queries += `&all.user.id.in=${filterOptions.users}`;
   }
 
   if (carsByMake) {
-    queries += `&all.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
+    queries += `&all.action.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
   }
 
   if (carsByLicense) {
-    queries += `&all.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
+    queries += `&all.action.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);
-    const eventQuery = `api/device-actions?page=${page || 0}&size=${limit || 20}&all.events.eventType.in=${trimmedQuery}${queries}`;
+    const eventQuery = `api/device-events?page=${page || 0}&size=${limit || 20}&all.eventsForFront.label.in=${trimmedQuery}${queries}`;
     return eventQuery;
   }
 
-  return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 export function getEventListForAutoServiceURL({
@@ -719,7 +719,7 @@ export function getEventListForAutoServiceURL({
     queries += `&any.vehicleRecord.match.contains=${queryTrimmed}`;
     queries += `&any.userAction.firstName.contains=${queryTrimmed}`;
   }
-  return `api/device-actions?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 export function getEventListCountForAutoServiceURL({
@@ -775,7 +775,7 @@ export function getEventListCountForAutoServiceURL({
     queries += `&any.vehicleRecord.in.contains=${queryTrimmed}`;
   }
 
-  return `api/device-actions/count?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-events/count?page=${page || 0}&size=${limit || 20}${queries}`;
 }
 
 //////////////////////////////////====================================================================BranchAPi

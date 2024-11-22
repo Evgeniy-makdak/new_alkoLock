@@ -1,7 +1,6 @@
-import React, { ReactNode, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { EventData, type HistoryTypes } from '@entities/events_data';
-import { getLastEvent } from '@entities/type_event_select';
 import { testids } from '@shared/const/testid';
 import { StyledTable } from '@shared/styled_components/styledTable';
 import type { EventsOptions, ID, IDeviceAction } from '@shared/types/BaseQueryTypes';
@@ -11,7 +10,7 @@ import { ItemButton, date, isTheSameRow } from '../lib/helpers';
 import style from '../ui/EventsHistory.module.scss';
 
 export const useEventsHistory = (options: EventsOptions, type: HistoryTypes) => {
-  const [expandRowId, setExpandRowId] = useState(null);
+  const [expandRowId, setExpandRowId] = useState<ID | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [eventsAcc, setEventsAcc] = useState<IDeviceAction[]>([]);
   const [page, setPage] = useState(0);
@@ -39,12 +38,12 @@ export const useEventsHistory = (options: EventsOptions, type: HistoryTypes) => 
   };
 
   const rows = (_index: number, event: IDeviceAction) => (
-    <React.Fragment key={event?.id}>
+    <React.Fragment key={event.id}>
       <StyledTable.BodyRow
         className={style.tr}
         key={event.id}
         data-testid={testids.EVENT_HISTORY_TABLE_ITEM}>
-        <StyledTable.BodyCell className={style.td}>{getLastEvent(event) as ReactNode}</StyledTable.BodyCell>
+        <StyledTable.BodyCell className={style.td}>{event.eventType}</StyledTable.BodyCell>
 
         <StyledTable.BodyCell className={style.bodyCellCreatedAt}>
           {date(event)}

@@ -17,6 +17,7 @@ export enum ValuesHeader {
   TYPE_OF_EVENT = SortTypes.TYPE_OF_EVENT,
   NAMING = SortTypes.NAMING,
   INITIATOR = SortTypes.CREATED_BY,
+  DATE_OCCURRENT = "DATE_OCCURRENT",
 }
 
 const setTestIdsToHeaderColumnsAdapter = (
