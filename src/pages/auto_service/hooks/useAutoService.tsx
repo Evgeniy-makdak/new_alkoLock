@@ -14,7 +14,7 @@ export const useAutoService = () => {
   const tabs = [
     {
       name: 'ИНФО',
-      content: <AutoServiceInfo selectedId={selectedItemId?.id} />,
+      content: <AutoServiceInfo selectedId={selectedItemId?.id} handleCloseAside={handleCloseAside} />,
     },
     {
       name: 'ИСТОРИЯ',

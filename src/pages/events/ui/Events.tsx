@@ -7,27 +7,24 @@ import { EventsTable } from '@widgets/events_table';
 import { useEventsPage } from '../hooks/useEventsPage';
 import { useRef } from 'react';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { eventsFilterPanelStore } from '@features/events_filter_panel';
 
 const Events = () => {
   const { handleClickRow, handleCloseAside, selectedEventId, tabs } = useEventsPage();
   const prevBranch = useRef(null);
   const { selectedBranchState } = appStore((state) => state);
-
-  const handleBranchChange = () => {
-    const event = new CustomEvent('resetFilters'); // Генерируем событие сброса фильтров
-    window.dispatchEvent(event);
-  };
+  const { resetFilters } = eventsFilterPanelStore();
 
   if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
     handleCloseAside();
-    handleBranchChange();
+    resetFilters();
   }
 
   return (
     <>
       <PageWrapper>
-        <EventsTable handleClickRow={handleClickRow} onBranchChange={handleBranchChange} />
+        <EventsTable handleClickRow={handleClickRow} />
       </PageWrapper>
 
       {selectedEventId && (

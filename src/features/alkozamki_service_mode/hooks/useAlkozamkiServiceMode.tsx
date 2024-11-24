@@ -17,7 +17,7 @@ import { ServiceModeInfoActionTypes } from '../lib/const';
 import { serviceModeInfoMapper } from '../lib/serviceModeInfoMapper';
 import style from '../ui/AlkozamkiServiceMode.module.scss';
 
-export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: IAlcolock) => {
+export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: IAlcolock, handleCloseAside: () => void) => {
   const {
     activateServiceModeMutation,
     cancelMutation,
@@ -121,7 +121,10 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                   <button className={style.cursorDefault}>ожидание</button>
                   <button
                     className={style.cancel}
-                    onClick={() => handleCancelActivate(serviceModeInfo.action?.id)}>
+                    onClick={() => {
+                      handleCancelActivate(serviceModeInfo.action?.id);
+                      handleCloseAside();
+                      }}>
                     Отменить
                   </button>
                 </div>
@@ -147,13 +150,19 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                 <div className={style.toggles}>
                   <button
                     className={style.accept}
-                    onClick={() => handleAcceptActivateService(serviceModeInfo.action?.id)}>
+                    onClick={() => {
+                      handleAcceptActivateService(serviceModeInfo.action?.id);
+                      handleCloseAside();
+                      }}>
                     Принять
                   </button>
 
                   <button
                     className={style.cancel}
-                    onClick={() => handleRejectActivateService(serviceModeInfo.action?.id)}>
+                    onClick={() => {
+                      handleRejectActivateService(serviceModeInfo.action?.id);
+                      handleCloseAside();
+                      }}>
                     Отклонить
                   </button>
                 </div>

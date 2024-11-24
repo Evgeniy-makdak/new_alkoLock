@@ -20,7 +20,8 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       <div className={style.alcolockInfo}>
         <Info fields={fields} />
 
-        {alkolock && !!alkolock.vehicleBind && <AlkozamkiServiceMode alkolock={alkolock} />}
+        {alkolock && !!alkolock.vehicleBind && <AlkozamkiServiceMode alkolock={alkolock} handleCloseAside={function (): void {
+        } } />}
       </div>
     </Loader>
   );

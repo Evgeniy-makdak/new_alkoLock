@@ -13,10 +13,10 @@ import { useEventsTable } from '../hooks/useEventsTable';
 
 interface EventsTableProps {
   handleClickRow: (id: string | number) => void;
-  onBranchChange: () => void;
+  // onBranchChange: () => void;
 }
 
-export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps) => {
+export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
@@ -36,15 +36,16 @@ export const EventsTable = ({ handleClickRow, onBranchChange }: EventsTableProps
       handleFilterChange();
     };
     window.addEventListener('resetFilters', resetFiltersListener);
+console.log(filtersData);
 
     return () => {
       window.removeEventListener('resetFilters', resetFiltersListener);
     };
   }, [filtersData]);
 
-  useEffect(() => {
-    onBranchChange(); // Вызываем очистку фильтров при изменении филиала
-  }, [onBranchChange]);
+  // useEffect(() => {
+  //   onBranchChange(); // Вызываем очистку фильтров при изменении филиала
+  // }, [onBranchChange]);
 
   useEffect(() => {
     tableData.apiRef.current.setPage(0);

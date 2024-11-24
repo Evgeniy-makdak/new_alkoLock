@@ -103,6 +103,10 @@ const mustBeDate = (context: YupContext) => {
   return licenseCode && licenseCode.trim().length > 0;
 };
 
+const isStringMatchGapStartOrFinish = (value: string) => {
+  return value.match(/^\s+|\s+$/g);
+};
+
 export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =>
   yup.object({
     licenseClass: yup.array().test({
@@ -149,6 +153,10 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
       .test({
         name: 'email',
         test(value, context) {
+         if (isStringMatchGapStartOrFinish(value)) {
+          return context.createError({ message: 'В строке есть пробелы' });
+         }
+
           if (value.length === 0) {
             return context.createError({ message: ValidationMessages.required });
           }
@@ -161,6 +169,9 @@ export const schema = (id: ID, isGlobalAdmin: boolean): yup.ObjectSchema<Form> =
     password: yup.string().test({
       name: 'password',
       test(value, context) {
+        if (isStringMatchGapStartOrFinish(value)) {
+          return context.createError({ message: 'В строке есть пробелы' });
+         }
         if (value.length === 0 && !id) {
           return context.createError({ message: ValidationMessages.required });
         }

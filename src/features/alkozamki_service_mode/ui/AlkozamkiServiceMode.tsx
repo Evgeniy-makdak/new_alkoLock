@@ -15,12 +15,14 @@ interface AlkozamkiServiceModeProps {
   deviceAction?: IDeviceAction;
   alkolock: IAlcolock;
   refetch?: () => void;
+  handleCloseAside: () => void;
 }
 
 export const AlkozamkiServiceMode = ({
   deviceAction,
   alkolock,
   refetch,
+  handleCloseAside,
 }: AlkozamkiServiceModeProps) => {
   const {
     getButtons,
@@ -34,7 +36,7 @@ export const AlkozamkiServiceMode = ({
     isLoadingActivateServiceModeMutation,
     modeResetAt,
     hasTime,
-  } = useAlkozamkiServiceMode(deviceAction, alkolock);
+  } = useAlkozamkiServiceMode(deviceAction, alkolock, handleCloseAside);
 
   return (
     <>
