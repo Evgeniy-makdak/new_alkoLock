@@ -13,6 +13,7 @@ export const useUserSelect = (
   useUserAttachSort = true,
   excludeUserWithId2 = false,
   onlyWithDriverId = true,
+  equalsBranchId = true,
   getOptions: (driver: any) => [string, ID] | [] = adapterMapOptions,
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +23,11 @@ export const useUserSelect = (
 
   const { data, isLoading } = useUserListQuery({
     searchQuery,
-    filterOptions: { branchId: branchId, notBranchId: notInBranch },
+    filterOptions: { 
+      branchId: branchId, 
+      notBranchId: notInBranch,
+      equalsBranchId: equalsBranchId, 
+    },
     sortBy: useUserAttachSort ? SortTypes.USER_ATTACH : SortTypes.USER,
     order: SortsTypes.asc,
   });

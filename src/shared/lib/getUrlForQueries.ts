@@ -293,11 +293,12 @@ export function getUserListURL(
 export function getUserListURLToAttachments(
   { searchQuery, filterOptions, startDate, endDate }: QueryOptions,
   widthCars: boolean,
-  excludeDisabledUsers: boolean, // добавляем новый параметр
+  excludeDisabledUsers: boolean, 
 ) {
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
   const driverSpecified = filterOptions?.driverSpecified;
+  const equalsBranchId = filterOptions?.equalsBranchId; // Этот параметр при false выводит список пользователей из других филиалов.
 
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
@@ -333,6 +334,8 @@ export function getUserListURLToAttachments(
   if (excludeDisabledUsers) {
     queries += `&all.disabled.in=false`;
   }
+
+  queries += `&equalsBranchId=${equalsBranchId}`;
 
   return `api/users/full-name?${queries}&match=${trimmedQuery}`;
 }

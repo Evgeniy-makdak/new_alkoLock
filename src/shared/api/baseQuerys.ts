@@ -164,9 +164,9 @@ export class UsersApi {
     });
   }
 
-  static getListToAttachments(options: QueryOptions, widthCars = false) {
+  static getListToAttachments(options: QueryOptions, widthCars = false, excludeDisabledUsers = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
-      url: getUserListURLToAttachments(options, widthCars, false),
+      url: getUserListURLToAttachments(options, widthCars, excludeDisabledUsers),
     });
   }
 

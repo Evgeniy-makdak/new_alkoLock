@@ -70,7 +70,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
     setPreviousValidValue('');
     setTimeout(() => {
       setValue(previousValidValue);
-    }, 500);
+    }, 1000);
   };
 
   return (

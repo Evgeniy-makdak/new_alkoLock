@@ -17,6 +17,7 @@ type UsersSelectProps<T> = {
   useUserAttachSort?: boolean; 
   excludeUserWithId2?: boolean;
   onlyWithDriverId?: boolean;
+  equalsBranchId?: boolean;
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
@@ -26,17 +27,17 @@ export const UsersSelect = <T,>({
   excludeUserWithId2,
   onlyWithDriverId,
   needDriverId,
+  equalsBranchId,
   // useUserAttachSort = false, // По умолчанию сортировка по USER
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
   const { onChange, isLoading, onReset, driversList } = useUserSelect(
-    // vieBranch,
     branchId,
     notInBranch,
-    needDriverId,
-    // useUserAttachSort, // Передаем флаг в хук
-    excludeUserWithId2,
-    onlyWithDriverId,
+    needDriverId, 
+    excludeUserWithId2, 
+    onlyWithDriverId, 
+    equalsBranchId, 
     adapterMapOptionsForList,
   );
 

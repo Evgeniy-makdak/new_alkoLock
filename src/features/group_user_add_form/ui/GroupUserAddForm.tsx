@@ -45,6 +45,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
           value={users}
           setValueStore={onSelect}
           label="Поиск по пользователю"
+          equalsBranchId={false}
         />
         {error && <span className={style.errorText}>Обязательное поле</span>}
 

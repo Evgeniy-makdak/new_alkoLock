@@ -86,6 +86,7 @@ export type QueryOptions = {
     driverSpecified?: boolean;
     match?: string;
     trimmedQuery?: string;
+    equalsBranchId?: boolean;
   };
   id?: ID;
   headers?: HeaderReq;
