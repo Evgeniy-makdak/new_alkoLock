@@ -50,9 +50,9 @@ export const UsersTable: FC<UsersTableProps> = ({
     };
   }, [filtersData]);
 
-  useEffect(() => {
-    onBranchChange(); // Сброс фильтров при изменении филиала
-  }, [onBranchChange]);
+  // useEffect(() => {
+  //   onBranchChange(); // Сброс фильтров при изменении филиала
+  // }, [onBranchChange]);
 
   useEffect(() => {
     if (tableData.sortModel) {

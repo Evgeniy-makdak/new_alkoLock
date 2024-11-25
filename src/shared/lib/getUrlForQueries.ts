@@ -182,9 +182,9 @@ const getSelectBranchToQueryUrl = ({
   let branch = '';
 
   if (branchId && !notBranch) {
-    branch = `branchId=${branchId}`;
+    branch = `all.assignment.branch.id.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    branch = `branchId=${notBranch}`;
+    branch = `all.assignment.branch.id.in=${notBranch}`;
   } else if (notBranch) {
     branch = `branchId=${notBranch}&all.id.notIn=1`;
   }
@@ -291,16 +291,17 @@ export function getUserListURL(
 }
 //////////////////
 export function getUserListURLToAttachments(
-  { searchQuery, filterOptions, startDate, endDate }: QueryOptions,
+  { filterOptions, startDate, endDate }: QueryOptions,
   widthCars: boolean,
   excludeDisabledUsers: boolean, 
+  // excludeSuperAdmin: boolean,
 ) {
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
   const driverSpecified = filterOptions?.driverSpecified;
   const equalsBranchId = filterOptions?.equalsBranchId; // Этот параметр при false выводит список пользователей из других филиалов.
 
-  const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
+  // const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
   let queries = getSelectBranchToQueryUrl({
     parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
@@ -317,15 +318,6 @@ export function getUserListURLToAttachments(
     queries += `&all.createdAt.lessThanOrEqual=${DateUtils.getEndFilterDate(endDate)}`;
   }
 
-  // if (trimmedQuery) {
-  //   queries += `&any.match.contains=${trimmedQuery}`;
-  //   queries += `&any.email.contains=${trimmedQuery}`;
-  // }
-
-  // if (sortBy && order) {
-  //   queries += getSortQuery(sortBy, order);
-  // }
-
   if (widthCars) {
     queries += `&all.driver.vehicleAllotments.include=true`;
   }
@@ -335,9 +327,13 @@ export function getUserListURLToAttachments(
     queries += `&all.disabled.in=false`;
   }
 
+  // if (excludeSuperAdmin) {
+  //   queries += `&all.id.notIn=1`
+  // }
+
   queries += `&equalsBranchId=${equalsBranchId}`;
 
-  return `api/users/full-name?${queries}&match=${trimmedQuery}`;
+  return `api/users/full-name?${queries}&sort=surname,firstName,middleName`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

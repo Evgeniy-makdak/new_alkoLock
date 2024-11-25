@@ -170,6 +170,12 @@ export class UsersApi {
     });
   }
 
+  // static getListToAttachments(options: QueryOptions, widthCars = false, excludeDisabledUsers = false, excludeSuperAdmin = true) {
+  //   return getQuery<{ content: IUser[]; totalElements: number }>({
+  //     url: getUserListURLToAttachments(options, widthCars, excludeDisabledUsers, excludeSuperAdmin),
+  //   });
+  // }
+
   static getUser(userId: ID) {
     return getQuery<IUser>({ url: `api/users/${userId}` });
   }

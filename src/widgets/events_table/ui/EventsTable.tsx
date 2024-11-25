@@ -36,7 +36,6 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
       handleFilterChange();
     };
     window.addEventListener('resetFilters', resetFiltersListener);
-console.log(filtersData);
 
     return () => {
       window.removeEventListener('resetFilters', resetFiltersListener);

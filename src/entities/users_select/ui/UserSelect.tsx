@@ -18,6 +18,7 @@ type UsersSelectProps<T> = {
   excludeUserWithId2?: boolean;
   onlyWithDriverId?: boolean;
   equalsBranchId?: boolean;
+  excludeSuperAdmin?: boolean;
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
