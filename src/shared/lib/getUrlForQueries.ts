@@ -184,9 +184,10 @@ const getSelectBranchToQueryUrl = ({
   if (branchId && !notBranch) {
     branch = `all.assignment.branch.id.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    branch = `all.assignment.branch.id.in=${notBranch}`;
+    // branch = `all.assignment.branch.id.in=${notBranch}`;
+    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   } else if (notBranch) {
-    branch = `branchId=${notBranch}&all.id.notIn=1`;
+    // branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   }
 
   return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
@@ -299,7 +300,7 @@ export function getUserListURLToAttachments(
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
   const driverSpecified = filterOptions?.driverSpecified;
-  const equalsBranchId = filterOptions?.equalsBranchId; // Этот параметр при false выводит список пользователей из других филиалов.
+  // const equalsBranchId = filterOptions?.equalsBranchId; // Этот параметр при false выводит список пользователей из других филиалов.
 
   // const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
@@ -331,7 +332,7 @@ export function getUserListURLToAttachments(
   //   queries += `&all.id.notIn=1`
   // }
 
-  queries += `&equalsBranchId=${equalsBranchId}`;
+  // queries += `&branch.id.notIn=${branchId}`;
 
   return `api/users/full-name?${queries}&sort=surname,firstName,middleName`;
 }
@@ -580,10 +581,11 @@ export function getEventsHistoryURL({
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
     branchId,
+    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24`,
   });
 
   if (userId) {
-    queries += `userAction.id.in=${userId}`;
+    queries += `user.id.in=${userId}`;
   }
 
   if (carId) {
@@ -591,7 +593,7 @@ export function getEventsHistoryURL({
   }
 
   if (alcolockId) {
-    queries += `device.id.in=${alcolockId}`;
+    queries += `&all.device.id.in=${alcolockId}`;
   }
 
   if (sortBy || order) {
@@ -609,6 +611,7 @@ export function getEventsHistoryURL({
 
   return `api/device-events?page=${page || 0}&size=${limit || 50}${queries}`;
 }
+
 export function getEventsApiURL({
   page,
   limit,
