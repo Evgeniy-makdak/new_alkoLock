@@ -354,7 +354,7 @@ export class EventsApi {
     return getQuery<number>({ url: getUrlCountEventsQuery(options) });
   }
   static getEventItem(id: ID) {
-    return getQuery<IDeviceAction>({ url: `api/device-events/${id}` });
+    return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });
   }
   static getEventItemForAutoServise(id: ID) {
     return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });

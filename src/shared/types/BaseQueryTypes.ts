@@ -365,6 +365,7 @@ export interface IDeviceAction {
   summary: ISummary;
   vehicleRecord: ICar;
   action: {
+    id: any;
     device: any;
     vehicleRecord: ICar;
   }

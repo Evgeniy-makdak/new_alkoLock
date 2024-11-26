@@ -20,7 +20,6 @@ const AutoService = () => {
   } = useAutoService();
   const prevBranch = useRef(null);
   const { selectedBranchState } = appStore((state) => state);
-console.log(selectedItemId);
 
   const handleBranchChange = () => {
     const event = new CustomEvent('resetFilters'); // Генерируем событие сброса фильтров

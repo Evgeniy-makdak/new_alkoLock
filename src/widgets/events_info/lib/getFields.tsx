@@ -8,7 +8,7 @@ import { Formatters } from '@shared/utils/formatters';
 export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   if (!data) return [];
 
-  const car = data?.action.vehicleRecord;
+  const car = data?.vehicleRecord;
   const carString = Formatters.carNameFormatter(car);
   const carForCopy = Formatters.carNameFormatter(car, false, false);
   const exhaleError = (data.summary?.exhaleError ||

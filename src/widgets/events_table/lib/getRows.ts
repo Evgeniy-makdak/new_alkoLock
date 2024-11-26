@@ -15,6 +15,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
 
       return {
         id: item.id,
+        actionId: item?.action.id,
         [ValuesHeader.DATE_OCCURRENT]: timestamp
           ? Formatters.formatISODate(timestamp) ?? '-'
           : '-',

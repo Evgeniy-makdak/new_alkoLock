@@ -9,7 +9,6 @@ export const useEventsApi = (options: QueryOptions) => {
     EventsApi.getList,
     { options, settings: { refetchInterval: 30000, retry: 1 } },
   );
-console.log('Строки событий', data?.data.content);
 
   return { isLoading, data, refetch };
 };

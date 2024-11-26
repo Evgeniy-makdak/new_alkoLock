@@ -19,58 +19,35 @@ type PhoneInputProps = {
   error?: string;
 } & DefaultInputComponentProps;
 
+let isMount = false;
+
 export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) => {
   const [currentCountry, setCurrentCountry] = useState<Country>('RU');
-  const [innerValue, setInnerValue] = useState(value || '');
+  // const [innerValue, setInnerValue] = useState(value || '');
   const [validationError, setValidationError] = useState<string | null>(null);
-  const [previousValidValue, setPreviousValidValue] = useState(value || '');
-  const [isCountryChanging, setIsCountryChanging] = useState(false); // Флаг для отслеживания смены страны
 
-  useEffect(() => {
-    if (value !== innerValue) {
-      setInnerValue(value || '');
-      setPreviousValidValue(value || '');
-    }
-  }, [value]);
+useEffect(() => {
+  const timer = setTimeout (() => isMount = true, 300)
+  return () => {
+    isMount = false;
+    clearTimeout(timer);
+  }
+}, [])
 
   const handleChange = (newValue: string | undefined) => {
-    if (isCountryChanging) {
-      setValidationError(null);
-      setInnerValue(newValue || '');
-      setValue(newValue);
-      return;
-    }
-
-    if (newValue?.startsWith('+86123') && newValue.length > 13) {
+    if ((newValue?.startsWith('+86123') && newValue.length > 13) || (newValue?.startsWith('+7') && newValue.length > 12)) {
       setValidationError('Некорректный номер');
-      setInnerValue(previousValidValue);
-      setValue(previousValidValue);
-      return;
-    }
-
-    if (newValue?.startsWith('+7') && newValue.length > 12) {
-      setValidationError('Некорректный номер');
-      setInnerValue(previousValidValue);
-      setValue(previousValidValue);
       return;
     }
 
     setValidationError(null);
-    setInnerValue(newValue || '');
-    setPreviousValidValue(newValue || '');
     setValue(newValue);
   };
 
   const handleCountryChange = (newCountry: Country | undefined) => {
-    setIsCountryChanging(true);
+    
     setCurrentCountry(newCountry);
-    setIsCountryChanging(true);
-    setInnerValue('');
-    setValue(previousValidValue);
-    setPreviousValidValue('');
-    setTimeout(() => {
-      setValue(previousValidValue);
-    }, 1000);
+    isMount && setTimeout(() => setValue(''), 100);
   };
 
   return (
@@ -91,7 +68,7 @@ export const PhoneInputSet: FC<PhoneInputProps> = ({ setValue, value, error }) =
         style={{ padding: 14 }}
       />
       {/* Если номер некорректен, выводим сообщение об ошибке */}
-      {(validationError || (error && innerValue && !isValidPhoneNumber(innerValue))) && (
+      {(validationError || (error && value && !isValidPhoneNumber(value))) && (
         <span className={style.error}>{validationError || error}</span>
       )}
     </div>

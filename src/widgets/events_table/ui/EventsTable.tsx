@@ -137,7 +137,9 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
         columns={tableData.columns}
         rows={tableData.rows}
         pointer
-        onRowClick={(params) => handleClickRow(params?.id)}
+        onRowClick={(params) => {
+          handleClickRow(params?.row.actionId)
+        }}
       />
     </>
   );

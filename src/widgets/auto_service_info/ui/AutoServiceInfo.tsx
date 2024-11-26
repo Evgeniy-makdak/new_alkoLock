@@ -12,7 +12,6 @@ interface AutoServiceInfoProps {
 
 export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInfoProps) => {
   const { deviceAction, fields, isLoading } = useAutoServiceInfo(selectedId);
-  console.log(deviceAction);
   
   return (
     <Loader isLoading={isLoading}>
