@@ -292,7 +292,7 @@ export function getUserListURL(
 }
 //////////////////
 export function getUserListURLToAttachments(
-  { filterOptions, startDate, endDate }: QueryOptions,
+  { filterOptions, startDate, endDate, searchQuery }: QueryOptions,
   widthCars: boolean,
   excludeDisabledUsers: boolean, 
   // excludeSuperAdmin: boolean,
@@ -302,7 +302,7 @@ export function getUserListURLToAttachments(
   const driverSpecified = filterOptions?.driverSpecified;
   // const equalsBranchId = filterOptions?.equalsBranchId; // Этот параметр при false выводит список пользователей из других филиалов.
 
-  // const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
+  const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
   let queries = getSelectBranchToQueryUrl({
     parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
@@ -326,6 +326,11 @@ export function getUserListURLToAttachments(
   // Добавляем параметр excludeDisabledUsers для исключения пользователей с isActive=false
   if (excludeDisabledUsers) {
     queries += `&all.disabled.in=false`;
+  }
+
+  if (trimmedQuery) {
+    // queries += `&any.vin.contains=${queryTrimmed}`;
+    queries += `&all.match.contains=${trimmedQuery}`;
   }
 
   // if (excludeSuperAdmin) {
