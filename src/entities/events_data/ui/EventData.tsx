@@ -20,7 +20,7 @@ type EventData = {
 
 export const EventData: FC<EventData> = ({ event, type, testid }) => {
   const hasMapLink =
-    !!(event?.events ?? [])[0] && !!event?.events[0].latitude && !!event?.events[0].longitude;
+    !!event?.latitude && !!event?.longitude;
 
   return (
     <div className={style.td}>
@@ -29,12 +29,12 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           <div className={style.row}>
             <span>Водитель</span>
 
-            <span>{Formatters.nameFormatter(event?.userAction)}</span>
+            <span>{Formatters.nameFormatter(event?.userRecord)}</span>
           </div>
           <div className={style.row}>
             <span>Почта</span>
 
-            <span>{event?.userAction?.email}</span>
+            <span>{event?.userRecord?.email}</span>
           </div>
         </>
       )}
@@ -44,12 +44,12 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           <div className={style.row}>
             <span>Наименование алкозамка</span>
 
-            <span>{event?.device?.name ?? '-'}</span>
+            <span>{event?.action.device?.name ?? '-'}</span>
           </div>
           <div className={style.row}>
             <span>Серийный номер алкозамка</span>
 
-            <span>{event?.device?.serialNumber ?? '-'}</span>
+            <span>{event?.action.device?.serialNumber ?? '-'}</span>
           </div>
         </>
       )}
@@ -59,22 +59,22 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           <div className={style.row}>
             <span>Марка ТС</span>
 
-            <span>{event?.action.vehicleRecord?.manufacturer ?? '-'}</span>
+            <span>{event?.action?.vehicleRecord?.manufacturer ?? '-'}</span>
           </div>
           <div className={style.row}>
             <span>Модель ТС</span>
 
-            <span>{event?.action.vehicleRecord?.model ?? '-'}</span>
+            <span>{event?.action?.vehicleRecord?.model ?? '-'}</span>
           </div>
           <div className={style.row}>
             <span>Государственный номер</span>
 
-            <span>{event?.action.vehicleRecord?.registrationNumber ?? '-'}</span>
+            <span>{event?.action?.vehicleRecord?.registrationNumber ?? '-'}</span>
           </div>
         </>
       )}
 
-      {event?.action?.vehicleRecord.type === 'SOBRIETY_TEST' && type !== HistoryTypes.byAlcolock && (
+      {event?.action?.vehicleRecord?.type === 'SOBRIETY_TEST' && type !== HistoryTypes.byAlcolock && (
         <div className={style.row}>
           <span>Результат тестирования</span>
 
@@ -89,8 +89,8 @@ export const EventData: FC<EventData> = ({ event, type, testid }) => {
           {hasMapLink ? (
             <MapLink
               testid={testid}
-              latitude={event.events[0].latitude}
-              longitude={event.events[0].longitude}
+              latitude={event.latitude}
+              longitude={event.longitude}
             />
           ) : (
             '-'
