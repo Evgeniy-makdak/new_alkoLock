@@ -187,7 +187,7 @@ const getSelectBranchToQueryUrl = ({
     // branch = `all.assignment.branch.id.in=${notBranch}`;
     branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   } else if (notBranch) {
-    // branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
+    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   }
 
   return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;

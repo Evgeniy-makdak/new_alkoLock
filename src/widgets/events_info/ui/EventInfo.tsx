@@ -12,8 +12,8 @@ interface EventInfo {
 
 export const EventInfo = ({ selectedEventId }: EventInfo) => {
   const { data, isLoading, fields } = useEventInfo(selectedEventId);
-  console.log(data);
-  console.log(fields);
+  // console.log(data);
+  // console.log(fields);
   
   
   return (

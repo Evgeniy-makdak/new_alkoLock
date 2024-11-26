@@ -57,7 +57,6 @@ export const useEventsTable = () => {
   const rows = useGetRows(data?.data?.content);
   const columns = useGetColumns(refetch);
   const totalCount = data?.data?.totalElements;
-
   const [page, setPage] = useState(0);
 
   useEffect(() => {

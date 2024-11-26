@@ -19,7 +19,7 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   const stateErrorCode = data?.summary?.stateErrorCode;
   const stateError = data?.summary?.stateError;
   const longitude =
-    !!(data?.events ?? [])[0] && !!data?.events[0].latitude && !!data?.events[0].longitude;
+    !!(data?.events ?? [])[0] && !!data?.latitude && !!data?.longitude;
   const fields: Field[] = [
     {
       label: 'Пользователь',
