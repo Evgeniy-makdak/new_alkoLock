@@ -11,14 +11,17 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   const car = data?.vehicleRecord;
   const carString = Formatters.carNameFormatter(car);
   const carForCopy = Formatters.carNameFormatter(car, false, false);
-  const exhaleError = (data.summary?.exhaleError ||
-    data?.summary?.result) as TypeSummaryExhaleResult;
+  const exhaleError = (data.summary?.exhaleError || data?.summary?.result) as TypeSummaryExhaleResult;
 
-  const name = Formatters.nameFormatter(data?.userRecord) || '';
-
+  const name = Formatters.nameFormatter(data?.userAction) || '';
   const stateErrorCode = data?.summary?.stateErrorCode;
   const stateError = data?.summary?.stateError;
-  const longitude = !!data && !!data?.latitude && !!data?.longitude;
+
+  // Проверяем, есть ли координаты в summary или в events
+  const latitude = data?.summary?.lat || data?.events?.[0]?.latitude; // Проверка для summary и events
+  const longitude = data?.summary?.lon || data?.events?.[0]?.longitude; // Проверка для summary и events
+  const longitudeExists = !!latitude && !!longitude;
+
   const fields: Field[] = [
     {
       label: 'Пользователь',
@@ -39,13 +42,12 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
           },
         }
       : null,
-
     {
       label: 'Серийный номер алкозамка',
       type: TypeOfRows.SERIAL_NUMBER,
       value: {
         copyble: true,
-        label: data?.action?.device.serialNumber || '',
+        label: data?.device.serialNumber || '',
       },
     },
     stateErrorCode
@@ -91,11 +93,11 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
       type: TypeOfRows.COORDS,
       value: {
         clickable: true,
-        label: longitude ? (
+        label: longitudeExists ? (
           <MapLink
             testid={testids.page_events.events_widget_info.EVENTS_WIDGET_INFO_MAPLINK}
-            latitude={data?.latitude}
-            longitude={data?.longitude}
+            latitude={latitude}
+            longitude={longitude}
           />
         ) : (
           '-'
@@ -103,5 +105,6 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
       },
     },
   ];
+
   return fields.filter((item) => item !== null);
 };

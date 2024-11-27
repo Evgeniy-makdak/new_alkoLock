@@ -89,7 +89,7 @@ export const summaryExhaleResult = {
   DEVICE_TEST_ERROR_HIGH_CONCENTRATION: (
     <CustomChipValue color="error" label={'Тестирование не пройдено'} />
   ),
-  DEVICE_TEST_ERROR_INTERRUPTED: <CustomChipValue color="warning" label="Прерван" />,
+  DEVICE_TEST_ERROR_INTERRUPTED: <CustomChipValue color="warning" label="Выдох прерван" />,
   DEVICE_TEST_ERROR_FALSIFICATION: (
     <CustomChipValue color="warning" label={'Фальсификация выдоха'} />
   ),

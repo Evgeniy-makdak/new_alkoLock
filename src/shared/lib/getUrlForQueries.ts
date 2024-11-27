@@ -588,13 +588,14 @@ export function getEventsHistoryURL({
     branchId,
     parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24`,
   });
+console.log({carId});
 
   if (userId) {
     queries += `user.id.in=${userId}`;
   }
 
   if (carId) {
-    queries += `&all.vehicle.id.in=${carId}`;
+    queries += `monitoringDevice.id.in=${carId}`;
   }
 
   if (alcolockId) {

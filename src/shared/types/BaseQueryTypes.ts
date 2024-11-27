@@ -249,6 +249,8 @@ export type IAuthenticate = {
 };
 
 export interface IAlcolock {
+  longitude: string | number;
+  latitude: string | number;
   modeResetAt?: string;
   id: ID;
   name: string;
@@ -329,10 +331,12 @@ export type IEvent = {
 export type IEvents = IEvent[];
 
 export interface ISummary {
+  longitude: string | number;
   photoFileName: string;
   testResult?: string;
   stateError?: string;
   stateErrorCode?: string;
+  latitude: string | number;
   appErrorCode: string;
   appErrorMessage: string;
   exhaleError: string;

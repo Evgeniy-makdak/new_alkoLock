@@ -19,7 +19,7 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
   const stateErrorCode = data?.summary?.stateErrorCode;
   const stateError = data?.summary?.stateError;
   const longitude =
-    !!(data?.events ?? [])[0] && !!data?.latitude && !!data?.longitude;
+    !!data?.summary.latitude && !!data?.summary.longitude;
   const fields: Field[] = [
     {
       label: 'Пользователь',
@@ -95,8 +95,8 @@ export const getFields = (data?: IDeviceAction | null | undefined): Field[] => {
         label: longitude ? (
           <MapLink
             testid={testids.page_events.events_widget_info.EVENTS_WIDGET_INFO_MAPLINK}
-            latitude={data?.events[0]?.latitude}
-            longitude={data?.events[0]?.longitude}
+            latitude={data?.summary?.latitude}
+            longitude={data?.summary?.longitude}
           />
         ) : (
           '-'
