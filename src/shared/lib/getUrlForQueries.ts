@@ -187,7 +187,7 @@ const getSelectBranchToQueryUrl = ({
     // branch = `all.assignment.branch.id.in=${notBranch}`;
     branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   } else if (notBranch) {
-    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
+    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1&all.isActive.in=true`;
   }
 
   return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
@@ -292,7 +292,7 @@ export function getUserListURL(
 }
 //////////////////
 export function getUserListURLToAttachments(
-  { filterOptions, startDate, endDate, searchQuery }: QueryOptions,
+  { filterOptions, startDate, endDate, searchQuery, page, limit }: QueryOptions,
   widthCars: boolean,
   excludeDisabledUsers: boolean, 
   // excludeSuperAdmin: boolean,
@@ -339,7 +339,7 @@ export function getUserListURLToAttachments(
 
   // queries += `&branch.id.notIn=${branchId}`;
 
-  return `api/users/full-name?${queries}&sort=surname,firstName,middleName`;
+  return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&sort=surname,firstName,middleName`;
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================
