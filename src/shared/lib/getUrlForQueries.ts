@@ -595,11 +595,11 @@ console.log({carId});
   }
 
   if (carId) {
-    queries += `monitoringDevice.id.in=${carId}`;
+    queries += `action.vehicle.id.in=${carId}`;
   }
 
   if (alcolockId) {
-    queries += `&all.device.id.in=${alcolockId}`;
+    queries += `action.device.id.in=${alcolockId}`;
   }
 
   if (sortBy || order) {

@@ -15,6 +15,7 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
   username: yup
     .string()
     .required(ValidationMessages.required)
+    .email(ValidationMessages.notValidEmail)
     .test({
       name: 'username',
       test: (value, ctx) => {
