@@ -49,7 +49,7 @@ export const ResetPassword = () => {
             </InputsColumnWrapper>
             <button
               data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
-              className={style.button_reset}
+              className={style.button}
               disabled={isLoading}
               type="submit">
               Отправить
