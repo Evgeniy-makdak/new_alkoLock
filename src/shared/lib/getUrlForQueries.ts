@@ -182,12 +182,12 @@ const getSelectBranchToQueryUrl = ({
   let branch = '';
 
   if (branchId && !notBranch) {
-    branch = `all.assignment.branch.id.in=${branchId}`;
+    branch = `any.assignment.branch.id.in=${branchId}&any.id.in=2`;
   } else if (notBranch && branchId !== 20) {
     // branch = `all.assignment.branch.id.in=${notBranch}`;
-    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
+    branch = `any.assignment.branch.id.notIn=${notBranch}&any.id.notIn=1`;
   } else if (notBranch) {
-    branch = `all.assignment.branch.id.notIn=${notBranch}&all.id.notIn=1&all.isActive.in=true`;
+    branch = `any.assignment.branch.id.notIn=${notBranch}&all.id.notIn=2&all.id.notIn=1&all.isActive.in=true`;
   }
 
   return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;

@@ -582,10 +582,11 @@ export type ChangePassword = {
 };
 
 export type UserDataLogin = {
-  detail: string;
-  username: string | null;
-  password: string | null;
+  detail?: string; 
+  username: string | null; 
+  password: string | null; 
   rememberMe: boolean;
+  email: string; 
 };
 
 export type AddPhotoItemResponse = {

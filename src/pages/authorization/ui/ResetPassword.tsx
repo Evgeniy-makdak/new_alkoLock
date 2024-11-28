@@ -9,7 +9,7 @@ import { useResetPassword } from '../hooks/useResetPassword';
 import style from './Authorization.module.scss';
 
 export const ResetPassword = () => {
-  const { isLoading, handleSubmit, register, errorEmail } = useResetPassword();
+  const { isLoading, handleSubmit, register, errorUsername } = useResetPassword();
 
   return (
     <div className={style.authorization}>
@@ -35,16 +35,16 @@ export const ResetPassword = () => {
             className={style.form}
             onSubmit={handleSubmit}>
             <InputsColumnWrapper>
-              <TextField
-                helperText={errorEmail as React.ReactNode}
-                error={!!errorEmail}
-                {...register('email')}
-                name="email"
+            <TextField
+                {...register('username')}
+                name="username"
+                helperText={errorUsername}
+                error={!!errorUsername}
                 autoComplete="off"
                 fullWidth
-                type="email"
-                variant="outlined"
-                label="e-mail"
+                type={'text'}
+                variant={'outlined'}
+                label="Логин"
               />
             </InputsColumnWrapper>
             <button

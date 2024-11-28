@@ -29,4 +29,8 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
       },
     }),
   rememberMe: yup.boolean().required(),
+  email: yup
+  .string()
+  // .required(ValidationMessages.required)
+  .email(ValidationMessages.notValidEmail),
 });

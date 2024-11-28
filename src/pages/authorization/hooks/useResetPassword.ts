@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useResetPasswordApi } from '@pages/authorization/api/useResetPassworApi';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
-import { Form, schema } from '../lib/validateReset'; 
+import { Form, schema } from '../lib/validate'; 
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { enqueueSnackbar } from 'notistack';
 
@@ -17,9 +17,12 @@ export const useResetPassword = () => {
     control,
     setError,
     formState: {
-      errors: { email }, 
+      errors: { username }, 
     },
-  } = useForm<Form>({
+  } = useForm({
+    defaultValues: {
+      rememberMe: false,
+    },
     resolver: yupResolver(schema),
   });
 
@@ -33,7 +36,7 @@ export const useResetPassword = () => {
           navigate(RoutePaths.auth);
         } else {
           const errorMessage = response?.detail || ValidationMessages.defaultError;
-          setError('email', {
+          setError('username', {
             type: 'custom',
             message: errorMessage,
           });
@@ -41,7 +44,7 @@ export const useResetPassword = () => {
       },
       onError: (error) => {
         const errorMessage = (error as any)?.detail || ValidationMessages.defaultError;
-        setError('email', {
+        setError('username', {
           type: 'custom',
           message: errorMessage,
         });
@@ -49,11 +52,13 @@ export const useResetPassword = () => {
     });
   };
 
+  const errorUsername = username ? username.message : '';
+
   return {
     handleSubmit: handleSubmit(onSubmit),
     isLoading,
     register,
-    errorEmail: email?.message || '', 
+    errorUsername, 
     control,
   };
 };
