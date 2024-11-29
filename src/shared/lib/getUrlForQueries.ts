@@ -277,6 +277,8 @@ export function getUserListURL(
 
   if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
+  } else {
+    return `api/users?page=${page || 0}&size=${limit || 20}${queries}&sort=surname,firstName,middleName,ASC`
   }
 
   if (widthCars) {
@@ -525,7 +527,7 @@ export function getAlcolockListURL({
     queries += `&any.lastModifiedBy.match.contains=${queryTrimmed}`;
   }
 
-  return `api/monitoring-devices?page=${page}&size=${limit}${queries}`;
+  return `api/monitoring-devices?page=${page}&size=${limit}${queries}&sort=name`;
 }
 
 export function getAlkolockURL(id: ID) {
@@ -655,6 +657,8 @@ export function getEventsApiURL({
 
   if (sortBy && order) {
     queries += getSortQueryEvents(sortBy, order);
+  } else {
+    return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp,DESC`;
   }
 
   if (queryTrimmed.length) {
@@ -680,7 +684,7 @@ export function getEventsApiURL({
     return eventQuery;
   }
 
-  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}`;
+  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp`;
 }
 
 export function getEventListForAutoServiceURL({
