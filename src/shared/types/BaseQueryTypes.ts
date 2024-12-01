@@ -200,8 +200,8 @@ export interface ICar {
   action?: {
     device: {
       serialNumber: string;
-    }
-  }
+    };
+  };
 }
 
 interface IActiveActions {
@@ -325,7 +325,7 @@ export type IEvent = {
   user: { id: ID; branchId: ID };
   action: {
     eventType: string;
-  }
+  };
 };
 
 export type IEvents = IEvent[];
@@ -372,7 +372,7 @@ export interface IDeviceAction {
     id: any;
     device: any;
     vehicleRecord: ICar;
-  }
+  };
 }
 
 type FieldError = {
@@ -582,11 +582,11 @@ export type ChangePassword = {
 };
 
 export type UserDataLogin = {
-  detail?: string; 
-  username: string | null; 
-  password: string | null; 
+  detail?: string;
+  username: string | null;
+  password: string | null;
   rememberMe: boolean;
-  email: string; 
+  email: string;
 };
 
 export type AddPhotoItemResponse = {

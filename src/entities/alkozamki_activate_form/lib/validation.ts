@@ -15,6 +15,7 @@ export const schema: yup.ObjectSchema<Form> = yup
       .positive('значение должно быть больше 0')
       .integer('значение должно быть числом')
       .required(ValidationMessages.required)
-      .min(1, 'значение должно быть больше 0'),
+      .min(1, 'значение должно быть больше 0')
+      .max(99, 'Нельзя установить более чем на 99 часов'),
   })
   .required(ValidationMessages.required);

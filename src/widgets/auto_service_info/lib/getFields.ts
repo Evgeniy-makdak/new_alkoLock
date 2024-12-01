@@ -6,13 +6,13 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
   if (!itemData) return [];
   const naming = itemData?.device?.name ?? '-';
   const serialNumber = itemData?.device?.serialNumber ?? '-';
-  const car = Formatters.carNameFormatter(itemData?.device?.vehicleBind?.vehicle);
+  const car = Formatters.carNameFormatter(itemData?.vehicleRecord);
   const carForCopy = Formatters.carNameFormatter(
     itemData?.device?.vehicleBind?.vehicle,
     false,
     false,
   );
-  const name = Formatters.nameFormatter(itemData?.device?.lastModifiedBy);
+  const name = Formatters.nameFormatter(itemData?.userAction);
   const date = Formatters.formatISODate(itemData?.device?.createdAt);
 
   return [
