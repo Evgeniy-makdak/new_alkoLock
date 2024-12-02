@@ -590,7 +590,7 @@ export function getEventsHistoryURL({
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
     branchId,
-    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24`,
+    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,31`,
   });
 console.log({carId});
 
