@@ -35,7 +35,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
       </Typography>
       <Stack gap={3}>
         <UsersSelect
-          excludeUserWithId2={true} 
+          excludeUserWithId2={true}
           onlyWithDriverId={false}
           notInBranch={branchId}
           vieBranch
@@ -47,6 +47,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
           label="Поиск по пользователю"
           equalsBranchId={false}
           excludeSuperAdmin={true}
+          showBranchName={true}
         />
         {error && <span className={style.errorText}>Обязательное поле</span>}
 

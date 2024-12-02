@@ -14,32 +14,32 @@ type UsersSelectProps<T> = {
   branchId?: ID;
   notInBranch?: ID;
   needDriverId?: boolean;
-  useUserAttachSort?: boolean; 
+  useUserAttachSort?: boolean;
   excludeUserWithId2?: boolean;
   onlyWithDriverId?: boolean;
   equalsBranchId?: boolean;
   excludeSuperAdmin?: boolean;
+  showBranchName?: boolean;
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
-  // vieBranch,
+  showBranchName = false,
   branchId,
   notInBranch,
   excludeUserWithId2,
   onlyWithDriverId,
   needDriverId,
   equalsBranchId,
-  // useUserAttachSort = false, // По умолчанию сортировка по USER
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
   const { onChange, isLoading, onReset, driversList } = useUserSelect(
     branchId,
     notInBranch,
-    needDriverId, 
-    excludeUserWithId2, 
-    onlyWithDriverId, 
-    equalsBranchId, 
-    adapterMapOptionsForList,
+    needDriverId,
+    excludeUserWithId2,
+    onlyWithDriverId,
+    equalsBranchId,
+    (driver) => adapterMapOptionsForList(driver, showBranchName),
   );
 
   return (
