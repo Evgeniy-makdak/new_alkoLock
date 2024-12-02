@@ -223,9 +223,9 @@ const getSelectBranchQueryUrl = ({
   if (branchId && !notBranch) {
     branch = `assignment.branch.id.in=${branchId}`;
   } else if (notBranch && branchId !== 20) {
-    branch = `assignment.branch.id.notEquals=${notBranch}`;
+    branch = `assignment.branch.id.notIn=${notBranch}`;
   } else if (notBranch) {
-    branch = `assignment.branch.id.notEquals=${notBranch}&all.id.notIn=1`;
+    branch = `assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
   }
 
   return `${parameters ? parameters : ''}&all.${page ? page + '.' : ''}${branch}`;
@@ -486,7 +486,7 @@ export function getAlcolocksURL({
   }
 
   if (queryTrimmed.length) {
-    queries += `&any.vehicle.monitoringDevice.match.contains=${queryTrimmed}`;
+    queries += `&any.match.contains=${queryTrimmed}`;
   }
   return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}&sort=name`;
 }
