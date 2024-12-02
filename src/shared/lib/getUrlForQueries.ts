@@ -185,7 +185,7 @@ const getSelectBranchToQueryUrl = ({
     branch = `any.assignment.branch.id.in=${branchId}&any.id.in=2`;
   } else if (notBranch && branchId !== 20) {
     // branch = `all.assignment.branch.id.in=${notBranch}`;
-    branch = `any.assignment.branch.id.notIn=${notBranch}&any.id.notIn=1`;
+    branch = `any.assignment.branch.id.notIn=${notBranch}&all.id.notIn=2&all.id.notIn=1`;
   } else if (notBranch) {
     branch = `any.assignment.branch.id.notIn=${notBranch}&all.id.notIn=2&all.id.notIn=1&all.isActive.in=true`;
   }
@@ -278,7 +278,7 @@ export function getUserListURL(
   if (sortBy && order) {
     queries += getSortQuery(sortBy, order);
   } else {
-    return `api/users?page=${page || 0}&size=${limit || 20}${queries}&sort=surname,firstName,middleName,ASC`
+    return `api/users?page=${page || 0}&size=${limit || 20}${queries}&sort=surname,firstName,middleName,ASC`;
   }
 
   if (widthCars) {
@@ -296,7 +296,7 @@ export function getUserListURL(
 export function getUserListURLToAttachments(
   { filterOptions, startDate, endDate, searchQuery, page, limit }: QueryOptions,
   widthCars: boolean,
-  excludeDisabledUsers: boolean, 
+  excludeDisabledUsers: boolean,
   // excludeSuperAdmin: boolean,
 ) {
   const branchId = filterOptions?.branchId;
@@ -592,7 +592,7 @@ export function getEventsHistoryURL({
     branchId,
     parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,31`,
   });
-console.log({carId});
+  console.log({ carId });
 
   if (userId) {
     queries += `user.id.in=${userId}`;
