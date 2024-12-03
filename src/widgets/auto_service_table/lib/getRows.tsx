@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import type { ChipProps } from '@mui/material';
 import type { GridRowsProp } from '@mui/x-data-grid';
 
-import { type IDeviceAction } from '@shared/types/BaseQueryTypes';
+import { EventType, type IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 import { SearchMethods } from '@shared/utils/global_methods';
 
@@ -38,18 +38,18 @@ const getStatus = (item: IDeviceAction) => {
   const requestType = SearchMethods.findFirstRequestEvent(item.events)?.eventType;
 
   const isAcknowledged = !!(item.events ?? []).find(
-    (event) => event.eventType === 'APP_ACKNOWLEDGED',
+    (event) => event.eventType === EventType.APP_ACKNOWLEDGED,
   );
   let status;
 
-  if (lastEvent?.eventType === 'Запрос сервера') {
+  if (lastEvent?.eventType === EventType.SERVER_REQUEST) {
     status = 'Ожидание водителя';
-  } else if (lastEvent?.eventType === 'Запрос приложения') {
+  } else if (lastEvent?.eventType === EventType.APP_REQUEST) {
     status = 'Ожидание оператора';
-  } else if (lastEvent?.eventType === 'REJECTED') {
+  } else if (lastEvent?.eventType === EventType.REJECTED) {
     if (isAcknowledged) {
       status = 'Оператор отклонил';
-    } else if (requestType === 'Запрос сервера') {
+    } else if (requestType === EventType.SERVER_REQUEST) {
       status = 'Водитель отклонил';
     } else {
       status = 'Оператор отклонил';
@@ -57,7 +57,7 @@ const getStatus = (item: IDeviceAction) => {
   } else if (lastEvent?.eventType === 'ACCEPTED') {
     if (isAcknowledged) {
       status = 'Оператор подтвердил';
-    } else if (requestType === 'Запрос сервера') {
+    } else if (requestType === EventType.SERVER_REQUEST) {
       status = 'Водитель подтвердил';
     } else {
       status = 'Оператор подтвердил';

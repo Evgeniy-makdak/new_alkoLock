@@ -75,7 +75,10 @@ export const AlkozamkiServiceMode = ({
         headerTitle={'Отключить сервисный режим?'}
         toggleModal={toggleDeactivatePopup}
         buttons={[
-          <Button key={'action_1'} typeButton={ButtonsType.action} onClick={handleDeactivate}>
+          <Button key={'action_1'} typeButton={ButtonsType.action} onClick={() => {
+            handleDeactivate();
+            toggleDeactivatePopup();
+            }}>
             {'Отключить'}
           </Button>,
           <Button key={'action_2'} typeButton={ButtonsType.action} onClick={toggleDeactivatePopup}>

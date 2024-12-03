@@ -1,5 +1,7 @@
 // import type { IEventsType } from '@shared/types/BaseQueryTypes';
 
+// import { IEventsType } from "@shared/types/BaseQueryTypes";
+
 export class AppConstants {
   static rolesSystemList = [
     {
@@ -174,25 +176,25 @@ export class AppConstants {
     },
   ];
 
-  // static EVENT_TYPES = Object.freeze({
-  //   // event types
-  //   alcolockEventStartedRegularMode: 'ALCOLOCK_EVENT_STARTED_REGULAR_MODE',
-  //   alcolockEventStartedMaintenanceMode: 'ALCOLOCK_EVENT_STARTED_MAINTENANCE_MODE',
-  //   alcolockEventIgnitionStarted: 'ALCOLOCK_EVENT_IGNITION_STARTED',
-  //   alcolockEventIgnitionStopped: 'ALCOLOCK_EVENT_IGNITION_STOPPED',
-  //   alcolockEventEngineBlocked: 'ALCOLOCK_EVENT_ENGINE_BLOCKED',
-  //   alcolockEventEngineUnblocked: 'ALCOLOCK_EVENT_ENGINE_UNBLOCKED',
-  //   alcolockEventMaintenanceModeOn: 'ALCOLOCK_EVENT_MAINTENANCE_MODE_ON',
-  //   alcolockEventMaintenanceModeOff: 'ALCOLOCK_EVENT_MAINTENANCE_MODE_OFF',
-  //   alcolockEventEmergencyModeOn: 'ALCOLOCK_EVENT_EMERGENCY_MODE_ON',
-  //   alcolockEventEmergencyModeOff: 'ALCOLOCK_EVENT_EMERGENCY_MODE_OFF',
-  //   alcolockEventDoorOpened: 'ALCOLOCK_EVENT_DOOR_OPENED',
-  //   alcolockEventDoorClosed: 'ALCOLOCK_EVENT_DOOR_CLOSED',
-  //   alcolockEventBlockedUnauthorized: 'ALCOLOCK_EVENT_BLOCKED_UNAUTHORIZED',
-  //   alcolockEventBlockedTimeout: 'ALCOLOCK_EVENT_BLOCKED_TIMEOUT',
-  //   alcolockError: 'ALCOLOCK_ERROR',
-  //   sobrietyTest: 'SOBRIETY_TEST',
-  // });
+  static EVENT_TYPES = Object.freeze({
+    // event types
+    alcolockEventStartedRegularMode: 'ALCOLOCK_EVENT_STARTED_REGULAR_MODE',
+    alcolockEventStartedMaintenanceMode: 'ALCOLOCK_EVENT_STARTED_MAINTENANCE_MODE',
+    alcolockEventIgnitionStarted: 'ALCOLOCK_EVENT_IGNITION_STARTED',
+    alcolockEventIgnitionStopped: 'ALCOLOCK_EVENT_IGNITION_STOPPED',
+    alcolockEventEngineBlocked: 'ALCOLOCK_EVENT_ENGINE_BLOCKED',
+    alcolockEventEngineUnblocked: 'ALCOLOCK_EVENT_ENGINE_UNBLOCKED',
+    alcolockEventMaintenanceModeOn: 'ALCOLOCK_EVENT_MAINTENANCE_MODE_ON',
+    alcolockEventMaintenanceModeOff: 'ALCOLOCK_EVENT_MAINTENANCE_MODE_OFF',
+    alcolockEventEmergencyModeOn: 'ALCOLOCK_EVENT_EMERGENCY_MODE_ON',
+    alcolockEventEmergencyModeOff: 'ALCOLOCK_EVENT_EMERGENCY_MODE_OFF',
+    alcolockEventDoorOpened: 'ALCOLOCK_EVENT_DOOR_OPENED',
+    alcolockEventDoorClosed: 'ALCOLOCK_EVENT_DOOR_CLOSED',
+    alcolockEventBlockedUnauthorized: 'ALCOLOCK_EVENT_BLOCKED_UNAUTHORIZED',
+    alcolockEventBlockedTimeout: 'ALCOLOCK_EVENT_BLOCKED_TIMEOUT',
+    alcolockError: 'ALCOLOCK_ERROR',
+    sobrietyTest: 'SOBRIETY_TEST',
+  });
 
   // static eventTypesList: IEventsType = [
   //   {

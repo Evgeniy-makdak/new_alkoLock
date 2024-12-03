@@ -30,7 +30,16 @@ export type IEventType = {
   value?: string;
 };
 
-export type IEventsType = IEventType[];
+export type IEventsType = {
+  content: IEventType[]; // Массив событий
+  pageable: object; // Типизируйте более строго, если знаете структуру
+  totalElements: number;
+  totalPages: number;
+  last: boolean;
+  first: boolean;
+};
+
+// export type IEventsType = IEventType[];
 
 export interface Role {
   id: ID;
@@ -291,14 +300,14 @@ export interface IAlcolock {
 }
 
 export enum EventType {
-  APP_ACKNOWLEDGED = 'APP_ACKNOWLEDGED',
+  APP_ACKNOWLEDGED = 'Подтверждение приложением',
   SERVER_REQUEST = 'Запрос сервера',
   APP_REQUEST = 'Запрос приложения',
   REJECTED = 'REJECTED',
   ACCEPTED = 'ACCEPTED',
   OFFLINE_DEACTIVATION = 'OFFLINE_DEACTIVATION',
   OFFLINE_ACTIVATION = 'OFFLINE_ACTIVATION',
-  MAINTENANCE = 'MAINTENANCE',
+  MAINTENANCE = 'Сервисный',
 }
 /**
  * @type IEvent - сущность "событие" которое приходит с бэка

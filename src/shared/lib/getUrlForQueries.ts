@@ -574,8 +574,6 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
       return '';
   }
 }
-// const EVENTS_TYPES_BLACKLIST = ['SERVICE_MODE_ACTIVATE', 'SERVICE_MODE_DEACTIVATE'];
-
 // TODO => написать общую функцию по формированию query параметров
 export function getEventsHistoryURL({
   alcolockId,
@@ -592,7 +590,6 @@ export function getEventsHistoryURL({
     branchId,
     parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,31`,
   });
-  console.log({ carId });
 
   if (userId) {
     queries += `user.id.in=${userId}`;
@@ -633,7 +630,6 @@ export function getEventsApiURL({
   filterOptions,
 }: QueryOptions) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
-  // const blacklistEventsTypes = EVENTS_TYPES_BLACKLIST.join(',');
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
     parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,25,26,27,28,29,30,31,32,33`,
@@ -657,8 +653,6 @@ export function getEventsApiURL({
 
   if (sortBy && order) {
     queries += getSortQueryEvents(sortBy, order);
-  } else {
-    return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp,DESC`;
   }
 
   if (queryTrimmed.length) {
@@ -684,7 +678,7 @@ export function getEventsApiURL({
     return eventQuery;
   }
 
-  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp`;
+  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp,DESC`;
 }
 
 export function getEventListForAutoServiceURL({
@@ -716,8 +710,8 @@ export function getEventListForAutoServiceURL({
 
   if (sortBy || order) {
     // Значения по умолчанию для сортировки
-    const sortByDefault = 'name'; // Укажите значение по умолчанию для поля сортировки
-    const orderDefault = 'asc'; // Укажите значение по умолчанию для порядка сортировки
+    const sortByDefault = 'name'; 
+    const orderDefault = 'asc'; 
 
     // Использование значений по умолчанию, если sortBy и order не определены
     const sortByFinal = sortBy || sortByDefault;

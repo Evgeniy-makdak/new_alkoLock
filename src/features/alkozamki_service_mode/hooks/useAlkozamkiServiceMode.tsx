@@ -17,7 +17,11 @@ import { ServiceModeInfoActionTypes } from '../lib/const';
 import { serviceModeInfoMapper } from '../lib/serviceModeInfoMapper';
 import style from '../ui/AlkozamkiServiceMode.module.scss';
 
-export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: IAlcolock, handleCloseAside: () => void) => {
+export const useAlkozamkiServiceMode = (
+  deviceAction: IDeviceAction,
+  alkolock: IAlcolock,
+  handleCloseAside: () => void,
+) => {
   const {
     activateServiceModeMutation,
     cancelMutation,
@@ -58,7 +62,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
     }
     cancelMutation(id);
     setTimeout(() => {
-      // toggleDeactivatePopup();
+      toggleDeactivatePopup();
     }, 100);
   };
   const handleRejectActivateService = (id: ID) => {
@@ -94,7 +98,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
     try {
       const serviceModeInfo = serviceModeInfoMapper(deviceAction, alkolock);
 
-      const isServiceMode = alkolock?.mode === 'MAINTENANCE';
+      const isServiceMode = alkolock?.mode === 'Рабочий';
       if (serviceModeInfo.action) {
         const time = Formatters.parseISO8601Duration(serviceModeInfo.duration);
         const timeFormat = time ? `${time.hours}:${time.minutes}:${time.seconds}` : '-';
@@ -124,7 +128,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                     onClick={() => {
                       handleCancelActivate(serviceModeInfo.action?.id);
                       handleCloseAside();
-                      }}>
+                    }}>
                     Отменить
                   </button>
                 </div>
@@ -153,7 +157,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                     onClick={() => {
                       handleAcceptActivateService(serviceModeInfo.action?.id);
                       handleCloseAside();
-                      }}>
+                    }}>
                     Принять
                   </button>
 
@@ -162,14 +166,14 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                     onClick={() => {
                       handleRejectActivateService(serviceModeInfo.action?.id);
                       handleCloseAside();
-                      }}>
+                    }}>
                     Отклонить
                   </button>
                 </div>
               </>
             );
           case EventType.REJECTED:
-            if (serviceModeInfo.requestType === EventType.SERVER_REQUEST) {
+            if (serviceModeInfo.requestType === 'Запрос сервера') {
               return serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
                 <span>
@@ -224,6 +228,7 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
             return null;
         }
       } else {
+        console.log(alkolock?.mode);
         return (
           <div className={style.toggles}>
             <button
@@ -231,8 +236,8 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                 testids.page_alcolocks.alcolocks_widget_info
                   .ALCOLOCKS_WIDGET_INFO_AVTOSERVISE_BUTTON_ON
               }
-              className={!isServiceMode ? style.active : style.disabled}
-              onClick={!isServiceMode ? toggleActivatePopup : null}>
+              className={isServiceMode ? style.active : style.disabled}
+              onClick={isServiceMode ? toggleActivatePopup : null}>
               Включить
             </button>
             <button
@@ -240,8 +245,8 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
                 testids.page_alcolocks.alcolocks_widget_info
                   .ALCOLOCKS_WIDGET_INFO_AVTOSERVISE_BUTTON_OFF
               }
-              className={isServiceMode ? style.active : style.disabled}
-              onClick={isServiceMode ? toggleDeactivatePopup : null}>
+              className={!isServiceMode ? style.active : style.disabled}
+              onClick={!isServiceMode ? toggleDeactivatePopup : null}>
               Выключить
             </button>
           </div>
@@ -252,84 +257,6 @@ export const useAlkozamkiServiceMode = (deviceAction: IDeviceAction, alkolock: I
     }
   };
 
-  // const getText = () => {
-  //   switch (data.state) {
-  //     case DriverOperatorState.OFFLINE_SWITCH:
-  //       if (data.process === OperatorAction.SWITCHING_ON) {
-  //         return <span>Включен в оффлайн-режиме на 10:10:10</span>;
-  //       } else if (data.process === OperatorAction.SWITCHING_OFF) {
-  //         return <span>Выключен в оффлайн-режиме</span>;
-  //       } else {
-  //         return '';
-  //       }
-  //     case DriverOperatorState.DRIVER_WAITING:
-  //       if (data.process === OperatorAction.SWITCHING_ON) {
-  //         return (
-  //           <span>
-  //             <b>Включение на 10:10:10</b>
-  //           </span>
-  //         );
-  //       } else if (data.process === OperatorAction.SWITCHING_OFF) {
-  //         return (
-  //           <span>
-  //             <b>Выключение</b>
-  //           </span>
-  //         );
-  //       } else {
-  //         return '';
-  //       }
-  //     case DriverOperatorState.OPERATOR_WAITING:
-  //       if (data.process === OperatorAction.SWITCHING_ON) {
-  //         return (
-  //           <span>
-  //             <b>Включение на 10:10:10</b>
-  //           </span>
-  //         );
-  //       } else if (data.process === OperatorAction.SWITCHING_OFF) {
-  //         return (
-  //           <span>
-  //             <b>Выключение</b>
-  //           </span>
-  //         );
-  //       } else {
-  //         return '';
-  //       }
-  //     case DriverOperatorState.DRIVER_ACCEPT:
-  //       if (data.process === OperatorAction.SWITCHING_ON) {
-  //         return (
-  //           <span>
-  //             <b>Включение на 10:10:10 подтверждено</b> водителем
-  //           </span>
-  //         );
-  //       } else if (data.process === OperatorAction.SWITCHING_OFF) {
-  //         return (
-  //           <span>
-  //             <b>Выключение подтверждено</b> водителем
-  //           </span>
-  //         );
-  //       } else {
-  //         return '';
-  //       }
-  //     case DriverOperatorState.DRIVER_CANCEL:
-  //       if (data.process === OperatorAction.SWITCHING_ON) {
-  //         return (
-  //           <span>
-  //             <b>Включение на 10:10:10 отклонено</b> водителем
-  //           </span>
-  //         );
-  //       } else if (data.process === OperatorAction.SWITCHING_OFF) {
-  //         return (
-  //           <span>
-  //             <b>Выключение отклонено</b> водителем
-  //           </span>
-  //         );
-  //       } else {
-  //         return '';
-  //       }
-  //     default:
-  //       return '';
-  //   }
-  // };
   const modeResetAt = alkolock?.modeResetAt || null;
   const hasTime = modeResetAt && alkolock?.mode === EventType.MAINTENANCE;
   return {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
 import utc from 'dayjs/plugin/utc';
@@ -8,7 +7,7 @@ dayjs.extend(duration);
 dayjs.extend(utc);
 
 interface TimeCellProps {
-  time: Date; // Изменено: теперь time - объект Date
+  time: Date; 
   id: string | number;
   refetch?: () => void;
 }
@@ -19,7 +18,6 @@ export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
   useEffect(() => {
     if (!time) return;
 
-    // Парсинг time как объекта Date (уже сделано в renderCell)
     const targetTime = dayjs(time).utc();
 
     const timer = setInterval(() => {
@@ -34,12 +32,12 @@ export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
       }
 
       const diffDuration = dayjs.duration(diff);
-      const hours = String(diffDuration.hours()).padStart(2, '0');
+      const totalHours = Math.floor(diffDuration.asHours()); 
       const minutes = String(diffDuration.minutes()).padStart(2, '0');
       const seconds = String(diffDuration.seconds()).padStart(2, '0');
 
-      setTimeDifference(`${hours}:${minutes}:${seconds}`);
-    }, 15);
+      setTimeDifference(`${totalHours}:${minutes}:${seconds}`);
+    }, 1000);
 
     return () => clearInterval(timer);
   }, [time, id]);

@@ -1,4 +1,4 @@
-import type { IEvents } from '@shared/types/BaseQueryTypes';
+import { EventType, type IEvents } from '@shared/types/BaseQueryTypes';
 
 export class SearchMethods {
   static findMostRecentEvent = (events: IEvents) => {
@@ -10,7 +10,7 @@ export class SearchMethods {
     let mostRecentTime = new Date(mostRecentEvent.occurredAt);
 
     events
-      .filter((event) => event.eventType !== 'APP_ACKNOWLEDGED')
+      .filter((event) => event.eventType !== EventType.APP_ACKNOWLEDGED)
       .forEach((event) => {
         const eventTime = new Date(event.occurredAt);
         if (eventTime > mostRecentTime) {
