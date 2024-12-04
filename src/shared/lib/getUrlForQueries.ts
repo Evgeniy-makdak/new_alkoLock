@@ -628,7 +628,7 @@ export function getEventsApiURL({
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({
-    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,25,26,27,28,29,30,31,32,33`,
+    parameters: `&all.eventsForFront.id.notIn=20,21,22,23,24,25,26,27,29,30,31,32,33`,
     page: 'action.device',
     branchId,
   });
