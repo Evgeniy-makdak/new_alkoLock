@@ -540,10 +540,6 @@ export function getCreateAlkolocksURL() {
 
 ////////////////////////////////==============================================EVENTS API
 
-export const getEventsTypeUrl = () => {
-  return `api/v1/front-data/event-types`;
-};
-
 function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirection) {
   const orderStr = ',' + order.toUpperCase();
 
@@ -710,8 +706,8 @@ export function getEventListForAutoServiceURL({
 
   if (sortBy || order) {
     // Значения по умолчанию для сортировки
-    const sortByDefault = 'name'; 
-    const orderDefault = 'asc'; 
+    const sortByDefault = 'name';
+    const orderDefault = 'asc';
 
     // Использование значений по умолчанию, если sortBy и order не определены
     const sortByFinal = sortBy || sortByDefault;
