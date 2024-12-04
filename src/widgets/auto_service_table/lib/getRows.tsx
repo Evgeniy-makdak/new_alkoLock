@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { ChipProps } from '@mui/material';
 import type { GridRowsProp } from '@mui/x-data-grid';
@@ -54,7 +54,7 @@ const getStatus = (item: IDeviceAction) => {
     } else {
       status = 'Оператор отклонил';
     }
-  } else if (lastEvent?.eventType === 'ACCEPTED') {
+  } else if (lastEvent?.eventType === EventType.ACCEPTED) {
     if (isAcknowledged) {
       status = 'Оператор подтвердил';
     } else if (requestType === EventType.SERVER_REQUEST) {
@@ -63,8 +63,8 @@ const getStatus = (item: IDeviceAction) => {
       status = 'Оператор подтвердил';
     }
   } else if (
-    lastEvent?.eventType === 'OFFLINE_DEACTIVATION' ||
-    lastEvent?.eventType === 'OFFLINE_ACTIVATION'
+    lastEvent?.eventType === EventType.OFFLINE_DEACTIVATION ||
+    lastEvent?.eventType === EventType.OFFLINE_ACTIVATION
   ) {
     status = 'Офлайн-переключение';
   } else {
@@ -75,33 +75,43 @@ const getStatus = (item: IDeviceAction) => {
 };
 
 export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
-  const mapData = (Array.isArray(data) ? data : []).map((item) => {
-    const { lastEvent, status } = getStatus(item);
-    let process;
+  // Локальное состояние для данных
+  const [filteredData, setFilteredData] = useState<IDeviceAction[]>([]);
 
-    if (item.type === 'SERVICE_MODE_ACTIVATE') {
-      process = 'Включение';
-    } else if (item.type === 'SERVICE_MODE_DEACTIVATE') {
-      process = 'Выключение';
-    } else {
-      process = '-';
-    }
+  useEffect(() => {
+    // Убираем строки с seen: true из данных
+    const updatedData = (Array.isArray(data) ? data : []).filter((item) => !item.seen);
+    setFilteredData(updatedData);
+  }, [data]);
 
-    return {
-      id: item.id,
-      idDevice: item?.device?.id,
-      lastEvent: lastEvent,
-      finishedAt: item.occurredAt,
-      state: status,
-      [ValuesHeader.DATE]: Formatters.formatISODate(item.createdAt) ?? '-',
-      [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
-      [ValuesHeader.TC]: item.vehicleRecord ? Formatters.carNameFormatter(item.vehicleRecord) : '-',
-      [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userAction),
-      [ValuesHeader.STATE]: status,
-      [ValuesHeader.PROCESS]: process,
-    };
-  });
+  const rows = useMemo(() => {
+    return filteredData.map((item) => {
+      const { lastEvent, status } = getStatus(item);
+      let process;
 
-  const returnData = useMemo(() => mapData, [data]);
-  return returnData;
+      if (item.type === 'SERVICE_MODE_ACTIVATE') {
+        process = 'Включение';
+      } else if (item.type === 'SERVICE_MODE_DEACTIVATE') {
+        process = 'Выключение';
+      } else {
+        process = '-';
+      }
+
+      return {
+        id: item.id,
+        idDevice: item?.device?.id,
+        lastEvent: lastEvent,
+        finishedAt: item.occurredAt,
+        state: status,
+        [ValuesHeader.DATE]: Formatters.formatISODate(item.createdAt) ?? '-',
+        [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
+        [ValuesHeader.TC]: item.vehicleRecord ? Formatters.carNameFormatter(item.vehicleRecord) : '-',
+        [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userAction),
+        [ValuesHeader.STATE]: status,
+        [ValuesHeader.PROCESS]: process,
+      };
+    });
+  }, [filteredData]);
+
+  return rows;
 };

@@ -39,6 +39,7 @@ export const useNavBarApi = () => {
 
     return () => clearInterval(intervalRef.current);
   }, [count?.data, refetchCount]);
+console.log(count?.data);
 
   return {
     refetchAccountData,

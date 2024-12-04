@@ -1,6 +1,7 @@
-import { EventsApi } from '@shared/api/baseQuerys';
+import { EventsApi } from '@shared/api/baseQuerys'; 
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
+import { useEffect } from 'react';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
 export const useAutoServiceInfoApi = (id: ID) => {
@@ -9,5 +10,14 @@ export const useAutoServiceInfoApi = (id: ID) => {
     EventsApi.getEventItemForAutoServise,
     { options: id },
   );
+
+  useEffect(() => {
+    if (data && data?.data?.seen === false) {
+      EventsApi.seenAutoService(id).then(() => {
+        refetch();
+      });
+    }
+  }, [data, id, refetch]);
+
   return { data, isLoading, refetch };
 };

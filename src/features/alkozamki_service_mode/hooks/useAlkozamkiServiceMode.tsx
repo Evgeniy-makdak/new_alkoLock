@@ -228,7 +228,6 @@ export const useAlkozamkiServiceMode = (
             return null;
         }
       } else {
-        console.log(alkolock?.mode);
         return (
           <div className={style.toggles}>
             <button
