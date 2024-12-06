@@ -295,7 +295,7 @@ export class AppConstants {
     },
   ];
 
-  static cancelTxt = 'Отмена';
+  static cancelTxt = 'Нет';
   static deleteTxt = 'Удалить';
   static saveTxt = 'Сохранить';
   static addTxt = 'Добавить';

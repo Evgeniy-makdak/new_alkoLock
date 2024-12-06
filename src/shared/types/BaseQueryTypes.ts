@@ -304,7 +304,7 @@ export enum EventType {
   SERVER_REQUEST = 'Запрос сервера',
   APP_REQUEST = 'Запрос приложения',
   REJECTED = 'REJECTED',
-  ACCEPTED = 'ACCEPTED',
+  ACCEPTED = 'Заявка на сервисный режим обработана',
   OFFLINE_DEACTIVATION = 'OFFLINE_DEACTIVATION',
   OFFLINE_ACTIVATION = 'OFFLINE_ACTIVATION',
   MAINTENANCE = 'Сервисный',

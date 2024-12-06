@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { Stack, Typography } from '@mui/material';
 
-import { AppConstants } from '@app/index';
 import { ActivateForm } from '@entities/alkozamki_activate_form';
 import { TimeCell } from '@entities/time_cell';
 import type { IAlcolock, IDeviceAction } from '@shared/types/BaseQueryTypes';
@@ -38,6 +37,8 @@ export const AlkozamkiServiceMode = ({
     hasTime,
   } = useAlkozamkiServiceMode(deviceAction, alkolock, handleCloseAside);
 
+  const initialTime = modeResetAt ? new Date(modeResetAt) : new Date();
+
   return (
     <>
       <div className={style.alcolockServiceMode}>
@@ -45,11 +46,11 @@ export const AlkozamkiServiceMode = ({
           <span className={style.name}>Сервисный режим: </span>
           {hasTime && (
             <Stack spacing={2} direction={'row'}>
-              <Typography fontSize={22} fontWeight={600}>
-                Выключение через
+              <Typography fontSize={22} fontWeight={600} sx={{ marginRight: '30px'}}>
+                Выключение через      
               </Typography>
-              <Typography fontSize={22} fontWeight={400}>
-                <TimeCell refetch={refetch} time={new Date(modeResetAt)} id={alkolock.id} />
+              <Typography fontSize={22} fontWeight={400} sx={{ marginLeft: '36px' }}>
+                <TimeCell refetch={refetch} time={initialTime} id={alkolock.id} />
               </Typography>
             </Stack>
           )}
@@ -72,17 +73,17 @@ export const AlkozamkiServiceMode = ({
 
       <Popup
         isOpen={openDeactivatePopup}
-        headerTitle={'Отключить сервисный режим?'}
+        headerTitle={'Отменить запрос на переход в сервисный режим?'}
         toggleModal={toggleDeactivatePopup}
         buttons={[
-          <Button key={'action_1'} typeButton={ButtonsType.action} onClick={() => {
+          <Button key={'action_1'} typeButton={ButtonsType.action} onClick={toggleDeactivatePopup}>
+            {'Да'}
+          </Button>,
+          <Button key={'action_2'} typeButton={ButtonsType.action} onClick={() => {
             handleDeactivate();
             toggleDeactivatePopup();
             }}>
-            {'Отключить'}
-          </Button>,
-          <Button key={'action_2'} typeButton={ButtonsType.action} onClick={toggleDeactivatePopup}>
-            {AppConstants.cancelTxt}
+            {'Нет'}
           </Button>,
         ]}
       />

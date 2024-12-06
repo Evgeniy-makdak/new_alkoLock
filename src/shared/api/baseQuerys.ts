@@ -378,6 +378,7 @@ export class EventsApi {
   static getEventsTypeList(options: QueryOptions) {
     let url = `api/v1/front-data/event-types`;
     if (options?.filterOptions?.match) {
+      // url += `?match=${options?.filterOptions?.match}?sort=label`;
       url += `?match=${options?.filterOptions?.match}`;
     } else url += `?sort=label`;
     return getQuery<IEventsType>({ url });

@@ -27,7 +27,7 @@ export class SearchMethods {
       return null;
     }
 
-    const requestEvent = events.find((event) => event.eventType.includes('REQUEST'));
+    const requestEvent = events.find((event) => event.eventType.includes('Запрос'));
     return requestEvent || null;
   };
 }
