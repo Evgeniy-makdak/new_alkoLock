@@ -13,14 +13,27 @@ interface TimeCellProps {
 }
 
 export const TimeCell = ({ time, id, refetch }: TimeCellProps) => {
-  const [timeDifference, setTimeDifference] = useState('');
+  const [timeDifference, setTimeDifference] = useState(() => {
+    const targetTime = dayjs(time).utc();
+    const now = dayjs().utc();
+    const diff = targetTime.diff(now);
+    if (diff <= 0) {
+      return '';
+    }
+    const diffDuration = dayjs.duration(diff);
+    const totalHours = Math.floor(diffDuration.asHours()); 
+    const minutes = String(diffDuration.minutes()).padStart(2, '0');
+    const seconds = String(diffDuration.seconds()).padStart(2, '0');
+    return `${totalHours}:${minutes}:${seconds}`
+  });
 
   useEffect(() => {
     if (!time) return;
 
-    const targetTime = dayjs(time).utc();
+    // const targetTime = dayjs(time).utc();
 
     const timer = setInterval(() => {
+      const targetTime = dayjs(time).utc();
       const now = dayjs().utc();
       const diff = targetTime.diff(now);
 

@@ -55,10 +55,10 @@ const getStatus = (item: IDeviceAction) => {
 
   let status;
 
-  console.log('lastEvent?.eventType', lastEvent?.eventType);
-  console.log('isAcknowledged', isAcknowledged);
-  console.log('requestType', requestType);
-  console.log('hasAcceptedEvent', hasAcceptedEvent);
+  // console.log('lastEvent?.eventType', lastEvent?.eventType);
+  // console.log('isAcknowledged', isAcknowledged);
+  // console.log('requestType', requestType);
+  // console.log('hasAcceptedEvent', hasAcceptedEvent);
 
   if (lastEvent?.eventType === EventType.SERVER_REQUEST) {
     status = 'Ожидание водителя';

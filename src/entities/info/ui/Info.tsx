@@ -9,6 +9,7 @@ import {
 } from '../lib/getTypeOfRowIconLabel';
 import { getTypeOfRowIconValue } from '../lib/getTypeOfRowIconValue';
 import style from './Info.module.scss';
+// import { useNavigate } from 'react-router-dom';
 
 /**
  * @prop fields - поля которые будут отрисованы
@@ -21,6 +22,10 @@ type InfoProps = {
 };
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
+  // const navigate = useNavigate()
+  // const onClick = (id) => {
+  //   navigate('/alkozamki', {state: {selectedId: id}});
+  // }
   return (
     <Card className={style.card}>
       {headerCard}
@@ -29,11 +34,16 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const summaryExhaleResultText = field?.summaryExhaleResult;
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
-
+          console.log(field);
+          
           return (
             <React.Fragment key={i}>
               <div className={style.row}>
-                <span className={style.label}>
+                <span onClick={() => {
+                  // if (field.label === 'Установленный алкозамок') {
+                  //   onClick(field.value.label)
+                  // }
+                }} className={style.label}>
                   {field?.type ? getTypeOfRowIconLabel(field?.type, field?.label) : field?.label}
                 </span>
                 <span className={style.value} style={field?.style}>

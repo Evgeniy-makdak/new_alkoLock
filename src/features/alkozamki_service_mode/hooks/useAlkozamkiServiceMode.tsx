@@ -40,6 +40,10 @@ export const useAlkozamkiServiceMode = (
     const isAcknowledged = !!(deviceAction?.events ?? []).find(
       (event) => event.eventType === EventType.APP_ACKNOWLEDGED,
     );
+// console.log(requestType);
+// console.log('====================================');
+// console.log(lastEvent);
+// console.log('====================================');
 
     if (
       [EventType.OFFLINE_DEACTIVATION, EventType.OFFLINE_ACTIVATION].includes(
