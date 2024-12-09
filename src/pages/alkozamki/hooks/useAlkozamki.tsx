@@ -10,10 +10,8 @@ import { useLocation } from 'react-router-dom';
 
 export const useAlkozamki = () => {
   const {state} = useLocation();
-  console.log(state);
-  
-  const [selectedAlcolockId, setSelectedAlcolockId] = useState('');
-  // const [selectedAlcolockId, setSelectedAlcolockId] = useState(state.selectedId || null);
+  // const [selectedAlcolockId, setSelectedAlcolockId] = useState('');
+  const [selectedAlcolockId, setSelectedAlcolockId] = useState(state?.selectedId || null);
   const onClickRow = (id: string) => setSelectedAlcolockId(id);
   const handleCloseAside = () => setSelectedAlcolockId(null);
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.ALKOLOCK_LIST_TABLE]);

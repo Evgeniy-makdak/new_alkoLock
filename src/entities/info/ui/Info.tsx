@@ -1,6 +1,7 @@
 import React, { type ReactNode } from 'react';
 
 import { Card, CardContent, Divider } from '@mui/material';
+import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext'
 
 import {
   type Field,
@@ -9,7 +10,7 @@ import {
 } from '../lib/getTypeOfRowIconLabel';
 import { getTypeOfRowIconValue } from '../lib/getTypeOfRowIconValue';
 import style from './Info.module.scss';
-// import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * @prop fields - поля которые будут отрисованы
@@ -22,10 +23,13 @@ type InfoProps = {
 };
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
-  // const navigate = useNavigate()
-  // const onClick = (id) => {
-  //   navigate('/alkozamki', {state: {selectedId: id}});
-  // }
+  const { alkoId } = useAlkoContext();
+  const navigate = useNavigate()
+  const onClick = (id: string) => {
+    navigate('/alkozamki', {state: {selectedId: id}});
+  }
+  console.log(alkoId);
+  
   return (
     <Card className={style.card}>
       {headerCard}
@@ -34,15 +38,14 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const summaryExhaleResultText = field?.summaryExhaleResult;
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
-          console.log(field);
           
           return (
             <React.Fragment key={i}>
               <div className={style.row}>
                 <span onClick={() => {
-                  // if (field.label === 'Установленный алкозамок') {
-                  //   onClick(field.value.label)
-                  // }
+                  if (field.label === 'Установленный алкозамок') {
+                    onClick(alkoId)
+                  }
                 }} className={style.label}>
                   {field?.type ? getTypeOfRowIconLabel(field?.type, field?.label) : field?.label}
                 </span>

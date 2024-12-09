@@ -1,8 +1,11 @@
+/* eslint-disable */
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
+import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext'
 
 export const getFields = (carData: ICar) => {
+  const { setAlkoId } = useAlkoContext();
   const vin = carData?.vin;
   const gosNumber = carData?.registrationNumber;
   const dateRegistry = Formatters.formatISODate(carData?.createdAt);
@@ -11,6 +14,8 @@ export const getFields = (carData: ICar) => {
   const year = carData?.year;
   const color = carData?.color;
   const type = carData?.type;
+  const alkoId = carData?.monitoringDevice?.id;
+  setAlkoId(alkoId);
 
   return [
     {

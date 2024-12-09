@@ -13,6 +13,7 @@ import { UserContextProvider } from '@widgets/users_info/UserContext';
 import { CountProvider } from '@widgets/nav_bar/api/CountContext';
 
 import './index.scss';
+import { AlkoContextProvider } from '@widgets/vehicles_info/lib/AlkoContext';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ root.render(
       <StyledEngineProvider injectFirst>
         <UserContextProvider>
           <CountProvider>
+          <AlkoContextProvider>
             <SnackbarProvider
               action={(snackbarId) => (
                 <CloseIcon className="CloseIcon" onClick={() => closeSnackbar(snackbarId)} />
@@ -31,6 +33,7 @@ root.render(
               anchorOrigin={{ horizontal: 'right', vertical: 'top' }}>
               <RouterProvider router={routers} />
             </SnackbarProvider>
+          </AlkoContextProvider>
           </CountProvider>
         </UserContextProvider>
       </StyledEngineProvider>
