@@ -15,7 +15,7 @@ interface AvtoServiceTableProps {
 }
 
 export const AvtoServiceTable = ({ handleClickRow, onBranchChange }: AvtoServiceTableProps) => {
-  const { filterData, tableData } = useAvtoServiceTable();
+  const { filterData, tableData, refetch } = useAvtoServiceTable();
 
   // Функция для сброса пагинации
   const resetPagination = () => {
@@ -33,6 +33,16 @@ export const AvtoServiceTable = ({ handleClickRow, onBranchChange }: AvtoService
   useEffect(() => {
     onBranchChange(); // Вызываем очистку фильтров при изменении филиала
   }, [onBranchChange]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refetch();
+    }, 10000);
+
+    return () => {
+      clearInterval(interval); // Очищаем интервал при размонтировании
+    };
+  }, [refetch]);
 
   return (
     <>

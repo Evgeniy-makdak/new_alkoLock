@@ -28,7 +28,6 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
   const onClick = (id: string) => {
     navigate('/alkozamki', {state: {selectedId: id}});
   }
-  console.log(alkoId);
   
   return (
     <Card className={style.card}>

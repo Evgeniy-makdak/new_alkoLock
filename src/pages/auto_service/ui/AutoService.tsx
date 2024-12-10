@@ -1,11 +1,12 @@
+import { useRef } from 'react';
+
 import { RowTableInfo } from '@entities/row_table_info';
 import { PageWrapper } from '@layout/page_wrapper';
+import { appStore } from '@shared/model/app_store/AppStore';
 import { Aside } from '@shared/ui/aside';
 import { AvtoServiceTable } from '@widgets/auto_service_table';
 
 import { useAutoService } from '../hooks/useAutoService';
-import { useRef } from 'react';
-import { appStore } from '@shared/model/app_store/AppStore';
 
 const AutoService = () => {
   const {

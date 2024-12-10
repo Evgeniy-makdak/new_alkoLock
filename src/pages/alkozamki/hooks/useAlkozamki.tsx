@@ -10,7 +10,6 @@ import { useLocation } from 'react-router-dom';
 
 export const useAlkozamki = () => {
   const {state} = useLocation();
-  // const [selectedAlcolockId, setSelectedAlcolockId] = useState('');
   const [selectedAlcolockId, setSelectedAlcolockId] = useState(state?.selectedId || null);
   const onClickRow = (id: string) => setSelectedAlcolockId(id);
   const handleCloseAside = () => setSelectedAlcolockId(null);

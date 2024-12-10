@@ -51,5 +51,5 @@ export const useAvtoServiceTable = () => {
     isLoading,
     rows,
   };
-  return { filterData, tableData };
+  return { filterData, tableData, refetch };
 };

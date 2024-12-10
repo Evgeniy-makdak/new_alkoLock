@@ -10,7 +10,7 @@ import TimeToLeaveOutlinedIcon from '@mui/icons-material/TimeToLeaveOutlined';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ExtractTypeFromArray } from '@shared/types/utility';
 
-export const frontendVersion = '1.24.2';
+export const frontendVersion = '1.24.3';
 
 export const NAV_LINKS = [
   {
