@@ -1,7 +1,9 @@
 import React, { type ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, Divider } from '@mui/material';
-import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext'
+
+import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext';
 
 import {
   type Field,
@@ -10,7 +12,6 @@ import {
 } from '../lib/getTypeOfRowIconLabel';
 import { getTypeOfRowIconValue } from '../lib/getTypeOfRowIconValue';
 import style from './Info.module.scss';
-import { useNavigate } from 'react-router-dom';
 
 /**
  * @prop fields - поля которые будут отрисованы
@@ -24,11 +25,11 @@ type InfoProps = {
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
   const { alkoId } = useAlkoContext();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const onClick = (id: string) => {
-    navigate('/alkozamki', {state: {selectedId: id}});
-  }
-  
+    navigate('/alkozamki', { state: { selectedId: id } });
+  };
+
   return (
     <Card className={style.card}>
       {headerCard}
@@ -37,15 +38,33 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const summaryExhaleResultText = field?.summaryExhaleResult;
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
-          
+          console.log(field);
+
           return (
             <React.Fragment key={i}>
               <div className={style.row}>
-                <span onClick={() => {
-                  if (field.label === 'Установленный алкозамок') {
-                    onClick(alkoId)
-                  }
-                }} className={style.label}>
+                <span
+                  onClick={() => {
+                    if (
+                      field.label === 'Установленный алкозамок' &&
+                      field.type === 'SERIAL_NUMBER' &&
+                      field.value &&
+                      !Array.isArray(field.value) && 
+                      field.value.label !== '-'
+                    ) {
+                      onClick(alkoId);
+                    }
+                  }}
+                  className={style.label}
+                  style={
+                    field.label === 'Установленный алкозамок' &&
+                    field.type === 'SERIAL_NUMBER' &&
+                    field.value &&
+                    !Array.isArray(field.value) &&
+                    field.value.label !== '-'
+                      ? { cursor: 'pointer' }
+                      : undefined
+                  }>
                   {field?.type ? getTypeOfRowIconLabel(field?.type, field?.label) : field?.label}
                 </span>
                 <span className={style.value} style={field?.style}>
