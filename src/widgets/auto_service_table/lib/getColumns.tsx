@@ -80,13 +80,16 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         field: ValuesHeader.EXPIRES,
         sortable: false,
         renderCell: (params) => {
+          const lastEventType = params?.row?.lastEvent?.eventType;
+          if (lastEventType === 'Заявка на сервисный режим обработана') {
+            return null;
+          }
           const dateString = params?.row.DATE_CREATE;
           const [datePart, timePart] = dateString.split(' ');
           const [day, month, year] = datePart.split('.');
           const [hour, minute, second] = timePart.split(':');
           const date = new Date(year, month - 1, day, hour, minute, second);
           date.setMinutes(date.getMinutes() + 15);
-
           return (
             <TimeCell
               refetch={refetch}
