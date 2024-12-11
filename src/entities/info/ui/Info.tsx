@@ -38,7 +38,6 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const summaryExhaleResultText = field?.summaryExhaleResult;
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
-          console.log(field);
 
           return (
             <React.Fragment key={i}>

@@ -198,8 +198,6 @@ export const useAlkozamkiServiceMode = (
             }
           case EventType.ACCEPTED:
             if (serviceModeInfo.requestType === EventType.SERVER_REQUEST) {
-              // console.log('serviceModeInfo.action.type', serviceModeInfo.action.type);
-              
               return serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
                 <span>

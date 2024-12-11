@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react';
+
 import { RowTableInfo } from '@entities/row_table_info';
 import { PageWrapper } from '@layout/page_wrapper';
+import { appStore } from '@shared/model/app_store/AppStore';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { Aside } from '@shared/ui/aside';
 import { AlkolocksTable } from '@widgets/alkolocks_table';
 
 import { useAlkozamki } from '../hooks/useAlkozamki';
-import { appStore } from '@shared/model/app_store/AppStore';
-import { ID } from '@shared/types/BaseQueryTypes';
 
 const Alkozamki = () => {
   const prevBranch = useRef<ID | null>(null);
@@ -14,10 +15,10 @@ const Alkozamki = () => {
   const { selectedBranchState } = appStore((state) => state);
 
   useEffect(() => {
-    if (prevBranch.current !== selectedBranchState?.id) {
-      prevBranch.current = selectedBranchState?.id;
+    if (prevBranch.current !== null && prevBranch.current !== selectedBranchState?.id) {
       handleCloseAside();
     }
+    prevBranch.current = selectedBranchState?.id;
   }, [selectedBranchState?.id, handleCloseAside]);
 
   return (
