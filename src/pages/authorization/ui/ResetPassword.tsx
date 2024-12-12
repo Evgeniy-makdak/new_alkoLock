@@ -35,16 +35,16 @@ export const ResetPassword = () => {
             className={style.form}
             onSubmit={handleSubmit}>
             <InputsColumnWrapper>
-            <TextField
-                {...register('username')}
-                name="username"
-                helperText={errorUsername}
+              <TextField
+                {...register('email')} 
+                name="email" 
+                helperText={typeof errorUsername === 'string' ? errorUsername : ''}
                 error={!!errorUsername}
                 autoComplete="off"
                 fullWidth
-                type={'text'}
-                variant={'outlined'}
-                label="Логин"
+                type="text"
+                variant="outlined"
+                label="Email" 
               />
             </InputsColumnWrapper>
             <button

@@ -164,7 +164,11 @@ export class UsersApi {
     });
   }
 
-  static getListToAttachments(options: QueryOptions, widthCars = false, excludeDisabledUsers = false) {
+  static getListToAttachments(
+    options: QueryOptions,
+    widthCars = false,
+    excludeDisabledUsers = false,
+  ) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
       url: getUserListURLToAttachments(options, widthCars, excludeDisabledUsers),
     });
@@ -356,8 +360,8 @@ export class EventsApi {
   static getEventItem(id: ID) {
     return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });
   }
-  static getEventItemForAutoServise(id: ID) {                              
-    return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });    
+  static getEventItemForAutoServise(id: ID) {
+    return getQuery<IDeviceAction>({ url: `api/device-actions/${id}` });
   }
   static getEventListForAutoService(options: QueryOptions) {
     return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
@@ -379,7 +383,7 @@ export class EventsApi {
     let url = `api/v1/front-data/event-types`;
     if (options?.filterOptions?.match) {
       // url += `?match=${options?.filterOptions?.match}?sort=label`;
-      url += `?match=${options?.filterOptions?.match}`;
+      url += `?all.match.contains=${options?.filterOptions?.match}&sort=label`;
     } else url += `?sort=label`;
     return getQuery<IEventsType>({ url });
   }

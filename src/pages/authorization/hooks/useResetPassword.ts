@@ -17,7 +17,7 @@ export const useResetPassword = () => {
     control,
     setError,
     formState: {
-      errors: { username }, 
+      errors: { email }, 
     },
   } = useForm({
     defaultValues: {
@@ -52,7 +52,7 @@ export const useResetPassword = () => {
     });
   };
 
-  const errorUsername = username ? username.message : '';
+  const errorUsername = email ? email.message : '';
 
   return {
     handleSubmit: handleSubmit(onSubmit),
