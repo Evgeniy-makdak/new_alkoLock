@@ -3,7 +3,7 @@ import { eventsFilterPanelStore } from '../model/eventsFilterPanelStore';
 
 export interface EventsFilters {
   driverId: Values;
-  markCar: Values;
+  alcolocks: Values;
   gosNumber: Values;
   typeEvent: Values;
 }
