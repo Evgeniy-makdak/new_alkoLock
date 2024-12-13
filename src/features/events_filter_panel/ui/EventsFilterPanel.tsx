@@ -1,8 +1,8 @@
 import { CarsGosNumberSelect } from '@entities/cars_gos_number_select';
 import { FilterPanel } from '@entities/filter_panel';
+import { MarksCarSelect } from '@entities/marks_car_select';
 import { TypeEventSelect } from '@entities/type_event_select';
 import { UsersSelect } from '@entities/users_select';
-import { AlcolockSelect } from '@entities/alcolock_select';
 import { testids } from '@shared/const/testid';
 
 import { EventsFilters, useEventsFilterPanel } from '../hooks/useEventsFilterPanel';
@@ -37,26 +37,25 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             }
             label="Поиск по пользователю"
           />
+          <MarksCarSelect
+            multiple={true}
+            name="markCar"
+            setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
+            value={filters.markCar}
+            testid={
+              testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_BRAND_CAR
+            }
+            label="Поиск по марке"
+          />
           <CarsGosNumberSelect
             multiple={true}
-            name="vehicle"
+            name="gosNumber"
             setValueStore={(name, value) => handleChange(name as keyof EventsFilters, value)}
             value={filters.gosNumber}
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_GOS_NUMBER
             }
-            label="Поиск по ТС"
-          />
-          <AlcolockSelect
-            multiple={true}
-            label="Поиск по алкозамку"
-            setValueStore={setFilters}
-            value={filters.alcolocks}
-            testid={
-              testids.page_attachments.attachments_widget_header
-                .ATTACHMENTS_WIDGET_HEADER_FILTER_INPUT_ALCOLOKS
-            }
-            name="alcolocks"
+            label="Поиск по гос.номеру"
           />
           <TypeEventSelect
             multiple={true}

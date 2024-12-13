@@ -46,7 +46,7 @@ export const useHistoryTable = () => {
     page: state.page,
     filterOptions: {
       users: Formatters.getStringForQueryParams(filters.driverId),
-      carsByMake: Formatters.getStringForQueryParams(filters.alcolocks),
+      carsByMake: Formatters.getStringForQueryParams(filters.markCar),
       carsByLicense: Formatters.getStringForQueryParams(filters.gosNumber),
       eventsByType: filters.typeEvent,
     },

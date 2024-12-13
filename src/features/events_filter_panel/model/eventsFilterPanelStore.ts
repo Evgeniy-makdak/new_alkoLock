@@ -16,12 +16,10 @@ interface EventsFilterPanelStore {
 
 export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get) => ({
   filters: {
-    alcolocks: [],
     driverId: [],
     gosNumber: [],
-    // markCar: [],
+    markCar: [],
     typeEvent: [],
-    markCar: []
   },
   hasActiveFilters: false,
   selectedLabel: null, // Инициализация нового состояния
@@ -31,8 +29,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
     const newState = { ...filters, [type]: readyValue };
     const hasActiveFilters = arraysHasLength([
       newState.gosNumber,
-      newState.alcolocks,
-      // newState.markCar,
+      newState.markCar,
       newState.typeEvent,
       newState.driverId,
     ]);
@@ -48,7 +45,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
       hasActiveFilters: false,
       filters: {
         gosNumber: [],
-        alcolocks: [],
+        markCar: [],
         typeEvent: [],
         driverId: [],
       },
