@@ -80,16 +80,24 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   const onSubmit = async (data: Form) => {
     try {
-      const year = data?.year.year();
+      // Удаление лишних пробелов из строковых полей
+      const trimmedData = Object.keys(data).reduce((acc, key) => {
+        const value = data[key as keyof Form];
+        acc[key as keyof Form] =
+          typeof value === 'string' ? value.trim() : (value as any);
+        return acc;
+      }, {} as Form);
+
+      const year = trimmedData?.year.year();
       const payload = {
         branchId: selectedBranch?.id,
-        color: data.color[0]?.value,
-        type: data?.type[0]?.value,
-        manufacturer: data.mark,
+        color: trimmedData.color[0]?.value,
+        type: trimmedData?.type[0]?.value,
+        manufacturer: trimmedData.mark,
         year,
-        model: data.model,
-        registrationNumber: data.registrationNumber,
-        vin: data.vin,
+        model: trimmedData.model,
+        registrationNumber: trimmedData.registrationNumber,
+        vin: trimmedData.vin,
       };
 
       if (id) {

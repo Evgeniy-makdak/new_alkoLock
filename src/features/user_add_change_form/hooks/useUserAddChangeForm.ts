@@ -146,32 +146,28 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   }, [id, initUser.initialAvatar, isLoading, setAvatar, stateOfForm.state.images.length, avatar]);
 
   const onSubmit = async (data: Form) => {
-    const licenseClass = (data.licenseClass || []).length > 0;
-    const licenseIssueDate = Boolean(data.licenseIssueDate);
-    const licenseExpirationDate = Boolean(data.licenseExpirationDate);
+    const trimmedData = Object.entries(data).reduce((acc, [key, value]) => {
+      acc[key as keyof Form] = typeof value === 'string' ? value.trim() : (value as any);
+      return acc;
+    }, {} as Form);
+
+    const licenseClass = (trimmedData.licenseClass || []).length > 0;
+    const licenseIssueDate = Boolean(trimmedData.licenseIssueDate);
+    const licenseExpirationDate = Boolean(trimmedData.licenseExpirationDate);
     const usersImagesInGalary = photoData?.images;
 
-    const imgHashToUpload = data.userPhotoDTO[0]?.hash;
+    const imgHashToUpload = trimmedData.userPhotoDTO[0]?.hash;
 
     if (
-      (!data.licenseCode && isDriver) ||
-      (!data.licenseIssueDate && isDriver) ||
-      (!data.licenseExpirationDate && isDriver)
+      (!trimmedData.licenseCode && isDriver) ||
+      (!trimmedData.licenseIssueDate && isDriver) ||
+      (!trimmedData.licenseExpirationDate && isDriver)
     ) {
-      // enqueueSnackbar('вместо снекбара вывести в подсказку', { variant: 'error' })
       return;
     }
 
-    // const userPhotosUnchanged =
-    //   data.userPhotoDTO.length === usersImagesInGalary?.length &&
-    //   data.userPhotoDTO.every((photo) =>
-    //     usersImagesInGalary.some(
-    //       (image) => image.hash === photo.hash && image.isAvatar === photo.isAvatar,
-    //     ),
-    //   );
-
     for (let i = 0; i < usersImagesInGalary?.length; i++) {
-      if ((imgHashToUpload === usersImagesInGalary[i]?.hash) && !usersImagesInGalary[i].isAvatar) {
+      if (imgHashToUpload === usersImagesInGalary[i]?.hash && !usersImagesInGalary[i].isAvatar) {
         enqueueSnackbar('Это фото уже добавлено пользователю', { variant: 'error' });
         return false;
       }
@@ -198,7 +194,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     }
 
     const { formData } = getDataForRequest(
-      data,
+      trimmedData,
       selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
       id,
     );

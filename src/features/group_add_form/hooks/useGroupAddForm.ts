@@ -22,11 +22,19 @@ export const useGroupAddForm = (close: () => void, branch?: { id: ID; name: stri
   const { addGroup, editGroup, isLoading } = useGroupAddFormApi(branch?.id);
 
   const submit = handleSubmit(async (data: { name: string }) => {
+    // Удаление пробелов из строковых полей
+    const trimmedData = Object.keys(data).reduce((acc, key) => {
+      const value = data[key as keyof typeof data];
+      acc[key as keyof typeof data] =
+        typeof value === 'string' ? value.trim() : (value as any);
+      return acc;
+    }, {} as typeof data);
+
     try {
       if (branch?.id) {
-        await editGroup({ name: data.name, id: branch?.id });
+        await editGroup({ name: trimmedData.name, id: branch?.id });
       } else {
-        await addGroup(data.name);
+        await addGroup(trimmedData.name);
       }
       close();
     } catch (error) {

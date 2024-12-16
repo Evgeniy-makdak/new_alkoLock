@@ -78,14 +78,19 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
   const errorName = name ? name.message.toString() : '';
 
   const onSubmit = async (data: Form) => {
-    const payload = RolesMapper.toApi(data);
+    const trimmedData = Object.entries(data).reduce((acc, [key, value]) => {
+      acc[key as keyof Form] = typeof value === 'string' ? value.trim() : (value as any);
+      return acc;
+    }, {} as Form);
+  
+    const payload = RolesMapper.toApi(trimmedData);
     try {
       id ? await changeRole({ data: payload, id }) : await createRole(payload);
       close();
     } catch (error) {
       console.error('Ошибка:', error);
     }
-  };
+  };  
 
   return {
     errorName,

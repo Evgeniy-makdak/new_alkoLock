@@ -75,12 +75,20 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   const errorUid = uid ? uid.message.toString() : '';
 
   const onSubmit = async (data: Form) => {
-    const car = data?.tc?.length ? data?.tc[0]?.value : '';
+    // Удаление пробелов из строковых значений
+    const trimmedData = Object.keys(data).reduce((acc, key) => {
+      const value = data[key as keyof Form];
+      acc[key as keyof Form] =
+        typeof value === 'string' ? value.trim() : (value as any);
+      return acc;
+    }, {} as Form);
+
+    const car = trimmedData?.tc?.length ? trimmedData?.tc[0]?.value : '';
     const payload = {
       branchId: 'id' in selectedBranch ? selectedBranch.id : 10,
-      name: data.name,
-      serialNumber: data.serialNumber,
-      serviceId: data.uid,
+      name: trimmedData.name,
+      serialNumber: trimmedData.serialNumber,
+      serviceId: trimmedData.uid,
       vehicleId: car,
     };
 
