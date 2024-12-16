@@ -21,9 +21,9 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
           : '-',
         [ValuesHeader.INTITIATOR]: Formatters.nameFormatter(item.userRecord) ?? '-',
         [ValuesHeader.TC]: item.action.vehicleRecord
-          ? Formatters.carNameFormatter(item.action.vehicleRecord, true)
+          ? Formatters.carNameFormatter(item.action.vehicleRecord, false)
           : '-',
-        [ValuesHeader.GOS_NUMBER]: item.action.vehicleRecord?.registrationNumber ?? '-',
+        [ValuesHeader.ALCOLOKS]: Formatters.alcolocksFormatter(item.action.device) ?? '-',
         [ValuesHeader.TYPE_OF_EVENT]: typeOfEvent,
       };
     });

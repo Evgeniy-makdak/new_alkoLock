@@ -81,7 +81,7 @@ export const appStore = create<AppStore>()((set, get) => ({
 
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
-    window.location.reload();
+    // window.location.reload();
     localStorage.removeItem(StorageKeys.OFFICE)
   },
 }));

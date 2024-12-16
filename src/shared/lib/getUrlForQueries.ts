@@ -94,6 +94,7 @@ export function getAttachmentURL({
   const dateLink = filterOptions?.dateLink;
   const branch = filterOptions?.branchId;
   let queries = getSelectBranchQueryUrl({ page: 'vehicle', branchId: branch });
+
   // Фильтрация по дате начала и окончания
   if (startDate) {
     const date = new Date(startDate).toISOString();
@@ -488,7 +489,7 @@ export function getAlcolocksURL({
   if (queryTrimmed.length) {
     queries += `&any.match.contains=${queryTrimmed}`;
   }
-  return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}&sort=name`;
+  return `api/monitoring-devices?page=${page || 0}&size=${limit || 20}${queries}&sort=name`; // добавить сортировку. относится к Событиям.
 }
 
 export function getAlcolockListURL({
@@ -550,8 +551,8 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
       return `&sort=device.serialNumber${orderStr}`;
     case SortTypes.TC:
       return `&sort=action.vehicleRecord.manufacturer,action.vehicleRecord.model${orderStr}`;
-    case SortTypes.GOS_NUMBER:
-      return `&sort=action.vehicleRecord.registrationNumber${orderStr}`;
+    case SortTypes.ALCOLOKS:
+      return `&sort=action.device.name,action.device.serialNumber,${order.toUpperCase()}`;
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=eventsForFront.label${orderStr}`;
     case SortTypes.WHO_LINK:
@@ -614,7 +615,7 @@ export function getEventsHistoryURL({
 
   return `api/device-events?page=${page || 0}&size=${limit || 50}${queries}`;
 }
-
+// Этот блок отвечает за фильтрацию на вкладке События в выпадающих списках.
 export function getEventsApiURL({
   page,
   limit,
@@ -634,8 +635,8 @@ export function getEventsApiURL({
   });
 
   const users = filterOptions?.users;
-  const carsByMake = filterOptions?.carsByMake;
-  const carsByLicense = filterOptions?.carsByLicense;
+  const tc = filterOptions?.cars;
+  const alcolock = filterOptions?.alcolock;
   const eventsByType = filterOptions?.eventsByType;
 
   if (startDate) {
@@ -654,18 +655,19 @@ export function getEventsApiURL({
   if (queryTrimmed.length) {
     queries += `&any.userRecord.match.contains=${queryTrimmed}`;
     queries += `&any.action.vehicleRecord.match.contains=${queryTrimmed}`;
+    queries += `&any.action.device.match.contains=${queryTrimmed}`;
   }
 
   if (users) {
-    queries += `&all.user.id.in=${filterOptions.users}`;
+    queries += `&all.user.id.in=${users}`;
   }
 
-  if (carsByMake) {
-    queries += `&all.action.vehicleRecord.manufacturer.in=${filterOptions.carsByMake}`;
+  if (tc) {
+    queries += `&all.action.vehicle.id.in=${tc}`;
   }
 
-  if (carsByLicense) {
-    queries += `&all.action.vehicleRecord.registrationNumber.in=${filterOptions.carsByLicense}`;
+  if (alcolock) {
+    queries += `&all.action.device.id.in=${alcolock}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {
@@ -674,7 +676,9 @@ export function getEventsApiURL({
     return eventQuery;
   }
 
-  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}&sort=timestamp,DESC`;
+  const defaultSort = sortBy && order ? '' : '&sort=timestamp,DESC';
+
+  return `api/device-events?page=${page || 0}&size=${limit || 20}${queries}${defaultSort}`;
 }
 
 export function getEventListForAutoServiceURL({

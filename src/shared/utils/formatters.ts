@@ -1,7 +1,7 @@
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 
-import type { ICar, IUser } from '@shared/types/BaseQueryTypes';
+import type { IAlcolock, ICar, IUser } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 export class Formatters {
@@ -32,6 +32,13 @@ export class Formatters {
     const dateParts = dateStr.split('-');
 
     return dateParts.reverse().join('.');
+  }
+
+  static alcolocksFormatter(alcolock: IAlcolock) {
+    if (!alcolock) return '-';
+    const alcolockName = alcolock?.name ?? '';
+    const alcolockSerialNumber = alcolock?.serialNumber ?? ''
+    return `${alcolockName} ( ${alcolockSerialNumber} )`
   }
 
   static nameFormatter(user: Partial<IUser>, withPlaceholder = true) {

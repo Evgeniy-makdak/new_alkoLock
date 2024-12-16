@@ -3,14 +3,13 @@ import { eventsFilterPanelStore } from '../model/eventsFilterPanelStore';
 
 export interface EventsFilters {
   driverId: Values;
-  markCar: Values;
-  gosNumber: Values;
+  carId: Values;
+  alcolocks: Values;
   typeEvent: Values;
 }
 
 export const useEventsFilterPanel = () => {
   const { filters, setFilters: setFiltersStore } = eventsFilterPanelStore();
-
   const setFilters = (name: keyof EventsFilters, value: Values) => {
     setFiltersStore(name, value); 
   };

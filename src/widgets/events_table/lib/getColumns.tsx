@@ -11,6 +11,7 @@ import type { RefetchType } from '@shared/types/QueryTypes';
 
 export enum ValuesHeader {
   DATE_OCCURRENT = SortTypes.DATE_OCCURRENT,
+  ALCOLOKS = SortTypes.ALCOLOKS,
   INTITIATOR = SortTypes.CREATED_BY,
   TC = SortTypes.TC,
   GOS_NUMBER = SortTypes.GOS_NUMBER,
@@ -47,8 +48,8 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Номер',
-        field: ValuesHeader.GOS_NUMBER,
+        headerName: 'Алкозамок',
+        field: ValuesHeader.ALCOLOKS,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
