@@ -40,7 +40,7 @@ export const useAlkozamkiServiceMode = (
     const isAcknowledged = !!(deviceAction?.events ?? []).find(
       (event) => event.eventType === EventType.APP_ACKNOWLEDGED,
     );
-
+  
     if (
       [EventType.OFFLINE_DEACTIVATION, EventType.OFFLINE_ACTIVATION].includes(
         lastEvent?.eventType,
@@ -52,7 +52,7 @@ export const useAlkozamkiServiceMode = (
       seenMutate(deviceAction?.id);
     }
   }, [deviceAction]);
-
+  
   const handleCloseActivatePopup = () => {
     toggleActivatePopup();
   };

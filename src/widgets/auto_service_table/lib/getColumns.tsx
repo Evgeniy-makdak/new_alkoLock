@@ -81,7 +81,10 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         sortable: false,
         renderCell: (params) => {
           const lastEventType = params?.row?.lastEvent?.eventType;
-          if (lastEventType === 'Заявка на сервисный режим обработана') {
+          if (
+            lastEventType === 'Выход из сервисного режима' ||
+            lastEventType === 'Переход в сервисный режим'
+          ) {
             return null;
           }
           const dateString = params?.row.DATE_CREATE;
