@@ -61,9 +61,9 @@ export const useAlkozamkiServiceMode = (
       return;
     }
     cancelMutation(id);
-    setTimeout(() => {
-      toggleDeactivatePopup();
-    }, 100);
+    // setTimeout(() => {
+    //   toggleDeactivatePopup();
+    // }, 100);
   };
   const handleRejectActivateService = (id: ID) => {
     if (!id) {

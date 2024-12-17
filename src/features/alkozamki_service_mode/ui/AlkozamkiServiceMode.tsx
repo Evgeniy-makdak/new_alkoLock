@@ -46,8 +46,8 @@ export const AlkozamkiServiceMode = ({
           <span className={style.name}>Сервисный режим: </span>
           {hasTime && (
             <Stack spacing={2} direction={'row'}>
-              <Typography fontSize={22} fontWeight={600} sx={{ marginRight: '30px'}}>
-                Выключение через      
+              <Typography fontSize={22} fontWeight={600} sx={{ marginRight: '30px' }}>
+                Выключение через
               </Typography>
               <Typography fontSize={22} fontWeight={400} sx={{ marginLeft: '36px' }}>
                 <TimeCell refetch={refetch} time={initialTime} id={alkolock.id} />
@@ -73,16 +73,23 @@ export const AlkozamkiServiceMode = ({
 
       <Popup
         isOpen={openDeactivatePopup}
-        headerTitle={'Отменить запрос на переход в сервисный режим?'}
+        headerTitle={'Выключить сервисный режим?'}
         toggleModal={toggleDeactivatePopup}
         buttons={[
-          <Button key={'action_1'} typeButton={ButtonsType.action} onClick={toggleDeactivatePopup}>
-            {'Да'}
-          </Button>,
-          <Button key={'action_2'} typeButton={ButtonsType.action} onClick={() => {
-            handleDeactivate();
-            toggleDeactivatePopup();
+          <Button
+            key={'action_1'}
+            typeButton={ButtonsType.action}
+            onClick={() => {
+              handleDeactivate(); 
+              toggleDeactivatePopup(); 
             }}>
+            {'Выключить'}
+          </Button>,
+          <Button
+            key={'action_2'}
+            typeButton={ButtonsType.action}
+            onClick={toggleDeactivatePopup}
+          >
             {'Нет'}
           </Button>,
         ]}
