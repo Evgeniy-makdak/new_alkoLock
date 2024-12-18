@@ -102,6 +102,7 @@ export const useAlkozamkiServiceMode = (
       if (serviceModeInfo.action) {
         const time = Formatters.parseISO8601Duration(serviceModeInfo.duration);
         const timeFormat = time ? `${time.hours}:${time.minutes}:${time.seconds}` : '-';
+// console.log(serviceModeInfo.type);
 
         switch (serviceModeInfo.type) {
           case EventType.SERVER_REQUEST:

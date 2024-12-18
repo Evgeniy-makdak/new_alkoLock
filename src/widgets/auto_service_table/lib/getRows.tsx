@@ -95,8 +95,6 @@ const getStatus = (item: IDeviceAction) => {
 export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
   const [filteredData, setFilteredData] = useState<IDeviceAction[]>([]);
   const { length } = useCountContext();
-  console.log(data);
-
   // if (data?.events?.eventType === 'Запрос сервера') {
   useEffect(() => {
     // Убираем строки с seen: true из данных
