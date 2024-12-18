@@ -81,6 +81,11 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
         sortable: false,
         renderCell: (params) => {
           const lastEventType = params?.row?.lastEvent?.eventType;
+
+          if (lastEventType === 'Заявка на сервисный режим отклонена') {
+            return null;
+          }
+          
           if (
             lastEventType === 'Выход из сервисного режима' ||
             lastEventType === 'Переход в сервисный режим'
@@ -97,7 +102,7 @@ export const useGetColumns = (refetch: RefetchType<IAttachmentItems[]>): GridCol
             <TimeCell
               refetch={refetch}
               key={params.id}
-              time={params?.row?.lastEvent?.eventType !== 'REJECTED' ? date : null}
+              time={params?.row?.lastEvent?.eventType !== 'Заявка на сервисный режим отклонена' ? date : null}
               id={params.id}
             />
           );

@@ -37,7 +37,13 @@ export const AlkozamkiServiceMode = ({
     hasTime,
   } = useAlkozamkiServiceMode(deviceAction, alkolock, handleCloseAside);
 
+  // Определение времени для TimeCell
   const initialTime = modeResetAt ? new Date(modeResetAt) : new Date();
+
+  // Логирование для отладки значений
+  console.log('alkolock.modeResetAt:', alkolock?.modeResetAt);
+  console.log('deviceAction:', deviceAction);
+  console.log('hasTime:', hasTime);
 
   return (
     <>
@@ -65,7 +71,10 @@ export const AlkozamkiServiceMode = ({
         body={
           <ActivateForm
             isLoading={isLoadingActivateServiceModeMutation}
-            onValidSubmit={(duration) => (handleCloseActivatePopup(), handleActivate(duration))}
+            onValidSubmit={(duration) => {
+              handleCloseActivatePopup();
+              handleActivate(duration);
+            }}
             handleClosePopup={handleCloseActivatePopup}
           />
         }
@@ -80,8 +89,8 @@ export const AlkozamkiServiceMode = ({
             key={'action_1'}
             typeButton={ButtonsType.action}
             onClick={() => {
-              handleDeactivate(); 
-              toggleDeactivatePopup(); 
+              handleDeactivate();
+              toggleDeactivatePopup();
             }}>
             {'Выключить'}
           </Button>,
