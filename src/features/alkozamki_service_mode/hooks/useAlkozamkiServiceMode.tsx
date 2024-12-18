@@ -38,7 +38,7 @@ export const useAlkozamkiServiceMode = (
     const lastEvent = SearchMethods.findMostRecentEvent(deviceAction?.events);
     const requestType = SearchMethods.findFirstRequestEvent(deviceAction?.events)?.eventType;
     const isAcknowledged = !!(deviceAction?.events ?? []).find(
-      (event) => event.eventType === EventType.APP_ACKNOWLEDGED,
+      (event) => event.eventType === EventType.ACCEPTED,
     );
   
     if (

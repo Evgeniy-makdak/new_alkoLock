@@ -15,7 +15,7 @@ export const serviceModeInfoMapper = (deviceAction: IDeviceAction, alkolock: IAl
     duration: action ? (action?.events ?? [])[0]?.extra?.duration ?? null : null,
     requestType: requestEvent?.eventType ?? null,
     isAcknowledged: !!(action?.events ?? []).find(
-      (event) => event.eventType === EventType.SERVER_REQUEST,
+      (event) => event.eventType === EventType.ACCEPTED,
     ),
   };
 };

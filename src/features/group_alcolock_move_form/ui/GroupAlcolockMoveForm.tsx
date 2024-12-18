@@ -39,7 +39,7 @@ export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
   return (
     <div className={style.group}>
       <Typography fontSize={16} fontWeight={600} marginBottom={2} variant="h6">
-        Перемещение ТС <span className={style.carText}>{alcolock.text}</span>
+        Перемещение алкозамка <span className={style.carText}>{alcolock.text}</span>
       </Typography>
       <Stack gap={3}>
         <BranchSelect
