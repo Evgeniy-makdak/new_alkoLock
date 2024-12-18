@@ -40,7 +40,7 @@ export const useAlkozamkiServiceMode = (
     const isAcknowledged = !!(deviceAction?.events ?? []).find(
       (event) => event.eventType === EventType.ACCEPTED,
     );
-  
+
     if (
       [EventType.OFFLINE_DEACTIVATION, EventType.OFFLINE_ACTIVATION].includes(
         lastEvent?.eventType,
@@ -52,7 +52,7 @@ export const useAlkozamkiServiceMode = (
       seenMutate(deviceAction?.id);
     }
   }, [deviceAction]);
-  
+
   const handleCloseActivatePopup = () => {
     toggleActivatePopup();
   };
@@ -102,7 +102,6 @@ export const useAlkozamkiServiceMode = (
       if (serviceModeInfo.action) {
         const time = Formatters.parseISO8601Duration(serviceModeInfo.duration);
         const timeFormat = time ? `${time.hours}:${time.minutes}:${time.seconds}` : '-';
-// console.log(serviceModeInfo.type);
 
         switch (serviceModeInfo.type) {
           case EventType.SERVER_REQUEST:

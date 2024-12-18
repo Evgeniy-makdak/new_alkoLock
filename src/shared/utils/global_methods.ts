@@ -6,7 +6,8 @@ export class SearchMethods {
       return null;
     }
     // return events?.find((event) => event.eventType === EventType.ACCEPTED)
-    let mostRecentEvent = events[0];
+    const acceptedEvent = events.find((event) => event.eventType === EventType.ACCEPTED);
+    let mostRecentEvent = acceptedEvent || events[0];
     let mostRecentTime = new Date(mostRecentEvent.occurredAt);
 
     events
