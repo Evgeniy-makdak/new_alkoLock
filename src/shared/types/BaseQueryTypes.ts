@@ -358,6 +358,7 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
+  level: string;
   eventType: string;
   latitude: number;
   longitude: number;

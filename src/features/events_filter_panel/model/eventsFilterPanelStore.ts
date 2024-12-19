@@ -20,6 +20,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
     carId: [],
     alcolocks: [],
     typeEvent: [],
+    level: [],
   },
   hasActiveFilters: false,
   selectedLabel: null, // Инициализация нового состояния
@@ -48,6 +49,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
         carId: [],
         alcolocks: [],
         typeEvent: [],
+        level: [],
       },
       selectedLabel: null, // Сброс нового состояния
     }));

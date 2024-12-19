@@ -1,11 +1,12 @@
+import { AlcolockSelect } from '@entities/alcolock_select';
+import { CarsSelect } from '@entities/cars_select';
 import { FilterPanel } from '@entities/filter_panel';
 import { TypeEventSelect } from '@entities/type_event_select';
+import { LevelSelect } from '@entities/type_event_select/ui/LevelSelect';
 import { UsersSelect } from '@entities/users_select';
 import { testids } from '@shared/const/testid';
 
 import { EventsFilters, useEventsFilterPanel } from '../hooks/useEventsFilterPanel';
-import { CarsSelect } from '@entities/cars_select';
-import { AlcolockSelect } from '@entities/alcolock_select';
 
 interface EventsFilterPanelProps {
   open: boolean;
@@ -60,6 +61,16 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             }
             name="alcolocks"
           />
+          <LevelSelect
+            multiple={true}
+            name="level"
+            setValueStore={(name, value) =>
+              handleEventFilterChange(name as keyof EventsFilters, value)
+            }
+            value={eventFilters.level}
+            label="Уровень"
+          />
+
           <TypeEventSelect
             multiple={true}
             name="typeEvent"

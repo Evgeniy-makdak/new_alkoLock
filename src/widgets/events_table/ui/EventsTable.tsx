@@ -22,6 +22,9 @@ export const EventsTable = ({ handleClickRow }: EventsTableProps) => {
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
 
+  // console.log(tableData);
+  
+
   const handleFilterChange = () => {
     if (tableData.apiRef.current) {
       setIsFiltersChanged(true);

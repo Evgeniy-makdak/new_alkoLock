@@ -32,4 +32,5 @@ export enum SortTypes {
   YEAR = 'YEAR',
   ROLE = 'ROLE',
   ACCESS = 'ACCESS',
+  LEVEL = 'LEVEL'
 }

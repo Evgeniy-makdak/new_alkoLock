@@ -16,6 +16,7 @@ export enum ValuesHeader {
   TC = SortTypes.TC,
   GOS_NUMBER = SortTypes.GOS_NUMBER,
   TYPE_OF_EVENT = SortTypes.TYPE_OF_EVENT,
+  LEVEL = SortTypes.LEVEL,
 }
 
 const setTestIdsToHeaderColumnsAdapter = (
@@ -51,6 +52,11 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
         headerName: 'Алкозамок',
         field: ValuesHeader.ALCOLOKS,
       },
+      // {
+      //   renderHeader: setTestIdsToHeaderColumnsAdapter,
+      //   headerName: 'Уровень',
+      //   field: ValuesHeader.LEVEL,
+      // },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'Тип события',

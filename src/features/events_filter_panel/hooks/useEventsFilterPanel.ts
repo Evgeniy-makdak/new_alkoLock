@@ -6,6 +6,7 @@ export interface EventsFilters {
   carId: Values;
   alcolocks: Values;
   typeEvent: Values;
+  level: Values;
 }
 
 export const useEventsFilterPanel = () => {

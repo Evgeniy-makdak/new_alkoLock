@@ -354,6 +354,11 @@ export class EventsApi {
       url: getEventsApiURL(options),
     });
   }
+  static getEventClasses() {
+    return getQuery<string[]>({
+      url: 'api/v1/front-data/event-classes',
+    });
+  }
   static getCount(options: QueryOptions) {
     return getQuery<number>({ url: getUrlCountEventsQuery(options) });
   }

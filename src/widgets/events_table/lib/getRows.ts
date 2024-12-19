@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 
 import type { GridRowsProp } from '@mui/x-data-grid';
 
@@ -6,12 +6,32 @@ import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
 import { ValuesHeader } from './getColumns';
+import { EventsApi } from '@shared/api/baseQuerys'; 
 
 export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
+  const [eventClasses, setEventClasses] = useState<string[]>([]); 
+
+  useEffect(() => {
+    const fetchEventClasses = async () => {
+      try {
+        const response = await EventsApi.getEventClasses();
+        setEventClasses(response.data); 
+      } catch (err) {
+        console.error('Ошибка при загрузке уровней', err);
+      }
+    };
+  
+    fetchEventClasses();
+  }, []);
+  
+
   const mapData = useMemo(() => {
     return (Array.isArray(data) ? data : []).map((item) => {
       const timestamp = typeof item.timestamp === 'string' ? item.timestamp : undefined;
       const typeOfEvent: string = item.eventType;
+      const level = eventClasses.find((eventClass) => eventClass === item.level) || '-';
+      console.log(level);
+      
 
       return {
         id: item.id,
@@ -25,9 +45,10 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
           : '-',
         [ValuesHeader.ALCOLOKS]: Formatters.alcolocksFormatter(item.action.device) ?? '-',
         [ValuesHeader.TYPE_OF_EVENT]: typeOfEvent,
+        [ValuesHeader.LEVEL]: level, // Новое поле для уровня
       };
     });
-  }, [data]);
+  }, [data, eventClasses]); // Добавляем зависимость от eventClasses
 
   return mapData;
 };
