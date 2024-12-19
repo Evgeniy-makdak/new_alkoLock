@@ -12,7 +12,7 @@ export const useAutoServiceInfoApi = (id: ID) => {
   );
 
   useEffect(() => {
-    if (data && data?.data?.seen === false) {
+    if (data && data?.data?.seen === false && data?.data.status !== "ACTIVE") {
       EventsApi.seenAutoService(id).then(() => {
         refetch();
       });
