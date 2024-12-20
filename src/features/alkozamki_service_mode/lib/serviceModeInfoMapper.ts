@@ -7,7 +7,6 @@ export const serviceModeInfoMapper = (deviceAction: IDeviceAction, alkolock: IAl
     ((alkolock?.activeActions ?? []).length ? (alkolock?.activeActions || [])[0] : null);
   const lastEvent = SearchMethods.findMostRecentEvent(action?.events);
   const requestEvent = SearchMethods.findFirstRequestEvent(action?.events);
-// console.log(alkolock?.activeActions);
 
   return {
     action,

@@ -258,7 +258,6 @@ export const useAlkozamkiServiceMode = (
 
   const modeResetAt = alkolock?.modeResetAt || null;
   const hasTime = Boolean(modeResetAt);
-  console.log('serviceModeInfo:', serviceModeInfoMapper(deviceAction, alkolock));  
 
   return {
     getButtons,

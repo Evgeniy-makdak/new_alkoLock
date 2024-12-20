@@ -639,7 +639,6 @@ export function getEventsApiURL({
   const alcolock = filterOptions?.alcolock;
   const eventsByType = filterOptions?.eventsByType;
   const eventClasses = filterOptions?.level; 
-  console.log(filterOptions);
   if (startDate) {
     const date = new Date(startDate).toISOString();
     queries += `&all.timestamp.greaterThanOrEqual=${date}`;
@@ -672,8 +671,9 @@ export function getEventsApiURL({
   }
 
   if (eventClasses && eventClasses.length > 0) {
-    queries += `&all.eventsForFront.levelType.id.in=${eventClasses}`;
-  }
+    const eventClassIds = eventClasses.map((event) => event.value).join(',');
+    queries += `&all.eventsForFront.levelType.id.in=${eventClassIds}`;
+  }  
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);

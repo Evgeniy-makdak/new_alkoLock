@@ -10,8 +10,5 @@ export const useEventsApi = (options: QueryOptions) => {
     { options, settings: { refetchInterval: 30000, retry: 1 } },
   );
 
-  console.log('options', options);
-  
-  
   return { isLoading, data, refetch };
 };

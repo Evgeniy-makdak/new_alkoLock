@@ -40,11 +40,6 @@ export const AlkozamkiServiceMode = ({
   // Определение времени для TimeCell
   const initialTime = modeResetAt ? new Date(modeResetAt) : new Date();
 
-  // Логирование для отладки значений
-  console.log('alkolock.modeResetAt:', alkolock?.modeResetAt);
-  console.log('deviceAction:', deviceAction);
-  console.log('hasTime:', hasTime);
-
   return (
     <>
       <div className={style.alcolockServiceMode}>

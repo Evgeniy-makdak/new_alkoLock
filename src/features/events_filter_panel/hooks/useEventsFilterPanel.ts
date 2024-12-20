@@ -16,8 +16,5 @@ export const useEventsFilterPanel = () => {
     setFiltersStore(name, value); 
   };
 
-  console.log(filters);
-  
-
   return { filters, setFilters };
 };

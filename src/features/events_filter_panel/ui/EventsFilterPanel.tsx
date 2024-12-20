@@ -20,7 +20,6 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
     onFilterChange();
   };
 
-  console.log('eventFilters?.level', eventFilters?.level);
   return (
     <>
       {open && (

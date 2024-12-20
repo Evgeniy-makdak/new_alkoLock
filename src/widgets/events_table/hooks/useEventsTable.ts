@@ -49,6 +49,7 @@ export const useEventsTable = () => {
       cars: Formatters.getStringForQueryParams(filters.carId),
       alcolock: Formatters.getStringForQueryParams(filters?.alcolocks),
       eventsByType: filters.typeEvent,
+      level: filters.level,
     },
     sortBy: state?.sortModel[0]?.field,
     order: state?.sortModel[0]?.sort,  
