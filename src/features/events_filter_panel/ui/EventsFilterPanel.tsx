@@ -20,6 +20,7 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
     onFilterChange();
   };
 
+  console.log('eventFilters?.level', eventFilters?.level);
   return (
     <>
       {open && (
@@ -67,10 +68,9 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
             setValueStore={(name, value) =>
               handleEventFilterChange(name as keyof EventsFilters, value)
             }
-            value={eventFilters.level}
+            value={eventFilters.level} 
             label="Уровень"
           />
-
           <TypeEventSelect
             multiple={true}
             name="typeEvent"

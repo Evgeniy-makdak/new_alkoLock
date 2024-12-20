@@ -87,6 +87,7 @@ export type QueryOptions = {
     match?: string;
     trimmedQuery?: string;
     equalsBranchId?: boolean;
+    level?: number[];
   };
   id?: ID;
   headers?: HeaderReq;

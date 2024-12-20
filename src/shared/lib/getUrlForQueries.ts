@@ -638,7 +638,8 @@ export function getEventsApiURL({
   const tc = filterOptions?.cars;
   const alcolock = filterOptions?.alcolock;
   const eventsByType = filterOptions?.eventsByType;
-
+  const eventClasses = filterOptions?.level; 
+  console.log(filterOptions);
   if (startDate) {
     const date = new Date(startDate).toISOString();
     queries += `&all.timestamp.greaterThanOrEqual=${date}`;
@@ -668,6 +669,10 @@ export function getEventsApiURL({
 
   if (alcolock) {
     queries += `&all.action.device.id.in=${alcolock}`;
+  }
+
+  if (eventClasses && eventClasses.length > 0) {
+    queries += `&all.eventsForFront.levelType.id.in=${eventClasses}`;
   }
 
   if (eventsByType && eventsByType.length > 0) {

@@ -7,6 +7,7 @@ export interface EventsFilters {
   alcolocks: Values;
   typeEvent: Values;
   level: Values;
+  // eventClasses: Values;
 }
 
 export const useEventsFilterPanel = () => {
@@ -14,6 +15,9 @@ export const useEventsFilterPanel = () => {
   const setFilters = (name: keyof EventsFilters, value: Values) => {
     setFiltersStore(name, value); 
   };
+
+  console.log(filters);
+  
 
   return { filters, setFilters };
 };

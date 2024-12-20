@@ -350,6 +350,8 @@ export class AlcolocksApi {
 
 export class EventsApi {
   static getList(options: QueryOptions) {
+    console.log('options', options?.filterOptions);
+    
     return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
       url: getEventsApiURL(options),
     });
