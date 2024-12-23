@@ -11,7 +11,6 @@ export const useAutoServiceInfoApi = (id: ID) => {
     { options: id },
   );
 
-  // Хранение предыдущего значения статуса
   const prevStatusRef = useRef(data?.data?.status);
 
   useEffect(() => {
@@ -24,8 +23,6 @@ export const useAutoServiceInfoApi = (id: ID) => {
 
   useEffect(() => {
     const currentStatus = data?.data?.status;
-    console.log('Current status:', currentStatus);
-
     if (prevStatusRef.current && prevStatusRef.current !== currentStatus) {
       refetch();
     }
@@ -35,7 +32,6 @@ export const useAutoServiceInfoApi = (id: ID) => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      console.log('Refreshing data...');
       refetch();
     }, 10000); 
 
