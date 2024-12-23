@@ -615,6 +615,16 @@ export function getEventsHistoryURL({
 
   return `api/device-events?page=${page || 0}&size=${limit || 50}${queries}`;
 }
+// ************ История сервисного режима ****************
+export function getHistoryApiURL({
+  page = 0,
+  limit = 20,
+}: {
+  page?: string | number;
+  limit?: string | number;
+}) {
+  return `api/v1/auto-service-history?page=${page}&size=${limit}`;
+}
 // Этот блок отвечает за фильтрацию на вкладке События в выпадающих списках.
 export function getEventsApiURL({
   page,
@@ -755,7 +765,7 @@ export function getEventListCountForAutoServiceURL({
 
   queries += getSelectBranchQueryUrl({
     parameters:
-      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID&',
+      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.status.in=ACTIVE',
     branchId,
     page: 'device',
   });
