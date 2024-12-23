@@ -358,6 +358,9 @@ export interface ISummary {
 }
 
 export interface IDeviceAction {
+  vehicle: ICar;
+  initiator: Partial<IUser>;
+  handler: Partial<IUser>;
   level: string;
   eventType: string;
   latitude: number;

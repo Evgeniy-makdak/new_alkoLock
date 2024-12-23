@@ -8,7 +8,7 @@ import { useDebounce } from '@shared/hooks/useDebounce';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
 import { Formatters } from '@shared/utils/formatters';
 
-import { useEventsApi } from '../api/useEventsApi';
+import { useHistoryApi } from '../api/useHistoryApi';
 import { ValuesHeader, useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useEventsStore } from '../model/eventsStore';
@@ -38,7 +38,7 @@ export const useHistoryTable = () => {
     toggleFilters,
   } = useEventsStore();
 
-  const { isLoading, data, refetch } = useEventsApi({
+  const { isLoading, data, refetch } = useHistoryApi({
     endDate: Formatters.formatToISODate(endDate),
     startDate: Formatters.formatToISODate(startDate),
     searchQuery: inputWidthDelay,

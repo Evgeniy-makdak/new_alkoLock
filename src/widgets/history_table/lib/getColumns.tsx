@@ -10,14 +10,15 @@ import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
 export enum ValuesHeader {
+  ALCOLOKS = SortTypes.ALCOLOKS,
   DATE = SortTypes.DATE_CREATE,
-  EXEQUTOR = SortTypes.CREATED_BY,
   TC = SortTypes.TC,
   GOS_NUMBER = SortTypes.GOS_NUMBER,
   TYPE_OF_EVENT = SortTypes.TYPE_OF_EVENT,
   NAMING = SortTypes.NAMING,
-  INITIATOR = SortTypes.CREATED_BY,
-  DATE_OCCURRENT = "DATE_OCCURRENT",
+  INITIATOR = SortTypes.INITIATOR,
+  HANDLER = SortTypes.HANDLER,
+  CREATED_AT = SortTypes.CREATED_AT,
 }
 
 const setTestIdsToHeaderColumnsAdapter = (
@@ -35,7 +36,12 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'Дата',
-        field: ValuesHeader.DATE,
+        field: ValuesHeader.CREATED_AT,
+      },
+      {
+        renderHeader: setTestIdsToHeaderColumnsAdapter,
+        headerName: 'Алкозамок',
+        field: ValuesHeader.ALCOLOKS,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
@@ -51,17 +57,12 @@ export const useGetColumns = (refetch: RefetchType<IDeviceAction[]>): GridColDef
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'Исполнитель',
         width: 200,
-        field: ValuesHeader.EXEQUTOR,
+        field: ValuesHeader.HANDLER,
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,
         headerName: 'ТС',
         field: ValuesHeader.TC,
-      },
-      {
-        renderHeader: setTestIdsToHeaderColumnsAdapter,
-        headerName: 'Алкозамок',
-        field: ValuesHeader.NAMING,
       },
       {
         field: 'actions',

@@ -15,6 +15,7 @@ import {
   getEventListCountForAutoServiceURL,
   getEventListForAutoServiceURL,
   getEventsApiURL,
+  getHistoryApiURL,
   getEventsHistoryURL,
   getMarksCarURL,
   getRolesListURL,
@@ -352,6 +353,11 @@ export class EventsApi {
   static getList(options: QueryOptions) {
     return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
       url: getEventsApiURL(options),
+    });
+  }
+  static getHistoryList(options: QueryOptions) {
+    return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
+      url: getHistoryApiURL(options),
     });
   }
   static getEventClasses() {

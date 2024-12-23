@@ -571,6 +571,28 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
       return '';
   }
 }
+
+// Сортировка для Истории сервисного режима:
+function getSortQueryHistory(orderType: SortTypes | string, order: GridSortDirection) {
+  const orderStr = ',' + order.toUpperCase();
+
+  switch (orderType) {
+    case SortTypes.TC:
+      return `&sort=vehicle.manufacturer,vehicle.model${orderStr}`;
+    case SortTypes.ALCOLOKS:
+      return `&sort=device.name,device.serialNumber,${order.toUpperCase()}`;
+    case SortTypes.TYPE_OF_EVENT:
+      return `&sort=eventType${orderStr}`;
+    case SortTypes.HANDLER:
+      return `&sort=handler.surname,handler.firstName,handler.middleName${orderStr}`;
+    case SortTypes.CREATED_AT:
+      return `&sort=createdAt${orderStr}`;
+    case SortTypes.INITIATOR:
+      return `&sort=initiator.surname,initiator.firstName,initiator.middleName${orderStr}`;
+    default:
+      return '';
+  }
+}
 // TODO => написать общую функцию по формированию query параметров
 export function getEventsHistoryURL({
   alcolockId,
@@ -619,12 +641,64 @@ export function getEventsHistoryURL({
 export function getHistoryApiURL({
   page = 0,
   limit = 20,
+  sortBy,
+  order,
+  startDate,
+  endDate,
+  // filterOptions,
 }: {
   page?: string | number;
   limit?: string | number;
+  sortBy?: string;
+  order?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
+  // filterOptions?: {
+  //   users?: string[];
+  //   cars?: string[];
+  //   alcolock?: string[];
+  //   eventsByType?: string[];
+  // };
 }) {
-  return `api/v1/auto-service-history?page=${page}&size=${limit}`;
+  let queries = '';
+
+  if (startDate) {
+    const startDateISO = new Date(startDate).toISOString();
+    queries += `&all.createdAt.greaterThanOrEqual=${startDateISO}`;
+  }
+  if (endDate) {
+    const endDateISO = new Date(endDate).toISOString();
+    queries += `&all.createdAt.lessThanOrEqual=${endDateISO}`;
+  }
+
+  // Добавление фильтров
+  // if (filterOptions?.users?.length) {
+  //   queries += `&all.user.id.in=${filterOptions.users.join(',')}`;
+  // }
+  // if (filterOptions?.cars?.length) {
+  //   queries += `&all.action.vehicle.id.in=${filterOptions.cars.join(',')}`;
+  // }
+  // if (filterOptions?.alcolock?.length) {
+  //   queries += `&all.action.device.id.in=${filterOptions.alcolock.join(',')}`;
+  // }
+  // if (filterOptions?.eventsByType?.length) {
+  //   queries += `&all.eventsForFront.label.in=${filterOptions.eventsByType.join(',')}`;
+  // }
+
+  if (sortBy || order) {
+    const sortByDefault = 'createdAt';
+    const orderDefault = 'desc';
+    const sortByFinal = sortBy || sortByDefault;
+    const orderFinal = order || orderDefault;
+
+    queries += getSortQueryHistory(sortByFinal, orderFinal);
+  } else {
+    queries += '&sort=createdAt,DESC';
+  }
+
+  return `api/v1/auto-service-history?page=${page}&size=${limit}${queries}`;
 }
+
 // Этот блок отвечает за фильтрацию на вкладке События в выпадающих списках.
 export function getEventsApiURL({
   page,
@@ -648,7 +722,7 @@ export function getEventsApiURL({
   const tc = filterOptions?.cars;
   const alcolock = filterOptions?.alcolock;
   const eventsByType = filterOptions?.eventsByType;
-  const eventClasses = filterOptions?.level; 
+  const eventClasses = filterOptions?.level;
   if (startDate) {
     const date = new Date(startDate).toISOString();
     queries += `&all.timestamp.greaterThanOrEqual=${date}`;
@@ -683,7 +757,7 @@ export function getEventsApiURL({
   if (eventClasses && eventClasses.length > 0) {
     const eventClassIds = eventClasses.map((event) => event.value).join(',');
     queries += `&all.eventsForFront.levelType.id.in=${eventClassIds}`;
-  }  
+  }
 
   if (eventsByType && eventsByType.length > 0) {
     const trimmedQuery = eventsByType.map((event) => event.label);
@@ -764,8 +838,7 @@ export function getEventListCountForAutoServiceURL({
   }
 
   queries += getSelectBranchQueryUrl({
-    parameters:
-      '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.status.in=ACTIVE',
+    parameters: '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.status.in=ACTIVE',
     branchId,
     page: 'device',
   });
