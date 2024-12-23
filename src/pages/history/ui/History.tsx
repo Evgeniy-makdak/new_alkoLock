@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { RowTableInfo } from '@entities/row_table_info';
+// import { RowTableInfo } from '@entities/row_table_info';
 import { PageWrapper } from '@layout/page_wrapper';
-import { Aside } from '@shared/ui/aside';
+// import { Aside } from '@shared/ui/aside';
 // import { HistoryInfo } from '@widgets/history_info';
 import { HistoryTable } from '@widgets/history_table';
 
@@ -16,11 +16,11 @@ const History = () => {
         <HistoryTable handleClickRow={handleClickRow} />
       </PageWrapper>
 
-      {selectedHistoryId && (
+      {/* {selectedHistoryId && (
         <Aside onClose={handleCloseAside}>
           <RowTableInfo tabs={tabs} />
         </Aside>
-      )}
+      )} */}
     </>
   );
 };
