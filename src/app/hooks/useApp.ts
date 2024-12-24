@@ -9,7 +9,7 @@ import type { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { setStore } from '@shared/model/store/localStorage';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
-import { NAV_LINKS } from '@widgets/nav_bar/config/const';
+// import { NAV_LINKS } from '@widgets/nav_bar/config/const';
 
 import { useAppApi } from '../api/useAppApi';
 
@@ -32,10 +32,10 @@ export const useApp = () => {
     const hasAccess = pathName in permissionsPath && permissionsPath[pathName];
     if (hasAccess) return;
     if (!hasAccess) {
-      const pathDisplayName = NAV_LINKS.find((link) => link.path === pathName);
-      enqueueSnackbar(`У вас нет доступа к странице "${pathDisplayName.name}"`, {
-        variant: 'error',
-      });
+      // const pathDisplayName = NAV_LINKS.find((link) => link.path === pathName);
+      // enqueueSnackbar(`У вас нет доступа к странице "${pathDisplayName.name}"`, {
+      //   variant: 'error',
+      // });
       if (!firstAvailableRouter) {
         enqueueSnackbar(`У вас нет доступа к Админ панели`, {
           variant: 'error',

@@ -1,8 +1,7 @@
 import {
-  getPermissionsNumbersEntities,
   permissionsListIncludes,
 } from '@features/role_add_change_form';
-import { Permissions, PermissionsStatus } from '@shared/config/permissionsEnums';
+import { Permissions } from '@shared/config/permissionsEnums';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 
 import type { TypeNavLink } from '../config/const';
@@ -14,134 +13,111 @@ export const getPermissionsForPages = (permissionForThisPage: HasPermissionForTh
   };
 };
 
-const hasNoZeroPermissions = (statuses: PermissionsStatus[]) => {
-  return Math.max(...statuses) > PermissionsStatus.NO_PERMISSION;
-};
-
 type HasPermissionForThisPageReturn = Partial<{
   [key in TypeNavPath]: boolean;
 }>;
 
+const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
+  [RoutePaths.events]: [
+    Permissions.PERMISSION_EVENTS_READ,
+    Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE,
+    Permissions.SYSTEM_DRIVER_ACCOUNT,
+    Permissions.SYSTEM_SERVICE_ACCOUNT,
+  ],
+  [RoutePaths.users]: [
+    Permissions.PERMISSION_USER_READ,
+    Permissions.PERMISSION_USER_CREATE,
+    Permissions.PERMISSION_USER_EDIT,
+  ],
+  [RoutePaths.roles]: [
+    Permissions.PERMISSION_ROLE_READ,
+    Permissions.PERMISSION_ROLE_CREATE,
+    Permissions.PERMISSION_ROLE_EDIT,
+  ],
+  [RoutePaths.groups]: [
+    Permissions.PERMISSION_ROLE_READ, // Группы связаны с ролями
+  ],
+  [RoutePaths.tc]: [
+    Permissions.PERMISSION_VEHICLE_READ,
+    Permissions.PERMISSION_VEHICLE_CREATE,
+    Permissions.PERMISSION_VEHICLE_EDIT,
+  ],
+  [RoutePaths.alkozamki]: [
+    Permissions.PERMISSION_DEVICE_READ,
+    Permissions.PERMISSION_DEVICE_CREATE,
+    Permissions.PERMISSION_DEVICE_EDIT,
+  ],
+  [RoutePaths.autoService]: [
+    Permissions.PERMISSION_SERVICE_MODE_READ,
+    Permissions.PERMISSION_SERVICE_MODE_CREATE,
+    Permissions.PERMISSION_SERVICE_MODE_EDIT,
+  ],
+  [RoutePaths.attachments]: [
+    Permissions.PERMISSION_BINDINGS_READ,
+    Permissions.PERMISSION_BINDINGS_CREATE,
+    Permissions.PERMISSION_BINDINGS_EDIT,
+  ],
+  [RoutePaths.historyAutoService]: [
+    Permissions.PERMISSION_SERVICE_MODE_HISTORY_READ,
+  ],
+  [RoutePaths.all]: [],
+  [RoutePaths.root]: [],
+  [RoutePaths.auth]: [],
+  [RoutePaths.changePassword]: [],
+  [RoutePaths.forgetPassword]: [],
+  [RoutePaths.resetPassword]: [],
+};
+
 export const hasPermissionForThisPage = (
   permissionsList: Permissions[],
 ): HasPermissionForThisPageReturn => {
-  const routerPermissions = {
-    [RoutePaths.events]: true,
-    [RoutePaths.users]: true,
-    [RoutePaths.roles]: true,
-    [RoutePaths.groups]: true,
-    [RoutePaths.tc]: true,
-    [RoutePaths.alkozamki]: true,
-    [RoutePaths.autoService]: true,
-    [RoutePaths.attachments]: true,
-    [RoutePaths.historyAutoService]: true,
-  };
   if (!permissionsList) {
-    return routerPermissions;
-  }
-
-  if (permissionsList.includes(Permissions.SYSTEM_DRIVER_ACCOUNT)) {
-    routerPermissions[RoutePaths.groups] = false;
-    routerPermissions[RoutePaths.events] = true;
-    routerPermissions[RoutePaths.alkozamki] = false;
-    routerPermissions[RoutePaths.attachments] = false;
-    routerPermissions[RoutePaths.autoService] = false;
-    routerPermissions[RoutePaths.roles] = false;
-    routerPermissions[RoutePaths.tc] = false;
-    routerPermissions[RoutePaths.historyAutoService] = false;
-    routerPermissions[RoutePaths.users] = false;
-    return routerPermissions;
-  }
-
-  if (permissionsList.includes(Permissions.SYSTEM_SERVICE_ACCOUNT)) {
-    routerPermissions[RoutePaths.groups] = false;
-    routerPermissions[RoutePaths.events] = true;
-    routerPermissions[RoutePaths.alkozamki] = false;
-    routerPermissions[RoutePaths.attachments] = false;
-    routerPermissions[RoutePaths.autoService] = false;
-    routerPermissions[RoutePaths.roles] = false;
-    routerPermissions[RoutePaths.tc] = false;
-    routerPermissions[RoutePaths.historyAutoService] = false;
-    routerPermissions[RoutePaths.users] = false;
-    return routerPermissions;
-  }
-
-  if (
-    permissionsList.includes(Permissions.PERMISSION_DEVICE_CREATE) &&
-    !permissionsList.includes(Permissions.SYSTEM_GLOBAL_ADMIN)
-  ) {
-    routerPermissions[RoutePaths.groups] = false;
-    routerPermissions[RoutePaths.events] = true;
-    routerPermissions[RoutePaths.alkozamki] = true;
-    routerPermissions[RoutePaths.attachments] = true;
-    routerPermissions[RoutePaths.autoService] = true;
-    routerPermissions[RoutePaths.roles] = false;
-    routerPermissions[RoutePaths.tc] = true;
-    routerPermissions[RoutePaths.historyAutoService] = true;
-    routerPermissions[RoutePaths.users] = true;
-    return routerPermissions;
-  }
-
-  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_READ)) {
-    routerPermissions[RoutePaths.groups] = false;
-    routerPermissions[RoutePaths.events] = true;
-    routerPermissions[RoutePaths.alkozamki] = true;
-    routerPermissions[RoutePaths.attachments] = true;
-    routerPermissions[RoutePaths.autoService] = true;
-    routerPermissions[RoutePaths.roles] = false;
-    routerPermissions[RoutePaths.tc] = true;
-    routerPermissions[RoutePaths.historyAutoService] = true;
-    routerPermissions[RoutePaths.users] = true;
-    return routerPermissions;
-  }
-
-  if (permissionsList.includes(Permissions.PERMISSION_DEVICE_EDIT)) {
-    routerPermissions[RoutePaths.groups] = false;
-    routerPermissions[RoutePaths.events] = true;
-    routerPermissions[RoutePaths.alkozamki] = false;
-    routerPermissions[RoutePaths.attachments] = false;
-    routerPermissions[RoutePaths.autoService] = true;
-    routerPermissions[RoutePaths.roles] = false;
-    routerPermissions[RoutePaths.tc] = false;
-    routerPermissions[RoutePaths.historyAutoService] = true;
-    routerPermissions[RoutePaths.users] = false;
-    return routerPermissions;
+    return {};
   }
 
   const permissionsIncludes = permissionsListIncludes(permissionsList);
   const isGlobalAdmin = permissionsIncludes(Permissions.SYSTEM_GLOBAL_ADMIN);
-  if (isGlobalAdmin) {
-    return routerPermissions;
-  }
-  const permission = getPermissionsNumbersEntities(permissionsList);
 
-  routerPermissions[RoutePaths.events] = hasNoZeroPermissions(permission.eventPermission);
-  routerPermissions[RoutePaths.users] = hasNoZeroPermissions(permission.userPermission);
-  routerPermissions[RoutePaths.roles] = hasNoZeroPermissions(permission.rolePermission);
-  routerPermissions[RoutePaths.groups] = false;
-  routerPermissions[RoutePaths.tc] = hasNoZeroPermissions(permission.carPermission);
-  routerPermissions[RoutePaths.alkozamki] = hasNoZeroPermissions(permission.devicePermission);
-  routerPermissions[RoutePaths.autoService] = permission.devicePermission.includes(
-    PermissionsStatus.EDIT,
-  );
-  routerPermissions[RoutePaths.historyAutoService] = permission.devicePermission.includes(
-    PermissionsStatus.EDIT,
-  );
-  routerPermissions[RoutePaths.attachments] = hasNoZeroPermissions(
-    permission.attachmentsPermission,
-  );
-  return routerPermissions;
+  // Глобальный администратор имеет доступ ко всем маршрутам
+  if (isGlobalAdmin) {
+    return Object.keys(routePermissionsMap).reduce((acc, route) => {
+      acc[route as RoutePaths] = true;
+      return acc;
+    }, {} as HasPermissionForThisPageReturn);
+  }
+
+  // Логика для "Водителя"
+  const isService = permissionsList.includes(Permissions.SYSTEM_SERVICE_ACCOUNT);
+  const isDriver = permissionsList.includes(Permissions.SYSTEM_DRIVER_ACCOUNT);
+  const hasEventReadOnly = permissionsList.includes(Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE);
+
+  if (isDriver && hasEventReadOnly) {
+    return {
+      [RoutePaths.events]: true,
+    };
+  }
+
+  if (isService && hasEventReadOnly) {
+    return {
+      [RoutePaths.events]: true,
+    };
+  }
+
+  // Общая логика проверки доступов
+  return Object.entries(routePermissionsMap).reduce((acc, [route, requiredPermissions]) => {
+    acc[route as RoutePaths] = requiredPermissions.some((permission) =>
+      permissionsList.includes(permission),
+    );
+    return acc;
+  }, {} as HasPermissionForThisPageReturn);
 };
 
 export const getFirstAvailableRouter = (permissionsList: Permissions[]) => {
-  // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
   const permissionsPath = hasPermissionForThisPage(permissionsList);
-  // TODO => поменять всю работу с доступами когда на бэке поменяется структура доступов
-  const array = Object.entries(permissionsPath).filter((perm) => perm[1] === true);
 
-  const availableRouter = array[0];
-
-  const firstAvailableRouter = availableRouter ? availableRouter[0] : null;
+  const firstAvailableRouter = Object.entries(permissionsPath).find(
+    ([, hasAccess]) => hasAccess,
+  )?.[0];
 
   return { permissionsPath, firstAvailableRouter };
 };

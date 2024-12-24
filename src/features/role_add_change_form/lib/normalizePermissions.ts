@@ -112,8 +112,8 @@ export const getPermissionsNumbersEntities = (permissionsList: Permissions[]) =>
   const carPermission = findPermissionForEntity(Entities.VEHICLE);
   const eventPermission = findPermissionForEntity(Entities.EVENT);
   const rolePermission = findPermissionForEntity(Entities.ROLE);
-  const attachmentsPermission = findPermissionForEntity(Entities.ATTACHMENT);
-  // const driverPermition = findPermissionForEntity(Entities.SYSTEM_DRIVER_ACCOUNT);
+  const attachmentsPermission = findPermissionForEntity(Entities.BINDINGS);
+  const driverPermition = findPermissionForEntity(Entities.SYSTEM_DRIVER_ACCOUNT);
   return {
     userPermission,
     devicePermission,
@@ -121,6 +121,6 @@ export const getPermissionsNumbersEntities = (permissionsList: Permissions[]) =>
     attachmentsPermission,
     rolePermission,
     eventPermission,
-    // driverPermition,
+    driverPermition,
   };
 };
