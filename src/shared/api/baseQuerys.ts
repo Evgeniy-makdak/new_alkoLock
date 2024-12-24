@@ -395,7 +395,7 @@ export class EventsApi {
     if (options?.filterOptions?.match) {
       // url += `?match=${options?.filterOptions?.match}?sort=label`;
       url += `?all.match.contains=${options?.filterOptions?.match}&sort=label`;
-    } else url += `?sort=label`;
+    } else url += `?all.id.notIn=20,21,22,23,24,25,26,27,29,30,31,32,33&sort=label`;
     return getQuery<IEventsType>({ url });
   }
 
