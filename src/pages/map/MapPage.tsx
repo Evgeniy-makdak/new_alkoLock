@@ -31,6 +31,7 @@ import { useVehiclesTableApi } from '@widgets/vehicles_table/api/useVehiclesTabl
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлено для будущего включения DebugPanel
 import { DebugPanel } from './DebugPanel';
+import { LocationSelectorModal, type NominatimResult } from './LocationSelectorModal';
 import { MapProvider } from './MapContext';
 import { MapControls } from './MapControls';
 import { MapMarkers } from './MapMarkers';
@@ -212,6 +213,9 @@ export const MapPage = () => {
   const [urlMarker, setUrlMarker] = useState<L.Marker | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<ID | null>(null);
   const [urlMarkerEvent, setUrlMarkerEvent] = useState<EventData | null>(null);
+  const [locationSelectorOpen, setLocationSelectorOpen] = useState(false);
+  const [locationSelectorResults, setLocationSelectorResults] = useState<NominatimResult[]>([]);
+  const [locationSelectorQuery, setLocationSelectorQuery] = useState('');
   // const mainMarkerRef = useRef<L.Marker | null>(null);
   const urlMarkerInitialized = useRef(false);
   const [baseMarkerCoords, setBaseMarkerCoords] = useState<{ lat: number; lng: number } | null>(
@@ -246,7 +250,7 @@ export const MapPage = () => {
     if (!q || !mapRef.current) return;
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&q=${encodeURIComponent(q)}&limit=10`,
         {
           headers: {
             'Accept-Language': 'ru',
@@ -256,14 +260,27 @@ export const MapPage = () => {
       );
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
-        const { lat, lon } = data[0];
-        mapRef.current.setView([parseFloat(lat), parseFloat(lon)], 14);
+        if (data.length === 1) {
+          const { lat, lon } = data[0];
+          mapRef.current.setView([parseFloat(lat), parseFloat(lon)], 14);
+        } else {
+          setLocationSelectorResults(data);
+          setLocationSelectorQuery(q);
+          setLocationSelectorOpen(true);
+        }
       } else {
-        enqueueSnackbar('Местность не найдена', { variant: 'warning' });
+        enqueueSnackbar(t('map.locationNotFound'), { variant: 'warning' });
       }
     } catch {
-      enqueueSnackbar('Ошибка поиска местности', { variant: 'error' });
+      enqueueSnackbar(t('map.locationSearchError'), { variant: 'error' });
     }
+  };
+
+  const handleLocationSelect = (lat: number, lon: number) => {
+    if (mapRef.current) {
+      mapRef.current.setView([lat, lon], 14);
+    }
+    setLocationSelectorOpen(false);
   };
 
   const handleCloseAside = (resetToDefault = false) => {
@@ -1311,6 +1328,13 @@ export const MapPage = () => {
             )}
         </>
       )}
+      <LocationSelectorModal
+        open={locationSelectorOpen}
+        onClose={() => setLocationSelectorOpen(false)}
+        results={locationSelectorResults}
+        query={locationSelectorQuery}
+        onSelect={handleLocationSelect}
+      />
     </MapProvider>
   );
 };

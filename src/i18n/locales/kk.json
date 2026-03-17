@@ -282,7 +282,11 @@
     "clear": "Тазалау",
     "findOnMap": "Картада табу",
     "showAsList": "Тізім ретінде көрсету",
-    "resetMapCenter": "Картаны бастапқы нүктеге жылжыту"
+    "resetMapCenter": "Картаны бастапқы нүктеге жылжыту",
+    "locationSelectorTitle": "Бірнеше жер табылды",
+    "locationSelectorSubtitle": "\"{{query}}\" үшін қажетті жерді таңдаңыз",
+    "locationNotFound": "Жер табылмады",
+    "locationSearchError": "Жер іздеу қатесі"
   },
   "groups": {
     "usersTab": "ПАЙДАЛАНУШЫЛАР",

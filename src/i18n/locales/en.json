@@ -282,7 +282,11 @@
     "clear": "Clear",
     "findOnMap": "Find on map",
     "showAsList": "Show as list",
-    "resetMapCenter": "Move map to initial position"
+    "resetMapCenter": "Move map to initial position",
+    "locationSelectorTitle": "Multiple locations found",
+    "locationSelectorSubtitle": "Select the location for \"{{query}}\"",
+    "locationNotFound": "Location not found",
+    "locationSearchError": "Location search error"
   },
   "groups": {
     "usersTab": "USERS",

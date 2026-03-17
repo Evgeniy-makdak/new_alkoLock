@@ -174,7 +174,11 @@
     "clear": "Очистить",
     "findOnMap": "Найти на карте",
     "showAsList": "Показать списком",
-    "resetMapCenter": "Переместить карту в начальную точку"
+    "resetMapCenter": "Переместить карту в начальную точку",
+    "locationSelectorTitle": "Найдено несколько мест",
+    "locationSelectorSubtitle": "Выберите нужную местность для «{{query}}»",
+    "locationNotFound": "Местность не найдена",
+    "locationSearchError": "Ошибка поиска местности"
   },
   "modals": {
     "addUser": "Добавление пользователя",
