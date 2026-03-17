@@ -146,7 +146,11 @@
     "rowsOf": "{{from}}-{{to}} / {{count}}"
   },
   "settingsLabels": {
-    "serviceModeActivationTimeout": "Сервистік режимді іске қосу/өшіру сұрауына жауап күту уақыты"
+    "serviceModeActivationTimeout": "Сервистік режимді іске қосу/өшіру сұрауына жауап күту уақыты",
+    "eventViewWaitingTimeServiceModeHistory": "Оқиғаны қарау күту уақыты (сервистік режим тарихы)",
+    "eventViewWaitingTime": "Оқиғаларды қарау күту уақыты",
+    "waitingTime": "Күту уақыты",
+    "blockingPeriod": "Блоктау кезеңі"
   },
   "settingsUnits": {
     "day_one": "күн",
@@ -366,7 +370,20 @@
     "confirmDeleteMailing": "Сіз шынымен хабарламаны {{name}} жойғыңыз келе ме?",
     "groupDeletion": "Топты жою",
     "confirmDeleteGroup": "Сіз шынымен топты {{name}} жойғыңыз келе ме? Мазмұнын сақтап жою кезінде оның барлық пайдаланушылары, көліктері, алкозамоктары және тіркелімдері Негізгі филиалға ауыстырылады.",
-    "deleteWithContentTransfer": "Мазмұнын ауыстырумен жою"
+    "deleteWithContentTransfer": "Мазмұнын ауыстырумен жою",
+    "templateDeletionConfirm": "Жоюды растау",
+    "confirmDeleteTemplate": "Сіз шынымен {{name}} үлгісін жойғыңыз келе ме?",
+    "resetConfirm": "Нөлдеуді растау",
+    "confirmResetParameter": "Сіз шынымен \"{{name}}\" параметрінің мәнін әдепкіге қалпына келтіргіңіз келе ме?",
+    "apply": "Қолдану"
+  },
+  "settingsPage": {
+    "noSettingsFound": "Баптаулар табылмады",
+    "parameterResetSuccess": "\"{{name}}\" параметрі әдепкі мәнге қалпына келтірілді.",
+    "parameterResetError": "\"{{name}}\" параметрін нөлдеу кезінде қате",
+    "parameterChangedSuccess": "\"{{name}}\" параметрінің мәні өзгертілді.",
+    "parameterChangeError": "\"{{name}}\" параметрін өзгерту кезінде қате",
+    "loadError": "Баптауларды жүктеу кезінде қате"
   },
   "errors": {
     "userExists": "Пайдаланушы әлдеқашан бар",

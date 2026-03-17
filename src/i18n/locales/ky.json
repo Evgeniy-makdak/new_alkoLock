@@ -146,7 +146,11 @@
     "rowsOf": "{{from}}-{{to}} / {{count}}"
   },
   "settingsLabels": {
-    "serviceModeActivationTimeout": "Сервистик режимди иштетүү/өчүрүү суроосуна жооп күтүү убактысы"
+    "serviceModeActivationTimeout": "Сервистик режимди иштетүү/өчүрүү суроосуна жооп күтүү убактысы",
+    "eventViewWaitingTimeServiceModeHistory": "Окуяны көрүү күтүү убактысы (сервистик режим тарыхы)",
+    "eventViewWaitingTime": "Окуяларды көрүү күтүү убактысы",
+    "waitingTime": "Күтүү убактысы",
+    "blockingPeriod": "Блоктоо мезгили"
   },
   "settingsUnits": {
     "day_one": "күн",
@@ -366,7 +370,20 @@
     "confirmDeleteMailing": "Сиз чынымен кабарламаны {{name}} өчүргүңүз келеби?",
     "groupDeletion": "Топту өчүрүү",
     "confirmDeleteGroup": "Сиз чынымен топту {{name}} өчүргүңүз келеби? Мазмунун сактап өчүрүүдө анын бардык колдонуучулары, транспорттары, алкозамоктору жана тиркелиштери Негизги филиалга которулат.",
-    "deleteWithContentTransfer": "Мазмунун которуу менен өчүрүү"
+    "deleteWithContentTransfer": "Мазмунун которуу менен өчүрүү",
+    "templateDeletionConfirm": "Өчүрүүнү ырастоо",
+    "confirmDeleteTemplate": "Сиз чынымен {{name}} үлгүсүн өчүргүңүз келеби?",
+    "resetConfirm": "Нөлдөөнү ырастоо",
+    "confirmResetParameter": "Сиз чынымен \"{{name}}\" параметринин маанисин демейкиге калыбына келтиргиңиз келеби?",
+    "apply": "Колдонуу"
+  },
+  "settingsPage": {
+    "noSettingsFound": "Тууралоолор табылган жок",
+    "parameterResetSuccess": "\"{{name}}\" параметри демейки мааниге калыбына келтирилди.",
+    "parameterResetError": "\"{{name}}\" параметрин нөлдөөдө ката",
+    "parameterChangedSuccess": "\"{{name}}\" параметринин мааниси өзгөртүлдү.",
+    "parameterChangeError": "\"{{name}}\" параметрин өзгөртүүдө ката",
+    "loadError": "Тууралоолорду жүктөөдө ката"
   },
   "errors": {
     "userExists": "Колдонуучу мурунтан эле бар",

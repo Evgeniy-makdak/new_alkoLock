@@ -1,8 +1,11 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
 import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+
+import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
 
 interface SettingRow {
   id: number;
@@ -34,6 +37,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
   handleEditClick,
   handleResetToDefault,
 }) => {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <Box
@@ -50,7 +54,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
       {displayedRows.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="textSecondary">
-            Настройки не найдены
+            {t('settingsPage.noSettingsFound')}
           </Typography>
         </Box>
       ) : (
@@ -67,17 +71,19 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
             {/* Изменяемый параметр */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Изменяемый параметр:
+                {t('tables.changeableParam')}:
               </Typography>
               <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                {row.label}
+                {row.label && SETTINGS_LABEL_MAP[row.label]
+                  ? t(SETTINGS_LABEL_MAP[row.label])
+                  : row.label}
               </Typography>
             </Box>
 
             {/* Текущее значение */}
             <Box sx={{ mb: 2 }}>
               <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
-                Текущее значение:
+                {t('tables.currentValue')}:
               </Typography>
               <Typography variant="body1" fontWeight="medium">
                 {row.value} {getUnitDisplay(row.unit, row.value)}
@@ -87,10 +93,10 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
             {/* Действия */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Typography variant="subtitle2" color="textSecondary">
-                Действия:
+                {t('tables.actions')}:
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="Редактировать">
+                <Tooltip title={t('common.edit')}>
                   <IconButton
                     onClick={() => handleEditClick(row)}
                     size="small"
@@ -105,7 +111,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     <ModeEditIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Восстановить значение по умолчанию">
+                <Tooltip title={t('common.resetToDefault')}>
                   <IconButton
                     onClick={() => handleResetToDefault(row)}
                     size="small"

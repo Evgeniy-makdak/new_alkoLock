@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from '@mui/material';
 
+import { useTranslation } from 'react-i18next';
+
 interface ResetConfirmationDialogProps {
   open: boolean;
   settingName?: string;
@@ -23,6 +25,8 @@ const ResetConfirmationDialog: React.FC<ResetConfirmationDialogProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Backdrop open={open} sx={{ zIndex: 1300, color: '#fff' }}>
       <Dialog
@@ -46,11 +50,11 @@ const ResetConfirmationDialog: React.FC<ResetConfirmationDialogProps> = ({
             fontSize: '20px',
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
           }}>
-          Подтверждение сброса
+          {t('modals.resetConfirm')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {`Вы действительно хотите восстановить значение параметра "${settingName}" по умолчанию?`}
+            {t('modals.confirmResetParameter', { name: settingName ?? '' })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -63,7 +67,7 @@ const ResetConfirmationDialog: React.FC<ResetConfirmationDialogProps> = ({
               border: '1px solid #494646',
               marginRight: '16px',
             }}>
-            Применить
+            {t('modals.apply')}
           </Button>
           <Button
             onClick={onClose}
@@ -74,7 +78,7 @@ const ResetConfirmationDialog: React.FC<ResetConfirmationDialogProps> = ({
               border: '1px solid #494646',
               marginRight: '16px',
             }}>
-            Отмена
+            {t('modals.cancel')}
           </Button>
         </DialogActions>
       </Dialog>

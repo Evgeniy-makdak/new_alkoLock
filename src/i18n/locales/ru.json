@@ -146,7 +146,11 @@
     "rowsOf": "{{from}}-{{to}} из {{count}}"
   },
   "settingsLabels": {
-    "serviceModeActivationTimeout": "Время ожидания ответа на запрос активации/деактивации сервисного режима"
+    "serviceModeActivationTimeout": "Время ожидания ответа на запрос активации/деактивации сервисного режима",
+    "eventViewWaitingTimeServiceModeHistory": "Время ожидания просмотра события (история сервисного режима)",
+    "eventViewWaitingTime": "Время ожидания просмотра событий",
+    "waitingTime": "Время ожидания",
+    "blockingPeriod": "Период блокировки"
   },
   "settingsUnits": {
     "day_one": "день",
@@ -366,7 +370,20 @@
     "confirmDeleteMailing": "Вы действительно хотите удалить рассылку {{name}} ?",
     "groupDeletion": "Удаление группы",
     "confirmDeleteGroup": "Вы действительно хотите удалить группу {{name}}? При удалении группы с сохранением содержимого все её пользователи, ТС, алкозамки и привязки переносятся в Основной филиал.",
-    "deleteWithContentTransfer": "Удалить с переносом содержимого"
+    "deleteWithContentTransfer": "Удалить с переносом содержимого",
+    "templateDeletionConfirm": "Подтверждение удаления",
+    "confirmDeleteTemplate": "Вы действительно хотите удалить шаблон {{name}}?",
+    "resetConfirm": "Подтверждение сброса",
+    "confirmResetParameter": "Вы действительно хотите восстановить значение параметра \"{{name}}\" по умолчанию?",
+    "apply": "Применить"
+  },
+  "settingsPage": {
+    "noSettingsFound": "Настройки не найдены",
+    "parameterResetSuccess": "Параметр \"{{name}}\" сброшен к значению по умолчанию.",
+    "parameterResetError": "Ошибка при сбросе параметра \"{{name}}\"",
+    "parameterChangedSuccess": "Значение параметра \"{{name}}\" изменено.",
+    "parameterChangeError": "Ошибка при изменении параметра \"{{name}}\"",
+    "loadError": "Ошибка при загрузке настроек"
   },
   "errors": {
     "userExists": "Пользователь уже существует",

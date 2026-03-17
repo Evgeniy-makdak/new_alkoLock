@@ -146,7 +146,11 @@
     "rowsOf": "{{from}}-{{to}} of {{count}}"
   },
   "settingsLabels": {
-    "serviceModeActivationTimeout": "Time to wait for response to service mode activation/deactivation request"
+    "serviceModeActivationTimeout": "Time to wait for response to service mode activation/deactivation request",
+    "eventViewWaitingTimeServiceModeHistory": "Event view waiting time (service mode history)",
+    "eventViewWaitingTime": "Event view waiting time",
+    "waitingTime": "Waiting time",
+    "blockingPeriod": "Blocking period"
   },
   "settingsUnits": {
     "day_one": "day",
@@ -366,7 +370,20 @@
     "confirmDeleteMailing": "Do you really want to delete mailing {{name}}?",
     "groupDeletion": "Delete group",
     "confirmDeleteGroup": "Do you really want to delete group {{name}}? When deleting a group with content preservation, all its users, vehicles, alcolocks and attachments will be moved to the Main branch.",
-    "deleteWithContentTransfer": "Delete with content transfer"
+    "deleteWithContentTransfer": "Delete with content transfer",
+    "templateDeletionConfirm": "Deletion confirmation",
+    "confirmDeleteTemplate": "Do you really want to delete template {{name}}?",
+    "resetConfirm": "Reset confirmation",
+    "confirmResetParameter": "Do you really want to restore the value of parameter \"{{name}}\" to default?",
+    "apply": "Apply"
+  },
+  "settingsPage": {
+    "noSettingsFound": "No settings found",
+    "parameterResetSuccess": "Parameter \"{{name}}\" has been reset to default.",
+    "parameterResetError": "Error resetting parameter \"{{name}}\"",
+    "parameterChangedSuccess": "Parameter \"{{name}}\" value has been changed.",
+    "parameterChangeError": "Error changing parameter \"{{name}}\"",
+    "loadError": "Error loading settings"
   },
   "errors": {
     "userExists": "User already exists",

@@ -16,6 +16,8 @@ import {
   Tooltip,
 } from '@mui/material';
 
+import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
+
 interface SettingRow {
   id: number;
   label: string;
@@ -122,7 +124,11 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
           ) : (
             settingsRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
               <TableRow key={row.id} hover sx={{ border: 'none', borderBottom: 'none' }}>
-                <TableCell sx={{ border: 'none', borderBottom: 'none' }}>{row.label}</TableCell>
+                <TableCell sx={{ border: 'none', borderBottom: 'none' }}>
+                  {row.label && SETTINGS_LABEL_MAP[row.label]
+                    ? t(SETTINGS_LABEL_MAP[row.label])
+                    : row.label}
+                </TableCell>
                 <TableCell sx={{ border: 'none', borderBottom: 'none' }}>
                   {row.value} {getUnitDisplay(row.unit, row.value)}
                 </TableCell>

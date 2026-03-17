@@ -9,6 +9,7 @@ import { useMediaQuery } from '@mui/material';
 
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
+import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { EditSettingDialog } from './EditSettingDialog';
@@ -48,7 +49,11 @@ const getUnitForm = (count: number) => {
 
 export const SettingsPage = () => {
   const { t } = useTranslation();
-  const [notification, setNotification] = useState<{ open: boolean; message: string }>({
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity?: 'success' | 'error';
+  }>({
     open: false,
     message: '',
   });
@@ -106,7 +111,8 @@ export const SettingsPage = () => {
     } catch (error) {
       setNotification({
         open: true,
-        message: 'Ошибка при загрузке настроек',
+        message: t('settingsPage.loadError'),
+        severity: 'error',
       });
     } finally {
       setLoading(false);
@@ -224,16 +230,24 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === updatedSetting.id ? updatedSetting : s)));
 
+      const displayName = SETTINGS_LABEL_MAP[editingField.label]
+        ? t(SETTINGS_LABEL_MAP[editingField.label])
+        : editingField.label;
       setNotification({
         open: true,
-        message: `Значение параметра "${editingField.label}" изменено.`,
+        message: t('settingsPage.parameterChangedSuccess', { name: displayName }),
+        severity: 'success',
       });
 
       handleCloseModal({}, 'buttonClick');
     } catch (error) {
+      const displayName = SETTINGS_LABEL_MAP[editingField.label]
+        ? t(SETTINGS_LABEL_MAP[editingField.label])
+        : editingField.label;
       setNotification({
         open: true,
-        message: `Ошибка при изменении параметра "${editingField.label}"`,
+        message: t('settingsPage.parameterChangeError', { name: displayName }),
+        severity: 'error',
       });
     } finally {
       setIsSaving(false);
@@ -259,14 +273,22 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === resetSetting.id ? resetSetting : s)));
 
+      const displayName = SETTINGS_LABEL_MAP[settingToReset.label]
+        ? t(SETTINGS_LABEL_MAP[settingToReset.label])
+        : settingToReset.label;
       setNotification({
         open: true,
-        message: `Параметр "${settingToReset.label}" сброшен к значению по умолчанию.`,
+        message: t('settingsPage.parameterResetSuccess', { name: displayName }),
+        severity: 'success',
       });
     } catch (error) {
+      const displayName = SETTINGS_LABEL_MAP[settingToReset.label]
+        ? t(SETTINGS_LABEL_MAP[settingToReset.label])
+        : settingToReset.label;
       setNotification({
         open: true,
-        message: `Ошибка при сбросе параметра "${settingToReset.label}"`,
+        message: t('settingsPage.parameterResetError', { name: displayName }),
+        severity: 'error',
       });
     } finally {
       setResetDialogOpen(false);
@@ -369,7 +391,11 @@ export const SettingsPage = () => {
 
       <ResetConfirmationDialog
         open={resetDialogOpen}
-        settingName={settingToReset?.label}
+        settingName={
+          settingToReset?.label && SETTINGS_LABEL_MAP[settingToReset.label]
+            ? t(SETTINGS_LABEL_MAP[settingToReset.label])
+            : (settingToReset?.label ?? '')
+        }
         onClose={handleResetCancel}
         onConfirm={handleResetConfirm}
       />
@@ -381,7 +407,7 @@ export const SettingsPage = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <Alert
           onClose={handleCloseNotification}
-          severity={notification.message.includes('Ошибка') ? 'error' : 'success'}
+          severity={notification.severity ?? 'success'}
           sx={{ width: '100%' }}>
           {notification.message}
         </Alert>

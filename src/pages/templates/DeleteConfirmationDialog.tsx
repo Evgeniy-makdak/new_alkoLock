@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Backdrop,
@@ -25,6 +26,8 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
   onClose,
   onConfirm,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Backdrop open={open} sx={{ zIndex: 1300, color: '#fff' }}>
       <Dialog
@@ -48,11 +51,11 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
             fontSize: '20px',
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
           }}>
-          Подтверждение удаления
+          {t('modals.templateDeletionConfirm')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Вы действительно хотите удалить шаблон {template?.name}?
+            {t('modals.confirmDeleteTemplate', { name: template?.name })}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -65,7 +68,7 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
               border: '1px solid #494646',
               marginRight: '16px',
             }}>
-            Да
+            {t('modals.yes')}
           </Button>
           <Button
             onClick={onClose}
@@ -76,7 +79,7 @@ const DeleteConfirmationDialog: React.FC<DeleteConfirmationDialogProps> = ({
               border: '1px solid #494646',
               marginRight: '16px',
             }}>
-            Нет
+            {t('modals.no')}
           </Button>
         </DialogActions>
       </Dialog>
