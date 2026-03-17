@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import 'dayjs/locale/en';
 import 'dayjs/locale/kk';
+import 'dayjs/locale/ky';
 import 'dayjs/locale/ru';
 
 import { ThemeProvider, createTheme } from '@mui/material';
@@ -28,6 +29,10 @@ const PICKERS_LOCALE_MAP: Record<
   kk: {
     localeText: kzKZ.components.MuiLocalizationProvider.defaultProps.localeText,
     adapterLocale: 'kk',
+  },
+  ky: {
+    localeText: ruRU.components.MuiLocalizationProvider.defaultProps.localeText,
+    adapterLocale: 'ky',
   },
 };
 

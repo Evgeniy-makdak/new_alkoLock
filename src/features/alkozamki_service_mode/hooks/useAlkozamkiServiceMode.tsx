@@ -6,6 +6,7 @@
 
 /* eslint-disable no-case-declarations */
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { testids } from '@shared/const/testid';
 import { useToggle } from '@shared/hooks/useToggle';
@@ -31,6 +32,7 @@ export const useAlkozamkiServiceMode = (
   alkolock: IAlcolock,
   handleCloseAside: () => void,
 ) => {
+  const { t } = useTranslation();
   const { deviceStatuses, deviceIds, deviceStatusMap } = useDeviceStatus(); // 👈 получение статусов, ID и карты из контекста
   const prevDeviceStatusesRef = useRef<string[]>([]); // 👈 для отслеживания предыдущего значения статусов
   const prevDeviceIdsRef = useRef<number[]>([]); // 👈 для отслеживания предыдущего значения ID
@@ -250,7 +252,7 @@ export const useAlkozamkiServiceMode = (
             if (isCrushModeFromAlkolock) {
               return (
                 <>
-                  <span>Устройство в аварийном режиме</span>
+                  <span>{t('serviceMode.deviceInEmergencyMode')}</span>
                   <div className={style.toggles}>
                     <button
                       className={hasServiceModeCreate ? style.cancel : style.disabled}
@@ -260,7 +262,7 @@ export const useAlkozamkiServiceMode = (
                         handleCloseAside();
                       }}
                       disabled={!hasServiceModeCreate}>
-                      Отменить
+                      {t('serviceMode.cancel')}
                     </button>
                   </div>
                 </>
@@ -270,12 +272,12 @@ export const useAlkozamkiServiceMode = (
             const servText =
               serviceModeInfo.action.type === ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
                 <span>
-                  <b>Выключение</b>
+                  <b>{t('serviceMode.deactivation')}</b>
                 </span>
               ) : serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
                 <span>
-                  <b>Включение на {timeFormat}</b>
+                  <b>{t('serviceMode.activationOn', { time: timeFormat })}</b>
                 </span>
               ) : (
                 '-'
@@ -291,9 +293,9 @@ export const useAlkozamkiServiceMode = (
                       handleCancelActivate(serviceModeInfo.action?.id);
                       handleCloseAside();
                     }}
-                    disabled={!hasServiceModeCreate}>
-                    Отменить
-                  </button>
+disabled={!hasServiceModeCreate}>
+                      {t('serviceMode.cancel')}
+                    </button>
                 </div>
               </>
             );
@@ -304,11 +306,11 @@ export const useAlkozamkiServiceMode = (
                 serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
                   <span>
-                    <b>Выключение</b>
+                    <b>{t('serviceMode.deactivation')}</b>
                   </span>
                 ) : serviceModeInfo.action.type ===
                   ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
-                  <span>{/* <b>Включение на {timeFormat}</b> */}</span>
+                  <span>{/* <b>{t('serviceMode.activationOn', { time: timeFormat })}</b> */}</span>
                 ) : (
                   '-'
                 );
@@ -317,7 +319,7 @@ export const useAlkozamkiServiceMode = (
                   {appTextCrush}
                   <div className={style.toggles}>
                     <button className={style.disabled} disabled={true}>
-                      Принять
+                      {t('serviceMode.accept')}
                     </button>
                     <button
                       className={hasServiceModeEdit ? style.cancel : style.disabled}
@@ -326,7 +328,7 @@ export const useAlkozamkiServiceMode = (
                         handleCloseAside();
                       }}
                       disabled={!hasServiceModeEdit}>
-                      Отклонить
+                      {t('serviceMode.reject')}
                     </button>
                   </div>
                 </>
@@ -336,12 +338,12 @@ export const useAlkozamkiServiceMode = (
             const appText =
               serviceModeInfo.action.type === ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
                 <span>
-                  <b>Выключение</b>
+                  <b>{t('serviceMode.deactivation')}</b>
                 </span>
               ) : serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
                 <span>
-                  <b>Включение на {timeFormat}</b>
+                  <b>{t('serviceMode.activationOn', { time: timeFormat })}</b>
                 </span>
               ) : (
                 '-'
@@ -358,7 +360,7 @@ export const useAlkozamkiServiceMode = (
                       handleCloseAside();
                     }}
                     disabled={!hasServiceModeEdit || isCrushModeFromAlkolock}>
-                    Принять
+                    {t('serviceMode.accept')}
                   </button>
 
                   <button
@@ -378,54 +380,46 @@ export const useAlkozamkiServiceMode = (
             if (serviceModeInfo.requestType === 'Запрос сервера') {
               return serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
-                <span>
-                  <b>Выключение отклонено</b> водителем
-                </span>
+                <span>{t('serviceMode.deactivationRejected')}</span>
               ) : serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
-                <span>
-                  <b>Включение отклонено</b> водителем
-                </span>
+                <span>{t('serviceMode.activationRejected')}</span>
               ) : (
                 '-'
               );
             } else if (serviceModeInfo.requestType === 'Запрос приложения') {
               if (serviceModeInfo.isAcknowledged) {
-                return <span>Отклонение подтверждено приложением</span>;
+                return <span>{t('serviceMode.rejectionConfirmed')}</span>;
               } else {
-                return <span>Ожидание подтверждения приложения</span>;
+                return <span>{t('serviceMode.awaitingAppConfirmation')}</span>;
               }
             } else {
-              return <span>Ожидание подтверждения приложения</span>;
+              return <span>{t('serviceMode.awaitingAppConfirmation')}</span>;
             }
           case EventType.ACCEPTED:
             if (serviceModeInfo.requestType === EventType.SERVER_REQUEST) {
               return serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_ACTIVATE ? (
-                <span>
-                  <b>Включение подтверждено</b> водителем
-                </span>
+                <span>{t('serviceMode.activationConfirmed')}</span>
               ) : serviceModeInfo.action.type ===
                 ServiceModeInfoActionTypes.SERVICE_MODE_DEACTIVATE ? (
-                <span>
-                  <b>Выключение подтверждено</b> водителем
-                </span>
+                <span>{t('serviceMode.deactivationConfirmed')}</span>
               ) : (
                 '-'
               );
             } else if (serviceModeInfo.requestType === EventType.APP_REQUEST) {
               if (serviceModeInfo.isAcknowledged) {
-                return <span>Подтверждено приложением</span>;
+                return <span>{t('serviceMode.confirmedByApp')}</span>;
               } else {
-                return <span>Ожидание подтверждения приложения</span>;
+                return <span>{t('serviceMode.awaitingAppConfirmation')}</span>;
               }
             } else {
-              return <span>Ожидание подтверждения приложения</span>;
+              return <span>{t('serviceMode.awaitingAppConfirmation')}</span>;
             }
           case EventType.OFFLINE_DEACTIVATION:
-            return <span>Выключен в оффлайн режиме</span>;
+            return <span>{t('serviceMode.deactivatedOffline')}</span>;
           case EventType.OFFLINE_ACTIVATION:
-            return <span>Включен в оффлайн режиме</span>;
+            return <span>{t('serviceMode.activatedOffline')}</span>;
           default:
             return null;
         }
@@ -462,7 +456,7 @@ export const useAlkozamkiServiceMode = (
                     : null
                 }
                 disabled={disableButtons || shouldDisableActivateButton || isCrushModeFromAlkolock}>
-                Включить
+                {t('serviceMode.enable')}
               </button>
               <button
                 data-testid={
@@ -482,7 +476,7 @@ export const useAlkozamkiServiceMode = (
                     : null
                 }
                 disabled={shouldDisableDeactivateButton}>
-                Выключить
+                {t('serviceMode.disable')}
               </button>
             </div>
             {shouldShowRequestMessage && (
@@ -499,14 +493,14 @@ export const useAlkozamkiServiceMode = (
                   width: '100%',
                   boxSizing: 'border-box',
                 }}>
-                Для данного устройства есть активная заявка
+                {t('serviceMode.activeRequestMessage')}
               </div>
             )}
           </div>
         );
       }
     } catch (err) {
-      return <>Ошибка в отображении сервисного режима</>;
+      return <>{t('serviceMode.displayError')}</>;
     }
   };
 

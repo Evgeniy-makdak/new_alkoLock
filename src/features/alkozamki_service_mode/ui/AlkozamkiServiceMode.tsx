@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useTranslation } from 'react-i18next';
+
 import { Stack, Typography } from '@mui/material';
 
 import { ActivateForm } from '@entities/alkozamki_activate_form';
@@ -28,6 +30,7 @@ export const AlkozamkiServiceMode = ({
   activeDeviceIds,
   autoServiceType, // 👈 получаем autoServiceType из пропсов
 }: AlkozamkiServiceModeProps) => {
+  const { t } = useTranslation();
   const {
     getButtons,
     handleActivate,
@@ -51,7 +54,7 @@ export const AlkozamkiServiceMode = ({
     <>
       <div className={style.alcolockServiceMode}>
         <Stack spacing={2} direction="column" alignItems="center" width="100%">
-          <span className={style.name}>Сервисный режим:</span>
+          <span className={style.name}>{t('serviceMode.label')}</span>
           {shouldShowTimer && (
             <Stack
               spacing={2}
@@ -60,7 +63,7 @@ export const AlkozamkiServiceMode = ({
               alignItems="center"
               width="100%">
               <Typography fontSize={22} fontWeight={600}>
-                Выключение через
+                {t('serviceMode.turnOffIn')}
               </Typography>
               <Typography fontSize={22} fontWeight={400}>
                 <TimeCell refetch={refetch} time={initialTime} id={alkolock.id} />
@@ -69,12 +72,12 @@ export const AlkozamkiServiceMode = ({
           )}
           {alkolock.mode === 'Аварийный' && (
             <Typography fontSize={22} fontWeight={400} color="error">
-              Активирован аварийный режим
+              {t('serviceMode.emergencyModeActivated')}
             </Typography>
           )}
           {alkolock.mode === 'Сервисный' && !shouldShowTimer && (
             <Typography fontSize={22} fontWeight={400} color="primary">
-              Активирован сервисным работником
+              {t('serviceMode.activatedByServiceWorker')}
             </Typography>
           )}
           {getButtons()}
@@ -82,7 +85,7 @@ export const AlkozamkiServiceMode = ({
       </div>
       <Popup
         isOpen={openActivatePopup}
-        headerTitle={'Включить сервисный режим?'}
+        headerTitle={t('serviceMode.activatePrompt')}
         toggleModal={toggleActivatePopup}
         body={
           <ActivateForm
@@ -97,7 +100,7 @@ export const AlkozamkiServiceMode = ({
       />
       <Popup
         isOpen={openDeactivatePopup}
-        headerTitle={'Выключить сервисный режим?'}
+        headerTitle={t('serviceMode.deactivatePrompt')}
         toggleModal={toggleDeactivatePopup}
         buttons={[
           <Button
@@ -107,10 +110,10 @@ export const AlkozamkiServiceMode = ({
               handleDeactivate();
               toggleDeactivatePopup();
             }}>
-            {'Выключить'}
+            {t('serviceMode.disable')}
           </Button>,
           <Button key={'action_2'} typeButton={ButtonsType.action} onClick={toggleDeactivatePopup}>
-            {'Нет'}
+            {t('serviceMode.no')}
           </Button>,
         ]}
       />

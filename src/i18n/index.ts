@@ -4,6 +4,7 @@ import i18n from 'i18next';
 
 import en from './locales/en.json';
 import kk from './locales/kk.json';
+import ky from './locales/ky.json';
 import ru from './locales/ru.json';
 
 const LANGUAGE_KEY = 'app_language';
@@ -29,6 +30,7 @@ i18n.use(initReactI18next).init({
     ru: { translation: ru },
     en: { translation: en },
     kk: { translation: kk },
+    ky: { translation: ky },
   },
   lng: getStoredLanguage(),
   fallbackLng: 'ru',

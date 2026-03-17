@@ -24,6 +24,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import { Popup } from '@shared/ui/popup';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- используется при раскомментировании переключателя языка
 import { setStoredLanguage } from '../../../i18n';
 import { breakpoints } from '../breakpoints';
 import { NAV_LINKS, frontendVersion } from '../config/const';
@@ -34,13 +35,16 @@ import style from './NavBar.module.scss';
 // Высота одного элемента навигации в пикселях (с учетом margin-bottom)
 const ITEM_HEIGHT = 61; // 44px высота + 17px margin-bottom
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- используется при раскомментировании переключателя языка
 const LANGUAGES = [
   { code: 'ru', label: 'RU' },
   { code: 'en', label: 'EN' },
   { code: 'kk', label: 'KZ' },
+  { code: 'ky', label: 'KG' },
 ] as const;
 
 export const NavBar = () => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- i18n используется при раскомментировании переключателя языка
   const { t, i18n } = useTranslation();
   const [open, toggle, close] = useToggle();
   const { resetStatusFilter } = useStatusFilter();
@@ -399,6 +403,7 @@ export const NavBar = () => {
                     </div>
                   </Tooltip>
                 </div>
+
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
                     {t('nav.frontend')}: v {frontendVersion}
