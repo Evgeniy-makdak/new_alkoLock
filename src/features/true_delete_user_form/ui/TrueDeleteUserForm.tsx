@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -16,20 +17,21 @@ type TrueDeleteUserForm = {
 };
 
 export const TrueDeleteUserForm: FC<TrueDeleteUserForm> = ({ user, closeModal, closeAside }) => {
+  const { t } = useTranslation();
   const onTrueDelete = useTrueDeleteUserForm(user.id, closeModal, closeAside);
   return (
     <>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Удаление пользователя
+        {t('modals.userDeletion')}
       </Typography>
       <Stack gap={3}>
-        <Typography>Вы действительно хотите удалить пользователя {user.text} ?</Typography>
+        <Typography>{t('modals.confirmDeleteUser', { name: user.text })}</Typography>
         <ButtonFormWrapper>
           <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={onTrueDelete}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

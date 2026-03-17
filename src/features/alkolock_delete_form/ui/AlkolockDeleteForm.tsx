@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -17,6 +18,7 @@ export const AlkolockDeleteForm = ({
   alkolock: { id: ID; text: any };
   closeDeleteModal: () => void;
 }) => {
+  const { t } = useTranslation();
   const { handleDelete, isLoading } = useAlkolockDeleteForm(alkolock?.id, closeDeleteModal);
 
   const displayText = alkolock?.text;
@@ -28,21 +30,21 @@ export const AlkolockDeleteForm = ({
       </Backdrop>
       <Stack maxWidth={'600px'} gap={1}>
         <Typography variant="h6" fontWeight={700}>
-          Деактивация Алкозамка
+          {t('modals.alcolockDeactivation')}
         </Typography>
-        <Typography>Вы действительно хотите деактивировать Алкозамок {displayText}?</Typography>
+        <Typography>{t('modals.confirmDeactivateAlcolock', { name: displayText })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleDelete}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeDeleteModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

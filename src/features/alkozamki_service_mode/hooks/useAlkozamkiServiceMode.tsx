@@ -293,9 +293,9 @@ export const useAlkozamkiServiceMode = (
                       handleCancelActivate(serviceModeInfo.action?.id);
                       handleCloseAside();
                     }}
-disabled={!hasServiceModeCreate}>
-                      {t('serviceMode.cancel')}
-                    </button>
+                    disabled={!hasServiceModeCreate}>
+                    {t('serviceMode.cancel')}
+                  </button>
                 </div>
               </>
             );

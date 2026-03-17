@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FC } from 'react';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -22,6 +23,7 @@ export const RecoverAlcolockForm: FC<RecoverCarFormProps> = ({
   closeModal,
   closeAside,
 }) => {
+  const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverAlcolockForm(alcolock.id, closeModal, closeAside);
 
   let displayText = alcolock?.text;
@@ -46,24 +48,22 @@ export const RecoverAlcolockForm: FC<RecoverCarFormProps> = ({
         <CircularProgress color="inherit" />
       </Backdrop>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Восстановление алкозамка
+        {t('modals.alcolockRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>
-          Восстановить Алкозамок {displayText} ? Все связанные события также будут активированы.
-        </Typography>
+        <Typography>{t('modals.confirmRecoverAlcolock', { name: displayText })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleRecover}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

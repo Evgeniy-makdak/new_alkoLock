@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -16,6 +17,7 @@ type RecoverCarFormProps = {
 };
 
 export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, closeAside }) => {
+  const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverCarForm(car.id, closeModal, closeAside);
   return (
     <>
@@ -23,25 +25,22 @@ export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, close
         <CircularProgress color="inherit" />
       </Backdrop>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Восстановление ТС
+        {t('modals.vehicleRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>
-          Восстановить транспортное средство {car.text} ? Все связанные события также будут
-          активированы.
-        </Typography>
+        <Typography>{t('modals.confirmRecoverVehicle', { name: car.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleRecover}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

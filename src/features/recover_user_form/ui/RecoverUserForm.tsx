@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -16,6 +17,7 @@ type RecoverUserFormProps = {
 };
 
 export const RecoverUserForm: FC<RecoverUserFormProps> = ({ user, closeModal, closeAside }) => {
+  const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverUserForm(user.id, closeModal, closeAside);
 
   return (
@@ -25,24 +27,22 @@ export const RecoverUserForm: FC<RecoverUserFormProps> = ({ user, closeModal, cl
       </Backdrop>
 
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Восстановление пользователя
+        {t('modals.userRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>
-          Восстановить пользователя {user.text} ? Все связанные события также будут активированы.
-        </Typography>
+        <Typography>{t('modals.confirmRecoverUser', { name: user.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleRecover}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

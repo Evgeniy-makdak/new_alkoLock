@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@mui/material';
 
@@ -15,21 +16,20 @@ type RoleDeleteFormProps = {
 };
 
 export const RoleDeleteForm: FC<RoleDeleteFormProps> = ({ role, closeModal }) => {
+  const { t } = useTranslation();
   const { handleDelete } = useRoleDeleteForm(role.id, closeModal);
   return (
     <div>
       <Typography marginBottom={3} fontWeight={700} variant="h6">
-        Удаление роли
+        {t('modals.roleDeletion')}
       </Typography>
-      <Typography>
-        Вы действительно хотите удалить роль <b>{role.text}?</b>
-      </Typography>
+      <Typography>{t('modals.confirmDeleteRole', { name: role.text })}</Typography>
       <ButtonFormWrapper>
         <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={handleDelete}>
-          удалить
+          {t('modals.delete')}
         </Button>
         <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
-          отмена
+          {t('modals.cancel')}
         </Button>
       </ButtonFormWrapper>
     </div>

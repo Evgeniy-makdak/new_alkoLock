@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -20,6 +21,7 @@ export const RecoverMailingsForm: FC<RecoverMailingsFormProps> = ({
   closeModal,
   closeAside,
 }) => {
+  const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverMailingsForm(mailing.id, closeModal, closeAside);
 
   return (
@@ -29,22 +31,22 @@ export const RecoverMailingsForm: FC<RecoverMailingsFormProps> = ({
       </Backdrop>
 
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Восстановление рассылки
+        {t('modals.mailingRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>Восстановить рассылку {mailing.text}?</Typography>
+        <Typography>{t('modals.confirmRecoverMailing', { name: mailing.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleRecover}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

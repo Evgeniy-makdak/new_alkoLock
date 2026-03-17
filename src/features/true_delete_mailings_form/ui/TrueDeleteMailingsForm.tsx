@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -20,20 +21,21 @@ export const TrueDeleteMailingsForm: FC<TrueDeleteMailingsForm> = ({
   closeModal,
   closeAside,
 }) => {
+  const { t } = useTranslation();
   const onTrueDelete = useTrueDeleteMailingsForm(mailing.id, closeModal, closeAside);
   return (
     <>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Удаление рассылки
+        {t('modals.mailingDeletion')}
       </Typography>
       <Stack gap={3}>
-        <Typography>Вы действительно хотите удалить рассылку {mailing.text} ?</Typography>
+        <Typography>{t('modals.confirmDeleteMailing', { name: mailing.text })}</Typography>
         <ButtonFormWrapper>
           <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={onTrueDelete}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

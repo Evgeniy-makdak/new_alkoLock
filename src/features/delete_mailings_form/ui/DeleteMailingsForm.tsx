@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -20,6 +21,7 @@ export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
   closeModal,
   closeAside,
 }) => {
+  const { t } = useTranslation();
   const { handleDelete, isLoading } = useDeleteMailingsForm(mailing.id, closeModal, closeAside);
   return (
     <>
@@ -27,22 +29,22 @@ export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
         <CircularProgress color="inherit" />
       </Backdrop>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Деактивация рассылки
+        {t('modals.mailingDeactivation')}
       </Typography>
       <Stack gap={3}>
-        <Typography>Вы действительно хотите деактивировать рассылку {mailing.text} ?</Typography>
+        <Typography>{t('modals.confirmDeactivateMailing', { name: mailing.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={handleDelete}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

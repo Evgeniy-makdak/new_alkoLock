@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -17,28 +18,24 @@ type GroupDeleteFormProps = {
 };
 
 export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal, setState }) => {
+  const { t } = useTranslation();
   const { handleDelete } = useGroupDeleteForm(branch.id, closeModal, setState);
   return (
     <div>
       <Typography marginBottom={3} fontWeight={700} variant="h6">
-        Удаление группы
+        {t('modals.groupDeletion')}
       </Typography>
       <Stack gap={3}>
-        <Typography>
-          Вы действительно хотите удалить группу <b>{branch.text}?</b>
-          <br />
-          При удалении группы с сохранением содержимого все её пользователи, ТС, алкозамки и
-          привязки переносятся в Основной филиал.
-        </Typography>
+        <Typography>{t('modals.confirmDeleteGroup', { name: branch.text })}</Typography>
         <ButtonFormWrapper>
           <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(true)}>
-            удалить
+            {t('modals.delete')}
           </Button>
           <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(false)}>
-            удалить с переносом содержимого
+            {t('modals.deleteWithContentTransfer')}
           </Button>
           <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
-            отмена
+            {t('modals.cancel')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
@@ -13,26 +15,25 @@ interface AttachmentDeleteFormProps {
 }
 
 export const AttachmentDeleteForm = ({ attach, closeModal }: AttachmentDeleteFormProps) => {
+  const { t } = useTranslation();
   const handleDelete = useAttachmentDeleteForm(attach.id, closeModal);
   return (
     <div>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Удаление привязки Алкозамка
+        {t('modals.attachmentDeletion')}
       </Typography>
       <Stack gap={2}>
-        <Typography>
-          Вы действительно хотите удалить привязку <b>{attach.text}?</b>
-        </Typography>
+        <Typography>{t('modals.confirmDeleteAttachment', { name: attach.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}_${testids.page_attachments.attachments_popup_delete_attach.ATTACHMENTS_DELETE_ATTACH}`}
             onClick={handleDelete}>
-            удалить
+            {t('modals.delete')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}_${testids.page_attachments.attachments_popup_delete_attach.ATTACHMENTS_DELETE_ATTACH}`}
             onClick={closeModal}>
-            отмена
+            {t('modals.cancel')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

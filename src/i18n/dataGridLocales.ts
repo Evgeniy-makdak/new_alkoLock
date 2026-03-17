@@ -9,7 +9,8 @@ const getBaseLocale = (locale: any) =>
 export const getDataGridLocaleText = () => {
   const lang = (i18n.language || '').split('-')[0].toLowerCase();
   const t = (key: string, opts?: Record<string, string | number>) => i18n.t(key, opts);
-  const base = lang === 'en' || lang === 'kk' ? getBaseLocale(enUS) : getBaseLocale(ruRU);
+  const base =
+    lang === 'en' || lang === 'kk' || lang === 'ky' ? getBaseLocale(enUS) : getBaseLocale(ruRU);
   return {
     ...base,
     labelRowsPerPage: t('tables.rowsPerPage'),

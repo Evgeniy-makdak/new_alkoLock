@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
@@ -15,6 +16,7 @@ type DeleteCarFormProps = {
 };
 
 export const DeleteTrueCarForm: FC<DeleteCarFormProps> = ({ car, closeModal }) => {
+  const { t } = useTranslation();
   const { onTrueDelete, isLoading } = useTrueDeleteCarForm(car.id, closeModal);
   return (
     <div>
@@ -22,22 +24,22 @@ export const DeleteTrueCarForm: FC<DeleteCarFormProps> = ({ car, closeModal }) =
         <CircularProgress color="inherit" />
       </Backdrop>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
-        Удаление ТС
+        {t('modals.vehicleDeletion')}
       </Typography>
       <Stack gap={3}>
-        <Typography>Вы действительно хотите удалить транспортное средство {car.text} ?</Typography>
+        <Typography>{t('modals.confirmDeleteVehicle', { name: car.text })}</Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}
             onClick={onTrueDelete}
             disabled={isLoading}>
-            да
+            {t('modals.yes')}
           </Button>
           <Button
             testid={`${testids.POPUP_CANCEL_BUTTON}`}
             onClick={closeModal}
             disabled={isLoading}>
-            нет
+            {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
       </Stack>

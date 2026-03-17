@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { type Dayjs } from 'dayjs';
 import 'dayjs/locale/ru';
 
@@ -75,6 +77,9 @@ export const InputsDates = ({
   inputStartTestId,
   inputEndTestId,
 }: InputsDatesProps) => {
+  const { t } = useTranslation();
+  const placeholder = t('datePlaceholder');
+
   return (
     <div className={style.datePickers}>
       <InputDate
@@ -82,12 +87,14 @@ export const InputsDates = ({
         testid={inputStartTestId}
         value={valueStartDatePicker}
         onChange={onChangeStartDate}
+        slotProps={{ textField: { placeholder } }}
       />
       <InputDate
         theme={theme}
         testid={inputEndTestId}
         value={valueEndDatePicker}
         onChange={onChangeEndDate}
+        slotProps={{ textField: { placeholder } }}
       />
     </div>
   );
