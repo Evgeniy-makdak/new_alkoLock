@@ -1,0 +1,13 @@
+.datePickers {
+  width: 400px;
+  display: flex;
+  justify-content: space-between;
+  column-gap: 16px;
+  background: #fafafa;
+  align-items: center;
+}
+.input {
+  height: 30px;
+  width: 200px;
+  background-color: red;
+}

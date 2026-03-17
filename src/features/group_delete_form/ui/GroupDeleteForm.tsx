@@ -1,0 +1,47 @@
+import type { FC } from 'react';
+
+import { Stack, Typography } from '@mui/material';
+
+import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
+import { testids } from '@shared/const/testid';
+import { SelectedBranchState } from '@shared/model/app_store/AppStore';
+import type { ID } from '@shared/types/BaseQueryTypes';
+import { Button } from '@shared/ui/button';
+
+import { useGroupDeleteForm } from '../hooks/useGroupDeleteForm';
+
+type GroupDeleteFormProps = {
+  closeModal: () => void;
+  branch: { id: ID; text: string };
+  setState: (data: { selectedBranchState?: SelectedBranchState }) => void;
+};
+
+export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal, setState }) => {
+  const { handleDelete } = useGroupDeleteForm(branch.id, closeModal, setState);
+  return (
+    <div>
+      <Typography marginBottom={3} fontWeight={700} variant="h6">
+        Удаление группы
+      </Typography>
+      <Stack gap={3}>
+        <Typography>
+          Вы действительно хотите удалить группу <b>{branch.text}?</b>
+          <br />
+          При удалении группы с сохранением содержимого все её пользователи, ТС, алкозамки и
+          привязки переносятся в Основной филиал.
+        </Typography>
+        <ButtonFormWrapper>
+          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(true)}>
+            удалить
+          </Button>
+          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(false)}>
+            удалить с переносом содержимого
+          </Button>
+          <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
+            отмена
+          </Button>
+        </ButtonFormWrapper>
+      </Stack>
+    </div>
+  );
+};

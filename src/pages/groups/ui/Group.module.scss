@@ -1,0 +1,21 @@
+.name {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 1px solid #d8d8d8;
+}
+
+.infoTab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-width: 900px;
+  max-width: 900px;
+}
+
+.marginControls {
+  margin: 10px 0;
+}

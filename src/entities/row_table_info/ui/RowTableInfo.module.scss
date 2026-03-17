@@ -1,0 +1,173 @@
+.rowTableInfo {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1;
+  overflow: hidden;
+  height: calc(100% - 50px);
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.contentHidden {
+  display: none;
+}
+
+.buttonTab {
+  width: 100%;
+  white-space: nowrap; // Чтобы текст не переносился
+  overflow: hidden; // Скрываем вылазиющий контент
+  text-overflow: ellipsis; // Добавляем троеточие если текст не помещается
+}
+
+.tabs {
+  display: flex;
+  gap: 5px;
+
+  @media (max-width: 900px) {
+    .buttonTab {
+      width: 220px;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .buttonTab {
+      width: 180px;
+      padding: 8px 12px !important;
+      font-size: 12px !important;
+    }
+  }
+  
+  @media (max-width: 700px) {
+    .buttonTab {
+      width: 170px;
+      padding: 6px 12px !important;
+      font-size: 12px !important;
+    }
+  }
+  
+  @media (max-width: 660px) {
+    .buttonTab {
+      width: 150px;
+      font-size: 10px !important;
+    }
+  }
+  
+  @media (max-width: 620px) {
+    .buttonTab {
+      width: 130px;
+      font-size: 10px !important;
+    }
+  }
+  
+  @media (max-width: 580px) {
+    .buttonTab {
+      width: 120px;
+      font-size: 7px !important;
+    }
+  }
+  
+  @media (max-width: 520px) {
+    .buttonTab {
+      width: 90px;
+      font-size: 7px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .buttonTab {
+      width: 60px;
+      padding: 6px 8px !important;
+      font-size: 7px !important;
+      min-width: 70px;
+    }
+  }
+  
+  @media (max-width: 360px) {
+    .buttonTab {
+      width: 70px;
+      padding: 4px 6px !important;
+      font-size: 7px !important;
+      min-width: 40px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    padding: 1rem;
+  }
+
+  button {
+    border-radius: 4px;
+    background-color: #667a8a3b;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 171.429%;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    padding: 9px 20px 6px 20px;
+    border-bottom: 2px solid transparent;
+    transition: border-bottom-color 0.15s ease-in-out;
+    white-space: nowrap; // Добавляем, чтобы текст не переносился
+    overflow: hidden; // Скрываем вылазиющий контент
+    text-overflow: ellipsis; // Добавляем троеточие если текст не помещается
+    
+    // Для мобильных устройств увеличиваем отступы для лучшего касания
+    @media (max-width: 530px) {
+      padding: 10px 15px; // Немного уменьшаем отступы
+      font-size: 12px; // Уменьшаем размер шрифта
+    }
+
+    // Уменьшаем размер чипов при экране менее 700px
+    @media (max-width: 700px) {
+      padding: 6px 12px !important;
+      font-size: 12px !important;
+    }
+    
+    // Стили для кнопок при ширине 580px и ниже
+    @media (max-width: 580px) {
+      font-size: 7px !important;
+    }
+  }
+
+  .active {
+    background-color: #667a8a;
+    color: white;
+    
+    // Уменьшаем размер активных чипов при экране менее 700px
+    @media (max-width: 700px) {
+      padding: 6px 12px !important;
+      font-size: 12px !important;
+    }
+    
+    @media (max-width: 580px) {
+      font-size: 7px !important;
+    }
+    
+    @media (max-width: 480px) {
+      padding: 6px 8px !important;
+      font-size: 7px !important;
+    }
+    
+    @media (max-width: 360px) {
+      padding: 4px 6px !important;
+      font-size: 7px !important;
+    }
+  }
+}
+
+.headerRow {
+  width: 100%;
+  background-color: #667a8a;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  margin-top: 10px;
+}

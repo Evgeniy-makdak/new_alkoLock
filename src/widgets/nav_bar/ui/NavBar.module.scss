@@ -1,0 +1,849 @@
+.wrapper {
+  padding-top: 20px;
+  transition: 0.3s all;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.navBar {
+  transition: 0.3s all;
+  background: white;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  padding: 10px 12px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.navBarOpen {
+  min-width: 260px;
+  max-width: 260px;
+}
+
+.navBarCollops {
+  min-width: 80px;
+  max-width: 80px;
+}
+
+.rotateIcon {
+  transition: transform 0.3s ease;
+}
+
+.navLink {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+
+  & a {
+    padding: 5px 12px;
+    background: transparent;
+    width: 100%;
+    color: #667a8a;
+    margin-bottom: 17px;
+    font-weight: 400;
+    border-radius: 4px;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    box-sizing: border-box;
+
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:hover {
+      background: lighten(#667a8a, 20%);
+      color: white;
+    }
+
+    &:global(.active) {
+      background: #667a8a;
+      color: white;
+      font-weight: 600;
+    }
+
+    &:active {
+      background: #667a8a;
+      color: white;
+    }
+  }
+}
+
+// Контейнер для кнопки параметров (располагается внизу под ссылками)
+.settingsContainer {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 20px;
+  width: 100%;
+  
+  // Для десктопной версии - обычные стили
+  .settingsLink {
+    color: #667a8a;
+    text-transform: none;
+    font-size: 16px;
+    padding: 8px 12px;
+    min-width: auto;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 8px;
+    border-radius: 4px;
+    min-height: 44px;
+    box-sizing: border-box;
+    
+    &:hover {
+      background: lighten(#667a8a, 20%);
+      color: white;
+      text-decoration: none;
+    }
+  }
+}
+
+// Модификация для мобильной версии
+.mobileNav {
+  .settingsContainer {
+    // Убираем верхний отступ для мобильной версии
+    padding-top: 10px;
+    
+    .settingsLink {
+      // Для мобильной версии - шестеренка по центру
+      justify-content: center;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      
+      span {
+        display: none; // Скрываем текст "Параметры" в мобильной версии
+      }
+      
+      &:hover {
+        background: #e0e0e0;
+        color: #667a8a;
+      }
+    }
+  }
+  
+  .navBarWrapper {
+    gap: 20px;
+  }
+
+  .links a {
+    margin-bottom: 12px;
+    min-height: 40px;
+  }
+  
+  // Исправляем стили для кнопки переключения в мобильной версии
+  .sliderContainer {
+    margin: 10px 0;
+    padding: 0;
+    background-color: transparent;
+
+    .settingsLink {
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 10px 16px;
+      min-height: 44px;
+      width: 100%;
+      box-sizing: border-box;
+
+      &:hover {
+        background: #e0e0e0;
+      }
+    }
+  }
+
+  // Явно переопределяем стили для мобильной кнопки переключения
+  .mobileSwitchButton {
+    border-radius: 4px !important;
+    border: 1px solid #e0e0e0 !important;
+    background: #f5f5f5 !important;
+    
+    // Убираем любые трансформации и псевдо-элементы MUI
+    &::before,
+    &::after {
+      display: none !important;
+    }
+
+    // Переопределяем состояние hover
+    &:hover {
+      background: #e0e0e0 !important;
+      border: 1px solid #e0e0e0 !important;
+    }
+
+    // Переопределяем состояние active/focus
+    &:active,
+    &:focus {
+      background: #e0e0e0 !important;
+      border: 1px solid #e0e0e0 !important;
+      outline: none !important;
+      box-shadow: none !important;
+    }
+  }
+}
+
+// Модификация для свернутого состояния на десктопе
+.navBarCollops {
+  .settingsContainer {
+    .settingsLink {
+      justify-content: center;
+      
+      span {
+        display: none; // Скрываем текст "Параметры" в свернутом состоянии
+      }
+    }
+  }
+}
+
+// Стили для карусели
+.carouselContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-height: 0;
+}
+
+.carouselWrapper {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.carouselContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.carouselViewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.carouselButtonTop {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #667a8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e0e0;
+
+  &:hover {
+    background: #e0e0e0;
+  }
+
+  &:disabled {
+    background: #f5f5f5;
+    color: #bdbdbd;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.carouselButtonBottom {
+  position: absolute;
+  bottom: 2%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #667a8a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e0e0e0;
+
+  &:hover {
+    background: #e0e0e0;
+  }
+
+  &:disabled {
+    background: #f5f5f5;
+    color: #bdbdbd;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
+
+.notifications {
+  position: absolute;
+  top: -100px;
+  right: -8px;
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  top: -16px;
+  left: 13px;
+  background: #d32f2f;
+  border-radius: 100%;
+  text-align: center;
+  align-items: center;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.14px;
+  line-height: 22px;
+  color: white !important;
+  z-index: 1002;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.collops {
+  transform: rotate(180deg);
+}
+
+.openedCollops {
+  height: 23px;
+  transition: 0.3s all;
+}
+
+.between {
+  justify-content: space-between;
+}
+
+.center {
+  justify-content: center;
+}
+
+.navBarButton {
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #667a8a;
+  text-align: center;
+  color: white;
+
+  &:hover {
+    background: #667a8a;
+    color: white;
+  }
+}
+
+.email {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.text {
+  text-align: start;
+  max-height: 23px;
+  transition: 0.7s all;
+}
+
+.textCollops {
+  transition: 0.6s all;
+  opacity: 0;
+  width: 0;
+}
+
+.logo {
+  gap: 10px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logoLink {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  gap: 12px;
+}
+
+.img {
+  width: 65px;
+  height: 65px;
+}
+
+.logoText {
+  font-size: 24px;
+  font-weight: 700;
+  display: inline;
+  text-transform: uppercase;
+  width: 120px;
+}
+
+.navBarWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.versionContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: 20px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+}
+
+.languageSwitcher {
+  margin-bottom: 4px;
+}
+
+.langButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.langButton {
+  font-size: 11px !important;
+  min-width: 36px !important;
+  padding: 2px 6px !important;
+  text-transform: none !important;
+}
+
+.versionItem {
+  font-size: 16px;
+  font-style: italic;
+  color: gray;
+}
+
+.sliderContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  margin-top: 10px;
+  flex-shrink: 0;
+}
+
+.settingsLink {
+  color: #667a8a;
+  text-transform: none;
+  font-size: 16px;
+  padding: 8px 12px;
+  min-width: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+
+  &:hover {
+    background: transparent;
+    text-decoration: none;
+    color: darken(#667a8a, 10%);
+    margin-left: 8px;
+  }
+}
+
+.hammerSickleIcon {
+  font-size: 1.5rem;
+  margin-right: 8px;
+
+  path {
+    stroke-width: 1;
+    stroke-linejoin: round;
+  }
+}
+
+// Стиль для секретной вкладки "Карта"
+.secretTab {
+  border: 2px dashed #ff6b00;
+  background: rgba(255, 107, 0, 0.1) !important;
+
+  &:hover {
+    background: rgba(255, 107, 0, 0.3) !important;
+  }
+
+  &:global(.active) {
+    background: rgba(255, 107, 0, 0.5) !important;
+    border: 2px solid #ff6b00;
+  }
+}
+
+.mobileSwitchContainer {
+  margin: 16px 0;
+  flex-shrink: 0;
+}
+
+.mobileSwitchButton {
+  background: #f5f5f5;
+  color: #667a8a;
+  text-transform: none;
+  font-size: 14px;
+  padding: 10px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  box-sizing: border-box; // Важно: включаем box-sizing
+  position: relative;
+  overflow: hidden; // Обрезаем все что выходит за границы
+
+  // Явно переопределяем все границы
+  border-left: 1px solid #e0e0e0 !important;
+  border-right: 1px solid #e0e0e0 !important;
+  border-top: 1px solid #e0e0e0 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+
+  // Убеждаемся что фон покрывает всю область
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f5f5f5;
+    border-radius: 4px;
+    z-index: -1;
+  }
+
+  &:hover {
+    background: #e0e0e0;
+    color: #333;
+
+    &::before {
+      background: #e0e0e0;
+    }
+  }
+
+  .MuiButton-startIcon {
+    margin-right: 8px;
+  }
+}
+
+.navBarBottom {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.carouselContainerCompact {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-height: 0;
+}
+
+.carouselViewportCompact {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.linksCompact {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  & a {
+    padding: 5px 12px;
+    background: transparent;
+    width: 100%;
+    color: #667a8a;
+    margin-bottom: 17px;
+    font-weight: 400;
+    border-radius: 4px;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    box-sizing: border-box;
+
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &:hover {
+      background: lighten(#667a8a, 20%);
+      color: white;
+    }
+
+    &:global(.active) {
+      background: #667a8a;
+      color: white;
+      font-weight: 600;
+    }
+
+    &:active {
+      background: #667a8a;
+      color: white;
+    }
+  }
+}
+
+.carouselViewportCompact {
+  position: relative;
+  overflow: hidden;
+
+  &.animating {
+    pointer-events: none; // Отключаем взаимодействие во время анимации
+
+    .linksCompact {
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease-in-out;
+    }
+  }
+
+  // Анимация скольжения вверх
+  &.slideUp.animating .linksCompact {
+    transform: translateY(20px);
+    opacity: 0;
+
+    &:global(.animating) {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  // Анимация скольжения вниз
+  &.slideDown.animating .linksCompact {
+    transform: translateY(-20px);
+    opacity: 0;
+
+    &:global(.animating) {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+}
+
+// Альтернативный вариант с более плавной анимацией
+.carouselViewportCompact {
+  &.animating {
+    .linksCompact {
+      transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+  }
+
+  &.slideUp.animating .linksCompact {
+    animation: slideFromBottom 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+
+  &.slideDown.animating .linksCompact {
+    animation: slideFromTop 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  }
+}
+
+@keyframes slideFromBottom {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideFromTop {
+  0% {
+    transform: translateY(-30px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+// Еще более плавный вариант с fade эффектом
+.carouselViewportCompact {
+  &.animating {
+    .linksCompact {
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
+  &.slideUp.animating .linksCompact {
+    animation: gentleSlideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  &.slideDown.animating .linksCompact {
+    animation: gentleSlideDown 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes gentleSlideUp {
+  0% {
+    transform: translateY(15px);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes gentleSlideDown {
+  0% {
+    transform: translateY(-15px);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.linksCompact {
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Градиентные маски для плавного скрытия краев (опционально)
+.carouselViewportCompact {
+  position: relative;
+  overflow: hidden;
+
+  // Градиент сверху
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, white, transparent);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  // Градиент снизу
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to top, white, transparent);
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  // Показываем градиенты только когда есть скролл
+  &.can-scroll-up::before {
+    opacity: 1;
+  }
+
+  &.can-scroll-down::after {
+    opacity: 1;
+  }
+}
+
+.linksCompact {
+  &.animating {
+    animation: pageTransition 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes pageTransition {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Альтернативный вариант с fade-эффектом
+.linksCompact {
+  &.animating {
+    animation: fadeSlide 0.4s ease-in-out forwards;
+  }
+}
+
+@keyframes fadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Вариант с горизонтальным сдвигом (как перелистывание страниц)
+.linksCompact {
+  &.animating {
+    animation: slideFlip 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+}
+
+@keyframes slideFlip {
+  0% {
+    opacity: 0;
+    transform: perspective(1000px) rotateX(10deg) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: perspective(1000px) rotateX(0) translateY(0);
+  }
+}

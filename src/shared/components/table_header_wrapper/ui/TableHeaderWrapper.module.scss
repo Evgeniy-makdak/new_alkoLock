@@ -1,0 +1,12 @@
+.wrapper {
+  padding: 10px;
+  gap: 10px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  @media (max-width: 1024px) {
+    margin-top: 20px; // Добавляем отступ сверху для мобильных и планшетов
+    position: relative; // Убедимся, что позиционирование корректное
+  }
+}

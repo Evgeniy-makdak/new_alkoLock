@@ -1,0 +1,138 @@
+import { useState } from 'react';
+
+import { attachmentsFilterPanelStore } from '@features/attachments_filter_panel';
+import { InputSearchDelay, Permissions } from '@shared/config/permissionsEnums';
+import { StorageKeys } from '@shared/const/storageKeys';
+import { useDebounce } from '@shared/hooks/useDebounce';
+import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
+import { useToggle } from '@shared/hooks/useToggle';
+import { appStore } from '@shared/model/app_store/AppStore';
+import { Formatters } from '@shared/utils/formatters';
+
+import { useAttachmentsApi } from '../api/attachmentsApi';
+import { useGetColumns } from '../lib/getColumns';
+import { useGetRows } from '../lib/getRows';
+import { useAttachmentsStore } from '../model/attachmentsStore';
+
+export const useAttachmentsTable = () => {
+  const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
+    StorageKeys.ATTACHMENTS_TABLE_SORTS,
+  );
+  const [selectDeleteAttachment, setSelectDeleteAttachment] = useState<null | {
+    id: number;
+    text: string;
+  }>(null);
+
+  const [openAddAttachModal, toggleAddAttachModal, closeAddAttachModal] = useToggle(false);
+  const permissions = appStore((state) => state.permissions);
+
+  const isVisibleActionsColum =
+    !permissions.includes(Permissions.PERMISSION_BINDINGS_READ) ||
+    permissions.includes(Permissions.PERMISSION_BINDINGS_CREATE);
+
+  const newRefetch = async () => {
+    refetch();
+  };
+
+  const [input, setInput] = useState('');
+  const {
+    changeEndDate,
+    changeStartDate,
+    clearDates,
+    endDate,
+    startDate,
+    openFilters,
+    toggleFilters,
+  } = useAttachmentsStore();
+  const filters = attachmentsFilterPanelStore((state) => state.filters);
+  const [searchQuery] = useDebounce(input, InputSearchDelay);
+  const { attachmentList, isLoading, refetch } = useAttachmentsApi({
+    searchQuery,
+    endDate: Formatters.formatToISODate(endDate),
+    startDate: Formatters.formatToISODate(startDate),
+    page: state.page,
+    limit: state.pageSize,
+    filterOptions: {
+      drivers: Formatters.getStringForQueryParams(filters.driverId),
+      cars: Formatters.getStringForQueryParams(filters.carId),
+      createLink: Formatters.getStringForQueryParams(filters.createLink),
+      alcolock: Formatters.getStringForQueryParams(filters?.alcolocks),
+      dateLink: Formatters.getStringForQueryParams(filters?.dateLink),
+    },
+    sortBy: state?.sortModel[0]?.field,
+    order: state?.sortModel[0]?.sort,
+  });
+
+  const handleClickDeleteAttachment = (id: number, text: string) => {
+    setSelectDeleteAttachment({ id, text });
+  };
+
+  const closeDeleteModal = () => {
+    setSelectDeleteAttachment(null);
+  };
+
+  const rows = useGetRows(attachmentList?.data?.content);
+  const totalCount = attachmentList?.data?.totalElements;
+  const headers = useGetColumns(
+    toggleAddAttachModal,
+    handleClickDeleteAttachment,
+    refetch,
+    newRefetch,
+    isVisibleActionsColum,
+  );
+
+  const changePage = (newPage: number) => {
+    changeTableState({ page: newPage, pageSize: state.pageSize });
+  };
+
+  const changePageSize = (newPageSize: number) => {
+    changeTableState({ page: 0, pageSize: newPageSize });
+  };
+
+  const tableData = {
+    ...state,
+    totalCount,
+    apiRef,
+    rows,
+    headers,
+    changeTableState,
+    changeTableSorts,
+    isLoading,
+    changePage,
+    changePageSize,
+    handleClickDeleteAttachment,
+    isVisibleActionsColum,
+  };
+
+  const filtersData = {
+    changeEndDate,
+    changeStartDate,
+    clearDates,
+    endDate,
+    startDate,
+    openFilters,
+    toggleFilters,
+    setInput,
+    input,
+    resetFilters: attachmentsFilterPanelStore((state) => state.resetFilters),
+  };
+
+  const addModalData = {
+    closeAddAttachModal,
+    toggleAddAttachModal,
+    openAddAttachModal,
+  };
+
+  const deleteAttachModalData = {
+    closeDeleteModal,
+    openDeleteModal: !!selectDeleteAttachment,
+    selectDeleteAttachment,
+  };
+
+  return {
+    deleteAttachModalData,
+    addModalData,
+    tableData,
+    filtersData,
+  };
+};

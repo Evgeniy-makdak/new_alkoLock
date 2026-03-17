@@ -1,0 +1,324 @@
+.controls {
+  display: flex;
+  gap: 10px;
+}
+.headerAction {
+  width: 100%;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+// Мобильные стили
+.tableWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mobileTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.addButton {
+  background-color: #7a7d80;
+  color: white;
+  
+  &:hover {
+    background-color: #7a7d80;
+  }
+}
+
+.mobileFilters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.dateFiltersRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.dateFiltersToggle {
+  flex: 1;
+  min-width: 0; // Добавляем для правильной работы flex
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #777;
+  transition: all 0.2s ease;
+  height: 30px;
+  width: 100%;
+  min-width: 0; // Важно для правильной работы текста
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  &:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.resetFiltersContainer {
+  flex-shrink: 0;
+}
+
+.customDateInputs {
+  margin-top: 8px;
+}
+
+.dateFieldsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dateFieldContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.narrowDateField {
+  flex: 1;
+  
+  .MuiOutlinedInput-root {
+    padding-right: 80px;
+  }
+}
+
+.calendarButton {
+  position: absolute;
+  right: 43%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  padding: 4px;
+  z-index: 2;
+  
+  &:hover {
+    color: #7a7d80;
+  }
+}
+
+.clearDateButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  font-size: 18px;
+  padding: 4px;
+  z-index: 2;
+  
+  &:hover {
+    color: #f44336;
+  }
+}
+
+.hiddenDateInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobileList {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.mobileRow {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #f8f9fa;
+  }
+  
+  &.selectedRow {
+    background-color: #e3f2fd;
+    border-left: 3px solid #2196f3;
+  }
+}
+
+.rowMainInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.groupInfo {
+  flex: 1;
+  margin-right: 12px;
+}
+
+.groupName {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.rowActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailItem {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.detailLabel {
+  color: #777;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.detailValue {
+  color: #333;
+  flex: 1;
+}
+
+.noData {
+  padding: 40px 20px;
+  text-align: center;
+  color: #777;
+  font-size: 16px;
+}
+
+.mobilePagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.paginationButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  color: #333;
+  
+  &:hover:not(:disabled) {
+    border-color: #7a7d80;
+    color: #7a7d80;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #777;
+}
+
+.customDateInputs {
+    .dateFieldContainer {
+        .narrowDateField {
+            :global(.MuiInputBase-root) {
+                height: 40px;
+                width: 60%;
+
+                input {
+                    padding: 8px 12px;
+                    height: auto;
+                }
+            }
+        }
+    }
+}
+
+// Адаптивные стили для маленьких экранов
+@media (max-width: 480px) {
+  .toggleButton {
+    padding: 8px 10px;
+    font-size: 11px;
+    
+    span {
+      max-width: 100px; // Ограничиваем ширину текста
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleButton {
+    font-size: 10px;
+    padding: 8px 8px;
+    
+    span {
+      max-width: 80px; // Еще меньше на очень маленьких экранах
+    }
+  }
+  
+  .dateFiltersRow {
+    gap: 8px;
+  }
+}

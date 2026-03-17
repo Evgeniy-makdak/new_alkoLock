@@ -1,0 +1,53 @@
+.mapControlsField {
+  :global(.MuiInputBase-root) {
+    min-height: 36px;
+  }
+  :global(.MuiOutlinedInput-root) {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  :global(.MuiAutocomplete-input) {
+    text-align: left;
+  }
+  :global(.MuiAutocomplete-input)::placeholder {
+    text-align: left;
+  }
+  :global(.MuiInputLabel-outlined):not(.MuiInputLabel-shrink) {
+    transform: translate(14px, 10px);
+    color: rgba(0, 0, 0, 0.6);
+  }
+  :global(.MuiInputLabel-outlined.MuiInputLabel-shrink) {
+    transform: translate(14px, -9px) scale(0.75);
+    color: rgba(0, 0, 0, 0.6);
+    background: white;
+    padding: 0 4px;
+  }
+  :global(.MuiChip-root) {
+    height: 22px;
+  }
+}
+
+.mapControlsFieldCompact {
+  :global(.MuiInputBase-root) {
+    min-height: 32px;
+    font-size: 14px;
+  }
+  :global(.MuiOutlinedInput-root) {
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+  :global(.MuiInputLabel-outlined):not(.MuiInputLabel-shrink) {
+    transform: translate(14px, 8px);
+    color: rgba(0, 0, 0, 0.6);
+  }
+  :global(.MuiInputLabel-outlined.MuiInputLabel-shrink) {
+    transform: translate(14px, -9px) scale(0.75);
+    color: rgba(0, 0, 0, 0.6);
+    background: white;
+    padding: 0 4px;
+  }
+  :global(.MuiChip-root) {
+    height: 20px;
+    font-size: 12px;
+  }
+}

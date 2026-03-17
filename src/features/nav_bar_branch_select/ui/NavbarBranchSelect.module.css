@@ -1,0 +1,16 @@
+.navbarBranchSelect {
+  flex-shrink: 0;
+  margin-right: 10px;
+}
+
+.chip {
+  background-color: #667a8a;
+  color: white;
+  height: 36px;
+}
+
+.chipLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}

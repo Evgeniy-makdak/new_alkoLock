@@ -1,0 +1,13 @@
+.wrapper {
+  padding-left: 5px;
+  height: calc(100vh - 110px);
+}
+
+.listItem {
+  width: 183px;
+  height: 183px;
+}
+
+.listWrapper {
+  overflow-y: scroll;
+}

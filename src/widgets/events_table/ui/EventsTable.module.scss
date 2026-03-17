@@ -1,0 +1,853 @@
+.tableWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobileTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.scrollableTable {
+  flex: 1;
+  min-width: 800px;
+  overflow-x: auto;
+
+  :global {
+    .MuiDataGrid-cell {
+      outline: none !important;
+      border: none !important;
+    }
+
+    .MuiDataGrid-cell:focus {
+      outline: none !important;
+      border: none !important;
+    }
+
+    .MuiDataGrid-cell:focus-within {
+      outline: none !important;
+      border: none !important;
+    }
+
+    .MuiDataGrid-cell--withRenderer {
+      outline: none !important;
+      border: none !important;
+    }
+  }
+}
+
+.selected-row {
+  background-color: #f5f5f5 !important;
+}
+
+.mobileFilters {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+
+  :global {
+    .MuiTextField-root {
+      .MuiInputBase-root {
+        font-size: 16px;
+
+        input {
+          font-size: 16px;
+        }
+      }
+    }
+
+    .MuiDialog-paper {
+      border-radius: 12px;
+    }
+
+    .MuiPickersLayout-root {
+      padding: 8px;
+    }
+  }
+}
+
+.dateFieldContainer {
+  position: relative;
+  width: 100%;
+
+  .calendarButton {
+    position: absolute;
+    right: 43%;
+    top: 37%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: 50%;
+    background: none;
+    border: none;
+    color: #777;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    z-index: 2;
+
+    &:hover {
+      color: #1976d2;
+      background: rgba(25, 118, 210, 0.1);
+      border-radius: 4px;
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+      pointer-events: none;
+    }
+  }
+
+  .clearDateButton {
+    position: absolute;
+    right: 4px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #777;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+
+    &:hover {
+      color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+      border-radius: 50%;
+    }
+  }
+
+  :global {
+    .MuiInputBase-root {
+      padding-right: 64px !important;
+
+      input {
+        padding-right: 8px !important;
+      }
+
+      &.Mui-error {
+        .MuiOutlinedInput-notchedOutline {
+          border-color: #d32f2f !important;
+          border-width: 2px;
+        }
+
+        &:hover .MuiOutlinedInput-notchedOutline {
+          border-color: #d32f2f !important;
+        }
+
+        &.Mui-focused .MuiOutlinedInput-notchedOutline {
+          border-color: #d32f2f !important;
+          border-width: 2px;
+        }
+      }
+
+      &:not(.Mui-error) {
+        .MuiOutlinedInput-notchedOutline {
+          border-color: rgba(0, 0, 0, 0.23);
+        }
+
+        &:hover .MuiOutlinedInput-notchedOutline {
+          border-color: rgba(0, 0, 0, 0.87);
+        }
+
+        &.Mui-focused .MuiOutlinedInput-notchedOutline {
+          border-color: #1976d2;
+          border-width: 2px;
+        }
+      }
+    }
+  }
+}
+
+.hiddenDateInput {
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  opacity: 0.01 !important;
+  pointer-events: none !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: transparent !important;
+  font-size: 16px !important;
+}
+
+.hiddenDateInput:focus {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.nativeInputsContainer {
+  position: absolute;
+  top: -9999px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nativeDateInput {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  width: 90%;
+  max-width: 300px;
+  height: 50px;
+  font-size: 16px;
+  padding: 12px;
+  border: 2px solid #1976d2;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+
+  min-height: 44px;
+
+  &:focus {
+    outline: none;
+    border-color: #1565c0;
+    box-shadow: 0 4px 20px rgba(25, 118, 210, 0.3);
+  }
+}
+
+@media (max-width: 480px) {
+  .nativeDateInput {
+    width: 95%;
+    height: 60px;
+    font-size: 18px;
+  }
+}
+
+.filterActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobileList {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.mobileRow {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  &.selectedRow {
+    background-color: #f0f7ff;
+    border-color: #1976d2;
+  }
+}
+
+.rowMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.date {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1976d2;
+  flex-shrink: 0;
+  max-width: 45%;
+}
+
+.initiator {
+  font-size: 14px;
+  color: #333;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.rowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  color: #777;
+  font-weight: 500;
+  min-width: 70px;
+  flex-shrink: 0;
+}
+
+.detailValue {
+  font-size: 12px;
+  color: #333;
+  word-break: break-word;
+  flex: 1;
+}
+
+.eventChip {
+  height: auto !important;
+  min-height: 20px;
+  max-width: 100%;
+
+  :global {
+    .MuiChip-label {
+      font-size: 11px;
+      padding: 4px 8px;
+      white-space: normal !important;
+      word-break: break-word !important;
+      line-height: 1.2 !important;
+      text-align: left;
+      overflow: visible !important;
+      display: block !important;
+    }
+  }
+}
+
+.chipContainer {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobilePagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border-top: 1px solid #e0e0e0;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: #f5f5f5;
+  }
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #777;
+  text-align: center;
+}
+
+.noData {
+  text-align: center;
+  padding: 40px 20px;
+  color: #777;
+  font-size: 16px;
+}
+
+.validationError {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &::before {
+    content: '⚠';
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .scrollableTable {
+    display: none;
+  }
+
+  .mobileList {
+    display: block;
+  }
+}
+
+@media (min-width: 1025px) {
+  .mobileFilters {
+    display: none;
+  }
+
+  .mobileList {
+    display: none;
+  }
+
+  .mobilePagination {
+    display: none;
+  }
+}
+
+.filterModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.filterModalContent {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+.filterModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+.closeModalButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #777;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
+}
+
+.filterModalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.filterModalFooter {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f9fa;
+
+  .clearButton {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+    text-transform: none;
+    font-weight: 500;
+
+    &:hover {
+      background: #ffebee;
+      border-color: #c62828;
+    }
+  }
+
+  .applyButton {
+    flex: 1;
+    padding: 10px;
+    background: #c2c5c9;
+    color: white;
+    text-transform: none;
+    font-weight: 500;
+
+    &:hover {
+      background: #1565c0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .filterModalFooter {
+    padding: 12px 16px;
+
+    .clearButton,
+    .applyButton {
+      padding: 12px;
+      font-size: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .filterModalFooter {
+    flex-direction: column;
+    gap: 8px;
+
+    .clearButton,
+    .applyButton {
+      flex: none;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .filterModalOverlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .filterModalContent {
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    max-width: 100%;
+  }
+
+  .filterModalBody {
+    padding: 16px;
+  }
+
+  .filterModalFooter {
+    padding: 12px 16px;
+
+    .cancelButton,
+    .applyButton {
+      padding: 12px;
+      font-size: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .filterModalBody {
+    padding: 12px;
+  }
+
+  .filterModalFooter {
+    flex-direction: column;
+    gap: 8px;
+
+    .cancelButton,
+    .applyButton {
+      flex: none;
+    }
+  }
+}
+
+.dateFiltersRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.dateFiltersToggle {
+  flex: 1;
+  min-width: 0; // Добавляем для правильной работы flex
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #777;
+  transition: all 0.2s ease;
+  height: 30px;
+  width: 100%;
+  min-width: 0; // Важно для правильной работы текста
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  &:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.resetFiltersContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.customDateInputs {
+  .dateFieldContainer {
+    .narrowDateField {
+      :global(.MuiInputBase-root) {
+        height: 40px;
+        width: 60%;
+
+        input {
+          padding: 8px 12px;
+          height: auto;
+        }
+      }
+    }
+  }
+}
+
+.dateFieldsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.dateFieldContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.narrowDateField {
+  width: 100%;
+
+  :global(.MuiInputBase-root) {
+    font-size: 14px;
+  }
+}
+
+.calendarButton {
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  z-index: 2;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+.clearDateButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #777;
+  font-size: 18px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+
+  &:hover {
+    color: #333;
+    background-color: #f5f5f5;
+    border-radius: 50%;
+  }
+}
+
+.hiddenDateInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mobileRow {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+
+  &:hover {
+    background-color: #f5f5f5;
+  }
+
+  &.selectedRow {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+  }
+}
+
+.dateTime {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.initiator {
+  font-size: 15px;
+  color: #777;
+  margin-bottom: 12px;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.rowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.detailLabel {
+  font-weight: 500;
+  color: #777;
+  min-width: 80px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.detailValue {
+  color: #333;
+  font-size: 14px;
+  word-break: break-word;
+  flex: 1;
+}
+
+.chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.eventChip {
+  font-size: 11px;
+  height: 22px;
+}
+
+.rowMain {
+  display: none;
+}
+
+// Адаптивные стили для маленьких экранов
+@media (max-width: 480px) {
+  .dateTime {
+    font-size: 15px;
+  }
+
+  .initiator {
+    font-size: 14px;
+  }
+
+  .detailLabel {
+    min-width: 70px;
+    font-size: 13px;
+  }
+
+  .detailValue {
+    font-size: 13px;
+  }
+  
+  .toggleButton {
+    padding: 8px 10px;
+    font-size: 11px;
+    
+    span {
+      max-width: 100px; // Ограничиваем ширину текста
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleButton {
+    font-size: 10px;
+    padding: 8px 8px;
+    
+    span {
+      max-width: 80px; // Еще меньше на очень маленьких экранах
+    }
+  }
+  
+  .dateFiltersRow {
+    gap: 8px;
+  }
+}

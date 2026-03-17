@@ -1,0 +1,339 @@
+.refetchWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.headerAction {
+  width: 100%;
+  min-width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+}
+
+.rolesWrapper {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 5px 0 5px 0;
+}
+
+.tableWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.scrollableTable {
+  flex: 1;
+  min-width: 800px;
+  overflow-x: auto;
+
+  :global {
+    .MuiDataGrid-cell {
+      outline: none !important;
+      border: none !important;
+    }
+    
+    .MuiDataGrid-cell:focus {
+      outline: none !important;
+      border: none !important;
+    }
+    
+    .MuiDataGrid-cell:focus-within {
+      outline: none !important;
+      border: none !important;
+    }
+    
+    .MuiDataGrid-columnHeader:focus {
+      outline: none !important;
+      border: none !important;
+    }
+    
+    .MuiDataGrid-columnHeader:focus-within {
+      outline: none !important;
+      border: none !important;
+    }
+  }
+}
+
+.mobileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mobileTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.addButton {
+  background-color: #7a7d80;
+  color: white;
+  
+  &:hover {
+    background-color: #7a7d80;
+  }
+}
+
+.mobileFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.resetFiltersContainer {
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobileList {
+  flex: 1;
+  overflow-y: auto;
+  background: #fff;
+}
+
+.mobileRow {
+  padding: 16px;
+  border-bottom: 1px solid #e0e0e0;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  position: relative;
+  
+  &:hover {
+    background-color: #f5f5f5;
+  }
+  
+  &.selectedRow {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+  }
+}
+
+.rowMainInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  gap: 12px;
+}
+
+.roleInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.roleName {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 0;
+}
+
+.rowActions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.detailLabel {
+  font-weight: 500;
+  color: #777;
+  min-width: 80px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.detailValue {
+  color: #333;
+  font-size: 14px;
+  word-break: break-word;
+  flex: 1;
+}
+
+.chipContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.roleChip {
+  font-size: 11px;
+  height: 22px;
+}
+
+.noData {
+  text-align: center;
+  padding: 40px 20px;
+  color: #777;
+  font-size: 16px;
+}
+
+.mobilePagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  &:not(:disabled):hover {
+    background: #f5f5f5;
+  }
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #777;
+}
+
+.selected-row {
+  background-color: #f5f5f5 !important;
+}
+
+@media (max-width: 480px) {
+  .mobileHeader {
+    padding: 12px;
+  }
+  
+  .mobileTitle {
+    font-size: 18px;
+  }
+  
+  .mobileFilters {
+    padding: 12px;
+  }
+  
+  .mobileRow {
+    padding: 12px;
+  }
+  
+  .roleName {
+    font-size: 15px;
+  }
+  
+  .detailLabel, .detailValue {
+    font-size: 13px;
+  }
+}
+
+.roleViewModal {
+  .detailSection {
+    margin-bottom: 24px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+  
+  .sectionTitle {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .rolesList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  
+  .roleChip {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #333;
+  }
+}
+
+// Стили для мобильного модального окна просмотра
+.mobileModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.mobileModalContent {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  
+  :global {
+    .MuiTypography-h6 {
+      padding: 16px 16px 0 16px;
+    }
+    
+    .MuiStack-root {
+      padding: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileModalOverlay {
+    padding: 8px;
+  }
+  
+  .mobileModalContent {
+    max-height: 95vh;
+  }
+}

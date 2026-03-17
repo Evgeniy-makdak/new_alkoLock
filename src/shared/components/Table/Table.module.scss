@@ -1,0 +1,15 @@
+.table {
+  overflow-y: auto;
+  height: 100%;
+  display: flex;
+}
+
+.header {
+  background-color: rgba(0, 0, 0, 0.13);
+}
+
+.processingRow {
+  opacity: 0.5;
+  pointer-events: none; // Отключаем взаимодействие
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}

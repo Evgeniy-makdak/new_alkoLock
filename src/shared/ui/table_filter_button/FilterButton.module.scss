@@ -1,0 +1,46 @@
+.filterButton {
+  min-width: 112px;
+  height: 30px;
+  transition: all 0.15s ease-in-out;
+  max-width: 100%;
+  height: 30px;
+
+  span {
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 171.429%;
+    letter-spacing: 0.1px;
+    text-transform: capitalize;
+  }
+}
+
+.close {
+  background-color: white;
+  border: 1px solid #e0e0e0;
+
+  span {
+    color: #333;
+  }
+
+  svg {
+    fill: #333;
+  }
+}
+
+.active {
+  background-color: #667a8a;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+
+  span {
+    color: white;
+  }
+
+  svg {
+    fill: white;
+  }
+  &:hover {
+    background: #586977;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+  }
+}

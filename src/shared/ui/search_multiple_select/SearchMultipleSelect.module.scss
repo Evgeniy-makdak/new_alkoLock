@@ -1,0 +1,36 @@
+.searchSelect {
+  width: 100%;
+  &.input {
+    align-items: flex-start;
+    margin-bottom: 0;
+  }
+
+  // Чип обрезается по ширине инпута при длинном тексте
+  .chipWrapper {
+    display: inline-flex;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  // Контейнер тегов Autocomplete — позволяем сжатие
+  :global(.MuiAutocomplete-root) {
+    .MuiInputAdornment-root {
+      min-width: 0;
+      max-width: 100%;
+      overflow: hidden;
+    }
+
+    .MuiAutocomplete-tag {
+      margin: 2px;
+      max-width: 100%;
+      min-width: 0;
+
+      .MuiChip-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+}

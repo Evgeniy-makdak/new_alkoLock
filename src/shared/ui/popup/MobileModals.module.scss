@@ -1,0 +1,61 @@
+// Стили для мобильных модальных окон
+.mobileModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.mobileModalContent {
+  background: white;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  
+  // Стили для контента внутри модального окна
+  :global {
+    .MuiTypography-h6 {
+      padding: 16px 16px 0 16px;
+    }
+    
+    .MuiStack-root {
+      padding: 16px;
+    }
+    
+    .inputsWrapper {
+      min-width: auto;
+      max-width: none;
+      padding: 16px;
+    }
+    
+    .columnsWrapper {
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .inputsColumnWrapper {
+      width: 100%;
+    }
+  }
+}
+
+// Адаптивные стили для очень маленьких экранов
+@media (max-width: 480px) {
+  .mobileModalOverlay {
+    padding: 8px;
+  }
+  
+  .mobileModalContent {
+    max-height: 95vh;
+  }
+}

@@ -1,0 +1,114 @@
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
+
+import { TextField } from '@mui/material';
+
+import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
+import { RoutePaths } from '@shared/config/routePathsEnum';
+import { testids } from '@shared/const/testid';
+import { InputPassword } from '@shared/ui/InputPassword/Input';
+import { FormCheckbox } from '@shared/ui/form_checkbox';
+import { Loader } from '@shared/ui/loader';
+import { Logo } from '@shared/ui/logo';
+
+import { useAuthorization } from '../hooks/useAuthorization';
+import style from './Authorization.module.scss';
+
+export const Authorization = () => {
+  const { t } = useTranslation();
+  const {
+    isLoading,
+    handleSubmit,
+    register,
+    control,
+    errorPassword,
+    errorUsername,
+    rememberMe,
+    handleChangeRemember,
+  } = useAuthorization();
+
+  const navigate = useNavigate();
+
+  const handleResetPassword = () => {
+    navigate(RoutePaths.resetPassword);
+  };
+
+  return (
+    <div className={style.authorization}>
+      <div className={style.logo}>
+        <Link to="/authorization">
+          <Logo />
+        </Link>
+      </div>
+      <div className={style.wrapper}>
+        <h1 className={style.title}>
+          {t('auth.title')} <br /> {t('auth.titleProduct')}
+        </h1>
+
+        <Loader
+          isLoading={isLoading}
+          props={{
+            className: style.loader,
+          }}>
+          <form
+            data-testid={testids.page_auth.AUTH_FORM}
+            className={style.form}
+            onSubmit={handleSubmit}>
+            <InputsColumnWrapper>
+              <TextField
+                {...register('username')}
+                name="username"
+                helperText={errorUsername}
+                error={!!errorUsername}
+                autoComplete="off"
+                fullWidth
+                type={'text'}
+                variant={'outlined'}
+                label={t('auth.login')}
+              />
+              <InputPassword
+                helperText={errorPassword}
+                error={!!errorPassword}
+                {...register('password')}
+                name="password"
+                control={control}
+                autoComplete="off"
+                fullWidth
+                type={'password'}
+                variant={'outlined'}
+                label={t('auth.password')}
+              />
+              <FormCheckbox
+                checkBox={{
+                  onChange: (_e, val) => handleChangeRemember(val),
+                  checked: rememberMe,
+                }}
+                label={t('auth.rememberMe')}
+              />
+              <input type="submit" style={{ display: 'none' }} />
+            </InputsColumnWrapper>
+            <button
+              data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
+              className={style.button}
+              disabled={isLoading}
+              type="submit">
+              {t('auth.enter')}
+            </button>
+            <button
+              data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
+              className={style.button_forget}
+              disabled={isLoading}
+              type="button"
+              onClick={handleResetPassword}>
+              {t('auth.resetPassword')}
+            </button>
+          </form>
+        </Loader>
+
+        <div className={style.copyright}>
+          © 2009-{new Date().getFullYear()} АО «Лазерные системы». Все права защищены
+        </div>
+      </div>
+    </div>
+  );
+};

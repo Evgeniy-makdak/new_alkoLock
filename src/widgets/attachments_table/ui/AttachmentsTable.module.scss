@@ -1,0 +1,614 @@
+.mobileHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+
+  .addButton {
+    background-color: #7a7d80 !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+
+    &:hover {
+      background-color: #7a7d80 !important;
+    }
+
+    &.MuiIconButton-root {
+      background-color: #7a7d80 !important;
+      border-radius: 50% !important;
+      width: 40px !important;
+      height: 40px !important;
+      min-width: 40px !important;
+      max-width: 40px !important;
+      padding: 0 !important;
+      flex-shrink: 0 !important;
+
+      &:hover {
+        background-color: #7a7d80 !important;
+      }
+    }
+  }
+}
+
+.mobileFilters {
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dateFiltersRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
+  gap: 12px;
+}
+
+.dateFiltersToggle {
+  flex: 1;
+  min-width: 0; // Добавляем для правильной работы flex
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #777;
+  transition: all 0.2s ease;
+  height: 30px;
+  width: 100%;
+  min-width: 0; // Важно для правильной работы текста
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  &:hover {
+    background-color: #f5f5f5;
+    border-color: #ccc;
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.resetFiltersContainer {
+  display: flex;
+  align-items: center;
+}
+
+.filterActions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.customDateInputs {
+  margin: 16px 0;
+}
+
+.dateFieldsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dateFieldContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.narrowDateField {
+  flex: 1;
+
+  .MuiOutlinedInput-root {
+    padding-right: 80px;
+  }
+}
+
+.calendarButton {
+  position: absolute;
+  right: 43%;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #777;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background: #f0f0f0;
+  }
+}
+
+.clearDateButton {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 18px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #777;
+  }
+}
+
+.hiddenDateInput {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.filterModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 1300;
+}
+
+.filterModalContent {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  z-index: 1301;
+}
+
+.filterModalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #f8f9fa;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+.closeModalButton {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #777;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+    color: #333;
+  }
+}
+
+.filterModalBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  position: relative;
+}
+
+.filterModalBody {
+  .mobileFilterContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    
+    > * {
+      width: 100% !important;
+      display: block !important;
+      flex: none !important;
+      min-width: auto !important;
+    }
+    
+    :global {
+      .MuiFormControl-root {
+        width: 100% !important;
+        display: block !important;
+        margin-bottom: 16px !important;
+        
+        .MuiInputBase-root {
+          width: 100% !important;
+        }
+      }
+      
+      .MuiAutocomplete-root {
+        width: 100% !important;
+        display: block !important;
+        
+        .MuiPopover-root {
+          z-index: 1400 !important;
+        }
+        
+        .MuiPaper-root {
+          z-index: 1401 !important;
+        }
+      }
+      
+      .MuiPopover-root {
+        z-index: 1400 !important;
+      }
+      
+      .MuiMenu-paper,
+      .MuiPaper-root {
+        z-index: 1401 !important;
+      }
+    }
+  }
+}
+
+.filterModalFooter {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #f8f9fa;
+
+  .clearButton {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #d32f2f;
+    color: #d32f2f;
+    text-transform: none;
+    font-weight: 500;
+
+    &:hover {
+      background: #ffebee;
+      border-color: #c62828;
+    }
+  }
+
+  .applyButton {
+    flex: 1;
+    padding: 10px;
+    background: #c2c5c9;
+    color: white;
+    text-transform: none;
+    font-weight: 500;
+
+    &:hover {
+      background: #1565c0;
+    }
+  }
+}
+
+.mobileFilterContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  
+  :global {
+    .MuiFormControl-root {
+      width: 100% !important;
+      margin-bottom: 16px !important;
+      display: block !important;
+    }
+    
+    .MuiAutocomplete-root {
+      width: 100% !important;
+      display: block !important;
+    }
+    
+    .MuiTextField-root {
+      width: 100% !important;
+      display: block !important;
+    }
+    
+    .MuiInputBase-root {
+      width: 100% !important;
+    }
+  }
+}
+
+.mobileList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(100vh - 300px);
+  min-height: 200px;
+}
+
+.mobileRow {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  &.selectedRow {
+    border-color: #1976d2;
+    background: #f8f9ff;
+  }
+}
+
+.rowMain {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.dateTime {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1976d2;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  color: #d32f2f;
+
+  &:hover {
+    background: #ffebee;
+  }
+}
+
+.rowDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 4px 0;
+}
+
+.detailLabel {
+  font-size: 14px;
+  color: #777;
+  font-weight: 500;
+  min-width: 120px;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: #333;
+  text-align: right;
+  flex: 1;
+  margin-left: 12px;
+  word-break: break-word;
+}
+
+.noData {
+  text-align: center;
+  padding: 40px 20px;
+  color: #777;
+  font-size: 16px;
+}
+
+.mobilePagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.paginationButton {
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #333;
+
+  &:hover:not(:disabled) {
+    background: #e9e9e9;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.mobileTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: #777;
+  font-weight: 500;
+}
+
+.tableWrapper {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+// Адаптивные стили для маленьких экранов
+@media (max-width: 480px) {
+  .toggleButton {
+    padding: 8px 10px;
+    font-size: 11px;
+    
+    span {
+      max-width: 100px; // Ограничиваем ширину текста
+    }
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleButton {
+    font-size: 10px;
+    padding: 8px 8px;
+    
+    span {
+      max-width: 80px; // Еще меньше на очень маленьких экранах
+    }
+  }
+  
+  .dateFiltersRow {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .tableWrapper {
+    padding: 0;
+  }
+
+  .filterModalOverlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .filterModalContent {
+    max-height: 90vh;
+    border-radius: 16px 16px 0 0;
+    max-width: 100%;
+  }
+
+  .filterModalBody {
+    padding: 16px;
+  }
+
+  .filterModalFooter {
+    padding: 12px 16px;
+    
+    .clearButton,
+    .applyButton {
+      padding: 12px;
+      font-size: 16px;
+    }
+  }
+
+  .mobileList {
+    max-height: calc(100vh - 280px);
+  }
+}
+
+@media (max-width: 480px) {
+  .mobileHeader {
+    padding: 12px;
+  }
+
+  .mobileFilters {
+    padding: 12px;
+  }
+
+  .mobileRow {
+    padding: 12px;
+  }
+
+  .detailLabel,
+  .detailValue {
+    font-size: 13px;
+  }
+
+  .filterModalBody {
+    padding: 12px;
+  }
+
+  .filterModalFooter {
+    flex-direction: column;
+    gap: 8px;
+    
+    .clearButton,
+    .applyButton {
+      flex: none;
+    }
+  }
+
+  .mobileList {
+    max-height: calc(100vh - 250px);
+  }
+}
+
+.customDateInputs {
+    .dateFieldContainer {
+        .narrowDateField {
+            :global(.MuiInputBase-root) {
+                height: 40px;
+                width: 60%;
+
+                input {
+                    padding: 8px 12px;
+                    height: auto;
+                }
+            }
+        }
+    }
+}
