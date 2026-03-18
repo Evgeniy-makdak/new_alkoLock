@@ -69,6 +69,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const {
     uploadAttachments,
     addPendingAttachments,
+    setPendingAttachments,
     clearPendingAttachments,
     getPendingAttachments,
   } = useChatAttachments(getSession, updateSession);
@@ -939,6 +940,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     uploadAttachments,
     refreshDialogs: safeRefreshDialogs,
     addPendingAttachments,
+    setPendingAttachments,
     clearPendingAttachments,
     getPendingAttachments,
     assignDialog,

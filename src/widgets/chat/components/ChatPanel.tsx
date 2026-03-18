@@ -33,7 +33,7 @@ function ChatPanel({
     findSessionByUserId,
     removeEmptySessions,
     clearPendingAttachments,
-    addPendingAttachments,
+    setPendingAttachments,
     getPendingAttachments,
     sendReadStatusForMessageId,
     loadDialogHistory,
@@ -483,26 +483,18 @@ function ChatPanel({
   const handleAttachmentsChange = useCallback(
     (files: File[]) => {
       setAttachments(files);
-      clearPendingAttachments(sessionId);
-      if (files.length > 0) {
-        addPendingAttachments(sessionId, files);
-      }
+      setPendingAttachments(sessionId, files);
     },
-    [sessionId, clearPendingAttachments, addPendingAttachments],
+    [sessionId, setPendingAttachments],
   );
 
   const handleRemoveAttachment = useCallback(
     (index: number) => {
-      const newAttachments = [...attachments];
-      newAttachments.splice(index, 1);
+      const newAttachments = attachments.filter((_, i) => i !== index);
       setAttachments(newAttachments);
-
-      clearPendingAttachments(sessionId);
-      if (newAttachments.length > 0) {
-        addPendingAttachments(sessionId, newAttachments);
-      }
+      setPendingAttachments(sessionId, newAttachments);
     },
-    [sessionId, attachments, clearPendingAttachments, addPendingAttachments],
+    [sessionId, attachments, setPendingAttachments],
   );
 
   const updateDialogStatus = useCallback(

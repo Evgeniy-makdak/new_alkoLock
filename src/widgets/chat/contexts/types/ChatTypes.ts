@@ -75,6 +75,7 @@ export interface ChatContextType {
   ) => Promise<Array<{ id: string; type: string; name: string; size: number; url?: string }>>;
   refreshDialogs: (sessionId: string) => void;
   addPendingAttachments: (sessionId: string, files: File[]) => void;
+  setPendingAttachments: (sessionId: string, files: File[]) => void;
   clearPendingAttachments: (sessionId: string) => void;
   getPendingAttachments: (sessionId: string) => File[];
   assignDialog: (sessionId: string, userId: number) => Promise<any>;

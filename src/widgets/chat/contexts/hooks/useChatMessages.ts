@@ -72,13 +72,22 @@ export const useChatMessages = (
       newProcessed.set(sessionId, []);
       setProcessedUserMessageIds(newProcessed);
 
+      const session = getSession(sessionId);
+      session?.messages?.forEach((msg: any) => {
+        msg.attachments?.forEach((att: any) => {
+          if (att?.url && typeof att.url === 'string' && att.url.startsWith('blob:')) {
+            URL.revokeObjectURL(att.url);
+          }
+        });
+      });
+
       updateSession(sessionId, {
         messages: [],
         uploadedAttachments: [],
         lastSendError: null,
       });
     },
-    [responseTimers, processedUserMessageIds, updateSession],
+    [responseTimers, processedUserMessageIds, updateSession, getSession],
   );
 
   const getCurrentUserInfo = useCallback(() => {
@@ -226,6 +235,7 @@ export const useChatMessages = (
 
         const currentUserInfo = getCurrentUserInfo();
 
+        const attachmentFiles = value.attachments || [];
         const localMessage = {
           id: messageUuid,
           uuid: messageUuid,
@@ -235,12 +245,16 @@ export const useChatMessages = (
           sender: 'user',
           messageStatus: 'TO_USER',
           confirmStatus: 'SENT',
-          attachments: pathsToAttaches.map((fileName) => ({
-            id: fileName,
-            type: 'image',
-            name: fileName,
-            url: fileName,
-          })),
+          attachments: pathsToAttaches.map((fileName, idx) => {
+            const file = attachmentFiles[idx];
+            const previewUrl = file ? URL.createObjectURL(file) : null;
+            return {
+              id: fileName,
+              type: 'image',
+              name: fileName,
+              url: previewUrl || fileName,
+            };
+          }),
           replyTo: value.replyTo || null,
           recipientId: session.selectedUsers[0],
           isPending: true,
