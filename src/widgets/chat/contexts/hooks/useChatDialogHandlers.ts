@@ -848,8 +848,6 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
       dialogLoadingInProgressRef.current.delete(dialogId);
       await openUnreadDialogFn(sessionId, dialog);
 
-      // Используем dialog.id напрямую: getSession() может вернуть устаревший selectedDialog
-      // до того как React применит обновление, что приводит к загрузке истории старого диалога.
       if (dialogId) {
         await loadDialogHistory(sessionId, dialogId);
       }

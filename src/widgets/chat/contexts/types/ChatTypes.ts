@@ -62,10 +62,7 @@ export interface ChatContextType {
   closeSession: (sessionId: string) => void;
   toggleSessionMinimize: (sessionId: string) => void;
   expandSession: (sessionId: string) => void;
-  updateSession: (
-    sessionId: string,
-    updatesOrFn: Partial<ChatSession> | ((session: ChatSession) => Partial<ChatSession>),
-  ) => void;
+  updateSession: (sessionId: string, updates: Partial<ChatSession>) => void;
   getSession: (sessionId: string) => ChatSession | undefined;
   findSessionByUserId: (userId: number) => ChatSession | undefined;
   removeEmptySessions: (excludeSessionId?: string) => void;
@@ -82,10 +79,7 @@ export interface ChatContextType {
   loadUnreadDialogs: (sessionId: string) => Promise<void>;
   loadDialogDetails: (dialogId: number) => Promise<any>;
   openUnreadDialog: (sessionId: string, dialog: UnreadDialog) => Promise<void>;
-  dialogsUnreadCounts: Map<number, number>;
-  setDialogsUnreadCounts: (
-    counts: Map<number, number> | ((prev: Map<number, number>) => Map<number, number>),
-  ) => void;
+  setDialogsUnreadCounts: (counts: Map<number, number>) => void;
   forceLoadUnreadDialogs: (sessionId: string) => Promise<void>;
   sendDeliveredStatusesForSession: (sessionId: string) => void;
   sendReadStatusesForSession: (sessionId: string) => void;

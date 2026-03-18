@@ -263,12 +263,6 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
       };
 
       if (existingMessage) {
-        existingMessage.attachments?.forEach((att: any) => {
-          if (att?.url && typeof att.url === 'string' && att.url.startsWith('blob:')) {
-            URL.revokeObjectURL(att.url);
-          }
-        });
-
         const updatedMessages = session.messages.map((msg: any) =>
           msg.uuid === messageData.uuid || msg.id === messageData.id
             ? { ...msg, ...newMessage }

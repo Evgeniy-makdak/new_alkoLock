@@ -334,9 +334,9 @@
 }
 
 // Единый стиль для превью с непрочитанными: розоватый фон + красный левый бордер
-// Применяется только при hasUnread (счётчик > 0) — и для minimized, и для unreadDialog
 .minimizedChat {
-  &.hasUnread {
+  &.hasUnread,
+  &.unreadDialog {
     border-left: 3px solid #ff6b6b;
     background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
 

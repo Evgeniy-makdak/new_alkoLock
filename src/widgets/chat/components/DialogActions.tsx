@@ -280,7 +280,8 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
         dialogStatus === '')) ||
     // Либо диалога ещё нет (нужно создать новый)
     !hasExistingDialog;
-
+  console.log('Dialog Status:', dialogStatus);
+  console.log('Show Assign Button:', showAssignButton);
   const showClosedDialogButtons = dialogStatus === 'CLOSED';
   const showManagementButtons = showClosedDialogButtons && hasExistingDialog && isDialogOwner;
   const showBlockedButton = showClosedDialogButtons;

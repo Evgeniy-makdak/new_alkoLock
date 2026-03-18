@@ -53,6 +53,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         const config = await configLoader.loadConfig();
         setApiConfig(config);
       } catch (error) {
+        console.error('Ошибка загрузки конфигурации WebSocket:', error);
         setApiConfig({
           apiUrl: 'https://alcolock-test.lsystems.ru/',
           wsUrl: 'wss://alcolock-test.lsystems.ru/ws/websocket',
@@ -100,6 +101,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, [dialogsUnreadCounts, unreadCount]);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
+    console.log(`💬 WebSocket: Обновление счётчика для диалога ${dialogId}: ${count}`);
     setDialogsUnreadCounts((prev) => {
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
@@ -110,6 +112,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateUnreadCountDirect = useCallback((count: number) => {
+    console.log(`💬 WebSocket: Общий счётчик непрочитанных: ${count}`);
     setUnreadCount(count);
   }, []);
 
@@ -210,6 +213,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       '/user/queue/status',
     ];
 
+    console.log('🔌 WebSocket: Активирую подписки:');
+    topics.forEach((topic) => {
+      console.log(`  📡 ${topic}`);
+    });
+
     subscriptionsRef.current.clear();
     topics.forEach((topic) => {
       const subscribeHeaders = {
@@ -233,9 +241,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     let wsUrl = configWsUrl;
 
     if (!wsUrl && apiUrl) {
-      const base = apiUrl.replace(/\/$/, '');
-      wsUrl =
-        base.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://') + '/ws/websocket';
+      wsUrl = apiUrl.replace('http', 'ws').replace('https', 'wss') + 'ws/websocket';
     }
 
     if (!wsUrl) {
@@ -458,8 +464,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setConnectionStatus('error');
             isConnectingRef.current = false;
           }
-        } catch {
-          // Ошибка парсинга сообщения WebSocket
+        } catch (error) {
+          console.error('Ошибка парсинга сообщения WebSocket:', error);
         }
       };
 
@@ -497,7 +503,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
           }, 5000);
         }
       };
-    } catch {
+    } catch (error) {
+      console.error('Ошибка создания WebSocket:', error);
       setConnectionStatus('error');
       isConnectingRef.current = false;
     }

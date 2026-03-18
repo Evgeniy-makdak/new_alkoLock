@@ -116,11 +116,10 @@ const ChatContainer = () => {
     setIsChatOpen,
     openUnreadDialog,
     hasSessionWithUser,
-    dialogsUnreadCounts,
-    setDialogsUnreadCounts,
   } = useChat();
   const { lastMessage, setUnreadCount } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
+  const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
   const lastDetailsUpdateRef = useRef<number>(0);
   const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
@@ -206,6 +205,9 @@ const ChatContainer = () => {
     ) {
       setUnreadCount(lastMessage.data.countUnMessages);
     }
+
+    // Инкремент unreadCount для свёрнутых сессий выполняется в ChatContext.handleIncomingMessage
+    // через атомарный incrementUnreadCount — дублирование здесь убрано
   }, [lastMessage, setUnreadCount]);
 
   useEffect(() => {
@@ -254,13 +256,23 @@ const ChatContainer = () => {
 
   const handleExpandSession = useCallback(
     (sessionId: string) => {
+      console.log(`[EXPAND] handleExpandSession called, sessionId=${sessionId}`);
+      console.log(
+        `[EXPAND] sessions before:`,
+        sessions.map((s) => ({
+          id: s.id,
+          isMinimized: s.isMinimized,
+          msgCount: s.messages?.length,
+        })),
+      );
       setJustExpandedSessionId(sessionId);
       expandSession(sessionId);
     },
-    [expandSession],
+    [expandSession, sessions],
   );
 
   const handleScrollToBottomDone = useCallback(() => {
+    console.log(`[EXPAND] handleScrollToBottomDone called, clearing justExpandedSessionId`);
     setJustExpandedSessionId(null);
   }, []);
 
@@ -278,6 +290,10 @@ const ChatContainer = () => {
 
   const expandedSessions = sessions.filter((session) => !session.isMinimized);
   const minimizedSessions = sessions.filter((session) => session.isMinimized);
+
+  console.log(
+    `[RENDER ChatFooter] justExpandedSessionId=${justExpandedSessionId}, expanded=[${expandedSessions.map((s) => s.id).join(',')}], minimized=[${minimizedSessions.map((s) => s.id).join(',')}]`,
+  );
 
   return (
     <div className={styles.chatContainer}>
@@ -304,6 +320,14 @@ const ChatContainer = () => {
               <span className={styles.unreadBadge}>
                 {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
               </span>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeSession(session.id);
+                }}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
             </div>
             {session.messages.length > 0 && (
               <div className={styles.lastMessage}>
@@ -328,9 +352,7 @@ const ChatContainer = () => {
               return (
                 <div
                   key={`unread-${dialog.id}-${session.id}-${index}`}
-                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
-                    getUnreadCountForDialog(dialog.id) > 0 ? styles.hasUnread : ''
-                  }`}
+                  className={`${styles.minimizedChat} ${styles.unreadDialog}`}
                   style={{
                     bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
                     right: '540px',
@@ -344,6 +366,13 @@ const ChatContainer = () => {
                   <div className={styles.minimizedHeader}>
                     <span>{dialog.owner.fullName}</span>
                     <span className={styles.unreadBadge}>{unreadCount}</span>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}>
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
                   </div>
                   <div className={styles.lastMessage}>
                     {unreadCount > 0

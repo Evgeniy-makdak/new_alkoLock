@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Backdrop,
@@ -9,8 +10,6 @@ import {
   DialogContentText,
   DialogTitle,
 } from '@mui/material';
-
-import { useTranslation } from 'react-i18next';
 
 interface ResetConfirmationDialogProps {
   open: boolean;

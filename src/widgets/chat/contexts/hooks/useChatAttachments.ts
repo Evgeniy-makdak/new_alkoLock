@@ -45,11 +45,10 @@ export const useChatAttachments = (
     [getSession, updateSession],
   );
 
-  /** Заменяет список вложений сессии (без дублирования). Использовать вместо clear+add. */
   const setPendingAttachments = useCallback(
     (sessionId: string, files: File[]) => {
       updateSession(sessionId, {
-        pendingAttachments: [...files],
+        pendingAttachments: files,
       });
     },
     [updateSession],

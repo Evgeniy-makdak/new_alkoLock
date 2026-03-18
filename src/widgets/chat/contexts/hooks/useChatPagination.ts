@@ -4,7 +4,7 @@ import { useChat } from '../ChatContext';
 import { ChatConfig } from '../chatConfig';
 
 export const useChatPagination = (sessionId: string) => {
-  const { getSession, loadPreviousMessages } = useChat();
+  const { getSession, loadPreviousMessages } = useChat(); // ИСПРАВЛЕНО: loadMoreMessages -> loadPreviousMessages
 
   const loadingRef = useRef(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -60,6 +60,7 @@ export const useChatPagination = (sessionId: string) => {
   const handleLoadMore = useCallback(async (): Promise<boolean> => {
     // Если пагинация отключена, ничего не делаем
     if (isPaginationDisabled) {
+      console.log('⛔ Пагинация отключена. Загрузка предыдущих сообщений невозможна.');
       return false;
     }
 

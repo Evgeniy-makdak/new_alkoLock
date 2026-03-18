@@ -7,9 +7,6 @@ import api from '../../api';
 export const useChatDialogs = (
   getSession: (sessionId: string) => any,
   updateSession: (sessionId: string, updates: any) => void,
-  setDialogsUnreadCounts?: (
-    counts: Map<number, number> | ((prev: Map<number, number>) => Map<number, number>),
-  ) => void,
 ) => {
   const loadingUnreadDialogsRef = useRef<Set<string>>(new Set());
   const loadDialogInProgressRef = useRef<Set<string>>(new Set());
@@ -125,64 +122,26 @@ export const useChatDialogs = (
       dialogLoadingRef.current.set(dialogId, true);
 
       try {
-        updateSession(sessionId, (currentSession: any) => {
-          let updatedUnread = (currentSession.unreadDialogs || []).filter(
-            (d: UnreadDialog) => d.id !== dialog.id,
-          );
-
-          const prev = currentSession.selectedDialog;
-          if (prev?.id && prev.id !== '0' && prev.id !== dialogId) {
-            const prevIdNum = typeof prev.id === 'number' ? prev.id : parseInt(prev.id, 10);
-            if (!isNaN(prevIdNum) && setDialogsUnreadCounts) {
-              setDialogsUnreadCounts((p) => {
-                const next = new Map(p);
-                next.set(prevIdNum, 0);
-                return next;
-              });
-            }
-            const alreadyInList = updatedUnread.some(
-              (d: UnreadDialog) => d.id === prevIdNum || d.id.toString() === prev.id,
-            );
-            if (!alreadyInList && !isNaN(prevIdNum)) {
-              updatedUnread = [
-                ...updatedUnread,
-                {
-                  ...prev,
-                  id: prevIdNum,
-                  owner: prev.owner || {
-                    id: currentSession.selectedUsers?.[0] ?? 0,
-                    fullName: currentSession.selectedUserName || prev.client_name || '',
-                  },
-                  branch: prev.branch || { id: 0, name: '' },
-                  status: prev.status || 'OPEN',
-                  createdAt: prev.createdAt || new Date().toISOString(),
-                  isActive: prev.isActive ?? true,
-                } as UnreadDialog,
-              ];
-            }
-          }
-
-          return {
-            selectedDialog: {
-              id: dialogId,
-              client_name: dialog.owner.fullName,
-              status: dialog.status,
-              ...dialog,
-            },
-            selectedUsers: [dialog.owner.id],
-            selectedUserName: dialog.owner.fullName,
-            assignedDialogId: dialogId,
-            hasLoadedDialogs: true,
-            messages: [] as any[],
-            unreadDialogs: updatedUnread,
-            pagination: {
-              currentPage: 0,
-              totalPages: 0,
-              totalElements: 0,
-              isLoadingMore: false,
-              hasMoreMessages: false,
-            },
-          };
+        updateSession(sessionId, {
+          selectedDialog: {
+            id: dialogId,
+            client_name: dialog.owner.fullName,
+            status: dialog.status,
+            ...dialog,
+          },
+          selectedUsers: [dialog.owner.id],
+          selectedUserName: dialog.owner.fullName,
+          assignedDialogId: dialogId,
+          hasLoadedDialogs: true,
+          messages: [],
+          unreadDialogs: session.unreadDialogs.filter((d: UnreadDialog) => d.id !== dialog.id),
+          pagination: {
+            currentPage: 0,
+            totalPages: 0,
+            totalElements: 0,
+            isLoadingMore: false,
+            hasMoreMessages: false,
+          },
         });
       } catch (error) {
         console.error('Ошибка открытия диалога:', error);
@@ -190,7 +149,7 @@ export const useChatDialogs = (
         setTimeout(() => dialogLoadingRef.current.delete(dialogId), 1000);
       }
     },
-    [getSession, updateSession, setDialogsUnreadCounts],
+    [getSession, updateSession],
   );
 
   return {

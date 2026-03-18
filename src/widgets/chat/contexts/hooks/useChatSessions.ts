@@ -7,22 +7,11 @@ export const useChatSessions = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
 
-  const updateSession = useCallback(
-    (
-      sessionId: string,
-      updatesOrFn: Partial<ChatSession> | ((session: ChatSession) => Partial<ChatSession>),
-    ) => {
-      setSessions((prev) =>
-        prev.map((session) => {
-          if (session.id !== sessionId) return session;
-          // eslint-disable-next-line prettier/prettier
-          const updates = typeof updatesOrFn === 'function' ? updatesOrFn(session) : updatesOrFn;
-          return { ...session, ...updates };
-        }),
-      );
-    },
-    [],
-  );
+  const updateSession = useCallback((sessionId: string, updates: Partial<ChatSession>) => {
+    setSessions((prev) =>
+      prev.map((session) => (session.id === sessionId ? { ...session, ...updates } : session)),
+    );
+  }, []);
 
   const getSession = useCallback(
     (sessionId: string): ChatSession | undefined => {
@@ -127,17 +116,25 @@ export const useChatSessions = () => {
     });
   }, []);
 
+  /**
+   * Разворачивание сессии: сворачивает раскрытую, разворачивает указанную.
+   * Обе сессии остаются в массиве (swap визуального порядка).
+   */
   const expandSession = useCallback((sessionId: string) => {
+    console.log(`[EXPAND-SESSION] expandSession called, target=${sessionId}`);
     setActiveSessionId(sessionId);
     setSessions((prev) => {
       const targetSession = prev.find((s) => s.id === sessionId);
-      if (!targetSession || !targetSession.isMinimized) {
+      if (!targetSession) return prev;
+
+      const expandedSession = prev.find((s) => !s.isMinimized);
+
+      if (!targetSession.isMinimized) {
         return prev;
       }
 
-      const expandedSession = prev.find((s) => !s.isMinimized);
       if (!expandedSession) {
-        return prev;
+        return prev.map((s) => (s.id === sessionId ? { ...s, isMinimized: false } : s));
       }
 
       return prev.map((s) => {
@@ -200,10 +197,14 @@ export const useChatSessions = () => {
   );
 
   const incrementUnreadCount = useCallback((sessionId: string, amount = 1) => {
+    console.log(`[UNREAD] incrementUnreadCount called: sessionId=${sessionId}, amount=${amount}`);
     setSessions((prev) =>
       prev.map((session) => {
         if (session.id === sessionId) {
           const newCount = (session.unreadCount || 0) + amount;
+          console.log(
+            `[UNREAD] Session ${sessionId}: ${session.unreadCount || 0} -> ${newCount}, minimized=${session.isMinimized}, user=${session.selectedUserName}`,
+          );
           return { ...session, unreadCount: newCount };
         }
         return session;
@@ -268,19 +269,17 @@ export const useChatSessions = () => {
   const removeEmptySessions = useCallback(
     (excludeSessionId?: string) => {
       setSessions((prev) => {
-        const hasEmpty = prev.some((session) => {
-          if (session.id === excludeSessionId) return false;
-          return session.selectedUsers.length === 0 && session.messages.length === 0;
-        });
-
-        if (!hasEmpty) return prev;
-
         const filteredSessions = prev.filter((session) => {
           if (session.id === excludeSessionId) {
             return true;
           }
 
           const isEmpty = session.selectedUsers.length === 0 && session.messages.length === 0;
+          if (isEmpty) {
+            console.log(
+              `[EMPTY] removeEmptySessions: REMOVING empty session ${session.id} (users=${session.selectedUsers.length}, msgs=${session.messages.length})`,
+            );
+          }
           return !isEmpty;
         });
 

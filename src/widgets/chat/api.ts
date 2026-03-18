@@ -31,6 +31,7 @@ const initializeApiUrl = async (): Promise<string> => {
 
 initializeApiUrl().then((url) => {
   apiUrl = url;
+  console.log('API URL инициализирован:', apiUrl);
 });
 
 const getToken = (): string | null => {
@@ -291,29 +292,53 @@ const sendDeliveryConfirmWS = (
   status: 'DELIVERED' | 'READ',
 ) => {
   if (!stompClient?.connected) {
+    console.log(`❌ WebSocket не подключен, статус ${status} для ${uuidMessage} не отправлен`);
     return false;
   }
 
   const message = { uuidMessage, status };
   const messageStr = JSON.stringify(message);
 
-  return stompClient.publish({
+  console.log(
+    `[STATUS WS] Публикация в /app/chat.delivery.confirm: ${status} для uuid=${uuidMessage}`,
+  );
+
+  const success = stompClient.publish({
     destination: '/app/chat.delivery.confirm',
     body: messageStr,
     headers: { 'content-type': 'application/json' },
   });
+
+  if (success) {
+    console.log(
+      `[STATUS WS] Статус ${status} успешно отправлен через WebSocket для uuid=${uuidMessage}`,
+    );
+  } else {
+    console.log(`[STATUS WS] Ошибка публикации ${status} для uuid=${uuidMessage}`);
+  }
+
+  return success;
 };
 
 const requestMessageStatusWS = (stompClient: any, messageUUIDs: string[]) => {
   if (!stompClient?.connected) {
+    console.log('❌ WebSocket не подключен, запрос статусов не отправлен');
     return false;
   }
 
-  stompClient.publish({
+  console.log(`🚀 Запрос статусов через WebSocket для сообщений:`, messageUUIDs);
+
+  const success = stompClient.publish({
     destination: '/app/chat.request.confirm',
     body: JSON.stringify(messageUUIDs),
     headers: { 'content-type': 'application/json' },
   });
+
+  if (success) {
+    console.log(`✅ Запрос статусов отправлен через WebSocket`);
+  } else {
+    console.log(`❌ Ошибка отправки запроса статусов через WebSocket`);
+  }
   return true;
 };
 

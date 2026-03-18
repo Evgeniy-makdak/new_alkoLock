@@ -51,6 +51,12 @@ function ChatPanel({
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isDialogReallyBlocked, setIsDialogReallyBlocked] = useState(false);
 
+  const chatPanelMountIdRef = useRef(Math.random().toString(36).slice(2, 6));
+
+  console.log(
+    `[CP-${chatPanelMountIdRef.current}] render: sessionId=${sessionId}, scrollToBottomOnExpand=${scrollToBottomOnExpand}, msgs=${session?.messages?.length}, isMinimized=${session?.isMinimized}`,
+  );
+
   const isUpdatingRef = useRef(false);
   const prevSessionIdRef = useRef<string>(sessionId);
   const lastMessageCountRef = useRef<number>(0);
@@ -60,6 +66,15 @@ function ChatPanel({
   const historyLoadAttemptedRef = useRef(false);
   const refreshAfterReadTriggeredRef = useRef(false);
   const isSessionSwitchingRef = useRef(false);
+
+  useEffect(() => {
+    console.log(
+      `[CP-${chatPanelMountIdRef.current}] MOUNTED sessionId=${sessionId}, scrollToBottomOnExpand=${scrollToBottomOnExpand}`,
+    );
+    return () => {
+      console.log(`[CP-${chatPanelMountIdRef.current}] UNMOUNTED sessionId=${sessionId}`);
+    };
+  }, []);
 
   const getDisplayUserName = useCallback(() => {
     if (session?.selectedUserName) return session.selectedUserName;
@@ -289,6 +304,7 @@ function ChatPanel({
         .getDialogDetails(session.selectedDialog.id)
         .then((dialogDetails) => {
           if (dialogDetails?.status && dialogDetails.status !== dialogStatus) {
+            console.log(`Статус диалога изменился: ${dialogStatus} -> ${dialogDetails.status}`);
             setDialogStatus(dialogDetails.status);
 
             if (dialogStatus === 'CLOSED' && dialogDetails.status !== 'CLOSED') {
@@ -490,7 +506,8 @@ function ChatPanel({
 
   const handleRemoveAttachment = useCallback(
     (index: number) => {
-      const newAttachments = attachments.filter((_, i) => i !== index);
+      const newAttachments = [...attachments];
+      newAttachments.splice(index, 1);
       setAttachments(newAttachments);
       setPendingAttachments(sessionId, newAttachments);
     },
@@ -515,6 +532,7 @@ function ChatPanel({
   const handleMarkMessagesAsRead = useCallback(
     (messageIds: string[]) => {
       if (messageIds.length > 0) {
+        console.log('[READ] handleMarkMessagesAsRead вызван для messageIds:', messageIds);
         messageIds.forEach((messageId) => {
           sendReadStatusForMessageId(sessionId, messageId);
         });

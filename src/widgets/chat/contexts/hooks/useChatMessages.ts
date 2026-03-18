@@ -34,15 +34,43 @@ export const useChatMessages = (
 
   const sendMessageStatus = useCallback(
     (uuid: string, status: 'DELIVERED' | 'READ'): boolean => {
+      console.log(`[STATUS] sendMessageStatus: ${status} для uuid=${uuid}`);
+
       if (!stompClient || !stompClient.connected) {
-        api.sendDeliveryConfirm(uuid, status).catch(() => {});
+        console.log(`❌ WebSocket не подключен, отправка через API`);
+        // Отправляем через обычный API запрос как fallback
+        const promise = api.sendDeliveryConfirm(uuid, status);
+        promise
+          .then(() => {
+            console.log(`✅ Статус ${status} отправлен через API для ${uuid}`);
+          })
+          .catch((error) => {
+            console.log(`❌ Ошибка отправки статуса ${status} через API для ${uuid}:`, error);
+          });
         return true;
       }
 
+      // Отправляем через WebSocket
       const success = api.sendDeliveryConfirmWS(stompClient, uuid, status);
 
-      if (!success) {
-        api.sendDeliveryConfirm(uuid, status).catch(() => {});
+      if (success) {
+        console.log(`[STATUS] Статус ${status} отправлен через WebSocket для uuid=${uuid}`);
+      } else {
+        console.log(
+          `[STATUS] Ошибка отправки ${status} через WebSocket для ${uuid}, fallback на API`,
+        );
+        // Fallback на обычный API запрос
+        const promise = api.sendDeliveryConfirm(uuid, status);
+        promise
+          .then(() => {
+            console.log(`✅ Статус ${status} отправлен через API (fallback) для ${uuid}`);
+          })
+          .catch((error) => {
+            console.log(
+              `❌ Ошибка отправки статуса ${status} через API (fallback) для ${uuid}:`,
+              error,
+            );
+          });
       }
 
       return success;
@@ -72,22 +100,13 @@ export const useChatMessages = (
       newProcessed.set(sessionId, []);
       setProcessedUserMessageIds(newProcessed);
 
-      const session = getSession(sessionId);
-      session?.messages?.forEach((msg: any) => {
-        msg.attachments?.forEach((att: any) => {
-          if (att?.url && typeof att.url === 'string' && att.url.startsWith('blob:')) {
-            URL.revokeObjectURL(att.url);
-          }
-        });
-      });
-
       updateSession(sessionId, {
         messages: [],
         uploadedAttachments: [],
         lastSendError: null,
       });
     },
-    [responseTimers, processedUserMessageIds, updateSession, getSession],
+    [responseTimers, processedUserMessageIds, updateSession],
   );
 
   const getCurrentUserInfo = useCallback(() => {
@@ -149,8 +168,21 @@ export const useChatMessages = (
 
         if (hasAttachments) {
           try {
+            console.log(`📤 Начало загрузки ${value.attachments.length} вложений...`);
+            console.log(
+              '📊 Информация о файлах:',
+              value.attachments.map((f: File) => ({
+                name: f.name,
+                type: f.type,
+                size: f.size,
+                sizeMB: f.size / 1024 / 1024,
+              })),
+            );
+
             const uploadResponse = await api.uploadAttachments(value.attachments);
             pathsToAttaches = uploadResponse.attachmentIds || [];
+
+            console.log('✅ Все вложения загружены:', pathsToAttaches.length, 'шт');
           } catch (uploadError: any) {
             console.error('❌ Детальная ошибка загрузки вложений:', {
               message: uploadError.message,
@@ -235,7 +267,6 @@ export const useChatMessages = (
 
         const currentUserInfo = getCurrentUserInfo();
 
-        const attachmentFiles = value.attachments || [];
         const localMessage = {
           id: messageUuid,
           uuid: messageUuid,
@@ -245,16 +276,20 @@ export const useChatMessages = (
           sender: 'user',
           messageStatus: 'TO_USER',
           confirmStatus: 'SENT',
-          attachments: pathsToAttaches.map((fileName, idx) => {
-            const file = attachmentFiles[idx];
-            const previewUrl = file ? URL.createObjectURL(file) : null;
-            return {
-              id: fileName,
-              type: 'image',
-              name: fileName,
-              url: previewUrl || fileName,
-            };
-          }),
+          attachments:
+            value.attachments && value.attachments.length > 0
+              ? value.attachments.map((file: File, i: number) => {
+                  const fileName = pathsToAttaches[i] || file.name;
+                  return {
+                    id: fileName,
+                    type: 'image',
+                    name: file.name,
+                    fileName,
+                    url: URL.createObjectURL(file),
+                    size: file.size,
+                  };
+                })
+              : [],
           replyTo: value.replyTo || null,
           recipientId: session.selectedUsers[0],
           isPending: true,
