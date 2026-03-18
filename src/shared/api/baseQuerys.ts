@@ -117,9 +117,7 @@ export class UsersApi {
     return postQuery<AddPhotoResponse, FormData>({
       url: `api/v1/users/photos/${id}`,
       data,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+      headers: {},
     });
   }
   static setPhotoAsAvatar(photoId: ID, userId: ID) {
