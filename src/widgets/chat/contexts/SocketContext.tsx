@@ -22,6 +22,7 @@ interface SocketContextType {
   dialogsUnreadCounts: Map<number, number>;
   setUnreadCount: (count: number) => void;
   updateDialogUnreadCount: (dialogId: number, count: number) => void;
+  incrementDialogUnreadCount: (dialogId: number, amount?: number) => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
 }
@@ -111,10 +112,32 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
+  const incrementDialogUnreadCount = useCallback((dialogId: number, amount = 1) => {
+    useDetailedCountsRef.current = true;
+    hasDetailedDataRef.current = true;
+    setDialogsUnreadCounts((prev) => {
+      const newMap = new Map(prev);
+      const current = newMap.get(dialogId) || 0;
+      const newCount = current + amount;
+      newMap.set(dialogId, newCount);
+      console.log(`💬 WebSocket: Обновление счётчика для диалога ${dialogId}: ${newCount}`);
+      return newMap;
+    });
+  }, []);
+
   const updateUnreadCountDirect = useCallback((count: number) => {
     console.log(`💬 WebSocket: Общий счётчик непрочитанных: ${count}`);
     setUnreadCount(count);
   }, []);
+
+  useEffect(() => {
+    if (!useDetailedCountsRef.current || !hasDetailedDataRef.current) return;
+    let total = 0;
+    dialogsUnreadCounts.forEach((count, dialogId) => {
+      if (dialogId > 0 && count > 0) total += count;
+    });
+    setUnreadCount((prev) => (prev !== total ? total : prev));
+  }, [dialogsUnreadCounts]);
 
   const sendStompFrame = (command: string, headers: any = {}, body: string = '') => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
@@ -212,11 +235,6 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       '/user/queue/errors',
       '/user/queue/status',
     ];
-
-    console.log('🔌 WebSocket: Активирую подписки:');
-    topics.forEach((topic) => {
-      console.log(`  📡 ${topic}`);
-    });
 
     subscriptionsRef.current.clear();
     topics.forEach((topic) => {
@@ -360,6 +378,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   if (hasRealDialogs) {
                     useDetailedCountsRef.current = true;
                     hasDetailedDataRef.current = true;
+                    const dialogCount = parsedBody.filter(
+                      (d: any) => d.dialogId && typeof d.countUnMessages === 'number',
+                    ).length;
+                    console.log(
+                      `💬 [UNREAD] Подписка /queue/unread: получено ${dialogCount} диалогов с непрочитанными`,
+                    );
                     parsedBody.forEach((dialogData: any) => {
                       if (dialogData.dialogId && typeof dialogData.countUnMessages === 'number') {
                         updateDialogUnreadCount(dialogData.dialogId, dialogData.countUnMessages);
@@ -400,13 +424,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                 });
               } else if (destination === '/user/queue/messages') {
                 if (parsedBody?.dialog?.id && parsedBody.messageStatus === 'TO_OPERATOR') {
-                  if (useDetailedCountsRef.current && hasDetailedDataRef.current) {
-                    const dialogId = parsedBody.dialog.id;
-                    const currentCount = dialogsUnreadCounts.get(dialogId) || 0;
-                    updateDialogUnreadCount(dialogId, currentCount + 1);
-                  } else {
-                    updateUnreadCountDirect(unreadCount + 1);
-                  }
+                  useDetailedCountsRef.current = true;
+                  hasDetailedDataRef.current = true;
                 }
 
                 setLastMessage({
@@ -553,6 +572,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         dialogsUnreadCounts,
         setUnreadCount: updateUnreadCountDirect,
         updateDialogUnreadCount,
+        incrementDialogUnreadCount,
         calculateTotalUnread,
         resetDialogCounts,
       }}>

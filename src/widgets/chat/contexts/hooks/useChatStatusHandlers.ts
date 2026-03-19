@@ -11,10 +11,11 @@ interface StatusHandlersDeps {
   getSession: (sessionId: string) => any;
   updateSession: (sessionId: string, updates: any) => void;
   sendMessageStatus: (uuid: string, status: string) => boolean;
+  recalculateSessionUnreadCount?: (sessionId: string, dialogId?: string) => void;
 }
 
 export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) => {
-  const { getSession, updateSession, sendMessageStatus } = deps;
+  const { getSession, updateSession, sendMessageStatus, recalculateSessionUnreadCount } = deps;
   const {
     statusSendingInProgressRef,
     processedReadStatusesRef,
@@ -86,19 +87,13 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
       const sendKey = `READ_${messageUuid}`;
       const now = Date.now();
 
-      if (statusSendingInProgressRef.current.has(sendKey)) {
-        console.log(`[READ] Пропуск отправки READ: уже отправляется для uuid=${messageUuid}`);
-        return;
-      }
+      if (statusSendingInProgressRef.current.has(sendKey)) return;
 
       if (processedReadStatusesRef.current.has(messageUuid)) {
-        console.log(`[READ] Пропуск отправки READ: уже отправлен для uuid=${messageUuid}`);
-        // Даже если READ уже отправлен, но сообщение еще не помечено как READ локально, обновляем локально
         const session = getSession(sessionId);
         if (session) {
           const currentMessage = session.messages.find((msg: any) => msg.uuid === messageUuid);
           if (currentMessage && currentMessage.confirmStatus !== 'READ') {
-            console.log(`[READ] Локальное обновление статуса на READ для uuid=${messageUuid}`);
             const updatedMessages = session.messages.map((msg: any) =>
               msg.uuid === messageUuid ? { ...msg, confirmStatus: 'READ', is_read: true } : msg,
             );
@@ -109,47 +104,25 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
       }
 
       const lastSendTime = readStatusTimestampsRef.current.get(messageUuid);
-      if (lastSendTime && now - lastSendTime < 5000 && !forceImmediate) {
-        console.log(`[READ] Пропуск отправки READ: слишком частый запрос для uuid=${messageUuid}`);
-        return;
-      }
+      if (lastSendTime && now - lastSendTime < 5000 && !forceImmediate) return;
 
-      if (message.confirmStatus === 'READ') {
-        console.log(`[READ] Пропуск отправки READ: уже прочитано для uuid=${messageUuid}`);
-        return;
-      }
+      if (message.confirmStatus === 'READ') return;
 
-      if (message.messageStatus !== 'TO_OPERATOR') {
-        console.log(`[READ] Пропуск отправки READ: не TO_OPERATOR для uuid=${messageUuid}`);
-        return;
-      }
+      if (message.messageStatus !== 'TO_OPERATOR') return;
 
       const session = getSession(sessionId);
-      if (!session) {
-        console.log(`[READ] Пропуск отправки READ: сессия не найдена для uuid=${messageUuid}`);
-        return;
-      }
+      if (!session) return;
 
       const currentMessage = session.messages.find((msg: any) => msg.uuid === messageUuid);
-      if (!currentMessage) {
-        console.log(`[READ] Пропуск отправки READ: сообщение не найдено для uuid=${messageUuid}`);
-        return;
-      }
+      if (!currentMessage) return;
 
       const currentAttempts = failedStatusAttemptsRef.current.get(sendKey) || 0;
-      if (currentAttempts >= 3 && !forceImmediate) {
-        console.log(`[READ] Пропуск отправки READ: слишком много попыток для uuid=${messageUuid}`);
-        return;
-      }
+      if (currentAttempts >= 3 && !forceImmediate) return;
 
       // Обновляем локально сразу, чтобы пользователь видел статус READ
       processedReadStatusesRef.current.add(messageUuid);
       statusSendingInProgressRef.current.add(sendKey);
       readStatusTimestampsRef.current.set(messageUuid, now);
-
-      console.log(
-        `[READ] Отправка статуса READ на бэк (TO_OPERATOR): uuid=${messageUuid}, sessionId=${sessionId}, текущий статус=${currentMessage.confirmStatus}`,
-      );
 
       // Сначала обновляем локально
       const updatedMessages = session.messages.map((msg: any) =>
@@ -159,9 +132,12 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
 
       const sendResult = sendMessageStatus(messageUuid, 'READ');
 
-      if (sendResult) {
-        console.log(`[READ] Статус READ успешно отправлен для uuid=${messageUuid}`);
+      if (sendResult && recalculateSessionUnreadCount) {
+        const dialogId = message.dialog?.id?.toString() || message.dialogId?.toString();
+        setTimeout(() => recalculateSessionUnreadCount(sessionId, dialogId), 150);
+      }
 
+      if (sendResult) {
         failedStatusAttemptsRef.current.delete(sendKey);
 
         const readSendKey = `SENT_READ_${messageUuid}`;
@@ -303,9 +279,6 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
         ) {
           statusSendingInProgressRef.current.add(sendKey);
 
-          console.log(
-            `[DELIVERED] Отправка статуса DELIVERED при открытии диалога: uuid=${message.uuid}, sessionId=${sessionId}`,
-          );
           const sendResult = sendMessageStatus(message.uuid, 'DELIVERED');
 
           if (sendResult) {
@@ -317,7 +290,6 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
 
             const deliveredSendKey = `SENT_DELIVERED_${message.uuid}`;
             localStorage.setItem(deliveredSendKey, now.toString());
-            console.log(`[DELIVERED] Статус DELIVERED отправлен для uuid=${message.uuid}`);
             setTimeout(() => {
               statusSendingInProgressRef.current.delete(sendKey);
             }, 5000);
@@ -367,9 +339,6 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
       deliveredSendingInProgressRef.current.add(sessionId);
       statusSendingInProgressRef.current.add(sendKey);
 
-      console.log(
-        `[DELIVERED] Отправка DELIVERED для нового входящего сообщения: uuid=${messageUuid}, sessionId=${sessionId}`,
-      );
       const sendResult = sendMessageStatus(messageUuid, 'DELIVERED');
 
       if (sendResult) {
@@ -382,9 +351,6 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
 
         const deliveredSendKey = `SENT_DELIVERED_${messageUuid}`;
         localStorage.setItem(deliveredSendKey, Date.now().toString());
-        console.log(
-          `[DELIVERED] Статус DELIVERED отправлен для нового сообщения uuid=${messageUuid}`,
-        );
       }
 
       setTimeout(() => {
@@ -469,16 +435,14 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
 
           if (status === 'READ') {
             processedReadStatusesRef.current.add(uuidMessage);
-            console.log(`[STATUS WS] Локально установлен READ для сообщения ${uuidMessage}`);
             if (recalculateSessionUnreadCount) {
               const dialogId =
                 currentMessage.dialog?.id?.toString() || currentMessage.dialogId?.toString();
-              recalculateSessionUnreadCount(session.id, dialogId);
+              setTimeout(() => recalculateSessionUnreadCount(session.id, dialogId), 150);
             }
           } else if (status === 'DELIVERED') {
             deliveredStatusesRef.current.add(uuidMessage);
             deliveredConfirmedByBackendRef.current.add(uuidMessage);
-            console.log(`[STATUS WS] Локально установлен DELIVERED для сообщения ${uuidMessage}`);
           }
         }
       });

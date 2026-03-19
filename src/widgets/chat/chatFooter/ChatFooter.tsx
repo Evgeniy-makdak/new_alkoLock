@@ -117,10 +117,8 @@ const ChatContainer = () => {
     openUnreadDialog,
     hasSessionWithUser,
   } = useChat();
-  const { lastMessage, setUnreadCount } = useSocket();
+  const { lastMessage, setUnreadCount, dialogsUnreadCounts } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
-  const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
-  const lastDetailsUpdateRef = useRef<number>(0);
   const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
   const hasChatPermissions = useOperatorPermissions();
@@ -165,31 +163,6 @@ const ChatContainer = () => {
         processedMessagesRef.current.delete(id);
       }
     });
-
-    const currentBranchId = appStore.getState().selectedBranchState?.id;
-
-    if (lastMessage.type === `/queue/unread/${currentBranchId}`) {
-      const messageData = lastMessage.data;
-
-      const now = Date.now();
-      const lastUpdate = lastDetailsUpdateRef.current;
-      if (lastUpdate && now - lastUpdate < 5000) {
-        return;
-      }
-      lastDetailsUpdateRef.current = now;
-
-      if (Array.isArray(messageData)) {
-        const newCountsMap = new Map<number, number>();
-
-        messageData.forEach((item: { dialogId: number; countUnMessages: number }) => {
-          if (item.dialogId && item.countUnMessages !== undefined) {
-            newCountsMap.set(item.dialogId, item.countUnMessages);
-          }
-        });
-
-        setDialogsUnreadCounts(newCountsMap);
-      }
-    }
 
     if (
       lastMessage.type === '/user/queue/unread' &&
@@ -256,15 +229,6 @@ const ChatContainer = () => {
 
   const handleExpandSession = useCallback(
     (sessionId: string) => {
-      console.log(`[EXPAND] handleExpandSession called, sessionId=${sessionId}`);
-      console.log(
-        `[EXPAND] sessions before:`,
-        sessions.map((s) => ({
-          id: s.id,
-          isMinimized: s.isMinimized,
-          msgCount: s.messages?.length,
-        })),
-      );
       setJustExpandedSessionId(sessionId);
       expandSession(sessionId);
     },
@@ -272,12 +236,11 @@ const ChatContainer = () => {
   );
 
   const handleScrollToBottomDone = useCallback(() => {
-    console.log(`[EXPAND] handleScrollToBottomDone called, clearing justExpandedSessionId`);
     setJustExpandedSessionId(null);
   }, []);
 
   const getUnreadCountForDialog = (dialogId: number): number => {
-    return dialogsUnreadCounts.get(dialogId) || 0;
+    return (dialogsUnreadCounts || new Map()).get(dialogId) || 0;
   };
 
   if (!hasChatPermissions) {
@@ -290,10 +253,6 @@ const ChatContainer = () => {
 
   const expandedSessions = sessions.filter((session) => !session.isMinimized);
   const minimizedSessions = sessions.filter((session) => session.isMinimized);
-
-  console.log(
-    `[RENDER ChatFooter] justExpandedSessionId=${justExpandedSessionId}, expanded=[${expandedSessions.map((s) => s.id).join(',')}], minimized=[${minimizedSessions.map((s) => s.id).join(',')}]`,
-  );
 
   return (
     <div className={styles.chatContainer}>

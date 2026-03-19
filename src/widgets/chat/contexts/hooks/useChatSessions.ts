@@ -121,7 +121,6 @@ export const useChatSessions = () => {
    * Обе сессии остаются в массиве (swap визуального порядка).
    */
   const expandSession = useCallback((sessionId: string) => {
-    console.log(`[EXPAND-SESSION] expandSession called, target=${sessionId}`);
     setActiveSessionId(sessionId);
     setSessions((prev) => {
       const targetSession = prev.find((s) => s.id === sessionId);
@@ -197,14 +196,10 @@ export const useChatSessions = () => {
   );
 
   const incrementUnreadCount = useCallback((sessionId: string, amount = 1) => {
-    console.log(`[UNREAD] incrementUnreadCount called: sessionId=${sessionId}, amount=${amount}`);
     setSessions((prev) =>
       prev.map((session) => {
         if (session.id === sessionId) {
           const newCount = (session.unreadCount || 0) + amount;
-          console.log(
-            `[UNREAD] Session ${sessionId}: ${session.unreadCount || 0} -> ${newCount}, minimized=${session.isMinimized}, user=${session.selectedUserName}`,
-          );
           return { ...session, unreadCount: newCount };
         }
         return session;
@@ -275,11 +270,6 @@ export const useChatSessions = () => {
           }
 
           const isEmpty = session.selectedUsers.length === 0 && session.messages.length === 0;
-          if (isEmpty) {
-            console.log(
-              `[EMPTY] removeEmptySessions: REMOVING empty session ${session.id} (users=${session.selectedUsers.length}, msgs=${session.messages.length})`,
-            );
-          }
           return !isEmpty;
         });
 

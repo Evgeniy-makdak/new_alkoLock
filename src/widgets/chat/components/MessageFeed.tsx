@@ -49,7 +49,6 @@ function MessageFeed({
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
 }: MessageFeedProps) {
-  const mountIdRef = useRef(Math.random().toString(36).slice(2, 6));
   const renderCountRef = useRef(0);
   renderCountRef.current++;
 
@@ -153,8 +152,6 @@ function MessageFeed({
     });
 
     if (messagesToMarkAsRead.length > 0) {
-      console.log(`[READ] Отправка READ для ${messagesToMarkAsRead.length} видимых сообщений`);
-
       messagesToMarkAsRead.forEach((messageId, index) => {
         setTimeout(() => {
           onMarkMessagesAsRead([messageId]);
@@ -180,26 +177,8 @@ function MessageFeed({
   prevMessageLenRef.current = messages.length;
 
   if (scrollToBottomOnExpand || (messages.length > 0 && isInitialLoad) || messagesJustLoaded) {
-    if (!needsScrollToBottomRef.current) {
-      console.log(
-        `[MF-${mountIdRef.current}] render#${renderCountRef.current}: Setting needsScrollToBottom=true (scrollToBottomOnExpand=${scrollToBottomOnExpand}, isInitialLoad=${isInitialLoad}, messagesJustLoaded=${messagesJustLoaded}, msgs=${messages.length})`,
-      );
-    }
     needsScrollToBottomRef.current = true;
   }
-
-  console.log(
-    `[MF-${mountIdRef.current}] render#${renderCountRef.current}: sessionId=${sessionId}, scrollToBottomOnExpand=${scrollToBottomOnExpand}, isInitialLoad=${isInitialLoad}, messagesJustLoaded=${messagesJustLoaded}, needsScroll=${needsScrollToBottomRef.current}, msgs=${messages.length}`,
-  );
-
-  useEffect(() => {
-    console.log(
-      `[MF-${mountIdRef.current}] MOUNTED sessionId=${sessionId}, scrollToBottomOnExpand=${scrollToBottomOnExpand}, msgs=${messages.length}`,
-    );
-    return () => {
-      console.log(`[MF-${mountIdRef.current}] UNMOUNTED sessionId=${sessionId}`);
-    };
-  }, []);
 
   useEffect(() => {
     scrollDoneCallbackRef.current = onScrollToBottomDone;
@@ -250,17 +229,8 @@ function MessageFeed({
   useLayoutEffect(() => {
     if (!needsScrollToBottomRef.current) return;
     const container = scrollRef.current;
-    if (!container || messages.length === 0) {
-      console.log(
-        `[MF-${mountIdRef.current}] useLayoutEffect: needsScroll=true but container=${!!container}, msgs=${messages.length} - SKIP`,
-      );
-      return;
-    }
-    const before = container.scrollTop;
+    if (!container || messages.length === 0) return;
     container.scrollTop = container.scrollHeight;
-    console.log(
-      `[MF-${mountIdRef.current}] useLayoutEffect: scrollTop ${before} -> ${container.scrollTop} (scrollHeight=${container.scrollHeight}, clientHeight=${container.clientHeight})`,
-    );
   });
 
   const getFirstVisibleMessageId = useCallback((): string | null => {
@@ -603,16 +573,7 @@ function MessageFeed({
   }, [messages.length, sessionId, updateVisibleMessages, sendReadStatusForVisibleMessages]);
 
   useEffect(() => {
-    if (!needsScrollToBottomRef.current || messages.length === 0) {
-      console.log(
-        `[MF-${mountIdRef.current}] scroll-interval effect: SKIP (needsScroll=${needsScrollToBottomRef.current}, msgs=${messages.length})`,
-      );
-      return;
-    }
-
-    console.log(
-      `[MF-${mountIdRef.current}] scroll-interval effect: STARTING interval, msgs=${messages.length}`,
-    );
+    if (!needsScrollToBottomRef.current || messages.length === 0) return;
 
     let stopped = false;
     let attempts = 0;
@@ -623,25 +584,15 @@ function MessageFeed({
       const c = scrollRef.current;
       if (!c) return;
 
-      const beforeScrollTop = c.scrollTop;
       c.scrollTop = c.scrollHeight;
 
       attempts++;
       const isAtBot = c.scrollHeight - c.scrollTop - c.clientHeight < 5;
       const hasContent = c.scrollHeight > c.clientHeight + 10;
 
-      if (attempts <= 3 || attempts % 10 === 0) {
-        console.log(
-          `[MF-${mountIdRef.current}] tryScroll #${attempts}: scrollTop ${beforeScrollTop}->${c.scrollTop}, scrollHeight=${c.scrollHeight}, clientHeight=${c.clientHeight}, isAtBot=${isAtBot}, hasContent=${hasContent}`,
-        );
-      }
-
       if ((isAtBot && hasContent) || attempts >= maxAttempts) {
         stopped = true;
         needsScrollToBottomRef.current = false;
-        console.log(
-          `[MF-${mountIdRef.current}] scroll-interval DONE: attempts=${attempts}, isAtBot=${isAtBot}, hasContent=${hasContent}, cleared needsScroll`,
-        );
         setIsAtBottom(true);
         setIsAtTop(false);
         scrollDoneCallbackRef.current?.();
@@ -652,11 +603,6 @@ function MessageFeed({
     tryScroll();
 
     return () => {
-      if (!stopped) {
-        console.log(
-          `[MF-${mountIdRef.current}] scroll-interval CLEANUP (was still running, attempts=${attempts})`,
-        );
-      }
       stopped = true;
       clearInterval(intervalId);
     };
@@ -786,16 +732,10 @@ function MessageFeed({
       e.stopPropagation();
       e.preventDefault();
 
-      if (!quoteMessage) {
-        console.warn('❌ Нет данных о цитируемом сообщении');
-        return;
-      }
+      if (!quoteMessage) return;
 
       const session = getSession(sessionId);
-      if (!session || !session.selectedDialog?.id) {
-        console.warn('❌ Нет активной сессии или диалога');
-        return;
-      }
+      if (!session || !session.selectedDialog?.id) return;
 
       const dialogId = session.selectedDialog.id;
       const messageCreatedAt = quoteMessage.created_at || quoteMessage.createdAt;

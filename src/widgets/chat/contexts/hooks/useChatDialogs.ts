@@ -7,6 +7,7 @@ import api from '../../api';
 export const useChatDialogs = (
   getSession: (sessionId: string) => any,
   updateSession: (sessionId: string, updates: any) => void,
+  onUnreadDialogsLoaded?: (dialogs: UnreadDialog[]) => void,
 ) => {
   const loadingUnreadDialogsRef = useRef<Set<string>>(new Set());
   const loadDialogInProgressRef = useRef<Set<string>>(new Set());
@@ -75,10 +76,12 @@ export const useChatDialogs = (
 
       try {
         const unreadDialogs = await api.getUnreadDialogs();
+        const list = unreadDialogs || [];
         updateSession(sessionId, {
-          unreadDialogs: unreadDialogs || [],
+          unreadDialogs: list,
           isLoadingUnreadDialogs: false,
         });
+        onUnreadDialogsLoaded?.(list);
       } catch {
         updateSession(sessionId, {
           unreadDialogs: [],
@@ -89,7 +92,7 @@ export const useChatDialogs = (
         loadDialogInProgressRef.current.delete(sessionId);
       }
     },
-    [getSession, updateSession],
+    [getSession, updateSession, onUnreadDialogsLoaded],
   );
 
   const forceLoadUnreadDialogs = useCallback(
