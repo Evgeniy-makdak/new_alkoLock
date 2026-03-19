@@ -29,6 +29,8 @@ interface MessageFeedProps {
   unreadCount?: number;
   scrollToBottomOnExpand?: boolean;
   onScrollToBottomDone?: () => void;
+  dialogStatus?: string;
+  isDialogBlockedByOtherOperator?: boolean;
 }
 
 function MessageFeed({
@@ -44,6 +46,8 @@ function MessageFeed({
   unreadCount: externalUnreadCount,
   scrollToBottomOnExpand,
   onScrollToBottomDone,
+  dialogStatus = '',
+  isDialogBlockedByOtherOperator = false,
 }: MessageFeedProps) {
   const mountIdRef = useRef(Math.random().toString(36).slice(2, 6));
   const renderCountRef = useRef(0);
@@ -1195,28 +1199,33 @@ function MessageFeed({
 
               {!isDeleted && (
                 <div className={styles.messageActions}>
-                  <button onClick={(e) => handleReplyClick(msg, e)} title="Ответить">
-                    <FaReply size={12} />
-                  </button>
-
-                  {canEditDelete && (
-                    <>
-                      {isOperatorMessage && (
-                        <button
-                          onClick={(e) => handleEditClick(msg, e)}
-                          title="Редактировать"
-                          disabled={!canEditDelete}>
-                          <BsPencil size={12} />
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => handleDeleteClick(msg, e)}
-                        title="Удалить сообщение"
-                        disabled={!canEditDelete}>
-                        <FaTrash size={12} />
+                  {(dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED') &&
+                    !isDialogBlockedByOtherOperator && (
+                      <button onClick={(e) => handleReplyClick(msg, e)} title="Ответить">
+                        <FaReply size={12} />
                       </button>
-                    </>
-                  )}
+                    )}
+
+                  {canEditDelete &&
+                    (dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED') &&
+                    !isDialogBlockedByOtherOperator && (
+                      <>
+                        {isOperatorMessage && (
+                          <button
+                            onClick={(e) => handleEditClick(msg, e)}
+                            title="Редактировать"
+                            disabled={!canEditDelete}>
+                            <BsPencil size={12} />
+                          </button>
+                        )}
+                        <button
+                          onClick={(e) => handleDeleteClick(msg, e)}
+                          title="Удалить сообщение"
+                          disabled={!canEditDelete}>
+                          <FaTrash size={12} />
+                        </button>
+                      </>
+                    )}
                 </div>
               )}
             </div>

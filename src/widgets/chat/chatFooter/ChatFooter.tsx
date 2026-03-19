@@ -344,7 +344,9 @@ const ChatContainer = () => {
               return (
                 <div
                   key={`unread-${dialog.id}-${session.id}-${index}`}
-                  className={`${styles.minimizedChat} ${styles.unreadDialog}`}
+                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
+                    unreadCount > 0 ? styles.hasUnread : ''
+                  }`}
                   style={{
                     bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
                     right: '540px',

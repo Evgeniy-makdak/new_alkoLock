@@ -337,8 +337,7 @@
 }
 
 // Превью с непрочитанными: лёгкий розовый фон + красный левый бордер
-.minimizedChat.hasUnread,
-.minimizedChat.unreadDialog {
+.minimizedChat.hasUnread {
   border-left: 3px solid #ff4d4f;
   background: linear-gradient(135deg, #fff0f5 0%, #ffffff 100%);
 
