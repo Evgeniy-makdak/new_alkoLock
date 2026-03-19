@@ -338,9 +338,22 @@ function ChatPanel({
 
       if (filteredUsers.length === 0) {
         updateSession(sessionId, {
+          selectedUsers: [],
           selectedUserName: '',
+          selectedDialog: null,
+          assignedDialogId: null,
+          hasLoadedDialogs: false,
           clearMessageInput: true,
           messages: [],
+          pagination: {
+            currentPage: 0,
+            totalPages: 0,
+            totalElements: 0,
+            isLoadingMore: false,
+            isLoadingNext: false,
+            hasMoreMessages: false,
+            hasNextMessages: false,
+          },
         });
         setLocalClearMessageInput(true);
         setAttachments([]);
@@ -398,6 +411,8 @@ function ChatPanel({
 
   const handleUserSelect = useCallback(
     (userId: number, userName: string, userData?: any) => {
+      if (userId === 0) return;
+
       updateSession(sessionId, {
         selectedUsers: [userId],
         selectedUserName: userName,
@@ -572,8 +587,7 @@ function ChatPanel({
     lastSendError,
   } = session;
 
-  const userHasSentMessage =
-    localHasSentMessage || messages.some((msg: { sender: string }) => msg.sender === 'user');
+  const isChipRemovalBlocked = dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED';
 
   if (isMinimized) {
     return (
@@ -623,7 +637,7 @@ function ChatPanel({
           onUserSelect={handleUserSelect}
           isTouched={localIsUsersTouched}
           onBlur={handleUsersBlur}
-          disabled={userHasSentMessage || isDialogEnded}
+          disabled={isChipRemovalBlocked}
           usersCache={usersCache}
           onUpdateUsersCache={updateUsersCache}
           onCheckExistingSession={handleCheckExistingSession}

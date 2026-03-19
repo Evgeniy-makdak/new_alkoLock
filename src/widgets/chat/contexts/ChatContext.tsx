@@ -563,6 +563,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (existingSession) {
+        const sessionHasDialog =
+          existingSession.selectedDialog?.id != null &&
+          String(existingSession.selectedDialog.id) === dialogIdStr;
+
         if (foundViaUnreadDialogs && dialogToOpen) {
           await forceLoadUnreadDialogs(existingSession.id);
           await dialogHandlers.openUnreadDialogWithStatus(
@@ -570,12 +574,61 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             dialogToOpen,
             openUnreadDialog,
           );
+          if (dialogIdStr) {
+            sessionsRef.current.forEach((s: any) => {
+              if (
+                s.id !== existingSession.id &&
+                s.unreadDialogs?.some(
+                  (d: any) => String(d.id) === dialogIdStr || d.id?.toString() === dialogIdStr,
+                )
+              ) {
+                updateSession(s.id, {
+                  unreadDialogs: s.unreadDialogs.filter(
+                    (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
+                  ),
+                });
+              }
+            });
+          }
+        } else if (!sessionHasDialog && dialogIdStr && messageData.dialog) {
+          await forceLoadUnreadDialogs(existingSession.id);
+          const ownerName = messageData.dialog.owner?.fullName || messageData.createdBy?.fullName;
+          updateSession(existingSession.id, {
+            selectedDialog: {
+              ...messageData.dialog,
+              client_name: ownerName || messageData.dialog.client_name,
+            },
+            assignedDialogId: dialogIdStr,
+            selectedUsers: messageData.dialog.owner?.id
+              ? [messageData.dialog.owner.id]
+              : existingSession.selectedUsers,
+            selectedUserName: ownerName || existingSession.selectedUserName,
+            unreadDialogs:
+              existingSession.unreadDialogs?.filter(
+                (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
+              ) || [],
+          });
+          await dialogHandlers.loadDialogHistory(existingSession.id, dialogIdStr, true, 0, true);
+          sessionsRef.current.forEach((s: any) => {
+            if (
+              s.id !== existingSession.id &&
+              s.unreadDialogs?.some(
+                (d: any) => String(d.id) === dialogIdStr || d.id?.toString() === dialogIdStr,
+              )
+            ) {
+              updateSession(s.id, {
+                unreadDialogs: s.unreadDialogs.filter(
+                  (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
+                ),
+              });
+            }
+          });
         }
 
         await messageHandlers.addMessageFromWebSocket(existingSession.id, messageData);
 
         const wasClaimed = existingSession.assignedDialogId || existingSession.selectedDialog?.id;
-        if (foundViaUnreadDialogs) {
+        if (foundViaUnreadDialogs || !sessionHasDialog) {
           expandSession(existingSession.id);
           setActiveSessionId(existingSession.id);
         } else if (existingSession.isMinimized && wasClaimed) {
@@ -641,78 +694,101 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       } else {
         const hasExpanded = currentSessions.some((s) => !s.isMinimized);
+        const dialogId = messageData.dialog?.id ?? messageData.dialogId;
+        const dialogIdStr = dialogId != null ? String(dialogId) : null;
+
         const newSessionId = enhancedCreateNewSession({ asMinimized: hasExpanded });
-        await new Promise((r) => setTimeout(r, 0));
-        const newSession = getSession(newSessionId);
 
-        if (newSession) {
-          const dialogId = messageData.dialog?.id ?? messageData.dialogId;
-          const dialogIdStr = dialogId != null ? String(dialogId) : null;
+        for (let i = 0; i < 20; i++) {
+          await new Promise((r) => setTimeout(r, 50));
+          if (getSession(newSessionId)) break;
+        }
 
-          if (dialogId && messageData.dialog) {
-            updateSession(newSessionId, {
-              selectedDialog: messageData.dialog,
-              assignedDialogId: messageData.dialog.id?.toString() ?? String(dialogId),
-            });
-          }
+        if (dialogId && messageData.dialog) {
+          const ownerName = messageData.dialog.owner?.fullName || messageData.createdBy?.fullName;
+          updateSession(newSessionId, {
+            selectedDialog: {
+              ...messageData.dialog,
+              client_name: ownerName || messageData.dialog.client_name,
+            },
+            assignedDialogId: messageData.dialog.id?.toString() ?? String(dialogId),
+            selectedUserName: ownerName,
+            selectedUsers: messageData.dialog.owner?.id ? [messageData.dialog.owner.id] : [],
+          });
+        }
 
-          if (!hasExpanded && dialogIdStr) {
-            await forceLoadUnreadDialogs(newSessionId);
-            await dialogHandlers.loadDialogHistory(newSessionId, dialogIdStr, true, 0, true);
-          }
+        if (!hasExpanded && dialogIdStr) {
+          await forceLoadUnreadDialogs(newSessionId);
+          await dialogHandlers.loadDialogHistory(newSessionId, dialogIdStr, true, 0, true);
+        }
 
-          await messageHandlers.addMessageFromWebSocket(newSessionId, messageData);
-
-          expandSession(newSessionId);
-          setActiveSessionId(newSessionId);
-
-          fetchUserInfo(parseInt(incomingUserId)).then((userData: any) => {
-            if (userData) {
-              updateSession(newSessionId, {
-                selectedUsers: [userData.id],
-                selectedUserName: getUserFullName(userData),
-                usersCache: new Map([[userData.id, userData]]),
-                hasLoadedDialogs: true,
+        if (dialogIdStr) {
+          [...sessionsRef.current, getSession(newSessionId)].filter(Boolean).forEach((s: any) => {
+            if (
+              s?.unreadDialogs?.some(
+                (d: any) => String(d.id) === dialogIdStr || d.id?.toString() === dialogIdStr,
+              )
+            ) {
+              updateSession(s.id, {
+                unreadDialogs: s.unreadDialogs.filter(
+                  (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
+                ),
               });
-
-              if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
-                const dId = messageData.dialog?.id ?? dialogId;
-                if (dId) {
-                  dialogHandlers
-                    .loadDialogHistory(newSessionId, String(dId), true, 0, true)
-                    .catch(console.error);
-                } else {
-                  dialogHandlers
-                    .refreshMessagesForUserId(newSessionId, userData.id)
-                    .catch(console.error);
-                }
-              }
             }
           });
+        }
 
-          if (dialogId) {
-            updateSessionUnreadCount(newSessionId, String(dialogId));
-          }
+        await messageHandlers.addMessageFromWebSocket(newSessionId, messageData);
 
-          if (
-            messageData.uuid &&
-            !refs.deliveredStatusesRef.current.has(messageData.uuid) &&
-            messageData.messageStatus === 'TO_OPERATOR' &&
-            messageData.confirmStatus === 'SENT'
-          ) {
-            setTimeout(() => {
-              const currentSession = getSession(newSessionId);
-              if (currentSession?.selectedDialog?.status) {
-                const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
-                  newSessionId,
-                  messageData.uuid,
-                );
-                if (sendResult) {
-                  refs.deliveredStatusesRef.current.add(messageData.uuid);
-                }
+        expandSession(newSessionId);
+        setActiveSessionId(newSessionId);
+
+        fetchUserInfo(parseInt(incomingUserId)).then((userData: any) => {
+          if (userData) {
+            updateSession(newSessionId, {
+              selectedUsers: [userData.id],
+              selectedUserName: getUserFullName(userData),
+              usersCache: new Map([[userData.id, userData]]),
+              hasLoadedDialogs: true,
+            });
+
+            if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
+              const dId = messageData.dialog?.id ?? dialogId;
+              if (dId) {
+                dialogHandlers
+                  .loadDialogHistory(newSessionId, String(dId), true, 0, true)
+                  .catch(console.error);
+              } else {
+                dialogHandlers
+                  .refreshMessagesForUserId(newSessionId, userData.id)
+                  .catch(console.error);
               }
-            }, 1000);
+            }
           }
+        });
+
+        if (dialogId) {
+          updateSessionUnreadCount(newSessionId, String(dialogId));
+        }
+
+        if (
+          messageData.uuid &&
+          !refs.deliveredStatusesRef.current.has(messageData.uuid) &&
+          messageData.messageStatus === 'TO_OPERATOR' &&
+          messageData.confirmStatus === 'SENT'
+        ) {
+          setTimeout(() => {
+            const currentSession = getSession(newSessionId);
+            if (currentSession?.selectedDialog?.status) {
+              const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
+                newSessionId,
+                messageData.uuid,
+              );
+              if (sendResult) {
+                refs.deliveredStatusesRef.current.add(messageData.uuid);
+              }
+            }
+          }, 1000);
         }
       }
     },

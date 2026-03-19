@@ -52,34 +52,6 @@
   z-index: 1000;
 }
 
-.minimizedChat {
-  position: fixed;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 8px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  min-width: 200px;
-  max-width: 300px;
-  
-  .minimizedHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    
-    h3 {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
-    }
-  }
-}
-
 .panel {
   display: flex;
   flex-direction: column;
@@ -172,39 +144,6 @@
 .minimizedChats {
   position: fixed;
   z-index: 1000;
-}
-
-.minimizedChat {
-  position: fixed;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 8px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  min-width: 200px;
-  max-width: 300px;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
-  .minimizedHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    
-    span {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
-    }
-  }
 }
 
 .chatFooter {
@@ -302,47 +241,50 @@
 
 .minimizedChat {
   position: fixed;
-  background-color: white;
-  border: 1px solid #ccc;
+  width: 280px;
+  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   border-radius: 8px;
   padding: 8px 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
   cursor: pointer;
-  min-width: 200px;
-  max-width: 300px;
   transition: all 0.3s ease;
-  
-  &:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-  
+
   .minimizedHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    
-    span {
+    gap: 8px;
+    min-width: 0;
+
+    > span:first-of-type {
+      flex: 1;
+      min-width: 0;
       margin: 0;
       font-size: 14px;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 200px;
     }
   }
-}
 
-// Единый стиль для превью с непрочитанными: розоватый фон + красный левый бордер
-.minimizedChat {
-  &.hasUnread,
-  &.unreadDialog {
+  // Фон и красный бордер только при наличии непрочитанных
+  &.hasUnread {
     border-left: 3px solid #ff6b6b;
     background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
     &:hover {
       background: linear-gradient(135deg, #ffe3e3 0%, #fff5f5 100%);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
+  }
+
+  &:hover:not(.hasUnread) {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: rgba(0, 0, 0, 0.12);
   }
 }
 
@@ -362,14 +304,15 @@
   font-weight: 500;
 }
 
-// Новые стили для последнего сообщения в минимизированном чате
-.lastMessage {
+// Стили для последнего сообщения в минимизированном чате
+.minimizedChat .lastMessage {
   font-size: 12px;
   color: #777;
   margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 // ====================================================
@@ -386,7 +329,7 @@
   }
 
   .minimizedChat {
-    max-width: 280px;
+    width: 280px;
     right: 480px;
   }
 }
@@ -411,7 +354,7 @@
   }
 
   .minimizedChat {
-    max-width: 260px;
+    width: 260px;
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -463,8 +406,7 @@
   }
 
   .minimizedChat {
-    max-width: calc(100vw - 40px);
-    width: 280px;
+    width: min(280px, calc(100vw - 40px));
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -520,8 +462,7 @@
   }
 
   .minimizedChat {
-    width: calc(100vw - 40px);
-    max-width: 280px;
+    width: min(280px, calc(100vw - 40px));
     
     &:nth-child(1) { bottom: calc(70vh + 40px); }
     &:nth-child(2) { bottom: calc(70vh + 100px); }
@@ -569,8 +510,7 @@
   }
 
   .minimizedChat {
-    width: calc(100vw - 30px);
-    max-width: 250px;
+    width: min(250px, calc(100vw - 30px));
     padding: 6px 10px;
     
     &:nth-child(1) { bottom: calc(65vh + 30px); }
@@ -578,9 +518,8 @@
     &:nth-child(3) { bottom: calc(65vh + 150px); }
     &:nth-child(4) { bottom: calc(65vh + 210px); }
     
-    .minimizedHeader span {
+    .minimizedHeader > span:first-of-type {
       font-size: 13px;
-      max-width: 160px;
     }
   }
 

@@ -320,14 +320,6 @@ const ChatContainer = () => {
               <span className={styles.unreadBadge}>
                 {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
               </span>
-              <IconButton
-                size="small"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeSession(session.id);
-                }}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
             </div>
             {session.messages.length > 0 && (
               <div className={styles.lastMessage}>
@@ -352,7 +344,9 @@ const ChatContainer = () => {
               return (
                 <div
                   key={`unread-${dialog.id}-${session.id}-${index}`}
-                  className={`${styles.minimizedChat} ${styles.unreadDialog}`}
+                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
+                    unreadCount > 0 ? styles.hasUnread : ''
+                  }`}
                   style={{
                     bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
                     right: '540px',
@@ -366,13 +360,6 @@ const ChatContainer = () => {
                   <div className={styles.minimizedHeader}>
                     <span>{dialog.owner.fullName}</span>
                     <span className={styles.unreadBadge}>{unreadCount}</span>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                      }}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
                   </div>
                   <div className={styles.lastMessage}>
                     {unreadCount > 0
