@@ -52,6 +52,34 @@
   z-index: 1000;
 }
 
+.minimizedChat {
+  position: fixed;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  min-width: 200px;
+  max-width: 300px;
+  
+  .minimizedHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    
+    h3 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+    }
+  }
+}
+
 .panel {
   display: flex;
   flex-direction: column;
@@ -144,6 +172,42 @@
 .minimizedChats {
   position: fixed;
   z-index: 1000;
+}
+
+// Базовый стиль превью: почти без оформления, только мягкий серый бордер
+.minimizedChat {
+  position: fixed;
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(160, 160, 160, 0.4);
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: none;
+  cursor: pointer;
+  width: 260px; // фиксированный размер превью, чтобы все были одинаковыми
+  transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, background-color 0.18s ease-out,
+    border-color 0.18s ease-out;
+
+  &:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    border-color: rgba(140, 140, 140, 0.7);
+  }
+
+  .minimizedHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    span {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+  }
 }
 
 .chatFooter {
@@ -241,50 +305,46 @@
 
 .minimizedChat {
   position: fixed;
-  width: 280px;
-  box-sizing: border-box;
-  background-color: rgba(255, 255, 255, 0.95);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: white;
+  border: 1px solid #ccc;
   border-radius: 8px;
   padding: 8px 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
+  min-width: 200px;
+  max-width: 300px;
   transition: all 0.3s ease;
-
+  
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+  
   .minimizedHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
-    min-width: 0;
-
-    > span:first-of-type {
-      flex: 1;
-      min-width: 0;
+    
+    span {
       margin: 0;
       font-size: 14px;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 200px;
     }
   }
+}
 
-  // Фон и красный бордер только при наличии непрочитанных
-  &.hasUnread {
-    border-left: 3px solid #ff6b6b;
-    background: linear-gradient(135deg, #fff5f5 0%, #fff 100%);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+// Превью с непрочитанными: лёгкий розовый фон + красный левый бордер
+.minimizedChat.hasUnread,
+.minimizedChat.unreadDialog {
+  border-left: 3px solid #ff4d4f;
+  background: linear-gradient(135deg, #fff0f5 0%, #ffffff 100%);
 
-    &:hover {
-      background: linear-gradient(135deg, #ffe3e3 0%, #fff5f5 100%);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-  }
-
-  &:hover:not(.hasUnread) {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-color: rgba(0, 0, 0, 0.12);
+  &:hover {
+    background: linear-gradient(135deg, #ffe4ec 0%, #fff0f5 100%);
+    box-shadow: 0 8px 22px rgba(255, 77, 79, 0.28);
   }
 }
 
@@ -304,15 +364,14 @@
   font-weight: 500;
 }
 
-// Стили для последнего сообщения в минимизированном чате
-.minimizedChat .lastMessage {
+// Новые стили для последнего сообщения в минимизированном чате
+.lastMessage {
   font-size: 12px;
   color: #777;
   margin-top: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-width: 0;
 }
 
 // ====================================================
@@ -329,7 +388,7 @@
   }
 
   .minimizedChat {
-    width: 280px;
+    max-width: 280px;
     right: 480px;
   }
 }
@@ -354,7 +413,7 @@
   }
 
   .minimizedChat {
-    width: 260px;
+    max-width: 260px;
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -406,7 +465,8 @@
   }
 
   .minimizedChat {
-    width: min(280px, calc(100vw - 40px));
+    max-width: calc(100vw - 40px);
+    width: 280px;
     right: auto;
     left: 50%;
     transform: translateX(-50%);
@@ -462,7 +522,8 @@
   }
 
   .minimizedChat {
-    width: min(280px, calc(100vw - 40px));
+    width: calc(100vw - 40px);
+    max-width: 280px;
     
     &:nth-child(1) { bottom: calc(70vh + 40px); }
     &:nth-child(2) { bottom: calc(70vh + 100px); }
@@ -510,7 +571,8 @@
   }
 
   .minimizedChat {
-    width: min(250px, calc(100vw - 30px));
+    width: calc(100vw - 30px);
+    max-width: 250px;
     padding: 6px 10px;
     
     &:nth-child(1) { bottom: calc(65vh + 30px); }
@@ -518,8 +580,9 @@
     &:nth-child(3) { bottom: calc(65vh + 150px); }
     &:nth-child(4) { bottom: calc(65vh + 210px); }
     
-    .minimizedHeader > span:first-of-type {
+    .minimizedHeader span {
       font-size: 13px;
+      max-width: 160px;
     }
   }
 
