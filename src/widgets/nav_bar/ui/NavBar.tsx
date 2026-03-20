@@ -380,6 +380,7 @@ export const NavBar = () => {
                 <AppLanguageSelect
                   className={style.languageSwitcher}
                   formControlClassName={style.langSelect}
+                  showLanguageName
                 />
 
                 <div className={style.versionItem}>
@@ -404,6 +405,7 @@ export const NavBar = () => {
                     className={style.languageSwitcherMobile}
                     formControlClassName={style.langSelectMobile}
                     size="small"
+                    showLanguageName
                   />
                 </div>
               )}

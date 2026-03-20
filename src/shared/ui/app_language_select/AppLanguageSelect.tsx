@@ -18,12 +18,15 @@ type AppLanguageSelectProps = {
   size?: 'small' | 'medium';
   /** Оставлено для совместимости; модалка сама по ширине контента. */
   fullWidth?: boolean;
+  /** Показать название текущего языка справа от флага (как в тултипе). */
+  showLanguageName?: boolean;
 };
 
 export function AppLanguageSelect({
   className,
   formControlClassName,
   size = 'medium',
+  showLanguageName = false,
 }: AppLanguageSelectProps) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -49,24 +52,35 @@ export function AppLanguageSelect({
 
   const currentLanguageLabel = t(`common.languageName.${current}`);
 
+  const trigger = (
+    <Tooltip title={currentLanguageLabel}>
+      <button
+        type="button"
+        className={triggerClass}
+        aria-label={currentLanguageLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}>
+        <img
+          src={APP_LANGUAGE_FLAG_SRC[current]}
+          alt=""
+          className={triggerFlagClass}
+          draggable={false}
+        />
+      </button>
+    </Tooltip>
+  );
+
   return (
     <div className={className}>
-      <Tooltip title={currentLanguageLabel}>
-        <button
-          type="button"
-          className={triggerClass}
-          aria-label={currentLanguageLabel}
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          onClick={() => setOpen(true)}>
-          <img
-            src={APP_LANGUAGE_FLAG_SRC[current]}
-            alt=""
-            className={triggerFlagClass}
-            draggable={false}
-          />
-        </button>
-      </Tooltip>
+      {showLanguageName ? (
+        <div className={style.triggerRow}>
+          {trigger}
+          <span className={style.inlineLanguageName}>{currentLanguageLabel}</span>
+        </div>
+      ) : (
+        trigger
+      )}
 
       <Dialog
         open={open}

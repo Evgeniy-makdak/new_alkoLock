@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   Autocomplete,
@@ -62,8 +63,11 @@ export function SearchMultipleSelect<T>({
   onInputChange,
   serverFilter = true,
   getTooltipTitle,
+  slotProps: userSlotProps,
   ...rest
 }: SearchMultipleSelectProps<T>) {
+  const { t } = useTranslation();
+  const clearLabel = t('datePicker.clear');
   const [inputState, setInputState] = useState('');
   const [focused, setFocused] = useState(false);
   const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
@@ -187,10 +191,20 @@ export function SearchMultipleSelect<T>({
 
   const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
 
+  const mergedSlotProps = {
+    ...userSlotProps,
+    clearIndicator: {
+      ...userSlotProps?.clearIndicator,
+      title: clearLabel,
+      'aria-label': clearLabel,
+    },
+  };
+
   return (
     <div className={style.searchSelect}>
       <Autocomplete
         {...rest}
+        slotProps={mergedSlotProps}
         getOptionLabel={(option) => {
           // ВАЖНОЕ ИСПРАВЛЕНИЕ: всегда возвращаем строку
           if (typeof option === 'string') return option;
