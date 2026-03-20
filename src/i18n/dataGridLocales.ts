@@ -34,9 +34,17 @@ export const getDataGridLocaleText = () => {
         }
       : {};
 
+  const sortLocaleText = {
+    columnHeaderSortIconLabel: t('tables.dataGrid.columnHeaderSortIconLabel'),
+    columnMenuSortAsc: t('tables.dataGrid.columnMenuSortAsc'),
+    columnMenuSortDesc: t('tables.dataGrid.columnMenuSortDesc'),
+    columnMenuUnsort: t('tables.dataGrid.columnMenuUnsort'),
+  };
+
   return {
     ...base,
     ...uzGridPatch,
+    ...sortLocaleText,
     labelRowsPerPage: t('tables.rowsPerPage'),
     labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
       t('pagination.rowsOf', { from, to, count }),

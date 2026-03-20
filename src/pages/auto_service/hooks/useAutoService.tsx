@@ -2,12 +2,14 @@
 
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { HistoryTypes } from '@entities/events_data';
 import { EventsHistory } from '@features/events_history';
 import { AutoServiceInfo } from '@widgets/auto_service_info';
 
 export const useAutoService = () => {
+  const { t } = useTranslation();
   const [selectedItemId, setSelectedItemId] = useState<{
     id: string | number;
     deviceId: string | number;
@@ -27,13 +29,13 @@ export const useAutoService = () => {
 
   const tabs = [
     {
-      name: 'ИНФО',
+      name: t('info.infoTab'),
       content: (
         <AutoServiceInfo selectedId={selectedItemId?.id} handleCloseAside={handleCloseAside} />
       ),
     },
     {
-      name: 'ИСТОРИЯ',
+      name: t('info.historyTab'),
       content: (
         <EventsHistory
           type={HistoryTypes.byAlcolock}

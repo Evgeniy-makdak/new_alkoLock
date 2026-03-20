@@ -53,6 +53,7 @@
     "close": "Закрыть",
     "closeWindow": "Закрыть окно",
     "addTemplate": "Добавить шаблон",
+    "refreshList": "Обновить список",
     "sort": "Сортировать",
     "sortTooltip": "Сортировать",
     "contains": "Содержит",
@@ -133,6 +134,12 @@
     "cancel": "Отменить"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Сортировать",
+      "columnMenuSortAsc": "Сортировать по возрастанию",
+      "columnMenuSortDesc": "Сортировать по убыванию",
+      "columnMenuUnsort": "Отменить сортировку"
+    },
     "date": "Дата",
     "initiator": "Инициатор",
     "vehicle": "Транспорт",

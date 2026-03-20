@@ -53,6 +53,7 @@
     "close": "Зачыніць",
     "closeWindow": "Зачыніць акно",
     "addTemplate": "Дадаць шаблон",
+    "refreshList": "Абнавіць спіс",
     "sort": "Сартаваць",
     "sortTooltip": "Сартаваць",
     "contains": "Змяшчае",
@@ -133,6 +134,12 @@
     "clearDate": "Ачысціць дату"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Сартаваць",
+      "columnMenuSortAsc": "Сартаваць па ўзрастанні",
+      "columnMenuSortDesc": "Сартаваць па змяншэнні",
+      "columnMenuUnsort": "Скасаваць сартаванне"
+    },
     "date": "Дата",
     "initiator": "Ініцыятар",
     "vehicle": "Транспарт",

@@ -52,6 +52,7 @@
     "close": "Жабу",
     "closeWindow": "Терезені жабу",
     "addTemplate": "Үлгі қосу",
+    "refreshList": "Тізімді жаңарту",
     "sort": "Сұрыптау",
     "sortTooltip": "Сұрыптау",
     "contains": "Қамтиды",
@@ -132,6 +133,12 @@
     "clearDate": "Күнді тазарту"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Сұрыптау",
+      "columnMenuSortAsc": "Өсу ретімен сұрыптау",
+      "columnMenuSortDesc": "Кему ретімен сұрыптау",
+      "columnMenuUnsort": "Сұрыптауды болдырмау"
+    },
     "date": "Күні",
     "initiator": "Бастамашы",
     "vehicle": "Көлік",

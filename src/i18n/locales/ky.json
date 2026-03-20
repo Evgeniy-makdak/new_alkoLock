@@ -52,6 +52,7 @@
     "close": "Жабуу",
     "closeWindow": "Терезени жабуу",
     "addTemplate": "Үлгү кошуу",
+    "refreshList": "Тизмени жаңылоо",
     "sort": "Иреттөө",
     "sortTooltip": "Иреттөө",
     "contains": "Камтайт",
@@ -132,6 +133,12 @@
     "clearDate": "Күнү тазалоо"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Иреттөө",
+      "columnMenuSortAsc": "Өсүү боюнча иреттөө",
+      "columnMenuSortDesc": "Кемүү боюнча иреттөө",
+      "columnMenuUnsort": "Иреттөөнү жокко чыгаруу"
+    },
     "date": "Күнү",
     "initiator": "Демилгечи",
     "vehicle": "Транспорт",

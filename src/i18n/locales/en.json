@@ -53,6 +53,7 @@
     "close": "Close",
     "closeWindow": "Close window",
     "addTemplate": "Add template",
+    "refreshList": "Refresh list",
     "sort": "Sort",
     "sortTooltip": "Sort",
     "contains": "Contains",
@@ -133,6 +134,12 @@
     "cancel": "Cancel"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Sort",
+      "columnMenuSortAsc": "Sort by ascending",
+      "columnMenuSortDesc": "Sort by descending",
+      "columnMenuUnsort": "Unsort"
+    },
     "date": "Date",
     "initiator": "Initiator",
     "vehicle": "Vehicle",

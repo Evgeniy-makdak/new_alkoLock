@@ -54,7 +54,7 @@ export const useVehicles = () => {
   const tabs = [
     {
       testid: testids.page_transports.transports_widget_info.TRANSPORTS_WIDGET_INFO_TAB_BUTTON_INFO,
-      name: 'ИНФО',
+      name: t('info.infoTab'),
       content: <VehiclesInfo closeTab={closeTabWidthUpdate} selectedCarId={selectedCarId} />,
     },
     {

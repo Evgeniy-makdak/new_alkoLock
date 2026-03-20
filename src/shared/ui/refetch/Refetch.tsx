@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ReplayIcon from '@mui/icons-material/Replay';
 import { type SvgIconProps, Tooltip } from '@mui/material';
@@ -18,6 +19,7 @@ export const Refetch = ({
   rest?: SvgIconProps;
   styles?: string;
 }) => {
+  const { t } = useTranslation();
   const [animate, setAnimate] = useState<string | null>(null);
 
   const onClickAnimate = async () => {
@@ -39,7 +41,7 @@ export const Refetch = ({
       data-testid={testId}
       className={`${style.button} ${styles}`}
       onClick={() => debounced()}>
-      <Tooltip title="Обновить список">
+      <Tooltip title={t('common.refreshList')}>
         <ReplayIcon className={animate || ''} {...rest} />
       </Tooltip>
     </button>

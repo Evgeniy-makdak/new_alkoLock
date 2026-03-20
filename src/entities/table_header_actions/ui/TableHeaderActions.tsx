@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
 import { Tooltip } from '@mui/material';
@@ -23,13 +24,14 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
   newRefetch,
   hasCreatePermission = true,
 }) => {
+  const { t } = useTranslation();
   const showAddAction = !!onClickAddIcon && hasCreatePermission;
   return (
     <div className={showAddAction ? style.headerAction : style.refetchWrapper}>
       <Refetch testId={testids.TABLE_REFETCH_TABLE_DATA_BUTTON} onClick={newRefetch} />
       {showAddAction && (
         <span onClick={onClickAddIcon} data-testid={testidAddIcon}>
-          <Tooltip title="Добавить">
+          <Tooltip title={t('common.add')}>
             <GridActionsCellItem
               key={'add'}
               icon={<AddIcon style={{ color: '#000' }} />}

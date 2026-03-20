@@ -91,6 +91,10 @@ class ConfigLoader {
     return this.config;
   }
 
+  isLoaded(): boolean {
+    return this.config !== null;
+  }
+
   /** Сброс конфига для принудительной перезагрузки при следующем loadConfig() */
   reset(): void {
     this.config = null;

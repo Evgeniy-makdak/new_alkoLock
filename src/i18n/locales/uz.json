@@ -52,6 +52,7 @@
     "close": "Yopish",
     "closeWindow": "Oyni yopish",
     "addTemplate": "Shablon qo'shish",
+    "refreshList": "Ro'yxatni yangilash",
     "sort": "Saralash",
     "sortTooltip": "Saralash",
     "contains": "O'z ichiga oladi",
@@ -132,6 +133,12 @@
     "clearDate": "Sanani tozalash"
   },
   "tables": {
+    "dataGrid": {
+      "columnHeaderSortIconLabel": "Saralash",
+      "columnMenuSortAsc": "O'sish bo'yicha saralash",
+      "columnMenuSortDesc": "Kamayish bo'yicha saralash",
+      "columnMenuUnsort": "Saralashni bekor qilish"
+    },
     "date": "Sana",
     "initiator": "Tashabbuskor",
     "vehicle": "Transport",

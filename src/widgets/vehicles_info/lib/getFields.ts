@@ -53,7 +53,7 @@ export const getFields = (carData: ICar, t?: TFunction) => {
       value: { label: type ?? '-' },
     },
     {
-      label: tr('info.registrationDate'),
+      label: tr('tables.registrationDate'),
       type: TypeOfRows.DATE,
       value: {
         label: Formatters.formatISODate(carData?.createdAt),

@@ -13,7 +13,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
 
-const PICKERS_LOCALE_MAP: Record<
+export const PICKERS_LOCALE_MAP: Record<
   string,
   {
     localeText: typeof ruRU.components.MuiLocalizationProvider.defaultProps.localeText;
@@ -45,6 +45,12 @@ const PICKERS_LOCALE_MAP: Record<
     adapterLocale: 'uz-latn',
   },
 };
+
+/** localeText для корневого LocalizationProvider (без Adapter — см. MuiLocalizationProvider в формах). */
+export function getPickersLocaleTextForLang(lang: string | undefined) {
+  const base = (lang || 'ru').split('-')[0].toLowerCase();
+  return (PICKERS_LOCALE_MAP[base] ?? PICKERS_LOCALE_MAP.ru).localeText;
+}
 
 type MuiLocalizationProviderProps = {
   children: ReactNode;

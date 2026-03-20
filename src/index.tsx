@@ -8,15 +8,11 @@ import { SnackbarProvider, closeSnackbar } from 'notistack';
 import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgress } from '@mui/material';
 import StyledEngineProvider from '@mui/material/StyledEngineProvider';
-import { ruRU as coreRuRU } from '@mui/material/locale';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { ruRU as dataGridRuRU } from '@mui/x-data-grid/locales';
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { ruRU as pickersRuRU } from '@mui/x-date-pickers/locales';
 
 import { ServiceModeProvider } from '@features/alkozamki_service_mode/hooks/ServiceModeContext';
 import { ErrorBoundary } from '@layout/error_boundary';
 import { UserProvider } from '@pages/users/UserContext';
+import { LocaleThemeProvider } from '@shared/components/locale_theme_provider';
 import { routers } from '@shared/config/routers';
 import { UserStatusProvider } from '@shared/ui/refetch/UserStatusContext';
 import { StatusFilterProvider } from '@shared/ui/search_multiple_select/StatusFilterContext';
@@ -35,50 +31,44 @@ import * as serviceWorker from './serviceWorker';
 
 const queryClient = new QueryClient();
 
-// Создаём тему с русской локализацией
-const theme = createTheme(coreRuRU, pickersRuRU, dataGridRuRU);
-
 const AppContent = (
   <>
     <ErrorBoundary>
       <UserProvider>
         <QueryClientProvider client={queryClient}>
           <StyledEngineProvider injectFirst>
-            <ThemeProvider theme={theme}>
-              <LocalizationProvider
-                localeText={pickersRuRU.components.MuiLocalizationProvider.defaultProps.localeText}>
-                <AutoServiceInfoProvider>
-                  <UserStatusProvider>
-                    <ServiceModeProvider>
-                      <UserContextProvider>
-                        <CountProvider>
-                          <AlkoContextProvider>
-                            <StatusFilterProvider>
-                              <DeviceStatusProvider>
-                                <SocketProvider>
-                                  <SnackbarProvider
-                                    action={(snackbarId) => (
-                                      <CloseIcon
-                                        className="CloseIcon"
-                                        onClick={() => closeSnackbar(snackbarId)}
-                                      />
-                                    )}
-                                    maxSnack={3}
-                                    anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-                                    autoHideDuration={null}>
-                                    <RouterProvider router={routers} />
-                                  </SnackbarProvider>
-                                </SocketProvider>
-                              </DeviceStatusProvider>
-                            </StatusFilterProvider>
-                          </AlkoContextProvider>
-                        </CountProvider>
-                      </UserContextProvider>
-                    </ServiceModeProvider>
-                  </UserStatusProvider>
-                </AutoServiceInfoProvider>
-              </LocalizationProvider>
-            </ThemeProvider>
+            <LocaleThemeProvider>
+              <AutoServiceInfoProvider>
+                <UserStatusProvider>
+                  <ServiceModeProvider>
+                    <UserContextProvider>
+                      <CountProvider>
+                        <AlkoContextProvider>
+                          <StatusFilterProvider>
+                            <DeviceStatusProvider>
+                              <SocketProvider>
+                                <SnackbarProvider
+                                  action={(snackbarId) => (
+                                    <CloseIcon
+                                      className="CloseIcon"
+                                      onClick={() => closeSnackbar(snackbarId)}
+                                    />
+                                  )}
+                                  maxSnack={3}
+                                  anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                  autoHideDuration={null}>
+                                  <RouterProvider router={routers} />
+                                </SnackbarProvider>
+                              </SocketProvider>
+                            </DeviceStatusProvider>
+                          </StatusFilterProvider>
+                        </AlkoContextProvider>
+                      </CountProvider>
+                    </UserContextProvider>
+                  </ServiceModeProvider>
+                </UserStatusProvider>
+              </AutoServiceInfoProvider>
+            </LocaleThemeProvider>
           </StyledEngineProvider>
         </QueryClientProvider>
       </UserProvider>
@@ -93,19 +83,29 @@ async function bootstrap() {
     configLoader.reset();
     await configLoader.loadConfig();
   } catch (e) {
-    console.error('Ошибка загрузки конфигурации:', e);
+    // eslint-disable-next-line no-console
+    console.error(e);
   }
-  root.render(AppContent);
-}
 
-root.render(
-  <div
-    style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-    <CircularProgress />
-  </div>,
-);
+  root.render(
+    <React.StrictMode>
+      {configLoader.isLoaded() ? (
+        AppContent
+      ) : (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100vh',
+          }}>
+          <CircularProgress />
+        </div>
+      )}
+    </React.StrictMode>,
+  );
+}
 
 bootstrap();
 
-// Регистрируем сервис-воркер
-serviceWorker.register();
+serviceWorker.unregister();

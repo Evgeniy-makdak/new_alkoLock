@@ -1,0 +1,1 @@
+export { LocaleThemeProvider } from './LocaleThemeProvider';
