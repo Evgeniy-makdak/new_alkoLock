@@ -111,7 +111,7 @@ export const Authorization = () => {
         </Loader>
 
         <div className={style.copyright}>
-          © 2009-{new Date().getFullYear()} АО «Лазерные системы». Все права защищены
+          {t('auth.copyright', { year: new Date().getFullYear() })}
         </div>
       </div>
     </div>

@@ -324,7 +324,7 @@ export const TableHeader = ({
                   <div
                     className={style.desktopResetButton}
                     style={{ marginLeft: '50px', marginRight: '20px' }}>
-                    <ResetFilters title={t('common.resetFilters')} reset={resetAllFilters} />
+                    <ResetFilters reset={resetAllFilters} />
                   </div>
                 </div>
               </StyledTable.HeaderCell>
@@ -375,7 +375,7 @@ export const TableHeader = ({
                       flexShrink: 0,
                       minWidth: '140px',
                     }}>
-                    <ResetFilters title={t('common.resetFilters')} reset={resetAllFilters} />
+                    <ResetFilters reset={resetAllFilters} />
                   </div>
                 </div>
               </StyledTable.HeaderCell>

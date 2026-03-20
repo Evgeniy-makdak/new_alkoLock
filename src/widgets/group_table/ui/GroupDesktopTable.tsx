@@ -178,7 +178,6 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

@@ -426,20 +426,15 @@
 
 .languageSwitcher {
   margin-bottom: 4px;
-  width: 100%;
-  max-width: 112px;
+  width: auto;
+  max-width: none;
   align-self: flex-start;
   padding-right: 8px;
   box-sizing: border-box;
 }
 
 .langSelect {
-  width: 100%;
-  max-width: 112px;
-
-  :global(.MuiInputBase-root) {
-    font-size: 13px;
-  }
+  flex-shrink: 0;
 }
 
 .versionItem {
@@ -463,9 +458,9 @@
   color: #667a8a;
   text-transform: none;
   font-size: 16px;
-  padding: 8px 12px;
+  padding: 8px 16px;
   min-width: auto;
-  width: 100%;
+  // width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;

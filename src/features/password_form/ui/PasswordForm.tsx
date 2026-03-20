@@ -1,4 +1,5 @@
 import { type FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@mui/material';
 
@@ -14,6 +15,7 @@ type PasswordFormProps = {
 };
 
 export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
+  const { t } = useTranslation();
   const {
     currentPasswordError,
     newPasswordError,
@@ -28,7 +30,7 @@ export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
   return (
     <>
       <Typography fontWeight={600} marginBottom={2}>
-        Изменение пароля
+        {t('passwordForm.title')}
       </Typography>
       <InputsColumnWrapper>
         <InputPassword
@@ -41,7 +43,7 @@ export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
           fullWidth
           type="password"
           variant="outlined"
-          label="Текущий пароль"
+          label={t('passwordForm.currentPassword')}
         />
         <InputPassword
           error={!!newPasswordError}
@@ -53,7 +55,7 @@ export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
           fullWidth
           type="password"
           variant="outlined"
-          label="Новый пароль"
+          label={t('passwordForm.newPassword')}
         />
         <InputPassword
           error={!!confirmNewPasswordError}
@@ -65,15 +67,15 @@ export const PasswordForm: FC<PasswordFormProps> = ({ close }) => {
           fullWidth
           type="password"
           variant="outlined"
-          label="Подтвердите пароль"
+          label={t('passwordForm.confirmPassword')}
         />
       </InputsColumnWrapper>
       <ButtonFormWrapper>
         <Button typeButton={ButtonsType.action} disabled={isNotValidForm} onClick={handleSubmit}>
-          Сохранить
+          {t('passwordForm.save')}
         </Button>
         <Button typeButton={ButtonsType.action} onClick={close}>
-          Отменить
+          {t('passwordForm.cancel')}
         </Button>
       </ButtonFormWrapper>
     </>

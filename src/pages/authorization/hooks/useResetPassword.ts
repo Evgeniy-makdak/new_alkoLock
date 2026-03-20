@@ -12,6 +12,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
 import { Form, schema } from '../lib/validateReset';
 
 interface ResetPasswordResponse {
@@ -109,7 +110,7 @@ export const useResetPassword = () => {
         const res = response as ResetPasswordResponse;
 
         if (res?.status === StatusCode.SUCCESS) {
-          enqueueSnackbar(res.data.message, {
+          enqueueSnackbar(i18n.t('auth.resetCodeEmailSent', { email: data.email }), {
             variant: 'success',
           });
           navigate(RoutePaths.confirmPassword, {

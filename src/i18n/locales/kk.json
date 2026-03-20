@@ -28,6 +28,8 @@
     "branch": "Филиал"
   },
   "common": {
+    "showPassword": "Құпия сөзді көрсету",
+    "hidePassword": "Құпия сөзді жасыру",
     "language": "Тіл",
     "save": "Сақтау",
     "cancel": "Болдырмау",
@@ -52,7 +54,15 @@
     "addTemplate": "Үлгі қосу",
     "sort": "Сұрыптау",
     "sortTooltip": "Сұрыптау",
-    "contains": "Қамтиды"
+    "contains": "Қамтиды",
+    "languageName": {
+      "ru": "Орыс тілі",
+      "en": "Ағылшын тілі",
+      "kk": "Қазақ тілі",
+      "ky": "Қырғыз тілі",
+      "be": "Беларус тілі",
+      "uz": "Өзбек тілі"
+    }
   },
   "history": {
     "startDate": "Бастапқы күн",
@@ -68,7 +78,11 @@
     "notValidName": "Аты дұрыс емес",
     "notValidVin": "VIN дұрыс емес",
     "notValidPasswordLength": "Құпия сөз кем дегенде 8 таңбадан тұруы керек",
-    "passwordsNotMustMatch": "Құпия сөздер сәйкес келмейді"
+    "passwordsNotMustMatch": "Құпия сөздер сәйкес келмейді",
+    "passwordCharsetRule": "Құпия сөзде латын және/немесе кирилл әріптері және кем дегенде бір сан болуы керек. Арнайы таңбалар мен тыныс белгілеріне рұқсат етіледі.",
+    "verificationCodeLength": "Код 6 таңбадан тұруы керек",
+    "newPasswordMustDifferFromCurrent": "Жаңа құпия сөз ағымдағы құпия сөзбен сәйкес келмеуі керек",
+    "stringHasInvalidSpaces": "Жолда рұқсат етілмеген бос орындар бар"
   },
   "auth": {
     "login": "Кіру",
@@ -78,7 +92,44 @@
     "title": "Ақпараттық жүйе",
     "titleProduct": "«Алкозамок-М СМАРТ»",
     "enter": "Кіру",
-    "resetPassword": "Құпия сөзді қалпына келтіру"
+    "resetPassword": "Құпия сөзді қалпына келтіру",
+    "copyright": "© 2009-{{year}} «Лазерные системы» АҚ. Барлық құқықтар қорғалған",
+    "resetPasswordTitle": "Құпия сөзді қалпына келтіру",
+    "resetPasswordDescription": "Жүйеде тіркелген пайдаланушының email-ін енгізіңіз — құпия сөзді қалпына келтіру үшін растау коды жіберіледі.",
+    "send": "Жіберу",
+    "confirmCodeIntro": "Электрондық поштаңызға жіберілген хаттағы 6 таңбалы кодты енгізіңіз.",
+    "confirmCodeValidFor": "Код жарамды:",
+    "confirmCodeExpired": "Кодтың мерзімі өткен",
+    "confirmCodeLabel": "Растау коды",
+    "resendCode": "Растау кодын қайта жіберу",
+    "resendCodeWait": "({{seconds}} с)",
+    "emailNotDetermined": "Email анықталмады",
+    "codeResent": "Код қайта жіберілді",
+    "resendFailed": "Кодты қайта жіберу сәтсіз аяқталды",
+    "setPasswordTitle": "Құпия сөзді өзгерту",
+    "setPasswordLine1": "Жалғастыру үшін жаңа құпия сөз орнатыңыз.",
+    "setPasswordLine2": "Сәтті жаңартудан кейін сіз",
+    "setPasswordLine3": "кіру экранына бағытталасыз.",
+    "setNewPassword": "Жаңа құпия сөзді орнату",
+    "confirmNewPassword": "Құпия сөзді растау",
+    "resetCodeEmailSent": "Коды бар хат {{email}} мекенжайына жіберілді",
+    "codeConfirmed": "Код расталды"
+  },
+  "passwordForm": {
+    "title": "Құпия сөзді өзгерту",
+    "currentPassword": "Ағымдағы құпия сөз",
+    "newPassword": "Жаңа құпия сөз",
+    "confirmPassword": "Құпия сөзді растаңыз",
+    "save": "Сақтау",
+    "cancel": "Болдырмау"
+  },
+  "datePicker": {
+    "clear": "Тазарту",
+    "openCalendar": "Күнтізбе",
+    "nextMonth": "Келесі ай",
+    "previousMonth": "Алдыңғы ай",
+    "switchView": "Көріністі ауыстыру",
+    "clearDate": "Күнді тазарту"
   },
   "tables": {
     "date": "Күні",

@@ -1,6 +1,6 @@
 import * as yup from 'yup';
 
-import { ValidationMessages } from '@shared/validations/validation_messages';
+import i18n from '../../../i18n';
 
 export type Form = {
   email: string; // email обязателен
@@ -9,10 +9,9 @@ export type Form = {
 export const schema: yup.ObjectSchema<Form> = yup.object({
   email: yup
     .string()
-    .required(ValidationMessages.required)
-    .email(ValidationMessages.notValidEmail)
-    .matches(
-      /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-      ValidationMessages.notValidEmail,
-    ) as yup.StringSchema<string>, // Явное указание типа
+    .required(() => i18n.t('validation.required'))
+    .email(() => i18n.t('validation.notValidEmail'))
+    .matches(/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, () =>
+      i18n.t('validation.notValidEmail'),
+    ) as yup.StringSchema<string>,
 });

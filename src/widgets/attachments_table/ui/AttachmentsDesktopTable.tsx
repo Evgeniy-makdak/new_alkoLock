@@ -192,7 +192,6 @@ export const AttachmentsDesktopTable = ({
           }
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             const event = new CustomEvent('resetFilters');
             window.dispatchEvent(event);

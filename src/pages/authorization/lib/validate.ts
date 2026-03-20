@@ -1,28 +1,25 @@
 import * as yup from 'yup';
 
 import type { UserDataLogin } from '@shared/types/BaseQueryTypes';
-import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
 
+import i18n from '../../../i18n';
+
 export type Form = UserDataLogin;
+
+const PASSWORD_COMPLEXITY =
+  /^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/;
 
 const validatePassword = (value: string, ctx: yup.TestContext<Form>) => {
   if (!value) return true;
 
-  // Проверка длины
   if (value.length < 8) {
-    return ctx.createError({ message: 'Минимальная длина пароля должна быть 8 символов' });
+    return ctx.createError({ message: i18n.t('validation.notValidPasswordLength') });
   }
 
-  // Проверка содержимого
-  if (
-    !/^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/.test(
-      value,
-    )
-  ) {
+  if (!PASSWORD_COMPLEXITY.test(value)) {
     return ctx.createError({
-      message:
-        'Пароль должен содержать буквы латинского и/или кириллического алфавитов, а также цифры. Допускаются спец.символы и знаки пунктуации',
+      message: i18n.t('validation.passwordCharsetRule'),
     });
   }
 
@@ -33,24 +30,24 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
   detail: yup.string().optional(),
   password: yup
     .string()
-    .required(ValidationMessages.required)
+    .required(() => i18n.t('validation.required'))
     .test({
       name: 'passwordValidation',
-      // @ts-expect-error% временное решение
+      // @ts-expect-error: временное решение
       test: (value, ctx) => validatePassword(value, ctx),
     }),
   username: yup
     .string()
-    .required(ValidationMessages.required)
+    .required(() => i18n.t('validation.required'))
     .test({
       name: 'emailValidation',
       test: (value, ctx) => {
         if (value.length === 0) {
-          return ctx.createError({ message: ValidationMessages.required });
+          return ctx.createError({ message: i18n.t('validation.required') });
         }
         const errors = ValidationRules.emailValidation(value);
         if (errors.length > 0) {
-          return ctx.createError({ message: ValidationMessages.notValidEmail });
+          return ctx.createError({ message: i18n.t('validation.notValidEmail') });
         }
         return true;
       },
@@ -62,7 +59,7 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
       if (!value) return true;
       const errors = ValidationRules.emailValidation(value);
       if (errors.length > 0) {
-        return ctx.createError({ message: ValidationMessages.notValidEmail });
+        return ctx.createError({ message: i18n.t('validation.notValidEmail') });
       }
       return true;
     },

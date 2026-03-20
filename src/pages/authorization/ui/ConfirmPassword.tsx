@@ -1,5 +1,6 @@
 /* eslint-disable no-console */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
@@ -12,7 +13,17 @@ import { Logo } from '@shared/ui/logo';
 import { useConfirmPassword } from '../hooks/useConfirmPassword';
 import style from './Authorization.module.scss';
 
+function formatRemainingMmSs(diffMs: number): string {
+  const totalSec = Math.max(0, Math.floor(diffMs / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const mm = String(m).padStart(2, '0');
+  const ss = String(s).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
 export const ConfirmPassword = () => {
+  const { t } = useTranslation();
   const {
     isLoading,
     handleSubmit,
@@ -25,50 +36,31 @@ export const ConfirmPassword = () => {
     codeExpiration,
   } = useConfirmPassword();
 
-  const [timeLeft, setTimeLeft] = useState<string>('');
+  const [countdown, setCountdown] = useState<'expired' | { mmss: string } | null>(null);
 
   useEffect(() => {
     if (!codeExpiration) return;
 
-    const interval = setInterval(() => {
+    const tick = () => {
       try {
         const expirationDate = new Date(codeExpiration);
         const now = new Date();
         const diffMs = expirationDate.getTime() - now.getTime();
-
         if (diffMs <= 0) {
-          setTimeLeft('Код больше не действителен');
-          clearInterval(interval);
-          return;
+          setCountdown('expired');
+        } else {
+          setCountdown({ mmss: formatRemainingMmSs(diffMs) });
         }
-
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        const diffSecs = Math.floor((diffMs % (1000 * 60)) / 1000);
-
-        const minsText = diffMins > 0 ? `${diffMins} ${getMinutesText(diffMins)}` : '';
-        const secsText = diffSecs > 0 ? `${diffSecs} ${getSecondsText(diffSecs)}` : '';
-
-        setTimeLeft(`${minsText}${minsText && secsText ? ' ' : ''}${secsText}`);
       } catch (e) {
         console.error('Error parsing date:', e);
-        clearInterval(interval);
       }
-    }, 1000);
+    };
+
+    tick();
+    const interval = setInterval(tick, 1000);
 
     return () => clearInterval(interval);
   }, [codeExpiration]);
-
-  const getMinutesText = (mins: number) => {
-    if (mins % 10 === 1 && mins % 100 !== 11) return 'минуты';
-    if ([2, 3, 4].includes(mins % 10) && ![12, 13, 14].includes(mins % 100)) return 'минут';
-    return 'минут';
-  };
-
-  const getSecondsText = (secs: number) => {
-    if (secs % 10 === 1 && secs % 100 !== 11) return 'секунды';
-    if ([2, 3, 4].includes(secs % 10) && ![12, 13, 14].includes(secs % 100)) return 'секунд';
-    return 'секунд';
-  };
 
   return (
     <div className={style.authorization}>
@@ -83,11 +75,17 @@ export const ConfirmPassword = () => {
       </div>
       <div className={style.wrapper}>
         <p className={style.changePassword}>
-          Введите 6-значный код, полученный в письме, отправленном на Ваш электронный адрес.
-          <br />
-          {timeLeft && (
+          {t('auth.confirmCodeIntro')}
+          {countdown === 'expired' && (
             <>
-              Код действителен в течение <strong>{timeLeft}</strong>
+              <br />
+              <strong>{t('auth.confirmCodeExpired')}</strong>
+            </>
+          )}
+          {countdown && countdown !== 'expired' && (
+            <>
+              <br />
+              {t('auth.confirmCodeValidFor')} <strong>{countdown.mmss}</strong>
             </>
           )}
         </p>
@@ -108,7 +106,7 @@ export const ConfirmPassword = () => {
                 fullWidth
                 type="text"
                 variant="outlined"
-                label="Код подтверждения"
+                label={t('auth.confirmCodeLabel')}
                 inputProps={{
                   maxLength: 6,
                   onPaste: (e) => {
@@ -118,13 +116,11 @@ export const ConfirmPassword = () => {
                     document.execCommand('insertText', false, cleaned);
                   },
                   onKeyPress: (e) => {
-                    // Блокируем ввод пробела
                     if (e.key === ' ') {
                       e.preventDefault();
                     }
                   },
                   onChange: (e) => {
-                    // Автоматически удаляем пробелы при ручном вводе
                     const target = e.target as HTMLInputElement;
                     target.value = target.value.replace(/\s/g, '');
                   },
@@ -137,7 +133,7 @@ export const ConfirmPassword = () => {
               className={style.button}
               disabled={isLoading}
               type="submit">
-              Отправить
+              {t('auth.send')}
             </button>
             <button
               data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
@@ -145,7 +141,8 @@ export const ConfirmPassword = () => {
               disabled={isResendDisabled}
               onClick={handleResendCode}
               type="button">
-              Выслать проверочный код повторно {isResendDisabled && `(${secondsLeft} сек)`}
+              {t('auth.resendCode')}
+              {isResendDisabled && ` ${t('auth.resendCodeWait', { seconds: secondsLeft })}`}
             </button>
           </form>
         </Loader>

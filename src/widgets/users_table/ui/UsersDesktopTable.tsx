@@ -278,7 +278,6 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

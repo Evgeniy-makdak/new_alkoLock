@@ -29,6 +29,8 @@
     "brandName": "Лазерные системы"
   },
   "common": {
+    "showPassword": "Паказаць пароль",
+    "hidePassword": "Схаваць пароль",
     "language": "Мова",
     "save": "Захаваць",
     "cancel": "Адмена",
@@ -53,7 +55,15 @@
     "addTemplate": "Дадаць шаблон",
     "sort": "Сартаваць",
     "sortTooltip": "Сартаваць",
-    "contains": "Змяшчае"
+    "contains": "Змяшчае",
+    "languageName": {
+      "ru": "Руская",
+      "en": "Англійская",
+      "kk": "Казахская",
+      "ky": "Кыргызская",
+      "be": "Беларуская",
+      "uz": "Узбекская"
+    }
   },
   "history": {
     "startDate": "Пачатковая дата",
@@ -69,7 +79,11 @@
     "notValidName": "Некарэктнае імя",
     "notValidVin": "Некарэктны VIN",
     "notValidPasswordLength": "Пароль павінен змяшчаць мінімум 8 сімвалаў",
-    "passwordsNotMustMatch": "Паролі не супадаюць"
+    "passwordsNotMustMatch": "Паролі не супадаюць",
+    "passwordCharsetRule": "Пароль павінен змяшчаць літары лацінскага і/або кірылічнага алфавіта, а таксама лічбы. Дапускаюцца спецыяльныя сімвалы і знакі прыпынку",
+    "verificationCodeLength": "Код павінен змяшчаць 6 сімвалаў",
+    "newPasswordMustDifferFromCurrent": "Новы пароль не павінен супадаць з бягучым",
+    "stringHasInvalidSpaces": "У радку ёсць недапушчальныя прабелы"
   },
   "auth": {
     "login": "Логін",
@@ -79,7 +93,44 @@
     "title": "Інфармацыйная сістэма",
     "titleProduct": "«Алказамок-М СМАРТ»",
     "enter": "Уваход",
-    "resetPassword": "Аднавіць пароль"
+    "resetPassword": "Аднавіць пароль",
+    "copyright": "© 2009-{{year}} ААТ «Лазерные системы». Усе правы абаронены",
+    "resetPasswordTitle": "Аднаўленне пароля",
+    "resetPasswordDescription": "Увядзіце email карыстальніка, зарэгістраванага ў сістэме, каб адправіць код пацвярджэння для аднаўлення пароля.",
+    "send": "Адправіць",
+    "confirmCodeIntro": "Увядзіце 6-значны код з ліста, адпраўленага на ваш электронны адрас.",
+    "confirmCodeValidFor": "Код дзейнічае на працягу",
+    "confirmCodeExpired": "Тэрмін дзеяння кода скончыўся",
+    "confirmCodeLabel": "Код пацвярджэння",
+    "resendCode": "Выслаць код пацвярджэння паўторна",
+    "resendCodeWait": "({{seconds}} сек)",
+    "emailNotDetermined": "Не ўдалося вызначыць email",
+    "codeResent": "Код адпраўлены паўторна",
+    "resendFailed": "Не ўдалося адправіць код паўторна",
+    "setPasswordTitle": "Змена пароля",
+    "setPasswordLine1": "Перад працягам устанавіце новы пароль.",
+    "setPasswordLine2": "Пасля паспяховага абнаўлення пароля вы будзеце перанакіраваны на",
+    "setPasswordLine3": "экран уваходу ў сістэму.",
+    "setNewPassword": "Устанавіць новы пароль",
+    "confirmNewPassword": "Пацвярджэнне пароля",
+    "resetCodeEmailSent": "Ліст з кодам адпраўлены на адрас {{email}}",
+    "codeConfirmed": "Код пацверджаны"
+  },
+  "passwordForm": {
+    "title": "Змяненне пароля",
+    "currentPassword": "Бягучы пароль",
+    "newPassword": "Новы пароль",
+    "confirmPassword": "Пацвердзіце пароль",
+    "save": "Захаваць",
+    "cancel": "Адмена"
+  },
+  "datePicker": {
+    "clear": "Ачысціць",
+    "openCalendar": "Каляндар",
+    "nextMonth": "Наступны месяц",
+    "previousMonth": "Папярэдні месяц",
+    "switchView": "Пераключыць выгляд",
+    "clearDate": "Ачысціць дату"
   },
   "tables": {
     "date": "Дата",

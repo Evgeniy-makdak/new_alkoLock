@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { TextField } from '@mui/material';
@@ -12,6 +13,7 @@ import { useResetPassword } from '../hooks/useResetPassword';
 import style from './Authorization.module.scss';
 
 export const ResetPassword = () => {
+  const { t } = useTranslation();
   const { isLoading, handleSubmit, register, errorUsername } = useResetPassword();
 
   return (
@@ -26,14 +28,8 @@ export const ResetPassword = () => {
         </Link>
       </div>
       <div className={style.wrapper}>
-        <h1 className={style.title}>Восстановление пароля</h1>
-        <p className={style.changePassword}>
-          Введите email пользователя,
-          <br />
-          зарегистрированного в системе, для отправки
-          <br />
-          кода подтверждения на восстановления пароля.
-        </p>
+        <h1 className={style.title}>{t('auth.resetPasswordTitle')}</h1>
+        <p className={style.changePassword}>{t('auth.resetPasswordDescription')}</p>
         <Loader
           isLoading={isLoading}
           props={{
@@ -53,7 +49,7 @@ export const ResetPassword = () => {
                 fullWidth
                 type="text"
                 variant="outlined"
-                label="Email"
+                label={t('tables.email')}
               />
             </InputsColumnWrapper>
             <button
@@ -61,7 +57,7 @@ export const ResetPassword = () => {
               className={style.button}
               disabled={isLoading}
               type="submit">
-              Отправить
+              {t('auth.send')}
             </button>
           </form>
         </Loader>

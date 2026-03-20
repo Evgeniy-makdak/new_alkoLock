@@ -125,28 +125,18 @@
   position: absolute;
   top: 24px;
   right: 24px;
-  width: 120px;
+  width: auto;
   z-index: 2;
 }
 
 .authLangSelect {
-  width: 100%;
-  max-width: 120px;
-
-  :global(.MuiInputBase-root) {
-    font-size: 13px;
-  }
+  flex-shrink: 0;
 }
 
 @media (max-width: 768px) {
   .languageSwitcher {
     top: 16px;
     right: 16px;
-    width: 100px;
-  }
-
-  .authLangSelect {
-    max-width: 100px;
   }
 }
 .loader {

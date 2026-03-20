@@ -28,6 +28,8 @@
     "branch": "Filial"
   },
   "common": {
+    "showPassword": "Parolni ko'rsatish",
+    "hidePassword": "Parolni yashirish",
     "language": "Til",
     "save": "Saqlash",
     "cancel": "Bekor qilish",
@@ -52,7 +54,15 @@
     "addTemplate": "Shablon qo'shish",
     "sort": "Saralash",
     "sortTooltip": "Saralash",
-    "contains": "O'z ichiga oladi"
+    "contains": "O'z ichiga oladi",
+    "languageName": {
+      "ru": "Rus tili",
+      "en": "Ingliz tili",
+      "kk": "Qozoq tili",
+      "ky": "Qirg'iz tili",
+      "be": "Belarus tili",
+      "uz": "O'zbek tili"
+    }
   },
   "history": {
     "startDate": "Boshlanish sanasi",
@@ -68,7 +78,11 @@
     "notValidName": "Noto'g'ri ism",
     "notValidVin": "Noto'g'ri VIN",
     "notValidPasswordLength": "Parol kamida 8 belgidan iborat bo'lishi kerak",
-    "passwordsNotMustMatch": "Parollar mos kelmaydi"
+    "passwordsNotMustMatch": "Parollar mos kelmaydi",
+    "passwordCharsetRule": "Parolda lotin va/yoki kirill harflari hamda kamida bitta raqam bo'lishi kerak. Maxsus belgilar va tinish belgilariga ruxsat beriladi.",
+    "verificationCodeLength": "Kod 6 belgidan iborat bo'lishi kerak",
+    "newPasswordMustDifferFromCurrent": "Yangi parol joriy parol bilan mos kelmasligi kerak",
+    "stringHasInvalidSpaces": "Qatorda ruxsat etilmagan bo'shliqlar bor"
   },
   "auth": {
     "login": "Login",
@@ -78,7 +92,44 @@
     "title": "Axborot tizimi",
     "titleProduct": "«Alkozamok-M SMART»",
     "enter": "Kirish",
-    "resetPassword": "Parolni tiklash"
+    "resetPassword": "Parolni tiklash",
+    "copyright": "© 2009-{{year}} «Лазерные системы» AJ. Barcha huquqlar himoyalangan",
+    "resetPasswordTitle": "Parolni tiklash",
+    "resetPasswordDescription": "Tizimda ro'yxatdan o'tgan foydalanuvchining email manzilini kiriting — parolni tiklash uchun tasdiqlash kodi yuboriladi.",
+    "send": "Yuborish",
+    "confirmCodeIntro": "Elektron pochtangizga yuborilgan xatdagi 6 xonali kodni kiriting.",
+    "confirmCodeValidFor": "Kod amal qiladi:",
+    "confirmCodeExpired": "Kodning muddati tugagan",
+    "confirmCodeLabel": "Tasdiqlash kodi",
+    "resendCode": "Tasdiqlash kodini qayta yuborish",
+    "resendCodeWait": "({{seconds}} s)",
+    "emailNotDetermined": "Email aniqlanmadi",
+    "codeResent": "Kod qayta yuborildi",
+    "resendFailed": "Kodni qayta yuborib bo'lmadi",
+    "setPasswordTitle": "Parolni o'zgartirish",
+    "setPasswordLine1": "Davom etishdan oldin yangi parol o'rnating.",
+    "setPasswordLine2": "Muvaffaqiyatli yangilashdan keyin siz",
+    "setPasswordLine3": "kirish ekraniga yo'naltirilasiz.",
+    "setNewPassword": "Yangi parol o'rnatish",
+    "confirmNewPassword": "Parolni tasdiqlash",
+    "resetCodeEmailSent": "Kodli xat {{email}} manziliga yuborildi",
+    "codeConfirmed": "Kod tasdiqlandi"
+  },
+  "passwordForm": {
+    "title": "Parolni o'zgartirish",
+    "currentPassword": "Joriy parol",
+    "newPassword": "Yangi parol",
+    "confirmPassword": "Parolni tasdiqlang",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish"
+  },
+  "datePicker": {
+    "clear": "Tozalash",
+    "openCalendar": "Taqvim",
+    "nextMonth": "Keyingi oy",
+    "previousMonth": "Oldingi oy",
+    "switchView": "Ko'rinishni almashtirish",
+    "clearDate": "Sanani tozalash"
   },
   "tables": {
     "date": "Sana",

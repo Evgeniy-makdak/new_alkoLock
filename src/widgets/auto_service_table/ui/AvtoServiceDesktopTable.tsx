@@ -191,7 +191,6 @@ export const AvtoServiceDesktopTable = ({
           valueEndDatePicker={filterData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filterData.clearDates();
             filterData.setInput('');

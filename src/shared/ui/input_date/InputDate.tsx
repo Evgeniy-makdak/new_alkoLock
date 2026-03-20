@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { FC, forwardRef, useId, useState } from 'react';
+import React, { FC, forwardRef, useCallback, useId, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/ru';
@@ -42,7 +43,8 @@ const createTooltipButton = (tooltipTitle: string, ariaLabel: string, extraOnCli
     );
   });
 
-const CustomMenuItem = (props: PickersActionBarProps) => {
+const ClearActionMenuItem = (props: PickersActionBarProps) => {
+  const { t } = useTranslation();
   const { onClear } = props;
   const id = useId();
   return (
@@ -56,7 +58,7 @@ const CustomMenuItem = (props: PickersActionBarProps) => {
         borderRadius: '3px',
       }}
       key={id}>
-      Очистить
+      {t('datePicker.clear')}
     </MenuItem>
   );
 };
@@ -108,40 +110,42 @@ const newTheme = (theme?: Theme) => ({
 });
 
 export const InputDate: FC<MyInputDateProps> = (props) => {
-  const { tooltipTitle = 'Календарь' } = props;
+  const { t } = useTranslation();
+  const { tooltipTitle } = props;
+  const calendarTooltip = tooltipTitle ?? t('datePicker.openCalendar');
   const theme = props.theme || {};
   const myTheme = createTheme(newTheme() as Theme);
   const textFieldProps = props?.slotProps?.textField || {};
   const [open, setOpen] = useState(false);
   const minDate = props.minDateFlag ? dayjs().add(1, 'day') : undefined;
 
-  const handleOpen = () => {
+  const handleOpen = useCallback(() => {
     setOpen(true);
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setOpen(false);
-  };
+  }, []);
 
-  const OpenPickerButton = React.useMemo(
-    () => createTooltipButton(tooltipTitle, tooltipTitle, handleOpen),
-    [tooltipTitle],
+  const OpenPickerButton = useMemo(
+    () => createTooltipButton(calendarTooltip, calendarTooltip, handleOpen),
+    [calendarTooltip, handleOpen],
   );
-  const NextIconButton = React.useMemo(
-    () => createTooltipButton('Следующий месяц', 'Следующий месяц'),
-    [],
+  const NextIconButton = useMemo(
+    () => createTooltipButton(t('datePicker.nextMonth'), t('datePicker.nextMonth')),
+    [t],
   );
-  const PreviousIconButton = React.useMemo(
-    () => createTooltipButton('Предыдущий месяц', 'Предыдущий месяц'),
-    [],
+  const PreviousIconButton = useMemo(
+    () => createTooltipButton(t('datePicker.previousMonth'), t('datePicker.previousMonth')),
+    [t],
   );
-  const SwitchViewButton = React.useMemo(
-    () => createTooltipButton('Переключить вид', 'Переключить вид'),
-    [],
+  const SwitchViewButton = useMemo(
+    () => createTooltipButton(t('datePicker.switchView'), t('datePicker.switchView')),
+    [t],
   );
-  const ClearButton = React.useMemo(
-    () => createTooltipButton('Очистить дату', 'Очистить дату'),
-    [],
+  const ClearButton = useMemo(
+    () => createTooltipButton(t('datePicker.clearDate'), t('datePicker.clearDate')),
+    [t],
   );
 
   return (
@@ -154,7 +158,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
           onClose={handleClose}
           minDate={minDate}
           slots={{
-            actionBar: CustomMenuItem,
+            actionBar: ClearActionMenuItem,
             openPickerButton: OpenPickerButton,
             nextIconButton: NextIconButton,
             previousIconButton: PreviousIconButton,

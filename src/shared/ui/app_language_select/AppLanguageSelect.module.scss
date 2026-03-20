@@ -1,0 +1,144 @@
+.trigger {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #1976d2;
+    outline-offset: 2px;
+  }
+}
+
+.triggerSmall {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+}
+
+.triggerFlag {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.triggerFlagSmall {
+  width: 30px;
+  height: 30px;
+}
+
+.dialogPaper {
+  border-radius: 12px;
+  max-width: min(640px, calc(100vw - 24px));
+  width: 100%;
+  margin: 12px;
+  box-sizing: border-box;
+}
+
+.dialogContent {
+  overflow: visible !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  box-sizing: border-box;
+}
+
+.dialogTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 8px;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.closeButton {
+  margin: -8px -6px -8px 8px;
+}
+
+/* 6 языков: 2 колонки × 3 ряда — всё помещается без горизонтального скролла */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+  padding: 4px 0 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.langItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #1976d2;
+    outline-offset: 0;
+  }
+}
+
+.langItemActive {
+  background: rgba(25, 118, 210, 0.08);
+}
+
+.langFlagCircle {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fafafa;
+  flex-shrink: 0;
+}
+
+.langFlagImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}
+
+.langName {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  min-width: 0;
+  flex: 1;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

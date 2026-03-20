@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
@@ -11,6 +12,7 @@ import { useForgetPassword } from '../hooks/useForgetPassword';
 import style from './Authorization.module.scss';
 
 export const ForgetPassword = () => {
+  const { t } = useTranslation();
   const { isLoading, handleSubmit, register, control, errorNewPassword, errorRepeatNewPassword } =
     useForgetPassword();
 
@@ -26,11 +28,11 @@ export const ForgetPassword = () => {
         </Link>
       </div>
       <div className={style.wrapper}>
-        <h1 className={style.title}>Смена пароля</h1>
+        <h1 className={style.title}>{t('auth.setPasswordTitle')}</h1>
         <p className={style.changePassword}>
-          Перед продолжением работы установите новый пароль. <br />
-          После успешного обновления пароля вы будете перенаправлены на <br /> экран входа в
-          систему.
+          {t('auth.setPasswordLine1')} <br />
+          {t('auth.setPasswordLine2')} <br />
+          {t('auth.setPasswordLine3')}
         </p>
         <Loader
           isLoading={isLoading}
@@ -53,7 +55,7 @@ export const ForgetPassword = () => {
                 fullWidth
                 type="password"
                 variant="outlined"
-                label="Новый пароль"
+                label={t('passwordForm.newPassword')}
               />
               <InputPassword
                 helperText={errorRepeatNewPassword as React.ReactNode}
@@ -66,7 +68,7 @@ export const ForgetPassword = () => {
                 fullWidth
                 type="password"
                 variant="outlined"
-                label="Подтверждение пароля"
+                label={t('auth.confirmNewPassword')}
               />
               <input type="submit" style={{ display: 'none' }} />
             </InputsColumnWrapper>
@@ -75,7 +77,7 @@ export const ForgetPassword = () => {
               className={style.button}
               disabled={isLoading}
               type="submit">
-              Установить новый пароль
+              {t('auth.setNewPassword')}
             </button>
           </form>
         </Loader>

@@ -203,7 +203,7 @@ export const UsersMobileTable = ({
         </div>
 
         <div className={styles.filterActions}>
-          <ResetFilters title="Сбросить фильтры" reset={handleResetAllFilters} />
+          <ResetFilters reset={handleResetAllFilters} />
         </div>
       </div>
 

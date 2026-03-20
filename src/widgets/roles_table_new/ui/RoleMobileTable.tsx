@@ -178,7 +178,7 @@ export const RoleMobileTable = ({ onRoleClick }: RoleMobileTableProps) => {
         />
 
         <div className={styles.resetFiltersContainer}>
-          <ResetFilters title="Сбросить фильтры" reset={handleResetAllFilters} />
+          <ResetFilters reset={handleResetAllFilters} />
         </div>
       </div>
 

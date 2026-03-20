@@ -291,7 +291,6 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

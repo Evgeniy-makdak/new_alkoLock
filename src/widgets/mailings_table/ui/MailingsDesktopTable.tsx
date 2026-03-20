@@ -233,7 +233,6 @@ export const MailingsDesktopTable: FC<MailingsDesktopTableProps> = ({
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

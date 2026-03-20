@@ -14,6 +14,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
 import { Form, schema } from '../lib/validateConfirm';
 
 export const useConfirmPassword = () => {
@@ -59,13 +60,13 @@ export const useConfirmPassword = () => {
 
   const handleResendCode = async () => {
     if (!email) {
-      enqueueSnackbar('Не удалось определить email', { variant: 'error' });
+      enqueueSnackbar(i18n.t('auth.emailNotDetermined'), { variant: 'error' });
       return;
     }
 
     try {
       const response = await UsersApi.resetPassword({ email });
-      enqueueSnackbar('Код отправлен повторно', { variant: 'success' });
+      enqueueSnackbar(i18n.t('auth.codeResent'), { variant: 'success' });
 
       // Обновляем время истечения кода из ответа сервера
       // @ts-expect-error: временное решение
@@ -85,13 +86,13 @@ export const useConfirmPassword = () => {
         });
       }, 1000);
     } catch (error) {
-      enqueueSnackbar('Не удалось отправить код повторно', { variant: 'error' });
+      enqueueSnackbar(i18n.t('auth.resendFailed'), { variant: 'error' });
     }
   };
 
   const onSubmit = async (data: Form) => {
     if (!email) {
-      enqueueSnackbar('Не удалось определить email', { variant: 'error' });
+      enqueueSnackbar(i18n.t('auth.emailNotDetermined'), { variant: 'error' });
       return;
     }
 
@@ -160,7 +161,7 @@ export const useConfirmPassword = () => {
           data: { message: string };
         }) => {
           if (response?.status === StatusCode.SUCCESS) {
-            enqueueSnackbar(response?.data.message, { variant: 'success' });
+            enqueueSnackbar(i18n.t('auth.codeConfirmed'), { variant: 'success' });
             navigate(RoutePaths.forgetPassword, {
               state: { email: email },
             });

@@ -206,7 +206,6 @@ export const EventsDesktopTable = ({
           }
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

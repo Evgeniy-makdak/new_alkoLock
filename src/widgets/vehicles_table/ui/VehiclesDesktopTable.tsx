@@ -224,7 +224,6 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
           valueEndDatePicker={filtersData.endDate}
         />
         <ResetFilters
-          title="Сбросить фильтры"
           reset={() => {
             filtersData.clearDates();
             filtersData.setInput('');

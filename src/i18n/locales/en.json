@@ -29,6 +29,8 @@
     "brandName": "Laser Systems"
   },
   "common": {
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
     "language": "Language",
     "save": "Save",
     "cancel": "Cancel",
@@ -53,7 +55,15 @@
     "addTemplate": "Add template",
     "sort": "Sort",
     "sortTooltip": "Sort",
-    "contains": "Contains"
+    "contains": "Contains",
+    "languageName": {
+      "ru": "Russian",
+      "en": "English",
+      "kk": "Kazakh",
+      "ky": "Kyrgyz",
+      "be": "Belarusian",
+      "uz": "Uzbek"
+    }
   },
   "history": {
     "startDate": "Start date",
@@ -69,7 +79,11 @@
     "notValidName": "Invalid name",
     "notValidVin": "Invalid VIN",
     "notValidPasswordLength": "Password must be at least 8 characters",
-    "passwordsNotMustMatch": "Passwords do not match"
+    "passwordsNotMustMatch": "Passwords do not match",
+    "passwordCharsetRule": "The password must include Latin and/or Cyrillic letters and at least one digit. Special characters and punctuation are allowed.",
+    "verificationCodeLength": "The code must be 6 characters",
+    "newPasswordMustDifferFromCurrent": "The new password must not match the current password",
+    "stringHasInvalidSpaces": "The value contains invalid spaces"
   },
   "auth": {
     "login": "Login",
@@ -79,7 +93,44 @@
     "title": "Information system",
     "titleProduct": "«Alcolock-M SMART»",
     "enter": "Sign in",
-    "resetPassword": "Reset password"
+    "resetPassword": "Reset password",
+    "copyright": "© 2009-{{year}} JSC «Laser Systems». All rights reserved",
+    "resetPasswordTitle": "Password recovery",
+    "resetPasswordDescription": "Enter the email of a user registered in the system to receive a confirmation code for password recovery.",
+    "send": "Send",
+    "confirmCodeIntro": "Enter the 6-digit code from the email sent to your address.",
+    "confirmCodeValidFor": "The code is valid for",
+    "confirmCodeExpired": "The code is no longer valid",
+    "confirmCodeLabel": "Confirmation code",
+    "resendCode": "Resend verification code",
+    "resendCodeWait": "({{seconds}} s)",
+    "emailNotDetermined": "Could not determine email",
+    "codeResent": "Code sent again",
+    "resendFailed": "Failed to resend code",
+    "setPasswordTitle": "Change password",
+    "setPasswordLine1": "Set a new password before continuing.",
+    "setPasswordLine2": "After a successful update you will be redirected to",
+    "setPasswordLine3": "the sign-in screen.",
+    "setNewPassword": "Set new password",
+    "confirmNewPassword": "Confirm password",
+    "resetCodeEmailSent": "An email with the code has been sent to {{email}}",
+    "codeConfirmed": "Code confirmed"
+  },
+  "datePicker": {
+    "clear": "Clear",
+    "openCalendar": "Calendar",
+    "nextMonth": "Next month",
+    "previousMonth": "Previous month",
+    "switchView": "Switch view",
+    "clearDate": "Clear date"
+  },
+  "passwordForm": {
+    "title": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "tables": {
     "date": "Date",

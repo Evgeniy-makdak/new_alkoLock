@@ -9,6 +9,8 @@ import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
 
+import i18n from '../../../i18n';
+
 export type Form = {
   firstName: string;
   surname: string;
@@ -170,7 +172,7 @@ const isStringMatchGapStartOrFinish = (value: string) => {
 // 🔧 FIX: Улучшенная валидация для обязательных полей - проверяем пробелы
 const validateRequiredField = (value: string, context: yup.TestContext<Form>) => {
   if (!value || value.trim().length === 0) {
-    return context.createError({ message: ValidationMessages.required });
+    return context.createError({ message: i18n.t('validation.required') });
   }
 
   if (isStringMatchGapStartOrFinish(value)) {
@@ -180,23 +182,21 @@ const validateRequiredField = (value: string, context: yup.TestContext<Form>) =>
   return true;
 };
 
+const PASSWORD_COMPLEXITY_USER =
+  /^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/;
+
 const validatePassword = (value: string, context: yup.TestContext<Form>) => {
   if (isStringMatchGapStartOrFinish(value)) {
-    return context.createError({ message: 'В строке есть пробелы' });
+    return context.createError({ message: i18n.t('validation.stringHasInvalidSpaces') });
   }
 
   if (value.length < 8) {
-    return context.createError({ message: 'Минимальная длина пароля должна быть 8 символов' });
+    return context.createError({ message: i18n.t('validation.notValidPasswordLength') });
   }
 
-  if (
-    !/^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/.test(
-      value,
-    )
-  ) {
+  if (!PASSWORD_COMPLEXITY_USER.test(value)) {
     return context.createError({
-      message:
-        'Пароль должен содержать буквы латинского и/или кириллического алфавитов, а также цифры. Допускаются спец.символы и знаки пунктуации',
+      message: i18n.t('validation.passwordCharsetRule'),
     });
   }
 
@@ -209,12 +209,12 @@ const validateEmail = (value: string, context: yup.TestContext<Form>) => {
   }
 
   if (value.length === 0) {
-    return context.createError({ message: ValidationMessages.required });
+    return context.createError({ message: i18n.t('validation.required') });
   }
 
   const errors = ValidationRules.emailValidation(value);
   if (errors.length > 0) {
-    return context.createError({ message: ValidationMessages.notValidEmail });
+    return context.createError({ message: i18n.t('validation.notValidEmail') });
   }
 
   return true;
@@ -279,7 +279,7 @@ export const schema = (
     }),
     email: yup
       .string()
-      .required(ValidationMessages.required)
+      .required(() => i18n.t('validation.required'))
       .test({
         name: 'email',
         // @ts-expect-error% временное решение
@@ -289,7 +289,7 @@ export const schema = (
       name: 'password',
       test(value, context) {
         if (value.length === 0 && !id) {
-          return context.createError({ message: ValidationMessages.required });
+          return context.createError({ message: i18n.t('validation.required') });
         }
         if (value.length === 0 && id) return true;
         // @ts-expect-error% временное решение
@@ -300,14 +300,14 @@ export const schema = (
       name: 'repeatPassword',
       test(value, context) {
         if (value !== context.parent.password) {
-          return context.createError({ message: ValidationMessages.passwordsNotMustMatch });
+          return context.createError({ message: i18n.t('validation.passwordsNotMustMatch') });
         }
         if (value.length === 0) return true;
         // @ts-expect-error% временное решение
         return validatePassword(value, context);
       },
     }),
-    disabled: yup.string().required(ValidationMessages.required),
+    disabled: yup.string().required(() => i18n.t('validation.required')),
     licenseCode: yup.string().test({
       name: 'licenseCode',
       test(value, context) {

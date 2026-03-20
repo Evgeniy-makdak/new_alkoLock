@@ -1,7 +1,8 @@
 /* eslint-disable prettier/prettier */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { type FC, forwardRef, useId } from 'react';
+import React, { type FC, forwardRef, useId, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import dayjs, { Dayjs } from 'dayjs';
 import 'dayjs/locale/ru';
@@ -37,12 +38,8 @@ const createTooltipButton = (tooltipTitle: string, ariaLabel: string) =>
     </Tooltip>
   ));
 
-const OpenPickerButton = createTooltipButton('Календарь', 'Календарь');
-const NextIconButton = createTooltipButton('Следующий месяц', 'Следующий месяц');
-const PreviousIconButton = createTooltipButton('Предыдущий месяц', 'Предыдущий месяц');
-const SwitchViewButton = createTooltipButton('Переключить вид', 'Переключить вид');
-
-const CustomMenuItem = (props: PickersActionBarProps) => {
+const ClearActionMenuItem = (props: PickersActionBarProps) => {
+  const { t } = useTranslation();
   const { onClear } = props;
   const id = useId();
   return (
@@ -58,7 +55,7 @@ const CustomMenuItem = (props: PickersActionBarProps) => {
         borderRadius: '3px',
       }}
       key={id}>
-      Очистить
+      {t('datePicker.clear')}
     </MenuItem>
   );
 };
@@ -109,10 +106,28 @@ const newTheme = (theme?: Theme) => ({
 });
 
 export const InputDateBirth: FC<MyInputDateProps> = (props) => {
+  const { t } = useTranslation();
   const theme = props.theme || {};
   const myTheme = createTheme(newTheme() as Theme);
   const textFieldProps = props?.slotProps?.textField || {};
   const maxDate = dayjs().subtract(1, 'day');
+
+  const OpenPickerButton = useMemo(
+    () => createTooltipButton(t('datePicker.openCalendar'), t('datePicker.openCalendar')),
+    [t],
+  );
+  const NextIconButton = useMemo(
+    () => createTooltipButton(t('datePicker.nextMonth'), t('datePicker.nextMonth')),
+    [t],
+  );
+  const PreviousIconButton = useMemo(
+    () => createTooltipButton(t('datePicker.previousMonth'), t('datePicker.previousMonth')),
+    [t],
+  );
+  const SwitchViewButton = useMemo(
+    () => createTooltipButton(t('datePicker.switchView'), t('datePicker.switchView')),
+    [t],
+  );
 
   return (
     <MuiLocalizationProvider>
@@ -121,7 +136,7 @@ export const InputDateBirth: FC<MyInputDateProps> = (props) => {
           {...props}
           maxDate={maxDate}
           slots={{
-            actionBar: CustomMenuItem,
+            actionBar: ClearActionMenuItem,
             openPickerButton: OpenPickerButton,
             nextIconButton: NextIconButton,
             previousIconButton: PreviousIconButton,

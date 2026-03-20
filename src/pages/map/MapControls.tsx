@@ -267,7 +267,6 @@ export const MapControls = ({
         </div>
       )}
       <ResetFilters
-        title={t('common.resetFilters')}
         reset={() => {
           resetFilters();
           setLocationQuery('');

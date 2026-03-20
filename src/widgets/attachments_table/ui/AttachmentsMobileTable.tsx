@@ -484,7 +484,7 @@ export const AttachmentsMobileTable = ({
           </div>
 
           <div className={styles.resetFiltersContainer}>
-            <ResetFilters title="Сбросить фильтры" reset={handleResetAllFilters} />
+            <ResetFilters reset={handleResetAllFilters} />
           </div>
         </div>
 

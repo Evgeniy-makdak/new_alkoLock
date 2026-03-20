@@ -28,6 +28,8 @@
     "branch": "Филиал"
   },
   "common": {
+    "showPassword": "Сыр сөздү көрсөтүү",
+    "hidePassword": "Сыр сөздү жашыруу",
     "language": "Тил",
     "save": "Сактоо",
     "cancel": "Жокко чыгаруу",
@@ -52,7 +54,15 @@
     "addTemplate": "Үлгү кошуу",
     "sort": "Иреттөө",
     "sortTooltip": "Иреттөө",
-    "contains": "Камтайт"
+    "contains": "Камтайт",
+    "languageName": {
+      "ru": "Орус тили",
+      "en": "Англис тили",
+      "kk": "Казак тили",
+      "ky": "Кыргыз тили",
+      "be": "Беларус тили",
+      "uz": "Өзбек тили"
+    }
   },
   "history": {
     "startDate": "Башталган күн",
@@ -68,7 +78,11 @@
     "notValidName": "Аты туура эмес",
     "notValidVin": "VIN туура эмес",
     "notValidPasswordLength": "Сыр сөз кем дегенде 8 символдон турушу керек",
-    "passwordsNotMustMatch": "Сыр сөздөр дал келбейт"
+    "passwordsNotMustMatch": "Сыр сөздөр дал келбейт",
+    "passwordCharsetRule": "Сыр сөздө латын жана/же кирилл тамгалары жана жок дегенде бир сан болушу керек. Атайын символдор жана тыныш белгилерине уруксат берилет.",
+    "verificationCodeLength": "Код 6 символдон турушу керек",
+    "newPasswordMustDifferFromCurrent": "Жаңы сыр сөз азыркы сыр сөз менен дал келбеши керек",
+    "stringHasInvalidSpaces": "Сапта тыю салынган боштуктар бар"
   },
   "auth": {
     "login": "Кириш",
@@ -78,7 +92,44 @@
     "title": "Маалыматтык система",
     "titleProduct": "«Алкозамок-М СМАРТ»",
     "enter": "Кириш",
-    "resetPassword": "Сыр сөздү калыбына келтирүү"
+    "resetPassword": "Сыр сөздү калыбына келтирүү",
+    "copyright": "© 2009-{{year}} «Лазерные системы» ААК. Бардык укуктар корголгон",
+    "resetPasswordTitle": "Сыр сөздү калыбына келтирүү",
+    "resetPasswordDescription": "Системада катталган колдонуучунун email дарегин киргизиңиз — сыр сөздү калыбына келтирүү үчүн ырастоо коду жөнөтүлөт.",
+    "send": "Жөнөтүү",
+    "confirmCodeIntro": "Электрондук почтаңызга жөнөтүлгөн каттагы 6 орундуу кодду киргизиңиз.",
+    "confirmCodeValidFor": "Код жарактуу:",
+    "confirmCodeExpired": "Коддун мөөнөтү өттү",
+    "confirmCodeLabel": "Ырастоо коду",
+    "resendCode": "Ырастоо кодун кайра жөнөтүү",
+    "resendCodeWait": "({{seconds}} сек)",
+    "emailNotDetermined": "Email аныкталган жок",
+    "codeResent": "Код кайра жөнөтүлдү",
+    "resendFailed": "Кодду кайра жөнөтүү ишке ашкан жок",
+    "setPasswordTitle": "Сыр сөздү өзгөртүү",
+    "setPasswordLine1": "Улантуу үчүн жаңы сыр сөз коюңуз.",
+    "setPasswordLine2": "Ийгиликтүү жаңылоодон кийин сиз",
+    "setPasswordLine3": "кириш экранына багытталасыз.",
+    "setNewPassword": "Жаңы сыр сөздү коюу",
+    "confirmNewPassword": "Сыр сөздү ырастоо",
+    "resetCodeEmailSent": "Коду камтылган кат {{email}} дарегине жөнөтүлдү",
+    "codeConfirmed": "Код ырасталды"
+  },
+  "passwordForm": {
+    "title": "Сыр сөздү өзгөртүү",
+    "currentPassword": "Азыркы сыр сөз",
+    "newPassword": "Жаңы сыр сөз",
+    "confirmPassword": "Сыр сөздү ырастаңыз",
+    "save": "Сактоо",
+    "cancel": "Жокко чыгаруу"
+  },
+  "datePicker": {
+    "clear": "Тазалоо",
+    "openCalendar": "Календарь",
+    "nextMonth": "Кийинки ай",
+    "previousMonth": "Мурунку ай",
+    "switchView": "Көрүнүштү алмаштыруу",
+    "clearDate": "Күнү тазалоо"
   },
   "tables": {
     "date": "Күнү",
