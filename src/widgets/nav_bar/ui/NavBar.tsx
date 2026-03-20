@@ -36,7 +36,6 @@ import style from './NavBar.module.scss';
 const ITEM_HEIGHT = 61; // 44px высота + 17px margin-bottom
 
 export const NavBar = () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- i18n используется при раскомментировании переключателя языка
   const { t, i18n } = useTranslation();
   const [open, toggle, close] = useToggle();
   const { resetStatusFilter } = useStatusFilter();
@@ -399,6 +398,15 @@ export const NavBar = () => {
 
           <div className={style.navBarBottom}>
             <Stack gap={1}>
+              {(isMobile || isTablet) && (
+                <div className={style.mobileLanguageWrap}>
+                  <AppLanguageSelect
+                    className={style.languageSwitcherMobile}
+                    formControlClassName={style.langSelectMobile}
+                    size="small"
+                  />
+                </div>
+              )}
               <MenuButton
                 tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
                 collops={isCollapsed}

@@ -560,6 +560,24 @@
   margin-top: auto;
 }
 
+.mobileLanguageWrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  padding: 4px 0 6px;
+}
+
+.languageSwitcherMobile {
+  width: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.langSelectMobile {
+  flex-shrink: 0;
+}
+
 .carouselContainerCompact {
   flex: 1;
   display: flex;
