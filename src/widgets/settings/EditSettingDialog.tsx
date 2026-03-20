@@ -97,7 +97,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
         <Typography component="span" fontWeight={600} variant="h6">
           {t('modals.editParameter')}
         </Typography>
-        <Tooltip title="Закрыть окно">
+        <Tooltip title={t('common.closeWindow')}>
           <IconButton
             edge="end"
             onClick={() => handleCloseModal({}, 'buttonClick')}

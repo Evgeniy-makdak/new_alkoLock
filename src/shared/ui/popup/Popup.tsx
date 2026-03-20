@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
 import { Tooltip } from '@mui/material';
@@ -31,6 +32,8 @@ export const Popup = ({
   onCloseModal,
   styles = null, // HELP => тут нужно передать нужную высоту и ширину
 }: PopupProps) => {
+  const { t } = useTranslation();
+
   const handleClickOutside = (e: React.SyntheticEvent<HTMLDivElement>) => {
     const { target } = e;
     if (target === e.currentTarget) return;
@@ -56,7 +59,7 @@ export const Popup = ({
               data-testid={`${testids.POPUP_CLOSE_BUTTON}`}
               className={style.close}
               onClick={onCloseModal ?? toggleModal}>
-              <Tooltip title="Закрыть окно">
+              <Tooltip title={t('common.closeWindow')}>
                 <CloseIcon />
               </Tooltip>
             </button>

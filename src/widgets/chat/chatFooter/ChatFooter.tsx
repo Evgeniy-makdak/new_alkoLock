@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Add as AddIcon, Chat as ChatIcon, Close as CloseIcon } from '@mui/icons-material';
 import { Card, IconButton, Tooltip } from '@mui/material';
@@ -41,6 +42,7 @@ const useOperatorPermissions = () => {
 };
 
 const ChatToggleButton = () => {
+  const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession } = useChat();
   const { unreadCount } = useSocket();
 
@@ -56,7 +58,7 @@ const ChatToggleButton = () => {
     }
   };
 
-  const tooltipTitle = `Непрочитанных сообщений: ${unreadCount} (Shift + Ctrl + D)`;
+  const tooltipTitle = t('chat.toggleTooltip', { count: unreadCount });
 
   return (
     <Tooltip title={tooltipTitle} placement="left">
@@ -75,6 +77,7 @@ const ChatToggleButton = () => {
 };
 
 const NewChatButton = () => {
+  const { t } = useTranslation();
   const { createNewSession, sessions, toggleSessionMinimize, setActiveSessionId } = useChat();
 
   const handleNewChat = () => {
@@ -91,7 +94,7 @@ const NewChatButton = () => {
   if (sessions.length === 0) return null;
 
   return (
-    <Tooltip title="Открыть новый чат" placement="left">
+    <Tooltip title={t('chat.openNewChat')} placement="left">
       <div className={styles.newChatButtonWrapper}>
         <IconButton
           className={styles.newChatButton}
@@ -106,6 +109,7 @@ const NewChatButton = () => {
 };
 
 const ChatContainer = () => {
+  const { t } = useTranslation();
   const {
     isChatOpen,
     sessions,
@@ -274,7 +278,9 @@ const ChatContainer = () => {
             onClick={() => handleExpandSession(session.id)}>
             <div className={styles.minimizedHeader}>
               <span>
-                {session.selectedUserName || session.selectedDialog?.client_name || 'Новый чат'}
+                {session.selectedUserName ||
+                  session.selectedDialog?.client_name ||
+                  t('chat.newChatFallback')}
               </span>
               <span className={styles.unreadBadge}>
                 {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
@@ -322,8 +328,11 @@ const ChatContainer = () => {
                   </div>
                   <div className={styles.lastMessage}>
                     {unreadCount > 0
-                      ? `Непрочитанных сообщений: ${unreadCount} • ${dialog.branch.name}`
-                      : `Новый диалог • ${dialog.branch.name}`}
+                      ? t('chat.unreadInBranch', {
+                          count: unreadCount,
+                          branch: dialog.branch.name,
+                        })
+                      : t('chat.newDialogInBranch', { branch: dialog.branch.name })}
                   </div>
                 </div>
               );

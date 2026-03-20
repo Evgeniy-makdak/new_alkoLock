@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import { IconButton, Tooltip } from '@mui/material';
@@ -15,11 +16,13 @@ interface AsideProps {
 }
 
 export const Aside = ({ children, onClose, testid }: AsideProps) => {
+  const { t } = useTranslation();
+
   return (
     <div data-testid={testid} className={style.aside}>
       {children}
 
-      <Tooltip title="Свернуть окно">
+      <Tooltip title={t('aside.collapseWindow')}>
         <IconButton
           color="info"
           data-testid={testids.INFO_TAB_CLOSE_BUTTON}

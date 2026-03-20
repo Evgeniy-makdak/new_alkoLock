@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AlcolockSelect } from '@entities/alcolock_select';
 import { CarsSelect } from '@entities/cars_select';
@@ -18,6 +19,7 @@ interface HistoryFilterPanelProps {
 }
 
 export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelProps) => {
+  const { t } = useTranslation();
   const { filters: eventFilters, setFilters: setEventFilters } = useHistoryFilterPanel();
   const prevBranchIdRef = useRef<string | number | undefined>(appStore().selectedBranchState?.id);
 
@@ -45,7 +47,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
         <FilterPanel>
           <AlcolockSelect
             multiple={true}
-            label="Поиск по алкозамку"
+            label={t('filters.searchByAlcolock')}
             setValueStore={handleEventFilterChange}
             value={eventFilters.alcolocks}
             testid={
@@ -67,7 +69,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_TYPE_EVENT
             }
-            label="Тип события"
+            label={t('filters.eventType')}
           />
           <UsersSelect
             multiple={true}
@@ -82,7 +84,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
             }
-            label="Поиск по инициатору"
+            label={t('filters.searchByInitiator')}
           />
           <UsersSelect
             multiple={true}
@@ -97,7 +99,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
             testid={
               testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
             }
-            label="Поиск по исполнителю"
+            label={t('filters.searchByExecutor')}
           />
           <CarsSelect
             multiple={true}
@@ -108,7 +110,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
             }
             setValueStore={handleEventFilterChange}
             value={eventFilters.carId}
-            label="Поиск по ТС"
+            label={t('filters.searchByVehicle')}
           />
         </FilterPanel>
       )}

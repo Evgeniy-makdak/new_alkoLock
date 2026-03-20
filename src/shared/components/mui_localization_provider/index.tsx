@@ -1,15 +1,17 @@
 import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import 'dayjs/locale/be';
 import 'dayjs/locale/en';
 import 'dayjs/locale/kk';
 import 'dayjs/locale/ky';
 import 'dayjs/locale/ru';
+import 'dayjs/locale/uz-latn';
 
 import { ThemeProvider, createTheme } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
+import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
 
 const PICKERS_LOCALE_MAP: Record<
   string,
@@ -33,6 +35,14 @@ const PICKERS_LOCALE_MAP: Record<
   ky: {
     localeText: ruRU.components.MuiLocalizationProvider.defaultProps.localeText,
     adapterLocale: 'ky',
+  },
+  be: {
+    localeText: beBY.components.MuiLocalizationProvider.defaultProps.localeText,
+    adapterLocale: 'be',
+  },
+  uz: {
+    localeText: enUS.components.MuiLocalizationProvider.defaultProps.localeText,
+    adapterLocale: 'uz-latn',
   },
 };
 

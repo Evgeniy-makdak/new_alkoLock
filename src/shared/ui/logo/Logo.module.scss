@@ -1,6 +1,21 @@
-.svg {
-  & svg {
-    max-width: 100%;
-    height: auto;
-  }
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 100%;
+}
+
+.brandIcon {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+
+.brandText {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: #070707;
+  min-width: 0;
 }

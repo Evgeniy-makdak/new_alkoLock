@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { testids } from '@shared/const/testid';
 import { InputPassword } from '@shared/ui/InputPassword/Input';
+import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { Loader } from '@shared/ui/loader';
 import { Logo } from '@shared/ui/logo';
 
@@ -71,6 +72,10 @@ export const ConfirmPassword = () => {
 
   return (
     <div className={style.authorization}>
+      <AppLanguageSelect
+        className={style.languageSwitcher}
+        formControlClassName={style.authLangSelect}
+      />
       <div className={style.logo}>
         <Link to="/authorization">
           <Logo />

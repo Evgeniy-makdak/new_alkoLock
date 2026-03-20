@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ApartmentOutlinedIcon from '@mui/icons-material/ApartmentOutlined';
 import { Chip, Popover, Tooltip, type TooltipProps, useMediaQuery } from '@mui/material';
@@ -15,13 +16,13 @@ type NavbarBranchSelectProps = {
   tooltipProps?: Omit<TooltipProps, 'title' | 'children'>;
 };
 
-const LABEL = 'Филиал';
-
 export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
   isCollops = false,
   tooltipProps,
   allowCustomEvents = true,
 }) => {
+  const { t } = useTranslation();
+  const label = t('nav.branch');
   const { isGlobalAdmin, onChangeBranch, value } = useNavbarBranchSelect();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
@@ -70,7 +71,7 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
               disabled={!isGlobalAdmin}
               setValueStore={onChangeBranch}
               allowCustomEvents={allowCustomEvents}
-              label={LABEL}
+              label={label}
               name="navbarBranchSelectMobile"
               testid={testids.widget_navbar.NAVBAR_INPUT_CHOOSE_FILIAL_OPEN_LIST_ITEM}
             />

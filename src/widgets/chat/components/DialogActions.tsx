@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // import { Lock, LockOpen, TransferWithinAStation } from '@mui/icons-material';
 import { Lock, LockOpen } from '@mui/icons-material';
@@ -28,6 +29,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   dialogData,
   onBlockedStateChange,
 }) => {
+  const { t } = useTranslation();
   const { getSession, updateSession } = useChat();
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOwner, setIsDialogOwner] = useState(false);
@@ -302,7 +304,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   return (
     <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
       {showAssignButton && (
-        <Tooltip title="Заблокировать диалог">
+        <Tooltip title={t('chat.lockDialog')}>
           <span>
             <Button
               variant="outlined"
@@ -311,14 +313,14 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               onClick={handleAssignDialog}
               disabled={isLoading}
               sx={{ fontSize: '0.75rem' }}>
-              Забрать
+              {t('chat.take')}
             </Button>
           </span>
         </Tooltip>
       )}
 
       {shouldShowBlockedByOther && (
-        <Tooltip title={`Диалог заблокирован оператором (ID: ${lastOperatorId})`}>
+        <Tooltip title={t('chat.dialogLockedByOperator', { id: lastOperatorId })}>
           <span>
             <Button
               variant="outlined"
@@ -330,14 +332,14 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
                 backgroundColor: '#ffebee',
                 color: '#d32f2f',
               }}>
-              Заблокирован другим оператором
+              {t('chat.blockedByOtherButton')}
             </Button>
           </span>
         </Tooltip>
       )}
 
       {showUnlockedMessage && !showAssignButton && (
-        <Tooltip title="Диалог разблокирован. Для отправки сообщений нажмите 'Забрать'">
+        <Tooltip title={t('chat.unlockToSendHint')}>
           <span>
             <Button
               variant="outlined"
@@ -350,7 +352,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
                 color: '#1976d2',
                 borderColor: '#90caf9',
               }}>
-              Диалог разблокирован
+              {t('chat.dialogUnlocked')}
             </Button>
           </span>
         </Tooltip>
@@ -358,7 +360,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
       {showManagementButtons && (
         <>
-          <Tooltip title="Разблокировать диалог">
+          <Tooltip title={t('chat.unlockDialog')}>
             <span>
               <Button
                 variant="outlined"
@@ -367,12 +369,12 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
                 onClick={handleCompleteDialog}
                 disabled={isLoading}
                 sx={{ fontSize: '0.75rem' }}>
-                Завершить
+                {t('chat.completeDialog')}
               </Button>
             </span>
           </Tooltip>
 
-          <Tooltip title="Передать диалог">
+          <Tooltip title={t('chat.transferDialog')}>
             <span>
               {/* <Button
                 variant="outlined"

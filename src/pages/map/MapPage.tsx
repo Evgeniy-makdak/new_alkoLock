@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -41,6 +41,8 @@ import { EventData, VehicleEventsGroup } from './types';
 
 const DEFAULT_MAP_CENTER: [number, number] = [59.9343, 30.3351]; // Санкт-Петербург
 const DEFAULT_MAP_ZOOM = 12;
+
+type MapDetailsTabKey = 'info' | 'additional';
 
 const formatPlateParts = (
   reg: string,
@@ -176,7 +178,7 @@ const useQueryParams = () => {
 };
 
 export const MapPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлено для будущего включения DebugPanel
@@ -200,7 +202,7 @@ export const MapPage = () => {
   const [clickedVehicleEvents, setClickedVehicleEvents] = useState<EventData[]>([]);
   const [, setIsLoadingEvents] = useState(false);
   const [hasTemperatureSensor, setHasTemperatureSensor] = useState(false);
-  const [activeTab, setActiveTab] = useState<'Инфо' | 'Доп. данные'>('Инфо');
+  const [activeTab, setActiveTab] = useState<MapDetailsTabKey>('info');
   const [freezeMarkers, setFreezeMarkers] = useState(false);
   const [showOnlyWithAlcolock, setShowOnlyWithAlcolock] = useState(false);
   const [showRoutes, setShowRoutes] = useState(false);
@@ -231,7 +233,7 @@ export const MapPage = () => {
 
   const handleOpenPanel = (params: { id: ID; content: React.ReactNode }) => {
     setPanelStack((prev) => [...prev, params]);
-    setActiveTab('Инфо');
+    setActiveTab('info');
   };
 
   const handleCloseAllPanels = () => {
@@ -288,7 +290,7 @@ export const MapPage = () => {
     setSelectedVehicleId(null);
     setSelectedVehicleActive(false);
     setOpenedPopupVehicleId(null);
-    setActiveTab('Инфо');
+    setActiveTab('info');
     setPanelStack([]);
     setShowRoutes(false);
     setExpandedRowId(null);
@@ -526,10 +528,14 @@ export const MapPage = () => {
     if (!urlMarker || !urlMarkerEvent) return;
 
     const tooltipContent = document.createElement('div');
-    tooltipContent.innerHTML = `
-      <div style="font-weight: bold; margin-bottom: 4px;">Тип события:</div>
-      <div>${urlMarkerEvent.eventType}</div>
-    `;
+    const titleRow = document.createElement('div');
+    titleRow.style.fontWeight = 'bold';
+    titleRow.style.marginBottom = '4px';
+    titleRow.textContent = `${t('map.popup.eventType')}:`;
+    const typeRow = document.createElement('div');
+    typeRow.textContent = urlMarkerEvent.eventType ?? '';
+    tooltipContent.appendChild(titleRow);
+    tooltipContent.appendChild(typeRow);
 
     urlMarker.unbindTooltip();
     urlMarker.bindTooltip(tooltipContent, {
@@ -540,46 +546,49 @@ export const MapPage = () => {
       className: 'custom-tooltip',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlMarkerEvent]);
+  }, [urlMarkerEvent, t, i18n.language]);
 
-  const transformEvent = (event: any) => ({
-    id: event.id,
-    timestamp: event.timestamp,
-    isActive: event.isActive,
-    latitude: event.latitude,
-    longitude: event.longitude,
-    eventType: event.eventsForFront?.label,
-    user: {
-      id: event.userRecord?.email,
-      fullName: event.userRecord
-        ? `${event.userRecord.surname || ''} ${event.userRecord.firstName || ''} ${event.userRecord.middleName || ''}`.trim()
-        : 'Неизвестный водитель',
-    },
-    action: {
-      id: event.actionId,
-      vehicleRecord: {
-        registrationNumber: event.vehicleRecord?.registrationNumber,
-        manufacturer: event.vehicleRecord?.manufacturer,
-        model: event.vehicleRecord?.model,
-        year: event.action?.vehicleRecord?.year,
-        vin: event.action?.vehicleRecord?.vin,
-        type: event.action?.vehicleRecord?.type,
-        color: event.action?.vehicleRecord?.color,
+  const transformEvent = useCallback(
+    (event: any) => ({
+      id: event.id,
+      timestamp: event.timestamp,
+      isActive: event.isActive,
+      latitude: event.latitude,
+      longitude: event.longitude,
+      eventType: event.eventsForFront?.label,
+      user: {
+        id: event.userRecord?.email,
+        fullName: event.userRecord
+          ? `${event.userRecord.surname || ''} ${event.userRecord.firstName || ''} ${event.userRecord.middleName || ''}`.trim()
+          : t('map.popup.unknownDriver'),
       },
-      device: {
-        id:
-          event.action?.device?.id ??
-          event.device?.id ??
-          event.deviceRecord?.id ??
-          event.summary?.deviceId ??
-          event.summary?.description?.deviceId,
-        name: event.deviceRecord?.name,
-        serialNumber: event.deviceRecord?.serialNumber,
-        mode: event.action?.device?.mode,
+      action: {
+        id: event.actionId,
+        vehicleRecord: {
+          registrationNumber: event.vehicleRecord?.registrationNumber,
+          manufacturer: event.vehicleRecord?.manufacturer,
+          model: event.vehicleRecord?.model,
+          year: event.action?.vehicleRecord?.year,
+          vin: event.action?.vehicleRecord?.vin,
+          type: event.action?.vehicleRecord?.type,
+          color: event.action?.vehicleRecord?.color,
+        },
+        device: {
+          id:
+            event.action?.device?.id ??
+            event.device?.id ??
+            event.deviceRecord?.id ??
+            event.summary?.deviceId ??
+            event.summary?.description?.deviceId,
+          name: event.deviceRecord?.name,
+          serialNumber: event.deviceRecord?.serialNumber,
+          mode: event.action?.device?.mode,
+        },
       },
-    },
-    mode: event.action?.device?.mode,
-  });
+      mode: event.action?.device?.mode,
+    }),
+    [t],
+  );
 
   const loadVehicleEvents = async (vehicleId: string, allEvents = false) => {
     try {
@@ -892,6 +901,7 @@ export const MapPage = () => {
       maxZoom: 18,
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
+    // OSM по умолчанию не отдаёт тайлы с выбором языка подписей; см. t('map.tilesLanguageHint')
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '',
       noWrap: true,
@@ -966,7 +976,7 @@ export const MapPage = () => {
   const tabs = [
     {
       testid: testids.page_users.users_widget_info.USERS_WIDGET_INFO_TAB_BUTTON_HISTORY,
-      name: 'ИСТОРИЯ',
+      name: t('info.historyTab'),
       content: (
         <EventsHistory
           type={HistoryTypes.byCar}
@@ -992,8 +1002,8 @@ export const MapPage = () => {
 
   const detailsTabs = [
     {
-      name: 'Инфо',
-      key: 'Инфо',
+      name: t('info.infoTab'),
+      key: 'info',
       content: (
         <EventInfo
           selectedEventId={panelStack[panelStack.length - 1]?.id}
@@ -1004,8 +1014,8 @@ export const MapPage = () => {
     ...(hasTemperatureSensor
       ? [
           {
-            name: 'Доп. данные',
-            key: 'Доп. данные',
+            name: t('info.additionalDataTab'),
+            key: 'additional',
             content: <AdditionInfo selectedEventId={panelStack[panelStack.length - 1]?.id} />,
           },
         ]
@@ -1236,8 +1246,8 @@ export const MapPage = () => {
             }}>
             <RowTableInfo
               tabs={detailsTabs}
-              activeTab={activeTab === 'Доп. данные' ? 1 : 0}
-              onTabChange={(index) => setActiveTab(index === 1 ? 'Доп. данные' : 'Инфо')}
+              activeTab={activeTab === 'additional' ? 1 : 0}
+              onTabChange={(index) => setActiveTab(index === 1 ? 'additional' : 'info')}
               style={{ flex: 1 }}
             />
           </Aside>

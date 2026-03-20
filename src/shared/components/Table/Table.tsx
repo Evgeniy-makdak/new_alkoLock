@@ -3,10 +3,14 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Chip, LinearProgress, ThemeProvider, createTheme } from '@mui/material';
-import { enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
+import { beBY as coreBeBY, enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
 import { type DataGridProps, type GridColumnHeaderParams, ruRU } from '@mui/x-data-grid';
-import { enUS } from '@mui/x-data-grid/locales';
-import { enUS as pickersEnUS, ruRU as pickersruRU } from '@mui/x-date-pickers/locales';
+import { enUS, beBY as gridBeBY } from '@mui/x-data-grid/locales';
+import {
+  beBY as pickersBeBY,
+  enUS as pickersEnUS,
+  ruRU as pickersruRU,
+} from '@mui/x-date-pickers/locales';
 
 import CustomPagination from '@shared/lib/CustomPagination';
 import { ValuesHeader } from '@widgets/events_table/lib/getColumns';
@@ -47,31 +51,29 @@ export const Table = memo(
     const { t, i18n } = useTranslation();
     const localeText = getDataGridLocaleText();
     const lang = (i18n.language || '').split('-')[0].toLowerCase();
-    const isEnOrKk = lang === 'en' || lang === 'kk';
-    const theme = createTheme(
-      {},
-      isEnOrKk ? enUS : ruRU,
-      isEnOrKk ? pickersEnUS : pickersruRU,
-      isEnOrKk ? coreEnUS : coreRuRU,
-      {
-        components: {
-          MuiTablePagination: {
-            defaultProps: {
-              labelRowsPerPage: t('tables.rowsPerPage'),
-              labelDisplayedRows: ({
-                from,
-                to,
-                count,
-              }: {
-                from: number;
-                to: number;
-                count: number;
-              }) => t('pagination.rowsOf', { from, to, count }),
-            },
+    const isBe = lang === 'be';
+    const useEnFamily = lang === 'en' || lang === 'kk' || lang === 'ky' || lang === 'uz';
+    const gridLocale = isBe ? gridBeBY : useEnFamily ? enUS : ruRU;
+    const pickersLocale = isBe ? pickersBeBY : useEnFamily ? pickersEnUS : pickersruRU;
+    const coreLocale = isBe ? coreBeBY : useEnFamily ? coreEnUS : coreRuRU;
+    const theme = createTheme({}, gridLocale, pickersLocale, coreLocale, {
+      components: {
+        MuiTablePagination: {
+          defaultProps: {
+            labelRowsPerPage: t('tables.rowsPerPage'),
+            labelDisplayedRows: ({
+              from,
+              to,
+              count,
+            }: {
+              from: number;
+              to: number;
+              count: number;
+            }) => t('pagination.rowsOf', { from, to, count }),
           },
         },
       },
-    );
+    });
     const renderValue = (value: any) => {
       if (Array.isArray(value)) {
         return (

@@ -4,6 +4,7 @@ import { enqueueSnackbar } from 'notistack';
 import { SelectedBranchState } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
+import i18n from '../../../i18n';
 import { useGroupDeleteFormApi } from '../api/useGroupDeleteFormApi';
 
 export const useGroupDeleteForm = (
@@ -25,10 +26,10 @@ export const useGroupDeleteForm = (
         });
       } else {
         // Устанавливаем активную группу в Основной филиал (id=20)
-        setState({ selectedBranchState: { id: 20, name: 'Основной филиал' } });
+        setState({ selectedBranchState: { id: 20, name: i18n.t('nav.mainBranch') } });
       }
     } catch (error) {
-      enqueueSnackbar('Произошла ошибка при удалении группы', { variant: 'error' });
+      enqueueSnackbar(i18n.t('errors.groupDeleteFailed'), { variant: 'error' });
     } finally {
       close();
     }

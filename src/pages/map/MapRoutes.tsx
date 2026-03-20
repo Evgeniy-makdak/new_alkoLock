@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import L from 'leaflet';
 
@@ -11,6 +12,19 @@ type MapRoutesProps = {
 };
 
 export const MapRoutes = ({ map, events, selectedVehicleId }: MapRoutesProps): null => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = useMemo(() => {
+    const mapLocales: Record<string, string> = {
+      ru: 'ru-RU',
+      en: 'en-US',
+      kk: 'kk-KZ',
+      ky: 'ky-KG',
+      be: 'be-BY',
+      uz: 'uz-UZ',
+    };
+    return mapLocales[i18n.language] || i18n.language;
+  }, [i18n.language]);
+
   const polylineRef = useRef<L.Polyline | null>(null);
   const eventMarkersRef = useRef<L.Marker[]>([]);
 
@@ -69,10 +83,12 @@ export const MapRoutes = ({ map, events, selectedVehicleId }: MapRoutesProps): n
 
       // Добавляем тултип с информацией о событии
       const tooltipContent = document.createElement('div');
-      tooltipContent.innerHTML = `
-        <div>${event.eventType || 'Неизвестное событие'}</div>
-        <div>${new Date(event.timestamp || '').toLocaleString()}</div>
-      `;
+      const typeLine = document.createElement('div');
+      typeLine.textContent = event.eventType || t('map.popup.unknownEvent');
+      const timeLine = document.createElement('div');
+      timeLine.textContent = new Date(event.timestamp || '').toLocaleString(dateLocale);
+      tooltipContent.appendChild(typeLine);
+      tooltipContent.appendChild(timeLine);
 
       marker.bindTooltip(tooltipContent, {
         permanent: false,
@@ -91,7 +107,7 @@ export const MapRoutes = ({ map, events, selectedVehicleId }: MapRoutesProps): n
         map.removeLayer(marker);
       });
     };
-  }, [map, events, selectedVehicleId]);
+  }, [map, events, selectedVehicleId, t, dateLocale]);
 
   return null;
 };

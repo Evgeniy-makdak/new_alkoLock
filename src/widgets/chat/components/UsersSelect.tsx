@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { ArrowDropDown, Close, Search } from '@mui/icons-material';
 import {
@@ -55,6 +56,7 @@ function UsersSelect({
   onCheckExistingSession,
   displayUserName,
 }: UsersSelectProps) {
+  const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [users, setUsers] = useState<IUser[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -67,6 +69,8 @@ function UsersSelect({
   const usersCacheRef = useRef<Map<number, any>>(new Map());
   const isMountedRef = useRef(true);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const onUpdateUsersCacheRef = useRef(onUpdateUsersCache);
+  onUpdateUsersCacheRef.current = onUpdateUsersCache;
 
   const open = Boolean(anchorEl);
   const branchId = appStore.getState().selectedBranchState?.id;
@@ -97,14 +101,14 @@ function UsersSelect({
 
         if (Array.isArray(response.data)) {
           usersData = response.data.filter((user) => user.id !== 2 && user.id !== currentUsedId);
-          onUpdateUsersCache(usersData);
+          onUpdateUsersCacheRef.current(usersData);
         }
 
         setUsers(usersData);
         setError('');
         hasLoadedRef.current = true;
       } catch (err) {
-        setError('Не удалось загрузить список пользователей');
+        setError(t('chat.usersFetchFailed'));
         hasLoadedRef.current = true;
       } finally {
         if (isMountedRef.current) {
@@ -112,26 +116,8 @@ function UsersSelect({
         }
       }
     },
-    [branchId],
+    [branchId, t, currentUsedId],
   );
-
-  useEffect(() => {
-    if (!open) return;
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(() => {
-      fetchUsers(searchQuery);
-    }, 300);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, open, fetchUsers]);
 
   useEffect(() => {
     if (!open) {
@@ -140,10 +126,21 @@ function UsersSelect({
       return;
     }
 
-    if (!hasLoadedRef.current || searchQuery) {
-      fetchUsers(searchQuery);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
     }
-  }, [open, fetchUsers, searchQuery]);
+
+    const delayMs = searchQuery.length > 0 ? 300 : 0;
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUsers(searchQuery);
+    }, delayMs);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [open, searchQuery, fetchUsers]);
 
   useEffect(() => {
     handleClose();
@@ -219,7 +216,7 @@ function UsersSelect({
     return (
       user.fullName ||
       [user.firstName, user.middleName, user.surname].filter(Boolean).join(' ') ||
-      `Пользователь ${user.id}`
+      t('chat.userWithId', { id: user.id })
     );
   };
 
@@ -294,7 +291,7 @@ function UsersSelect({
             fontWeight: 400,
             lineHeight: 1,
           }}>
-          Пользователи
+          {t('chat.usersLabel')}
         </Box>
 
         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, flex: 1, minHeight: '24px' }}>
@@ -351,7 +348,7 @@ function UsersSelect({
                 autoFocus
                 fullWidth
                 size="small"
-                placeholder="Поиск пользователей..."
+                placeholder={t('chat.searchUsersPlaceholder')}
                 value={searchQuery}
                 onChange={handleSearchChange}
                 InputProps={{
@@ -374,7 +371,7 @@ function UsersSelect({
                 <Box sx={{ p: 2, color: 'error.main' }}>{error}</Box>
               ) : users.length === 0 && hasLoadedRef.current ? (
                 <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>
-                  {searchQuery ? 'Пользователи не найдены' : 'Нет доступных пользователей'}
+                  {searchQuery ? t('chat.usersNotFound') : t('chat.noUsersAvailable')}
                 </Box>
               ) : (
                 users.map((user) => (

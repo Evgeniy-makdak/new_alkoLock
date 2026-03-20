@@ -5,6 +5,7 @@ import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
 
@@ -32,7 +33,9 @@ export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
         {t('modals.mailingDeactivation')}
       </Typography>
       <Stack gap={3}>
-        <Typography>{t('modals.confirmDeactivateMailing', { name: mailing.text })}</Typography>
+        <Typography>
+          {t('modals.confirmDeactivateMailing', { name: reactNodeToPlainText(mailing.text) })}
+        </Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}

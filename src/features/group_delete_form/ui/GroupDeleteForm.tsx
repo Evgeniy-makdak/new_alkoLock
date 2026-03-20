@@ -5,6 +5,7 @@ import { Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import { SelectedBranchState } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
@@ -26,7 +27,9 @@ export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal, 
         {t('modals.groupDeletion')}
       </Typography>
       <Stack gap={3}>
-        <Typography>{t('modals.confirmDeleteGroup', { name: branch.text })}</Typography>
+        <Typography>
+          {t('modals.confirmDeleteGroup', { name: reactNodeToPlainText(branch.text) })}
+        </Typography>
         <ButtonFormWrapper>
           <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(true)}>
             {t('modals.delete')}

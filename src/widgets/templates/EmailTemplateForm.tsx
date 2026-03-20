@@ -242,7 +242,7 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
             }}>
             {isEditing ? t('modals.editTemplate') : t('modals.addTemplate')}
           </Typography>
-          <Tooltip title="Закрыть окно">
+          <Tooltip title={t('common.closeWindow')}>
             <IconButton
               edge="end"
               onClick={onClose}

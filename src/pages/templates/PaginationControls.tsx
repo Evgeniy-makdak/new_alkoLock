@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Paper, TablePagination } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material';
-import { enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
+import { beBY as coreBeBY, enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
 
 import { CustomPaginationActions } from './CustomPaginationActions';
 
@@ -24,7 +24,14 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.split('-')[0] || i18n.language;
-  const theme = createTheme({}, lang === 'en' || lang === 'kk' ? coreEnUS : coreRuRU);
+  const theme = createTheme(
+    {},
+    lang === 'be'
+      ? coreBeBY
+      : lang === 'en' || lang === 'kk' || lang === 'ky' || lang === 'uz'
+        ? coreEnUS
+        : coreRuRU,
+  );
 
   if (!totalCount || !rowsPerPage) return null;
 

@@ -154,9 +154,9 @@ export const useGetColumns = (
                           .USERS_WIDGET_TABLE_BODY_ITEM_ACTION_EDIT
                       }
                       onClickEdit={() => setChangeUserId(email)}
-                      onClickDelete={() => toggleDelete(email, <b>{email}</b>)}
-                      onClickRecover={() => toggleRecover(email, <b>{email}</b>)}
-                      onTrueDelete={() => toggleTrueDelete(email, <b>{email}</b>)}
+                      onClickDelete={() => toggleDelete(email, String(email))}
+                      onClickRecover={() => toggleRecover(email, String(email))}
+                      onTrueDelete={() => toggleTrueDelete(email, String(email))}
                       showEdit={true}
                     />
                   </div>

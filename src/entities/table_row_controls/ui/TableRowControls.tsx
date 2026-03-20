@@ -1,4 +1,5 @@
 import { type FC, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
@@ -46,6 +47,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
   useHighlightOffIcon = false,
   permissionPrefix = '',
 }) => {
+  const { t } = useTranslation();
   const [hoveredButton, setHoveredButton] = useState<string | null>(null);
 
   const isGlobalAdmin = roles?.includes('Администратор системы');
@@ -102,7 +104,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
 
       {/* Карандашик "Редактировать" - отображается только при наличии прав */}
       {visible && canEdit && !arrowIcon && (
-        <Tooltip title="Редактировать" open={hoveredButton === 'edit'}>
+        <Tooltip title={t('common.edit')} open={hoveredButton === 'edit'}>
           <span>
             <GridActionsCellItem
               data-testid={testidEdit}
@@ -118,7 +120,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
       )}
       {!isGlobalAdmin && canDelete && visible && (
         <Tooltip
-          title={useHighlightOffIcon ? 'Деактивировать' : 'Удалить'}
+          title={useHighlightOffIcon ? t('common.deactivate') : t('common.delete')}
           open={hoveredButton === 'delete'}>
           <span>
             <GridActionsCellItem
@@ -134,7 +136,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
         </Tooltip>
       )}
       {canRecover && visible && (
-        <Tooltip title="Активировать" open={hoveredButton === 'recover'}>
+        <Tooltip title={t('common.activate')} open={hoveredButton === 'recover'}>
           <span>
             <GridActionsCellItem
               onClick={onClickRecover}
@@ -149,7 +151,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
         </Tooltip>
       )}
       {!isGlobalAdmin && visible && canTrueDelete && (
-        <Tooltip title="Удалить" open={hoveredButton === 'trueDelete'}>
+        <Tooltip title={t('common.deletePermanently')} open={hoveredButton === 'trueDelete'}>
           <span>
             <GridActionsCellItem
               onClick={onTrueDelete}

@@ -1,4 +1,5 @@
 import { type FC, type MouseEvent, type ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 // import { useSnackbar } from 'notistack';
 // Импортируем useSnackbar
@@ -44,6 +45,7 @@ export const MenuButton: FC<MenuButtonProps> = ({
   collops,
   tooltipProps,
 }) => {
+  const { t } = useTranslation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const { logout } = appStore((state) => state);
@@ -90,7 +92,7 @@ export const MenuButton: FC<MenuButtonProps> = ({
           }}>
           {!collops && <span>{email}</span>}
           {collops && <PersonOutlineOutlinedIcon />}
-          <Tooltip title={open ? 'Свернуть' : 'Раскрыть'}>
+          <Tooltip title={open ? t('nav.collapse') : t('nav.expand')}>
             <ArrowDropDownIcon
               sx={{
                 transform: `rotate(${open ? 180 : 0}deg)`,
@@ -117,8 +119,8 @@ export const MenuButton: FC<MenuButtonProps> = ({
               toggleModal();
             }}
             className={`${style.menuItem} ${collops ? style.center : style.between}`}>
-            {!collops && <span>Изменить пароль</span>}
-            <Tooltip title="Изменить пароль">
+            {!collops && <span>{t('nav.changePassword')}</span>}
+            <Tooltip title={t('nav.changePassword')}>
               <EditOutlinedIcon />
             </Tooltip>
           </MenuItem>
@@ -131,8 +133,8 @@ export const MenuButton: FC<MenuButtonProps> = ({
             onClick={handleLogout}>
             {' '}
             {/* Используем handleLogout */}
-            {!collops && <span>Выйти</span>}
-            <Tooltip title="Выйти">
+            {!collops && <span>{t('nav.logout')}</span>}
+            <Tooltip title={t('nav.logout')}>
               <ExitToAppOutlinedIcon />
             </Tooltip>
           </MenuItem>

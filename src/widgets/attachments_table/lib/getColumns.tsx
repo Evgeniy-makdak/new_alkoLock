@@ -101,7 +101,14 @@ export const useGetColumns = (
                       testids.page_alcolocks.alcolocks_widget_table
                         .ALCOLOCKS_WIDGET_TABLE_BODY_ITEM_ACTION_EDIT
                     }
-                    onClickDelete={() => toggleDelete(row.id, row?.ATTACHMENTS)}
+                    onClickDelete={() => {
+                      const tc = row[ValuesHeader.TC];
+                      const alc = row[ValuesHeader.ALCOLOKS];
+                      const label = [tc, alc]
+                        .filter((x) => x != null && x !== '' && x !== '-')
+                        .join(' · ');
+                      toggleDelete(row.id, label || String(row.id));
+                    }}
                     showEdit={false}
                   />
                 );

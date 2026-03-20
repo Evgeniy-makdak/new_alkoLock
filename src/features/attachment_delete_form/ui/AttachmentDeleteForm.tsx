@@ -4,6 +4,7 @@ import { Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
 
@@ -23,7 +24,9 @@ export const AttachmentDeleteForm = ({ attach, closeModal }: AttachmentDeleteFor
         {t('modals.attachmentDeletion')}
       </Typography>
       <Stack gap={2}>
-        <Typography>{t('modals.confirmDeleteAttachment', { name: attach.text })}</Typography>
+        <Typography>
+          {t('modals.confirmDeleteAttachment', { name: reactNodeToPlainText(attach.text) })}
+        </Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}_${testids.page_attachments.attachments_popup_delete_attach.ATTACHMENTS_DELETE_ATTACH}`}

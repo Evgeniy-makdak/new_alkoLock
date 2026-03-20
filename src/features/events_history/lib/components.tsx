@@ -2,15 +2,21 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import dayjs, { Dayjs } from 'dayjs';
+import 'dayjs/locale/be';
+import 'dayjs/locale/en';
+import 'dayjs/locale/kk';
+import 'dayjs/locale/ky';
 import 'dayjs/locale/ru';
+import 'dayjs/locale/uz-latn';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { Tooltip, Typography } from '@mui/material';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { ruRU } from '@mui/x-date-pickers/locales';
+import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
 
 import { TypeEventSelect } from '@entities/type_event_select';
 import {
@@ -24,9 +30,8 @@ import { Values } from '@shared/ui/search_multiple_select';
 import { FilterButton } from '@shared/ui/table_filter_button/FilterButton';
 import { TouchLoader } from '@shared/ui/touch_loader';
 
+import i18n from '../../../i18n';
 import style from '../ui/EventsHistory.module.scss';
-
-dayjs.locale('ru');
 
 interface EventsFilterPanelProps {
   open: boolean;
@@ -49,8 +54,8 @@ export const Text = (text: string) => (
 
 export const getTextList = (isLoading: boolean, length: number) => {
   if (isLoading) return <TouchLoader />;
-  if (!isLoading && length > 0) return Text('Событий больше нет');
-  if (!isLoading && length === 0) return Text('Нет событий');
+  if (!isLoading && length > 0) return Text(i18n.t('history.noMoreEvents'));
+  if (!isLoading && length === 0) return Text(i18n.t('history.noEvents'));
 };
 
 export const TableHeader = ({
@@ -73,6 +78,33 @@ export const TableHeader = ({
   startDate: Dayjs | null;
   endDate: Dayjs | null;
 }) => {
+  const { t, i18n } = useTranslation();
+  const lang = (i18n.language || 'ru').split('-')[0].toLowerCase();
+
+  const pickersLocalePack: Record<string, typeof ruRU | typeof enUS | typeof kzKZ | typeof beBY> = {
+    ru: ruRU,
+    en: enUS,
+    kk: kzKZ,
+    ky: ruRU,
+    be: beBY,
+    uz: enUS,
+  };
+  const dayjsLocaleByLang: Record<string, string> = {
+    ru: 'ru',
+    en: 'en',
+    kk: 'kk',
+    ky: 'ky',
+    be: 'be',
+    uz: 'uz-latn',
+  };
+  const pickerPack = pickersLocalePack[lang] || ruRU;
+  const localeText = pickerPack.components.MuiLocalizationProvider.defaultProps.localeText;
+  const adapterLocale = dayjsLocaleByLang[lang] || 'ru';
+
+  React.useEffect(() => {
+    dayjs.locale(adapterLocale);
+  }, [adapterLocale]);
+
   const { filters: eventFilters, setFilters: setEventFilters } = useEventsFilterPanel();
   const [localStartDate, setLocalStartDate] = React.useState<Dayjs | null>(initialStartDate);
   const [localEndDate, setLocalEndDate] = React.useState<Dayjs | null>(initialEndDate);
@@ -139,8 +171,8 @@ export const TableHeader = ({
   return (
     <LocalizationProvider
       dateAdapter={AdapterDayjs}
-      localeText={ruRU.components.MuiLocalizationProvider.defaultProps.localeText}
-      adapterLocale="ru">
+      localeText={localeText}
+      adapterLocale={adapterLocale}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <StyledTable.HeaderRow className={style.headerTitleRow}>
@@ -150,9 +182,9 @@ export const TableHeader = ({
               onMouseEnter={() => setHoveredColumn('id')}
               onMouseLeave={() => setHoveredColumn(null)}
               sx={{ cursor: 'pointer', position: 'relative' }}>
-              Тип события
+              {t('tables.eventType')}
               <span style={{ display: 'inline-block', position: 'absolute', marginLeft: 10 }}>
-                <Tooltip title="Сортировать">
+                <Tooltip title={t('common.sortTooltip')}>
                   <span style={{ display: 'inline-flex' }}>
                     {(sortField === 'id' || hoveredColumn === 'id') && (
                       <ArrowUpwardIcon
@@ -185,14 +217,14 @@ export const TableHeader = ({
                     position: 'relative',
                     paddingRight: 30,
                   }}>
-                  <span>Дата</span>
+                  <span>{t('tables.date')}</span>
                   <span
                     style={{
                       display: 'inline-block',
                       position: 'absolute',
                       left: 'calc(100% - 20px)',
                     }}>
-                    <Tooltip title="Сортировать">
+                    <Tooltip title={t('common.sortTooltip')}>
                       <span style={{ display: 'inline-flex' }}>
                         {(sortField === 'timestamp' || hoveredColumn === 'timestamp') && (
                           <ArrowUpwardIcon
@@ -252,7 +284,7 @@ export const TableHeader = ({
                   }
                   value={eventFilters.typeEvent} // Используем очищенные фильтры
                   levelEvent={eventFilters.level}
-                  label="Тип события"
+                  label={t('filters.eventType')}
                   getTooltipTitle={(label) => `${label}`}
                   sx={{ width: 150 }}
                 />
@@ -268,7 +300,7 @@ export const TableHeader = ({
                     <InputDate
                       value={localStartDate}
                       onChange={handleStartDateChange}
-                      tooltipTitle="Начальная дата"
+                      tooltipTitle={t('history.startDate')}
                       sx={{
                         '& .MuiInputBase-root': {
                           height: '56px',
@@ -279,7 +311,7 @@ export const TableHeader = ({
                     <InputDate
                       value={localEndDate}
                       onChange={handleEndDateChange}
-                      tooltipTitle="Конечная дата"
+                      tooltipTitle={t('history.endDate')}
                       sx={{
                         '& .MuiInputBase-root': {
                           height: '56px',
@@ -292,7 +324,7 @@ export const TableHeader = ({
                   <div
                     className={style.desktopResetButton}
                     style={{ marginLeft: '50px', marginRight: '20px' }}>
-                    <ResetFilters title="Сбросить фильтры" reset={resetAllFilters} />
+                    <ResetFilters title={t('common.resetFilters')} reset={resetAllFilters} />
                   </div>
                 </div>
               </StyledTable.HeaderCell>
@@ -333,7 +365,7 @@ export const TableHeader = ({
                       }
                       value={eventFilters.typeEvent}
                       levelEvent={eventFilters.level}
-                      label="Тип события"
+                      label={t('filters.eventType')}
                       getTooltipTitle={(label) => `${label}`}
                       sx={{ width: '100%' }}
                     />
@@ -343,7 +375,7 @@ export const TableHeader = ({
                       flexShrink: 0,
                       minWidth: '140px',
                     }}>
-                    <ResetFilters title="Сбросить фильтры" reset={resetAllFilters} />
+                    <ResetFilters title={t('common.resetFilters')} reset={resetAllFilters} />
                   </div>
                 </div>
               </StyledTable.HeaderCell>
@@ -359,7 +391,7 @@ export const TableHeader = ({
                     <InputDate
                       value={localStartDate}
                       onChange={handleStartDateChange}
-                      tooltipTitle="Начальная дата"
+                      tooltipTitle={t('history.startDate')}
                       sx={{
                         '& .MuiInputBase-root': {
                           height: '40px',
@@ -370,7 +402,7 @@ export const TableHeader = ({
                     <InputDate
                       value={localEndDate}
                       onChange={handleEndDateChange}
-                      tooltipTitle="Конечная дата"
+                      tooltipTitle={t('history.endDate')}
                       sx={{
                         '& .MuiInputBase-root': {
                           height: '40px',

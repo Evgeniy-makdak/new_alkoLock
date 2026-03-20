@@ -2,8 +2,29 @@ import { ICONS } from '@shared/const/icons';
 
 import { VehicleEventsGroup } from './types';
 
+/** Строки UI для попапа маркера (передаются из компонента с useTranslation). */
+export type VehiclePopupLabels = {
+  closeTitle: string;
+  noData: string;
+  mode: string;
+  status: string;
+  online: string;
+  offline: string;
+  alcolockPrefix: string;
+  driverPrefix: string;
+  unknownDriver: string;
+  addressUnknown: string;
+  addressLoading: string;
+  noCoordinates: string;
+  unknownEvent: string;
+  viewAllEvents: string;
+};
+
 type VehiclePopupProps = {
   event: VehicleEventsGroup;
+  labels: VehiclePopupLabels;
+  /** BCP-47 / i18n language для Nominatim (Accept-Language). */
+  acceptLanguage: string;
   getEventColor: (eventType: string) => string;
   formatDate: (dateString: string) => string;
   onClose: () => void;
@@ -39,8 +60,12 @@ const isEventDataComplete = (event: VehicleEventsGroup): boolean => {
   return true;
 };
 
+const NO_DATA_RU = 'Нет данных';
+
 export const VehiclePopup = ({
   event,
+  labels,
+  acceptLanguage,
   getEventColor,
   formatDate,
   onClose,
@@ -74,13 +99,15 @@ export const VehiclePopup = ({
   closeButton.style.fontSize = '20px';
   closeButton.style.fontWeight = 'bold';
   closeButton.style.zIndex = '1000';
+  closeButton.setAttribute('title', labels.closeTitle);
+  closeButton.setAttribute('aria-label', labels.closeTitle);
   closeButton.addEventListener('click', (e) => {
     e.stopPropagation();
     onClose();
   });
 
   const vehicleName = document.createElement('b');
-  vehicleName.textContent = `${event.vehicle?.manufacturer || ''} ${event.vehicle?.model || ''} (${event.vehicle?.registrationNumber || 'Нет данных'})`;
+  vehicleName.textContent = `${event.vehicle?.manufacturer || ''} ${event.vehicle?.model || ''} (${event.vehicle?.registrationNumber || labels.noData})`;
 
   const infoContainer = document.createElement('div');
   infoContainer.style.marginTop = '4px';
@@ -120,18 +147,17 @@ export const VehiclePopup = ({
   modeText.setAttribute('data-mode-element', 'true'); // Добавляем data-атрибут для поиска
 
   // Получаем режим из события, устройства или monitoringDevice
-  const currentMode =
-    event.mode ||
-    event.vehicle?.monitoringDevice?.mode ||
-    firstEvent?.action?.device?.mode ||
-    'Нет данных';
-  modeText.textContent = `Режим: ${currentMode}`;
+  const rawMode =
+    event.mode || event.vehicle?.monitoringDevice?.mode || firstEvent?.action?.device?.mode || '';
+  const displayMode =
+    !rawMode || rawMode === NO_DATA_RU || String(rawMode).trim() === '' ? labels.noData : rawMode;
+  modeText.textContent = `${labels.mode}: ${displayMode}`;
 
-  if (currentMode === 'Рабочий') {
+  if (rawMode === 'Рабочий') {
     modeText.style.color = '#2e7d32';
-  } else if (currentMode === 'Аварийный') {
+  } else if (rawMode === 'Аварийный') {
     modeText.style.color = '#d32f2f';
-  } else if (currentMode === 'Сервисный') {
+  } else if (rawMode === 'Сервисный') {
     modeText.style.color = '#ed6c02';
   }
 
@@ -145,7 +171,7 @@ export const VehiclePopup = ({
   const statusIcon = createSvgIcon(ICONS.STATUS);
   statusInfo.appendChild(statusIcon);
   const statusText = document.createElement('span');
-  statusText.textContent = `Статус: ${deviceStatus ? 'в сети' : 'не в сети'}`;
+  statusText.textContent = `${labels.status}: ${deviceStatus ? labels.online : labels.offline}`;
   statusText.style.color = deviceStatus ? '#2e7d32' : '#d32f2f';
   statusInfo.appendChild(statusText);
 
@@ -157,7 +183,9 @@ export const VehiclePopup = ({
   const deviceIcon = createSvgIcon(ICONS.DEVICE);
   deviceInfo.appendChild(deviceIcon);
   const deviceText = document.createElement('span');
-  deviceText.textContent = `Алкозамок: ${firstEvent?.action?.device?.name || 'Нет данных'} (${firstEvent?.action?.device?.serialNumber || 'Нет данных'})`;
+  const devName = firstEvent?.action?.device?.name || labels.noData;
+  const devSerial = firstEvent?.action?.device?.serialNumber || labels.noData;
+  deviceText.textContent = `${labels.alcolockPrefix}: ${devName} (${devSerial})`;
   deviceInfo.appendChild(deviceText);
 
   const addressInfo = document.createElement('div');
@@ -171,21 +199,22 @@ export const VehiclePopup = ({
   addressText.style.minHeight = '1em';
 
   if (event.latitude && event.longitude) {
-    const cacheKey = `${event.latitude.toFixed(6)},${event.longitude.toFixed(6)}`;
+    const cacheKey = `${event.latitude.toFixed(6)},${event.longitude.toFixed(6)}|${acceptLanguage}`;
 
     if (geocodingCache.has(cacheKey)) {
       // Используем кэшированный адрес
-      addressText.textContent = geocodingCache.get(cacheKey) || 'Адрес не определен';
+      addressText.textContent = geocodingCache.get(cacheKey) || labels.addressUnknown;
     } else {
-      addressText.textContent = 'Определение адреса...';
+      addressText.textContent = labels.addressLoading;
 
       // Делаем запрос только если адрес еще не в кэше
       fetch(
         `https://nominatim.openstreetmap.org/reverse?format=json&lat=${event.latitude}&lon=${event.longitude}`,
+        { headers: { 'Accept-Language': acceptLanguage } },
       )
         .then((response) => response.json())
         .then((data) => {
-          const displayName = data.display_name || 'Адрес не определен';
+          const displayName = data.display_name || labels.addressUnknown;
           const shortAddress = displayName.split(',').slice(0, 3).join(', ');
 
           // Сохраняем в кэш
@@ -198,14 +227,14 @@ export const VehiclePopup = ({
         })
         .catch(() => {
           // Сохраняем ошибку в кэше, чтобы не повторять запрос
-          geocodingCache.set(cacheKey, 'Адрес не определен');
+          geocodingCache.set(cacheKey, labels.addressUnknown);
           if (addressText.parentNode) {
-            addressText.textContent = 'Адрес не определен';
+            addressText.textContent = labels.addressUnknown;
           }
         });
     }
   } else {
-    addressText.textContent = 'Координаты не указаны';
+    addressText.textContent = labels.noCoordinates;
   }
 
   addressInfo.appendChild(addressText);
@@ -221,7 +250,7 @@ export const VehiclePopup = ({
     dateCell.style.gridColumn = '1';
 
     const typeCell = document.createElement('div');
-    typeCell.textContent = ev.eventType || 'Неизвестное событие';
+    typeCell.textContent = ev.eventType || labels.unknownEvent;
     typeCell.style.color = getEventColor(ev.eventType || '');
     typeCell.style.fontWeight = '500';
     typeCell.style.gridColumn = '2';
@@ -238,7 +267,7 @@ export const VehiclePopup = ({
   viewEventsLink.style.width = '100%';
   viewEventsLink.style.textAlign = 'center';
   viewEventsLink.style.cursor = 'pointer';
-  viewEventsLink.textContent = 'Посмотреть все события';
+  viewEventsLink.textContent = labels.viewAllEvents;
   viewEventsLink.addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -256,7 +285,7 @@ export const VehiclePopup = ({
     const driverIcon = createSvgIcon(ICONS.DRIVER);
     driverInfo.appendChild(driverIcon);
     const driverText = document.createElement('span');
-    driverText.textContent = `Водитель: ${firstEvent?.user?.fullName || 'Неизвестный водитель'}`;
+    driverText.textContent = `${labels.driverPrefix}: ${firstEvent?.user?.fullName || labels.unknownDriver}`;
     driverInfo.appendChild(driverText);
     infoContainer.appendChild(driverInfo);
   }

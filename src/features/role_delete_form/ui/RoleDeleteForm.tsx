@@ -5,6 +5,7 @@ import { Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
 
@@ -23,7 +24,9 @@ export const RoleDeleteForm: FC<RoleDeleteFormProps> = ({ role, closeModal }) =>
       <Typography marginBottom={3} fontWeight={700} variant="h6">
         {t('modals.roleDeletion')}
       </Typography>
-      <Typography>{t('modals.confirmDeleteRole', { name: role.text })}</Typography>
+      <Typography>
+        {t('modals.confirmDeleteRole', { name: reactNodeToPlainText(role.text) })}
+      </Typography>
       <ButtonFormWrapper>
         <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={handleDelete}>
           {t('modals.delete')}

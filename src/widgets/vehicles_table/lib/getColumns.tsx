@@ -113,36 +113,27 @@ export const useGetColumns = (
                     onClickEdit={() => setChangeCarsId(row.id)}
                     useHighlightOffIcon={useHighlightOffIcon}
                     isActive={row.isActive}
-                    onClickDelete={() =>
-                      toggleDelete(
-                        row?.id,
-                        <>
-                          <b>
-                            {row?.MARK} {row?.MODEL} ({row?.GOS_NUMBER})
-                          </b>
-                        </>,
-                      )
-                    }
-                    onClickRecover={() =>
-                      toggleRecover(
-                        row?.id,
-                        <>
-                          <b>
-                            {row?.MARK} {row?.MODEL} ({row?.GOS_NUMBER})
-                          </b>
-                        </>,
-                      )
-                    }
-                    onTrueDelete={() =>
-                      toggleTrueDelete(
-                        row?.id,
-                        <>
-                          <b>
-                            {row?.MARK} {row?.MODEL} ({row?.GOS_NUMBER})
-                          </b>
-                        </>,
-                      )
-                    }
+                    onClickDelete={() => {
+                      const label =
+                        `${row?.MARK ?? ''} ${row?.MODEL ?? ''} (${row?.GOS_NUMBER ?? ''})`
+                          .replace(/\s+/g, ' ')
+                          .trim();
+                      toggleDelete(row?.id, label || String(row?.id));
+                    }}
+                    onClickRecover={() => {
+                      const label =
+                        `${row?.MARK ?? ''} ${row?.MODEL ?? ''} (${row?.GOS_NUMBER ?? ''})`
+                          .replace(/\s+/g, ' ')
+                          .trim();
+                      toggleRecover(row?.id, label || String(row?.id));
+                    }}
+                    onTrueDelete={() => {
+                      const label =
+                        `${row?.MARK ?? ''} ${row?.MODEL ?? ''} (${row?.GOS_NUMBER ?? ''})`
+                          .replace(/\s+/g, ' ')
+                          .trim();
+                      toggleTrueDelete(row?.id, label || String(row?.id));
+                    }}
                   />
                 );
               },

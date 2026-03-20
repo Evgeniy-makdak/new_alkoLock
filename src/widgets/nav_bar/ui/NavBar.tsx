@@ -20,12 +20,12 @@ import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useLocalStorage } from '@shared/hooks/useLocalStorage';
 import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
+import { brandNameLabel } from '@shared/lib/brandNameLabel';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { Popup } from '@shared/ui/popup';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- используется при раскомментировании переключателя языка
-import { setStoredLanguage } from '../../../i18n';
 import { breakpoints } from '../breakpoints';
 import { NAV_LINKS, frontendVersion } from '../config/const';
 import { tooltipStyle } from '../config/styles';
@@ -34,14 +34,6 @@ import style from './NavBar.module.scss';
 
 // Высота одного элемента навигации в пикселях (с учетом margin-bottom)
 const ITEM_HEIGHT = 61; // 44px высота + 17px margin-bottom
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- используется при раскомментировании переключателя языка
-const LANGUAGES = [
-  { code: 'ru', label: 'RU' },
-  { code: 'en', label: 'EN' },
-  { code: 'kk', label: 'KZ' },
-  { code: 'ky', label: 'KG' },
-] as const;
 
 export const NavBar = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- i18n используется при раскомментировании переключателя языка
@@ -306,7 +298,9 @@ export const NavBar = () => {
             <Link to={RoutePaths.events} onClick={handleLogoClick} className={style.logoLink}>
               <Logo className={style.img} />
             </Link>
-            {!isCollapsed && <span className={style.logoText}>Лазерные системы</span>}
+            {!isCollapsed && (
+              <span className={style.logoText}>{brandNameLabel(t, i18n.language)}</span>
+            )}
           </div>
         )}
 
@@ -384,25 +378,10 @@ export const NavBar = () => {
             {/* Версии и переключатель языка */}
             {!isCollapsed && !(isMobile || isTablet) && (
               <div className={style.versionContainer}>
-                <div className={style.languageSwitcher}>
-                  <Tooltip title={t('common.language')} placement="right" slotProps={tooltipStyle}>
-                    <div className={style.langButtons}>
-                      {LANGUAGES.map(({ code, label }) => (
-                        <Button
-                          key={code}
-                          size="small"
-                          variant={i18n.language === code ? 'contained' : 'outlined'}
-                          onClick={() => {
-                            i18n.changeLanguage(code);
-                            setStoredLanguage(code);
-                          }}
-                          className={style.langButton}>
-                          {label}
-                        </Button>
-                      ))}
-                    </div>
-                  </Tooltip>
-                </div>
+                <AppLanguageSelect
+                  className={style.languageSwitcher}
+                  formControlClassName={style.langSelect}
+                />
 
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>

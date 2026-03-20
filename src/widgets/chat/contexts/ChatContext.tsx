@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 
 import { appStore } from '@shared/model/app_store/AppStore';
 
+import i18n from '../../../i18n';
 import { ChatConfig } from '../contexts/chatConfig';
 import { useSocket } from './SocketContext';
 import { useChatAttachments } from './hooks/useChatAttachments';
@@ -898,7 +899,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
             updateSession(activeSessionId, {
               messages: filteredMessages,
-              lastSendError: errorData.message || 'Диалог не заблокирован. Нажмите "Забрать"',
+              lastSendError: errorData.message || i18n.t('chat.needTakeToSendDefault'),
               assignedDialogId: null,
               selectedDialog: {
                 ...session.selectedDialog,
@@ -912,7 +913,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             const filteredMessages = session.messages.filter((msg: any) => !msg.isPending);
             updateSession(activeSessionId, {
               messages: filteredMessages,
-              lastSendError: errorData.message || 'Внутренняя ошибка сервера',
+              lastSendError: errorData.message || i18n.t('chat.internalServerError'),
             });
           }
         }

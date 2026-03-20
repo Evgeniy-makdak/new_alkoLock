@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FiPaperclip, FiX } from 'react-icons/fi';
 import { RxPaperPlane } from 'react-icons/rx';
 
@@ -58,6 +59,7 @@ function MessageInput({
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
 }: MessageInputProps) {
+  const { t } = useTranslation();
   const { sendMessage } = useChat();
   const [text, setText] = useState(initialText);
   const [compressionInProgress, setCompressionInProgress] = useState(false);
@@ -129,7 +131,7 @@ function MessageInput({
       }
 
       if (dialogStatus !== 'CLOSED') {
-        alert('Диалог не заблокирован. Нажмите "Забрать" для блокировки диалога.');
+        alert(t('chat.alertDialogNotLocked'));
         return;
       }
 
@@ -150,7 +152,7 @@ function MessageInput({
       }
 
       if (textIsEmpty && hasAttachments) {
-        alert('Нельзя отправить вложения без текста сообщения');
+        alert(t('chat.alertNoAttachmentsWithoutText'));
         return;
       }
 
@@ -196,6 +198,7 @@ function MessageInput({
       onMessageSent,
       onClearReply,
       onAttachmentsChange,
+      t,
     ],
   );
 
@@ -210,20 +213,20 @@ function MessageInput({
       }
 
       if (dialogStatus !== 'CLOSED') {
-        alert('Диалог не заблокирован. Нажмите "Забрать" для блокировки диалога.');
+        alert(t('chat.alertDialogNotLocked'));
         e.target.value = '';
         return;
       }
 
       if (lastSendError) {
-        alert('Нельзя прикреплять файлы пока есть ошибка отправки');
+        alert(t('chat.alertNoAttachWhileError'));
         e.target.value = '';
         return;
       }
 
       const totalFiles = attachments.length + files.length;
       if (totalFiles > MAX_ATTACHMENTS) {
-        alert(`Максимальное количество файлов: ${MAX_ATTACHMENTS}`);
+        alert(t('chat.alertMaxFiles', { max: MAX_ATTACHMENTS }));
         e.target.value = '';
         return;
       }
@@ -235,14 +238,17 @@ function MessageInput({
         try {
           const isAllowed = isAllowedImageType(file);
           if (!isAllowed) {
-            invalidFiles.push(`"${file.name}" - недопустимый формат`);
+            invalidFiles.push(t('chat.invalidFormat', { name: file.name }));
             continue;
           }
 
           if (!checkFileSize(file)) {
             const shouldCompress = window.confirm(
-              `Файл "${file.name}" (${formatFileSize(file.size)}) превышает максимальный размер ${MAX_FILE_SIZE_MB} МБ.\n\n` +
-                'Хотите попробовать сжать изображение?',
+              t('chat.confirmOversize', {
+                name: file.name,
+                size: formatFileSize(file.size),
+                mb: MAX_FILE_SIZE_MB,
+              }),
             );
 
             if (shouldCompress) {
@@ -259,33 +265,33 @@ function MessageInput({
                 if (processedFile) {
                   validFiles.push(processedFile);
                 } else {
-                  invalidFiles.push(`"${file.name}" - не удалось сжать до нужного размера`);
+                  invalidFiles.push(t('chat.couldNotCompress', { name: file.name }));
                 }
               } catch (error) {
                 console.error('❌ Ошибка сжатия файла:', error);
-                invalidFiles.push(`"${file.name}" - ошибка сжатия`);
+                invalidFiles.push(t('chat.compressionFailed', { name: file.name }));
               } finally {
                 setCompressionInProgress(false);
               }
             } else {
-              invalidFiles.push(
-                `"${file.name}" - превышает максимальный размер ${MAX_FILE_SIZE_MB} МБ`,
-              );
+              invalidFiles.push(t('chat.exceedsMax', { name: file.name, mb: MAX_FILE_SIZE_MB }));
             }
           } else {
             validFiles.push(file);
           }
         } catch (error) {
           console.error('❌ Ошибка обработки файла:', file.name, error);
-          invalidFiles.push(`"${file.name}" - ошибка обработки`);
+          invalidFiles.push(t('chat.processingFailed', { name: file.name }));
         }
       }
 
       if (invalidFiles.length > 0) {
         alert(
-          `Не удалось загрузить ${invalidFiles.length} файл(ов):\n\n` +
-            invalidFiles.join('\n') +
-            `\n\nРазрешены только изображения (JPG, PNG, BMP) до ${MAX_FILE_SIZE_MB} МБ.`,
+          t('chat.uploadRejected', {
+            count: invalidFiles.length,
+            list: invalidFiles.join('\n'),
+            mb: MAX_FILE_SIZE_MB,
+          }),
         );
       }
 
@@ -298,7 +304,14 @@ function MessageInput({
       onAttachmentsChange?.(newAttachments);
       e.target.value = '';
     },
-    [isDialogBlockedByOtherOperator, dialogStatus, attachments, onAttachmentsChange, lastSendError],
+    [
+      isDialogBlockedByOtherOperator,
+      dialogStatus,
+      attachments,
+      onAttachmentsChange,
+      lastSendError,
+      t,
+    ],
   );
 
   const removeAttachment = useCallback(
@@ -348,75 +361,75 @@ function MessageInput({
 
   const getSendButtonTooltip = () => {
     if (isDialogBlockedByOtherOperator) {
-      return 'Диалог заблокирован другим оператором. Отправка сообщений невозможна';
+      return t('chat.sendBlockedByOther');
     }
     if (dialogStatus !== 'CLOSED') {
-      return 'Нажмите "Забрать" для отправки сообщения';
+      return t('chat.sendNeedTake');
     }
     if (lastSendError) {
-      return 'Исправьте ошибку для отправки';
+      return t('chat.sendFixError');
     }
     if (compressionInProgress) {
-      return 'Идет сжатие изображений...';
+      return t('chat.sendCompressing');
     }
     if (isSendDisabled) {
       if (!text.trim().length && attachments.length === 0) {
-        return 'Введите текст сообщения или прикрепите файл';
+        return t('chat.sendEnterTextOrFile');
       }
       if (isDialogEnded) {
-        return 'Диалог завершен';
+        return t('chat.sendDialogEnded');
       }
       if (isSendingMessage) {
-        return 'Сообщение отправляется...';
+        return t('chat.sendSending');
       }
       if (selectedUsers.length === 0) {
-        return 'Выберите пользователя';
+        return t('chat.sendSelectUser');
       }
     }
-    return 'Отправить сообщение';
+    return t('chat.sendMessage');
   };
 
   const getFileButtonTooltip = () => {
     if (compressionInProgress) {
-      return 'Сжатие файлов...';
+      return t('chat.fileCompressing');
     }
     if (isDialogBlockedByOtherOperator) {
-      return 'Диалог заблокирован другим оператором. Прикрепление файлов невозможно';
+      return t('chat.fileBlockedByOther');
     }
     if (dialogStatus !== 'CLOSED') {
-      return 'Нажмите "Забрать" чтобы начать диалог';
+      return t('chat.fileNeedTake');
     }
     if (lastSendError) {
-      return 'Исправьте ошибку для прикрепления файлов';
+      return t('chat.fileFixError');
     }
     if (isFileButtonDisabled) {
       if (isSendingMessage) {
-        return 'Загрузка файлов...';
+        return t('chat.fileUploading');
       }
       if (attachments.length >= MAX_ATTACHMENTS) {
-        return `Максимум ${MAX_ATTACHMENTS} файлов`;
+        return t('chat.fileMaxCount', { max: MAX_ATTACHMENTS });
       }
     }
-    return `Прикрепить файл (макс. ${MAX_FILE_SIZE_MB} МБ каждый)`;
+    return t('chat.fileAttach', { mb: MAX_FILE_SIZE_MB });
   };
 
   const getTextareaPlaceholder = () => {
     if (isDialogBlockedByOtherOperator) {
-      return 'Отправка сообщений невозможна';
+      return t('chat.phSendImpossible');
     }
     if (dialogStatus !== 'CLOSED') {
-      return 'Нажмите "Забрать" для отправки сообщений';
+      return t('chat.phNeedTake');
     }
     if (lastSendError) {
-      return 'Исправьте ошибку для отправки';
+      return t('chat.phFixError');
     }
     if (compressionInProgress) {
-      return 'Идет сжатие изображений...';
+      return t('chat.phCompressing');
     }
     if (isDialogEnded) {
-      return 'Диалог завершен';
+      return t('chat.phDialogEnded');
     }
-    return 'Написать сообщение...';
+    return t('chat.phWriteMessage');
   };
 
   const textareaDisabled =
@@ -436,16 +449,16 @@ function MessageInput({
       {replyTarget && (
         <div className={styles.replyHeader}>
           <div className={styles.replyInfo}>
-            <div className={styles.replyAuthor}>Ответ на сообщение</div>
+            <div className={styles.replyAuthor}>{t('chat.replyToMessage')}</div>
             <div className={styles.replyText}>
-              {replyTarget.text?.substring(0, 50) || 'Сообщение'}
+              {replyTarget.text?.substring(0, 50) || t('chat.messageStub')}
               {replyTarget.text?.length > 50 ? '...' : ''}
             </div>
           </div>
           <button
             className={styles.closeReply}
             onClick={onClearReply}
-            title="Отменить ответ"
+            title={t('chat.cancelReply')}
             disabled={!!lastSendError || textareaDisabled}>
             <FiX />
           </button>
@@ -462,7 +475,7 @@ function MessageInput({
             backgroundColor: '#ffe6e6',
             borderRadius: '4px',
           }}>
-          ❌ Ошибка отправки: {lastSendError}
+          ❌ {t('chat.sendErrorLabel')} {lastSendError}
         </div>
       )}
 
@@ -476,16 +489,16 @@ function MessageInput({
             marginBottom: '8px',
             fontSize: '0.9em',
           }}>
-          ⏳ Сжатие изображений... Пожалуйста, подождите.
+          ⏳ {t('chat.compressingImagesWait')}
         </div>
       )}
 
       {attachments.length > 0 && (
         <div className={styles.attachmentsPreview}>
           <div className={styles.attachmentsTitle}>
-            Прикрепленные файлы ({attachments.length}/{MAX_ATTACHMENTS}):
+            {t('chat.attachedFiles', { current: attachments.length, max: MAX_ATTACHMENTS })}
             <span style={{ fontSize: '0.8em', color: '#777', marginLeft: '8px' }}>
-              (макс. {MAX_FILE_SIZE_MB} МБ каждый)
+              {t('chat.maxSizeEach', { mb: MAX_FILE_SIZE_MB })}
             </span>
           </div>
           <div className={styles.attachmentsList}>
@@ -497,7 +510,7 @@ function MessageInput({
                     {formatFileSize(file.size)}
                     {file.name.includes('_compressed') && (
                       <span style={{ color: '#388e3c', marginLeft: '4px', fontSize: '0.8em' }}>
-                        (сжато)
+                        {t('chat.compressed')}
                       </span>
                     )}
                   </span>
@@ -506,7 +519,7 @@ function MessageInput({
                   className={styles.removeAttachment}
                   onClick={() => removeAttachment(index)}
                   disabled={isSendingMessage || !!lastSendError || textareaDisabled}
-                  title="Удалить файл">
+                  title={t('chat.deleteFile')}>
                   <FiX />
                 </button>
               </div>
@@ -526,7 +539,7 @@ function MessageInput({
             borderRadius: '4px',
             borderLeft: '4px solid #d32f2f',
           }}>
-          ⚠️ Диалог заблокирован другим оператором. Вы можете только просматривать сообщения.
+          ⚠️ {t('chat.blockedViewOnly')}
         </div>
       )}
 

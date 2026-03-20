@@ -8,6 +8,7 @@ import { TableRowControls } from '@entities/table_row_controls/ui/TableRowContro
 import { setTestIdsToHeaderColumns } from '@shared/components/Table/Table';
 import { SortTypes } from '@shared/config/queryParamsEnums';
 import { testids } from '@shared/const/testid';
+import { entityLabelForI18n } from '@shared/lib/reactNodeToPlainText';
 import type { IAlcolock, ID } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
@@ -93,12 +94,7 @@ export const useGetColumns = (
                   }
                   onClickEdit={() => setChangeRoleId(row.id)}
                   onClickDelete={() =>
-                    toggleDelete(
-                      row.id,
-                      <>
-                        <b>{row[ValuesHeader.ROLE]}</b>
-                      </>,
-                    )
+                    toggleDelete(row.id, entityLabelForI18n(row[ValuesHeader.ROLE]))
                   }
                 />
               )}

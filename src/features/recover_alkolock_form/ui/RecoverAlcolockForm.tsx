@@ -7,6 +7,7 @@ import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
 
@@ -51,7 +52,9 @@ export const RecoverAlcolockForm: FC<RecoverCarFormProps> = ({
         {t('modals.alcolockRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>{t('modals.confirmRecoverAlcolock', { name: displayText })}</Typography>
+        <Typography>
+          {t('modals.confirmRecoverAlcolock', { name: reactNodeToPlainText(displayText) })}
+        </Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}

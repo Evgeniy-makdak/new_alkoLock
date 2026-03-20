@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Close, Minimize } from '@mui/icons-material';
 import { IconButton } from '@mui/material';
@@ -24,6 +25,7 @@ function ChatPanel({
   scrollToBottomOnExpand,
   onScrollToBottomDone,
 }: ChatPanelProps) {
+  const { t } = useTranslation();
   const {
     closeSession,
     toggleSessionMinimize,
@@ -41,6 +43,10 @@ function ChatPanel({
   } = useChat();
 
   const session = getSession(sessionId);
+
+  /** Актуальный getSession без подписки useCallback на usersCache — иначе цикл запросов в UsersSelect. */
+  const getSessionLiveRef = useRef(getSession);
+  getSessionLiveRef.current = getSession;
 
   const [localIsUsersTouched, setLocalIsUsersTouched] = useState(false);
   const [localHasSentMessage, setLocalHasSentMessage] = useState(false);
@@ -430,13 +436,14 @@ function ChatPanel({
 
   const updateUsersCache = useCallback(
     (users: any[]) => {
-      const newCache = new Map(session?.usersCache || new Map());
+      const current = getSessionLiveRef.current(sessionId);
+      const newCache = new Map(current?.usersCache || new Map());
       users.forEach((user) => {
         if (user && user.id) newCache.set(user.id, user);
       });
       updateSession(sessionId, { usersCache: newCache });
     },
-    [sessionId, updateSession, session?.usersCache],
+    [sessionId, updateSession],
   );
 
   const handleMessageTextChange = useCallback(
@@ -578,13 +585,16 @@ function ChatPanel({
     return (
       <div className={styles.minimizedPanel}>
         <div className={styles.minimizedHeader} onClick={() => toggleSessionMinimize(sessionId)}>
-          <h3>{selectedUserName || selectedDialog?.client_name || 'Диалог с пользователем'}</h3>
+          <h3>
+            {selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}
+          </h3>
           {unreadCount > 0 && (
             <span className={styles.unreadBadgeMinimized}>
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
           <IconButton
+            title={t('chat.minimizeDialog')}
             onClick={(e) => {
               e.stopPropagation();
               toggleSessionMinimize(sessionId);
@@ -601,15 +611,18 @@ function ChatPanel({
   return (
     <div className={styles.panel} data-session-id={sessionId}>
       <div className={styles.chatHeader}>
-        <h3>{selectedUserName || selectedDialog?.client_name || 'Диалог с пользователем'}</h3>
+        <h3>{selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}</h3>
         {unreadCount > 0 && (
           <span className={styles.unreadBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
         )}
         <div className={styles.headerActions}>
-          <IconButton size="small" onClick={handleMinimize} title="Свернуть диалог">
+          <IconButton size="small" onClick={handleMinimize} title={t('chat.minimizeDialog')}>
             <Minimize fontSize="small" />
           </IconButton>
-          <IconButton size="small" onClick={() => closeSession(sessionId)} title="Закрыть диалог">
+          <IconButton
+            size="small"
+            onClick={() => closeSession(sessionId)}
+            title={t('chat.closeDialog')}>
             <Close fontSize="small" />
           </IconButton>
         </div>

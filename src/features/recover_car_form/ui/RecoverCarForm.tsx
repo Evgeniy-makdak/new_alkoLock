@@ -5,6 +5,7 @@ import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
+import { reactNodeToPlainText } from '@shared/lib/reactNodeToPlainText';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
 
@@ -28,7 +29,9 @@ export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, close
         {t('modals.vehicleRecovery')}
       </Typography>
       <Stack gap={3}>
-        <Typography>{t('modals.confirmRecoverVehicle', { name: car.text })}</Typography>
+        <Typography>
+          {t('modals.confirmRecoverVehicle', { name: reactNodeToPlainText(car.text) })}
+        </Typography>
         <ButtonFormWrapper>
           <Button
             testid={`${testids.POPUP_ACTION_BUTTON}`}

@@ -3,14 +3,15 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import L from 'leaflet';
 
 import { MonitoringDevicesApi } from '@shared/api/baseQuerys';
 
 import { useMapContext } from './MapContext';
-import { VehiclePopup } from './VehiclePopup';
+import { VehiclePopup, type VehiclePopupLabels } from './VehiclePopup';
 import { VehicleEventsGroup } from './types';
 
 type MapMarkersProps = {
@@ -49,6 +50,39 @@ export const MapMarkers = ({
   popupRef: externalPopupRef,
   freezeMarkers = false,
 }: MapMarkersProps): JSX.Element => {
+  const { t, i18n } = useTranslation();
+  const dateLocale = useMemo(() => {
+    const map: Record<string, string> = {
+      ru: 'ru-RU',
+      en: 'en-US',
+      kk: 'kk-KZ',
+      ky: 'ky-KG',
+      be: 'be-BY',
+      uz: 'uz-UZ',
+    };
+    return map[i18n.language] || i18n.language;
+  }, [i18n.language]);
+
+  const vehiclePopupLabels = useMemo(
+    () => ({
+      closeTitle: t('map.popup.closeTitle'),
+      noData: t('map.popup.noData'),
+      mode: t('map.popup.mode'),
+      status: t('map.popup.status'),
+      online: t('map.popup.online'),
+      offline: t('map.popup.offline'),
+      alcolockPrefix: t('map.popup.alcolockPrefix'),
+      driverPrefix: t('map.popup.driverPrefix'),
+      unknownDriver: t('map.popup.unknownDriver'),
+      addressUnknown: t('map.popup.addressUnknown'),
+      addressLoading: t('map.popup.addressLoading'),
+      noCoordinates: t('map.popup.noCoordinates'),
+      unknownEvent: t('map.popup.unknownEvent'),
+      viewAllEvents: t('map.popup.viewAllEvents'),
+    }),
+    [t],
+  );
+
   const markersRef = useRef<L.Marker[]>([]);
   const prevEventsRef = useRef<VehicleEventsGroup[]>([]);
   const [, setForceUpdate] = useState(0);
@@ -367,28 +401,51 @@ export const MapMarkers = ({
     };
   };
 
-  const getEventColor = (eventType: string): string => {
+  const getEventColor = useCallback((eventType: string): string => {
     if (eventType.includes('Тестирование пройдено')) return '#2e7d32';
     if (eventType.includes('Тестирование не пройдено')) return '#d32f2f';
     if (eventType.includes('Тестирование прервано')) return '#ed6c02';
     return '#000000';
-  };
+  }, []);
 
-  const formatDate = (dateString: string): string => {
-    if (!dateString) return 'Нет данных';
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = useCallback(
+    (dateString: string): string => {
+      if (!dateString) return t('map.popup.noData');
+      try {
+        const date = new Date(dateString);
+        return date.toLocaleString(dateLocale, {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      } catch {
+        return dateString;
+      }
+    },
+    [dateLocale, t],
+  );
+
+  /** Актуально для колбэка setInterval опроса статуса (замыкание иначе держит локаль с момента открытия попапа). */
+  const popupI18nRef = useRef<{
+    labels: VehiclePopupLabels;
+    acceptLanguage: string;
+    formatDate: (dateString: string) => string;
+    getEventColor: (eventType: string) => string;
+    vehicleModes: Record<string, string | undefined>;
+  }>({
+    labels: vehiclePopupLabels,
+    acceptLanguage: i18n.language,
+    formatDate,
+    getEventColor,
+    vehicleModes,
+  });
+  popupI18nRef.current.labels = vehiclePopupLabels;
+  popupI18nRef.current.acceptLanguage = i18n.language;
+  popupI18nRef.current.formatDate = formatDate;
+  popupI18nRef.current.getEventColor = getEventColor;
+  popupI18nRef.current.vehicleModes = vehicleModes;
 
   const getDeviceStatus = async (
     deviceId: string,
@@ -515,6 +572,8 @@ export const MapMarkers = ({
             longitude: markerCoords?.lng ?? updatedEvent.longitude,
             mode: currentMode,
           },
+          labels: vehiclePopupLabels,
+          acceptLanguage: i18n.language,
           getEventColor,
           formatDate,
           onClose: () => {
@@ -600,8 +659,10 @@ export const MapMarkers = ({
           const modeFromMarker =
             markerEvent?.vehicle?.monitoringDevice?.mode ||
             markerEvent?.events?.[0]?.action?.device?.mode;
+          const i18nSnap = popupI18nRef.current;
           const updatedMode =
-            modeFromMarker ?? (currentVehicleId ? vehicleModes[currentVehicleId] : undefined);
+            modeFromMarker ??
+            (currentVehicleId ? i18nSnap.vehicleModes[currentVehicleId] : undefined);
 
           const updatedEventForPopup = {
             ...popupDataRef.current,
@@ -624,8 +685,10 @@ export const MapMarkers = ({
                 longitude: currentCoords?.lng ?? updatedEventForPopup.longitude,
                 mode: updatedMode,
               },
-              getEventColor,
-              formatDate,
+              labels: i18nSnap.labels,
+              acceptLanguage: i18nSnap.acceptLanguage,
+              getEventColor: i18nSnap.getEventColor,
+              formatDate: i18nSnap.formatDate,
               onClose: () => {
                 popupRef.current?.remove();
                 setOpenedPopupVehicleId(null);
@@ -659,6 +722,11 @@ export const MapMarkers = ({
       setOpenedPopupVehicleId,
       setSelectedVehicleId,
       onCloseAllPanels,
+      vehiclePopupLabels,
+      i18n.language,
+      formatDate,
+      getEventColor,
+      onViewAllEventsWithCoords,
     ],
   );
 
@@ -704,6 +772,8 @@ export const MapMarkers = ({
             longitude: markerCoords?.lng ?? popupDataRef.current!.longitude,
             mode: currentMode,
           },
+          labels: vehiclePopupLabels,
+          acceptLanguage: i18n.language,
           getEventColor,
           formatDate,
           onClose: () => {
@@ -740,7 +810,19 @@ export const MapMarkers = ({
     setSelectedVehicleId,
     onCloseAllPanels,
     onViewAllEventsWithCoords,
+    vehiclePopupLabels,
+    i18n.language,
+    formatDate,
+    getEventColor,
   ]);
+
+  /** Leaflet-попап — отдельный DOM; при смене языка пересобираем контент (подписи, Nominatim). */
+  useEffect(() => {
+    if (!popupRef.current || !popupDataRef.current) return;
+    refreshOpenPopup();
+    // только i18n.language: не привязываем refreshOpenPopup (иначе лишние обновления при vehicleModes и т.д.)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
 
   useEffect(() => {
     if (!map) return;
@@ -983,13 +1065,16 @@ export const MapMarkers = ({
 
           const firstEvent = mergedEvent.events[0];
           const tooltipContent = document.createElement('div');
-          tooltipContent.innerHTML = `
-            ${firstEvent?.action?.vehicleRecord?.manufacturer || ''} 
-            ${firstEvent?.action?.vehicleRecord?.model || ''} 
-            (${firstEvent?.action?.vehicleRecord?.registrationNumber || 'Нет данных'})
-            <br>
-            режим: ${newMode || 'Нет данных'}
-          `;
+          const mfr = firstEvent?.action?.vehicleRecord?.manufacturer || '';
+          const mdl = firstEvent?.action?.vehicleRecord?.model || '';
+          const reg =
+            firstEvent?.action?.vehicleRecord?.registrationNumber || t('map.popup.noData');
+          const line1 = document.createElement('div');
+          line1.textContent = `${mfr} ${mdl} (${reg})`.replace(/\s+/g, ' ').trim();
+          const line2 = document.createElement('div');
+          line2.textContent = `${t('map.markerTooltipMode')}: ${newMode || t('map.popup.noData')}`;
+          tooltipContent.appendChild(line1);
+          tooltipContent.appendChild(line2);
 
           marker.unbindTooltip();
           marker.bindTooltip(tooltipContent, {
@@ -1059,13 +1144,15 @@ export const MapMarkers = ({
 
       const firstEvent = event.events[0];
       const tooltipContent = document.createElement('div');
-      tooltipContent.innerHTML = `
-        ${firstEvent?.action?.vehicleRecord?.manufacturer || ''} 
-        ${firstEvent?.action?.vehicleRecord?.model || ''} 
-        (${firstEvent?.action?.vehicleRecord?.registrationNumber || 'Нет данных'})
-        <br>
-        режим: ${deviceMode || 'Нет данных'}
-      `;
+      const mfr = firstEvent?.action?.vehicleRecord?.manufacturer || '';
+      const mdl = firstEvent?.action?.vehicleRecord?.model || '';
+      const reg = firstEvent?.action?.vehicleRecord?.registrationNumber || t('map.popup.noData');
+      const line1 = document.createElement('div');
+      line1.textContent = `${mfr} ${mdl} (${reg})`.replace(/\s+/g, ' ').trim();
+      const line2 = document.createElement('div');
+      line2.textContent = `${t('map.markerTooltipMode')}: ${deviceMode || t('map.popup.noData')}`;
+      tooltipContent.appendChild(line1);
+      tooltipContent.appendChild(line2);
 
       marker.bindTooltip(tooltipContent, {
         permanent: false,
@@ -1139,6 +1226,8 @@ export const MapMarkers = ({
     vehicleModes,
     createDetachedPopup,
     setVehicleMode,
+    i18n.language,
+    t,
   ]);
 
   return null;

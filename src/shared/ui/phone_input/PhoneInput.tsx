@@ -19,6 +19,8 @@ const LOCALE_LABELS: Record<string, typeof ru> = {
   ru,
   kk: ru,
   ky: ru,
+  be: ru,
+  uz: en,
   en,
 };
 
@@ -26,6 +28,8 @@ const DEFAULT_COUNTRY_BY_LOCALE: Record<string, Country> = {
   ru: 'RU',
   kk: 'KZ',
   ky: 'KG',
+  be: 'BY',
+  uz: 'UZ',
   en: 'US',
 };
 

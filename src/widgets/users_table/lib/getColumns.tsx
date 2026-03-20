@@ -15,6 +15,7 @@ import { AccountApi } from '@shared/api/baseQuerys';
 import { setTestIdsToHeaderColumns } from '@shared/components/Table/Table';
 import { SortTypes } from '@shared/config/queryParamsEnums';
 import { testids } from '@shared/const/testid';
+import { entityLabelForI18n } from '@shared/lib/reactNodeToPlainText';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { IAlcolock, ID } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
@@ -143,9 +144,9 @@ export const useGetColumns = (
                       testids.page_users.users_widget_table.USERS_WIDGET_TABLE_BODY_ITEM_ACTION_EDIT
                     }
                     onClickEdit={() => setChangeUserId(row.id)}
-                    onClickDelete={() => toggleDelete(row.id, <b>{row?.USER}</b>)}
-                    onClickRecover={() => toggleRecover(row.id, <b>{row?.USER}</b>)}
-                    onTrueDelete={() => toggleTrueDelete(row.id, <b>{row?.USER}</b>)}
+                    onClickDelete={() => toggleDelete(row.id, entityLabelForI18n(row?.USER))}
+                    onClickRecover={() => toggleRecover(row.id, entityLabelForI18n(row?.USER))}
+                    onTrueDelete={() => toggleTrueDelete(row.id, entityLabelForI18n(row?.USER))}
                     showEdit={!hideEditButton}
                   />
                 );

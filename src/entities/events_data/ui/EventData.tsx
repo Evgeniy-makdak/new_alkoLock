@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { EventsApi } from '@shared/api/baseQuerys';
@@ -41,6 +42,7 @@ export const EventData: FC<EventData> = ({
   onToggleFreezeMarkers,
   onCoordinateClick,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   // Координаты могут быть в summary, events[0] или на верхнем уровне (разная структура API)
   const latitude = event?.summary?.lat ?? event?.events?.[0]?.latitude ?? (event as any)?.latitude;
@@ -92,37 +94,37 @@ export const EventData: FC<EventData> = ({
       {type !== HistoryTypes.byUser && (
         <>
           <div className={style.row}>
-            <span>Водитель</span>
+            <span>{t('map.eventDetails.driver')}</span>
             <span>{Formatters.nameFormatter(event?.userRecord)}</span>
           </div>
           <div className={style.row}>
-            <span>Почта</span>
+            <span>{t('map.eventDetails.email')}</span>
             <span>{event?.userRecord?.email}</span>
           </div>
         </>
       )}
 
       <div className={style.row}>
-        <span>Наименование алкозамка</span>
+        <span>{t('map.eventDetails.deviceName')}</span>
         <span>{event?.deviceRecord?.name ?? '-'}</span>
       </div>
       <div className={style.row}>
-        <span>Серийный номер алкозамка</span>
+        <span>{t('map.eventDetails.deviceSerial')}</span>
         <span>{event?.deviceRecord?.serialNumber ?? '-'}</span>
       </div>
 
       {type !== HistoryTypes.byCar && (
         <>
           <div className={style.row}>
-            <span>Марка ТС</span>
+            <span>{t('map.eventDetails.vehicleMake')}</span>
             <span>{event?.vehicleRecord?.manufacturer ?? '-'}</span>
           </div>
           <div className={style.row}>
-            <span>Модель ТС</span>
+            <span>{t('map.eventDetails.vehicleModel')}</span>
             <span>{event?.vehicleRecord?.model ?? '-'}</span>
           </div>
           <div className={style.row}>
-            <span>Государственный номер</span>
+            <span>{t('map.eventDetails.stateNumber')}</span>
             <span>{event?.vehicleRecord?.registrationNumber ?? '-'}</span>
           </div>
         </>
@@ -138,13 +140,13 @@ export const EventData: FC<EventData> = ({
       {event?.action?.vehicleRecord?.type === 'SOBRIETY_TEST' &&
         type !== HistoryTypes.byAlcolock && (
           <div className={style.row}>
-            <span>Результат тестирования</span>
+            <span>{t('map.eventDetails.testResult')}</span>
             <span>{event.summary?.testResult ?? '-'} мг/л</span>
           </div>
         )}
 
       <div className={style.row}>
-        <span>Координаты</span>
+        <span>{t('map.eventDetails.coordinates')}</span>
         <span>
           {hasCoordinates ? (
             <button
@@ -162,7 +164,7 @@ export const EventData: FC<EventData> = ({
       {showDetailsLink && (
         <div className={style['details-row']}>
           <button className={style['details-button']} onClick={handleDetailsClick}>
-            Подробнее
+            {t('map.eventDetails.more')}
           </button>
         </div>
       )}
