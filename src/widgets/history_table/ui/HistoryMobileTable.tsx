@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { CalendarToday, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { TextField } from '@mui/material';
 
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
@@ -561,27 +562,16 @@ export const HistoryMobileTable = ({ prevBranch }: HistoryMobileTableProps) => {
         )}
       </div>
 
-      {tableData.totalCount > 0 && (
-        <div className={styles.mobilePagination}>
-          <button
-            type="button"
-            className={styles.paginationButton}
-            disabled={tableData.page === 0}
-            onClick={() => handlePageChange(tableData.page - 1)}>
-            <KeyboardArrowUp />
-          </button>
-          <span className={styles.paginationInfo}>
-            Страница {tableData.page + 1} из {Math.ceil(tableData.totalCount / tableData.pageSize)}
-          </span>
-          <button
-            type="button"
-            className={styles.paginationButton}
-            disabled={tableData.page >= Math.ceil(tableData.totalCount / tableData.pageSize) - 1}
-            onClick={() => handlePageChange(tableData.page + 1)}>
-            <KeyboardArrowDown />
-          </button>
-        </div>
-      )}
+      <div className={styles.mobilePagination}>
+        <MobilePaginationWithJump
+          page={tableData.page}
+          pageSize={tableData.pageSize}
+          totalCount={tableData.totalCount}
+          onPageChange={handlePageChange}
+          buttonClassName={styles.paginationButton}
+          infoClassName={styles.paginationInfo}
+        />
+      </div>
     </div>
   );
 };

@@ -17,6 +17,7 @@ import {
   AttachmentsFilterPanel,
   attachmentsFilterPanelStore,
 } from '@features/attachments_filter_panel';
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { Popup } from '@shared/ui/popup';
@@ -704,25 +705,16 @@ export const AttachmentsMobileTable = ({
         )}
       </div>
 
-      {tableData.totalCount > 0 && (
-        <div className={styles.mobilePagination}>
-          <button
-            className={styles.paginationButton}
-            disabled={tableData.page === 0}
-            onClick={() => handlePageChange(tableData.page - 1)}>
-            <KeyboardArrowUp />
-          </button>
-          <span className={styles.paginationInfo}>
-            Страница {tableData.page + 1} из {Math.ceil(tableData.totalCount / tableData.pageSize)}
-          </span>
-          <button
-            className={styles.paginationButton}
-            disabled={(tableData.page + 1) * tableData.pageSize >= tableData.totalCount}
-            onClick={() => handlePageChange(tableData.page + 1)}>
-            <KeyboardArrowDown />
-          </button>
-        </div>
-      )}
+      <div className={styles.mobilePagination}>
+        <MobilePaginationWithJump
+          page={tableData.page}
+          pageSize={tableData.pageSize}
+          totalCount={tableData.totalCount}
+          onPageChange={handlePageChange}
+          buttonClassName={styles.paginationButton}
+          infoClassName={styles.paginationInfo}
+        />
+      </div>
 
       <Popup
         closeonClickSpace={false}

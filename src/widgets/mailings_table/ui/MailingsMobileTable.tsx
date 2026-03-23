@@ -13,6 +13,7 @@ import { DeleteMailingsForm } from '@features/delete_mailings_form';
 import { MailingsAddChangeForm } from '@features/mailings_add_change_form';
 import { RecoverMailingsForm } from '@features/recover_mailings_form/ui';
 import { TrueDeleteMailingsForm } from '@features/true_delete_mailings_form';
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { Popup } from '@shared/ui/popup';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
@@ -678,25 +679,16 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
         )}
       </div>
 
-      {tableData.totalCount > 0 && (
-        <div className={styles.mobilePagination}>
-          <button
-            className={styles.paginationButton}
-            disabled={tableData.page === 0}
-            onClick={() => handlePageChange(tableData.page - 1)}>
-            <KeyboardArrowUp />
-          </button>
-          <span className={styles.paginationInfo}>
-            Страница {tableData.page + 1} из {Math.ceil(tableData.totalCount / tableData.pageSize)}
-          </span>
-          <button
-            className={styles.paginationButton}
-            disabled={(tableData.page + 1) * tableData.pageSize >= tableData.totalCount}
-            onClick={() => handlePageChange(tableData.page + 1)}>
-            <KeyboardArrowDown />
-          </button>
-        </div>
-      )}
+      <div className={styles.mobilePagination}>
+        <MobilePaginationWithJump
+          page={tableData.page}
+          pageSize={tableData.pageSize}
+          totalCount={tableData.totalCount}
+          onPageChange={handlePageChange}
+          buttonClassName={styles.paginationButton}
+          infoClassName={styles.paginationInfo}
+        />
+      </div>
 
       <Popup
         body={

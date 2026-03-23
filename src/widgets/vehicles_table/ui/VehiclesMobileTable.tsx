@@ -14,6 +14,7 @@ import {
 } from '@mui/icons-material';
 import { IconButton, TextField, Tooltip } from '@mui/material';
 
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { MobileModals } from '@shared/ui/popup/MobileModals';
@@ -752,27 +753,16 @@ export const VehiclesMobileTable = ({
         )}
       </div>
 
-      {tableData.totalCount > 0 && (
-        <div className={styles.mobilePagination}>
-          <button
-            type="button"
-            className={styles.paginationButton}
-            disabled={tableData.page === 0}
-            onClick={() => handlePageChange(tableData.page - 1)}>
-            <KeyboardArrowUp />
-          </button>
-          <span className={styles.paginationInfo}>
-            Страница {tableData.page + 1} из {Math.ceil(tableData.totalCount / tableData.pageSize)}
-          </span>
-          <button
-            type="button"
-            className={styles.paginationButton}
-            disabled={tableData.page >= Math.ceil(tableData.totalCount / tableData.pageSize) - 1}
-            onClick={() => handlePageChange(tableData.page + 1)}>
-            <KeyboardArrowDown />
-          </button>
-        </div>
-      )}
+      <div className={styles.mobilePagination}>
+        <MobilePaginationWithJump
+          page={tableData.page}
+          pageSize={tableData.pageSize}
+          totalCount={tableData.totalCount}
+          onPageChange={handlePageChange}
+          buttonClassName={styles.paginationButton}
+          infoClassName={styles.paginationInfo}
+        />
+      </div>
 
       <MobileModals
         addCarModalData={{

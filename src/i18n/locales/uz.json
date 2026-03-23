@@ -217,7 +217,11 @@
     "nextPage": "Keyingi sahifa",
     "lastPage": "Oxirgi sahifaga",
     "pageOf": "{{total}} dan {{page}}-sahifa",
-    "rowsOf": "{{count}} dan {{from}}-{{to}}"
+    "rowsOf": "{{count}} dan {{from}}-{{to}}",
+    "jumpToPage": "Sahifaga o'tish",
+    "pageNumber": "Sahifa raqami",
+    "jumpHelper": "1 dan {{max}} gacha",
+    "go": "O'tish"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Xizmat rejimini yoqish/o'chirish so'roviga javob kutish vaqti",
@@ -498,6 +502,8 @@
   "chat": {
     "toggleTooltip": "O'qilmagan xabarlar: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Yangi chat ochish",
+    "minimizedListTooltip": "Yig'ilgan dialoglar va bildirishnomalar",
+    "minimizedListTitle": "Yig'ilgan dialoglar",
     "newChatFallback": "Yangi chat",
     "unreadInBranch": "O'qilmagan xabarlar: {{count}} • {{branch}}",
     "newDialogInBranch": "Yangi dialog • {{branch}}",

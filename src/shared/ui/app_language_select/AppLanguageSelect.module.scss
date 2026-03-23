@@ -3,6 +3,10 @@
   align-items: center;
   gap: 10px;
   max-width: 100%;
+
+  @media (max-width: 1023px) {
+    gap: 0;
+  }
 }
 
 .inlineLanguageName {
@@ -13,6 +17,11 @@
   min-width: 0;
   overflow-wrap: break-word;
   word-break: break-word;
+
+  /* Название языка у флага на триггере — только ≥1024px; в модалке выбора подписи у флагов не трогаем */
+  @media (max-width: 1023px) {
+    display: none;
+  }
 }
 
 .trigger {

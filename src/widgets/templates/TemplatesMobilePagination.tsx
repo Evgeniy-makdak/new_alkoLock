@@ -1,7 +1,8 @@
 import React from 'react';
 
-import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import { Box, Typography } from '@mui/material';
+import { Box } from '@mui/material';
+
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 
 interface TemplatesMobilePaginationProps {
   totalCount: number;
@@ -16,8 +17,6 @@ export const TemplatesMobilePagination: React.FC<TemplatesMobilePaginationProps>
   page,
   onPageChange,
 }) => {
-  const totalPages = Math.ceil(totalCount / rowsPerPage);
-
   return (
     <Box
       sx={{
@@ -26,85 +25,16 @@ export const TemplatesMobilePagination: React.FC<TemplatesMobilePaginationProps>
         justifyContent: 'center',
         padding: '16px',
         backgroundColor: 'white',
-        borderTop: '1px solid #e0e0e0',
         gap: '16px',
       }}>
-      <button
-        className="pagination-button"
-        disabled={page === 0}
-        onClick={() => onPageChange(page - 1)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          border: '1px solid #e0e0e0',
-          borderRadius: '50%',
-          background: '#fff',
-          color: '#333',
-          cursor: page === 0 ? 'not-allowed' : 'pointer',
-          transition: 'all 0.2s ease',
-          opacity: page === 0 ? 0.5 : 1,
-        }}
-        onMouseOver={(e) => {
-          if (page !== 0) {
-            e.currentTarget.style.borderColor = '#1976d2';
-            e.currentTarget.style.color = '#1976d2';
-          }
-        }}
-        onMouseOut={(e) => {
-          if (page !== 0) {
-            e.currentTarget.style.borderColor = '#e0e0e0';
-            e.currentTarget.style.color = '#333';
-          }
-        }}>
-        <KeyboardArrowUp />
-      </button>
-
-      <Typography
-        variant="body2"
-        sx={{
-          fontSize: '14px',
-          color: '#777',
-          minWidth: '120px',
-          textAlign: 'center',
-        }}>
-        Страница {page + 1} из {totalPages}
-      </Typography>
-
-      <button
-        className="pagination-button"
-        disabled={(page + 1) * rowsPerPage >= totalCount}
-        onClick={() => onPageChange(page + 1)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '40px',
-          height: '40px',
-          border: '1px solid #e0e0e0',
-          borderRadius: '50%',
-          background: '#fff',
-          color: '#333',
-          cursor: (page + 1) * rowsPerPage >= totalCount ? 'not-allowed' : 'pointer',
-          transition: 'all 0.2s ease',
-          opacity: (page + 1) * rowsPerPage >= totalCount ? 0.5 : 1,
-        }}
-        onMouseOver={(e) => {
-          if ((page + 1) * rowsPerPage < totalCount) {
-            e.currentTarget.style.borderColor = '#1976d2';
-            e.currentTarget.style.color = '#1976d2';
-          }
-        }}
-        onMouseOut={(e) => {
-          if ((page + 1) * rowsPerPage < totalCount) {
-            e.currentTarget.style.borderColor = '#e0e0e0';
-            e.currentTarget.style.color = '#333';
-          }
-        }}>
-        <KeyboardArrowDown />
-      </button>
+      <MobilePaginationWithJump
+        page={page}
+        pageSize={rowsPerPage}
+        totalCount={totalCount}
+        onPageChange={onPageChange}
+        buttonClassName="pagination-button"
+        infoClassName=""
+      />
     </Box>
   );
 };

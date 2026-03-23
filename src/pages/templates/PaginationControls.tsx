@@ -13,6 +13,8 @@ interface PaginationControlsProps {
   page: number;
   onPageChange: (event: unknown, newPage: number) => void;
   onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Убрать верхнюю линию у панели (напр. «Шаблоны сообщений» — как у вкладок с DataGrid) */
+  hideTopBorder?: boolean;
 }
 
 const PaginationControls: React.FC<PaginationControlsProps> = ({
@@ -21,6 +23,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   page,
   onPageChange,
   onRowsPerPageChange,
+  hideTopBorder = false,
 }) => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language?.split('-')[0] || i18n.language;
@@ -38,16 +41,28 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   return (
     <ThemeProvider theme={theme}>
       <Paper
+        elevation={hideTopBorder ? 0 : undefined}
         sx={{
           position: 'sticky',
           bottom: 0,
           width: '100%',
-          borderTop: '1px solid #ccc',
+          borderTop: hideTopBorder ? 'none' : '1px solid #ccc',
           backgroundColor: 'white',
           zIndex: 10,
+          boxShadow: hideTopBorder ? 'none' : undefined,
         }}>
         <TablePagination
-          sx={{ marginTop: 'auto', backgroundColor: 'transparent', borderTop: 'none' }}
+          sx={{
+            marginTop: 'auto',
+            backgroundColor: 'transparent',
+            borderTop: 'none',
+            '& .MuiTablePagination-toolbar': {
+              flexWrap: 'nowrap',
+              gap: 1,
+              minHeight: 48,
+              boxSizing: 'border-box',
+            },
+          }}
           rowsPerPageOptions={[25, 50, 75, 100]}
           component="div"
           count={totalCount}

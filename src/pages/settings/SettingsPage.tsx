@@ -348,7 +348,6 @@ export const SettingsPage = () => {
             left: 0,
             right: 0,
             backgroundColor: 'background.paper',
-            borderTop: '1px solid #e0e0e0',
             pb: 0,
           }}>
           {isMobile ? (
@@ -360,6 +359,7 @@ export const SettingsPage = () => {
             />
           ) : (
             <PaginationControls
+              hideTopBorder
               totalCount={filteredSettingsRows.length}
               rowsPerPage={rowsPerPage}
               page={page}

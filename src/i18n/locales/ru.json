@@ -218,7 +218,11 @@
     "nextPage": "Следующая страница",
     "lastPage": "Перейти на последнюю страницу",
     "pageOf": "Страница {{page}} из {{total}}",
-    "rowsOf": "{{from}}-{{to}} из {{count}}"
+    "rowsOf": "{{from}}-{{to}} из {{count}}",
+    "jumpToPage": "Перейти на страницу",
+    "pageNumber": "Номер страницы",
+    "jumpHelper": "От 1 до {{max}}",
+    "go": "Перейти"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Время ожидания ответа на запрос активации/деактивации сервисного режима",
@@ -499,6 +503,8 @@
   "chat": {
     "toggleTooltip": "Непрочитанных сообщений: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Открыть новый чат",
+    "minimizedListTooltip": "Свёрнутые диалоги и уведомления",
+    "minimizedListTitle": "Свёрнутые диалоги",
     "newChatFallback": "Новый чат",
     "unreadInBranch": "Непрочитанных сообщений: {{count}} • {{branch}}",
     "newDialogInBranch": "Новый диалог • {{branch}}",

@@ -217,7 +217,11 @@
     "nextPage": "Келесі бет",
     "lastPage": "Соңғы бетке",
     "pageOf": "{{page}} бет / {{total}}",
-    "rowsOf": "{{from}}-{{to}} / {{count}}"
+    "rowsOf": "{{from}}-{{to}} / {{count}}",
+    "jumpToPage": "Бетке өту",
+    "pageNumber": "Бет нөмірі",
+    "jumpHelper": "1-ден {{max}}-ке дейін",
+    "go": "Өту"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Сервистік режимді іске қосу/өшіру сұрауына жауап күту уақыты",
@@ -498,6 +502,8 @@
   "chat": {
     "toggleTooltip": "Оқылмаған хабарламалар: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Жаңа чат ашу",
+    "minimizedListTooltip": "Жинақталған диалогтар және хабарламалар",
+    "minimizedListTitle": "Жинақталған диалогтар",
     "newChatFallback": "Жаңа чат",
     "unreadInBranch": "Оқылмаған хабарламалар: {{count}} • {{branch}}",
     "newDialogInBranch": "Жаңа диалог • {{branch}}",

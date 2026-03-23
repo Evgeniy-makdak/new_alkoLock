@@ -218,7 +218,11 @@
     "nextPage": "Наступная старонка",
     "lastPage": "Перайсці на апошнюю старонку",
     "pageOf": "Старонка {{page}} з {{total}}",
-    "rowsOf": "{{from}}-{{to}} з {{count}}"
+    "rowsOf": "{{from}}-{{to}} з {{count}}",
+    "jumpToPage": "Перайсці на старонку",
+    "pageNumber": "Нумар старонкі",
+    "jumpHelper": "Ад 1 да {{max}}",
+    "go": "Перайсці"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Час чакання адказу на запыт актывацыі/дэактывацыі сэрвіснага рэжыму",
@@ -499,6 +503,8 @@
   "chat": {
     "toggleTooltip": "Непрачытаных паведамленняў: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Адкрыць новы чат",
+    "minimizedListTooltip": "Згорнутыя дыялогі і апавяшчэнні",
+    "minimizedListTitle": "Згорнутыя дыялогі",
     "newChatFallback": "Новы чат",
     "unreadInBranch": "Непрачытаных паведамленняў: {{count}} • {{branch}}",
     "newDialogInBranch": "Новы дыялог • {{branch}}",

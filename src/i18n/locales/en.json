@@ -218,7 +218,11 @@
     "nextPage": "Next page",
     "lastPage": "Last page",
     "pageOf": "Page {{page}} of {{total}}",
-    "rowsOf": "{{from}}-{{to}} of {{count}}"
+    "rowsOf": "{{from}}-{{to}} of {{count}}",
+    "jumpToPage": "Go to page",
+    "pageNumber": "Page number",
+    "jumpHelper": "From 1 to {{max}}",
+    "go": "Go"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Time to wait for response to service mode activation/deactivation request",
@@ -499,6 +503,8 @@
   "chat": {
     "toggleTooltip": "Unread messages: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Open new chat",
+    "minimizedListTooltip": "Minimized dialogs and notifications",
+    "minimizedListTitle": "Minimized dialogs",
     "newChatFallback": "New chat",
     "unreadInBranch": "Unread messages: {{count}} • {{branch}}",
     "newDialogInBranch": "New dialog • {{branch}}",

@@ -217,7 +217,11 @@
     "nextPage": "Кийинки бет",
     "lastPage": "Акыркы бетке",
     "pageOf": "{{page}} бет / {{total}}",
-    "rowsOf": "{{from}}-{{to}} / {{count}}"
+    "rowsOf": "{{from}}-{{to}} / {{count}}",
+    "jumpToPage": "Бетке өтүү",
+    "pageNumber": "Бет номери",
+    "jumpHelper": "1ден {{max}}га чейин",
+    "go": "Өтүү"
   },
   "settingsLabels": {
     "serviceModeActivationTimeout": "Сервистик режимди иштетүү/өчүрүү суроосуна жооп күтүү убактысы",
@@ -498,6 +502,8 @@
   "chat": {
     "toggleTooltip": "Окула элек кабарлар: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Жаңы чат ачуу",
+    "minimizedListTooltip": "Жыйналган диалогдор жана кабарлоолор",
+    "minimizedListTitle": "Жыйналган диалогдор",
     "newChatFallback": "Жаңы чат",
     "unreadInBranch": "Окула элек кабарлар: {{count}} • {{branch}}",
     "newDialogInBranch": "Жаңы диалог • {{branch}}",

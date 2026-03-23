@@ -7,6 +7,8 @@ import LastPageIcon from '@mui/icons-material/LastPage';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import { GridPagination, useGridApiContext } from '@mui/x-data-grid';
 
+import { PaginationJumpField } from '@shared/components/Pagination';
+
 const CustomPagination = () => {
   const { t } = useTranslation();
   const apiRef = useGridApiContext();
@@ -42,17 +44,18 @@ const CustomPagination = () => {
       const { pageSize } = apiRef.current.state.pagination.paginationModel;
       const totalRows = apiRef.current.state.rows.totalRowCount;
       const totalPages = Math.ceil(totalRows / pageSize);
-      apiRef.current.setPage(totalPages - 1);
+      apiRef.current.setPage(Math.max(0, totalPages - 1));
     }
   };
 
   const { page, pageSize } = apiRef.current.state.pagination.paginationModel;
   const totalRows = apiRef.current.state.rows.totalRowCount;
-  const totalPages = Math.ceil(totalRows / pageSize) - 1;
+  const maxPageIndex = Math.max(0, Math.ceil(totalRows / pageSize) - 1);
+  const pageCount = maxPageIndex + 1;
 
   return (
-    <Box display="flex" alignItems="center">
-      <Box display="flex" alignItems="center" mx={2} flexGrow={1}>
+    <Box display="flex" alignItems="center" flexWrap="nowrap" justifyContent="flex-end" gap={0.5}>
+      <Box display="flex" alignItems="center" mx={2} flexGrow={1} minWidth={0}>
         <GridPagination
           sx={{
             '& .MuiButtonBase-root': {
@@ -61,6 +64,12 @@ const CustomPagination = () => {
           }}
         />
       </Box>
+
+      <PaginationJumpField
+        page={page}
+        pageCount={pageCount}
+        onJump={(idx) => apiRef.current?.setPage(idx)}
+      />
 
       <Tooltip title={t('pagination.firstPage')}>
         <IconButton
@@ -83,7 +92,7 @@ const CustomPagination = () => {
       <Tooltip title={t('pagination.nextPage')}>
         <IconButton
           onClick={handleNextPageButtonClick}
-          disabled={page >= totalPages}
+          disabled={page >= maxPageIndex}
           aria-label="next page">
           <KeyboardArrowRightIcon />
         </IconButton>
@@ -92,7 +101,7 @@ const CustomPagination = () => {
       <Tooltip title={t('pagination.lastPage')}>
         <IconButton
           onClick={handleLastPageButtonClick}
-          disabled={page >= totalPages}
+          disabled={page >= maxPageIndex}
           aria-label="last page">
           <LastPageIcon />
         </IconButton>

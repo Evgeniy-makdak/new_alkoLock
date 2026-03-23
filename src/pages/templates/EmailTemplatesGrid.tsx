@@ -72,8 +72,7 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: 'background.paper',
-          borderTop: '1px solid #e0e0e0',
+          backgroundColor: '#fff',
           paddingBottom: 0,
         }}>
         {isMobile ? (
@@ -85,6 +84,7 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
           />
         ) : (
           <PaginationControls
+            hideTopBorder
             totalCount={totalCount}
             rowsPerPage={rowsPerPage}
             page={page}

@@ -11,6 +11,7 @@ import {
 } from '@mui/icons-material';
 import { Chip, IconButton, Tooltip } from '@mui/material';
 
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
@@ -311,25 +312,16 @@ export const UsersMobileTable = ({
         )}
       </div>
 
-      {tableData.totalCount > 0 && (
-        <div className={styles.mobilePagination}>
-          <button
-            className={styles.paginationButton}
-            disabled={tableData.page === 0}
-            onClick={() => handlePageChange(tableData.page - 1)}>
-            Назад
-          </button>
-          <span className={styles.paginationInfo}>
-            Страница {tableData.page + 1} из {Math.ceil(tableData.totalCount / tableData.pageSize)}
-          </span>
-          <button
-            className={styles.paginationButton}
-            disabled={(tableData.page + 1) * tableData.pageSize >= tableData.totalCount}
-            onClick={() => handlePageChange(tableData.page + 1)}>
-            Вперед
-          </button>
-        </div>
-      )}
+      <div className={styles.mobilePagination}>
+        <MobilePaginationWithJump
+          page={tableData.page}
+          pageSize={tableData.pageSize}
+          totalCount={tableData.totalCount}
+          onPageChange={handlePageChange}
+          buttonClassName={styles.paginationButton}
+          infoClassName={styles.paginationInfo}
+        />
+      </div>
     </div>
   );
 };
