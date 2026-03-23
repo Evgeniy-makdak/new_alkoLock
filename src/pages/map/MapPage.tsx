@@ -1,5 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -1000,6 +1007,28 @@ export const MapPage = () => {
     },
   ];
 
+  const mobileAsideShellStyle: CSSProperties = {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '100%',
+    maxWidth: '100%',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    backgroundColor: 'white',
+  };
+
+  const desktopPanelStackShellStyle: React.CSSProperties = {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: '680px',
+    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+  };
+
   const detailsTabs = [
     {
       name: t('info.infoTab'),
@@ -1042,8 +1071,9 @@ export const MapPage = () => {
             position: 'absolute',
             top: '10px',
             right: '10px',
-            maxWidth: 'calc(100vw - 70px)',
+            maxWidth: 'min(100%, calc(100dvw - 70px))',
             zIndex: 1000,
+            boxSizing: 'border-box',
           }}>
           <MapControls
             isMobile
@@ -1211,10 +1241,14 @@ export const MapPage = () => {
       {selectedVehicleId && (
         <div
           style={{
-            position: 'absolute',
-            right: 0,
-            zIndex: 1001,
-            backgroundColor: 'white',
+            ...(isMobile
+              ? { ...mobileAsideShellStyle, zIndex: 1001 }
+              : {
+                  position: 'absolute',
+                  right: 0,
+                  zIndex: 1001,
+                  backgroundColor: 'white',
+                }),
           }}>
           <Aside
             onClose={handleCloseAside}
@@ -1228,14 +1262,13 @@ export const MapPage = () => {
         <div
           key={`panel-${panel.id}`}
           style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: '680px',
-            zIndex: 1002 + index,
-            backgroundColor: 'white',
-            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+            ...(isMobile
+              ? { ...mobileAsideShellStyle, zIndex: 1002 + index }
+              : {
+                  ...desktopPanelStackShellStyle,
+                  zIndex: 1002 + index,
+                  backgroundColor: 'white',
+                }),
           }}>
           <Aside
             onClose={handleCloseAllPanels}

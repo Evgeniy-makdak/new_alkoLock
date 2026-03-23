@@ -25,6 +25,12 @@
   flex-direction: column;
   overflow-x: auto;
   width: 100%;
+  min-width: 0;
+
+  /* На мобильных не даём «ездить» всей странице из‑за чата/карты — скролл только внутри виджетов */
+  @media (max-width: 768px) {
+    overflow-x: hidden;
+  }
 }
 
 .contentWrapper {
@@ -32,4 +38,5 @@
   flex: 1 1 0;
   overflow: hidden;
   display: flex;
+  min-width: 0;
 }

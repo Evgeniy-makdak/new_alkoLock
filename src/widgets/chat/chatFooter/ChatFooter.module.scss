@@ -427,17 +427,21 @@
   .chatFooter {
     width: 380px;
     height: 500px;
-    bottom: 50%;
-    right: 50%;
-    transform: translate(50%, 50%) scale(1);
-    top: auto;
-    
+    /* Центр экрана: left/top + translate(-50%,-50%). НЕ right/bottom + translate(50%) — иначе панель уезжает за край. */
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%) scale(1);
+    box-sizing: border-box;
+    max-width: calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
+
     &.collapsed {
-      transform: translate(50%, 50%) translateY(20px) scale(0.95);
+      transform: translate(-50%, -50%) translateY(20px) scale(0.95);
     }
-    
+
     &.expanded {
-      transform: translate(50%, 50%) translateY(0) scale(1);
+      transform: translate(-50%, -50%) translateY(0) scale(1);
     }
   }
 
@@ -474,22 +478,24 @@
 // Для средних телефонов (от 480px до 630px)
 @media (max-width: 630px) {
   .chatFooter {
-    width: calc(100vw - 40px);
+    width: calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
     max-width: 500px;
-    height: 75vh; // Используем 75% высоты экрана
-    max-height: 600px;
-    min-height: 400px;
-    bottom: 50%;
-    right: 50%;
-    transform: translate(50%, 50%);
-    top: auto;
-    
+    height: min(75dvh, 75vh);
+    max-height: min(600px, 100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: min(400px, 55dvh);
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
+
     &.collapsed {
-      transform: translate(50%, 50%) translateY(20px) scale(0.95);
+      transform: translate(-50%, -50%) translateY(20px) scale(0.95);
     }
-    
+
     &.expanded {
-      transform: translate(50%, 50%);
+      transform: translate(-50%, -50%);
     }
   }
 
@@ -516,7 +522,9 @@
     bottom: 10px;
     right: 10px;
     left: 10px;
-    width: calc(100vw - 20px);
+    width: auto;
+    max-width: 100%;
+    box-sizing: border-box;
   }
 
   .toggleButtonWrapper {
@@ -541,13 +549,16 @@
 // Для маленьких телефонов (до 480px)
 @media (max-width: 480px) {
   .chatFooter {
-    width: calc(100vw - 20px);
-    height: 70vh; // 70% высоты экрана
-    max-height: 550px;
-    min-height: 350px;
-    bottom: 50%;
-    right: 50%;
-    transform: translate(50%, 50%);
+    width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    height: min(70dvh, 70vh);
+    max-height: min(550px, 100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: min(350px, 50dvh);
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
   }
 
   .minimizedChat {
@@ -593,10 +604,16 @@
 // Для очень маленьких телефонов (до 360px)
 @media (max-width: 360px) {
   .chatFooter {
-    width: calc(100vw - 10px);
-    height: 65vh; // 65% высоты экрана
-    max-height: 500px;
-    min-height: 300px;
+    width: calc(100vw - 12px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    height: min(65dvh, 65vh);
+    max-height: min(500px, 100dvh - 12px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    min-height: min(300px, 48dvh);
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
   }
 
   .minimizedChat {
@@ -632,16 +649,19 @@
   }
 }
 
-// Для портретной ориентации на всех устройствах
-@media (max-height: 700px) {
+// Короткий экран на мобильных — не трогаем десктоп (там чат в углу bottom/right)
+@media (max-height: 700px) and (max-width: 768px) {
   .chatFooter {
-    height: 80vh; // Увеличиваем высоту на коротких экранах
-    max-height: 500px;
-    bottom: 50%;
-    transform: translate(50%, 50%);
-    
+    height: min(80dvh, 80vh);
+    max-height: min(500px, 100dvh - 16px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+
     &.collapsed {
-      transform: translate(50%, 50%) translateY(20px) scale(0.95);
+      transform: translate(-50%, -50%) translateY(20px) scale(0.95);
     }
   }
   
@@ -661,20 +681,23 @@
 
 @media (max-width: 768px) and (orientation: landscape) {
   .chatFooter {
-    height: 85vh;
-    max-height: 500px;
-    width: 80vw;
+    height: min(85dvh, 85vh);
+    max-height: min(500px, 100dvh - 16px);
+    width: min(80vw, 100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right));
     max-width: 600px;
-    bottom: 50%;
-    right: 50%;
-    transform: translate(50%, 50%);
+    left: 50%;
+    top: 50%;
+    right: auto;
+    bottom: auto;
+    transform: translate(-50%, -50%);
+    box-sizing: border-box;
   }
-  
+
   @media (max-width: 630px) {
     .chatFooter {
-      width: 90vw;
-      height: 90vh;
-      max-height: 400px;
+      width: min(90vw, 100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+      height: min(90dvh, 90vh);
+      max-height: min(400px, 100dvh - 16px);
     }
     
     .minimizedChat {
@@ -688,9 +711,9 @@
 
 @media (max-height: 500px) {
   .chatFooter {
-    height: 90vh;
-    max-height: 450px;
-    
+    height: min(90dvh, 90vh);
+    max-height: min(450px, 100dvh - 12px);
+
     .messageInputContainer {
       position: sticky;
       bottom: 0;
