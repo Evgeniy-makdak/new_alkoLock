@@ -424,7 +424,6 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-left: 20px;
   margin-bottom: 20px;
   flex-shrink: 0;
 }
@@ -463,9 +462,7 @@
   color: #667a8a;
   text-transform: none;
   font-size: 16px;
-  padding: 8px 16px;
   min-width: auto;
-  // width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
