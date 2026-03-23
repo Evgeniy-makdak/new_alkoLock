@@ -16,7 +16,7 @@ import {
 
 import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { ID } from '@shared/types/BaseQueryTypes';
+import type { ID } from '@shared/types/BaseQueryTypes';
 
 interface IUser {
   id: number;
@@ -73,8 +73,8 @@ function UsersSelect({
   onUpdateUsersCacheRef.current = onUpdateUsersCache;
 
   const open = Boolean(anchorEl);
-  const branchId = appStore.getState().selectedBranchState?.id;
-  const currentUsedId = appStore.getState().authId;
+  const branchId = appStore((state) => state.selectedBranchState?.id);
+  const currentUsedId = appStore((state) => state.authId);
 
   useEffect(() => {
     usersCacheRef.current = new Map(usersCache);
@@ -99,10 +99,15 @@ function UsersSelect({
         const response = await UsersApi.getListToChat(options, false);
         let usersData: IUser[] = [];
 
-        if (Array.isArray(response.data)) {
-          usersData = response.data.filter((user) => user.id !== 2 && user.id !== currentUsedId);
-          onUpdateUsersCacheRef.current(usersData);
-        }
+        const payload = response.data as IUser[] | { content?: IUser[] } | null | undefined;
+        const rawList = Array.isArray(payload)
+          ? payload
+          : payload && typeof payload === 'object' && Array.isArray(payload.content)
+            ? payload.content
+            : [];
+
+        usersData = rawList.filter((user) => user.id !== 2 && user.id !== currentUsedId);
+        onUpdateUsersCacheRef.current(usersData);
 
         setUsers(usersData);
         setError('');
@@ -147,6 +152,9 @@ function UsersSelect({
   }, [branchId]);
 
   useEffect(() => {
+    // В React 18 Strict Mode после «фейкового» размонтирования ref сохраняет false —
+    // без повторной установки true fetchUsers навсегда выходит по !isMountedRef.
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
       if (searchTimeoutRef.current) {

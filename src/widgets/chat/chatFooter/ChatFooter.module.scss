@@ -239,26 +239,42 @@
   }
 }
 
-.notifications {
+// Общая геометрия кружков над стеком FAB чата (красный непрочитанные + синий список свёрнутых)
+%chatFabStackBadge {
   position: absolute;
   top: -100px;
   right: -8px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 22px;
   height: 22px;
-  background: #d32f2f;
   border-radius: 100%;
   text-align: center;
-  align-items: center;
   font-size: 12px;
   font-style: normal;
   font-weight: 500;
   letter-spacing: 0.14px;
-  line-height: 22px;
+  line-height: 1;
   color: white !important;
   z-index: 1002;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.notifications {
+  @extend %chatFabStackBadge;
+  background: #d32f2f;
+}
+
+.minimizedListCountBadge {
+  @extend %chatFabStackBadge;
+  background: #1976d2;
+}
+
+.minimizedListCountBadgeUnread {
+  @extend %chatFabStackBadge;
+  background: #d32f2f;
 }
 
 .toggleButton {
@@ -377,6 +393,15 @@
 // АДАПТИВНЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
 // ====================================================
 
+// Для мобильных: бейджи FAB не должны перекрывать диалог чата
+@media (max-width: 1023px) {
+  .notifications,
+  .minimizedListCountBadge,
+  .minimizedListCountBadgeUnread {
+    z-index: 10;
+  }
+}
+
 // Для планшетов (от 768px до 1024px)
 @media (max-width: 1024px) {
   .chatFooter {
@@ -389,6 +414,11 @@
   .minimizedChat {
     max-width: 280px;
     right: 480px;
+  }
+
+  // Свёрнутые превью переносим в нижний Drawer (см. ChatFooter.tsx), иначе перекрывают ввод и историю
+  .minimizedChats {
+    display: none !important;
   }
 }
 

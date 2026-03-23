@@ -505,6 +505,8 @@
     "dialogTitleFallback": "Дыялог з карыстальнікам",
     "minimizeDialog": "Згарнуць дыялог",
     "closeDialog": "Зачыніць дыялог",
+    "minimizedListTooltip": "Згорнутыя дыялогі і апавяшчэнні",
+    "minimizedListTitle": "Згорнутыя дыялогі",
     "usersLabel": "Карыстальнікі",
     "searchUsersPlaceholder": "Пошук карыстальнікаў...",
     "usersNotFound": "Карыстальнікі не знойдзены",

@@ -405,7 +405,6 @@ export const NavBar = () => {
                     className={style.languageSwitcherMobile}
                     formControlClassName={style.langSelectMobile}
                     size="small"
-                    showLanguageName
                   />
                 </div>
               )}

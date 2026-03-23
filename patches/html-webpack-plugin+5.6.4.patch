@@ -1,0 +1,19 @@
+diff --git a/node_modules/html-webpack-plugin/index.js b/node_modules/html-webpack-plugin/index.js
+index efe592d..e894640 100644
+--- a/node_modules/html-webpack-plugin/index.js
++++ b/node_modules/html-webpack-plugin/index.js
+@@ -327,10 +327,10 @@ class HtmlWebpackPlugin {
+ 
+     // If the template doesn't use a loader use the lodash template loader
+     if (template.indexOf("!") === -1) {
+-      template =
+-        require.resolve("./lib/loader.js") +
+-        "!" +
+-        path.resolve(context, template);
++      // Use forward slashes for webpack resolver (fixes Windows path resolution)
++      const loaderPath = require.resolve("./lib/loader.js").replace(/\\/g, "/");
++      const templatePath = path.resolve(context, template).replace(/\\/g, "/");
++      template = loaderPath + "!" + templatePath;
+     }
+ 
+     // Resolve template path

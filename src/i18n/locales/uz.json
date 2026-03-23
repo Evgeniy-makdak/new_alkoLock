@@ -504,6 +504,8 @@
     "dialogTitleFallback": "Foydalanuvchi bilan dialog",
     "minimizeDialog": "Dialogni yig'ish",
     "closeDialog": "Dialogni yopish",
+    "minimizedListTooltip": "Yig'ilgan dialoglar va bildirishnomalar",
+    "minimizedListTitle": "Yig'ilgan dialoglar",
     "usersLabel": "Foydalanuvchilar",
     "searchUsersPlaceholder": "Foydalanuvchilarni qidirish...",
     "usersNotFound": "Foydalanuvchilar topilmadi",

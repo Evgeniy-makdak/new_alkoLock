@@ -505,6 +505,8 @@
     "dialogTitleFallback": "Диалог с пользователем",
     "minimizeDialog": "Свернуть диалог",
     "closeDialog": "Закрыть диалог",
+    "minimizedListTooltip": "Свёрнутые диалоги и уведомления",
+    "minimizedListTitle": "Свёрнутые диалоги",
     "usersLabel": "Пользователи",
     "searchUsersPlaceholder": "Поиск пользователей...",
     "usersNotFound": "Пользователи не найдены",

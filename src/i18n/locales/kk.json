@@ -504,6 +504,8 @@
     "dialogTitleFallback": "Пайдаланушымен диалог",
     "minimizeDialog": "Диалогты жию",
     "closeDialog": "Диалогты жабу",
+    "minimizedListTooltip": "Жинақталған диалогтар және хабарламалар",
+    "minimizedListTitle": "Жинақталған диалогтар",
     "usersLabel": "Пайдаланушылар",
     "searchUsersPlaceholder": "Пайдаланушыларды іздеу...",
     "usersNotFound": "Пайдаланушылар табылмады",

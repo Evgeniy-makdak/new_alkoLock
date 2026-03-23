@@ -505,6 +505,8 @@
     "dialogTitleFallback": "Dialog with user",
     "minimizeDialog": "Minimize dialog",
     "closeDialog": "Close dialog",
+    "minimizedListTooltip": "Minimized dialogs and notifications",
+    "minimizedListTitle": "Minimized dialogs",
     "usersLabel": "Users",
     "searchUsersPlaceholder": "Search users...",
     "usersNotFound": "No users found",

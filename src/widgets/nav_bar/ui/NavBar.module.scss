@@ -326,6 +326,11 @@
   z-index: 1002;
   pointer-events: none;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  // Для мобильных: бейдж не должен перекрывать диалог чата
+  @media (max-width: 1023px) {
+    z-index: 10;
+  }
 }
 
 .collops {
