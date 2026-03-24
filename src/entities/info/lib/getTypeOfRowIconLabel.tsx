@@ -151,6 +151,7 @@ export const summaryExhaleResult = {
   ),
   SHORT_EXHALE: <ExhaleResultChip color="warning" label="Короткий выдох" />,
   WEAK_EXHALE: <ExhaleResultChip color="warning" label="Слабый выдох" />,
+  ALCOHOL_BACKGROUND: <ExhaleResultChip color="warning" label="Обнаружен спиртовой фон" />,
 };
 
 export type TypeSummaryExhaleResult = keyof typeof summaryExhaleResult;

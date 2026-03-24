@@ -6,6 +6,13 @@ import type { HistoryFilterOptions, QueryOptions } from '@shared/types/QueryType
 import { DateUtils } from '@shared/utils/DateUtils';
 import { Formatters } from '@shared/utils/formatters';
 
+/** «Тестирование прервано» (eventsForFront id 24): коды extra.exhaleErrorCode; */
+const INTERRUPTED_SOBERITY_TEST_EXHALE_ERROR_CODES = '1,3,4,5,6,7';
+
+function isOnlyInterruptedSoberityTestEventFilter(eventIds: string[]): boolean {
+  return eventIds.length === 1 && eventIds[0] === '24';
+}
+
 const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) => {
   const orderStr = ',' + order.toUpperCase();
 
@@ -930,6 +937,11 @@ export function getEventsHistoryURL({
 
     if (eventIds.length > 0) {
       queryParts.push(`all.eventsForFront.id.in=${eventIds.join(',')}`);
+      if (isOnlyInterruptedSoberityTestEventFilter(eventIds)) {
+        queryParts.push(
+          `all.extra.exhaleErrorCode.in=${INTERRUPTED_SOBERITY_TEST_EXHALE_ERROR_CODES}`,
+        );
+      }
     }
   }
 
@@ -1139,7 +1151,11 @@ export function getEventsApiURL({
     if (trimmedQuery.includes('16')) {
       trimmedQuery = trimmedQuery.filter((id) => id !== '16').concat(['22', '23', '24', '54']);
     }
-    const eventQuery = `api/device-events?page=${page || 0}&size=${limit || 20}&all.eventsForFront.id.in=${trimmedQuery.join(',')}${queries}${sortParams}`;
+    let interruptedExhaleQuery = '';
+    if (isOnlyInterruptedSoberityTestEventFilter(trimmedQuery)) {
+      interruptedExhaleQuery = `&all.extra.exhaleErrorCode.in=${INTERRUPTED_SOBERITY_TEST_EXHALE_ERROR_CODES}`;
+    }
+    const eventQuery = `api/device-events?page=${page || 0}&size=${limit || 20}&all.eventsForFront.id.in=${trimmedQuery.join(',')}${queries}${interruptedExhaleQuery}${sortParams}`;
     return eventQuery;
   }
 
@@ -1247,7 +1263,11 @@ export function getEventsApiURLForMap({
     if (trimmedQuery.includes('16')) {
       trimmedQuery = trimmedQuery.filter((id) => id !== '16').concat(['22', '23', '24', '54']);
     }
-    return `api/device-events?page=${page || 0}&size=${limit || 3}&all.eventsForFront.id.in=${trimmedQuery.join(',')}${queries}${sortParams}`;
+    let interruptedExhaleQuery = '';
+    if (isOnlyInterruptedSoberityTestEventFilter(trimmedQuery)) {
+      interruptedExhaleQuery = `&all.extra.exhaleErrorCode.in=${INTERRUPTED_SOBERITY_TEST_EXHALE_ERROR_CODES}`;
+    }
+    return `api/device-events?page=${page || 0}&size=${limit || 3}&all.eventsForFront.id.in=${trimmedQuery.join(',')}${queries}${interruptedExhaleQuery}${sortParams}`;
   }
 
   // Базовый URL с параметрами
