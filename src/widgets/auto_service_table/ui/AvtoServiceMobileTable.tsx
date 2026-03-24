@@ -7,7 +7,10 @@ import { Chip, TextField } from '@mui/material';
 
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
-import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
+import {
+  closeNativeDatePickerSession,
+  openNativeDatePickerFromHiddenInput,
+} from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
@@ -357,6 +360,7 @@ export const AvtoServiceMobileTable = ({
     .map((col) => col.field);
 
   const handleResetAllFilters = () => {
+    closeNativeDatePickerSession();
     filterData.clearDates();
     filterData.setInput('');
     setStartDateInput('');
