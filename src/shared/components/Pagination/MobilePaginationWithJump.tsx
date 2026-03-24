@@ -47,23 +47,18 @@ function MobilePaginationWithJumpComponent({
     totalCount !== undefined && totalCount !== null && Number.isFinite(Number(totalCount));
   const rawTotal = rawTotalKnown ? Math.max(0, Number(totalCount)) : null;
 
-  const computedPages =
-    rawTotal !== null ? Math.max(1, Math.ceil(rawTotal / safePageSize)) : null;
+  const computedPages = rawTotal !== null ? Math.max(1, Math.ceil(rawTotal / safePageSize)) : null;
 
-  const impossibleSinglePage =
-    computedPages !== null && computedPages === 1 && safePage > 0;
+  const impossibleSinglePage = computedPages !== null && computedPages === 1 && safePage > 0;
 
-  const hasReliableTotal =
-    !loading && rawTotal !== null && rawTotal >= 0 && !impossibleSinglePage;
+  const hasReliableTotal = !loading && rawTotal !== null && rawTotal >= 0 && !impossibleSinglePage;
 
   if (hasReliableTotal && computedPages !== null) {
     lastStableTotalPagesRef.current = computedPages;
   }
 
   const fallbackPagesFromProps =
-    rawTotal !== null && !impossibleSinglePage && computedPages !== null
-      ? computedPages
-      : null;
+    rawTotal !== null && !impossibleSinglePage && computedPages !== null ? computedPages : null;
 
   const displayTotalPages: number | null =
     loading && lastStableTotalPagesRef.current !== null
@@ -75,8 +70,7 @@ function MobilePaginationWithJumpComponent({
   const maxPagesForDialog =
     displayTotalPages !== null ? displayTotalPages : Math.max(safePage + 1, 1);
 
-  const totalForI18n: string | number =
-    displayTotalPages !== null ? displayTotalPages : '\u00a0';
+  const totalForI18n: string | number = displayTotalPages !== null ? displayTotalPages : '\u00a0';
 
   const canGoNext =
     displayTotalPages !== null
