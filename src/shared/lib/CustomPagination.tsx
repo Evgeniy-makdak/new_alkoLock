@@ -1,3 +1,4 @@
+import { useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import FirstPageIcon from '@mui/icons-material/FirstPage';
@@ -5,13 +6,92 @@ import KeyboardArrowLeftIcon from '@mui/icons-material/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
 import LastPageIcon from '@mui/icons-material/LastPage';
 import { Box, IconButton, Tooltip } from '@mui/material';
-import { GridPagination, useGridApiContext } from '@mui/x-data-grid';
+import {
+  GridPagination,
+  type GridState,
+  gridPaginationModelSelector,
+  gridRowsLoadingSelector,
+  useGridApiContext,
+  useGridSelector,
+} from '@mui/x-data-grid';
 
 import { PaginationJumpField } from '@shared/components/Pagination';
+
+type PaginationResolution = {
+  hasReliableTotal: boolean;
+  resolvedPageCount: number;
+  maxPageIndex: number;
+  displayPageCount: number | null;
+};
+
+function resolveServerPagination(
+  totalRows: number,
+  pageSize: number,
+  page: number,
+  rowsLoading: boolean,
+  lastKnownPageCount: number | null,
+): PaginationResolution {
+  const numericTotalOk = typeof totalRows === 'number' && totalRows >= 0;
+  const pageCountFromTotal = numericTotalOk ? Math.max(1, Math.ceil(totalRows / pageSize)) : 1;
+  const impossibleSinglePage = pageCountFromTotal === 1 && page > 0;
+  const hasReliableTotal = numericTotalOk && !rowsLoading && !impossibleSinglePage;
+
+  if (hasReliableTotal) {
+    const resolvedPageCount = pageCountFromTotal;
+    const maxPageIndex = resolvedPageCount - 1;
+    return {
+      hasReliableTotal: true,
+      resolvedPageCount,
+      maxPageIndex,
+      displayPageCount: resolvedPageCount,
+    };
+  }
+
+  if (lastKnownPageCount != null) {
+    return {
+      hasReliableTotal: false,
+      resolvedPageCount: lastKnownPageCount,
+      maxPageIndex: lastKnownPageCount - 1,
+      displayPageCount: lastKnownPageCount,
+    };
+  }
+
+  return {
+    hasReliableTotal: false,
+    resolvedPageCount: 1,
+    maxPageIndex: 0,
+    displayPageCount: null,
+  };
+}
 
 const CustomPagination = () => {
   const { t } = useTranslation();
   const apiRef = useGridApiContext();
+  const lastKnownPageCountRef = useRef<number | null>(null);
+
+  const rowsLoading = useGridSelector(apiRef, gridRowsLoadingSelector) === true;
+  const { page, pageSize } = useGridSelector(apiRef, gridPaginationModelSelector);
+  const totalRows = useGridSelector(apiRef, (state: GridState) => state.rows.totalRowCount);
+
+  const onJump = useCallback(
+    (idx: number) => {
+      apiRef.current?.setPage(idx);
+    },
+    [apiRef],
+  );
+
+  const paginationSnap = resolveServerPagination(
+    totalRows,
+    pageSize,
+    page,
+    rowsLoading,
+    lastKnownPageCountRef.current,
+  );
+  if (paginationSnap.hasReliableTotal) {
+    lastKnownPageCountRef.current = paginationSnap.resolvedPageCount;
+  }
+
+  const { resolvedPageCount, maxPageIndex, displayPageCount } = paginationSnap;
 
   const handleFirstPageButtonClick = () => {
     if (apiRef.current) {
@@ -29,29 +109,38 @@ const CustomPagination = () => {
   };
 
   const handleNextPageButtonClick = () => {
-    if (apiRef.current) {
-      const { page, pageSize } = apiRef.current.state.pagination.paginationModel;
-      const totalRows = apiRef.current.state.rows.totalRowCount;
-      const totalPages = Math.ceil(totalRows / pageSize);
-      if (page < totalPages - 1) {
-        apiRef.current.setPage(page + 1);
-      }
+    const api = apiRef.current;
+    if (!api) return;
+    const pm = api.state.pagination.paginationModel;
+    const tr = api.state.rows.totalRowCount;
+    const loading = api.state.rows.loading === true;
+    const { resolvedPageCount: totalPages } = resolveServerPagination(
+      tr,
+      pm.pageSize,
+      pm.page,
+      loading,
+      lastKnownPageCountRef.current,
+    );
+    if (pm.page < totalPages - 1) {
+      api.setPage(pm.page + 1);
     }
   };
 
   const handleLastPageButtonClick = () => {
-    if (apiRef.current) {
-      const { pageSize } = apiRef.current.state.pagination.paginationModel;
-      const totalRows = apiRef.current.state.rows.totalRowCount;
-      const totalPages = Math.ceil(totalRows / pageSize);
-      apiRef.current.setPage(Math.max(0, totalPages - 1));
-    }
+    const api = apiRef.current;
+    if (!api) return;
+    const pm = api.state.pagination.paginationModel;
+    const tr = api.state.rows.totalRowCount;
+    const loading = api.state.rows.loading === true;
+    const { resolvedPageCount: totalPages } = resolveServerPagination(
+      tr,
+      pm.pageSize,
+      pm.page,
+      loading,
+      lastKnownPageCountRef.current,
+    );
+    api.setPage(Math.max(0, totalPages - 1));
   };
-
-  const { page, pageSize } = apiRef.current.state.pagination.paginationModel;
-  const totalRows = apiRef.current.state.rows.totalRowCount;
-  const maxPageIndex = Math.max(0, Math.ceil(totalRows / pageSize) - 1);
-  const pageCount = maxPageIndex + 1;
 
   return (
     <Box display="flex" alignItems="center" flexWrap="nowrap" justifyContent="flex-end" gap={0.5}>
@@ -67,8 +156,9 @@ const CustomPagination = () => {
 
       <PaginationJumpField
         page={page}
-        pageCount={pageCount}
-        onJump={(idx) => apiRef.current?.setPage(idx)}
+        pageCount={resolvedPageCount}
+        displayPageCount={displayPageCount}
+        onJump={onJump}
       />
 
       <Tooltip title={t('pagination.firstPage')}>

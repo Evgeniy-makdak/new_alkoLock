@@ -33,22 +33,33 @@ export const MobilePaginationWithJump = ({
   infoClassName = '',
 }: MobilePaginationWithJumpProps) => {
   const { t } = useTranslation();
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const safePage =
+    Number.isFinite(Number(page)) && Number(page) >= 0 ? Math.floor(Number(page)) : 0;
+  const safePageSize =
+    Number.isFinite(Number(pageSize)) && Number(pageSize) > 0 ? Number(pageSize) : 1;
+  const totalKnown =
+    totalCount !== undefined && totalCount !== null && Number.isFinite(Number(totalCount));
+  const safeTotal = totalKnown ? Math.max(0, Number(totalCount)) : null;
+  const totalPages = safeTotal !== null ? Math.max(1, Math.ceil(safeTotal / safePageSize)) : null;
+  const totalForUi = totalPages !== null ? totalPages : '';
+
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState(String(page + 1));
+  const [draft, setDraft] = useState(String(safePage + 1));
 
   useEffect(() => {
     if (open) {
-      setDraft(String(page + 1));
+      setDraft(String(safePage + 1));
     }
-  }, [open, page]);
+  }, [open, safePage]);
 
   const applyDialog = () => {
     const n = parseInt(String(draft).trim(), 10);
     if (!Number.isFinite(n)) {
       return;
     }
-    const p = Math.min(totalPages, Math.max(1, n));
+    const maxPage = totalPages ?? Math.max(1, n);
+    const p = Math.min(maxPage, Math.max(1, n));
     onPageChange(p - 1);
     setOpen(false);
   };
@@ -60,8 +71,8 @@ export const MobilePaginationWithJump = ({
       <button
         type="button"
         className={buttonClassName}
-        disabled={page === 0}
-        onClick={() => onPageChange(page - 1)}
+        disabled={safePage === 0}
+        onClick={() => onPageChange(safePage - 1)}
         aria-label={t('pagination.prevPage')}>
         <KeyboardArrowUp />
       </button>
@@ -79,20 +90,21 @@ export const MobilePaginationWithJump = ({
           font: 'inherit',
           color: infoClassName ? 'inherit' : '#777',
           fontSize: infoClassName ? 'inherit' : 14,
+          fontVariantNumeric: 'tabular-nums',
           textDecoration: 'underline',
           textDecorationStyle: 'dotted',
           textUnderlineOffset: 3,
           textAlign: 'center',
-          minWidth: infoClassName ? 0 : 120,
+          minWidth: infoClassName ? 0 : 132,
         }}>
-        {t('pagination.pageOf', { page: page + 1, total: totalPages })}
+        {t('pagination.pageOf', { page: safePage + 1, total: totalForUi })}
       </button>
 
       <button
         type="button"
         className={buttonClassName}
-        disabled={(page + 1) * pageSize >= totalCount}
-        onClick={() => onPageChange(page + 1)}
+        disabled={safeTotal !== null && (safePage + 1) * safePageSize >= safeTotal}
+        onClick={() => onPageChange(safePage + 1)}
         aria-label={t('pagination.nextPage')}>
         <KeyboardArrowDown />
       </button>
@@ -124,8 +136,12 @@ export const MobilePaginationWithJump = ({
             label={t('pagination.pageNumber')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            inputProps={{ min: 1, max: totalPages }}
-            helperText={t('pagination.jumpHelper', { max: totalPages })}
+            inputProps={{ min: 1, max: totalPages ?? 9999 }}
+            helperText={
+              totalPages !== null
+                ? t('pagination.jumpHelper', { max: totalPages })
+                : t('pagination.jumpHelper', { max: '…' })
+            }
             FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.5, mx: 0 } }}
             InputLabelProps={{ sx: { fontSize: '0.8125rem' } }}
             sx={{

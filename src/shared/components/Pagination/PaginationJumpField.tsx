@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, TextField, Typography } from '@mui/material';
@@ -6,8 +6,13 @@ import { Box, TextField, Typography } from '@mui/material';
 export interface PaginationJumpFieldProps {
   /** Текущая страница, 0-based */
   page: number;
-  /** Число страниц (может быть 0 с бэка — для отображения нормализуем) */
+  /** Число страниц для лимитов перехода (последнее известное, пока total с бэка неизвестен) */
   pageCount: number;
+  /**
+   * Что показать после «/». null — не показывать цифру (первый запрос, total ещё не было).
+   * Не передавать — вести себя как раньше: показывать pageCount.
+   */
+  displayPageCount?: number | null;
   onJump: (pageIndexZeroBased: number) => void;
   disabled?: boolean;
 }
@@ -15,15 +20,17 @@ export interface PaginationJumpFieldProps {
 /**
  * Поле номера страницы (отдельная рамка) + текст «/ всего» рядом, без общего контейнера.
  */
-export function PaginationJumpField({
+function PaginationJumpFieldComponent({
   page,
   pageCount,
+  displayPageCount,
   onJump,
   disabled,
 }: PaginationJumpFieldProps) {
   const { t } = useTranslation();
   const effectiveTotal = Math.max(1, pageCount);
-  const isJumpDisabled = Boolean(disabled || effectiveTotal <= 1);
+  const totalUnknownForUi = displayPageCount !== undefined && displayPageCount === null;
+  const isJumpDisabled = Boolean(disabled || totalUnknownForUi || effectiveTotal <= 1);
   const [value, setValue] = useState(String(page + 1));
 
   useEffect(() => {
@@ -91,9 +98,21 @@ export function PaginationJumpField({
           lineHeight: 1,
           fontSize: '0.8125rem',
           userSelect: 'none',
+          fontVariantNumeric: 'tabular-nums',
+          minWidth: '10ch',
+          display: 'inline-block',
+          flexShrink: 0,
         }}>
-        / {effectiveTotal}
+        /{' '}
+        {displayPageCount === undefined
+          ? effectiveTotal
+          : displayPageCount === null
+            ? '\u00a0'
+            : displayPageCount}
       </Typography>
     </Box>
   );
 }
+
+export const PaginationJumpField = memo(PaginationJumpFieldComponent);
+PaginationJumpField.displayName = 'PaginationJumpField';

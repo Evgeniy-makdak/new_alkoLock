@@ -71,6 +71,15 @@ export const Table = memo(
               count: number;
             }) => t('pagination.rowsOf', { from, to, count }),
           },
+          styleOverrides: {
+            displayedRows: {
+              fontVariantNumeric: 'tabular-nums',
+              minWidth: '15rem',
+              display: 'inline-block',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            },
+          },
         },
       },
     });
