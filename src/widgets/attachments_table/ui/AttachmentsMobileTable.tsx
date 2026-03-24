@@ -19,6 +19,7 @@ import {
 } from '@features/attachments_filter_panel';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
+import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { Popup } from '@shared/ui/popup';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
@@ -319,50 +320,10 @@ export const AttachmentsMobileTable = ({
   };
 
   const handleOpenCalendar = (type: 'start' | 'end') => {
-    if (type === 'start' && startDateNativeRef.current) {
-      const input = startDateNativeRef.current;
-
-      input.value = '';
-
-      input.style.display = 'block';
-      input.style.position = 'fixed';
-      input.style.top = '50%';
-      input.style.left = '50%';
-      input.style.transform = 'translate(-50%, -50%)';
-      input.style.zIndex = '9999';
-      input.style.opacity = '0.01';
-      input.style.width = '100px';
-      input.style.height = '40px';
-
-      input.focus();
-      input.click();
-
-      setTimeout(() => {
-        input.style.display = 'none';
-        input.value = formatDateForNative(filtersData.startDate);
-      }, 100);
-    } else if (type === 'end' && endDateNativeRef.current) {
-      const input = endDateNativeRef.current;
-
-      input.value = '';
-
-      input.style.display = 'block';
-      input.style.position = 'fixed';
-      input.style.top = '50%';
-      input.style.left = '50%';
-      input.style.transform = 'translate(-50%, -50%)';
-      input.style.zIndex = '9999';
-      input.style.opacity = '0.01';
-      input.style.width = '100px';
-      input.style.height = '40px';
-
-      input.focus();
-      input.click();
-
-      setTimeout(() => {
-        input.style.display = 'none';
-        input.value = formatDateForNative(filtersData.endDate);
-      }, 100);
+    if (type === 'start') {
+      openNativeDatePickerFromHiddenInput(startDateNativeRef.current);
+    } else {
+      openNativeDatePickerFromHiddenInput(endDateNativeRef.current);
     }
   };
 

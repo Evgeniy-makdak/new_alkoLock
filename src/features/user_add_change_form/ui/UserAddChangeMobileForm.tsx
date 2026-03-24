@@ -9,6 +9,7 @@ import { AppConstants } from '@app/index';
 import { RolesSelect } from '@entities/roles_select';
 import { UploadImg } from '@entities/upload_img';
 import { testids } from '@shared/const/testid';
+import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { AppAlert } from '@shared/ui/alert';
@@ -480,44 +481,18 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
   };
 
   const handleOpenCalendar = (type: 'issue' | 'expiration') => {
-    if (type === 'issue' && licenseIssueDateNativeRef.current) {
+    if (type === 'issue') {
       const input = licenseIssueDateNativeRef.current;
-      input.value = formatDateForNative(state.state.licenseIssueDate);
-      input.style.display = 'block';
-      input.style.position = 'fixed';
-      input.style.top = '50%';
-      input.style.left = '50%';
-      input.style.transform = 'translate(-50%, -50%)';
-      input.style.zIndex = '9999';
-      input.style.opacity = '0.01';
-      input.style.width = '100px';
-      input.style.height = '40px';
-
-      input.focus();
-      input.click();
-
-      setTimeout(() => {
-        input.style.display = 'none';
-      }, 100);
-    } else if (type === 'expiration' && licenseExpirationDateNativeRef.current) {
+      if (input) {
+        input.value = formatDateForNative(state.state.licenseIssueDate);
+      }
+      openNativeDatePickerFromHiddenInput(input);
+    } else {
       const input = licenseExpirationDateNativeRef.current;
-      input.value = formatDateForNative(state.state.licenseExpirationDate);
-      input.style.display = 'block';
-      input.style.position = 'fixed';
-      input.style.top = '50%';
-      input.style.left = '50%';
-      input.style.transform = 'translate(-50%, -50%)';
-      input.style.zIndex = '9999';
-      input.style.opacity = '0.01';
-      input.style.width = '100px';
-      input.style.height = '40px';
-
-      input.focus();
-      input.click();
-
-      setTimeout(() => {
-        input.style.display = 'none';
-      }, 100);
+      if (input) {
+        input.value = formatDateForNative(state.state.licenseExpirationDate);
+      }
+      openNativeDatePickerFromHiddenInput(input);
     }
   };
 
