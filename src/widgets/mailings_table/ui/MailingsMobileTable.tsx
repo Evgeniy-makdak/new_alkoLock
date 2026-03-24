@@ -15,6 +15,7 @@ import { RecoverMailingsForm } from '@features/recover_mailings_form/ui';
 import { TrueDeleteMailingsForm } from '@features/true_delete_mailings_form';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
+import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
 import { Popup } from '@shared/ui/popup';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
@@ -458,14 +459,12 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={startDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filtersData.startDate)}
-                  onChange={(e) => handleNativeDateChange('start', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={startDateNativeRef}
+                  syncedIso={formatDateForNative(filtersData.startDate)}
+                  onCommit={(v) => handleNativeDateChange('start', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
 
@@ -506,14 +505,12 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={endDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filtersData.endDate)}
-                  onChange={(e) => handleNativeDateChange('end', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={endDateNativeRef}
+                  syncedIso={formatDateForNative(filtersData.endDate)}
+                  onCommit={(v) => handleNativeDateChange('end', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
             </div>

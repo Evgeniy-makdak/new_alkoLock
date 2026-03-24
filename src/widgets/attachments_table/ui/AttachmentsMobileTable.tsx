@@ -20,6 +20,7 @@ import {
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
+import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { Popup } from '@shared/ui/popup';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
@@ -492,14 +493,12 @@ export const AttachmentsMobileTable = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={startDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filtersData.startDate)}
-                  onChange={(e) => handleNativeDateChange('start', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={startDateNativeRef}
+                  syncedIso={formatDateForNative(filtersData.startDate)}
+                  onCommit={(v) => handleNativeDateChange('start', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
 
@@ -542,14 +541,12 @@ export const AttachmentsMobileTable = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={endDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filtersData.endDate)}
-                  onChange={(e) => handleNativeDateChange('end', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={endDateNativeRef}
+                  syncedIso={formatDateForNative(filtersData.endDate)}
+                  onCommit={(v) => handleNativeDateChange('end', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
             </div>

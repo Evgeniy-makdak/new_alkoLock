@@ -11,6 +11,7 @@ import {
   closeNativeDatePickerSession,
   openNativeDatePickerFromHiddenInput,
 } from '@shared/lib/openNativeDatePickerFromHiddenInput';
+import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
@@ -467,14 +468,12 @@ export const AvtoServiceMobileTable = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={startDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filterData.startDate)}
-                  onChange={(e) => handleNativeDateChange('start', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={startDateNativeRef}
+                  syncedIso={formatDateForNative(filterData.startDate)}
+                  onCommit={(v) => handleNativeDateChange('start', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
 
@@ -517,14 +516,12 @@ export const AvtoServiceMobileTable = ({
                     ×
                   </button>
                 )}
-                <input
-                  ref={endDateNativeRef}
-                  type="date"
-                  value={formatDateForNative(filterData.endDate)}
-                  onChange={(e) => handleNativeDateChange('end', e.target.value)}
+                <NativeDateHiddenInput
+                  inputRef={endDateNativeRef}
+                  syncedIso={formatDateForNative(filterData.endDate)}
+                  onCommit={(v) => handleNativeDateChange('end', v)}
                   className={styles.hiddenDateInput}
                   style={{ display: 'none' }}
-                  aria-hidden="true"
                 />
               </div>
             </div>
