@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
@@ -19,30 +19,71 @@ export interface MobilePaginationWithJumpProps {
   buttonClassName: string;
   /** Класс для текста «Страница N из M» (например из *.module.scss) */
   infoClassName?: string;
+  /** Как у DataGrid: пока true — не доверяем кратковременным total из пропсов */
+  loading?: boolean;
 }
 
 /**
  * Мобильная пагинация: назад / вперёд + тап по счётчику страниц → диалог быстрого перехода.
  */
-export const MobilePaginationWithJump = ({
+function MobilePaginationWithJumpComponent({
   page,
   pageSize,
   totalCount,
   onPageChange,
   buttonClassName,
   infoClassName = '',
-}: MobilePaginationWithJumpProps) => {
+  loading = false,
+}: MobilePaginationWithJumpProps) {
   const { t } = useTranslation();
+  const lastStableTotalPagesRef = useRef<number | null>(null);
 
   const safePage =
     Number.isFinite(Number(page)) && Number(page) >= 0 ? Math.floor(Number(page)) : 0;
   const safePageSize =
     Number.isFinite(Number(pageSize)) && Number(pageSize) > 0 ? Number(pageSize) : 1;
-  const totalKnown =
+
+  const rawTotalKnown =
     totalCount !== undefined && totalCount !== null && Number.isFinite(Number(totalCount));
-  const safeTotal = totalKnown ? Math.max(0, Number(totalCount)) : null;
-  const totalPages = safeTotal !== null ? Math.max(1, Math.ceil(safeTotal / safePageSize)) : null;
-  const totalForUi = totalPages !== null ? totalPages : '';
+  const rawTotal = rawTotalKnown ? Math.max(0, Number(totalCount)) : null;
+
+  const computedPages =
+    rawTotal !== null ? Math.max(1, Math.ceil(rawTotal / safePageSize)) : null;
+
+  const impossibleSinglePage =
+    computedPages !== null && computedPages === 1 && safePage > 0;
+
+  const hasReliableTotal =
+    !loading && rawTotal !== null && rawTotal >= 0 && !impossibleSinglePage;
+
+  if (hasReliableTotal && computedPages !== null) {
+    lastStableTotalPagesRef.current = computedPages;
+  }
+
+  const fallbackPagesFromProps =
+    rawTotal !== null && !impossibleSinglePage && computedPages !== null
+      ? computedPages
+      : null;
+
+  const displayTotalPages: number | null =
+    loading && lastStableTotalPagesRef.current !== null
+      ? lastStableTotalPagesRef.current
+      : hasReliableTotal && computedPages !== null
+        ? computedPages
+        : (lastStableTotalPagesRef.current ?? fallbackPagesFromProps);
+
+  const maxPagesForDialog =
+    displayTotalPages !== null ? displayTotalPages : Math.max(safePage + 1, 1);
+
+  const totalForI18n: string | number =
+    displayTotalPages !== null ? displayTotalPages : '\u00a0';
+
+  const canGoNext =
+    displayTotalPages !== null
+      ? safePage + 1 < displayTotalPages
+      : rawTotal !== null
+        ? (safePage + 1) * safePageSize < rawTotal
+        : true;
 
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(String(safePage + 1));
@@ -58,8 +99,7 @@ export const MobilePaginationWithJump = ({
     if (!Number.isFinite(n)) {
       return;
     }
-    const maxPage = totalPages ?? Math.max(1, n);
-    const p = Math.min(maxPage, Math.max(1, n));
+    const p = Math.min(maxPagesForDialog, Math.max(1, n));
     onPageChange(p - 1);
     setOpen(false);
   };
@@ -97,13 +137,13 @@ export const MobilePaginationWithJump = ({
           textAlign: 'center',
           minWidth: infoClassName ? 0 : 132,
         }}>
-        {t('pagination.pageOf', { page: safePage + 1, total: totalForUi })}
+        {t('pagination.pageOf', { page: safePage + 1, total: totalForI18n })}
       </button>
 
       <button
         type="button"
         className={buttonClassName}
-        disabled={safeTotal !== null && (safePage + 1) * safePageSize >= safeTotal}
+        disabled={!canGoNext}
         onClick={() => onPageChange(safePage + 1)}
         aria-label={t('pagination.nextPage')}>
         <KeyboardArrowDown />
@@ -136,10 +176,10 @@ export const MobilePaginationWithJump = ({
             label={t('pagination.pageNumber')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            inputProps={{ min: 1, max: totalPages ?? 9999 }}
+            inputProps={{ min: 1, max: maxPagesForDialog }}
             helperText={
-              totalPages !== null
-                ? t('pagination.jumpHelper', { max: totalPages })
+              displayTotalPages !== null
+                ? t('pagination.jumpHelper', { max: displayTotalPages })
                 : t('pagination.jumpHelper', { max: '…' })
             }
             FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.5, mx: 0 } }}
@@ -166,4 +206,7 @@ export const MobilePaginationWithJump = ({
       </Dialog>
     </>
   );
-};
+}
+
+export const MobilePaginationWithJump = memo(MobilePaginationWithJumpComponent);
+MobilePaginationWithJump.displayName = 'MobilePaginationWithJump';

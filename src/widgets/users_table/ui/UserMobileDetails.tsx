@@ -317,6 +317,7 @@ export const UsersMobileTable = ({
           page={tableData.page}
           pageSize={tableData.pageSize}
           totalCount={tableData.totalCount}
+          loading={tableData.isLoading}
           onPageChange={handlePageChange}
           buttonClassName={styles.paginationButton}
           infoClassName={styles.paginationInfo}
