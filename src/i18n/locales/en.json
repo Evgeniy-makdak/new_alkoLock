@@ -508,6 +508,7 @@
     "newChatFallback": "New chat",
     "unreadInBranch": "Unread messages: {{count}} • {{branch}}",
     "newDialogInBranch": "New dialog • {{branch}}",
+    "previewAttachment": "Attachment",
     "dialogTitleFallback": "Dialog with user",
     "minimizeDialog": "Minimize dialog",
     "closeDialog": "Close dialog",

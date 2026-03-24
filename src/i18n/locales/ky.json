@@ -507,6 +507,7 @@
     "newChatFallback": "Жаңы чат",
     "unreadInBranch": "Окула элек кабарлар: {{count}} • {{branch}}",
     "newDialogInBranch": "Жаңы диалог • {{branch}}",
+    "previewAttachment": "Тиркеме",
     "dialogTitleFallback": "Колдонуучу менен диалог",
     "minimizeDialog": "Диалогту жыйноо",
     "closeDialog": "Диалогту жабуу",

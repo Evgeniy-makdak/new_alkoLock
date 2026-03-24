@@ -722,3 +722,28 @@
     }
   }
 }
+
+// Развёрнутый чат на телефоне — только геометрия на весь экран (без z-index: порталы MUI остаются поверх)
+@media (max-width: 768px) {
+  .chatFooter.expanded {
+    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    max-height: none;
+    min-height: 0;
+    margin: 0;
+    transform: none;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
+      env(safe-area-inset-left);
+    box-sizing: border-box;
+    overscroll-behavior: contain;
+  }
+}

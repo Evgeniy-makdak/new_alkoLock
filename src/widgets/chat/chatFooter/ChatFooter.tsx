@@ -22,7 +22,7 @@ import {
 
 import { appStore } from '@shared/model/app_store/AppStore';
 
-import type { UnreadDialog } from '../api/dialogsApi';
+import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
 import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
@@ -30,6 +30,105 @@ import styles from './ChatFooter.module.scss';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
 const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
+
+function normalizeSessionDialogId(raw: unknown): number | null {
+  if (raw === undefined || raw === null || raw === 'assigned') return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Диалог уже открыт/привязан к какой‑либо сессии — не показывать его второй раз в превью «непрочитанных». */
+function sessionListAlreadyCoversDialog(
+  sessions: Array<{ selectedDialog?: { id?: unknown }; assignedDialogId?: unknown }>,
+  dialogId: number,
+): boolean {
+  return sessions.some((session) => {
+    const fromSelected = normalizeSessionDialogId(session.selectedDialog?.id);
+    const fromAssigned = normalizeSessionDialogId(session.assignedDialogId);
+    return fromSelected === dialogId || fromAssigned === dialogId;
+  });
+}
+
+/**
+ * Список непрочитанных с API кладётся в unreadDialogs у каждой сессии (loadUnreadDialogs).
+ * Без дедупликации один dialog.id даёт по строке превью на каждую сессию — на мобильном список и счётчик врут.
+ */
+function collectDedupedUnreadDialogsForPreview(
+  sessions: Array<{
+    id: string;
+    unreadDialogs?: UnreadDialog[];
+    selectedDialog?: { id?: unknown };
+    assignedDialogId?: unknown;
+  }>,
+  hasSessionWithUser: (userId: number) => boolean,
+): { dialog: UnreadDialog; sessionId: string }[] {
+  const seenDialogIds = new Set<number>();
+  const rows: { dialog: UnreadDialog; sessionId: string }[] = [];
+
+  for (const session of sessions) {
+    const unreadList =
+      session.unreadDialogs?.filter((dialog) => {
+        const dialogUserId = dialog.owner?.id;
+        if (dialogUserId && hasSessionWithUser(dialogUserId)) return false;
+        if (sessionListAlreadyCoversDialog(sessions, dialog.id)) return false;
+        return true;
+      }) ?? [];
+
+    for (const dialog of unreadList) {
+      if (seenDialogIds.has(dialog.id)) continue;
+      seenDialogIds.add(dialog.id);
+      rows.push({ dialog, sessionId: session.id });
+    }
+  }
+
+  return rows;
+}
+
+function previewLineFromMessagePayload(msg: unknown, attachmentLabel: string): string {
+  if (!msg || typeof msg !== 'object') return '';
+  const m = msg as { text?: string; attachments?: unknown[] };
+  const text = (m.text || '').trim();
+  if (text.length > 0) return text;
+  if (Array.isArray(m.attachments) && m.attachments.length > 0) return attachmentLabel;
+  return '';
+}
+
+function truncatePreviewLine(text: string, maxLen: number): string {
+  const s = text.trim();
+  if (!s) return '';
+  return s.length <= maxLen ? s : `${s.slice(0, maxLen)}…`;
+}
+
+function unreadCountForPreviewEntry(
+  dialog: UnreadDialog,
+  dialogsUnreadCounts: Map<number, number> | undefined,
+): number {
+  const fromSocket = (dialogsUnreadCounts || new Map()).get(dialog.id) ?? 0;
+  const fromApi = Number(dialog.countUnMessages ?? dialog.countUnreadMess ?? 0);
+  return Math.max(fromSocket, Number.isFinite(fromApi) ? fromApi : 0);
+}
+
+function minimizedSessionPreviewRaw(
+  session: {
+    messages?: any[];
+    selectedDialog?: { id?: unknown };
+    assignedDialogId?: unknown;
+  },
+  fetchedByDialogId: Record<number, string>,
+  attachmentLabel: string,
+): string {
+  if (session.messages?.length) {
+    const last = session.messages[session.messages.length - 1];
+    const local = previewLineFromMessagePayload(last, attachmentLabel);
+    if (local) return local;
+  }
+  const did = normalizeSessionDialogId(session.selectedDialog?.id ?? session.assignedDialogId);
+  if (did !== null) {
+    const fetched = (fetchedByDialogId[did] || '').trim();
+    if (fetched) return fetched;
+  }
+  return '';
+}
 
 const UnreadMessagesBadge = ({ count }: { count: number }) => {
   return <span className={styles.notifications}>{count > 99 ? '99+' : count}</span>;
@@ -263,10 +362,6 @@ const ChatContainer = () => {
     setJustExpandedSessionId(null);
   }, []);
 
-  const getUnreadCountForDialog = (dialogId: number): number => {
-    return (dialogsUnreadCounts || new Map()).get(dialogId) || 0;
-  };
-
   const isCompactMinimizedUi = useMediaQuery(CHAT_COMPACT_MINIMIZED_QUERY);
   const [minimizedListOpen, setMinimizedListOpen] = useState(false);
 
@@ -285,15 +380,75 @@ const ChatContainer = () => {
         sessionId: string;
         dialog: UnreadDialog;
         title: string;
-        subtitle: string;
+        subtitle?: string;
         unread: number;
       };
+
+  const dedupedUnreadPreviewRows = useMemo(
+    () => collectDedupedUnreadDialogsForPreview(sessions, hasSessionWithUser),
+    [sessions, hasSessionWithUser],
+  );
+
+  const dialogIdsToFetch = useMemo(() => {
+    const ids = new Set<number>();
+    dedupedUnreadPreviewRows.forEach(({ dialog }) => ids.add(dialog.id));
+    for (const s of sessions) {
+      if (!s.isMinimized) continue;
+      if (s.messages?.length) continue;
+      const d = normalizeSessionDialogId(s.selectedDialog?.id ?? s.assignedDialogId);
+      if (d !== null) ids.add(d);
+    }
+    return Array.from(ids).sort((a, b) => a - b);
+  }, [dedupedUnreadPreviewRows, sessions]);
+
+  const [dialogPreviewLines, setDialogPreviewLines] = useState<Record<number, string>>({});
+  const dialogFetchKey = dialogIdsToFetch.join(',');
+
+  useEffect(() => {
+    if (dialogIdsToFetch.length === 0) {
+      setDialogPreviewLines({});
+      return;
+    }
+
+    let cancelled = false;
+    const attachmentLabel = t('chat.previewAttachment');
+
+    void (async () => {
+      const results = await Promise.all(
+        dialogIdsToFetch.map(async (dialogId) => {
+          try {
+            const res = await DialogsApi.getMessages({
+              dialogId: String(dialogId),
+              page: 0,
+              size: 1,
+              sort: 'createdAt,desc',
+            });
+            const msg = res?.data?.content?.[0];
+            return [dialogId, previewLineFromMessagePayload(msg, attachmentLabel)] as const;
+          } catch {
+            return [dialogId, ''] as const;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      setDialogPreviewLines(Object.fromEntries(results) as Record<number, string>);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dialogFetchKey, t]);
+
+  const attachmentLabel = t('chat.previewAttachment');
 
   const compactMinimizedEntries = useMemo((): CompactMinimizedEntry[] => {
     const minimized = sessions.filter((s) => s.isMinimized);
     const items: CompactMinimizedEntry[] = [];
 
     minimized.forEach((session) => {
+      const raw = minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel);
+      const subtitle = truncatePreviewLine(raw, 60);
       items.push({
         kind: 'session',
         key: `minimized-${session.id}`,
@@ -302,46 +457,35 @@ const ChatContainer = () => {
           session.selectedUserName ||
           session.selectedDialog?.client_name ||
           t('chat.newChatFallback'),
-        subtitle:
-          session.messages.length > 0
-            ? `${session.messages[session.messages.length - 1].text?.substring(0, 60) ?? ''}…`
-            : undefined,
+        subtitle: subtitle || undefined,
         unread: session.unreadCount ?? 0,
       });
     });
 
-    sessions.forEach((session) => {
-      const unreadList =
-        session.unreadDialogs?.filter((dialog) => {
-          const dialogUserId = dialog.owner?.id;
-          if (dialogUserId && hasSessionWithUser(dialogUserId)) {
-            return false;
-          }
-          return true;
-        }) ?? [];
-
-      unreadList.forEach((dialog, index) => {
-        const unreadCount = (dialogsUnreadCounts || new Map()).get(dialog.id) || 0;
-        items.push({
-          kind: 'unread',
-          key: `unread-${dialog.id}-${session.id}-${index}`,
-          sessionId: session.id,
-          dialog,
-          title: dialog.owner.fullName,
-          subtitle:
-            unreadCount > 0
-              ? t('chat.unreadInBranch', {
-                  count: unreadCount,
-                  branch: dialog.branch.name,
-                })
-              : t('chat.newDialogInBranch', { branch: dialog.branch.name }),
-          unread: unreadCount,
-        });
+    dedupedUnreadPreviewRows.forEach(({ dialog, sessionId }) => {
+      const unreadCount = unreadCountForPreviewEntry(dialog, dialogsUnreadCounts);
+      const raw = (dialogPreviewLines[dialog.id] || '').trim();
+      const subtitle = truncatePreviewLine(raw, 60);
+      items.push({
+        kind: 'unread',
+        key: `unread-${dialog.id}`,
+        sessionId,
+        dialog,
+        title: dialog.owner.fullName,
+        subtitle: subtitle || undefined,
+        unread: unreadCount,
       });
     });
 
     return items;
-  }, [sessions, dialogsUnreadCounts, hasSessionWithUser, t]);
+  }, [
+    sessions,
+    dedupedUnreadPreviewRows,
+    dialogsUnreadCounts,
+    dialogPreviewLines,
+    attachmentLabel,
+    t,
+  ]);
 
   if (!hasChatPermissions) {
     return null;
@@ -420,26 +564,24 @@ const ChatContainer = () => {
                     primaryTypographyProps={{ noWrap: true }}
                     secondaryTypographyProps={{ noWrap: true }}
                   />
-                  {entry.unread > 0 ? (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      sx={{
-                        flexShrink: 0,
-                        bgcolor: 'error.main',
-                        color: 'error.contrastText',
-                        borderRadius: '10px',
-                        px: 0.75,
-                        py: 0.25,
-                        fontWeight: 600,
-                        minWidth: 22,
-                        textAlign: 'center',
-                        lineHeight: 1.5,
-                        mt: 0.25,
-                      }}>
-                      {entry.unread > 99 ? '99+' : entry.unread}
-                    </Typography>
-                  ) : null}
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{
+                      flexShrink: 0,
+                      bgcolor: entry.unread > 0 ? 'error.main' : 'action.selected',
+                      color: entry.unread > 0 ? 'error.contrastText' : 'text.secondary',
+                      borderRadius: '10px',
+                      px: 0.75,
+                      py: 0.25,
+                      fontWeight: 600,
+                      minWidth: 22,
+                      textAlign: 'center',
+                      lineHeight: 1.5,
+                      mt: 0.25,
+                    }}>
+                    {entry.unread > 99 ? '99+' : entry.unread}
+                  </Typography>
                 </ListItemButton>
               ))}
             </List>
@@ -449,80 +591,65 @@ const ChatContainer = () => {
       <ChatToggleButton />
 
       <div className={styles.minimizedChats}>
-        {minimizedSessions.map((session, index) => (
-          <div
-            key={`minimized-${session.id}`}
-            className={`${styles.minimizedChat} ${
-              (session.unreadCount ?? 0) > 0 ? styles.hasUnread : ''
-            }`}
-            style={{
-              bottom: `${120 + index * 60}px`,
-              right: '540px',
-              zIndex: 1000 - index,
-            }}
-            onClick={() => handleExpandSession(session.id)}>
-            <div className={styles.minimizedHeader}>
-              <span>
-                {session.selectedUserName ||
-                  session.selectedDialog?.client_name ||
-                  t('chat.newChatFallback')}
-              </span>
-              <span className={styles.unreadBadge}>
-                {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
-              </span>
-            </div>
-            {session.messages.length > 0 && (
-              <div className={styles.lastMessage}>
-                {session.messages[session.messages.length - 1].text?.substring(0, 30)}...
+        {minimizedSessions.map((session, index) => {
+          const previewLine = truncatePreviewLine(
+            minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
+            30,
+          );
+          return (
+            <div
+              key={`minimized-${session.id}`}
+              className={`${styles.minimizedChat} ${
+                (session.unreadCount ?? 0) > 0 ? styles.hasUnread : ''
+              }`}
+              style={{
+                bottom: `${120 + index * 60}px`,
+                right: '540px',
+                zIndex: 1000 - index,
+              }}
+              onClick={() => handleExpandSession(session.id)}>
+              <div className={styles.minimizedHeader}>
+                <span>
+                  {session.selectedUserName ||
+                    session.selectedDialog?.client_name ||
+                    t('chat.newChatFallback')}
+                </span>
+                <span className={styles.unreadBadge}>
+                  {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
+                </span>
               </div>
-            )}
-          </div>
-        ))}
+              {previewLine ? <div className={styles.lastMessage}>{previewLine}</div> : null}
+            </div>
+          );
+        })}
 
-        {sessions.map((session) =>
-          session.unreadDialogs
-            ?.filter((dialog) => {
-              const dialogUserId = dialog.owner?.id;
-              if (dialogUserId && hasSessionWithUser(dialogUserId)) {
-                return false;
-              }
-              return true;
-            })
-            ?.map((dialog, index) => {
-              const unreadCount = getUnreadCountForDialog(dialog.id);
+        {dedupedUnreadPreviewRows.map(({ dialog, sessionId }, index) => {
+          const unreadCount = unreadCountForPreviewEntry(dialog, dialogsUnreadCounts);
+          const raw = (dialogPreviewLines[dialog.id] || '').trim();
+          const line = truncatePreviewLine(raw, 30);
 
-              return (
-                <div
-                  key={`unread-${dialog.id}-${session.id}-${index}`}
-                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
-                    unreadCount > 0 ? styles.hasUnread : ''
-                  }`}
-                  style={{
-                    bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
-                    right: '540px',
-                    zIndex: 1000 - (minimizedSessions.length + index),
-                  }}
-                  onClick={async () => {
-                    if (session.id) {
-                      await openUnreadDialog(session.id, dialog);
-                    }
-                  }}>
-                  <div className={styles.minimizedHeader}>
-                    <span>{dialog.owner.fullName}</span>
-                    <span className={styles.unreadBadge}>{unreadCount}</span>
-                  </div>
-                  <div className={styles.lastMessage}>
-                    {unreadCount > 0
-                      ? t('chat.unreadInBranch', {
-                          count: unreadCount,
-                          branch: dialog.branch.name,
-                        })
-                      : t('chat.newDialogInBranch', { branch: dialog.branch.name })}
-                  </div>
-                </div>
-              );
-            }),
-        )}
+          return (
+            <div
+              key={`unread-${dialog.id}`}
+              className={`${styles.minimizedChat} ${styles.unreadDialog} ${
+                unreadCount > 0 ? styles.hasUnread : ''
+              }`}
+              style={{
+                bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
+                right: '540px',
+                zIndex: 1000 - (minimizedSessions.length + index),
+              }}
+              onClick={async () => {
+                await openUnreadDialog(sessionId, dialog);
+              }}>
+              <div className={styles.minimizedHeader}>
+                <span>{dialog.owner.fullName}</span>
+                <span className={styles.unreadBadge}>{unreadCount}</span>
+              </div>
+              {line ? <div className={styles.lastMessage}>{line}</div> : null}
+            </div>
+          );
+        })}
       </div>
 
       {expandedSessions.map((session) => (

@@ -508,6 +508,7 @@
     "newChatFallback": "Новы чат",
     "unreadInBranch": "Непрачытаных паведамленняў: {{count}} • {{branch}}",
     "newDialogInBranch": "Новы дыялог • {{branch}}",
+    "previewAttachment": "Укладанне",
     "dialogTitleFallback": "Дыялог з карыстальнікам",
     "minimizeDialog": "Згарнуць дыялог",
     "closeDialog": "Зачыніць дыялог",

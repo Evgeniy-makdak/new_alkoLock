@@ -507,6 +507,7 @@
     "newChatFallback": "Yangi chat",
     "unreadInBranch": "O'qilmagan xabarlar: {{count}} • {{branch}}",
     "newDialogInBranch": "Yangi dialog • {{branch}}",
+    "previewAttachment": "Ilova",
     "dialogTitleFallback": "Foydalanuvchi bilan dialog",
     "minimizeDialog": "Dialogni yig'ish",
     "closeDialog": "Dialogni yopish",
