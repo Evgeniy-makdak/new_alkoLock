@@ -15,8 +15,8 @@ import { IconButton, TextField, Tooltip } from '@mui/material';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
-import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
+import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 

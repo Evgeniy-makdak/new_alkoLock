@@ -497,6 +497,9 @@ export function getUserListURLToChat(
     queries += `&all.match.contains=${trimmedQuery}`;
   }
 
+  // Только выпадающий список чата (getListToChat → этот URL): водители и сервисные работники
+  queries += '&all.groupMembership.group.id.in=200,300';
+
   // if (excludeSuperAdmin) {
   //   queries += `&all.id.notIn=1`
   // }
