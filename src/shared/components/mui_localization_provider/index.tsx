@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import 'dayjs/locale/be';
@@ -9,6 +10,7 @@ import 'dayjs/locale/ru';
 import 'dayjs/locale/uz-latn';
 
 import { ThemeProvider, createTheme } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
@@ -57,11 +59,12 @@ type MuiLocalizationProviderProps = {
 };
 
 export const MuiLocalizationProvider: FC<MuiLocalizationProviderProps> = ({ children }) => {
+  const outerTheme = useTheme();
   const { i18n } = useTranslation();
   const lang = i18n.language?.split('-')[0] || 'ru';
   const { localeText, adapterLocale } = PICKERS_LOCALE_MAP[lang] ?? PICKERS_LOCALE_MAP.ru;
 
-  const theme = createTheme({});
+  const theme = useMemo(() => createTheme(outerTheme, {}), [outerTheme]);
 
   return (
     <ThemeProvider theme={theme}>

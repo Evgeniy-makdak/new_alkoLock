@@ -149,7 +149,7 @@ export const getInitFormState = (
     licenseClass: canSetDefaultValue ? user?.driver?.licenseClass : [],
     licenseCode: user && user?.driver?.licenseCode ? user?.driver?.licenseCode : '',
     userGroups: values,
-    userPhotoDTO: [],
+    userPhotoDTO: initialAvatar,
   };
 
   return { defaultValues: defaultValues, initialAvatar, accessList };

@@ -17,6 +17,7 @@ import {
   Tooltip,
   createTheme,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { DatePicker, type DatePickerProps, type PickersActionBarProps } from '@mui/x-date-pickers';
 
 import { MuiLocalizationProvider } from '@shared/components/mui_localization_provider';
@@ -64,52 +65,56 @@ type MyInputDateProps = {
   theme?: Theme;
 } & InputDateProps;
 
-const newTheme = (theme?: Theme) => ({
-  ...theme,
-  components: {
-    'MuiDayCalendar-slideTransition': {
-      styleOverrides: {
-        root: {
-          maxHeight: 200,
-          minHeight: '100px !important',
-          height: 200,
-        },
-      },
-    },
-    MuiPickersSlideTransition: {
-      styleOverrides: {
-        root: {
-          maxHeight: 200,
-          minHeight: '150px !important',
-          height: 200,
-        },
-      },
-    },
-    MuiDateCalendar: {
-      styleOverrides: {
-        root: {
-          height: 'auto',
-        },
-      },
-    },
-    MuiPickersLayout: {
-      styleOverrides: {
-        root: {
-          paddingBottom: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: 350,
-        },
+const inputDateBirthPickerComponents = {
+  'MuiDayCalendar-slideTransition': {
+    styleOverrides: {
+      root: {
+        maxHeight: 200,
+        minHeight: '100px !important',
+        height: 200,
       },
     },
   },
-});
+  MuiPickersSlideTransition: {
+    styleOverrides: {
+      root: {
+        maxHeight: 200,
+        minHeight: '150px !important',
+        height: 200,
+      },
+    },
+  },
+  MuiDateCalendar: {
+    styleOverrides: {
+      root: {
+        height: 'auto',
+      },
+    },
+  },
+  MuiPickersLayout: {
+    styleOverrides: {
+      root: {
+        paddingBottom: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: 350,
+      },
+    },
+  },
+} as const;
 
 export const InputDateBirth: FC<MyInputDateProps> = (props) => {
   const { t } = useTranslation();
-  const theme = props.theme || {};
-  const myTheme = createTheme(newTheme() as Theme);
-  const textFieldProps = props?.slotProps?.textField || {};
+  const outerTheme = useTheme();
+  const { theme: themeOverride, ...pickerProps } = props;
+  const myTheme = useMemo(
+    () =>
+      themeOverride
+        ? createTheme(outerTheme, { components: inputDateBirthPickerComponents }, themeOverride)
+        : createTheme(outerTheme, { components: inputDateBirthPickerComponents }),
+    [outerTheme, themeOverride],
+  );
+  const textFieldProps = pickerProps?.slotProps?.textField || {};
   const maxDate = dayjs().subtract(1, 'day');
 
   const OpenPickerButton = useMemo(
@@ -131,9 +136,9 @@ export const InputDateBirth: FC<MyInputDateProps> = (props) => {
 
   return (
     <MuiLocalizationProvider>
-      <ThemeProvider theme={{ ...myTheme, ...theme }}>
+      <ThemeProvider theme={myTheme}>
         <DatePicker
-          {...props}
+          {...pickerProps}
           maxDate={maxDate}
           slots={{
             actionBar: ClearActionMenuItem,
@@ -149,11 +154,11 @@ export const InputDateBirth: FC<MyInputDateProps> = (props) => {
               id: 'ACTION_BAR',
             },
             popper: {
-              id: `POPER ${props.testid}_POPER`,
+              id: `POPER ${pickerProps.testid}_POPER`,
             },
             textField: {
               ...textFieldProps,
-              id: `TEXT_FIELD ${props.testid}_TEXT_FIELD`,
+              id: `TEXT_FIELD ${pickerProps.testid}_TEXT_FIELD`,
             },
           }}
         />

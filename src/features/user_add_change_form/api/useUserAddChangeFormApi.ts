@@ -1,11 +1,47 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRolesSelectApi } from '@entities/roles_select/api/useRolesSelectApi';
+import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { ID, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
+
+function getUserPhotoMeta(user: IUser | undefined): IUserPhotoDTO | undefined {
+  if (!user) return undefined;
+  return user.userPhotoDTO ?? user.userPhoto;
+}
+
+/** Hash для превью в форме: сайдбар рисует blob без hash, здесь без строки ImageState не заполняется */
+function resolveAvatarHashForForm(
+  user: IUser | undefined,
+  headerMd5: string | null,
+  hasBlob: boolean,
+): string | null {
+  if (!hasBlob) return null;
+  const dto = getUserPhotoMeta(user);
+  return (
+    headerMd5 ??
+    dto?.hash ??
+    (dto?.fileName ? `fn:${dto.fileName}` : null) ??
+    (dto?.id != null ? `photoId:${dto.id}` : null) ??
+    (user?.id != null ? `user:${user.id}` : null) ??
+    'existing'
+  );
+}
+
+function getContentMd5FromResponse(foto: AppAxiosResponse<Blob> | undefined): string | null {
+  const headers = foto?.headers;
+  if (!headers) return null;
+  if (typeof (headers as { get?: (k: string) => string | undefined }).get === 'function') {
+    const h = headers as { get: (k: string) => string | undefined };
+    const fromGet = h.get('content-md5') ?? h.get('Content-MD5');
+    if (fromGet) return fromGet;
+  }
+  const rec = headers as Record<string, string>;
+  return rec['content-md5'] ?? rec['Content-MD5'] ?? null;
+}
 
 const updateQueries = [
   QueryKeys.USER_LIST_TABLE,
@@ -42,7 +78,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
       options: id,
       settings: {
         enabled: enabled,
-        networkMode: 'offlineFirst',
       } as any,
     },
   );
@@ -67,12 +102,16 @@ export const useUserAddChangeFormApi = (id: ID) => {
     onSuccess: () => update(updateQueries),
   });
 
-  const hash = foto ? foto?.headers['content-md5'] : null;
+  const user = data?.data;
+  const headerMd5 = getContentMd5FromResponse(foto);
+  const blob = foto?.data;
+  const hasBlob = Boolean(blob && blob.size > 0);
+  const hash = resolveAvatarHashForForm(user, headerMd5, hasBlob);
 
   return {
-    avatar: foto?.data && hash ? { img: foto?.data, hash } : null,
+    avatar: hasBlob && hash ? { img: blob, hash } : null,
     groups: userGroups,
-    user: data?.data,
+    user,
     isLoading: isLoading || isLoadingUserGroups || isLoadingFoto,
     changeItem,
     createItem,

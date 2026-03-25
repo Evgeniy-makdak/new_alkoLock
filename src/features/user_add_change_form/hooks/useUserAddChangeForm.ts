@@ -92,7 +92,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   useEffect(() => {
     reset(initUser.defaultValues);
-  }, [isLoading]);
+  }, [isLoading, id]);
+
+  // При смене пользователя снова разрешаем подставить аватар из API (firstRender иначе остаётся false)
+  useEffect(() => {
+    firstRender.current = true;
+  }, [id]);
 
   const stateOfForm = getFormState(formState, watch);
 

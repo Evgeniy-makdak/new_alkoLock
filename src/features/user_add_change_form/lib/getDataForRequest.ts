@@ -42,6 +42,9 @@ export const getDataForRequest = (
   const licenseIssueDate = hasDriver ? formatDateUniversal(data?.licenseIssueDate) : null;
 
   const image = data?.userPhotoDTO?.length > 0 ? data?.userPhotoDTO[0] : null;
+  const imageBody = image?.image ?? null;
+  /** Только новый выбор файла уходит в multipart; серверный Blob превью не дублируем в PUT */
+  const isNewAvatarFile = imageBody instanceof File;
 
   const reqBody: CreateUserData = {
     branchId: branchId,
@@ -99,17 +102,17 @@ export const getDataForRequest = (
     }
   }
 
-  if (image && !userID) {
+  if (image && !userID && isNewAvatarFile) {
     formData.append('userPhotoDTO.hash', image.hash);
     formData.append('userPhotoDTO.image', image.image);
   }
 
   let userFoto: FormData | null = null;
-  if (image && userID) {
+  if (image && userID && isNewAvatarFile) {
     userFoto = new FormData();
-    userFoto.append('image', image?.image || '');
-    userFoto.append('hash', image?.hash || '');
-    formData.append('userPhoto.hash', image.hash);
+    userFoto.append('image', image.image);
+    userFoto.append('hash', image.hash || '');
+    formData.append('userPhoto.hash', image.hash || '');
     formData.append('userPhoto.image', image.image);
   }
 

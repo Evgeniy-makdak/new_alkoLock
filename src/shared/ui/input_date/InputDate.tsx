@@ -8,6 +8,7 @@ import updateLocale from 'dayjs/plugin/updateLocale';
 import omit from 'lodash/omit';
 
 import { IconButton, MenuItem, Theme, ThemeProvider, Tooltip, createTheme } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { DatePicker, DatePickerProps, PickersActionBarProps } from '@mui/x-date-pickers';
 
 import { MuiLocalizationProvider } from '@shared/components/mui_localization_provider';
@@ -68,56 +69,59 @@ type MyInputDateProps = {
   minDateFlag?: boolean; // Флаг для установки минимальной даты (завтрашний день)
 } & InputDateProps;
 
-const newTheme = (theme?: Theme) => ({
-  ...theme,
-  components: {
-    'MuiDayCalendar-slideTransition': {
-      styleOverrides: {
-        root: {
-          maxHeight: 200,
-          minHeight: '100px !important',
-          height: 200,
-        },
-      },
-    },
-    MuiPickersSlideTransition: {
-      styleOverrides: {
-        root: {
-          maxHeight: 200,
-          minHeight: '150px !important',
-          height: 200,
-        },
-      },
-    },
-    MuiDateCalendar: {
-      styleOverrides: {
-        root: {
-          height: 'auto',
-        },
-      },
-    },
-    MuiPickersLayout: {
-      styleOverrides: {
-        root: {
-          paddingBottom: '20px',
-          display: 'flex',
-          flexDirection: 'column',
-          maxHeight: 350,
-        },
+const inputDatePickerComponents = {
+  'MuiDayCalendar-slideTransition': {
+    styleOverrides: {
+      root: {
+        maxHeight: 200,
+        minHeight: '100px !important',
+        height: 200,
       },
     },
   },
-});
+  MuiPickersSlideTransition: {
+    styleOverrides: {
+      root: {
+        maxHeight: 200,
+        minHeight: '150px !important',
+        height: 200,
+      },
+    },
+  },
+  MuiDateCalendar: {
+    styleOverrides: {
+      root: {
+        height: 'auto',
+      },
+    },
+  },
+  MuiPickersLayout: {
+    styleOverrides: {
+      root: {
+        paddingBottom: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        maxHeight: 350,
+      },
+    },
+  },
+} as const;
 
 export const InputDate: FC<MyInputDateProps> = (props) => {
   const { t } = useTranslation();
-  const { tooltipTitle } = props;
+  const outerTheme = useTheme();
+  const { tooltipTitle, theme: themeOverride, minDateFlag, ...pickerProps } = props;
   const calendarTooltip = tooltipTitle ?? t('datePicker.openCalendar');
-  const theme = props.theme || {};
-  const myTheme = createTheme(newTheme() as Theme);
-  const textFieldProps = props?.slotProps?.textField || {};
+  const myTheme = useMemo(
+    () =>
+      themeOverride
+        ? createTheme(outerTheme, { components: inputDatePickerComponents }, themeOverride)
+        : createTheme(outerTheme, { components: inputDatePickerComponents }),
+    [outerTheme, themeOverride],
+  );
+  const textFieldProps = pickerProps?.slotProps?.textField || {};
   const [open, setOpen] = useState(false);
-  const minDate = props.minDateFlag ? dayjs().add(1, 'day') : undefined;
+  const minDate = minDateFlag ? dayjs().add(1, 'day') : undefined;
 
   const handleOpen = useCallback(() => {
     setOpen(true);
@@ -150,9 +154,9 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
 
   return (
     <MuiLocalizationProvider>
-      <ThemeProvider theme={{ ...myTheme, ...theme }}>
+      <ThemeProvider theme={myTheme}>
         <DatePicker
-          {...props}
+          {...pickerProps}
           open={open}
           onOpen={handleOpen}
           onClose={handleClose}
@@ -172,7 +176,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
               id: 'ACTION_BAR',
             },
             popper: {
-              id: `POPER ${props.testid}_POPER`,
+              id: `POPER ${pickerProps.testid}_POPER`,
               onKeyDown: (e: React.KeyboardEvent) => {
                 e.stopPropagation();
                 // Добавляем обработчик для сохранения фокуса
@@ -183,7 +187,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
             },
             textField: {
               ...textFieldProps,
-              id: `TEXT_FIELD ${props.testid}_TEXT_FIELD`,
+              id: `TEXT_FIELD ${pickerProps.testid}_TEXT_FIELD`,
             },
             desktopPaper: {
               onKeyDown: (e: React.KeyboardEvent) => {

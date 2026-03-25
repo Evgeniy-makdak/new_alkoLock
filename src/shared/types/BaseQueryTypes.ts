@@ -141,6 +141,17 @@ export interface IAccountUser {
   permissions: string[];
 }
 
+/** Метаданные аватара с бэка (GET user); не путать с телом multipart userPhotoDTO при создании */
+export interface IUserPhotoDTO {
+  id?: ID;
+  fileName?: string;
+  hash?: string;
+  userId?: ID;
+  extension?: string;
+  createdAt?: string;
+  default?: boolean;
+}
+
 export interface IUser {
   inProcessing: any;
   isActive: any;
@@ -165,6 +176,9 @@ export interface IUser {
   };
   driver: IDriver;
   disabled: boolean;
+  userPhotoDTO?: IUserPhotoDTO;
+  /** Реже, чем userPhotoDTO — то же назначение, зависит от сериализации бэка */
+  userPhoto?: IUserPhotoDTO;
 }
 
 export interface IAttachmentItems {
