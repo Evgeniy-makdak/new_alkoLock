@@ -324,7 +324,6 @@ function ChatPanel({
   const handleUsersChange = useCallback(
     (users: number[]) => {
       const filteredUsers = users.filter((id) => id !== 0);
-      updateSession(sessionId, { selectedUsers: filteredUsers });
 
       if (filteredUsers.length === 0) {
         updateSession(sessionId, {
@@ -357,6 +356,29 @@ function ChatPanel({
         historyLoadAttemptedRef.current = false;
         refreshAfterReadTriggeredRef.current = false;
       } else {
+        /* Иначе остаётся selectedDialog/assignedDialogId от предыдущего пользователя:
+         loadMessagesByUserId уходит в refreshSessionMessages(старый dialogId), запросов по новому userId нет,
+         а эффект ниже не вызывает loadMessagesByUserId из‑за hasDialogId. */
+        updateSession(sessionId, {
+          selectedUsers: filteredUsers,
+          selectedDialog: null,
+          assignedDialogId: null,
+          messages: [],
+          hasHistoryLoaded: false,
+          hasSentMessage: false,
+          isDialogEnded: false,
+          hasLoadedDialogs: false,
+          lastSendError: null,
+          pagination: {
+            currentPage: 0,
+            totalPages: 0,
+            totalElements: 0,
+            isLoadingMore: false,
+            isLoadingNext: false,
+            hasMoreMessages: false,
+            hasNextMessages: false,
+          },
+        });
         initialLoadDoneRef.current = false;
         historyLoadAttemptedRef.current = false;
         refreshAfterReadTriggeredRef.current = false;

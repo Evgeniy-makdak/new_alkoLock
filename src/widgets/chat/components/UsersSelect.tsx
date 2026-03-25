@@ -200,17 +200,6 @@ function UsersSelect({
     handleClose();
   };
 
-  const handleDeleteUser = (userId: ID, event: React.MouseEvent) => {
-    if (disabled) return;
-    event.stopPropagation();
-    const newSelectedUsers = selectedUsers.filter((id) => id !== userId);
-    onUsersChange(newSelectedUsers);
-
-    if (onUserSelect && newSelectedUsers.length === 0) {
-      onUserSelect(0, '', undefined);
-    }
-  };
-
   const handleClearAll = (event: React.MouseEvent) => {
     if (disabled) return;
     event.stopPropagation();
@@ -303,19 +292,11 @@ function UsersSelect({
               key={userId}
               label={getDisplayUserName(userId)}
               size="small"
-              onDelete={disabled ? undefined : (e) => handleDeleteUser(userId, e)}
-              deleteIcon={disabled ? null : <Close />}
               sx={{
                 backgroundColor: 'transparent',
                 color: theme.palette.text.primary,
                 fontWeight: 500,
                 border: `1px solid ${borderSubtle}`,
-                '& .MuiChip-deleteIcon': {
-                  color: theme.palette.text.secondary,
-                  '&:hover': {
-                    color: theme.palette.error.main,
-                  },
-                },
               }}
             />
           ))}

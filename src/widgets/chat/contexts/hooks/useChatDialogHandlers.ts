@@ -758,8 +758,19 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
 
       const dialogId = session.selectedDialog?.id || session.assignedDialogId;
       if (dialogId && dialogId !== '0') {
-        await refreshSessionMessages(sessionId);
-        return;
+        const ownerFromDialog = session.selectedDialog?.owner?.id;
+        const dialogBelongsToUser =
+          ownerFromDialog == null || Number(ownerFromDialog) === Number(userId);
+        if (dialogBelongsToUser) {
+          await refreshSessionMessages(sessionId);
+          return;
+        }
+        updateSession(sessionId, {
+          selectedDialog: null,
+          assignedDialogId: null,
+          messages: [],
+          hasHistoryLoaded: false,
+        });
       }
 
       try {
