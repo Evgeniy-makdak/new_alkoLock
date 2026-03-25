@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 
 // import { UsersApi } from '@shared/api/baseQuerys';
 import { InputSearchDelay, Permissions } from '@shared/config/permissionsEnums';
@@ -13,6 +13,7 @@ import { Formatters } from '@shared/utils/formatters';
 import { useUsersTableApi } from '../api/useUsersTableApi';
 import { useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
+import { getUsersTableDisplayTotal } from '../lib/usersTableSystemUsers';
 import { useUsersTableStore } from '../model/usersTableStore';
 
 export const useUsersTable = (handleCloseAside: () => void, selectedUserId: ID | null) => {
@@ -158,8 +159,11 @@ export const useUsersTable = (handleCloseAside: () => void, selectedUserId: ID |
     }
   };
 
-  const rows = useGetRows({ data: users?.content, excludeUserIds: [2] });
-  const totalCount = users?.totalElements;
+  const rows = useGetRows({ data: users?.content, excludeUserIds: [] });
+  const totalCount = useMemo(
+    () => getUsersTableDisplayTotal(users?.totalElements, statusFilter),
+    [users?.totalElements, statusFilter],
+  );
   const headers = useGetColumns(
     refetch,
     handleClickDeletetUser,

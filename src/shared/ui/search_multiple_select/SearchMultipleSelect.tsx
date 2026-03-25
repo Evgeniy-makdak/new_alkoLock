@@ -107,14 +107,19 @@ export function SearchMultipleSelect<T>({
       },
     };
     const hasValue = (value && value.length > 0) || !!inputState;
-    // Пустая строка label у OutlinedInput оставляет «вырез» в рамке — пропадает верхняя граница
+    // Пустая строка label у OutlinedInput оставляет «вырез» в рамке — пропадает верхняя граница (иногда нестабильно из‑за legend)
     const displayLabel = typeof label === 'string' && label.trim() !== '' ? label : undefined;
+    const inputPropsNoLabel = displayLabel === undefined ? { notched: false as const } : {};
     return (
       <TextField
         helperText={helperText}
         {...prop}
         label={displayLabel}
         error={error}
+        InputProps={{
+          ...prop.InputProps,
+          ...inputPropsNoLabel,
+        }}
         InputLabelProps={{
           shrink: focused || !!hasValue || displayLabel === undefined,
         }}

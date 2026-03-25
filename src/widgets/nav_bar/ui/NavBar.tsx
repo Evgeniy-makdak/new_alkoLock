@@ -278,7 +278,7 @@ export const NavBar = () => {
           onClick={isMobile ? () => resetStatusFilter() : undefined}
           end>
           {!isCollapsed && <span>{t(link.nameKey)}</span>}
-          <div style={{ position: 'relative', display: 'inline-flex' }}>
+          <div className={style.notificationsAnchor}>
             <span>{link.icon}</span>
             {notification && (
               <span className={style.notifications}>{length > 99 ? '99+' : length}</span>
@@ -308,14 +308,16 @@ export const NavBar = () => {
 
         <div className={`${isCollapsed ? style.navBarCollops : style.navBarOpen} ${style.navBar}`}>
           <div className={style.navBarWrapper}>
-            <NavbarBranchSelect
-              tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
-              isCollops={isCollapsed}
-            />
+            <div className={style.branchSelectWrap}>
+              <NavbarBranchSelect
+                tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
+                isCollops={isCollapsed}
+              />
+            </div>
 
             {/* Место под стрелку «вверх» всегда резервируем при нескольких страницах — иначе на p>0 появляется кнопка, область ссылок сжимается, visibleItemsCount падает и slice(1*perPage) захватывает последний пункт предыдущей страницы (дубль «Привязки»). */}
             {totalPages > 1 && (
-              <div style={{ position: 'relative', height: '30px', marginBottom: '5px' }}>
+              <div style={{ position: 'relative', height: '26px', marginBottom: '4px' }}>
                 {canScrollUp ? (
                   <IconButton
                     className={style.carouselButtonTop}
@@ -331,7 +333,7 @@ export const NavBar = () => {
                     <KeyboardArrowUpIcon />
                   </IconButton>
                 ) : (
-                  <div aria-hidden style={{ height: 30 }} />
+                  <div aria-hidden style={{ height: 26 }} />
                 )}
               </div>
             )}

@@ -1,5 +1,5 @@
 .wrapper {
-  padding-top: 20px;
+  padding-top: 12px;
   transition: 0.3s all;
   display: flex;
   flex-direction: column;
@@ -16,7 +16,9 @@
   position: relative;
   padding: 10px 12px;
   width: 100%;
-  overflow: hidden;
+  /* overflow-y: visible — бейдж «сервисный режим» выходит вверх из списка; по горизонтали обрезаем */
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .navBarOpen {
@@ -41,6 +43,7 @@
   width: 100%;
   min-height: 44px;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .links {
@@ -304,28 +307,41 @@
   }
 }
 
+/* Якорь иконки: бейдж позиционируется относительно этого блока */
+.notificationsAnchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
 .notifications {
   position: absolute;
-  top: -100px;
+  top: -3px;
   right: -8px;
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  top: -16px;
-  left: 13px;
-  background: #d32f2f;
-  border-radius: 100%;
-  text-align: center;
+  left: auto;
+  /* Компактный бейдж у внешнего края иконки — меньше перекрывает глиф */
+  display: inline-flex;
   align-items: center;
-  font-size: 12px;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  background: #d32f2f;
+  border-radius: 999px;
+  font-size: 10px;
   font-style: normal;
-  font-weight: 500;
-  letter-spacing: 0.14px;
-  line-height: 22px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
   color: white !important;
-  z-index: 1002;
+  z-index: 20;
   pointer-events: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.95),
+    0 1px 3px rgba(0, 0, 0, 0.2);
 
   // Для мобильных: бейдж не должен перекрывать диалог чата
   @media (max-width: 1023px) {
@@ -384,7 +400,7 @@
 
 .logo {
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -414,10 +430,31 @@
 .navBarWrapper {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   flex: 1;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   min-height: 0;
+}
+
+/* Селект филиала: стабильная верхняя граница (Outlined) и слой ниже карусели, чтобы счётчик мог наезжать снизу */
+.branchSelectWrap {
+  flex-shrink: 0;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+
+  :global(.MuiOutlinedInput-notchedOutline) {
+    border-width: 1px;
+    border-top-width: 1px !important;
+    top: 0;
+  }
+
+  :global(.MuiOutlinedInput-root) {
+    position: relative;
+    z-index: 1;
+    background-color: #fff;
+  }
 }
 
 .versionContainer {
@@ -701,6 +738,16 @@
     background: linear-gradient(to top, #1e1e1e, transparent);
   }
 
+  .branchSelectWrap :global(.MuiOutlinedInput-root) {
+    background-color: #1e1e1e;
+  }
+
+  .notifications {
+    box-shadow:
+      0 0 0 1px rgba(30, 30, 30, 0.95),
+      0 1px 3px rgba(0, 0, 0, 0.35);
+  }
+
   .mobileNav .settingsLink,
   .mobileNav .mobileSwitchButton {
     background: #2a2a2a !important;
@@ -715,11 +762,14 @@
   flex-direction: column;
   position: relative;
   min-height: 0;
+  /* Карусель выше селекта по z-index — бейдж первой строки рисуется поверх нижней кромки филиала */
+  z-index: 2;
 }
 
 .carouselViewportCompact {
   flex: 1;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -729,20 +779,23 @@
 .carouselLinksMeasure {
   flex: 1;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
   display: flex;
   flex-direction: column;
-  /* Бейдж «сервисный режим» (.notifications) смещён вверх (top: -16px); без отступа overflow:hidden обрезает кружок у верхнего пункта */
-  padding-top: 18px;
-  box-sizing: border-box;
+  /* Выше псевдоэлементов-градиентов карусели (z-index: 2), чтобы бейдж и пункты не уходили под маску */
+  position: relative;
+  z-index: 3;
 }
 
 .linksCompact {
   display: flex;
   flex-direction: column;
   flex: 1;
+  overflow: visible;
 
   & a {
+    overflow: visible;
     padding: 5px 12px;
     background: transparent;
     width: 100%;
@@ -785,7 +838,8 @@
 
 .carouselViewportCompact {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
 
   &.animating {
     pointer-events: none; // Отключаем взаимодействие во время анимации
@@ -907,7 +961,8 @@
 // Градиентные маски для плавного скрытия краев (опционально)
 .carouselViewportCompact {
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
 
   // Градиент сверху
   &::before {

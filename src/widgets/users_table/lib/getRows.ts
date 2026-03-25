@@ -9,6 +9,7 @@ import { type IUser } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
 import { ValuesHeader } from './getColumns';
+import { isUsersTableExcludedUser } from './usersTableSystemUsers';
 
 interface UseGetRowsProps {
   data: IUser[];
@@ -22,7 +23,7 @@ export const useGetRows = ({ data, excludeUserIds = [] }: UseGetRowsProps): Grid
   return useMemo(
     () =>
       (data ? data : [])
-        .filter((user) => !excludeUserIds.includes(+user.id))
+        .filter((user) => !excludeUserIds.includes(+user.id) && !isUsersTableExcludedUser(user))
         .map((user) => {
           const roles = user?.groupMembership?.map((group) => group?.group?.name).sort();
           const isProcessing =
