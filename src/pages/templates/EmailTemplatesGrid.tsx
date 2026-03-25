@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { useMediaQuery } from '@mui/material';
+import { Box, useMediaQuery } from '@mui/material';
 
 import { EmailTemplate } from '../templates/types';
 import EmailTemplatesTable from './EmailTemplatesTable';
@@ -66,14 +66,17 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
         onSearchChange={onSearchChange}
       />
 
-      <div
-        style={{
+      <Box
+        sx={{
           position: 'sticky',
           bottom: 0,
           left: 0,
           right: 0,
-          backgroundColor: '#fff',
-          paddingBottom: 0,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderTop: 1,
+          borderColor: 'divider',
+          pb: 0,
         }}>
         {isMobile ? (
           <TemplatesMobilePagination
@@ -92,7 +95,7 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
             onRowsPerPageChange={handleRowsPerPageChange}
           />
         )}
-      </div>
+      </Box>
     </div>
   );
 };

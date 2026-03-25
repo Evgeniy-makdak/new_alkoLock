@@ -30,7 +30,6 @@ import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
 import { brandNameLabel } from '@shared/lib/brandNameLabel';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { Popup } from '@shared/ui/popup';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
@@ -400,15 +399,6 @@ export const NavBar = () => {
 
           <div className={style.navBarBottom}>
             <Stack gap={1}>
-              {(isMobile || isTablet) && (
-                <div className={style.mobileLanguageWrap}>
-                  <AppLanguageSelect
-                    className={style.languageSwitcherMobile}
-                    formControlClassName={style.langSelectMobile}
-                    size="small"
-                  />
-                </div>
-              )}
               <MenuButton
                 tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
                 collops={isCollapsed}

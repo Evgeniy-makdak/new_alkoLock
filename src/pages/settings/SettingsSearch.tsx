@@ -24,7 +24,14 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
 }) => {
   const { t } = useTranslation();
   return (
-    <Box sx={{ p: 2 }}>
+    <Box
+      sx={{
+        pt: 2,
+        pl: 2,
+        pb: 2,
+        pr: { xs: 2, md: '124px' },
+        bgcolor: 'background.default',
+      }}>
       <TextField
         variant="outlined"
         placeholder={t('common.search')}

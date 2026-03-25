@@ -3,5 +3,31 @@
   flex-direction: row;
   flex-shrink: 0;
   align-items: center;
+  gap: 0;
+}
+
+.resetSlot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.themeLangCluster {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  align-items: center;
   gap: 2px;
+}
+
+.themeLangClusterSeparated {
+  margin-left: 14px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+:global(html[data-theme='dark']) {
+  .themeLangClusterSeparated {
+    border-left-color: rgba(255, 255, 255, 0.14);
+  }
 }

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Paper, TablePagination } from '@mui/material';
-import { ThemeProvider, createTheme } from '@mui/material';
+import { Paper, TablePagination, useTheme } from '@mui/material';
 import { beBY as coreBeBY, enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 import { CustomPaginationActions } from './CustomPaginationActions';
 
@@ -26,14 +26,19 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   hideTopBorder = false,
 }) => {
   const { t, i18n } = useTranslation();
+  const outerTheme = useTheme();
   const lang = i18n.language?.split('-')[0] || i18n.language;
-  const theme = createTheme(
-    {},
-    lang === 'be'
-      ? coreBeBY
-      : lang === 'en' || lang === 'kk' || lang === 'ky' || lang === 'uz'
-        ? coreEnUS
-        : coreRuRU,
+  const theme = useMemo(
+    () =>
+      createTheme(
+        outerTheme,
+        lang === 'be'
+          ? coreBeBY
+          : lang === 'en' || lang === 'kk' || lang === 'ky' || lang === 'uz'
+            ? coreEnUS
+            : coreRuRU,
+      ),
+    [outerTheme, lang],
   );
 
   if (!totalCount || !rowsPerPage) return null;
@@ -46,14 +51,16 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           position: 'sticky',
           bottom: 0,
           width: '100%',
-          borderTop: hideTopBorder ? 'none' : '1px solid #ccc',
-          backgroundColor: 'white',
+          borderTop: hideTopBorder ? 'none' : `1px solid ${outerTheme.palette.divider}`,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
           zIndex: 10,
           boxShadow: hideTopBorder ? 'none' : undefined,
         }}>
         <TablePagination
           sx={{
             marginTop: 'auto',
+            color: 'text.primary',
             backgroundColor: 'transparent',
             borderTop: 'none',
             '& .MuiTablePagination-toolbar': {
@@ -61,6 +68,15 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
               gap: 1,
               minHeight: 48,
               boxSizing: 'border-box',
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              color: 'text.primary',
+            },
+            '& .MuiTablePagination-selectIcon': {
+              color: 'text.secondary',
+            },
+            '& .MuiInputBase-root': {
+              color: 'text.primary',
             },
           }}
           rowsPerPageOptions={[25, 50, 75, 100]}

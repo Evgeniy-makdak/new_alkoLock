@@ -31,7 +31,12 @@ const EmailTemplatesSearch: React.FC<EmailTemplatesSearchProps> = ({
           display: 'flex',
           alignItems: 'center',
           gap: 1,
-          backgroundColor: 'white',
+          px: 1,
+          py: 1,
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}>
         <TextField
           variant="outlined"
@@ -68,11 +73,9 @@ const EmailTemplatesSearch: React.FC<EmailTemplatesSearchProps> = ({
             <IconButton
               onClick={onAddClick}
               sx={{
-                backgroundColor: '#f5f5f5',
-                '&:hover': {
-                  backgroundColor: '#e0e0e0',
-                },
                 flexShrink: 0,
+                bgcolor: 'action.hover',
+                '&:hover': { bgcolor: 'action.selected' },
               }}>
               <AddIcon />
             </IconButton>
@@ -83,36 +86,49 @@ const EmailTemplatesSearch: React.FC<EmailTemplatesSearchProps> = ({
   }
 
   return (
-    <TextField
-      variant="outlined"
-      placeholder={t('common.search')}
-      value={searchQuery}
-      onChange={(e) => onSearchChange(e.target.value)}
-      size="small"
-      fullWidth
-      sx={{ mb: 3 }}
-      InputProps={{
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon />
-          </InputAdornment>
-        ),
-        endAdornment: (
-          <InputAdornment position="end">
-            <Tooltip
-              title={t('map.clear')}
-              open={activeTooltip === 'clear'}
-              onOpen={() => handleTooltipOpen('clear')}
-              onClose={handleTooltipClose}
-              disableInteractive>
-              <IconButton onClick={() => onSearchChange('')}>
-                <ClearIcon />
-              </IconButton>
-            </Tooltip>
-          </InputAdornment>
-        ),
-      }}
-    />
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        minHeight: 48,
+        mb: 3,
+      }}>
+      <TextField
+        variant="outlined"
+        placeholder={t('common.search')}
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        size="small"
+        fullWidth
+        sx={{
+          flex: 1,
+          minWidth: 0,
+          maxWidth: { xs: '100%', md: 'calc(100% - 132px)' },
+        }}
+        InputProps={{
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon />
+            </InputAdornment>
+          ),
+          endAdornment: (
+            <InputAdornment position="end">
+              <Tooltip
+                title={t('map.clear')}
+                open={activeTooltip === 'clear'}
+                onOpen={() => handleTooltipOpen('clear')}
+                onClose={handleTooltipClose}
+                disableInteractive>
+                <IconButton onClick={() => onSearchChange('')}>
+                  <ClearIcon />
+                </IconButton>
+              </Tooltip>
+            </InputAdornment>
+          ),
+        }}
+      />
+    </Box>
   );
 };
 

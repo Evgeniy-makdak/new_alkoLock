@@ -1,12 +1,13 @@
 import { Outlet, useLocation } from 'react-router-dom';
 
-import { CircularProgress } from '@mui/material';
+import { CircularProgress, useMediaQuery } from '@mui/material';
 
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
 import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import ChatFooter from '@widgets/chat/chatFooter/ChatFooter';
 import { NavBar } from '@widgets/nav_bar';
+import { breakpoints } from '@widgets/nav_bar/breakpoints';
 import { RoleChipStyles } from '@widgets/users_table/ui/RoleChipStyles';
 
 import { useApp } from '../hooks/useApp';
@@ -16,7 +17,10 @@ export function App() {
   const { isLoading } = useApp();
   const { mode } = useColorMode();
   const location = useLocation();
-  const showFloatingThemeSlot = !pathHasInlineTableToolbar(location.pathname);
+  const isMobile = useMediaQuery(breakpoints.mobile);
+  const isTablet = useMediaQuery(breakpoints.tablet);
+  const isNarrowViewport = isMobile || isTablet;
+  const showFloatingThemeSlot = !pathHasInlineTableToolbar(location.pathname) || isNarrowViewport;
 
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
@@ -29,7 +33,8 @@ export function App() {
           <NavBar />
           <div className={style.content}>
             {showFloatingThemeSlot ? (
-              <div className={style.themeToggleSlot}>
+              <div
+                className={`${style.themeToggleSlot} ${isNarrowViewport ? style.themeToggleSlotNarrow : ''}`}>
                 <ThemeToggleControl />
                 <AppLanguageSelect appearance="toolbar" />
               </div>

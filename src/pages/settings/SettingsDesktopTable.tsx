@@ -15,6 +15,7 @@ import {
   TableRow,
   Tooltip,
 } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 
 import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
 
@@ -49,6 +50,9 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
   handleResetToDefault,
 }) => {
   const { t } = useTranslation();
+  const headBg = (theme: Theme) =>
+    theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : theme.palette.grey[300];
+
   return (
     <TableContainer
       component={Paper}
@@ -74,7 +78,7 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
         <TableHead sx={{ height: '54px' }}>
           <TableRow
             sx={{
-              backgroundColor: '#dad8d8',
+              bgcolor: headBg,
               position: 'sticky',
               top: 0,
               zIndex: 2,
@@ -83,7 +87,7 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
             <TableCell
               sx={{
                 fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
+                bgcolor: headBg,
                 width: '60%',
                 border: 'none',
                 borderBottom: 'none',
@@ -93,7 +97,7 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
             <TableCell
               sx={{
                 fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
+                bgcolor: headBg,
                 width: '20%',
                 border: 'none',
                 borderBottom: 'none',
@@ -105,7 +109,7 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
                 width: '20%',
                 textAlign: 'center',
                 fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
+                bgcolor: headBg,
                 border: 'none',
                 borderBottom: 'none',
               }}>

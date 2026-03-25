@@ -1,4 +1,6 @@
 .wrapper {
+  box-sizing: border-box;
+  width: 100%;
   padding: 10px;
   gap: 8px;
   display: flex;

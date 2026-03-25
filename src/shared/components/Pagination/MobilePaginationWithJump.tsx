@@ -10,6 +10,7 @@ import {
   DialogTitle,
   TextField,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 export interface MobilePaginationWithJumpProps {
   page: number;
@@ -36,6 +37,7 @@ function MobilePaginationWithJumpComponent({
   loading = false,
 }: MobilePaginationWithJumpProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const lastStableTotalPagesRef = useRef<number | null>(null);
 
   const safePage =
@@ -107,7 +109,8 @@ function MobilePaginationWithJumpComponent({
         className={buttonClassName}
         disabled={safePage === 0}
         onClick={() => onPageChange(safePage - 1)}
-        aria-label={t('pagination.prevPage')}>
+        aria-label={t('pagination.prevPage')}
+        style={{ color: theme.palette.text.primary }}>
         <KeyboardArrowUp />
       </button>
 
@@ -122,7 +125,7 @@ function MobilePaginationWithJumpComponent({
           border: 'none',
           padding: '4px 8px',
           font: 'inherit',
-          color: infoClassName ? 'inherit' : '#777',
+          color: infoClassName ? 'inherit' : theme.palette.text.secondary,
           fontSize: infoClassName ? 'inherit' : 14,
           fontVariantNumeric: 'tabular-nums',
           textDecoration: 'underline',
@@ -139,7 +142,8 @@ function MobilePaginationWithJumpComponent({
         className={buttonClassName}
         disabled={!canGoNext}
         onClick={() => onPageChange(safePage + 1)}
-        aria-label={t('pagination.nextPage')}>
+        aria-label={t('pagination.nextPage')}
+        style={{ color: theme.palette.text.primary }}>
         <KeyboardArrowDown />
       </button>
 

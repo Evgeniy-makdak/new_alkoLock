@@ -600,26 +600,6 @@
   margin-top: auto;
 }
 
-.mobileLanguageWrap {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 4px 0 6px;
-  flex-wrap: wrap;
-}
-
-.languageSwitcherMobile {
-  width: auto;
-  display: flex;
-  justify-content: center;
-}
-
-.langSelectMobile {
-  flex-shrink: 0;
-}
-
 .postLinksToolbar {
   display: flex;
   flex-direction: row;
@@ -746,6 +726,19 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+/* Стрелка «вниз» — в потоке под пунктами, без наезда на последнюю иконку */
+.carouselViewportCompact > .carouselButtonBottom {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  align-self: center;
+  flex-shrink: 0;
+  margin-top: 14px;
+  margin-bottom: 8px;
 }
 
 /* Только зона пунктов меню (без стрелки вниз) — стабильная высота для расчёта «страницы» */

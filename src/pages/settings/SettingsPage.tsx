@@ -320,7 +320,7 @@ export const SettingsPage = () => {
   );
 
   return (
-    <Box sx={{ p: 0 }}>
+    <Box sx={{ p: 0, bgcolor: 'background.default', color: 'text.primary', minHeight: 1 }}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
         <SettingsSearch
           searchQuery={searchQuery}
@@ -347,7 +347,10 @@ export const SettingsPage = () => {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: 'background.paper',
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            borderTop: 1,
+            borderColor: 'divider',
             pb: 0,
           }}>
           {isMobile ? (

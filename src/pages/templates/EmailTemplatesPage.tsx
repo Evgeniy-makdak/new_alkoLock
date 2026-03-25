@@ -201,7 +201,15 @@ const EmailTemplatesPage: React.FC = () => {
   };
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box
+      sx={{
+        px: 3,
+        pt: { xs: 3, md: '10px' },
+        pb: 3,
+        bgcolor: 'background.default',
+        color: 'text.primary',
+        minHeight: 1,
+      }}>
       <EmailTemplatesGrid
         templates={templates}
         onEditSave={handleSave}
