@@ -143,7 +143,13 @@ const CustomPagination = () => {
   };
 
   return (
-    <Box display="flex" alignItems="center" flexWrap="nowrap" justifyContent="flex-end" gap={0.5}>
+    <Box
+      display="flex"
+      alignItems="center"
+      flexWrap="nowrap"
+      justifyContent="flex-end"
+      gap={0.5}
+      sx={{ color: 'text.primary' }}>
       <Box display="flex" alignItems="center" mx={2} flexGrow={1} minWidth={0}>
         <GridPagination
           sx={{

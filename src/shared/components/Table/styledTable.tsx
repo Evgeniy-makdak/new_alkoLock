@@ -99,6 +99,7 @@ export const getStyle = (flag: boolean, theme?: Theme) => {
     },
     '.MuiDataGrid-footerContainer': {
       borderTop: 'none', // Убираем разделитель в футере
+      color: theme?.palette.text.primary,
     },
     // Убираем выделение для всех состояний ячеек
     '.MuiDataGrid-cell:focus, .MuiDataGrid-cell:focus-within, .MuiDataGrid-cell--withRenderer:focus':

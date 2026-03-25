@@ -78,25 +78,29 @@ function PaginationJumpFieldComponent({
           min: 1,
           max: effectiveTotal,
           'aria-label': t('pagination.jumpToPage'),
-          style: { textAlign: 'center', padding: '5px 4px', fontSize: '0.8125rem' },
+          style: { textAlign: 'center', padding: '5px 4px', fontSize: '0.875rem' },
         }}
         sx={{
           width: 52,
           '& .MuiOutlinedInput-root': {
             minHeight: 32,
-            fontSize: '0.8125rem',
+            fontSize: '0.875rem',
+            color: 'text.primary',
             backgroundColor: 'background.paper',
+          },
+          '& .MuiOutlinedInput-input': {
+            color: 'text.primary',
           },
         }}
       />
       <Typography
         variant="body2"
         component="span"
-        color="text.secondary"
+        color="text.primary"
         sx={{
           whiteSpace: 'nowrap',
           lineHeight: 1,
-          fontSize: '0.8125rem',
+          fontSize: '0.875rem',
           userSelect: 'none',
           fontVariantNumeric: 'tabular-nums',
           minWidth: '10ch',

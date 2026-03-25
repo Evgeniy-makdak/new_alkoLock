@@ -725,6 +725,18 @@
   flex-direction: column;
 }
 
+/* Только зона пунктов меню (без стрелки вниз) — стабильная высота для расчёта «страницы» */
+.carouselLinksMeasure {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  /* Бейдж «сервисный режим» (.notifications) смещён вверх (top: -16px); без отступа overflow:hidden обрезает кружок у верхнего пункта */
+  padding-top: 18px;
+  box-sizing: border-box;
+}
+
 .linksCompact {
   display: flex;
   flex-direction: column;

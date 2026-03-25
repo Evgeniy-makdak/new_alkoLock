@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
@@ -43,8 +43,8 @@ import { tooltipStyle } from '../config/styles';
 import { useNavBar } from '../hooks/useNavBar';
 import style from './NavBar.module.scss';
 
-// Высота одного элемента навигации в пикселях (с учетом margin-bottom)
-const ITEM_HEIGHT = 61; // 44px высота + 17px margin-bottom
+// Один «слот» пункта: min-height 44px + margin-bottom 17px (у последнего пункта margin 0 — это учтено в формуле ниже)
+const ITEM_HEIGHT = 61; // 44 + 17
 
 export const NavBar = () => {
   const { t, i18n } = useTranslation();
@@ -68,7 +68,8 @@ export const NavBar = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [visibleItemsCount, setVisibleItemsCount] = useState(8);
   const [isAnimating, setIsAnimating] = useState(false);
-  const carouselRef = useRef<HTMLDivElement>(null);
+  /** Высота только под список ссылок (без кнопки «вниз»), иначе при появлении стрелки меняется perPage и дублируется последний пункт */
+  const carouselLinksMeasureRef = useRef<HTMLDivElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   const { data } = useConfiguredQuery([QueryKeys.BACKEND_VERSION], AccountApi.getBackandVersion, {
@@ -102,41 +103,58 @@ export const NavBar = () => {
 
   const filteredLinks = getFilteredLinks();
 
-  // Расчет количества видимых элементов и страниц
-  const calculateVisibleItems = useCallback(() => {
-    if (!carouselRef.current) {
-      return { visibleCount: filteredLinks.length, totalPages: 1 };
-    }
-
+  const measureItemsPerPage = useCallback(() => {
+    const el = carouselLinksMeasureRef.current;
+    if (!el) return;
     try {
-      const containerHeight = carouselRef.current.clientHeight;
-      const availableHeight = containerHeight - 20;
-      const visibleCount = Math.floor(availableHeight / ITEM_HEIGHT);
-      const totalPages = Math.ceil(filteredLinks.length / visibleCount);
-
-      return { visibleCount, totalPages };
-    } catch (error) {
-      return { visibleCount: filteredLinks.length, totalPages: 1 };
+      const cs = window.getComputedStyle(el);
+      const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      const availableHeight = Math.max(0, el.clientHeight - padY - 20);
+      // n пунктов занимают: n*44 + (n-1)*17 = n*ITEM_HEIGHT - 17 (последний без margin-bottom)
+      // => максимальное n: floor((H + 17) / ITEM_HEIGHT). Старая формула floor(H/61) занижала n на 1 — вторая «страница» начиналась с последнего пункта первой.
+      const count = Math.max(1, Math.floor((availableHeight + 17) / ITEM_HEIGHT));
+      setVisibleItemsCount(count);
+    } catch {
+      /* ignore */
     }
-  }, [filteredLinks.length]);
+  }, []);
 
-  // Получение текущих ссылок для отображения
-  const getCurrentLinks = useCallback(() => {
-    const { visibleCount } = calculateVisibleItems();
-    const startIndex = currentPage * visibleCount;
-    const endIndex = startIndex + visibleCount;
-    return filteredLinks.slice(startIndex, endIndex);
-  }, [currentPage, filteredLinks, calculateVisibleItems]);
+  useLayoutEffect(() => {
+    measureItemsPerPage();
+  }, [filteredLinks.length, measureItemsPerPage]);
 
   useEffect(() => {
-    const { visibleCount, totalPages } = calculateVisibleItems();
-    setVisibleItemsCount(visibleCount);
+    const el = carouselLinksMeasureRef.current;
+    if (!el) return;
 
-    // Корректируем текущую страницу, если она выходит за границы
-    if (currentPage >= totalPages) {
-      setCurrentPage(Math.max(0, totalPages - 1));
-    }
-  }, [calculateVisibleItems, currentPage]);
+    resizeObserverRef.current = new ResizeObserver(() => {
+      measureItemsPerPage();
+    });
+    resizeObserverRef.current.observe(el);
+
+    return () => {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+    };
+  }, [measureItemsPerPage]);
+
+  const itemsPerPage = Math.max(1, visibleItemsCount);
+  const totalPages =
+    filteredLinks.length === 0 ? 1 : Math.max(1, Math.ceil(filteredLinks.length / itemsPerPage));
+
+  useEffect(() => {
+    setCurrentPage((p) => {
+      const perPage = Math.max(1, visibleItemsCount);
+      const tp =
+        filteredLinks.length === 0 ? 1 : Math.max(1, Math.ceil(filteredLinks.length / perPage));
+      return p >= tp ? Math.max(0, tp - 1) : p;
+    });
+  }, [filteredLinks.length, visibleItemsCount]);
+
+  const getCurrentLinks = useCallback(() => {
+    const start = currentPage * itemsPerPage;
+    return filteredLinks.slice(start, start + itemsPerPage);
+  }, [currentPage, filteredLinks, itemsPerPage]);
 
   const handleCollops = () => {
     setItemState(!state);
@@ -212,37 +230,10 @@ export const NavBar = () => {
     };
   }, [location.pathname, navigate]);
 
-  // Обновление при изменении размеров
-  useEffect(() => {
-    const updateCarousel = () => {
-      const { visibleCount, totalPages } = calculateVisibleItems();
-      setVisibleItemsCount(visibleCount);
-
-      if (currentPage >= totalPages) {
-        setCurrentPage(Math.max(0, totalPages - 1));
-      }
-    };
-
-    if (carouselRef.current) {
-      resizeObserverRef.current = new ResizeObserver(() => {
-        updateCarousel();
-      });
-
-      resizeObserverRef.current.observe(carouselRef.current);
-    }
-
-    return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-    };
-  }, [calculateVisibleItems, currentPage]);
-
   // Обработчики для страничной навигации
   const handleNext = () => {
     if (isAnimating) return;
 
-    const { totalPages } = calculateVisibleItems();
     if (currentPage < totalPages - 1) {
       setIsAnimating(true);
       setCurrentPage(currentPage + 1);
@@ -260,7 +251,6 @@ export const NavBar = () => {
     }
   };
 
-  const { totalPages } = calculateVisibleItems();
   const currentLinks = getCurrentLinks();
   const canScrollUp = currentPage > 0;
   const canScrollDown = currentPage < totalPages - 1;
@@ -323,36 +313,42 @@ export const NavBar = () => {
               isCollops={isCollapsed}
             />
 
-            {/* ВЫНОСИМ КНОПКУ ВВЕРХ НА УРОВЕНЬ ВЫШЕ */}
-            {totalPages > 1 && canScrollUp && (
+            {/* Место под стрелку «вверх» всегда резервируем при нескольких страницах — иначе на p>0 появляется кнопка, область ссылок сжимается, visibleItemsCount падает и slice(1*perPage) захватывает последний пункт предыдущей страницы (дубль «Привязки»). */}
+            {totalPages > 1 && (
               <div style={{ position: 'relative', height: '30px', marginBottom: '5px' }}>
-                <IconButton
-                  className={style.carouselButtonTop}
-                  onClick={handlePrev}
-                  disabled={!canScrollUp || isAnimating}
-                  size="small"
-                  style={{
-                    position: 'absolute',
-                    top: '0',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                  }}>
-                  <KeyboardArrowUpIcon />
-                </IconButton>
+                {canScrollUp ? (
+                  <IconButton
+                    className={style.carouselButtonTop}
+                    onClick={handlePrev}
+                    disabled={!canScrollUp || isAnimating}
+                    size="small"
+                    style={{
+                      position: 'absolute',
+                      top: '0',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                    }}>
+                    <KeyboardArrowUpIcon />
+                  </IconButton>
+                ) : (
+                  <div aria-hidden style={{ height: 30 }} />
+                )}
               </div>
             )}
 
-            <div className={style.carouselContainerCompact} ref={carouselRef}>
+            <div className={style.carouselContainerCompact}>
               <div className={style.carouselViewportCompact}>
-                <div
-                  className={`${style.linksCompact} ${isAnimating ? style.animating : ''}`}
-                  style={{
-                    transition: isAnimating ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                  }}>
-                  {currentLinks.map((link, index) => {
-                    const globalIndex = currentPage * visibleItemsCount + index;
-                    return renderNavLink(link, globalIndex);
-                  })}
+                <div ref={carouselLinksMeasureRef} className={style.carouselLinksMeasure}>
+                  <div
+                    className={`${style.linksCompact} ${isAnimating ? style.animating : ''}`}
+                    style={{
+                      transition: isAnimating ? 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                    }}>
+                    {currentLinks.map((link, index) => {
+                      const globalIndex = currentPage * itemsPerPage + index;
+                      return renderNavLink(link, globalIndex);
+                    })}
+                  </div>
                 </div>
 
                 {totalPages > 1 && canScrollDown && (

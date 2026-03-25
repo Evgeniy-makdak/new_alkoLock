@@ -74,12 +74,31 @@ export const Table = memo(
             }) => t('pagination.rowsOf', { from, to, count }),
           },
           styleOverrides: {
+            root: {
+              color: outerTheme.palette.text.primary,
+            },
+            toolbar: {
+              color: outerTheme.palette.text.primary,
+            },
+            selectLabel: {
+              fontSize: '0.875rem',
+              color: outerTheme.palette.text.primary,
+            },
             displayedRows: {
+              fontSize: '0.875rem',
+              color: outerTheme.palette.text.primary,
               fontVariantNumeric: 'tabular-nums',
               minWidth: '15rem',
               display: 'inline-block',
               whiteSpace: 'nowrap',
               flexShrink: 0,
+            },
+            select: {
+              fontSize: '0.875rem',
+              color: outerTheme.palette.text.primary,
+            },
+            actions: {
+              color: outerTheme.palette.text.primary,
             },
           },
         },
