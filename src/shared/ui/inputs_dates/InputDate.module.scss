@@ -1,8 +1,9 @@
 .datePickers {
-  width: 400px;
+  width: auto;
+  flex: 0 0 auto;
   display: flex;
-  justify-content: space-between;
-  column-gap: 16px;
+  justify-content: flex-start;
+  column-gap: 8px;
   background: #fafafa;
   align-items: center;
   border-radius: 12px;

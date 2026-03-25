@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
@@ -190,13 +191,15 @@ export const AvtoServiceDesktopTable = ({
           valueStartDatePicker={filterData.startDate}
           valueEndDatePicker={filterData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filterData.clearDates();
-            filterData.setInput('');
-            resetPagination();
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filterData.clearDates();
+              filterData.setInput('');
+              resetPagination();
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
       <div className={styles.scrollableTable}>
         <Table

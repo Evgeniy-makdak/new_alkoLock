@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { GroupAddForm } from '@features/group_add_form';
 import { GroupDeleteForm } from '@features/group_delete_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import { SelectedBranchState } from '@shared/model/app_store/AppStore';
@@ -177,13 +178,15 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            tableData.apiRef.current.setPage(0);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              tableData.apiRef.current.setPage(0);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

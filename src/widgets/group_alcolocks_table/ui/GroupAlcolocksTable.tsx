@@ -4,6 +4,7 @@ import type { FC } from 'react';
 import { GroupAlcolockMoveForm } from '@features/group_alcolock_move_form';
 import { GroupAlcolocksAddForm } from '@features/group_alcolocks_add_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { IBranch } from '@shared/types/BaseQueryTypes';
@@ -34,6 +35,7 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
             tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
           }}
         />
+        <TableHeaderEndToolbar />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

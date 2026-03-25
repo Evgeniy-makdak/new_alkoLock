@@ -31,6 +31,7 @@
 }
 
 .content {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -41,6 +42,26 @@
   /* На мобильных не даём «ездить» всей странице из‑за чата/карты — скролл только внутри виджетов */
   @media (max-width: 768px) {
     overflow-x: hidden;
+  }
+}
+
+/* Тема + язык: выравнивание по вертикали с рядом TableHeaderWrapper (padding 10px, контролы ~34px) */
+.themeToggleSlot {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 1100;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  min-height: 48px;
+
+  @media (max-width: 1024px) {
+    top: 10px;
+    right: 10px;
   }
 }
 

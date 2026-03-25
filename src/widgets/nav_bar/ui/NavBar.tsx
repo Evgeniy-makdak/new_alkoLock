@@ -4,10 +4,8 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
-import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import SettingsIcon from '@mui/icons-material/Settings';
 import {
   Button,
@@ -32,7 +30,6 @@ import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
 import { brandNameLabel } from '@shared/lib/brandNameLabel';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { useColorMode } from '@shared/theme/colorMode';
 import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { Popup } from '@shared/ui/popup';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
@@ -58,7 +55,6 @@ export const NavBar = () => {
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
   const theme = useTheme();
-  const { mode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(false);
@@ -383,33 +379,11 @@ export const NavBar = () => {
                   </Button>
                 </Tooltip>
               )}
-              {!(isMobile || isTablet) && (
-                <Tooltip
-                  title={t('nav.toggleColorMode')}
-                  placement="right"
-                  slotProps={tooltipStyle}
-                  disableHoverListener={isCollapsed}>
-                  <IconButton
-                    size="small"
-                    color="inherit"
-                    onClick={toggleColorMode}
-                    className={style.themeIconBtn}
-                    aria-label={t('nav.toggleColorMode')}>
-                    {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
-                  </IconButton>
-                </Tooltip>
-              )}
             </div>
 
-            {/* Версии и переключатель языка */}
+            {/* Версии (язык — в верхней панели контента, App.tsx) */}
             {!isCollapsed && !(isMobile || isTablet) && (
               <div className={style.versionContainer}>
-                <AppLanguageSelect
-                  className={style.languageSwitcher}
-                  formControlClassName={style.langSelect}
-                  showLanguageName
-                />
-
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
                     {t('nav.frontend')}: v {frontendVersion}
@@ -433,16 +407,6 @@ export const NavBar = () => {
                     formControlClassName={style.langSelectMobile}
                     size="small"
                   />
-                  <Tooltip title={t('nav.toggleColorMode')} placement="top">
-                    <IconButton
-                      size="small"
-                      color="inherit"
-                      onClick={toggleColorMode}
-                      className={style.themeIconBtnMobile}
-                      aria-label={t('nav.toggleColorMode')}>
-                      {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
-                    </IconButton>
-                  </Tooltip>
                 </div>
               )}
               <MenuButton

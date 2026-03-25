@@ -57,6 +57,15 @@
   min-width: 40px;
 }
 
+/* Верхняя панель: мини-флаг 3:2, без круга — визуально ближе к IconButton соседей */
+.triggerToolbar {
+  width: auto;
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 6px;
+}
+
 .triggerFlag {
   width: 34px;
   height: 34px;
@@ -70,6 +79,13 @@
 .triggerFlagSmall {
   width: 30px;
   height: 30px;
+}
+
+.triggerFlagToolbar {
+  width: 22px;
+  height: 15px;
+  border-radius: 2px;
+  object-fit: cover;
 }
 
 .dialogPaper {
@@ -216,5 +232,10 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
       background: rgba(255, 255, 255, 0.12);
     }
+  }
+
+  .triggerToolbar {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
   }
 }

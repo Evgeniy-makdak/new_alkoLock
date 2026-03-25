@@ -4,6 +4,7 @@ import { type FC, useEffect } from 'react';
 import { GroupUserAddForm } from '@features/group_user_add_form';
 import { GroupUserMoveForm } from '@features/group_user_move_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { IBranch } from '@shared/types/BaseQueryTypes';
@@ -41,6 +42,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
             tableData.apiRef.current.setPage(0); // Сброс пагинации при изменении поиска
           }}
         />
+        <TableHeaderEndToolbar />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

@@ -8,6 +8,7 @@ import { DeleteCarForm } from '@features/delete_car_form';
 import { DeleteTrueCarForm } from '@features/delete_true_car_form/ui/DeleteTrueCarForm';
 import { RecoverCarForm } from '@features/recover_car_form/ui';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { ID } from '@shared/types/BaseQueryTypes';
@@ -223,14 +224,16 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            resetStatusFilter();
-            tableData.apiRef.current.setPage(0);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              resetStatusFilter();
+              tableData.apiRef.current.setPage(0);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
       <Table
         sortingMode="server"

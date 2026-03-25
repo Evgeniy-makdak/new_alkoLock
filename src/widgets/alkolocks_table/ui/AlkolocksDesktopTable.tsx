@@ -8,6 +8,7 @@ import { AlkolockTrueDeleteForm } from '@features/alkolock_true_delete_form/ui/A
 import { AlkozamkiForm } from '@features/alkozamki_add_change_form';
 import { RecoverAlcolockForm } from '@features/recover_alkolock_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { ID } from '@shared/types/BaseQueryTypes';
@@ -290,14 +291,16 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            resetStatusFilter();
-            tableData.apiRef?.current?.setPage(0);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              resetStatusFilter();
+              tableData.apiRef?.current?.setPage(0);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
 
       <div className={styles.scrollableTable}>

@@ -6,6 +6,7 @@ import { MailingsAddChangeForm } from '@features/mailings_add_change_form';
 import { RecoverMailingsForm } from '@features/recover_mailings_form/ui';
 import { TrueDeleteMailingsForm } from '@features/true_delete_mailings_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
 import { Popup } from '@shared/ui/popup';
@@ -232,16 +233,18 @@ export const MailingsDesktopTable: FC<MailingsDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            resetStatusFilter();
-            handleFilterChange();
-            const event = new CustomEvent('resetFilters');
-            window.dispatchEvent(event);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              resetStatusFilter();
+              handleFilterChange();
+              const event = new CustomEvent('resetFilters');
+              window.dispatchEvent(event);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

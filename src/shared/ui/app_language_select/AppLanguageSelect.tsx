@@ -20,6 +20,11 @@ type AppLanguageSelectProps = {
   fullWidth?: boolean;
   /** Показать название текущего языка справа от флага (как в тултипе). */
   showLanguageName?: boolean;
+  /**
+   * `toolbar` — компактный прямоугольный флаг для верхней панели (рядом с темой).
+   * У `toolbar` подпись у триггера не показывается (только тултип).
+   */
+  appearance?: 'default' | 'toolbar';
 };
 
 export function AppLanguageSelect({
@@ -27,6 +32,7 @@ export function AppLanguageSelect({
   formControlClassName,
   size = 'medium',
   showLanguageName = false,
+  appearance = 'default',
 }: AppLanguageSelectProps) {
   const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -42,11 +48,22 @@ export function AppLanguageSelect({
     setOpen(false);
   };
 
-  const triggerClass = [style.trigger, size === 'small' && style.triggerSmall, formControlClassName]
+  const isToolbar = appearance === 'toolbar';
+
+  const triggerClass = [
+    style.trigger,
+    isToolbar && style.triggerToolbar,
+    !isToolbar && size === 'small' && style.triggerSmall,
+    formControlClassName,
+  ]
     .filter(Boolean)
     .join(' ');
 
-  const triggerFlagClass = [style.triggerFlag, size === 'small' && style.triggerFlagSmall]
+  const triggerFlagClass = [
+    style.triggerFlag,
+    isToolbar && style.triggerFlagToolbar,
+    !isToolbar && size === 'small' && style.triggerFlagSmall,
+  ]
     .filter(Boolean)
     .join(' ');
 
@@ -71,9 +88,11 @@ export function AppLanguageSelect({
     </Tooltip>
   );
 
+  const showNameBesideFlag = showLanguageName && !isToolbar;
+
   return (
     <div className={className}>
-      {showLanguageName ? (
+      {showNameBesideFlag ? (
         <div className={style.triggerRow}>
           {trigger}
           <span className={style.inlineLanguageName}>{currentLanguageLabel}</span>

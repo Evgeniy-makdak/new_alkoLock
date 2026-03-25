@@ -8,6 +8,7 @@ import { RecoverUserForm } from '@features/recover_user_form/ui';
 import { TrueDeleteUserForm } from '@features/true_delete_user_form';
 import { UserAddChangeForm } from '@features/user_add_change_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { ID } from '@shared/types/BaseQueryTypes';
@@ -277,16 +278,18 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            resetStatusFilter();
-            handleFilterChange();
-            const event = new CustomEvent('resetFilters');
-            window.dispatchEvent(event);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              resetStatusFilter();
+              handleFilterChange();
+              const event = new CustomEvent('resetFilters');
+              window.dispatchEvent(event);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
 
       <div className={styles.scrollableTable}>

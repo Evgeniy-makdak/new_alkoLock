@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import { ID } from '@shared/types/BaseQueryTypes';
@@ -205,14 +206,16 @@ export const EventsDesktopTable = ({
               .ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
           }
         />
-        <ResetFilters
-          reset={() => {
-            filtersData.clearDates();
-            filtersData.setInput('');
-            const event = new CustomEvent('resetFilters');
-            window.dispatchEvent(event);
-          }}
-        />
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={() => {
+              filtersData.clearDates();
+              filtersData.setInput('');
+              const event = new CustomEvent('resetFilters');
+              window.dispatchEvent(event);
+            }}
+          />
+        </TableHeaderEndToolbar>
       </TableHeaderWrapper>
 
       <EventsFilterPanel open={filtersData.openFilters} onFilterChange={handleFilterChange} />

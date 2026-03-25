@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { RoleAddChangeForm } from '@features/role_add_change_form';
 import { RoleDeleteForm } from '@features/role_delete_form';
 import { Table } from '@shared/components/Table/Table';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import { Popup } from '@shared/ui/popup';
@@ -146,6 +147,7 @@ export const RolesTable: FC<RolesTableProps> = ({ prevBranch }) => {
             tableData.apiRef.current.setPage(0);
           }}
         />
+        <TableHeaderEndToolbar />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

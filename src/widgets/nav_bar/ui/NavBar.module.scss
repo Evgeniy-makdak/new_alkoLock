@@ -636,24 +636,6 @@
   align-items: center;
 }
 
-.themeIconBtn {
-  flex-shrink: 0;
-  color: #667a8a;
-
-  &:hover {
-    background-color: rgba(102, 122, 138, 0.12);
-  }
-}
-
-.themeIconBtnMobile {
-  flex-shrink: 0;
-  color: #667a8a;
-
-  &:hover {
-    background-color: rgba(102, 122, 138, 0.12);
-  }
-}
-
 .versionText {
   color: inherit;
 }
@@ -662,15 +644,6 @@
 .rootDark {
   .navBar {
     background: #1e1e1e !important;
-  }
-
-  .themeIconBtn,
-  .themeIconBtnMobile {
-    color: #b0bec5;
-
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.08);
-    }
   }
 
   .logoText {
