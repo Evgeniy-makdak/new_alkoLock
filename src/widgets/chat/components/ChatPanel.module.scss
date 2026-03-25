@@ -169,3 +169,76 @@
   border-bottom: 1px solid #e0e0e0;
   background-color: #f8f9fa;
 }
+
+/* Тёмная тема: панель диалога не белая; заголовок и кнопки читаемы */
+:global(html[data-theme='dark']) {
+  .panel {
+    background-color: #1e1e1e;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .chatHeader {
+    background-color: #252525;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+
+    h3 {
+      color: rgba(255, 255, 255, 0.95);
+    }
+  }
+
+  .headerActions {
+    :global(.MuiIconButton-root) {
+      color: rgba(255, 255, 255, 0.78);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+  }
+
+  .usersSelectContainer {
+    background-color: #1e1e1e;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .dialogActionsContainer {
+    background-color: #222;
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .messageInputContainer {
+    background-color: #1e1e1e;
+    border-top-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .divider {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .minimizedPanel {
+    background-color: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.18);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+    .minimizedHeader {
+      h3 {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      :global(.MuiIconButton-root) {
+        color: rgba(255, 255, 255, 0.78);
+      }
+    }
+  }
+
+  .emptyState {
+    h3 {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.5);
+    }
+  }
+}

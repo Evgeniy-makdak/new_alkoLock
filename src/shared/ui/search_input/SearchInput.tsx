@@ -11,24 +11,12 @@ import {
   Tooltip,
   createTheme,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { appStore } from '@shared/model/app_store/AppStore';
 import { StatusFilter } from '@shared/ui/search_multiple_select/StatusFilter';
 
 import style from './SearchInput.module.scss';
-
-const theme = createTheme({
-  components: {
-    MuiOutlinedInput: {
-      styleOverrides: {
-        input: { padding: '10px 14px' },
-        notchedOutline: { borderWidth: '2px' },
-        root: { height: '30px', display: 'flex', alignItems: 'center' },
-      },
-    },
-    MuiFormControl: { styleOverrides: { root: { width: '100%' } } },
-  },
-});
 
 type SearchInputProps = TextFieldProps & {
   setState: React.Dispatch<React.SetStateAction<string>>;
@@ -45,6 +33,23 @@ export const SearchInput = ({
   ...rest
 }: SearchInputProps) => {
   const { t } = useTranslation();
+  const outerTheme = useTheme();
+  const fieldTheme = React.useMemo(
+    () =>
+      createTheme(outerTheme, {
+        components: {
+          MuiOutlinedInput: {
+            styleOverrides: {
+              input: { padding: '10px 14px' },
+              notchedOutline: { borderWidth: '2px' },
+              root: { height: '30px', display: 'flex', alignItems: 'center' },
+            },
+          },
+          MuiFormControl: { styleOverrides: { root: { width: '100%' } } },
+        },
+      }),
+    [outerTheme],
+  );
   const [statusFilter, setStatusFilter] = React.useState<'Все' | 'Активные' | 'Неактивные'>('Все');
 
   const handleStatusChange = (newStatus: 'Все' | 'Активные' | 'Неактивные') => {
@@ -54,7 +59,7 @@ export const SearchInput = ({
   const isAdmin = appStore().isAdmin;
 
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={fieldTheme}>
       <div className={style.SearchInput}>
         <TextField
           data-testid={testId}

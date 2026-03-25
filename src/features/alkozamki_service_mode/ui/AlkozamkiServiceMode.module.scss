@@ -115,3 +115,24 @@
     margin-top: 30px;
   }
 }
+
+:global(html[data-theme='dark']) {
+  .alcolockServiceMode span {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .active {
+    background: #424242;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .disabled {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.38);
+  }
+
+  .toggles button {
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}

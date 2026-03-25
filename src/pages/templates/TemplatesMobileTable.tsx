@@ -5,7 +5,7 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
-import { Box, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import { Box, IconButton, Paper, Tooltip, Typography, useTheme } from '@mui/material';
 
 import { TEMPLATE_TYPES_LABEL_MAP } from '@shared/lib/templateTypesLabelMap';
 
@@ -27,6 +27,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
   selectedRowId,
 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const handleStatusChange = (template: EmailTemplate) => {
     if (!template.actual) {
       onToggleStatus(template.id);
@@ -49,9 +50,13 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
               p: 2,
               mb: 1.5,
               borderRadius: 2,
-              boxShadow: '0 1px 4px rgba(0,0,0,0.1)',
-              border: '1px solid #e0e0e0',
-              backgroundColor: selectedRowId === template.id ? '#f5f5f5' : 'white',
+              border: 1,
+              borderColor: 'divider',
+              bgcolor: selectedRowId === template.id ? 'action.selected' : 'background.paper',
+              boxShadow:
+                theme.palette.mode === 'dark'
+                  ? '0 1px 8px rgba(0,0,0,0.45)'
+                  : '0 1px 4px rgba(0,0,0,0.1)',
             }}>
             <Box
               sx={{
@@ -82,7 +87,8 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                       height: 12,
                       borderRadius: '50%',
                       backgroundColor: template.actual ? '#4caf50' : '#f44336',
-                      border: '1px solid #fff',
+                      border: '1px solid',
+                      borderColor: 'background.paper',
                       boxShadow: '0 0 2px rgba(0,0,0,0.3)',
                       mr: 2,
                     }}
@@ -99,13 +105,9 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                       size="small"
                       sx={{
                         padding: 0.5,
-                        '& .MuiSvgIcon-root': {
-                          fontSize: '1rem',
-                          color: 'rgba(0, 0, 0, 0.54) !important',
-                        },
-                        '&:hover .MuiSvgIcon-root': {
-                          color: 'rgba(0, 0, 0, 0.87) !important',
-                        },
+                        color: 'text.secondary',
+                        '&:hover': { color: 'text.primary' },
+                        '& .MuiSvgIcon-root': { fontSize: '1rem' },
                       }}>
                       <ModeEditIcon fontSize="small" />
                     </IconButton>
@@ -122,13 +124,9 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                     size="small"
                     sx={{
                       padding: 0.5,
-                      '& .MuiSvgIcon-root': {
-                        fontSize: '1rem',
-                        color: template.actual ? 'rgba(0, 0, 0, 0.54)' : 'rgba(0, 0, 0, 0.38)',
-                      },
-                      '&:hover .MuiSvgIcon-root': {
-                        color: template.actual ? 'rgba(0, 0, 0, 0.87)' : 'rgba(0, 0, 0, 0.87)',
-                      },
+                      color: template.actual ? 'text.secondary' : 'action.disabled',
+                      '&:hover': { color: 'text.primary' },
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
                     }}>
                     {template.actual ? (
                       <CheckCircleOutlineIcon fontSize="small" />
@@ -148,13 +146,9 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                       size="small"
                       sx={{
                         padding: 0.5,
-                        '& .MuiSvgIcon-root': {
-                          fontSize: '1rem',
-                          color: 'rgba(0, 0, 0, 0.54) !important',
-                        },
-                        '&:hover .MuiSvgIcon-root': {
-                          color: 'rgba(0, 0, 0, 0.87) !important',
-                        },
+                        color: 'text.secondary',
+                        '&:hover': { color: 'text.primary' },
+                        '& .MuiSvgIcon-root': { fontSize: '1rem' },
                       }}>
                       <DeleteIcon fontSize="small" />
                     </IconButton>

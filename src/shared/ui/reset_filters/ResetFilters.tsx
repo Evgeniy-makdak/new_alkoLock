@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import CleaningServicesIcon from '@mui/icons-material/CleaningServices';
 import { IconButton, Tooltip } from '@mui/material';
 
-import style from './ResetFilters.module.scss';
-
 interface ResetFiltersProps {
   reset: () => void;
   /** Если не передан — берётся из `common.resetFilters` текущей локали. */
@@ -17,8 +15,8 @@ export const ResetFilters = ({ reset, title }: ResetFiltersProps) => {
 
   return (
     <Tooltip title={tooltipTitle}>
-      <IconButton onClick={reset}>
-        <CleaningServicesIcon className={style.icon} />
+      <IconButton onClick={reset} color="inherit">
+        <CleaningServicesIcon fontSize="small" />
       </IconButton>
     </Tooltip>
   );

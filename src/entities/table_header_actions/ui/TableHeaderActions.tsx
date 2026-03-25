@@ -32,11 +32,7 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
       {showAddAction && (
         <span onClick={onClickAddIcon} data-testid={testidAddIcon}>
           <Tooltip title={t('common.add')}>
-            <GridActionsCellItem
-              key={'add'}
-              icon={<AddIcon style={{ color: '#000' }} />}
-              label="add"
-            />
+            <GridActionsCellItem key={'add'} icon={<AddIcon />} label="add" />
           </Tooltip>
         </span>
       )}

@@ -1,6 +1,7 @@
 import { type ReactNode, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import CssBaseline from '@mui/material/CssBaseline';
 import {
   beBY as coreBeBY,
   enUS as coreEnUS,
@@ -15,6 +16,8 @@ import {
 } from '@mui/x-data-grid/locales';
 import '@mui/x-data-grid/themeAugmentation';
 import { LocalizationProvider } from '@mui/x-date-pickers';
+
+import { useColorMode } from '@shared/theme/colorMode';
 
 import { getPickersLocaleTextForLang } from '../mui_localization_provider';
 
@@ -59,16 +62,133 @@ type LocaleThemeProviderProps = {
  */
 export function LocaleThemeProvider({ children }: LocaleThemeProviderProps) {
   const { i18n } = useTranslation();
+  const { mode } = useColorMode();
   const lang = (i18n.language || 'ru').split('-')[0].toLowerCase();
 
   const theme = useMemo(() => {
     const core = getCoreLocale(lang);
     const grid = getDataGridFragment(lang);
-    let th = createTheme(core, grid);
+    let th = createTheme(
+      {
+        palette: {
+          mode,
+        },
+      },
+      core,
+      grid,
+    );
 
     const prev = th.components?.MuiDataGrid?.defaultProps?.localeText ?? {};
     th = createTheme(th, {
       components: {
+        MuiCssBaseline: {
+          styleOverrides: {
+            body:
+              mode === 'dark'
+                ? {
+                    backgroundColor: th.palette.background.default,
+                    color: th.palette.text.primary,
+                  }
+                : {},
+          },
+        },
+        MuiPaper: {
+          styleOverrides: {
+            root: {
+              backgroundImage: 'none',
+            },
+          },
+        },
+        MuiDialog: {
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+            },
+          },
+        },
+        MuiPopover: {
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+            },
+          },
+        },
+        MuiMenu: {
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+            },
+          },
+        },
+        MuiDrawer: {
+          styleOverrides: {
+            paper: {
+              backgroundImage: 'none',
+            },
+          },
+        },
+        MuiIconButton: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? th.palette.grey[200] : th.palette.action.active,
+            },
+          },
+        },
+        MuiCheckbox: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? th.palette.grey[400] : undefined,
+            },
+          },
+        },
+        MuiFormLabel: {
+          styleOverrides: {
+            root: {
+              color: mode === 'dark' ? th.palette.text.secondary : undefined,
+            },
+          },
+        },
+        MuiFormControlLabel: {
+          styleOverrides: {
+            label: {
+              color: mode === 'dark' ? th.palette.text.primary : undefined,
+            },
+          },
+        },
+        MuiInputLabel: {
+          styleOverrides: {
+            root:
+              mode === 'dark'
+                ? {
+                    '&.MuiInputLabel-shrink': {
+                      backgroundColor: th.palette.background.paper,
+                      padding: '0 4px',
+                      marginLeft: '-4px',
+                    },
+                  }
+                : {},
+          },
+        },
+        MuiOutlinedInput: {
+          styleOverrides: {
+            notchedOutline:
+              mode === 'dark'
+                ? {
+                    borderColor: 'rgba(255, 255, 255, 0.23)',
+                  }
+                : {},
+          },
+        },
+        MuiButton: {
+          styleOverrides: {
+            containedPrimary:
+              mode === 'dark'
+                ? {
+                    color: th.palette.primary.contrastText,
+                  }
+                : {},
+          },
+        },
         MuiDataGrid: {
           defaultProps: {
             localeText: {
@@ -84,12 +204,13 @@ export function LocaleThemeProvider({ children }: LocaleThemeProviderProps) {
     });
 
     return th;
-  }, [i18n, lang]);
+  }, [i18n, lang, mode]);
 
   const pickersLocaleText = useMemo(() => getPickersLocaleTextForLang(lang), [lang]);
 
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline enableColorScheme />
       <LocalizationProvider localeText={pickersLocaleText}>{children}</LocalizationProvider>
     </ThemeProvider>
   );

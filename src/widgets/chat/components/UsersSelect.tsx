@@ -13,6 +13,7 @@ import {
   Popover,
   TextField,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -57,6 +58,14 @@ function UsersSelect({
   displayUserName,
 }: UsersSelectProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const surface = disabled
+    ? theme.palette.action.disabledBackground
+    : theme.palette.background.paper;
+  const borderSubtle = isDark ? 'rgba(255, 255, 255, 0.23)' : '#ccc';
+  const borderHover = isDark ? 'rgba(255, 255, 255, 0.45)' : '#000';
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [users, setUsers] = useState<IUser[]>([]);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -250,39 +259,24 @@ function UsersSelect({
   const filteredSelectedUsers = selectedUsers.filter((id) => Number(id) !== 0);
 
   return (
-    <FormControl
-      fullWidth
-      size="small"
-      variant="outlined"
-      sx={{
-        '& .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#ccc',
-        },
-        '&:hover .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#000',
-        },
-        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-          borderColor: '#1976d2',
-          borderWidth: '2px',
-        },
-      }}>
+    <FormControl fullWidth size="small" variant="outlined">
       <Box
         ref={selectRef}
         onClick={handleClick}
         sx={{
           border: '1px solid',
-          borderColor: '#ccc',
-          borderRadius: '4px',
+          borderColor: borderSubtle,
+          borderRadius: '10px',
           padding: '16.5px 14px',
           minHeight: '40px',
           cursor: disabled ? 'default' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: disabled ? '#f5f5f5' : 'white',
+          backgroundColor: surface,
           position: 'relative',
           '&:hover': {
-            borderColor: disabled ? '#ccc' : '#000',
+            borderColor: disabled ? borderSubtle : borderHover,
           },
           opacity: disabled ? 0.7 : 1,
         }}>
@@ -292,12 +286,13 @@ function UsersSelect({
             position: 'absolute',
             top: '-6px',
             left: '8px',
-            backgroundColor: disabled ? '#f5f5f5' : 'white',
+            backgroundColor: surface,
             padding: '0 4px',
             fontSize: '0.75rem',
-            color: 'inherit',
+            color: theme.palette.text.secondary,
             fontWeight: 400,
             lineHeight: 1,
+            zIndex: 1,
           }}>
           {t('chat.usersLabel')}
         </Box>
@@ -312,13 +307,13 @@ function UsersSelect({
               deleteIcon={disabled ? null : <Close />}
               sx={{
                 backgroundColor: 'transparent',
-                color: 'inherit',
+                color: theme.palette.text.primary,
                 fontWeight: 500,
-                border: '1px solid #ccc',
+                border: `1px solid ${borderSubtle}`,
                 '& .MuiChip-deleteIcon': {
-                  color: 'inherit',
+                  color: theme.palette.text.secondary,
                   '&:hover': {
-                    color: '#333',
+                    color: theme.palette.error.main,
                   },
                 },
               }}
@@ -390,17 +385,21 @@ function UsersSelect({
                     sx={{
                       color: 'inherit',
                       backgroundColor: filteredSelectedUsers.includes(user.id)
-                        ? '#e3f2fd'
+                        ? isDark
+                          ? 'rgba(144, 202, 249, 0.16)'
+                          : '#e3f2fd'
                         : 'inherit',
                       '&:hover': {
                         backgroundColor: filteredSelectedUsers.includes(user.id)
-                          ? '#bbdefb'
-                          : '#f5f5f5',
+                          ? isDark
+                            ? 'rgba(144, 202, 249, 0.22)'
+                            : '#bbdefb'
+                          : theme.palette.action.hover,
                       },
                       '&.Mui-selected': {
-                        backgroundColor: '#e3f2fd',
+                        backgroundColor: isDark ? 'rgba(144, 202, 249, 0.16)' : '#e3f2fd',
                         '&:hover': {
-                          backgroundColor: '#bbdefb',
+                          backgroundColor: isDark ? 'rgba(144, 202, 249, 0.22)' : '#bbdefb',
                         },
                       },
                     }}>

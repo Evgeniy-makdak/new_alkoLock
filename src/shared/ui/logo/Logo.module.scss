@@ -19,3 +19,9 @@
   color: #070707;
   min-width: 0;
 }
+
+:global(html[data-theme='dark']) {
+  .brandText {
+    color: rgba(255, 255, 255, 0.87);
+  }
+}

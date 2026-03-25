@@ -1,4 +1,6 @@
-import { FC, useEffect } from 'react';
+import { FC, useEffect, useMemo } from 'react';
+
+import { useTheme } from '@mui/material/styles';
 
 import { CarAddMobileChangeForm } from '@features/car_add_change_form/ui/CarAddMobileChangeForm';
 import { DeleteCarForm } from '@features/delete_car_form';
@@ -69,6 +71,15 @@ export const MobileModals: FC<MobileModalsProps> = ({
   recoverCarModalData,
   deleteTrueCarModalData,
 }) => {
+  const theme = useTheme();
+  const modalPaperStyle = useMemo(
+    () => ({
+      backgroundColor: theme.palette.background.paper,
+      color: theme.palette.text.primary,
+    }),
+    [theme],
+  );
+
   const isAnyUserModalOpen =
     addModalData?.openAddUserModal ||
     false ||
@@ -109,7 +120,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
     return (
       <div className={styles.mobileModalOverlay}>
         <RoleChipStyles />
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <UserAddChangeForm
             id={addModalData.changeUserId}
             closeModal={addModalData.closeAddUserModal}
@@ -125,7 +136,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
     return (
       <div className={styles.mobileModalOverlay}>
         <RoleChipStyles />
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <DeleteUserForm
             user={deleteUserModalData.deleteUser}
             closeModal={deleteUserModalData.closeDeleteModal}
@@ -142,7 +153,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
     return (
       <div className={styles.mobileModalOverlay}>
         <RoleChipStyles />
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <RecoverUserForm
             user={recoverUserModalData.recoverUser}
             closeModal={recoverUserModalData.closeRecoverModal}
@@ -159,7 +170,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
     return (
       <div className={styles.mobileModalOverlay}>
         <RoleChipStyles />
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <TrueDeleteUserForm
             user={trueDeleteUserModalData.trueDeleteUser}
             closeModal={trueDeleteUserModalData.closeTrueDeleteModal}
@@ -175,7 +186,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
 
     return (
       <div className={styles.mobileModalOverlay}>
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <CarAddMobileChangeForm
             id={addCarModalData.changeCarId}
             closeModal={addCarModalData.closeAddCarModal}
@@ -190,7 +201,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
 
     return (
       <div className={styles.mobileModalOverlay}>
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <DeleteCarForm
             car={deleteCarModalData.deleteCar}
             closeModal={deleteCarModalData.closeDeleteModal}
@@ -205,7 +216,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
 
     return (
       <div className={styles.mobileModalOverlay}>
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <RecoverCarForm
             car={recoverCarModalData.recoverCar}
             closeModal={recoverCarModalData.closeRecoverModal}
@@ -221,7 +232,7 @@ export const MobileModals: FC<MobileModalsProps> = ({
 
     return (
       <div className={styles.mobileModalOverlay}>
-        <div className={styles.mobileModalContent}>
+        <div className={styles.mobileModalContent} style={modalPaperStyle}>
           <DeleteTrueCarForm
             car={deleteTrueCarModalData.trueDeleteCar}
             closeModal={deleteTrueCarModalData.closeTrueDeleteModal}

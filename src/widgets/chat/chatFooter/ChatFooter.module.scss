@@ -747,3 +747,71 @@
     overscroll-behavior: contain;
   }
 }
+
+/* Тёмная тема: окно чата и превью */
+:global(html[data-theme='dark']) {
+  /* MUI Card задаёт свой фон — перебиваем вместе с классом модуля */
+  .chatFooter:global(.MuiPaper-root) {
+    background-color: #1e1e1e !important;
+    background-image: none !important;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .chatFooter {
+    background-color: #1e1e1e !important;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .chatHeader {
+    background-color: #2a2a2a !important;
+    border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+
+    h3 {
+      color: rgba(255, 255, 255, 0.87);
+    }
+  }
+
+  .usersSelectContainer,
+  .messageInputContainer,
+  .dialogActionsContainer {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  .dialogActionsContainer {
+    background-color: #252525 !important;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .minimizedChat {
+    background-color: #2a2a2a !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    color: rgba(255, 255, 255, 0.87);
+
+    .minimizedHeader h3,
+    .minimizedHeader span {
+      color: rgba(255, 255, 255, 0.87);
+    }
+  }
+
+  .minimizedChat.hasUnread {
+    background: linear-gradient(135deg, #3a2a32 0%, #2a2a2a 100%) !important;
+
+    &:hover {
+      background: linear-gradient(135deg, #4a3038 0%, #333 100%) !important;
+    }
+  }
+
+  .lastMessage {
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .messageInputContainer {
+    background-color: #1e1e1e;
+  }
+
+  @media (max-height: 500px) {
+    .chatFooter .messageInputContainer {
+      background-color: #1e1e1e !important;
+    }
+  }
+}

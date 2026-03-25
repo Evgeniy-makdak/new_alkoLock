@@ -171,3 +171,22 @@
   border-radius: 8px;
   margin-top: 10px;
 }
+
+.rowItem {
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.87);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+:global(html[data-theme='dark']) {
+  .tabs button:not(.active) {
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .rowItem {
+    color: rgba(255, 255, 255, 0.87);
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+}

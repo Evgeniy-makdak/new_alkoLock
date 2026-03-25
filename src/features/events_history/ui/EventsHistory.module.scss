@@ -1053,3 +1053,77 @@
     }
   }
 }
+
+/* Тёмная тема: контраст текста и фонов панели истории */
+:global(html[data-theme='dark']) {
+  .fixedHeader {
+    background: #1e1e1e !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+  }
+
+  .typeOfEventTitle,
+  .dateTitle {
+    color: rgba(255, 255, 255, 0.7) !important;
+  }
+
+  /* Ряд фильтров: чуть отделён от шапки, без резкого «блока другого цвета» */
+  .filterRow {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    padding-top: 6px !important;
+    padding-bottom: 10px !important;
+  }
+
+  .filterRowMobile {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+    padding-top: 6px !important;
+    padding-bottom: 10px !important;
+  }
+
+  /* Поля фильтров: скругление и мягкий фон вместо «белых прямоугольников» */
+  .filterRow,
+  .filterRowMobile {
+    :global(.MuiOutlinedInput-root) {
+      border-radius: 12px;
+      background-color: rgba(255, 255, 255, 0.06);
+      transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    :global(.MuiOutlinedInput-root:hover) {
+      background-color: rgba(255, 255, 255, 0.09);
+    }
+
+    :global(.MuiOutlinedInput-notchedOutline) {
+      border-color: rgba(255, 255, 255, 0.14);
+    }
+
+    :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+      border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    :global(.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+      border-color: rgba(144, 202, 249, 0.45);
+      border-width: 1px;
+    }
+
+    :global(.MuiAutocomplete-root .MuiOutlinedInput-root) {
+      border-radius: 12px;
+    }
+  }
+
+  .tr {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  /* первая колонка (тип события): без явного цвета тянулся #333 из BodyCellDiv */
+  .td {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .bodyCellCreatedAt {
+    color: rgba(255, 255, 255, 0.87);
+  }
+}

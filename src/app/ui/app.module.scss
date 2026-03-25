@@ -5,6 +5,17 @@
   overflow: hidden;
 }
 
+.appDark {
+  .main {
+    background-color: #121212;
+  }
+
+  .content,
+  .contentWrapper {
+    background-color: #121212;
+  }
+}
+
 .loadingPage {
   width: 100vw;
   height: 100vh;

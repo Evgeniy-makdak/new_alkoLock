@@ -567,8 +567,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
   width: 100%;
   padding: 4px 0 6px;
+  flex-wrap: wrap;
 }
 
 .languageSwitcherMobile {
@@ -579,6 +581,132 @@
 
 .langSelectMobile {
   flex-shrink: 0;
+}
+
+.postLinksToolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  width: 100%;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+}
+
+.navBarCollops .postLinksToolbar {
+  flex-direction: column;
+  align-items: center;
+}
+
+.themeIconBtn {
+  flex-shrink: 0;
+  color: #667a8a;
+
+  &:hover {
+    background-color: rgba(102, 122, 138, 0.12);
+  }
+}
+
+.themeIconBtnMobile {
+  flex-shrink: 0;
+  color: #667a8a;
+
+  &:hover {
+    background-color: rgba(102, 122, 138, 0.12);
+  }
+}
+
+.versionText {
+  color: inherit;
+}
+
+/* Тёмная тема: боковая панель (остальной UI в основном через MUI palette.mode) */
+.rootDark {
+  .navBar {
+    background: #1e1e1e !important;
+  }
+
+  .themeIconBtn,
+  .themeIconBtnMobile {
+    color: #b0bec5;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .logoText {
+    color: #e0e0e0;
+  }
+
+  .versionItem {
+    color: #9e9e9e;
+  }
+
+  .linksCompact a {
+    color: #b0bec5;
+
+    svg,
+    .MuiSvgIcon-root {
+      color: #e0e0e0;
+      fill: currentColor;
+    }
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    &:global(.active) {
+      background: #667a8a;
+      color: #fff;
+
+      svg,
+      .MuiSvgIcon-root {
+        color: #fff;
+      }
+    }
+
+    &:active {
+      background: #667a8a;
+      color: #fff;
+    }
+  }
+
+  .settingsLink {
+    color: #b0bec5;
+
+    &:hover {
+      color: #fff;
+    }
+  }
+
+  .carouselButtonTop,
+  .carouselButtonBottom {
+    background: #2a2a2a;
+    color: #b0bec5;
+    border-color: #424242;
+
+    &:hover {
+      background: #333;
+    }
+  }
+
+  .carouselViewportCompact::before {
+    background: linear-gradient(to bottom, #1e1e1e, transparent);
+  }
+
+  .carouselViewportCompact::after {
+    background: linear-gradient(to top, #1e1e1e, transparent);
+  }
+
+  .mobileNav .settingsLink,
+  .mobileNav .mobileSwitchButton {
+    background: #2a2a2a !important;
+    border-color: #424242 !important;
+    color: #b0bec5 !important;
+  }
 }
 
 .carouselContainerCompact {

@@ -37,6 +37,34 @@
   display: flex;
   width: 80px;
   gap: 8px;
+
+  span {
+    color: rgba(0, 0, 0, 0.87);
+  }
+}
+
+:global(html[data-theme='dark']) {
+  .categoriesLabel {
+    background: #121212;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .categoriesContainer {
+    border-color: rgba(255, 255, 255, 0.23);
+  }
+
+  .categoriesItem span {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .mobileCategoriesContainer {
+    border-color: rgba(255, 255, 255, 0.23);
+  }
+
+  .mobileCategoriesSection .categoriesLabel {
+    background: #121212;
+    color: rgba(255, 255, 255, 0.7);
+  }
 }
 
 .disabledDriverData {

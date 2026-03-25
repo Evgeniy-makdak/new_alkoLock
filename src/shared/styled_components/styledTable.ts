@@ -4,38 +4,45 @@ import EastIcon from '@mui/icons-material/East';
 import EditIcon from '@mui/icons-material/Edit';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { IconButton, TableCell, TableRow } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 
-import styled from '@emotion/styled';
+const historyHeaderBg = (theme: Theme) => (theme.palette.mode === 'dark' ? '#1e1e1e' : '#F6F6F6');
+
+const historyHeaderBorder = (theme: Theme) =>
+  theme.palette.mode === 'dark'
+    ? '1px solid rgba(255, 255, 255, 0.1)'
+    : '1px solid rgba(0, 0, 0, 0.12)';
 
 export class StyledTable {
-  static HeaderRow = styled(TableRow)({
+  static HeaderRow = styled(TableRow)(({ theme }) => ({
     width: '100%',
     display: 'flex',
     position: 'sticky',
     top: 0,
     justifyContent: 'space-between',
-    background: '#F6F6F6',
-    borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
-    borderTop: '1px solid rgba(0, 0, 0, 0.12)',
-  });
+    background: historyHeaderBg(theme),
+    borderBottom: historyHeaderBorder(theme),
+    borderTop: historyHeaderBorder(theme),
+  }));
 
-  static HeaderCell = styled(TableCell)({
-    background: '#F6F6F6',
+  static HeaderCell = styled(TableCell)(({ theme }) => ({
+    background: historyHeaderBg(theme),
     padding: '12px 16px',
     fontSize: '14px',
     fontWeight: 600,
     lineHeight: '171.429%',
     letterSpacing: '0.1px',
-    color: '#333',
+    color: theme.palette.mode === 'dark' ? theme.palette.text.primary : '#333',
     border: 'none',
-  });
+  }));
 
-  static HeaderIconCell = styled(TableCell)({
-    background: '#F6F6F6',
+  static HeaderIconCell = styled(TableCell)(({ theme }) => ({
+    background: historyHeaderBg(theme),
     padding: '4px 0',
     maxWidth: '114px',
     width: '114px',
-  });
+  }));
 
   static AddIcon = styled(AddIcon)({
     fill: '#333',
@@ -94,22 +101,25 @@ export class StyledTable {
   });
 
   /** Div-based variants for use inside Virtuoso (avoids validateDOMNesting: tr cannot be child of div) */
-  static BodyRowDiv = styled('div')({
-    borderBottom: '1px solid rgba(0, 0, 0, 0.12)',
-  });
+  static BodyRowDiv = styled('div')(({ theme }) => ({
+    borderBottom:
+      theme.palette.mode === 'dark'
+        ? '1px solid rgba(255, 255, 255, 0.12)'
+        : '1px solid rgba(0, 0, 0, 0.12)',
+  }));
 
-  static BodyCellDiv = styled('div')({
+  static BodyCellDiv = styled('div')(({ theme }) => ({
     padding: '12px 16px',
     border: 'none',
     fontSize: '14px',
     fontWeight: 500,
     lineHeight: '171.429%',
     letterSpacing: '0.1px',
-    color: '#333',
-  });
+    color: theme.palette.text.primary,
+  }));
 
-  static DataCellDiv = styled('div')({
+  static DataCellDiv = styled('div')(({ theme }) => ({
     padding: '7px 24px',
-    background: '#0000000A',
-  });
+    background: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)',
+  }));
 }

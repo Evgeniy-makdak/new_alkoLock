@@ -206,3 +206,76 @@
   color: #777;
   margin-top: 2px;
 }
+
+:global(html[data-theme='dark']) {
+  .textarea {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.87);
+
+    &:focus {
+      border-color: rgba(144, 202, 249, 0.5);
+    }
+
+    &:disabled {
+      background-color: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.45);
+    }
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.45);
+    }
+  }
+
+  .textareaBlocked {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.38) !important;
+    }
+  }
+
+  .fileButton {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.8);
+
+    &:hover:not(.disabled) {
+      background-color: rgba(255, 255, 255, 0.12);
+    }
+  }
+
+  .fileButtonBlocked {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.35) !important;
+  }
+
+  .replyHeader {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.87);
+
+    .replyText {
+      color: rgba(255, 255, 255, 0.55);
+    }
+  }
+
+  .attachmentItem {
+    background-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.09);
+    }
+  }
+
+  .attachmentName {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .attachmentSize {
+    color: rgba(255, 255, 255, 0.5);
+  }
+}

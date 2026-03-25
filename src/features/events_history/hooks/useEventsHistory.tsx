@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Dayjs } from 'dayjs';
 
 import { Chip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { EventData, type HistoryTypes } from '@entities/events_data';
 import { EventsApi } from '@shared/api/baseQuerys';
@@ -30,6 +31,7 @@ export const useEventsHistory = (
   type: HistoryTypes,
   customEvents?: IDeviceAction[],
 ) => {
+  const theme = useTheme();
   const [expandRowId, setExpandRowId] = useState<ID | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [eventsAcc, setEventsAcc] = useState<IDeviceAction[]>([]);
@@ -150,10 +152,19 @@ export const useEventsHistory = (
     const isMobile = window.innerWidth <= 768;
 
     if (isMobile) {
-      let textStyle = {};
-      if (color === 'success') textStyle = { color: '#2e7d32', fontWeight: 500 };
-      else if (color === 'error') textStyle = { color: '#d32f2f', fontWeight: 500 };
-      else if (color === 'warning') textStyle = { color: '#ed6c02', fontWeight: 500 };
+      let textStyle: React.CSSProperties = {};
+      if (theme.palette.mode === 'dark') {
+        if (color === 'success')
+          textStyle = { color: theme.palette.success.light, fontWeight: 500 };
+        else if (color === 'error')
+          textStyle = { color: theme.palette.error.light, fontWeight: 500 };
+        else if (color === 'warning')
+          textStyle = { color: theme.palette.warning.light, fontWeight: 500 };
+      } else {
+        if (color === 'success') textStyle = { color: '#2e7d32', fontWeight: 500 };
+        else if (color === 'error') textStyle = { color: '#d32f2f', fontWeight: 500 };
+        else if (color === 'warning') textStyle = { color: '#ed6c02', fontWeight: 500 };
+      }
 
       return <span style={textStyle}>{label}</span>;
     }
@@ -161,7 +172,7 @@ export const useEventsHistory = (
     return color ? (
       <Chip label={label} color={color} size="small" sx={{ color: 'white', fontWeight: 500 }} />
     ) : (
-      label
+      <span style={{ color: theme.palette.text.primary }}>{label}</span>
     );
   };
 

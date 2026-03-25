@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 // HistoryTable.module.scss
 .refetchWrapper {
   display: flex;
@@ -694,3 +696,5 @@
   display: flex;
   gap: 10px;
 }
+
+@include mobile-table-dark;

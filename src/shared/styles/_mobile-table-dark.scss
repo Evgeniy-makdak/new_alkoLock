@@ -1,0 +1,219 @@
+// Общие стили тёмной темы для мобильных списков (карточки, фильтры, модалки фильтров).
+// Подключать в *.module.scss таблиц: @use '../path/to/shared/styles/mobile-table-dark' as *; @include mobile-table-dark;
+
+@mixin mobile-table-dark {
+  :global(html[data-theme='dark']) {
+    .tableWrapper {
+      background-color: #121212;
+      color: rgba(255, 255, 255, 0.87);
+    }
+
+    .mobileHeader {
+      background: #1e1e1e;
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+
+      .mobileTitle {
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+
+    /* Заголовок-полоса без обёртки mobileHeader (напр. «События») */
+    .tableWrapper > .mobileTitle {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.95);
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .mobileFilters {
+      background: #1a1a1a;
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .mobileList {
+      background-color: #121212;
+    }
+
+    .mobileRow {
+      background: #1e1e1e;
+      border-color: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+
+      &:hover {
+        background-color: #252525;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
+
+      &.selectedRow {
+        background-color: rgba(25, 118, 210, 0.18);
+        border-color: rgba(144, 202, 249, 0.45);
+        border-left-color: #90caf9;
+      }
+    }
+
+    .date,
+    .dateTime {
+      color: #90caf9;
+    }
+
+    .initiator {
+      color: rgba(255, 255, 255, 0.75);
+    }
+
+    .userName,
+    .eventType {
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .email,
+    .phone,
+    .eventDate {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .detailLabel {
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    .detailValue {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .mobilePagination {
+      background: #1e1e1e;
+      border-top-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .paginationButton {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.87);
+
+      &:not(:disabled):hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    .paginationInfo {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    .noData {
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .toggleButton {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: rgba(255, 255, 255, 0.75);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.28);
+      }
+
+      svg {
+        color: rgba(255, 255, 255, 0.65);
+      }
+    }
+
+    .filterModalContent {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.87);
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.55);
+    }
+
+    .filterModalHeader {
+      background: #252525;
+      border-bottom-color: rgba(255, 255, 255, 0.12);
+
+      h3 {
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+
+    .filterModalBody {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.87);
+    }
+
+    .closeModalButton {
+      color: rgba(255, 255, 255, 0.7);
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: rgba(255, 255, 255, 0.95);
+      }
+    }
+
+    .filterModalFooter {
+      background: #252525;
+      border-top-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .calendarButton,
+    .clearDateButton {
+      color: rgba(255, 255, 255, 0.65);
+
+      &:hover {
+        color: #90caf9;
+      }
+    }
+
+    .dateFieldContainer {
+      :global(.MuiInputBase-root) {
+        &:not(.Mui-error) {
+          .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(255, 255, 255, 0.2);
+          }
+
+          &:hover .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(255, 255, 255, 0.35);
+          }
+
+          &.Mui-focused .MuiOutlinedInput-notchedOutline {
+            border-color: rgba(144, 202, 249, 0.55);
+          }
+        }
+      }
+    }
+
+    .nativeDateInput {
+      background: #2a2a2a;
+      border-color: rgba(144, 202, 249, 0.5);
+      color: rgba(255, 255, 255, 0.87);
+    }
+
+    .addButton {
+      background-color: rgba(255, 255, 255, 0.12) !important;
+      color: rgba(255, 255, 255, 0.9) !important;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.18) !important;
+      }
+    }
+
+    .mobileModalContent {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.87);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .roleName,
+    .alcolockName,
+    .groupName {
+      color: rgba(255, 255, 255, 0.95);
+    }
+
+    .roleViewModal {
+      .sectionTitle {
+        color: rgba(255, 255, 255, 0.85);
+      }
+
+      .roleChip {
+        background-color: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: rgba(255, 255, 255, 0.88);
+      }
+    }
+  }
+}

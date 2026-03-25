@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 // AlkolocksTable.module.scss
 .refetchWrapper {
   display: flex;
@@ -680,3 +682,5 @@
 .selected-row {
   background-color: #f5f5f5 !important;
 }
+
+@include mobile-table-dark;

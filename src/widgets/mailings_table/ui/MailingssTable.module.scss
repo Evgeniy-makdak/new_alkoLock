@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 .rolesWrapper {
   display: flex;
   gap: 10px;
@@ -734,4 +736,28 @@
   gap: 4px;
   margin-top: 12px;
   justify-content: flex-end;
+}
+
+@include mobile-table-dark;
+
+:global(html[data-theme='dark']) {
+  .email-cell-grouped,
+  .actions-cell-grouped {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  :global(.MuiDataGrid-row:hover) {
+    .email-cell-grouped,
+    .actions-cell-grouped {
+      background-color: rgba(255, 255, 255, 0.07) !important;
+    }
+  }
+
+  :global(.MuiDataGrid-row.selected-row) {
+    .email-cell-grouped,
+    .actions-cell-grouped {
+      background-color: rgba(25, 118, 210, 0.2) !important;
+    }
+  }
 }

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { CalendarToday, KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import { Button, Chip, TextField } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
@@ -31,6 +32,7 @@ export const EventsMobileTable = ({
   prevBranch,
 }: EventsMobileTableProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { filtersData, tableData } = useEventsTable();
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
@@ -427,11 +429,17 @@ export const EventsMobileTable = ({
     return 'default';
   };
 
-  // Новая функция для стилей текста на мобильных
   const getTextStyleForEventType = (typeOfEvent: string) => {
-    if (!typeOfEvent) return {};
+    const dark = theme.palette.mode === 'dark';
+    const box = {
+      border: dark ? '1px solid rgba(255, 255, 255, 0.18)' : '1px solid #e0e0e0',
+      backgroundColor: dark ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+    };
 
-    // Оставляем только цвет текста, убираем фон и рамки
+    if (!typeOfEvent) {
+      return { ...box, color: dark ? 'rgba(255, 255, 255, 0.87)' : '#333' };
+    }
+
     if (
       typeOfEvent.includes('Ошибка E-') ||
       typeOfEvent.includes('Неразрешенное движение') ||
@@ -440,24 +448,28 @@ export const EventsMobileTable = ({
       typeOfEvent.includes('Фальсификация выдоха')
     ) {
       return {
-        color: '#d32f2f',
+        ...box,
+        color: dark ? theme.palette.error.light : '#d32f2f',
         fontWeight: '500' as const,
       };
     }
     if (typeOfEvent.includes('Тестирование пройдено')) {
       return {
-        color: '#2e7d32',
+        ...box,
+        color: dark ? theme.palette.success.light : '#2e7d32',
         fontWeight: '500' as const,
       };
     }
     if (typeOfEvent.includes('Тестирование прервано')) {
       return {
-        color: '#ed6c02',
+        ...box,
+        color: dark ? theme.palette.warning.light : '#ed6c02',
         fontWeight: '500' as const,
       };
     }
     return {
-      color: '#333',
+      ...box,
+      color: dark ? 'rgba(255, 255, 255, 0.87)' : '#333',
     };
   };
 
@@ -743,10 +755,9 @@ export const EventsMobileTable = ({
                           style={{
                             display: 'inline-block',
                             padding: '4px 8px',
-                            borderRadius: '4px',
+                            borderRadius: '8px',
                             fontSize: '13px',
                             lineHeight: '1.4',
-                            border: '1px solid #e0e0e0',
                             ...getTextStyleForEventType(row[ValuesHeader.TYPE_OF_EVENT]),
                           }}>
                           {row[ValuesHeader.TYPE_OF_EVENT]}

@@ -23,6 +23,7 @@
     "backend": "Бэкенд",
     "mainBranch": "Негізгі тармақ",
     "mapShortcut": "Карта таңбашасы",
+    "toggleColorMode": "Жарық немесе қараңғы теманы ауыстыру",
     "changePassword": "Құпия сөзді өзгерту",
     "logout": "Шығу",
     "branch": "Филиал"

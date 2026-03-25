@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
 import { Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { testids } from '@shared/const/testid';
 
@@ -33,6 +34,7 @@ export const Popup = ({
   styles = null, // HELP => тут нужно передать нужную высоту и ширину
 }: PopupProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
 
   const handleClickOutside = (e: React.SyntheticEvent<HTMLDivElement>) => {
     const { target } = e;
@@ -54,18 +56,26 @@ export const Popup = ({
           data-click-id={DATA_SET}
           className={`${style.popup} `}
           onClick={handleClickOutside}>
-          <div className={`${styles ? styles : style.size} ${style.substr}`}>
+          <div
+            className={`${styles ? styles : style.size} ${style.substr}`}
+            style={{
+              backgroundColor: theme.palette.background.paper,
+              color: theme.palette.text.primary,
+            }}>
             <button
               data-testid={`${testids.POPUP_CLOSE_BUTTON}`}
               className={style.close}
-              onClick={onCloseModal ?? toggleModal}>
+              onClick={onCloseModal ?? toggleModal}
+              style={{ color: theme.palette.text.secondary }}>
               <Tooltip title={t('common.closeWindow')}>
                 <CloseIcon />
               </Tooltip>
             </button>
 
             <div className={style.header}>
-              <h4 className={style.title}>{headerTitle}</h4>
+              <h4 className={style.title} style={{ color: theme.palette.text.primary }}>
+                {headerTitle}
+              </h4>
             </div>
 
             <div className={style.body}>{body}</div>

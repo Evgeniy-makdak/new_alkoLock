@@ -1,11 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { TextField } from '@mui/material';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
+import { IconButton, TextField, Tooltip } from '@mui/material';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { testids } from '@shared/const/testid';
+import { useColorMode } from '@shared/theme/colorMode';
 import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { FormCheckbox } from '@shared/ui/form_checkbox';
@@ -17,6 +20,7 @@ import style from './Authorization.module.scss';
 
 export const Authorization = () => {
   const { t } = useTranslation();
+  const { mode, toggleColorMode } = useColorMode();
   const {
     isLoading,
     handleSubmit,
@@ -36,10 +40,22 @@ export const Authorization = () => {
 
   return (
     <div className={style.authorization}>
-      <AppLanguageSelect
-        className={style.languageSwitcher}
-        formControlClassName={style.authLangSelect}
-      />
+      <div className={style.topRight}>
+        <Tooltip title={t('nav.toggleColorMode')} placement="bottom">
+          <IconButton
+            size="small"
+            color="inherit"
+            onClick={toggleColorMode}
+            className={style.themeToggle}
+            aria-label={t('nav.toggleColorMode')}>
+            {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
+          </IconButton>
+        </Tooltip>
+        <AppLanguageSelect
+          className={style.languageSwitcher}
+          formControlClassName={style.authLangSelect}
+        />
+      </div>
       <div className={style.logo}>
         <Link to="/authorization">
           <Logo />

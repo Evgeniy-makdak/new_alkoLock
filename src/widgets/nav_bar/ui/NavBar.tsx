@@ -4,10 +4,20 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowBackIosNewOutlinedIcon from '@mui/icons-material/ArrowBackIosNewOutlined';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { Button, IconButton, Stack, Tooltip, Typography, useMediaQuery } from '@mui/material';
+import {
+  Button,
+  IconButton,
+  Stack,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from '@mui/material';
 
 import { MenuButton } from '@features/menu_button';
 import { NavbarBranchSelect } from '@features/nav_bar_branch_select';
@@ -22,6 +32,7 @@ import { useToggle } from '@shared/hooks/useToggle';
 import { Logo } from '@shared/images/logo';
 import { brandNameLabel } from '@shared/lib/brandNameLabel';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { useColorMode } from '@shared/theme/colorMode';
 import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import { Popup } from '@shared/ui/popup';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
@@ -46,6 +57,8 @@ export const NavBar = () => {
   const { length, permissionsFilter, email, sliderState, setSliderState } = useNavBar();
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
+  const theme = useTheme();
+  const { mode, toggleColorMode } = useColorMode();
   const navigate = useNavigate();
   const location = useLocation();
   const [forceUpdate, setForceUpdate] = useState(false);
@@ -291,7 +304,7 @@ export const NavBar = () => {
       <div
         className={`${isCollapsed ? style.navBarCollops : style.navBarOpen} ${style.wrapper} ${
           isMobile || isTablet ? style.mobileNav : ''
-        }`}>
+        } ${theme.palette.mode === 'dark' ? style.rootDark : ''}`}>
         {!(isMobile || isTablet) && (
           <div className={`${style.logo} ${!isCollapsed && style.between}`}>
             <Link to={RoutePaths.events} onClick={handleLogoClick} className={style.logoLink}>
@@ -354,9 +367,9 @@ export const NavBar = () => {
               </div>
             </div>
 
-            {/* КНОПКА ПАРАМЕТРЫ/НАЗАД - ВСЕГДА ПОСЛЕ ССЫЛОК */}
-            {isAdmin && (
-              <div className={style.settingsButtonContainer}>
+            {/* Параметры / назад (админ) + переключатель темы (десктопная колонка навбара) */}
+            <div className={style.postLinksToolbar}>
+              {isAdmin && (
                 <Tooltip
                   title={sliderState ? t('nav.parameters') : t('nav.back')}
                   placement="right"
@@ -371,8 +384,24 @@ export const NavBar = () => {
                       (sliderState ? t('nav.parameters') : t('nav.back'))}
                   </Button>
                 </Tooltip>
-              </div>
-            )}
+              )}
+              {!(isMobile || isTablet) && (
+                <Tooltip
+                  title={t('nav.toggleColorMode')}
+                  placement="right"
+                  slotProps={tooltipStyle}
+                  disableHoverListener={isCollapsed}>
+                  <IconButton
+                    size="small"
+                    color="inherit"
+                    onClick={toggleColorMode}
+                    className={style.themeIconBtn}
+                    aria-label={t('nav.toggleColorMode')}>
+                    {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
+                  </IconButton>
+                </Tooltip>
+              )}
+            </div>
 
             {/* Версии и переключатель языка */}
             {!isCollapsed && !(isMobile || isTablet) && (
@@ -406,6 +435,16 @@ export const NavBar = () => {
                     formControlClassName={style.langSelectMobile}
                     size="small"
                   />
+                  <Tooltip title={t('nav.toggleColorMode')} placement="top">
+                    <IconButton
+                      size="small"
+                      color="inherit"
+                      onClick={toggleColorMode}
+                      className={style.themeIconBtnMobile}
+                      aria-label={t('nav.toggleColorMode')}>
+                      {mode === 'dark' ? <LightModeOutlined /> : <DarkModeOutlined />}
+                    </IconButton>
+                  </Tooltip>
                 </div>
               )}
               <MenuButton

@@ -23,6 +23,7 @@
     "backend": "backend",
     "mainBranch": "Основной филиал",
     "mapShortcut": "Карта (Ctrl+Shift+M)",
+    "toggleColorMode": "Переключить светлую или тёмную тему",
     "changePassword": "Изменить пароль",
     "logout": "Выйти",
     "branch": "Филиал",

@@ -121,12 +121,24 @@
   width: 220px;
 }
 
-.languageSwitcher {
+.topRight {
   position: absolute;
   top: 24px;
   right: 24px;
-  width: auto;
   z-index: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+
+.languageSwitcher {
+  width: auto;
+}
+
+.themeToggle {
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .authLangSelect {
@@ -134,7 +146,7 @@
 }
 
 @media (max-width: 768px) {
-  .languageSwitcher {
+  .topRight {
     top: 16px;
     right: 16px;
   }

@@ -43,9 +43,9 @@ export const FieldSelect: FC<FieldSelectProps> = ({
         <InputLabel
           {...labelProps}
           shrink={true}
-          sx={{
-            background: 'white',
-          }}>
+          sx={(theme) => ({
+            background: theme.palette.background.paper,
+          })}>
           {labelText}
         </InputLabel>
 

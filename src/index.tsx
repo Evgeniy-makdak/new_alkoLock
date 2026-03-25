@@ -14,6 +14,7 @@ import { ErrorBoundary } from '@layout/error_boundary';
 import { UserProvider } from '@pages/users/UserContext';
 import { LocaleThemeProvider } from '@shared/components/locale_theme_provider';
 import { routers } from '@shared/config/routers';
+import { ColorModeProvider } from '@shared/theme/colorMode';
 import { UserStatusProvider } from '@shared/ui/refetch/UserStatusContext';
 import { StatusFilterProvider } from '@shared/ui/search_multiple_select/StatusFilterContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -37,38 +38,40 @@ const AppContent = (
       <UserProvider>
         <QueryClientProvider client={queryClient}>
           <StyledEngineProvider injectFirst>
-            <LocaleThemeProvider>
-              <AutoServiceInfoProvider>
-                <UserStatusProvider>
-                  <ServiceModeProvider>
-                    <UserContextProvider>
-                      <CountProvider>
-                        <AlkoContextProvider>
-                          <StatusFilterProvider>
-                            <DeviceStatusProvider>
-                              <SocketProvider>
-                                <SnackbarProvider
-                                  action={(snackbarId) => (
-                                    <CloseIcon
-                                      className="CloseIcon"
-                                      onClick={() => closeSnackbar(snackbarId)}
-                                    />
-                                  )}
-                                  maxSnack={3}
-                                  anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-                                  autoHideDuration={null}>
-                                  <RouterProvider router={routers} />
-                                </SnackbarProvider>
-                              </SocketProvider>
-                            </DeviceStatusProvider>
-                          </StatusFilterProvider>
-                        </AlkoContextProvider>
-                      </CountProvider>
-                    </UserContextProvider>
-                  </ServiceModeProvider>
-                </UserStatusProvider>
-              </AutoServiceInfoProvider>
-            </LocaleThemeProvider>
+            <ColorModeProvider>
+              <LocaleThemeProvider>
+                <AutoServiceInfoProvider>
+                  <UserStatusProvider>
+                    <ServiceModeProvider>
+                      <UserContextProvider>
+                        <CountProvider>
+                          <AlkoContextProvider>
+                            <StatusFilterProvider>
+                              <DeviceStatusProvider>
+                                <SocketProvider>
+                                  <SnackbarProvider
+                                    action={(snackbarId) => (
+                                      <CloseIcon
+                                        className="CloseIcon"
+                                        onClick={() => closeSnackbar(snackbarId)}
+                                      />
+                                    )}
+                                    maxSnack={3}
+                                    anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
+                                    autoHideDuration={null}>
+                                    <RouterProvider router={routers} />
+                                  </SnackbarProvider>
+                                </SocketProvider>
+                              </DeviceStatusProvider>
+                            </StatusFilterProvider>
+                          </AlkoContextProvider>
+                        </CountProvider>
+                      </UserContextProvider>
+                    </ServiceModeProvider>
+                  </UserStatusProvider>
+                </AutoServiceInfoProvider>
+              </LocaleThemeProvider>
+            </ColorModeProvider>
           </StyledEngineProvider>
         </QueryClientProvider>
       </UserProvider>

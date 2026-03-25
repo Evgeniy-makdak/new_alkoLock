@@ -23,6 +23,7 @@
     "backend": "Backend",
     "mainBranch": "Main Branch",
     "mapShortcut": "Map Shortcut",
+    "toggleColorMode": "Switch light or dark theme",
     "changePassword": "Change password",
     "logout": "Log out",
     "branch": "Branch",

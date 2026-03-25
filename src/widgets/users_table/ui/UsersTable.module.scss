@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 .rolesWrapper {
   display: flex;
   gap: 10px;
@@ -690,4 +692,16 @@
   font-size: 13px;
   color: #747272;
   font-style: italic;
+}
+
+@include mobile-table-dark;
+
+:global(html[data-theme='dark']) {
+  .rolesText {
+    color: rgba(255, 255, 255, 0.88);
+  }
+
+  .rolesMore {
+    color: rgba(255, 255, 255, 0.45);
+  }
 }

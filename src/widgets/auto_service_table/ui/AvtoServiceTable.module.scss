@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 .completed {
   background-color: green;
 }
@@ -357,3 +359,5 @@
     gap: 8px;
   }
 }
+
+@include mobile-table-dark;

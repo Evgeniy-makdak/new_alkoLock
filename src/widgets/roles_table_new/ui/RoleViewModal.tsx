@@ -2,6 +2,7 @@ import { FC } from 'react';
 
 import { Close } from '@mui/icons-material';
 import { Box, IconButton } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { RoleViewForm } from './RoleViewForm';
 
@@ -12,6 +13,8 @@ interface RoleViewModalProps {
 }
 
 export const RoleViewModal: FC<RoleViewModalProps> = ({ role, open, onClose }) => {
+  const theme = useTheme();
+
   if (!open) return null;
 
   return (
@@ -34,13 +37,19 @@ export const RoleViewModal: FC<RoleViewModalProps> = ({ role, open, onClose }) =
       }}>
       <Box
         sx={{
-          background: 'white',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
           borderRadius: 2,
           width: '100%',
           maxWidth: 500,
           maxHeight: '90vh',
           overflowY: 'auto',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
+          boxShadow:
+            theme.palette.mode === 'dark'
+              ? '0 8px 32px rgba(0, 0, 0, 0.55)'
+              : '0 4px 20px rgba(0, 0, 0, 0.15)',
+          border: '1px solid',
+          borderColor: 'divider',
           '@media (max-width: 480px)': {
             maxHeight: '95vh',
           },
@@ -51,25 +60,20 @@ export const RoleViewModal: FC<RoleViewModalProps> = ({ role, open, onClose }) =
             justifyContent: 'flex-end',
             alignItems: 'center',
             p: 2,
-            borderBottom: '1px solid #e0e0e0',
-            background: '#f8f9fa',
+            borderBottom: 1,
+            borderColor: 'divider',
+            bgcolor: 'action.hover',
           }}>
           <IconButton
             onClick={onClose}
             aria-label="Закрыть"
             sx={{
-              background: 'none',
-              border: 'none',
-              fontSize: '24px',
-              cursor: 'pointer',
-              color: '#777',
+              color: 'text.secondary',
               width: 32,
               height: 32,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
               '&:hover': {
-                color: '#333',
+                color: 'text.primary',
+                bgcolor: 'action.selected',
               },
             }}>
             <Close />

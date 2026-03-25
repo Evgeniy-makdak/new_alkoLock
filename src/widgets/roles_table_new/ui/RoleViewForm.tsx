@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 
 import { TextField, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper';
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
@@ -17,6 +18,7 @@ interface RoleViewFormProps {
 }
 
 export const RoleViewForm: FC<RoleViewFormProps> = ({ closeModal, id }) => {
+  const theme = useTheme();
   const {
     isLoading,
     roleName,
@@ -45,8 +47,9 @@ export const RoleViewForm: FC<RoleViewFormProps> = ({ closeModal, id }) => {
                   readOnly: true,
                 }}
                 sx={{
-                  '& .MuiInputBase-input.Mui-disabled': {
-                    WebkitTextFillColor: '#000000',
+                  '& .MuiInputBase-input': {
+                    color: theme.palette.text.primary,
+                    WebkitTextFillColor: theme.palette.text.primary,
                   },
                 }}
               />

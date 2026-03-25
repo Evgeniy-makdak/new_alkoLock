@@ -1,8 +1,15 @@
 import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
 import { DataGrid } from '@mui/x-data-grid';
 
-export const getStyle = (flag: boolean) => {
+export const getStyle = (flag: boolean, theme?: Theme) => {
+  const headerBg =
+    theme?.palette.mode === 'dark'
+      ? theme.palette.action.hover
+      : theme
+        ? 'rgba(0, 0, 0, 0.13)'
+        : 'rgba(0, 0, 0, 0.13)';
   return {
     overflowX: 'scroll',
     overflowY: 'hidden',
@@ -10,7 +17,7 @@ export const getStyle = (flag: boolean) => {
       fontWeight: '600',
     },
     '.MuiDataGrid-columnHeaders': {
-      backgroundColor: 'rgba(0, 0, 0, 0.13)',
+      backgroundColor: headerBg,
       borderRadius: '0',
       borderBottom: 'none', // Убираем разделитель под заголовками
     },
@@ -102,42 +109,48 @@ export const getStyle = (flag: boolean) => {
   };
 };
 
-const getBackgroundColor = (mode: string) => (mode === 'dark' ? '#000' : '#ffffff');
-const getColorIcon = (mode: string) => (mode === 'dark' ? '#ffffff ' : '#000');
-const getBackgroundColorIconHover = (mode: string) =>
-  mode === 'dark' ? '#000' : 'rgba(134, 134, 134, 0.712)';
-const getBackgroundColorIconHoverSelected = (mode: string) =>
-  mode === 'dark' ? '#00000' : 'rgba(0,0,0,0.5)';
-const getHoverBackgroundColor = (mode: string) =>
-  mode === 'dark' ? '#000' : 'rgba(172, 172, 172, 0.507)';
+const getRowBackground = (t: Theme) => t.palette.background.default;
+const getColorIcon = (t: Theme) => t.palette.text.primary;
+const getBackgroundColorIconHover = (t: Theme) =>
+  t.palette.mode === 'dark' ? t.palette.action.hover : 'rgba(134, 134, 134, 0.712)';
+const getBackgroundColorIconHoverSelected = (t: Theme) =>
+  t.palette.mode === 'dark' ? t.palette.action.selected : 'rgba(0,0,0,0.5)';
+const getHoverBackgroundColor = (t: Theme) =>
+  t.palette.mode === 'dark' ? t.palette.action.hover : 'rgba(172, 172, 172, 0.507)';
 
-const getSelectedBackgroundColor = (mode: string) => (mode === 'dark' ? '#000' : '#667a8a');
-const getSelectedHoverBackgroundColor = (mode: string) => (mode === 'dark' ? '#000' : '#667a8a');
+const getSelectedBackgroundColor = (t: Theme) =>
+  t.palette.mode === 'dark' ? '#4a5f6e' : '#667a8a';
+const getSelectedHoverBackgroundColor = (t: Theme) =>
+  t.palette.mode === 'dark' ? '#546e7a' : '#667a8a';
 
 export const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
   border: 'none', // Убираем общую границу таблицы
+  '& .MuiDataGrid-row': {
+    color: theme.palette.text.primary,
+  },
   // Убираем выделение ячеек для всей таблицы
   '& .MuiDataGrid-cell': {
     outline: 'none !important',
+    color: 'inherit',
     '&:focus': {
       outline: 'none !important',
     },
   },
   '& .super-app-theme': {
     '& .MuiButtonBase-root:hover': {
-      backgroundColor: getBackgroundColorIconHover(theme.palette.mode),
-      color: getColorIcon(theme.palette.mode),
+      backgroundColor: getBackgroundColorIconHover(theme),
+      color: getColorIcon(theme),
     },
     '& .MuiSvgIcon-root': {
-      color: getColorIcon(theme.palette.mode),
+      color: getColorIcon(theme),
     },
-    backgroundColor: getBackgroundColor(theme.palette.mode),
+    backgroundColor: getRowBackground(theme),
     '&:hover': {
-      backgroundColor: getHoverBackgroundColor(theme.palette.mode),
+      backgroundColor: getHoverBackgroundColor(theme),
     },
     '&.Mui-selected': {
       '& .MuiSvgIcon-root': {
-        color: getBackgroundColor(theme.palette.mode),
+        color: theme.palette.common.white,
       },
       '& .css-r6bn6-MuiChip-root': {
         color: '#fff',
@@ -149,58 +162,58 @@ export const StyledDataGrid = styled(DataGrid)(({ theme }) => ({
         color: '#fff',
       },
       '& .MuiButtonBase-root:hover': {
-        backgroundColor: getBackgroundColorIconHoverSelected(theme.palette.mode),
-        color: getColorIcon(theme.palette.mode),
+        backgroundColor: getBackgroundColorIconHoverSelected(theme),
+        color: getColorIcon(theme),
       },
-      backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+      backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
       color: '#fff',
       '&:hover': {
-        backgroundColor: getSelectedHoverBackgroundColor(theme.palette.mode) + ' !important',
+        backgroundColor: getSelectedHoverBackgroundColor(theme) + ' !important',
       },
     },
   },
   // Стили для выделенных групп email
   '& .selected-group': {
-    backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+    backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
     color: '#fff !important',
     '& .MuiDataGrid-cell': {
       color: '#fff !important',
-      borderColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+      borderColor: getSelectedBackgroundColor(theme) + ' !important',
     },
     '&:hover': {
-      backgroundColor: getSelectedHoverBackgroundColor(theme.palette.mode) + ' !important',
+      backgroundColor: getSelectedHoverBackgroundColor(theme) + ' !important',
       '& .MuiDataGrid-cell': {
         color: '#fff !important',
-        borderColor: getSelectedHoverBackgroundColor(theme.palette.mode) + ' !important',
+        borderColor: getSelectedHoverBackgroundColor(theme) + ' !important',
       },
     },
   },
   // Стили для выделенных строк (при клике или клавиатурной навигации) - УСИЛЕННЫЕ СТИЛИ
   '& .MuiDataGrid-row.Mui-selected': {
-    backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+    backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
     '& .MuiDataGrid-cell': {
       color: '#fff !important',
-      backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+      backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
     },
     '&:hover': {
-      backgroundColor: getSelectedHoverBackgroundColor(theme.palette.mode) + ' !important',
+      backgroundColor: getSelectedHoverBackgroundColor(theme) + ' !important',
       '& .MuiDataGrid-cell': {
-        backgroundColor: getSelectedHoverBackgroundColor(theme.palette.mode) + ' !important',
+        backgroundColor: getSelectedHoverBackgroundColor(theme) + ' !important',
         color: '#fff !important',
       },
     },
   },
   // УСИЛЕННЫЕ СТИЛИ для всех выделенных ячеек
   '& .Mui-selected': {
-    backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+    backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
     '& .MuiDataGrid-cell': {
-      backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+      backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
       color: '#fff !important',
     },
   },
   // Специфичные стили для ячеек в выделенных строках
   '& .MuiDataGrid-cell.Mui-selected': {
-    backgroundColor: getSelectedBackgroundColor(theme.palette.mode) + ' !important',
+    backgroundColor: getSelectedBackgroundColor(theme) + ' !important',
     color: '#fff !important',
   },
 }));

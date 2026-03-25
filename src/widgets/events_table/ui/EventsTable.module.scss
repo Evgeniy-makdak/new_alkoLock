@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 .tableWrapper {
   width: 100%;
   height: 100%;
@@ -851,3 +853,5 @@
     gap: 8px;
   }
 }
+
+@include mobile-table-dark;

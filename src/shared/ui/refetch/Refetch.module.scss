@@ -4,10 +4,14 @@
 }
 
 .button {
-  color: #000;
+  color: rgba(0, 0, 0, 0.87);
   height: 22px;
   align-items: center;
   justify-content: center;
+}
+
+:global(html[data-theme='dark']) .button {
+  color: rgba(255, 255, 255, 0.87);
 }
 
 @keyframes reload {

@@ -7,6 +7,7 @@ import {
   Chip,
   TextField,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 interface MultiSelectWithChipsViewProps {
   value: string[];
@@ -19,6 +20,7 @@ export const MultiSelectWithChipsView: React.FC<MultiSelectWithChipsViewProps> =
   label,
   options,
 }) => {
+  const theme = useTheme();
   const sortedOptions = [...options].sort();
   const sortedValue = [...value].sort();
 
@@ -46,7 +48,8 @@ export const MultiSelectWithChipsView: React.FC<MultiSelectWithChipsViewProps> =
           label={label}
           sx={{
             '& .MuiInputBase-input.Mui-disabled': {
-              WebkitTextFillColor: '#000000',
+              WebkitTextFillColor: theme.palette.text.primary,
+              color: theme.palette.text.primary,
             },
           }}
         />

@@ -66,6 +66,34 @@ address {
 ::-webkit-scrollbar-thumb:hover {
   background-color: rgba(54, 69, 93, 0.3) !important;
 }
+
+/* Тёмная тема: менее контрастные скроллы (WebKit + Firefox) */
+html[data-theme='dark'] {
+  scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.04);
+
+  /* Firefox: цвет полосы у контейнеров со скроллом (не наследуется) */
+  * {
+    scrollbar-color: rgba(255, 255, 255, 0.22) rgba(255, 255, 255, 0.04);
+  }
+
+  &::-webkit-scrollbar-track,
+  *::-webkit-scrollbar-track {
+    background-color: rgba(255, 255, 255, 0.04);
+  }
+
+  &::-webkit-scrollbar-thumb,
+  *::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.22) !important;
+    border-radius: 50px !important;
+    border: 3px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+
+  &::-webkit-scrollbar-thumb:hover,
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(255, 255, 255, 0.32) !important;
+  }
+}
 /* Form*/
 
 input,

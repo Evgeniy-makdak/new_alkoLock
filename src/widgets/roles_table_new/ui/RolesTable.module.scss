@@ -1,3 +1,5 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
 .refetchWrapper {
   display: flex;
   align-items: center;
@@ -337,3 +339,5 @@
     max-height: 95vh;
   }
 }
+
+@include mobile-table-dark;

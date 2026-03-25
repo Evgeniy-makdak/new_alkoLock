@@ -14,6 +14,7 @@ import 'dayjs/locale/uz-latn';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import { Tooltip, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
@@ -79,6 +80,7 @@ export const TableHeader = ({
   endDate: Dayjs | null;
 }) => {
   const { t, i18n } = useTranslation();
+  const theme = useTheme();
   const lang = (i18n.language || 'ru').split('-')[0].toLowerCase();
 
   const pickersLocalePack: Record<string, typeof ruRU | typeof enUS | typeof kzKZ | typeof beBY> = {
@@ -190,7 +192,10 @@ export const TableHeader = ({
                       <ArrowUpwardIcon
                         sx={{
                           fontSize: '1rem',
-                          color: sortField === 'id' ? 'rgba(0, 0, 0, 0.87)' : 'rgba(0, 0, 0, 0.5)',
+                          color:
+                            sortField === 'id'
+                              ? theme.palette.text.primary
+                              : theme.palette.text.secondary,
                           transform:
                             sortField === 'id' && sortOrder === 'DESC'
                               ? 'rotate(180deg)'
@@ -232,8 +237,8 @@ export const TableHeader = ({
                               fontSize: '1rem',
                               color:
                                 sortField === 'timestamp'
-                                  ? 'rgba(0, 0, 0, 0.87)'
-                                  : 'rgba(0, 0, 0, 0.5)',
+                                  ? theme.palette.text.primary
+                                  : theme.palette.text.secondary,
                               transform:
                                 sortField === 'timestamp' && sortOrder === 'DESC'
                                   ? 'rotate(180deg)'

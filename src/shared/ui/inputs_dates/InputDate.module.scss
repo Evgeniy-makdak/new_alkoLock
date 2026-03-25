@@ -5,6 +5,15 @@
   column-gap: 16px;
   background: #fafafa;
   align-items: center;
+  border-radius: 12px;
+  padding: 2px 0;
+  box-sizing: border-box;
+}
+
+:global(html[data-theme='dark']) {
+  .datePickers {
+    background: transparent;
+  }
 }
 .input {
   height: 30px;

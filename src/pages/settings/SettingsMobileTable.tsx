@@ -3,7 +3,15 @@ import { useTranslation } from 'react-i18next';
 
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
-import { Box, CircularProgress, IconButton, Paper, Tooltip, Typography } from '@mui/material';
+import {
+  Box,
+  CircularProgress,
+  IconButton,
+  Paper,
+  Tooltip,
+  Typography,
+  useTheme,
+} from '@mui/material';
 
 import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
 
@@ -38,6 +46,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
   handleResetToDefault,
 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   if (loading) {
     return (
       <Box
@@ -65,8 +74,13 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
               p: 2,
               mb: 2,
               borderRadius: 2,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-              border: '1px solid #e0e0e0',
+              bgcolor: 'background.paper',
+              border: 1,
+              borderColor: 'divider',
+              boxShadow:
+                theme.palette.mode === 'dark'
+                  ? '0 2px 12px rgba(0,0,0,0.45)'
+                  : '0 2px 8px rgba(0,0,0,0.1)',
             }}>
             {/* Изменяемый параметр */}
             <Box sx={{ mb: 2 }}>
@@ -101,12 +115,8 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     onClick={() => handleEditClick(row)}
                     size="small"
                     sx={{
-                      '& .MuiSvgIcon-root': {
-                        color: 'rgba(0, 0, 0, 0.54) !important',
-                      },
-                      '&:hover .MuiSvgIcon-root': {
-                        color: 'rgba(0, 0, 0, 0.87) !important',
-                      },
+                      color: 'text.secondary',
+                      '&:hover': { color: 'text.primary' },
                     }}>
                     <ModeEditIcon fontSize="small" />
                   </IconButton>
@@ -116,12 +126,8 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     onClick={() => handleResetToDefault(row)}
                     size="small"
                     sx={{
-                      '& .MuiSvgIcon-root': {
-                        color: 'rgba(0, 0, 0, 0.54) !important',
-                      },
-                      '&:hover .MuiSvgIcon-root': {
-                        color: 'rgba(0, 0, 0, 0.87) !important',
-                      },
+                      color: 'text.secondary',
+                      '&:hover': { color: 'text.primary' },
                     }}>
                     <AutorenewIcon fontSize="small" />
                   </IconButton>
