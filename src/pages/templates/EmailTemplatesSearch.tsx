@@ -45,6 +45,7 @@ const EmailTemplatesSearch: React.FC<EmailTemplatesSearchProps> = ({
           onChange={(e) => onSearchChange(e.target.value)}
           size="small"
           fullWidth
+          sx={{ minWidth: 0 }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">

@@ -29,7 +29,7 @@ export const SettingsSearch: React.FC<SettingsSearchProps> = ({
         pt: 2,
         pl: 2,
         pb: 2,
-        pr: { xs: 2, md: '124px' },
+        pr: { xs: '120px', md: '124px' },
         bgcolor: 'background.default',
       }}>
       <TextField
