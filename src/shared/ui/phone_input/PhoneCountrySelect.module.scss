@@ -1,0 +1,26 @@
+.trigger {
+  appearance: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.menuFlag {
+  display: block;
+  width: 28px;
+  height: auto;
+  max-height: 20px;
+  object-fit: contain;
+}
+
+.intlGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
