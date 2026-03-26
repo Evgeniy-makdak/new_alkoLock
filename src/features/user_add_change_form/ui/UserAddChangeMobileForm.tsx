@@ -28,8 +28,17 @@ type UserAddChangeMobileFormProps = {
 
 export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ closeModal, id }) => {
   const { t } = useTranslation();
-  const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
-    useUserAddChangeForm(id, closeModal);
+  const {
+    isLoading,
+    isGlobalAdmin,
+    closeAlert,
+    alert,
+    accessList,
+    state,
+    control,
+    isUserDriver,
+    hasFormChanges,
+  } = useUserAddChangeForm(id, closeModal);
 
   const [licenseIssueDateInput, setLicenseIssueDateInput] = useState('');
   const [licenseExpirationDateInput, setLicenseExpirationDateInput] = useState('');
@@ -40,13 +49,6 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
   const [birthDateInput, setBirthDateInput] = useState('');
   const [birthDateError, setBirthDateError] = useState('');
   const birthDateNativeRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const hasAny = Array.isArray(state?.state?.userGroups) && state.state.userGroups.length > 0;
-    if (hasAny) {
-      state.handlers.onSelectUserGroups(null as any, []);
-    }
-  }, [id]);
 
   useEffect(() => {
     if (state.state.birthDate) {
@@ -864,9 +866,15 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
 
             {!alert ? (
               <div className={style.mobileFormActions}>
-                <Button type="submit" variant="contained" fullWidth className={style.submitButton}>
-                  {id ? t('common.save') : t('common.add')}
-                </Button>
+                {(!id || hasFormChanges) && (
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    fullWidth
+                    className={style.submitButton}>
+                    {id ? t('common.save') : t('common.add')}
+                  </Button>
+                )}
                 <Button
                   onClick={closeModal}
                   variant="outlined"

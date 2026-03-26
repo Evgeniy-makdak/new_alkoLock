@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FC, useEffect, useMemo } from 'react';
+import { FC, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Checkbox, TextField, Typography } from '@mui/material';
@@ -31,19 +31,19 @@ type UserAddChangeDesktopFormProps = {
 
 export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ closeModal, id }) => {
   const { t } = useTranslation();
-  const { isLoading, isGlobalAdmin, closeAlert, alert, accessList, state, control, isUserDriver } =
-    useUserAddChangeForm(id, closeModal);
+  const {
+    isLoading,
+    isGlobalAdmin,
+    closeAlert,
+    alert,
+    accessList,
+    state,
+    control,
+    isUserDriver,
+    hasFormChanges,
+  } = useUserAddChangeForm(id, closeModal);
 
-  // --- FIX 1: Сбрасываем роли при первом открытии карточки/смене пользователя
-  useEffect(() => {
-    const hasAny = Array.isArray(state?.state?.userGroups) && state.state.userGroups.length > 0;
-    if (hasAny) {
-      state.handlers.onSelectUserGroups(null as any, []);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
-
-  // --- FIX 2: Санитизация значения, идущего в RolesSelect (на случай дубликатов/пустых).
+  // Санитизация значения, идущего в RolesSelect (на случай дубликатов/пустых).
   const sanitizedUserGroups = useMemo(() => {
     const raw = Array.isArray(state?.state?.userGroups) ? state.state.userGroups : [];
     const map = new Map<any, any>();
@@ -318,9 +318,11 @@ export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ cl
             </div>
             {!alert && (
               <ButtonFormWrapper>
-                <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
-                  {id ? t('common.save') : t('common.add')}
-                </Button>
+                {(!id || hasFormChanges) && (
+                  <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
+                    {id ? t('common.save') : t('common.add')}
+                  </Button>
+                )}
                 <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>

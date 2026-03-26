@@ -61,6 +61,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     clearErrors,
     setValue,
     getValues,
+    formState: { isDirty },
     formState,
     reset,
     trigger,
@@ -104,20 +105,20 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const newLicenseClass = licenseClass.includes(value)
       ? licenseClass.filter((val: string) => val !== value)
       : [...licenseClass, value];
-    setValue('licenseClass', newLicenseClass);
+    setValue('licenseClass', newLicenseClass, { shouldDirty: true });
   };
 
   const onSelectUserGroups = (type: KeyForm, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
     clearErrors(type);
-    setValue(type, values);
+    setValue(type, values, { shouldDirty: true });
 
     const valueIds = values.map((item: Value) => String((item as any).value ?? (item as any).id));
     setSelectedRoleIds(valueIds);
   };
 
-  const setAvatar = (avatar: ImageState[]) => {
-    setValue('userPhotoDTO', avatar);
+  const setAvatar = (next: ImageState[], options?: { shouldDirty?: boolean }) => {
+    setValue('userPhotoDTO', next, { shouldDirty: options?.shouldDirty !== false });
   };
 
   // const resetPassword = async (data: { email: string; newPassword: string; token: string }) => {
@@ -129,22 +130,22 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     errorDate === ValidationMessages.similarDateOfLicense
       ? clearErrors(['licenseIssueDate', 'licenseExpirationDate'])
       : clearErrors(type);
-    setValue(type, value);
+    setValue(type, value, { shouldDirty: true });
   };
 
   const onChangeAccess = (value: ID) => {
-    setValue('disabled', value);
+    setValue('disabled', value, { shouldDirty: true });
   };
 
   const setPhone = (value: string, type: KeyForm = 'phone') => {
     clearErrors(type);
-    setValue(type, value);
+    setValue(type, value, { shouldDirty: true });
   };
 
   const setLicenseCode = (value: string | undefined) => {
     // 🔧 FIX: Убираем всю кастомную валидацию - пусть работает только через yup
     clearErrors('licenseCode');
-    setValue('licenseCode', value);
+    setValue('licenseCode', value, { shouldDirty: true });
   };
 
   useEffect(() => {
@@ -156,7 +157,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       firstRender.current
     ) {
       firstRender.current = false;
-      setAvatar(initUser.initialAvatar);
+      setAvatar(initUser.initialAvatar, { shouldDirty: false });
     }
   }, [id, initUser.initialAvatar, isLoading, setAvatar, stateOfForm.state.images.length, avatar]);
 
@@ -229,7 +230,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       !arraysShallowEqual([...prevIds].sort(), [...nextIds].sort());
 
     if (needUpdateForm) {
-      setValue('userGroups', sanitized);
+      setValue('userGroups', sanitized, { shouldDirty: false });
     }
 
     // В любом случае синхронизируем zustand-стор под актуальные id
@@ -376,5 +377,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     accessList: initUser.accessList,
     closeAlert,
     alert,
+    /** Режим редактирования: есть несохранённые изменения полей или фото */
+    hasFormChanges: isDirty,
   };
 };
