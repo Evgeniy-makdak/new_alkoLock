@@ -123,8 +123,10 @@ export const getInitFormState = (
 
   const src = FilesUtils.getUrlFromBlob(avatar?.img);
   const photoMeta = user?.userPhotoDTO ?? user?.userPhoto;
+  /** В галерее может быть то же фото с default: false — в поле «аватар» превью не подставляем */
+  const showProfileAvatarInForm = photoMeta == null || photoMeta.default !== false;
   const initialAvatar: ImageState[] =
-    avatar && !isLoading
+    avatar && !isLoading && showProfileAvatarInForm
       ? [
           {
             src,

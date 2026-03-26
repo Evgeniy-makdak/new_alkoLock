@@ -1,7 +1,46 @@
 import { create } from 'zustand';
 
 import type { ImageState, ImageStateInStore, ImagesStateInStore } from '@entities/upload_img';
-import type { AddPhotoResponse, ID } from '@shared/types/BaseQueryTypes';
+import type { AddPhotoResponse, ID, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
+
+/** Нормализация ключа из GET api/v1/users/photos/reference/:userId (поле body) для сопоставления со стором */
+function normalizeGalleryRefUrl(url: string): string {
+  return (url ?? '').trim();
+}
+
+/**
+ * true, если запись в сторе уже описывает этот ref (после повторного открытия вкладки не создаём дубль).
+ * Загрузка с клиента часто даёт id/hash без url — сравниваем с body по id и hash.
+ */
+function galleryRefMatchesStoreItem(refUrl: string, item: ImageStateInStore): boolean {
+  const u = normalizeGalleryRefUrl(refUrl);
+  if (!u) return false;
+  if ((item?.url == null || item.url === '') && item?.hash == null && item?.id == null) {
+    return false;
+  }
+
+  const itemUrl = item.url != null ? normalizeGalleryRefUrl(String(item.url)) : '';
+  if (itemUrl) {
+    if (itemUrl === u || itemUrl.endsWith(u) || u.endsWith(itemUrl)) {
+      return true;
+    }
+  }
+
+  if (item.id != null) {
+    const idStr = String(item.id);
+    if (u === idStr || u.endsWith(`/${idStr}`) || u.endsWith(idStr)) {
+      return true;
+    }
+  }
+
+  if (item.hash) {
+    if (u.includes(item.hash)) return true;
+    const legacy = u.length > 12 ? u.slice(12) : '';
+    if (legacy && item.hash === legacy) return true;
+  }
+
+  return false;
+}
 
 type UsersImages = {
   [K in ID]: ImagesStateInStore;
@@ -19,10 +58,34 @@ type UsersFotoStore = {
   deleteImage: (idImage: ID, userId: ID) => void;
   changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
   updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
+  /** После PUT user: привести isAvatar в галерее в соответствие с userPhotoDTO.default с бэка */
+  syncGalleryAvatarFromUserPhoto: (userId: ID, photo: IUserPhotoDTO | null | undefined) => void;
 };
 
 export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
   usersImages: {},
+
+  syncGalleryAvatarFromUserPhoto: (userId, photo) => {
+    if (!userId) return;
+    const state = get().usersImages;
+    const prev = state[userId];
+    if (!prev?.length) return;
+
+    const isDefault = photo?.default === true;
+    const avatarId = isDefault && photo?.id != null ? String(photo.id) : null;
+    const avatarHash = isDefault && photo?.hash ? String(photo.hash) : null;
+
+    const newImages = prev.map((img) => {
+      const idMatch = avatarId != null && img.id != null && String(img.id) === avatarId;
+      const hashMatch = avatarHash != null && img.hash != null && String(img.hash) === avatarHash;
+      return {
+        ...img,
+        isAvatar: Boolean(idMatch || hashMatch),
+      };
+    });
+
+    set({ usersImages: { ...state, [userId]: newImages } });
+  },
 
   setImageToStoreAfterLoading: (image, userId) => {
     if (!userId) return;
@@ -72,6 +135,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
           ...image,
           isSavedInDataBase: true,
           id: uploadedImage.id,
+          url: uploadedImage.photoUrl ?? image.url,
         };
       }
       return image;
@@ -115,11 +179,7 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const newImage: ImageStateInStore[] = [];
 
     for (const url of urls) {
-      const hasImgInStore = prevImage.find((item) => {
-        const urlWithoutPrefix = url.slice(12);
-        if (!item?.url && !item?.hash) return false;
-        return item.url === url || (item.hash && item.hash === urlWithoutPrefix);
-      });
+      const hasImgInStore = prevImage.some((item) => galleryRefMatchesStoreItem(url, item));
 
       if (hasImgInStore) continue;
 
@@ -133,6 +193,10 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
         isAvatar: false,
       };
       newImage.push(img);
+    }
+
+    if (newImage.length === 0) {
+      return;
     }
 
     set((prev) => ({

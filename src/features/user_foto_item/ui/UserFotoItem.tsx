@@ -5,16 +5,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from 'react';
-
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
 import { CircularProgress, Skeleton, Stack, Tooltip } from '@mui/material';
 
 import type { ImageStateInStore } from '@entities/upload_img';
-import { UsersApi } from '@shared/api/baseQuerys';
-// Подключаем хранилище
 import { Permissions } from '@shared/config/permissionsEnums';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
@@ -28,6 +24,8 @@ import style from './UserFotoItem.module.scss';
 type UserFotoItemProps = {
   imageItem: ImageStateInStore;
   userId: ID;
+  /** Активен ли пользователь (из строки таблицы) — без отдельного GET api/users на каждую миниатюру */
+  userActive: boolean;
   onClickView: () => void;
   deleteImageMemo: (imageID: ID) => void;
   setImageToStoreAfterLoadingMemo: (image: ImageStateInStore) => void;
@@ -41,6 +39,7 @@ export const UserFotoItem = ({
   deleteImageMemo,
   changeAvatarMemo,
   userId,
+  userActive,
 }: UserFotoItemProps) => {
   const {
     isLoadingImage,
@@ -60,24 +59,10 @@ export const UserFotoItem = ({
   const permissions = appStore((state) => state.permissions);
   const isGlobalAdmin = permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
   const isEdit = permissions.includes(Permissions.PERMISSION_USER_EDIT);
-  const [isActive, setIsActive] = useState();
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await UsersApi.getUser(userId);
-        setIsActive(response.data?.isActive as any);
-      } catch (error) {
-        console.error('Ошибка получения данных пользователя:', error);
-      }
-    };
-
-    fetchUserData();
-  }, []);
 
   // Логика проверки для кнопок
   const isDisabled = (): boolean => {
-    if (!isEdit || !isActive) return true;
+    if (!isEdit || !userActive) return true;
     return userId === 1 ? !isGlobalAdmin : false;
   };
 

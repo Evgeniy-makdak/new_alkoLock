@@ -37,6 +37,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const firstRender = useRef(true);
   const { user, isLoading, changeItem, createItem, groups, avatar } = useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups);
+
+  const userPhotoSyncKey = [
+    user?.userPhotoDTO?.id,
+    user?.userPhotoDTO?.default,
+    user?.userPhotoDTO?.hash,
+    user?.userPhoto?.id,
+    user?.userPhoto?.default,
+    user?.userPhoto?.hash,
+  ].join('|');
   const [alert, setAlert] = useState(false);
 
   const setSelectedRoleIds = useUserRolesStore((state) => state.setSelectedRoleIds);
@@ -89,12 +98,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   useEffect(() => {
     reset(initUser.defaultValues);
-  }, [isLoading, id]);
+  }, [isLoading, id, userPhotoSyncKey]);
 
-  // При смене пользователя снова разрешаем подставить аватар из API (firstRender иначе остаётся false)
+  // При смене пользователя или метаданных фото с бэка снова разрешаем однократную подстановку превью из API
   useEffect(() => {
     firstRender.current = true;
-  }, [id]);
+  }, [id, userPhotoSyncKey]);
 
   const stateOfForm = getFormState(formState, watch);
 
@@ -261,14 +270,19 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const licenseClass = (cleanedData.licenseClass || []).length > 0;
     const licenseIssueDate = Boolean(cleanedData.licenseIssueDate);
     const licenseExpirationDate = Boolean(cleanedData.licenseExpirationDate);
-    const usersImagesInGalary = photoData?.images;
 
-    const imgHashToUpload = cleanedData.userPhotoDTO[0]?.hash;
-
-    for (let i = 0; i < usersImagesInGalary?.length; i++) {
-      if (imgHashToUpload === usersImagesInGalary[i]?.hash && !usersImagesInGalary[i].isAvatar) {
-        enqueueSnackbar('Это фото уже добавлено пользователю', { variant: 'error' });
-        return false;
+    // Только для нового файла в форме: прежний аватар/Blob без File не считаем «повторной загрузкой».
+    // Иначе хеш текущего аватара совпадает с миниатюрой в галерее, а isAvatar у части записей в сторе бывает false/undefined — ложное «уже добавлено».
+    const userPhoto = cleanedData.userPhotoDTO?.[0];
+    const isNewPhotoFile = userPhoto?.image instanceof File;
+    if (isNewPhotoFile && userPhoto?.hash) {
+      const usersImagesInGalary = photoData?.images;
+      const imgHashToUpload = userPhoto.hash;
+      for (let i = 0; i < usersImagesInGalary?.length; i++) {
+        if (imgHashToUpload === usersImagesInGalary[i]?.hash && !usersImagesInGalary[i].isAvatar) {
+          enqueueSnackbar('Это фото уже добавлено пользователю', { variant: 'error' });
+          return false;
+        }
       }
     }
 

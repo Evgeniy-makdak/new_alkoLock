@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useRolesSelectApi } from '@entities/roles_select/api/useRolesSelectApi';
+import { userFotoStore } from '@features/user_add_foto/model/userFotoStore';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
@@ -82,11 +83,27 @@ export const useUserAddChangeFormApi = (id: ID) => {
       UsersApi.changeUser(data, id) as Promise<AppAxiosResponse<IUser>>,
     onSuccess: async (response) => {
       const putUser = response?.data;
+      if (putUser?.id) {
+        // Сразу подставляем тело ответа PUT в кэш карточки пользователя (превью в сайдбаре, ключ AVATAR).
+        queryClient.setQueriesData({ queryKey: [QueryKeys.USER_ITEM] }, (old: any) => {
+          if (!old?.data || old.data.id !== putUser.id) return old;
+          return {
+            ...old,
+            data: { ...old.data, ...putUser },
+          };
+        });
+
+        userFotoStore
+          .getState()
+          .syncGalleryAvatarFromUserPhoto(putUser.id, getUserPhotoMeta(putUser));
+      }
+
       await Promise.all(
         updateQueries.map((key) => queryClient.refetchQueries({ queryKey: [key] })),
       );
-      // GET user после PUT иногда не отдаёт userPhotoDTO, хотя аватар на бэке есть — восстанавливаем из ответа PUT
-      const photo = getUserPhotoMeta(putUser);
+
+      // GET user после PUT иногда не отдаёт userPhotoDTO — восстанавливаем из ответа PUT
+      const photo = putUser ? getUserPhotoMeta(putUser) : undefined;
       if (putUser?.id && photo) {
         queryClient.setQueriesData({ queryKey: [QueryKeys.USER_ITEM] }, (old: any) => {
           if (!old?.data || old.data.id !== putUser.id) return old;
@@ -100,6 +117,8 @@ export const useUserAddChangeFormApi = (id: ID) => {
           };
         });
       }
+
+      await queryClient.invalidateQueries({ queryKey: [QueryKeys.IMAGE_ITEM] });
     },
   });
 

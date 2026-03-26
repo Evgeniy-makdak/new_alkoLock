@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { type FC, type ReactNode } from 'react';
+import { type FC, type ReactNode, useMemo } from 'react';
 
 import { Stack } from '@mui/material';
 
@@ -36,6 +36,20 @@ export const UserFoto: FC<UserFoto> = ({ userId, userActive }) => {
     isLoadingListUrl,
   } = useUserFoto(userId);
 
+  const uniqueImages = useMemo(() => {
+    const seen = new Set<string>();
+    return images.filter((img) => {
+      const idPart = img?.id != null ? `id:${img.id}` : null;
+      const hashPart = img?.hash ? `h:${img.hash}` : null;
+      const urlPart = img?.url ? `u:${img.url}` : null;
+      const key = idPart || hashPart || urlPart;
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }, [images]);
+
   return (
     <Loader isLoading={false}>
       <Stack className={style.wrapper} gap={1} width={'580px'}>
@@ -44,12 +58,14 @@ export const UserFoto: FC<UserFoto> = ({ userId, userActive }) => {
           <TouchLoader />
         ) : (
           <Stack className={style.listWrapper} direction={'row'} flexWrap={'wrap'} gap={1}>
-            {images.map((img, index) => {
+            {uniqueImages.map((img, index) => {
+              const stableKey = img?.id ?? img?.hash ?? img?.url ?? `idx-${index}`;
               return (
-                <ItemWrapper key={img?.hash || index}>
+                <ItemWrapper key={String(stableKey)}>
                   <UserFotoItem
                     changeAvatarMemo={changeAvatarMemo}
                     userId={userId}
+                    userActive={userActive}
                     imageItem={img}
                     deleteImageMemo={deleteImageMemo}
                     setImageToStoreAfterLoadingMemo={setImageToStoreAfterLoadingMemo}

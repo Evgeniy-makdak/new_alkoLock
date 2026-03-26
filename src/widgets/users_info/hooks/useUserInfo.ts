@@ -12,7 +12,11 @@ export const useUserInfo = (id: ID, closeTab: () => void) => {
   const { t } = useTranslation();
   const [open, toggle] = useToggle();
   const { isLoading, userData, foto, notFoundUser } = useUserInfoApi(id);
-  const src = useMemo(() => (foto?.size !== 0 ? FilesUtils.getUrlFromBlob(foto) : null), [foto]);
+  const src = useMemo(() => {
+    const dto = userData?.userPhotoDTO ?? userData?.userPhoto;
+    if (dto?.default === false) return null;
+    return foto?.size !== 0 ? FilesUtils.getUrlFromBlob(foto) : null;
+  }, [userData, foto]);
   const fields = getFields(userData, t);
 
   useEffect(() => {

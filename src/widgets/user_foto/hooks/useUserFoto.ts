@@ -39,14 +39,16 @@ export const useUserFoto = (userId: ID) => {
     [userId],
   );
 
+  const listBodiesKey = listUrl?.map((item: { body: string }) => item.body).join('\u0001') ?? '';
+
   useEffect(() => {
     if (!userId || !listUrl || isLoadingListUrl) return;
 
     getUserImages(
-      listUrl?.map((item: { body: any }) => item.body),
+      listUrl.map((item: { body: string }) => item.body),
       userId,
     );
-  }, [listUrl?.length, isLoadingListUrl]);
+  }, [userId, listBodiesKey, isLoadingListUrl, getUserImages]);
 
   return {
     open: Boolean(selectImg),

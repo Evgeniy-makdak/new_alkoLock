@@ -1075,8 +1075,6 @@ export function getEventsApiURL({
   sortBy,
   filterOptions,
   currentUserId,
-  // permission,
-  // role,
 }: QueryOptions & { currentUserId?: number; permission?: string[]; role?: number[] }) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = filterOptions?.branchId;
@@ -1090,13 +1088,7 @@ export function getEventsApiURL({
 
   // Фильтр «только мои события» по currentUserId не добавляем: при нескольких ролях должен
   // перевешивать бэкенд (JWT). Ранее здесь дописывали &all.user.id.in= — дублировало и ломало комбинации ролей.
-  // if (
-  //   permission?.some((p) => ['SYSTEM_DRIVER_ACCOUNT', 'SYSTEM_SERVICE_ACCOUNT'].includes(p)) &&
-  //   currentUserId &&
-  //   !role.some((r) => [400, 500, 1053].includes(r))
-  // ) {
-  //   queries += `&all.user.id.in=${currentUserId}`;
-  // }
+
   const users = filterOptions?.users;
   const tc = filterOptions?.cars;
   const alcolock = filterOptions?.alcolock;
@@ -1175,9 +1167,6 @@ export function getEventsApiURLForMap({
   // order,
   // sortBy,
   filterOptions,
-  // currentUserId,
-  // permission,
-  // role,
 }: QueryOptions & { currentUserId?: number; permission?: string[]; role?: number[] }) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = filterOptions?.branchId;
@@ -1194,13 +1183,7 @@ export function getEventsApiURLForMap({
   }
 
   // См. getEventsApiURL: ограничение по user id для вкладки/карты событий задаёт бэкенд по ролям.
-  // if (
-  //     permission?.some((p) => ['SYSTEM_DRIVER_ACCOUNT', 'SYSTEM_SERVICE_ACCOUNT'].includes(p)) &&
-  //     currentUserId &&
-  //     !role.some((r) => [400, 500, 1053].includes(r))
-  //   ) {
-  //     queries += `&all.user.id.in=${currentUserId}`;
-  //   }
+
   const users = filterOptions?.users;
   const cars = filterOptions?.cars;
   const tcRegistrationNumbers = filterOptions?.carsRegistrationNumbers;
