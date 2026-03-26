@@ -3,7 +3,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 
@@ -42,10 +42,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const setSelectedRoleIds = useUserRolesStore((state) => state.setSelectedRoleIds);
 
   const photoData = useUserFoto(user?.id);
-  const { changeAvatarMemo } = useUserFoto(user?.id);
-  const avatarImage = useMemo(() => {
-    return photoData.images.find((img) => img.isAvatar);
-  }, [photoData]);
 
   const initUser = getInitFormState(isLoading, values, id, user, avatar, t);
   const close = () => {
@@ -323,9 +319,6 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             variant: 'error',
           });
         } else if (response.status === StatusCode.SUCCESS) {
-          if (!formData.get('userPhoto.hash')) {
-            changeAvatarMemo(avatarImage?.id, false);
-          }
           // Проверяем, изменился ли пароль
           if (cleanedData.password && cleanedData.password !== initUser.defaultValues.password) {
             const userName = user?.fullName;

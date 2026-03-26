@@ -19,6 +19,10 @@ export type ImageState = {
   id?: ID;
   name?: string;
   isAvatar?: boolean;
+  /** userPhotoDTO.default с бэка: аватар по умолчанию; без явного false при сохранении не сбрасывать на бэке */
+  photoDefault?: boolean;
+  /** userPhotoDTO.fileName при редактировании без нового файла */
+  fileName?: string;
 };
 
 export type ImageStateInStore = Partial<ImageState> & {

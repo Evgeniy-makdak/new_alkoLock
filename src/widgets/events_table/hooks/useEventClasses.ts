@@ -8,6 +8,21 @@ interface EventClass {
   label: string;
 }
 
+function toEventClassList(raw: unknown): EventClass[] {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  const first = raw[0];
+  if (typeof first === 'string') {
+    return (raw as string[]).map((label, index) => ({ id: index, label }));
+  }
+  if (first != null && typeof first === 'object' && 'label' in first) {
+    return (raw as { id?: number; label: string }[]).map((item, index) => ({
+      id: typeof item.id === 'number' ? item.id : index,
+      label: item.label,
+    }));
+  }
+  return [];
+}
+
 export const useEventClasses = () => {
   const [eventClasses, setEventClasses] = useState<{ id: number; label: string }[]>([]);
   const [filteredEventClasses, setFilteredEventClasses] = useState<{ id: number; label: string }[]>(
@@ -22,10 +37,13 @@ export const useEventClasses = () => {
       setLoading(true);
       try {
         const response = await EventsApi.getEventClasses();
-        setEventClasses(response.data as unknown as EventClass[]);
-        setFilteredEventClasses(response.data as any as EventClass[]);
+        const list = toEventClassList(response?.data);
+        setEventClasses(list);
+        setFilteredEventClasses(list);
       } catch (error) {
         setError('Ошибка при загрузке уровней');
+        setEventClasses([]);
+        setFilteredEventClasses([]);
       } finally {
         setLoading(false);
       }

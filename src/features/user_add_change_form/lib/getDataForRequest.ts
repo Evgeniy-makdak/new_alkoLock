@@ -116,5 +116,14 @@ export const getDataForRequest = (
     formData.append('userPhoto.image', image.image);
   }
 
+  /** Редактирование без нового файла: иначе бэк может выставить userPhotoDTO.default = false */
+  if (image && userID && !isNewAvatarFile) {
+    const keepDefault = image.photoDefault !== false;
+    formData.append('userPhotoDTO.default', keepDefault ? 'true' : 'false');
+    if (image.id != null) formData.append('userPhotoDTO.id', String(image.id));
+    if (image.hash) formData.append('userPhotoDTO.hash', String(image.hash));
+    if (image.fileName) formData.append('userPhotoDTO.fileName', image.fileName);
+  }
+
   return { formData, userData: reqBody, userFoto };
 };

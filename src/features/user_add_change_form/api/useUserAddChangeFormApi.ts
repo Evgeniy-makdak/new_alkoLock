@@ -5,8 +5,9 @@ import { UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
+import { useUserAvatarQuery } from '@shared/hooks/useUserAvatarQuery';
 import type { ID, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function getUserPhotoMeta(user: IUser | undefined): IUserPhotoDTO | undefined {
   if (!user) return undefined;
@@ -53,6 +54,7 @@ const updateQueries = [
 export const useUserAddChangeFormApi = (id: ID) => {
   const enabled = Boolean(id);
 
+  const queryClient = useQueryClient();
   const update = useUpdateQueries();
 
   const { data, isLoading } = useConfiguredQuery([QueryKeys.USER_ITEM], UsersApi.getUser, {
@@ -61,6 +63,8 @@ export const useUserAddChangeFormApi = (id: ID) => {
       enabled: enabled,
     } as any,
   });
+
+  const user = data?.data;
 
   const { data: userGroups, isLoading: isLoadingUserGroups } = useRolesSelectApi({
     page: 0,
@@ -71,20 +75,32 @@ export const useUserAddChangeFormApi = (id: ID) => {
     },
   });
 
-  const { data: foto, isLoading: isLoadingFoto } = useConfiguredQuery(
-    [QueryKeys.AVATAR],
-    UsersApi.getAvatar,
-    {
-      options: id,
-      settings: {
-        enabled: enabled,
-      } as any,
-    },
-  );
+  const { data: foto, isLoading: isLoadingFoto } = useUserAvatarQuery(id, user);
 
-  const { mutateAsync: changeItem } = useMutation({
-    mutationFn: (data: FormData) => UsersApi.changeUser(data, id),
-    onSuccess: () => update(updateQueries),
+  const { mutateAsync: changeItem } = useMutation<AppAxiosResponse<IUser>, unknown, FormData>({
+    mutationFn: (data: FormData) =>
+      UsersApi.changeUser(data, id) as Promise<AppAxiosResponse<IUser>>,
+    onSuccess: async (response) => {
+      const putUser = response?.data;
+      await Promise.all(
+        updateQueries.map((key) => queryClient.refetchQueries({ queryKey: [key] })),
+      );
+      // GET user после PUT иногда не отдаёт userPhotoDTO, хотя аватар на бэке есть — восстанавливаем из ответа PUT
+      const photo = getUserPhotoMeta(putUser);
+      if (putUser?.id && photo) {
+        queryClient.setQueriesData({ queryKey: [QueryKeys.USER_ITEM] }, (old: any) => {
+          if (!old?.data || old.data.id !== putUser.id) return old;
+          if (old.data.userPhotoDTO || old.data.userPhoto) return old;
+          return {
+            ...old,
+            data: {
+              ...old.data,
+              userPhotoDTO: photo,
+            },
+          };
+        });
+      }
+    },
   });
 
   const { mutateAsync: createItem } = useMutation({
@@ -102,7 +118,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
     onSuccess: () => update(updateQueries),
   });
 
-  const user = data?.data;
   const headerMd5 = getContentMd5FromResponse(foto);
   const blob = foto?.data;
   const hasBlob = Boolean(blob && blob.size > 0);

@@ -32,9 +32,11 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp<TableRow> => {
     const fetchEventClasses = async () => {
       try {
         const response = await EventsApi.getEventClasses();
-        setEventClasses(response.data);
+        const raw = response?.data;
+        setEventClasses(Array.isArray(raw) ? raw : []);
       } catch (err) {
         console.error('Ошибка при загрузке уровней', err);
+        setEventClasses([]);
       }
     };
 
@@ -42,6 +44,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp<TableRow> => {
   }, []);
 
   const mapData = useMemo(() => {
+    const classes = Array.isArray(eventClasses) ? eventClasses : [];
     return (Array.isArray(data) ? data : []).map((item: IDeviceAction) => {
       const timestamp = typeof item.timestamp === 'string' ? item.timestamp : undefined;
 
@@ -49,7 +52,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp<TableRow> => {
       const typeOfEvent: string = item.eventsForFront?.label || '-';
 
       // Определяем уровень - используем старую логику с eventClasses
-      const level = eventClasses.find((eventClass) => eventClass === item.level) || '-';
+      const level = classes.find((eventClass) => eventClass === item.level) || '-';
 
       const isProcessing =
         item.vehicleAction?.inProcessing ||

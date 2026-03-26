@@ -122,8 +122,20 @@ export const getInitFormState = (
   }));
 
   const src = FilesUtils.getUrlFromBlob(avatar?.img);
+  const photoMeta = user?.userPhotoDTO ?? user?.userPhoto;
   const initialAvatar: ImageState[] =
-    avatar && !isLoading ? [{ src: src, image: avatar?.img, hash: avatar?.hash }] : [];
+    avatar && !isLoading
+      ? [
+          {
+            src,
+            image: avatar?.img,
+            hash: avatar?.hash,
+            id: photoMeta?.id,
+            fileName: photoMeta?.fileName,
+            photoDefault: photoMeta?.default !== false,
+          },
+        ]
+      : [];
 
   const birthDateInit = user && user?.birthDate ? dayjs(user?.birthDate) : null;
   const disabledInit = `${user ? accessList.find((item) => item.value === `${user?.disabled}`)?.value : false}`;
