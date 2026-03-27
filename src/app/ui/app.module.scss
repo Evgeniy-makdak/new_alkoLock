@@ -66,6 +66,50 @@
   }
 }
 
+/*
+ * Вкладка «Карта», узкий viewport: визуально как заголовок «Параметры»
+ * (MapControls .mapControlsMobileHeader / лист 4px radius).
+ */
+.themeToggleSlotMapMobile {
+  min-height: unset;
+  gap: 0;
+  /* Как .mapControlsMobileHeader: padding 8px 12px */
+  padding: 8px 12px;
+  border-radius: 4px;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  box-shadow: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+
+  :global(.MuiIconButton-root) {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border-radius: 4px;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+}
+
+.appDark .themeToggleSlotMapMobile {
+  background-color: #252525;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+
+  :global(.MuiIconButton-root) {
+    color: rgba(255, 255, 255, 0.9);
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+  }
+}
+
 /* Мобильный/планшет: не сливаются с контентом и друг с другом (единственный блок темы/языка) */
 .themeToggleSlotNarrow {
   gap: 10px;

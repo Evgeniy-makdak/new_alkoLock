@@ -1233,8 +1233,9 @@ export const MapPage = () => {
           style={{
             position: 'absolute',
             top: '10px',
-            right: '10px',
-            maxWidth: 'min(100%, calc(100dvw - 70px))',
+            /* Не наезжаем на слот темы (right ~10px, z-index 999) */
+            right: '68px',
+            maxWidth: 'min(100%, calc(100dvw - 70px - 58px))',
             zIndex: 1000,
             boxSizing: 'border-box',
           }}>

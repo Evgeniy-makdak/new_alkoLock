@@ -28,6 +28,8 @@ export function App() {
     isMobile && showFloatingThemeSlot && location.pathname === RoutePaths.messages;
 
   const hideLanguageOnMap = location.pathname === RoutePaths.map;
+  /** Карта на узком экране: плашка темы как у «Параметры» (radius, высота) */
+  const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
   /** Карта на desktop: тема рядом со сбросом фильтров в MapControls, не в плавающем слоте */
   const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
   const showThemeInFloatingSlot = !themeInMapToolbar;
@@ -45,7 +47,7 @@ export function App() {
           <div className={style.content}>
             {showFloatingThemeSlot && (showThemeInFloatingSlot || showLangInFloatingSlot) ? (
               <div
-                className={`${style.themeToggleSlot} ${isNarrowViewport ? style.themeToggleSlotNarrow : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''}`}>
+                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''}`}>
                 {showThemeInFloatingSlot ? <ThemeToggleControl /> : null}
                 {showLangInFloatingSlot ? <AppLanguageSelect appearance="toolbar" /> : null}
               </div>
