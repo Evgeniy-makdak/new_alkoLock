@@ -11,6 +11,7 @@ import {
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { configLoader } from '../../../config/configLoader';
+import { chatUnreadTrace, unreadMapToRecord } from './chatUnreadTrace';
 
 interface SocketContextType {
   lastMessage: any;
@@ -102,12 +103,18 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, [dialogsUnreadCounts, unreadCount]);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
-    console.log(`💬 WebSocket: Обновление счётчика для диалога ${dialogId}: ${count}`);
     setDialogsUnreadCounts((prev) => {
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
         newMap.set(dialogId, count);
       }
+      chatUnreadTrace('socket.setDialogUnread (absolute)', {
+        dialogId,
+        count,
+        useDetailed: useDetailedCountsRef.current,
+        hasDetailedData: hasDetailedDataRef.current,
+        mapAfter: unreadMapToRecord(newMap),
+      });
       return newMap;
     });
   }, []);
@@ -120,13 +127,23 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       const current = newMap.get(dialogId) || 0;
       const newCount = current + amount;
       newMap.set(dialogId, newCount);
-      console.log(`💬 WebSocket: Обновление счётчика для диалога ${dialogId}: ${newCount}`);
+      chatUnreadTrace('socket.incrementDialogUnread', {
+        dialogId,
+        amount,
+        prev: current,
+        next: newCount,
+        mapAfter: unreadMapToRecord(newMap),
+      });
       return newMap;
     });
   }, []);
 
   const updateUnreadCountDirect = useCallback((count: number) => {
-    console.log(`💬 WebSocket: Общий счётчик непрочитанных: ${count}`);
+    chatUnreadTrace('socket.setTotalUnread (branch/user aggregate)', {
+      count,
+      useDetailed: useDetailedCountsRef.current,
+      hasDetailedData: hasDetailedDataRef.current,
+    });
     setUnreadCount(count);
   }, []);
 
@@ -136,7 +153,15 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     dialogsUnreadCounts.forEach((count, dialogId) => {
       if (dialogId > 0 && count > 0) total += count;
     });
-    setUnreadCount((prev) => (prev !== total ? total : prev));
+    setUnreadCount((prev) => {
+      if (prev === total) return prev;
+      chatUnreadTrace('socket.deriveTotalUnreadFromPerDialogMap', {
+        total,
+        prev,
+        perDialog: unreadMapToRecord(dialogsUnreadCounts),
+      });
+      return total;
+    });
   }, [dialogsUnreadCounts]);
 
   const sendStompFrame = (command: string, headers: any = {}, body: string = '') => {
@@ -244,6 +269,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       };
       sendStompFrame('SUBSCRIBE', subscribeHeaders);
       subscriptionsRef.current.add(topic);
+    });
+    chatUnreadTrace('socket.subscribe.topics', {
+      branchId: currentBranchId,
+      topics,
+      note: '/user/queue/unread — общий счётчик; /queue/unread/{branchId} — разбивка по dialogId',
     });
   };
 
@@ -361,6 +391,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
               }
 
               if (destination === '/user/queue/unread') {
+                chatUnreadTrace('socket.frame /user/queue/unread', {
+                  countUnMessages: parsedBody?.countUnMessages,
+                  skippedBecauseUsingPerDialogTotals: Boolean(
+                    useDetailedCountsRef.current && hasDetailedDataRef.current,
+                  ),
+                  rawKeys:
+                    parsedBody && typeof parsedBody === 'object' ? Object.keys(parsedBody) : [],
+                });
                 if (parsedBody && typeof parsedBody.countUnMessages === 'number') {
                   if (!(useDetailedCountsRef.current && hasDetailedDataRef.current)) {
                     useDetailedCountsRef.current = false;
@@ -381,9 +419,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                     const dialogCount = parsedBody.filter(
                       (d: any) => d.dialogId && typeof d.countUnMessages === 'number',
                     ).length;
-                    console.log(
-                      `💬 [UNREAD] Подписка /queue/unread: получено ${dialogCount} диалогов с непрочитанными`,
-                    );
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} array(per-dialog)', {
+                      branchId: currentBranchId,
+                      dialogRows: dialogCount,
+                      snapshot: parsedBody.map((d: any) => ({
+                        dialogId: d.dialogId,
+                        countUnMessages: d.countUnMessages,
+                      })),
+                    });
                     parsedBody.forEach((dialogData: any) => {
                       if (dialogData.dialogId && typeof dialogData.countUnMessages === 'number') {
                         updateDialogUnreadCount(dialogData.dialogId, dialogData.countUnMessages);
@@ -391,6 +434,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                     });
                   } else {
                     const firstItem = parsedBody[0];
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} array(fallback total)', {
+                      branchId: currentBranchId,
+                      length: parsedBody.length,
+                      firstCountUnMessages: firstItem?.countUnMessages,
+                    });
                     if (firstItem && typeof firstItem.countUnMessages === 'number') {
                       useDetailedCountsRef.current = false;
                       hasDetailedDataRef.current = false;
@@ -399,6 +447,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   }
                 } else if (parsedBody?.dialogId && typeof parsedBody.countUnMessages === 'number') {
                   if (parsedBody.dialogId > 0) {
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} single dialog object', {
+                      branchId: currentBranchId,
+                      dialogId: parsedBody.dialogId,
+                      countUnMessages: parsedBody.countUnMessages,
+                    });
                     useDetailedCountsRef.current = true;
                     hasDetailedDataRef.current = true;
                     updateDialogUnreadCount(parsedBody.dialogId, parsedBody.countUnMessages);
@@ -408,6 +461,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   typeof parsedBody.countUnMessages === 'number' &&
                   !parsedBody.dialogId
                 ) {
+                  chatUnreadTrace('socket.frame /queue/unread/{branch} aggregate object', {
+                    branchId: currentBranchId,
+                    countUnMessages: parsedBody.countUnMessages,
+                    skippedBecausePerDialogMode: Boolean(
+                      useDetailedCountsRef.current && hasDetailedDataRef.current,
+                    ),
+                  });
                   if (!(useDetailedCountsRef.current && hasDetailedDataRef.current)) {
                     useDetailedCountsRef.current = false;
                     hasDetailedDataRef.current = false;
@@ -415,6 +475,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   }
                 }
 
+                chatUnreadTrace('socket.lastMessage emit', {
+                  type: 'DIALOGS_UPDATE',
+                  destination,
+                  note: 'ChatContext обрабатывает DIALOGS_UPDATE как no-op для счётчиков (см. лог context)',
+                });
                 setLastMessage({
                   data: parsedBody,
                   type: 'DIALOGS_UPDATE',

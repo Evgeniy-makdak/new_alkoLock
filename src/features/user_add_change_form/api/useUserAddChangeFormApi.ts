@@ -52,6 +52,9 @@ const updateQueries = [
   QueryKeys.AVATAR,
 ];
 
+/** После createUser не трогаем глобально USER_ITEM — иначе refetch всех карточек и лишние GET (в т.ч. 404 по «старым» id в кэше) */
+const updateQueriesAfterCreate = [QueryKeys.USER_LIST_TABLE, QueryKeys.USER_LIST, QueryKeys.AVATAR];
+
 export const useUserAddChangeFormApi = (id: ID) => {
   const enabled = Boolean(id);
 
@@ -123,19 +126,19 @@ export const useUserAddChangeFormApi = (id: ID) => {
     },
   });
 
-  /** POST галереи: refetch выполняется в форме после setPhotoAsAvatar, чтобы порядок совпадал с бэком */
+  /** POST галереи: userId передаётся явно (редактирование и только что созданный пользователь) */
   const { mutateAsync: addGalleryPhoto } = useMutation<
     AppAxiosResponse<AddPhotoResponse>,
     unknown,
-    FormData
+    { formData: FormData; userId: ID }
   >({
-    mutationFn: (data: FormData) =>
-      UsersApi.addPhoto(data, id) as Promise<AppAxiosResponse<AddPhotoResponse>>,
+    mutationFn: ({ formData, userId }) =>
+      UsersApi.addPhoto(formData, userId) as Promise<AppAxiosResponse<AddPhotoResponse>>,
   });
 
   const { mutateAsync: createItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.createUser(data),
-    onSuccess: () => update(updateQueries),
+    onSuccess: () => update(updateQueriesAfterCreate),
   });
 
   const { mutateAsync: changeFoto } = useMutation({

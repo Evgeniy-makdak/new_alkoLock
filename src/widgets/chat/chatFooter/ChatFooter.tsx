@@ -26,6 +26,7 @@ import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
 import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
+import { chatUnreadTrace, unreadMapToRecord } from '../contexts/chatUnreadTrace';
 import styles from './ChatFooter.module.scss';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
@@ -240,7 +241,12 @@ const ChatContainer = () => {
     openUnreadDialog,
     hasSessionWithUser,
   } = useChat();
-  const { lastMessage, setUnreadCount, dialogsUnreadCounts } = useSocket();
+  const {
+    lastMessage,
+    setUnreadCount,
+    dialogsUnreadCounts,
+    unreadCount: socketUnreadTotal,
+  } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
   const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
@@ -485,6 +491,33 @@ const ChatContainer = () => {
     dialogPreviewLines,
     attachmentLabel,
     t,
+  ]);
+
+  useEffect(() => {
+    const previewUnreadBadges = compactMinimizedEntries
+      .filter((e): e is Extract<typeof e, { kind: 'unread' }> => e.kind === 'unread')
+      .map((e) => ({
+        dialogId: e.dialog.id,
+        badge: e.unread,
+        title: e.title,
+      }));
+    chatUnreadTrace('render.ChatFooter badge snapshot', {
+      globalIconBadge: socketUnreadTotal,
+      socketDialogMapEntries: unreadMapToRecord(dialogsUnreadCounts),
+      unreadPreviewRows: previewUnreadBadges,
+      minimizedSessionsUnread: sessions
+        .filter((s) => s.isMinimized)
+        .map((s) => ({ sessionId: s.id, unread: s.unreadCount ?? 0 })),
+      lastMessageType: lastMessage?.type,
+      lastMessageDestination: lastMessage?.destination,
+    });
+  }, [
+    compactMinimizedEntries,
+    dialogsUnreadCounts,
+    socketUnreadTotal,
+    sessions,
+    lastMessage?.type,
+    lastMessage?.destination,
   ]);
 
   if (!hasChatPermissions) {

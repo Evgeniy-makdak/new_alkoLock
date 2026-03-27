@@ -102,14 +102,9 @@ export const getDataForRequest = (
     }
   }
 
-  if (image && !userID && isNewAvatarFile) {
-    formData.append('userPhotoDTO.hash', image.hash);
-    formData.append('userPhotoDTO.image', image.image);
-  }
-
-  /** Новое фото в галерею: отправляется отдельным POST UsersApi.addPhoto, не дублируем в PUT */
+  /** Новое фото: отдельный POST UsersApi.addPhoto (и при создании пользователя, и при редактировании) */
   let userFoto: FormData | null = null;
-  if (image && userID && isNewAvatarFile) {
+  if (image && isNewAvatarFile) {
     userFoto = new FormData();
     userFoto.append('image', image.image);
     userFoto.append('hash', image.hash || '');

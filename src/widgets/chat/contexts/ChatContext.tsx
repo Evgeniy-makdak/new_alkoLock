@@ -5,6 +5,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import i18n from '../../../i18n';
 import { ChatConfig } from '../contexts/chatConfig';
 import { useSocket } from './SocketContext';
+import { chatUnreadTrace } from './chatUnreadTrace';
 import { useChatAttachments } from './hooks/useChatAttachments';
 import { useChatDialogHandlers } from './hooks/useChatDialogHandlers';
 import { useChatDialogs } from './hooks/useChatDialogs';
@@ -68,6 +69,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const onUnreadDialogsLoaded = useCallback(
     (dialogs: { id: number; countUnreadMess?: number; countUnMessages?: number }[]) => {
+      chatUnreadTrace('context.onUnreadDialogsLoaded (API → socketUpdateDialogUnread)', {
+        dialogCount: dialogs.length,
+        rows: dialogs.map((d) => ({
+          id: d.id,
+          count: d.countUnMessages ?? d.countUnreadMess ?? 0,
+        })),
+      });
       const currentSessions = sessionsRef.current;
       dialogs.forEach((d) => {
         const isOpenInExpandedSession = currentSessions.some(
@@ -121,6 +129,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
       updateSession(sessionId, { unreadCount: count });
       if (!isNaN(dialogIdNum)) {
+        chatUnreadTrace('context.updateSessionUnreadCount (messages → session + socket map)', {
+          sessionId,
+          dialogId: dialogIdStr,
+          count,
+        });
         socketUpdateDialogUnreadCount(dialogIdNum, count);
       }
     },
@@ -262,6 +275,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
 
+      chatUnreadTrace('context.updateUnreadCountsFromWebSocket (локальная Map в ChatProvider)', {
+        hasChanges,
+        updates: dialogUpdates,
+        note: 'Рендер бейджей в футере берёт Map из SocketContext, не отсюда',
+      });
       if (hasChanges) setDialogsUnreadCounts(newCounts);
     },
     [dialogsUnreadCounts],
@@ -864,7 +882,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
 
-      if (lastMessage.type === 'DIALOGS_UPDATE') return;
+      if (lastMessage.type === 'DIALOGS_UPDATE') {
+        chatUnreadTrace('context.lastMessage DIALOGS_UPDATE — пропуск обработки счётчиков', {
+          destination: lastMessage.destination,
+          dataIsArray: Array.isArray(lastMessage.data),
+          arrayLength: Array.isArray(lastMessage.data) ? lastMessage.data.length : undefined,
+          note: 'Пер-dialog счётчики уже выставлены в SocketContext; ветки lastMessage /user/queue/unread и /queue/unread/{branch} ниже для этого типа не выполняются',
+        });
+        return;
+      }
 
       if (lastMessage.type === 'error' || lastMessage.destination === '/user/queue/errors') {
         const errorData = lastMessage.data;
@@ -936,6 +962,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (lastMessage.type === '/user/queue/unread') {
+        chatUnreadTrace(
+          'context.lastMessage /user/queue/unread (редко: Socket не ставит lastMessage)',
+          {
+            dataIsArray: Array.isArray(lastMessage.data),
+          },
+        );
         if (Array.isArray(lastMessage.data)) {
           updateUnreadCountsFromWebSocket(lastMessage.data);
         }
@@ -960,6 +992,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const currentBranchId = appStore.getState().selectedBranchState?.id;
 
       if (lastMessage.type === `/queue/unread/${currentBranchId}`) {
+        chatUnreadTrace(
+          'context.lastMessage /queue/unread/{branch} (редко: type сейчас DIALOGS_UPDATE)',
+          {
+            branchId: currentBranchId,
+          },
+        );
         if (Array.isArray(lastMessage.data) && lastMessage.data.length === 0) return;
 
         const now = Date.now();
@@ -1096,6 +1134,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       if (dialogId == null || !socketDialogsUnreadCounts.has(dialogId)) return;
       const count = socketDialogsUnreadCounts.get(dialogId)!;
       if (count !== (session.unreadCount ?? 0)) {
+        chatUnreadTrace('context.sync session.unreadCount из SocketContext map', {
+          sessionId: session.id,
+          dialogId,
+          count,
+          prevSessionUnread: session.unreadCount ?? 0,
+        });
         updateSession(session.id, { unreadCount: count });
       }
     });

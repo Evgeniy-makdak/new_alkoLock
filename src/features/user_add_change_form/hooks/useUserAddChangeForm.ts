@@ -388,6 +388,58 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const branchId = selectedBranch && selectedBranch?.id ? selectedBranch.id : null;
 
     try {
+      /** Только затронутый пользователь + списки/аватар/галерея — без refetch всех USER_ITEM */
+      const invalidateAfterGallery = async (affectedUserId: ID) => {
+        const bId = appStore.getState().selectedBranchState?.id ?? null;
+        await client.invalidateQueries({
+          queryKey: [QueryKeys.USER_ITEM, bId, affectedUserId],
+          exact: false,
+        });
+        await client.invalidateQueries({ queryKey: [QueryKeys.AVATAR] });
+        await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_URL_LIST] });
+        await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_ITEM] });
+        await client.invalidateQueries({ queryKey: [QueryKeys.USER_LIST_TABLE] });
+        await client.invalidateQueries({ queryKey: [QueryKeys.USER_LIST] });
+      };
+
+      const postGalleryThenSetAvatar = async (
+        hash: string,
+        imageBody: Blob,
+        targetUserId: ID,
+      ): Promise<boolean> => {
+        const galleryFd = new FormData();
+        galleryFd.append('hash', hash || '');
+        galleryFd.append('image', imageBody);
+        galleryFd.append('userPhotoDTO.default', 'true');
+        const addRes = await addGalleryPhoto({ formData: galleryFd, userId: targetUserId });
+        if (
+          addRes?.status === StatusCode.BAD_REQUEST ||
+          addRes?.status === StatusCode.SERVER_ERROR ||
+          addRes.isError
+        ) {
+          enqueueSnackbar(addRes?.detail || addRes?.message || 'Не удалось загрузить фото', {
+            variant: 'error',
+          });
+          return false;
+        }
+        const uploaded = addRes?.data as AddPhotoResponse | undefined;
+        const newPhotoId = getNewPhotoIdFromAddResponse(uploaded);
+        if (newPhotoId == null) {
+          enqueueSnackbar('Не удалось получить id фото', { variant: 'error' });
+          return false;
+        }
+        const avatarRes = await UsersApi.setPhotoAsAvatar(newPhotoId, targetUserId, true);
+        const avatarErr =
+          avatarRes?.isError || (avatarRes?.status != null && !isSuccessStatus(avatarRes.status));
+        if (avatarErr) {
+          enqueueSnackbar(avatarRes?.detail || 'Не удалось назначить фото аватаром', {
+            variant: 'error',
+          });
+          return false;
+        }
+        return true;
+      };
+
       if (!id) {
         const { formData } = getDataForRequest(cleanedData, branchId, id);
         const response = await createItem(formData);
@@ -396,9 +448,31 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           response.status === StatusCode.SERVER_ERROR
         ) {
           enqueueSnackbar(response.detail, { variant: 'error' });
-        } else {
-          close();
+          return;
         }
+        if (response.status == null || !isSuccessStatus(response.status)) {
+          return;
+        }
+        const newUserId = (response.data as { id?: ID } | undefined)?.id;
+        const bId = appStore.getState().selectedBranchState?.id ?? null;
+        if (newUserId != null && newUserId !== '' && response.data != null) {
+          client.setQueryData([QueryKeys.USER_ITEM, bId, newUserId], response);
+        }
+        if (
+          isNewPhotoFile &&
+          userPhoto?.image instanceof File &&
+          newUserId != null &&
+          newUserId !== ''
+        ) {
+          const ok = await postGalleryThenSetAvatar(
+            userPhoto.hash || '',
+            userPhoto.image,
+            newUserId,
+          );
+          if (!ok) return;
+          await invalidateAfterGallery(newUserId);
+        }
+        close();
       } else {
         const dirtyFields = formState.dirtyFields ?? {};
         const needsUserPut = Object.keys(dirtyFields).some((key) => key !== 'userPhotoDTO');
@@ -485,51 +559,10 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           }
         }
 
-        const invalidateAfterGallery = async () => {
-          await client.invalidateQueries({ queryKey: [QueryKeys.USER_ITEM] });
-          await client.invalidateQueries({ queryKey: [QueryKeys.AVATAR] });
-          await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_URL_LIST] });
-          await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_ITEM] });
-        };
-
-        const postGalleryThenSetAvatar = async (hash: string, imageBody: Blob) => {
-          const galleryFd = new FormData();
-          galleryFd.append('hash', hash || '');
-          galleryFd.append('image', imageBody);
-          galleryFd.append('userPhotoDTO.default', 'true');
-          const addRes = await addGalleryPhoto(galleryFd);
-          if (
-            addRes?.status === StatusCode.BAD_REQUEST ||
-            addRes?.status === StatusCode.SERVER_ERROR ||
-            addRes.isError
-          ) {
-            enqueueSnackbar(addRes?.detail || addRes?.message || 'Не удалось загрузить фото', {
-              variant: 'error',
-            });
-            return false;
-          }
-          const uploaded = addRes?.data as AddPhotoResponse | undefined;
-          const newPhotoId = getNewPhotoIdFromAddResponse(uploaded);
-          if (newPhotoId == null) {
-            enqueueSnackbar('Не удалось получить id фото', { variant: 'error' });
-            return false;
-          }
-          const avatarRes = await UsersApi.setPhotoAsAvatar(newPhotoId, id!, true);
-          const avatarErr =
-            avatarRes?.isError || (avatarRes?.status != null && !isSuccessStatus(avatarRes.status));
-          if (avatarErr) {
-            enqueueSnackbar(avatarRes?.detail || 'Не удалось назначить фото аватаром', {
-              variant: 'error',
-            });
-            return false;
-          }
-          return true;
-        };
-
         if (photoAddedNewFile && userPhoto?.image instanceof File && id != null) {
-          const ok = await postGalleryThenSetAvatar(userPhoto.hash || '', userPhoto.image);
+          const ok = await postGalleryThenSetAvatar(userPhoto.hash || '', userPhoto.image, id);
           if (!ok) return;
-          await invalidateAfterGallery();
+          await invalidateAfterGallery(id);
         } else if (clearAvatarOnSave && id != null) {
           let photoIdToUnset = profilePhotoIdToUnset;
           if (photoIdToUnset == null || photoIdToUnset === '') {
@@ -558,7 +591,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           serverProfilePhotoIdRef.current = undefined;
           photoMutationPendingRef.current = false;
           setPhotoMutationPending(false);
-          await invalidateAfterGallery();
+          await invalidateAfterGallery(id);
         }
 
         if (
