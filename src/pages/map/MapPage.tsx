@@ -19,6 +19,7 @@ import { UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { useColorMode } from '@shared/theme/colorMode';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { Aside } from '@shared/ui/aside';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -36,6 +37,14 @@ import { MapProvider } from './MapContext';
 import { MapControls } from './MapControls';
 import { MapMarkers } from './MapMarkers';
 import { MapRoutes } from './MapRoutes';
+import {
+  addRasterBasemapForTheme,
+  addVectorBasemapToLeafletMap,
+  isMapReadyForLayers,
+  replaceVectorBasemapTheme,
+  vectorStyleUrlForTheme,
+} from './mapBasemap';
+import './mapTheme.scss';
 import './mapTooltip.scss';
 import { EventData, VehicleEventsGroup } from './types';
 
@@ -177,10 +186,30 @@ const useQueryParams = () => {
   return new URLSearchParams(location.search);
 };
 
+type MapBasemapState =
+  | {
+      kind: 'vector';
+      layer: L.Layer;
+      setMapLanguage: (lang: string) => void;
+      vectorStyleUrl: string;
+    }
+  | { kind: 'raster'; layer: L.TileLayer };
+
 export const MapPage = () => {
   const { t, i18n } = useTranslation();
+  const { mode: colorMode } = useColorMode();
+  const colorModeRef = useRef(colorMode);
+  colorModeRef.current = colorMode;
+  const i18nLangRef = useRef(i18n.language);
+  i18nLangRef.current = i18n.language;
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const basemapRef = useRef<MapBasemapState | null>(null);
+  /** Одна за другой: setStyle/recreate подложки, иначе гонки с pan/zoom Leaflet. */
+  const basemapSwapChainRef = useRef<Promise<void>>(Promise.resolve());
+  const scheduleBasemapWork = useCallback((fn: () => Promise<void>) => {
+    basemapSwapChainRef.current = basemapSwapChainRef.current.then(fn, fn).catch(() => {});
+  }, []);
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлено для будущего включения DebugPanel
   const [debugInfo, setDebugInfo] = useState<string>('Инициализация...');
   const location = useLocation();
@@ -901,14 +930,33 @@ export const MapPage = () => {
       maxZoom: 18,
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
-    // OSM по умолчанию не отдаёт тайлы с выбором языка подписей; см. t('map.tilesLanguageHint')
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '',
-      noWrap: true,
-      bounds: L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180)),
-      maxNativeZoom: 18,
-      detectRetina: false,
-    }).addTo(mapRef.current);
+    const map = mapRef.current;
+    basemapRef.current = null;
+
+    void (async () => {
+      const vector = await addVectorBasemapToLeafletMap(
+        map,
+        () => i18nLangRef.current,
+        () => vectorStyleUrlForTheme(colorModeRef.current),
+      );
+      // После await карта могла быть снята (Strict Mode / уход со страницы) — не трогаем чужой инстанс.
+      if (!mapRef.current || mapRef.current !== map || !isMapReadyForLayers(map)) return;
+
+      if (vector) {
+        const appliedStyle = vectorStyleUrlForTheme(colorModeRef.current);
+        basemapRef.current = {
+          kind: 'vector',
+          layer: vector.layer,
+          setMapLanguage: vector.setMapLanguage,
+          vectorStyleUrl: appliedStyle,
+        };
+      } else if (isMapReadyForLayers(map)) {
+        basemapRef.current = {
+          kind: 'raster',
+          layer: addRasterBasemapForTheme(map, colorModeRef.current),
+        };
+      }
+    })();
 
     const updateBounds = () => {
       const bounds = mapRef.current?.getBounds();
@@ -920,7 +968,7 @@ export const MapPage = () => {
       }
     };
 
-    mapRef.current.on('moveend', updateBounds);
+    map.on('moveend', updateBounds);
     updateBounds();
 
     if (navigator.geolocation) {
@@ -941,11 +989,93 @@ export const MapPage = () => {
     }
 
     return () => {
-      mapRef.current?.off('moveend', updateBounds);
-      mapRef.current?.remove();
+      basemapSwapChainRef.current = Promise.resolve();
+      basemapRef.current = null;
+      map.off('moveend', updateBounds);
+      map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [scheduleBasemapWork]);
+
+  /** Светлая/тёмная подложка: вектор — новый экземпляр слоя; растр — смена TileLayer */
+  useEffect(() => {
+    const mapSnap = mapRef.current;
+    if (!mapSnap || !isMapReadyForLayers(mapSnap)) return;
+
+    scheduleBasemapWork(async () => {
+      const m = mapRef.current;
+      if (!m || m !== mapSnap || !isMapReadyForLayers(m)) return;
+      const bs = basemapRef.current;
+      if (!bs) return;
+
+      const invalidate = () =>
+        requestAnimationFrame(() => {
+          if (mapRef.current === m && isMapReadyForLayers(m)) {
+            m.invalidateSize();
+          }
+        });
+
+      if (bs.kind === 'vector') {
+        const url = vectorStyleUrlForTheme(colorMode);
+        if (bs.vectorStyleUrl === url) {
+          invalidate();
+          return;
+        }
+        const oldLayer = bs.layer;
+        const next = await replaceVectorBasemapTheme(m, oldLayer, url, () => i18nLangRef.current);
+        if (!mapRef.current || mapRef.current !== m || !isMapReadyForLayers(m)) {
+          if (next && m.hasLayer(next.layer)) {
+            m.removeLayer(next.layer);
+          }
+          return;
+        }
+        if (
+          !basemapRef.current ||
+          basemapRef.current.kind !== 'vector' ||
+          basemapRef.current.layer !== oldLayer
+        ) {
+          if (next && m.hasLayer(next.layer)) {
+            m.removeLayer(next.layer);
+          }
+          return;
+        }
+        if (next) {
+          basemapRef.current = {
+            kind: 'vector',
+            layer: next.layer,
+            setMapLanguage: next.setMapLanguage,
+            vectorStyleUrl: url,
+          };
+        } else {
+          basemapRef.current = {
+            kind: 'raster',
+            layer: addRasterBasemapForTheme(m, colorMode),
+          };
+        }
+        invalidate();
+        return;
+      }
+
+      try {
+        m.removeLayer(bs.layer);
+      } catch {
+        /* слой уже отвязан */
+      }
+      if (!isMapReadyForLayers(m)) return;
+      basemapRef.current = {
+        kind: 'raster',
+        layer: addRasterBasemapForTheme(m, colorMode),
+      };
+      invalidate();
+    });
+  }, [colorMode, scheduleBasemapWork]);
+
+  useEffect(() => {
+    const bs = basemapRef.current;
+    if (bs?.kind === 'vector') {
+      bs.setMapLanguage(i18nLangRef.current);
+    }
+  }, [i18n.language]);
 
   // const handleResetFilters = () => {
   //   setStartDate(null);

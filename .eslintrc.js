@@ -24,7 +24,7 @@ module.exports = {
     parser: '@typescript-eslint/parser',
     requireConfigFile: false,
   },
-  ignorePatterns: ['/build/*', 'craco.config.js'],
+  ignorePatterns: ['/build/*', 'craco.config.js', 'src/vendor/**/*.js'],
   rules: eslintRules(),
 };
 

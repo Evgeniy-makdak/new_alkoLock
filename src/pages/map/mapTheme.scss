@@ -1,0 +1,37 @@
+/* Фон под тайлами и Leaflet UI в тёмной теме (data-theme выставляет ColorModeProvider) */
+
+[data-theme='dark'] {
+  .leaflet-container {
+    background: #0f1419;
+  }
+
+  .leaflet-control-zoom a {
+    background-color: #1e1e1e;
+    color: rgba(255, 255, 255, 0.87);
+    border-color: rgba(255, 255, 255, 0.12);
+
+    &:hover {
+      background-color: #2a2a2a;
+    }
+  }
+
+  .leaflet-control-attribution {
+    background: rgba(30, 30, 30, 0.92);
+    color: rgba(255, 255, 255, 0.65);
+
+    a {
+      color: #90caf9;
+    }
+  }
+
+  .leaflet-bar {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .leaflet-popup-content-wrapper,
+  .leaflet-popup-tip {
+    background: #1e1e1e;
+    color: rgba(255, 255, 255, 0.87);
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+  }
+}

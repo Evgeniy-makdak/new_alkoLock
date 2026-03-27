@@ -22,6 +22,10 @@ module.exports = {
       features: resolvePath('./src/features'),
       entities: resolvePath('./src/entities'),
       shared: resolvePath('./src/shared'),
+      // Patched adapter from src/vendor (Docker/CI без patch-package в node_modules)
+      '@maplibre/maplibre-gl-leaflet': resolvePath(
+        './src/vendor/maplibre-gl-leaflet/leaflet-maplibre-gl.js',
+      ),
     },
     configure: (webpackConfig) => {
       webpackConfig.output = {
@@ -59,6 +63,15 @@ module.exports = {
           };
         }
       }
+
+      // Последним, чтобы CracoAliasPlugin/tsconfig не подменили путь на node_modules
+      webpackConfig.resolve = webpackConfig.resolve || {};
+      webpackConfig.resolve.alias = {
+        ...(webpackConfig.resolve.alias || {}),
+        '@maplibre/maplibre-gl-leaflet': resolvePath(
+          './src/vendor/maplibre-gl-leaflet/leaflet-maplibre-gl.js',
+        ),
+      };
 
       return webpackConfig;
     },

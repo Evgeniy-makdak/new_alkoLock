@@ -1,0 +1,103 @@
+diff --git a/node_modules/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js b/node_modules/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js
+index b1bead0..4d143e1 100644
+--- a/node_modules/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js
++++ b/node_modules/@maplibre/maplibre-gl-leaflet/leaflet-maplibre-gl.js
+@@ -220,6 +220,11 @@
+             if (!this._map) {
+                 return;
+             }
++            // During MapLibre setStyle / teardown, _glMap can be temporarily missing;
++            // Leaflet may still fire throttled move — avoid crashing the render loop.
++            if (!this._glMap) {
++                return;
++            }
+             // update the offset so we can correct for it later when we zoom
+             this._offset = this._map.containerPointToLayerPoint([0, 0]);
+ 
+@@ -234,34 +239,35 @@
+ 
+             L.DomUtil.setPosition(container, this._roundPoint(topLeft));
+ 
+-            this._transformGL(gl);
++            if (this._glMap) {
++                this._transformGL(this._glMap);
++            }
+         },
+ 
+         _transformGL: function (gl) {
+-            var center = this._map.getCenter();
+-
+-            // gl.setView([center.lat, center.lng], this._map.getZoom() - 1, 0);
+-            // calling setView directly causes sync issues because it uses requestAnimFrame
+-
+-            var tr = gl._getTransformForUpdate(); // .clone() ?
+-
+-            if (tr.setCenter) {
+-                // maplibre 5.0.0 and higher:
+-                tr.setCenter(maplibregl.LngLat.convert([center.lng, center.lat]));
+-                tr.setZoom(this._map.getZoom() - 1);
+-                gl.transform.apply(tr);
+-            } else {
+-                // maplibre < 5.0.0
+-                tr = gl.transform;
+-                tr.center = maplibregl.LngLat.convert([center.lng, center.lat]);
+-                tr.zoom = this._map.getZoom() - 1;
++            try {
++                if (!this._map || gl == null || !gl.transform) {
++                    return;
++                }
++                var center = this._map.getCenter();
++                var lngLat = maplibregl.LngLat.convert([center.lng, center.lat]);
++                gl.transform.center = lngLat;
++                gl.transform.zoom = this._map.getZoom() - 1;
++                if (typeof gl._fireMoveEvents === 'function') {
++                    gl._fireMoveEvents();
++                } else if (typeof gl.triggerRepaint === 'function') {
++                    gl.triggerRepaint();
++                }
++            } catch (e) {
++                return;
+             }
+-
+-            gl._fireMoveEvents();
+         },
+ 
+         // update the map constantly during a pinch zoom
+         _pinchZoom: function (e) {
++            if (!this._glMap || !this._map) {
++                return;
++            }
+             this._glMap.jumpTo({
+                 zoom: this._map.getZoom() - 1,
+                 center: this._map.getCenter()
+@@ -271,6 +277,9 @@
+         // borrowed from L.ImageOverlay
+         // https://github.com/Leaflet/Leaflet/blob/master/src/layer/ImageOverlay.js#L139-L144
+         _animateZoom: function (e) {
++            if (!this._glMap || !this._map || !this._glMap._actualCanvas) {
++                return;
++            }
+             var scale = this._map.getZoomScale(e.zoom);
+             var padding = this._map.getSize().multiplyBy(this.options.padding * scale);
+             var viewHalf = this.getSize()._divideBy(2);
+@@ -295,6 +304,10 @@
+         },
+ 
+         _zoomEnd: function () {
++            if (!this._glMap || !this._map || !this._glMap._actualCanvas) {
++                this._zooming = false;
++                return;
++            }
+             var scale = this._map.getZoomScale(this._map.getZoom());
+ 
+             L.DomUtil.setTransform(
+@@ -311,6 +324,9 @@
+ 
+         _transitionEnd: function (e) {
+             L.Util.requestAnimFrame(function () {
++                if (!this._glMap || !this._map) {
++                    return;
++                }
+                 var zoom = this._map.getZoom();
+                 var center = this._map.getCenter();
+                 var offset = this._map.latLngToContainerPoint(
