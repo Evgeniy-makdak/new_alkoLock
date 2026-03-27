@@ -12,6 +12,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import type { ImageState } from '@entities/upload_img';
 import { useUserRolesStore } from '@features/user_add_change_form/userRolesStore';
+import { userFotoStore } from '@features/user_add_foto/model/userFotoStore';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
@@ -551,6 +552,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
             });
             return;
           }
+          /** Zustand-галерея не слушает PUT фото; без этого значок аватара остаётся до F5 */
+          userFotoStore.getState().syncGalleryAvatarFromUserPhoto(id, null);
           userClearedAvatarRef.current = false;
           serverProfilePhotoIdRef.current = undefined;
           photoMutationPendingRef.current = false;

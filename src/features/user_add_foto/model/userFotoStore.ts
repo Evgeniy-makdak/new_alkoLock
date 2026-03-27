@@ -71,9 +71,22 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     const prev = state[userId];
     if (!prev?.length) return;
 
-    const isDefault = photo?.default === true;
-    const avatarId = isDefault && photo?.id != null ? String(photo.id) : null;
-    const avatarHash = isDefault && photo?.hash ? String(photo.hash) : null;
+    /** PUT user без userPhoto в теле ответа: не сбрасывать галерею (у инфо превью кэш обновится отдельно) */
+    if (photo === undefined) return;
+
+    if (photo === null) {
+      set({
+        usersImages: {
+          ...state,
+          [userId]: prev.map((img) => ({ ...img, isAvatar: false })),
+        },
+      });
+      return;
+    }
+
+    const isDefault = photo.default === true;
+    const avatarId = isDefault && photo.id != null ? String(photo.id) : null;
+    const avatarHash = isDefault && photo.hash ? String(photo.hash) : null;
 
     const newImages = prev.map((img) => {
       const idMatch = avatarId != null && img.id != null && String(img.id) === avatarId;

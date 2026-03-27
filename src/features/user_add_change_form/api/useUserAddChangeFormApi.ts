@@ -93,9 +93,10 @@ export const useUserAddChangeFormApi = (id: ID) => {
           };
         });
 
-        userFotoStore
-          .getState()
-          .syncGalleryAvatarFromUserPhoto(putUser.id, getUserPhotoMeta(putUser));
+        const photoMetaForGallery = getUserPhotoMeta(putUser);
+        if (photoMetaForGallery !== undefined) {
+          userFotoStore.getState().syncGalleryAvatarFromUserPhoto(putUser.id, photoMetaForGallery);
+        }
       }
 
       await Promise.all(
