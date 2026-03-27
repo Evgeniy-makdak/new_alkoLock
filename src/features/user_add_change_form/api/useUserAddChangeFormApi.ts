@@ -7,7 +7,7 @@ import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
 import { useUserAvatarQuery } from '@shared/hooks/useUserAvatarQuery';
-import type { ID, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
+import type { AddPhotoResponse, ID, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function getUserPhotoMeta(user: IUser | undefined): IUserPhotoDTO | undefined {
@@ -122,6 +122,16 @@ export const useUserAddChangeFormApi = (id: ID) => {
     },
   });
 
+  /** POST галереи: refetch выполняется в форме после setPhotoAsAvatar, чтобы порядок совпадал с бэком */
+  const { mutateAsync: addGalleryPhoto } = useMutation<
+    AppAxiosResponse<AddPhotoResponse>,
+    unknown,
+    FormData
+  >({
+    mutationFn: (data: FormData) =>
+      UsersApi.addPhoto(data, id) as Promise<AppAxiosResponse<AddPhotoResponse>>,
+  });
+
   const { mutateAsync: createItem } = useMutation({
     mutationFn: (data: FormData) => UsersApi.createUser(data),
     onSuccess: () => update(updateQueries),
@@ -148,6 +158,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
     user,
     isLoading: isLoading || isLoadingUserGroups || isLoadingFoto,
     changeItem,
+    addGalleryPhoto,
     createItem,
     changeFoto,
     deleteUserFoto,

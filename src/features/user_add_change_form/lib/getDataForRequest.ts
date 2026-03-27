@@ -107,13 +107,13 @@ export const getDataForRequest = (
     formData.append('userPhotoDTO.image', image.image);
   }
 
+  /** Новое фото в галерею: отправляется отдельным POST UsersApi.addPhoto, не дублируем в PUT */
   let userFoto: FormData | null = null;
   if (image && userID && isNewAvatarFile) {
     userFoto = new FormData();
     userFoto.append('image', image.image);
     userFoto.append('hash', image.hash || '');
-    formData.append('userPhoto.hash', image.hash || '');
-    formData.append('userPhoto.image', image.image);
+    userFoto.append('userPhotoDTO.default', 'true');
   }
 
   /** Редактирование без нового файла: иначе бэк может выставить userPhotoDTO.default = false */

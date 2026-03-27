@@ -13,11 +13,12 @@ import { enqueueSnackbar } from 'notistack';
 import type { ImageState } from '@entities/upload_img';
 import { useUserRolesStore } from '@features/user_add_change_form/userRolesStore';
 import { yupResolver } from '@hookform/resolvers/yup';
+import { UsersApi } from '@shared/api/baseQuerys';
 import { Permissions } from '@shared/config/permissionsEnums';
-import { StatusCode } from '@shared/const/statusCode';
+import { StatusCode, isSuccessStatus } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { appStore } from '@shared/model/app_store/AppStore';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { AddPhotoResponse, ID } from '@shared/types/BaseQueryTypes';
 import type { Value } from '@shared/ui/search_multiple_select';
 import ArrayUtils from '@shared/utils/ArrayUtils';
 import { ValidationMessages } from '@shared/validations/validation_messages';
@@ -31,11 +32,56 @@ import { getFormState, getInitFormState } from '../lib/getFormState';
 import { groupsMapper } from '../lib/groupsMapper';
 import { type Form, type KeyForm, schema } from '../lib/validate';
 
+function getNewPhotoIdFromAddResponse(payload: unknown): ID | undefined {
+  if (payload == null) return undefined;
+  if (Array.isArray(payload) && payload.length > 0) {
+    const first = payload[0] as { id?: ID };
+    return first?.id;
+  }
+  if (typeof payload === 'object' && 'id' in (payload as object)) {
+    return (payload as { id: ID }).id;
+  }
+  return undefined;
+}
+
+/** id текущего аватара из ответов GET api/v1/users/photos/{body} (заголовки как в useUserFotoItemApi) */
+async function resolvePhotoIdForUnsetAvatar(userId: ID): Promise<ID | undefined> {
+  const refRes = await UsersApi.getPhotoUrlsFromGallery(userId);
+  if (refRes.isError || !refRes.data?.length) return undefined;
+
+  const metas = await Promise.all(
+    refRes.data.map(async (item) => {
+      const url = item?.body;
+      if (!url) return null;
+      const res = await UsersApi.getPhotoFromGallery(url);
+      if (res.isError || !res.headers) return null;
+      const h = res.headers as { id?: ID; isavatar?: string };
+      const id = h.id;
+      const isAvatar = h.isavatar === 'true';
+      if (id == null || id === '') return null;
+      return { id, isAvatar };
+    }),
+  );
+
+  const avatarRow = metas.find((m) => m?.isAvatar);
+  if (avatarRow?.id != null) return avatarRow.id;
+
+  const withId = metas.filter((m): m is { id: ID; isAvatar: boolean } => m != null && m.id != null);
+  if (withId.length === 1) return withId[0].id;
+
+  return undefined;
+}
+
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { t } = useTranslation();
   const selectedBranch = appStore.getState().selectedBranchState;
   const firstRender = useRef(true);
-  const { user, isLoading, changeItem, createItem, groups, avatar } = useUserAddChangeFormApi(id);
+  const userClearedAvatarRef = useRef(false);
+  const serverProfilePhotoIdRef = useRef<ID | undefined>(undefined);
+  const [photoMutationPending, setPhotoMutationPending] = useState(false);
+  const photoMutationPendingRef = useRef(false);
+  const { user, isLoading, changeItem, addGalleryPhoto, createItem, groups, avatar } =
+    useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups);
 
   const userPhotoSyncKey = [
@@ -100,6 +146,19 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     reset(initUser.defaultValues);
   }, [isLoading, id, userPhotoSyncKey]);
 
+  useEffect(() => {
+    if (!id || isLoading) return;
+    const m = user?.userPhotoDTO ?? user?.userPhoto;
+    if (m?.id != null) serverProfilePhotoIdRef.current = m.id;
+  }, [id, isLoading, user?.userPhotoDTO?.id, user?.userPhoto?.id]);
+
+  useEffect(() => {
+    userClearedAvatarRef.current = false;
+    serverProfilePhotoIdRef.current = undefined;
+    photoMutationPendingRef.current = false;
+    setPhotoMutationPending(false);
+  }, [id]);
+
   // При смене пользователя или метаданных фото с бэка снова разрешаем однократную подстановку превью из API
   useEffect(() => {
     firstRender.current = true;
@@ -126,8 +185,26 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     setSelectedRoleIds(valueIds);
   };
 
-  const setAvatar = (next: ImageState[], options?: { shouldDirty?: boolean }) => {
-    setValue('userPhotoDTO', next, { shouldDirty: options?.shouldDirty !== false });
+  const setAvatar = (
+    next: ImageState[],
+    options?: { shouldDirty?: boolean; trackPending?: boolean },
+  ) => {
+    const shouldDirty = options?.shouldDirty !== false;
+    const trackRefs = options?.trackPending !== undefined ? options.trackPending : shouldDirty;
+
+    if (trackRefs && id) {
+      if (next.length === 0) {
+        userClearedAvatarRef.current = true;
+        photoMutationPendingRef.current = true;
+        setPhotoMutationPending(true);
+      } else {
+        userClearedAvatarRef.current = false;
+        const hasNewFile = next.some((i) => i.image instanceof File);
+        photoMutationPendingRef.current = hasNewFile;
+        setPhotoMutationPending(hasNewFile);
+      }
+    }
+    setValue('userPhotoDTO', next, { shouldDirty });
   };
 
   // const resetPassword = async (data: { email: string; newPassword: string; token: string }) => {
@@ -163,10 +240,11 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       !isLoading &&
       stateOfForm.state.images.length === 0 &&
       id &&
-      firstRender.current
+      firstRender.current &&
+      !userClearedAvatarRef.current
     ) {
       firstRender.current = false;
-      setAvatar(initUser.initialAvatar, { shouldDirty: false });
+      setAvatar(initUser.initialAvatar, { shouldDirty: false, trackPending: false });
     }
   }, [id, initUser.initialAvatar, isLoading, setAvatar, stateOfForm.state.images.length, avatar]);
 
@@ -306,15 +384,11 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       return;
     }
 
-    // 🔧 FIX: Используем cleanedData вместо trimmedData
-    const { formData } = getDataForRequest(
-      cleanedData,
-      selectedBranch && selectedBranch?.id ? selectedBranch.id : null,
-      id,
-    );
+    const branchId = selectedBranch && selectedBranch?.id ? selectedBranch.id : null;
 
     try {
       if (!id) {
+        const { formData } = getDataForRequest(cleanedData, branchId, id);
         const response = await createItem(formData);
         if (
           response.status === StatusCode.BAD_REQUEST ||
@@ -325,35 +399,182 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
           close();
         }
       } else {
-        const response = await changeItem(formData);
-        if (
-          response.status === StatusCode.BAD_REQUEST ||
-          response.status === StatusCode.SERVER_ERROR
-        ) {
-          enqueueSnackbar(response.detail, {
-            variant: 'error',
-          });
-        } else if (response.status === StatusCode.SUCCESS) {
-          // Проверяем, изменился ли пароль
-          if (cleanedData.password && cleanedData.password !== initUser.defaultValues.password) {
-            const userName = user?.fullName;
-            // Используем новую почту из формы, если она была изменена
-            const userMail = cleanedData.email || user?.email;
+        const dirtyFields = formState.dirtyFields ?? {};
+        const needsUserPut = Object.keys(dirtyFields).some((key) => key !== 'userPhotoDTO');
+        const photoAddedNewFile = Boolean(id && isNewPhotoFile && userPhoto?.image instanceof File);
 
-            enqueueSnackbar(
-              `Пароль для ${userName} успешно изменён и отправлен на почту ${userMail}`,
-              {
-                variant: 'success',
-              },
-            );
-          }
-          close();
+        const initialSlotPhotos = initUser.defaultValues.userPhotoDTO;
+        const hadInitialSlotPhoto = (initialSlotPhotos?.length ?? 0) > 0;
+        const slotPhotoFromForm = getValues('userPhotoDTO') ?? cleanedData.userPhotoDTO;
+        const formHasPhoto = (slotPhotoFromForm?.length ?? 0) > 0;
+        const rawPhotoDirty = formState.dirtyFields?.userPhotoDTO as unknown;
+        const photoFieldDirty =
+          rawPhotoDirty === true ||
+          (Array.isArray(rawPhotoDirty) && rawPhotoDirty.some(Boolean)) ||
+          (rawPhotoDirty != null &&
+            typeof rawPhotoDirty === 'object' &&
+            !Array.isArray(rawPhotoDirty) &&
+            Object.keys(rawPhotoDirty as object).length > 0);
+        const serverPhotoMeta = user?.userPhotoDTO ?? user?.userPhoto;
+        const serverProfilePhotoId =
+          serverPhotoMeta?.id ??
+          user?.userPhotoDTO?.id ??
+          user?.userPhoto?.id ??
+          serverProfilePhotoIdRef.current;
+        const galleryImages = photoData?.images ?? [];
+        const galleryAvatarIdByFlag = galleryImages.find(
+          (img) => img.isAvatar && img.id != null,
+        )?.id;
+        const slotHash = initialSlotPhotos?.[0]?.hash;
+        const galleryIdBySlotHash =
+          slotHash != null
+            ? galleryImages.find((img) => img.hash != null && img.hash === slotHash)?.id
+            : undefined;
+        const serverHash = serverPhotoMeta?.hash;
+        const galleryIdByServerHash =
+          serverHash != null
+            ? galleryImages.find((img) => img.hash != null && img.hash === serverHash)?.id
+            : undefined;
+        /** id существующего фото профиля — нужен для PUT снятия аватара (без POST в галерею) */
+        const profilePhotoIdToUnset =
+          initialSlotPhotos?.[0]?.id ??
+          serverProfilePhotoId ??
+          serverProfilePhotoIdRef.current ??
+          galleryAvatarIdByFlag ??
+          galleryIdBySlotHash ??
+          galleryIdByServerHash;
+        /** Наличие аватара до редактирования */
+        const hadAvatarEvidence = Boolean(
+          hadInitialSlotPhoto ||
+            serverPhotoMeta?.id != null ||
+            serverPhotoMeta?.hash ||
+            serverPhotoMeta?.fileName ||
+            serverProfilePhotoId != null,
+        );
+        const userRequestedClearAvatar = Boolean(
+          userClearedAvatarRef.current ||
+            photoMutationPending ||
+            photoMutationPendingRef.current ||
+            (photoFieldDirty && !formHasPhoto && hadInitialSlotPhoto),
+        );
+        const clearAvatarOnSave = Boolean(
+          id != null && id !== '' && !formHasPhoto && userRequestedClearAvatar && hadAvatarEvidence,
+        );
+
+        const needsPhotoWork = photoAddedNewFile || clearAvatarOnSave;
+
+        if (!needsUserPut && !needsPhotoWork) {
+          return;
         }
+
+        if (needsUserPut) {
+          const { formData } = getDataForRequest(cleanedData, branchId, id);
+          const response = await changeItem(formData);
+          if (
+            response.status === StatusCode.BAD_REQUEST ||
+            response.status === StatusCode.SERVER_ERROR
+          ) {
+            enqueueSnackbar(response.detail, {
+              variant: 'error',
+            });
+            return;
+          }
+          if (response.status !== StatusCode.SUCCESS) {
+            return;
+          }
+        }
+
+        const invalidateAfterGallery = async () => {
+          await client.invalidateQueries({ queryKey: [QueryKeys.USER_ITEM] });
+          await client.invalidateQueries({ queryKey: [QueryKeys.AVATAR] });
+          await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_URL_LIST] });
+          await client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_ITEM] });
+        };
+
+        const postGalleryThenSetAvatar = async (hash: string, imageBody: Blob) => {
+          const galleryFd = new FormData();
+          galleryFd.append('hash', hash || '');
+          galleryFd.append('image', imageBody);
+          galleryFd.append('userPhotoDTO.default', 'true');
+          const addRes = await addGalleryPhoto(galleryFd);
+          if (
+            addRes?.status === StatusCode.BAD_REQUEST ||
+            addRes?.status === StatusCode.SERVER_ERROR ||
+            addRes.isError
+          ) {
+            enqueueSnackbar(addRes?.detail || addRes?.message || 'Не удалось загрузить фото', {
+              variant: 'error',
+            });
+            return false;
+          }
+          const uploaded = addRes?.data as AddPhotoResponse | undefined;
+          const newPhotoId = getNewPhotoIdFromAddResponse(uploaded);
+          if (newPhotoId == null) {
+            enqueueSnackbar('Не удалось получить id фото', { variant: 'error' });
+            return false;
+          }
+          const avatarRes = await UsersApi.setPhotoAsAvatar(newPhotoId, id!, true);
+          const avatarErr =
+            avatarRes?.isError || (avatarRes?.status != null && !isSuccessStatus(avatarRes.status));
+          if (avatarErr) {
+            enqueueSnackbar(avatarRes?.detail || 'Не удалось назначить фото аватаром', {
+              variant: 'error',
+            });
+            return false;
+          }
+          return true;
+        };
+
+        if (photoAddedNewFile && userPhoto?.image instanceof File && id != null) {
+          const ok = await postGalleryThenSetAvatar(userPhoto.hash || '', userPhoto.image);
+          if (!ok) return;
+          await invalidateAfterGallery();
+        } else if (clearAvatarOnSave && id != null) {
+          let photoIdToUnset = profilePhotoIdToUnset;
+          if (photoIdToUnset == null || photoIdToUnset === '') {
+            photoIdToUnset = await resolvePhotoIdForUnsetAvatar(id);
+          }
+          if (photoIdToUnset == null || photoIdToUnset === '') {
+            enqueueSnackbar(
+              'Не удалось снять аватар: нет id фото в данных пользователя. Обновите карточку или проверьте ответ API.',
+              { variant: 'error' },
+            );
+            return;
+          }
+          /** Снятие аватара: PUT …/photos/{userId}/photos/{photoId} — бэк снимает default (без POST файла) */
+          const avatarRes = await UsersApi.setPhotoAsAvatar(photoIdToUnset, id, false);
+          const avatarErr =
+            avatarRes?.isError || (avatarRes?.status != null && !isSuccessStatus(avatarRes.status));
+          if (avatarErr) {
+            enqueueSnackbar(avatarRes?.detail || 'Не удалось снять аватар', {
+              variant: 'error',
+            });
+            return;
+          }
+          userClearedAvatarRef.current = false;
+          serverProfilePhotoIdRef.current = undefined;
+          photoMutationPendingRef.current = false;
+          setPhotoMutationPending(false);
+          await invalidateAfterGallery();
+        }
+
+        if (
+          needsUserPut &&
+          cleanedData.password &&
+          cleanedData.password !== initUser.defaultValues.password
+        ) {
+          const userName = user?.fullName;
+          const userMail = cleanedData.email || user?.email;
+          enqueueSnackbar(
+            `Пароль для ${userName} успешно изменён и отправлен на почту ${userMail}`,
+            { variant: 'success' },
+          );
+        }
+
+        close();
       }
-    } catch (error) {
-      enqueueSnackbar(error.message, { variant: 'error' });
-    } finally {
-      client.invalidateQueries({ queryKey: [QueryKeys.IMAGE_URL_LIST] });
+    } catch (error: any) {
+      enqueueSnackbar(error?.message ?? 'Ошибка', { variant: 'error' });
     }
   };
 
@@ -391,7 +612,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     accessList: initUser.accessList,
     closeAlert,
     alert,
-    /** Режим редактирования: есть несохранённые изменения полей или фото */
-    hasFormChanges: isDirty,
+    /** Режим редактирования: есть несохранённые изменения полей или фото / снятие аватара */
+    hasFormChanges: isDirty || photoMutationPending,
   };
 };

@@ -104,9 +104,9 @@ export class UsersApi {
       },
     });
   }
-  static changeAvatarById(photoId: ID, userId: ID) {
+  static changeAvatarById(photoId: ID, userId: ID, isDefault = true) {
     return putQuery({
-      url: `api/v1/users/photos/${userId}/photos/${photoId}`,
+      url: `api/v1/users/photos/${userId}/photos/${photoId}?isDefault=${isDefault}`,
       config: {
         responseType: 'blob',
         headers: { 'Cache-Control': 'no-cache' },
@@ -120,9 +120,10 @@ export class UsersApi {
       headers: {},
     });
   }
-  static setPhotoAsAvatar(photoId: ID, userId: ID) {
+  /** PUT назначения/снятия аватара: ?isDefault=true при установке, false при снятии */
+  static setPhotoAsAvatar(photoId: ID, userId: ID, isDefault = true) {
     return putQuery({
-      url: `api/v1/users/photos/${userId}/photos/${photoId}`,
+      url: `api/v1/users/photos/${userId}/photos/${photoId}?isDefault=${isDefault}`,
       config: {
         responseType: 'blob',
         headers: { 'Cache-Control': 'no-cache' },
