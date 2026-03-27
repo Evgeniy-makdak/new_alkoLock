@@ -1126,4 +1126,22 @@
   .bodyCellCreatedAt {
     color: rgba(255, 255, 255, 0.87);
   }
+
+  /* Скролл-область и Virtuoso: у TableContainer / корня по умолчанию светлый фон */
+  .minWidthWrapper {
+    background-color: #121212;
+  }
+
+  .scrollableContent {
+    background-color: #121212 !important;
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .scrollableContent :global(.MuiTableContainer-root) {
+    background-color: transparent !important;
+  }
+
+  .tableVirtuoso {
+    background-color: #121212;
+  }
 }

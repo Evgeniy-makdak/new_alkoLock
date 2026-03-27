@@ -60,20 +60,25 @@ export class StyledTable {
     fill: '#333',
   });
 
-  static ExpandIcon = styled(AddIcon)({
-    fill: '#00000099',
-  });
+  static ExpandIcon = styled(AddIcon)(({ theme }) => ({
+    fill: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.78)' : 'rgba(0, 0, 0, 0.6)',
+  }));
 
-  static CollapseIcon = styled(RemoveIcon)({
-    fill: '#00000099',
-  });
+  static CollapseIcon = styled(RemoveIcon)(({ theme }) => ({
+    fill: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.78)' : 'rgba(0, 0, 0, 0.6)',
+  }));
 
-  static TableButton = styled(IconButton)({
+  static TableButton = styled(IconButton)(({ theme }) => ({
     border: 'none',
     width: '40px',
     height: '40px',
     padding: '0',
-  });
+    color: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.78)' : 'rgba(0, 0, 0, 0.54)',
+    '&:hover': {
+      backgroundColor:
+        theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+    },
+  }));
 
   static BodyRow = styled(TableRow)({
     borderBottom: '1px solid rgba(0, 0, 0, 0.12)',

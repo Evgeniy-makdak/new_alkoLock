@@ -60,3 +60,24 @@
     text-decoration: none;
   }
 }
+
+:global(html[data-theme='dark']) {
+  .row span {
+    &:first-child {
+      color: rgba(255, 255, 255, 0.65);
+    }
+
+    &:last-child {
+      color: rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  .details-button {
+    color: #90caf9;
+  }
+
+  .mapLink,
+  .mapLink.active {
+    color: #90caf9;
+  }
+}

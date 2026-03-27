@@ -27,7 +27,172 @@
   }
 }
 
+/* Как полоса FilterPanel на вкладках таблиц; справа в одном ряду сброс + тема */
+.mapControlsToolbar {
+  box-sizing: border-box;
+  width: 100%;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 10px;
+  border-bottom: 1px solid #e0e0e0;
+  background: #fafafa;
+}
+
+:global(html[data-theme='dark']) .mapControlsToolbar {
+  background: #1e1e1e;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+
+.mapControlsTogglesRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.mapControlsFiltersRow {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  width: 100%;
+  min-width: 0;
+}
+
+.mapControlsFields {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.mapControlsReset {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  align-self: flex-start;
+  flex-shrink: 0;
+  gap: 0;
+  padding-top: 4px;
+}
+
+.mapControlsFieldToolbar {
+  flex: 1 1 200px;
+  min-width: 200px;
+  max-width: 100%;
+}
+
+.mapSwitch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.mapSwitchTrack {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.mapSwitchTrackOn {
+  background-color: #1976d2;
+}
+
+.mapSwitchTrackOff {
+  background-color: #ccc;
+}
+
+.mapSwitchThumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+}
+
+.mapSwitchThumbChecked {
+  left: 18px;
+}
+
+.mapSwitchLabel {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+:global(html[data-theme='dark']) {
+  .mapControlsFieldToolbar,
+  .mapControlsField {
+    :global(.MuiInputLabel-outlined):not(.MuiInputLabel-shrink) {
+      color: rgba(255, 255, 255, 0.65);
+    }
+    :global(.MuiInputLabel-outlined.MuiInputLabel-shrink) {
+      color: rgba(255, 255, 255, 0.75);
+      background: #1e1e1e;
+    }
+    :global(.MuiOutlinedInput-root) {
+      :global(.MuiOutlinedInput-notchedOutline) {
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+      &:hover :global(.MuiOutlinedInput-notchedOutline) {
+        border-color: rgba(255, 255, 255, 0.35);
+      }
+      &.Mui-focused :global(.MuiOutlinedInput-notchedOutline) {
+        border-color: rgba(144, 202, 249, 0.55);
+      }
+    }
+    :global(.MuiInputBase-input) {
+      color: rgba(255, 255, 255, 0.87);
+    }
+    :global(.MuiInputBase-input)::placeholder {
+      color: rgba(255, 255, 255, 0.45);
+    }
+  }
+
+  .mapSwitchLabel {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .mapSwitchTrackOff {
+    background-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .mapControlsReset {
+    :global(.MuiIconButton-root) {
+      color: rgba(255, 255, 255, 0.75);
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.08);
+      }
+    }
+  }
+}
+
+/* Светлая тема: те же кнопки в одном ряду с читаемым контрастом */
+.mapControlsReset {
+  :global(.MuiIconButton-root) {
+    color: rgba(0, 0, 0, 0.72);
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+  }
+}
+
 .mapControlsFieldCompact {
+  width: 100%;
+
   :global(.MuiInputBase-root) {
     min-height: 32px;
     font-size: 14px;
@@ -49,5 +214,63 @@
   :global(.MuiChip-root) {
     height: 20px;
     font-size: 12px;
+  }
+}
+
+.mapControlsMobileSheet {
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mapControlsMobileSheetLight {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid #ccc;
+}
+
+.mapControlsMobileSheetDark {
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mapControlsMobileHeader {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.mapControlsMobileHeaderLight {
+  background-color: #fff;
+}
+
+.mapControlsMobileHeaderDark {
+  background-color: #252525;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.mapControlsMobileFiltersHeadingLight {
+  color: #333;
+}
+
+.mapControlsMobileFiltersHeadingDark {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mapControlsMobileBodyLight {
+  background: #fff;
+}
+
+.mapControlsMobileBodyDark {
+  background: #1e1e1e;
+}
+
+:global(html[data-theme='dark']) .mapControlsFieldCompact {
+  :global(.MuiInputLabel-outlined.MuiInputLabel-shrink) {
+    background: #1e1e1e;
+    color: rgba(255, 255, 255, 0.75);
+  }
+  :global(.MuiInputLabel-outlined):not(.MuiInputLabel-shrink) {
+    color: rgba(255, 255, 255, 0.65);
   }
 }

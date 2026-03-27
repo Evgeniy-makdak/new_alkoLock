@@ -2,7 +2,24 @@
 
 [data-theme='dark'] {
   .leaflet-container {
-    background: #0f1419;
+    background: #1f2836;
+  }
+
+  /* Разнесено по data-basemap-tiles (см. mapBasemap.rasterBasemapSpec) */
+  .leaflet-container[data-basemap-tiles='carto-dark'] .leaflet-tile-pane img.leaflet-tile {
+    filter: brightness(1.46) contrast(1.07) saturate(1.05);
+  }
+
+  /*
+   * Тот же URL OSM, что и в светлой теме (кириллица в РФ), но сильное затемнение —
+   * иначе светлая/тёмная тема визуально не отличаются.
+   */
+  .leaflet-container[data-basemap-tiles='osm'] .leaflet-tile-pane img.leaflet-tile {
+    filter: brightness(0.52) contrast(1.12) saturate(0.88);
+  }
+
+  .leaflet-container[data-basemap-tiles='jawg'] .leaflet-tile-pane img.leaflet-tile {
+    filter: brightness(1.15) contrast(1.05);
   }
 
   .leaflet-control-zoom a {
@@ -33,5 +50,12 @@
     background: #1e1e1e;
     color: rgba(255, 255, 255, 0.87);
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.45);
+  }
+
+  /* Маркеры (divIcon): убрать излишнюю яркость на тёмной подложке */
+  .leaflet-marker-icon.custom-car-icon,
+  .leaflet-marker-icon.url-marker,
+  .leaflet-marker-icon.event-marker {
+    filter: brightness(0.84) saturate(0.94);
   }
 }

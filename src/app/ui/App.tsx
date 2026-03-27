@@ -27,6 +27,12 @@ export function App() {
   const themeSlotBelowMobileSearch =
     isMobile && showFloatingThemeSlot && location.pathname === RoutePaths.messages;
 
+  const hideLanguageOnMap = location.pathname === RoutePaths.map;
+  /** Карта на desktop: тема рядом со сбросом фильтров в MapControls, не в плавающем слоте */
+  const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
+  const showThemeInFloatingSlot = !themeInMapToolbar;
+  const showLangInFloatingSlot = !hideLanguageOnMap;
+
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
       {isLoading ? (
@@ -37,11 +43,11 @@ export function App() {
         <div className={style.main}>
           <NavBar />
           <div className={style.content}>
-            {showFloatingThemeSlot ? (
+            {showFloatingThemeSlot && (showThemeInFloatingSlot || showLangInFloatingSlot) ? (
               <div
                 className={`${style.themeToggleSlot} ${isNarrowViewport ? style.themeToggleSlotNarrow : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''}`}>
-                <ThemeToggleControl />
-                <AppLanguageSelect appearance="toolbar" />
+                {showThemeInFloatingSlot ? <ThemeToggleControl /> : null}
+                {showLangInFloatingSlot ? <AppLanguageSelect appearance="toolbar" /> : null}
               </div>
             ) : null}
             <RoleChipStyles />

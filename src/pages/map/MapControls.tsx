@@ -13,6 +13,7 @@ import { useMapFilterPanel } from '@features/map_filter_panel/hooks/useMapFilter
 import type { MapFilters } from '@features/map_filter_panel/model/mapFilterPanelStore';
 import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -25,32 +26,12 @@ type SwitchProps = {
 };
 
 const Switch = ({ checked, onChange, label }: SwitchProps) => (
-  <div
-    style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
-    onClick={() => onChange(!checked)}>
+  <div className={styles.mapSwitch} onClick={() => onChange(!checked)}>
     <div
-      style={{
-        width: 36,
-        height: 20,
-        borderRadius: 10,
-        backgroundColor: checked ? '#1976d2' : '#ccc',
-        position: 'relative',
-        transition: 'background-color 0.2s',
-      }}>
-      <div
-        style={{
-          width: 16,
-          height: 16,
-          borderRadius: '50%',
-          backgroundColor: 'white',
-          position: 'absolute',
-          top: 2,
-          left: checked ? 18 : 2,
-          transition: 'left 0.2s',
-        }}
-      />
+      className={`${styles.mapSwitchTrack} ${checked ? styles.mapSwitchTrackOn : styles.mapSwitchTrackOff}`}>
+      <div className={`${styles.mapSwitchThumb} ${checked ? styles.mapSwitchThumbChecked : ''}`} />
     </div>
-    {label && <span style={{ fontSize: '14px' }}>{label}</span>}
+    {label && <span className={styles.mapSwitchLabel}>{label}</span>}
   </div>
 );
 
@@ -77,6 +58,8 @@ type MapControlsProps = {
     onShowOnlyWithAlcolock: (v: boolean) => void;
     onNumberedMarkersMode: (v: boolean) => void;
   };
+  /** Desktop: полоса фильтров как на вкладках с таблицами (FilterPanel) */
+  variant?: 'toolbar';
 };
 
 export const MapControls = ({
@@ -88,8 +71,10 @@ export const MapControls = ({
   onExpandedChange,
   mobileToggles,
   desktopToggles,
+  variant,
 }: MapControlsProps) => {
   const { t } = useTranslation();
+  const { mode } = useColorMode();
   const { filters, setFilters, resetFilters } = useMapFilterPanel();
   const branchId = appStore((state) => state.selectedBranchState?.id);
   const [expanded, setExpanded] = useState(false);
@@ -118,28 +103,33 @@ export const MapControls = ({
   };
 
   const isCompact = isMobile || compact;
-  const fieldWidth = isCompact ? '100%' : 400;
-  const minFieldWidth = isCompact ? undefined : 400;
+  const isToolbar = Boolean(variant === 'toolbar' && !isCompact);
 
-  const filtersContent = (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: isCompact ? 'column' : 'row',
-        gap: '8px',
-        flexWrap: isCompact ? 'nowrap' : 'wrap',
-      }}>
-      <div
-        style={{
-          width: fieldWidth,
-          minWidth: minFieldWidth,
+  const fieldWrapClass = isCompact
+    ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
+    : isToolbar
+      ? `${styles.mapControlsField} ${styles.mapControlsFieldToolbar}`
+      : styles.mapControlsField;
+
+  const fieldWrapStyle =
+    isCompact || isToolbar
+      ? undefined
+      : {
+          width: 400,
+          minWidth: 400,
           flexShrink: 0,
-        }}
-        className={
-          isCompact
-            ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
-            : styles.mapControlsField
-        }>
+        };
+
+  const handleResetFilters = () => {
+    resetFilters();
+    setLocationQuery('');
+    onResetMapCenter?.();
+    onFilterChange?.();
+  };
+
+  const filterFields = (
+    <>
+      <div style={fieldWrapStyle} className={fieldWrapClass}>
         <UsersSelect
           multiple
           excludeDisabledUsers={false}
@@ -156,17 +146,7 @@ export const MapControls = ({
           label={t('map.searchByUser')}
         />
       </div>
-      <div
-        style={{
-          width: fieldWidth,
-          minWidth: minFieldWidth,
-          flexShrink: 0,
-        }}
-        className={
-          isCompact
-            ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
-            : styles.mapControlsField
-        }>
+      <div style={fieldWrapStyle} className={fieldWrapClass}>
         <CarsSelect
           multiple
           name="carId"
@@ -181,17 +161,7 @@ export const MapControls = ({
           label={t('map.searchByVehicle')}
         />
       </div>
-      <div
-        style={{
-          width: fieldWidth,
-          minWidth: minFieldWidth,
-          flexShrink: 0,
-        }}
-        className={
-          isCompact
-            ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
-            : styles.mapControlsField
-        }>
+      <div style={fieldWrapStyle} className={fieldWrapClass}>
         <AlcolockSelect
           multiple
           label={t('map.searchByAlcolock')}
@@ -206,17 +176,7 @@ export const MapControls = ({
         />
       </div>
       {onLocationSearch && (
-        <div
-          style={{
-            width: fieldWidth,
-            minWidth: minFieldWidth,
-            flexShrink: 0,
-          }}
-          className={
-            isCompact
-              ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
-              : styles.mapControlsField
-          }>
+        <div style={fieldWrapStyle} className={fieldWrapClass}>
           <TextField
             variant="outlined"
             size="small"
@@ -266,26 +226,49 @@ export const MapControls = ({
           />
         </div>
       )}
-      <ResetFilters
-        reset={() => {
-          resetFilters();
-          setLocationQuery('');
-          onResetMapCenter?.();
-          onFilterChange?.();
-        }}
-      />
+    </>
+  );
+
+  const filtersContent = isToolbar ? (
+    <div className={styles.mapControlsFiltersRow}>
+      <div className={styles.mapControlsFields}>{filterFields}</div>
+      <div className={styles.mapControlsReset}>
+        <ResetFilters reset={handleResetFilters} />
+        <ThemeToggleControl />
+      </div>
+    </div>
+  ) : (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: isCompact ? 'column' : 'row',
+        gap: '8px',
+        flexWrap: isCompact ? 'nowrap' : 'wrap',
+      }}>
+      {filterFields}
+      <ResetFilters reset={handleResetFilters} />
     </div>
   );
 
   if (isCompact) {
+    const sheetClass =
+      mode === 'dark'
+        ? `${styles.mapControlsMobileSheet} ${styles.mapControlsMobileSheetDark}`
+        : `${styles.mapControlsMobileSheet} ${styles.mapControlsMobileSheetLight}`;
+    const headerClass =
+      mode === 'dark'
+        ? `${styles.mapControlsMobileHeader} ${styles.mapControlsMobileHeaderDark}`
+        : `${styles.mapControlsMobileHeader} ${styles.mapControlsMobileHeaderLight}`;
+    const bodyClass =
+      mode === 'dark' ? styles.mapControlsMobileBodyDark : styles.mapControlsMobileBodyLight;
+    const headingClass =
+      mode === 'dark'
+        ? styles.mapControlsMobileFiltersHeadingDark
+        : styles.mapControlsMobileFiltersHeadingLight;
+    const borderTop = mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid #eee';
+
     return (
-      <div
-        style={{
-          background: 'rgba(255, 255, 255, 0.9)',
-          border: '1px solid #ccc',
-          borderRadius: '4px',
-          overflow: 'hidden',
-        }}>
+      <div className={sheetClass}>
         <div
           onClick={handleToggleExpanded}
           role="button"
@@ -296,14 +279,7 @@ export const MapControls = ({
               handleToggleExpanded();
             }
           }}
-          style={{
-            padding: '8px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            cursor: 'pointer',
-            backgroundColor: 'white',
-          }}>
+          className={headerClass}>
           <span style={{ fontSize: '14px', fontWeight: 500 }}>{t('nav.parameters')}</span>
           <span
             style={{
@@ -320,9 +296,10 @@ export const MapControls = ({
         </div>
         {expanded && (
           <div
+            className={bodyClass}
             style={{
               padding: '8px 12px 12px',
-              borderTop: '1px solid #eee',
+              borderTop,
               maxHeight: '50vh',
               overflowY: 'auto',
             }}>
@@ -363,16 +340,19 @@ export const MapControls = ({
             )}
             {mobileToggles && (
               <div
+                className={headingClass}
                 style={{
                   fontSize: '13px',
                   fontWeight: 600,
-                  color: '#333',
                   marginBottom: '8px',
                 }}>
                 {t('common.filters')}
               </div>
             )}
-            {filtersContent}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {filterFields}
+              <ResetFilters reset={handleResetFilters} />
+            </div>
           </div>
         )}
       </div>
@@ -380,30 +360,9 @@ export const MapControls = ({
   }
 
   return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 10,
-        left: 50,
-        width: 'fit-content',
-        maxWidth: 'calc(100vw - 100px)',
-        zIndex: 1000,
-        background: 'rgba(255, 255, 255, 0.9)',
-        padding: '12px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-      }}>
+    <div className={styles.mapControlsToolbar}>
       {desktopToggles && (
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-            flexWrap: 'wrap',
-          }}>
+        <div className={styles.mapControlsTogglesRow}>
           <Switch
             checked={desktopToggles.freezeMarkers}
             onChange={desktopToggles.onFreezeToggle}
@@ -424,7 +383,8 @@ export const MapControls = ({
               <IconButton
                 size="small"
                 onClick={onResetMapCenter}
-                aria-label={t('map.resetMapCenter')}>
+                aria-label={t('map.resetMapCenter')}
+                color="inherit">
                 <GpsFixedIcon fontSize="small" />
               </IconButton>
             </Tooltip>

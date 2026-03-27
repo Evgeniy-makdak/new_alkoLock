@@ -41,6 +41,8 @@ import {
   addRasterBasemapForTheme,
   addVectorBasemapToLeafletMap,
   isMapReadyForLayers,
+  isVectorBasemapEnabled,
+  rasterBasemapSpec,
   replaceVectorBasemapTheme,
   vectorStyleUrlForTheme,
 } from './mapBasemap';
@@ -210,6 +212,16 @@ export const MapPage = () => {
   const scheduleBasemapWork = useCallback((fn: () => Promise<void>) => {
     basemapSwapChainRef.current = basemapSwapChainRef.current.then(fn, fn).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+    el.setAttribute(
+      'data-basemap-tiles',
+      isVectorBasemapEnabled() ? 'vector' : rasterBasemapSpec(colorMode, i18n.language).tileVisual,
+    );
+  }, [colorMode, i18n.language]);
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- оставлено для будущего включения DebugPanel
   const [debugInfo, setDebugInfo] = useState<string>('Инициализация...');
   const location = useLocation();
@@ -930,6 +942,10 @@ export const MapPage = () => {
       maxZoom: 18,
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
 
+    requestAnimationFrame(() => {
+      mapRef.current?.invalidateSize();
+    });
+
     const map = mapRef.current;
     basemapRef.current = null;
 
@@ -953,7 +969,7 @@ export const MapPage = () => {
       } else if (isMapReadyForLayers(map)) {
         basemapRef.current = {
           kind: 'raster',
-          layer: addRasterBasemapForTheme(map, colorModeRef.current),
+          layer: addRasterBasemapForTheme(map, colorModeRef.current, i18nLangRef.current),
         };
       }
     })();
@@ -1018,6 +1034,7 @@ export const MapPage = () => {
       if (bs.kind === 'vector') {
         const url = vectorStyleUrlForTheme(colorMode);
         if (bs.vectorStyleUrl === url) {
+          bs.setMapLanguage(i18n.language);
           invalidate();
           return;
         }
@@ -1049,7 +1066,7 @@ export const MapPage = () => {
         } else {
           basemapRef.current = {
             kind: 'raster',
-            layer: addRasterBasemapForTheme(m, colorMode),
+            layer: addRasterBasemapForTheme(m, colorMode, i18n.language),
           };
         }
         invalidate();
@@ -1064,18 +1081,11 @@ export const MapPage = () => {
       if (!isMapReadyForLayers(m)) return;
       basemapRef.current = {
         kind: 'raster',
-        layer: addRasterBasemapForTheme(m, colorMode),
+        layer: addRasterBasemapForTheme(m, colorMode, i18n.language),
       };
       invalidate();
     });
-  }, [colorMode, scheduleBasemapWork]);
-
-  useEffect(() => {
-    const bs = basemapRef.current;
-    if (bs?.kind === 'vector') {
-      bs.setMapLanguage(i18nLangRef.current);
-    }
-  }, [i18n.language]);
+  }, [colorMode, i18n.language, scheduleBasemapWork]);
 
   // const handleResetFilters = () => {
   //   setStartDate(null);
@@ -1130,6 +1140,10 @@ export const MapPage = () => {
     },
   ];
 
+  const asidePanelBackground = colorMode === 'dark' ? '#121212' : '#ffffff';
+  const asidePanelShadow =
+    colorMode === 'dark' ? '0 0 16px rgba(0,0,0,0.45)' : '0 0 10px rgba(0,0,0,0.1)';
+
   const mobileAsideShellStyle: CSSProperties = {
     position: 'absolute',
     left: 0,
@@ -1140,7 +1154,7 @@ export const MapPage = () => {
     maxWidth: '100%',
     boxSizing: 'border-box',
     overflow: 'hidden',
-    backgroundColor: 'white',
+    backgroundColor: asidePanelBackground,
   };
 
   const desktopPanelStackShellStyle: React.CSSProperties = {
@@ -1149,7 +1163,7 @@ export const MapPage = () => {
     top: 0,
     bottom: 0,
     width: '680px',
-    boxShadow: '0 0 10px rgba(0,0,0,0.1)',
+    boxShadow: asidePanelShadow,
   };
 
   const detailsTabs = [
@@ -1177,7 +1191,6 @@ export const MapPage = () => {
   return (
     <MapProvider>
       <div
-        ref={mapContainerRef}
         style={{
           position: 'absolute',
           top: 0,
@@ -1185,8 +1198,35 @@ export const MapPage = () => {
           right: 0,
           bottom: 0,
           zIndex: 1,
-        }}
-      />
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: 0,
+        }}>
+        {!isMobile ? (
+          <MapControls
+            variant="toolbar"
+            onResetMapCenter={handleResetMapCenter}
+            onLocationSearch={handleLocationSearch}
+            desktopToggles={{
+              freezeMarkers,
+              showOnlyWithAlcolock,
+              numberedMarkersMode,
+              onFreezeToggle: handleFreezeToggle,
+              onShowOnlyWithAlcolock: setShowOnlyWithAlcolock,
+              onNumberedMarkersMode: setNumberedMarkersMode,
+            }}
+          />
+        ) : null}
+        <div
+          ref={mapContainerRef}
+          style={{
+            flex: 1,
+            minHeight: 0,
+            position: 'relative',
+            width: '100%',
+          }}
+        />
+      </div>
 
       {isMobile ? (
         <div
@@ -1214,26 +1254,13 @@ export const MapPage = () => {
             }}
           />
         </div>
-      ) : (
-        <MapControls
-          onResetMapCenter={handleResetMapCenter}
-          onLocationSearch={handleLocationSearch}
-          desktopToggles={{
-            freezeMarkers,
-            showOnlyWithAlcolock,
-            numberedMarkersMode,
-            onFreezeToggle: handleFreezeToggle,
-            onShowOnlyWithAlcolock: setShowOnlyWithAlcolock,
-            onNumberedMarkersMode: setNumberedMarkersMode,
-          }}
-        />
-      )}
+      ) : null}
 
       {numberedMarkersMode && latestEvents.length > 0 && !(isMobile && mobileParamsExpanded) && (
         <div
           style={{
             position: 'absolute',
-            top: isMobile ? '140px' : '120px',
+            top: isMobile ? '140px' : '200px',
             left: '10px',
             width: '200px',
             maxHeight: isMobile ? '28vh' : '1024px',
@@ -1370,7 +1397,8 @@ export const MapPage = () => {
                   position: 'absolute',
                   right: 0,
                   zIndex: 1001,
-                  backgroundColor: 'white',
+                  backgroundColor: asidePanelBackground,
+                  boxShadow: asidePanelShadow,
                 }),
           }}>
           <Aside
@@ -1390,7 +1418,7 @@ export const MapPage = () => {
               : {
                   ...desktopPanelStackShellStyle,
                   zIndex: 1002 + index,
-                  backgroundColor: 'white',
+                  backgroundColor: asidePanelBackground,
                 }),
           }}>
           <Aside

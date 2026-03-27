@@ -9,11 +9,28 @@ export const OPENFREEMAP_LIBERTY_STYLE = 'https://tiles.openfreemap.org/styles/l
 export const CARTO_DARK_MATTER_VECTOR_STYLE =
   'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
-/** Растровый fallback (Carto), если вектор не поднялся — те же пары светлая/тёмная. */
+/**
+ * Светлый растр по умолчанию: Carto Voyager (контрастный «международный» стиль; подписи часто на латинице).
+ * Для локалей ru/kk/ky/uz/be без Jawg на светлой теме используем публичный растр OSM — в стране обычно местные name (РФ — кириллица).
+ * Тёмный: при ru/kk/ky/uz/be — те же OSM-тайлы с приглушением в mapTheme; иначе Carto dark_all.
+ * Единый язык подписей по всему миру — Jawg (REACT_APP_JAWG_ACCESS_TOKEN).
+ */
 export const RASTER_TILE_TEMPLATE_LIGHT =
-  'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
 export const RASTER_TILE_TEMPLATE_DARK =
   'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+
+/** Публичные тайлы OSM (соблюдайте https://operations.osmfoundation.org/policies/tiles/). */
+export const OSM_RASTER_TEMPLATE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+const JAWG_ATTRIBUTION =
+  '<a href="https://jawg.io?utm_medium=map&utm_source=attribution" target="_blank" rel="noreferrer">&copy; <b>Jawg</b>Maps</a> | &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a>';
+
+const CARTO_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+const OSM_RASTER_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 /**
  * Вектор (MapLibre + maplibre-gl-leaflet) по умолчанию выключен — при pan/zoom часты падения и циклы ошибок.
@@ -43,23 +60,134 @@ type MaplibreLeafletLayer = L.Layer & {
   getMaplibreMap?: () => MaplibreMapLike;
 };
 
-/** Коды языка для MapLibre `setLanguage` (OpenMapTiles name:* в данных). */
+/** Базовый код языка интерфейса (kk-KZ → kk). */
+export function baseLangFromI18n(i18nLang: string): string {
+  return (i18nLang || 'en').split('-')[0].toLowerCase();
+}
+
+/** Коды языка для MapLibre `setLanguage` и растра Jawg (совпадает с локалями приложения). */
 export function mapLangForMapLibre(i18nLang: string): string {
-  const base = (i18nLang || 'ru').split('-')[0].toLowerCase();
+  const base = baseLangFromI18n(i18nLang);
   const supported = ['ru', 'en', 'kk', 'ky', 'be', 'uz'];
   if (supported.includes(base)) return base;
   return 'en';
 }
 
+export type RasterBasemapTileVisual = 'osm' | 'carto-voyager' | 'carto-dark' | 'jawg';
+
+export type RasterBasemapSpec = {
+  url: string;
+  attribution: string;
+  layerExtras: Pick<L.TileLayerOptions, 'maxNativeZoom' | 'detectRetina' | 'subdomains'>;
+  /** Атрибут data-basemap-tiles на контейнере Leaflet — стили в mapTheme.scss */
+  tileVisual: RasterBasemapTileVisual;
+};
+
+/** Без Jawg: OSM даёт локальные подписи (кириллица в РФ и т.д.), не латиница Carto Voyager/dark_all. */
+const OSM_LOCAL_LABEL_LANGS = ['ru', 'kk', 'ky', 'uz', 'be'] as const;
+
+function preferOsmLocalLabelsRaster(lang: string): boolean {
+  return (OSM_LOCAL_LABEL_LANGS as readonly string[]).includes(lang);
+}
+
+function isOsmTileUrl(url: string): boolean {
+  return url.includes('openstreetmap.org') && !url.includes('basemaps.cartocdn');
+}
+
+/**
+ * Подложка по теме и языку интерфейса.
+ * При `REACT_APP_JAWG_ACCESS_TOKEN` — Jawg (подписи на выбранном языке по всему миру).
+ * Иначе светлая: для ru/kk/ky/uz/be — OSM; для en — Carto Voyager.
+ */
+export function rasterBasemapSpec(mode: ColorMode, i18nLang: string): RasterBasemapSpec {
+  const lang = mapLangForMapLibre(i18nLang);
+  const token = process.env.REACT_APP_JAWG_ACCESS_TOKEN?.trim();
+
+  if (token) {
+    const style = mode === 'dark' ? 'jawg-dark' : 'jawg-streets';
+    const url = `https://tile.jawg.io/${style}/{z}/{x}/{y}.png?lang=${encodeURIComponent(lang)}&access-token=${encodeURIComponent(token)}`;
+    return {
+      url,
+      attribution: JAWG_ATTRIBUTION,
+      layerExtras: {
+        maxNativeZoom: 22,
+        detectRetina: false,
+        subdomains: 'abcd',
+      },
+      tileVisual: 'jawg',
+    };
+  }
+
+  const lightEnv = process.env.REACT_APP_MAP_RASTER_LIGHT_URL?.trim();
+  const darkEnv = process.env.REACT_APP_MAP_RASTER_DARK_URL?.trim();
+
+  if (mode === 'light') {
+    let url: string;
+    if (lightEnv) {
+      url = lightEnv;
+    } else if (preferOsmLocalLabelsRaster(lang)) {
+      url = OSM_RASTER_TEMPLATE;
+    } else {
+      url = RASTER_TILE_TEMPLATE_LIGHT;
+    }
+    const osm = isOsmTileUrl(url);
+    return {
+      url,
+      attribution: osm ? OSM_RASTER_ATTRIBUTION : CARTO_ATTRIBUTION,
+      layerExtras: {
+        maxNativeZoom: 19,
+        detectRetina: !osm,
+        subdomains: osm ? '' : 'abcd',
+      },
+      tileVisual: osm ? 'osm' : 'carto-voyager',
+    };
+  }
+
+  let url: string;
+  if (darkEnv) {
+    url = darkEnv;
+  } else if (preferOsmLocalLabelsRaster(lang)) {
+    url = OSM_RASTER_TEMPLATE;
+  } else {
+    url = RASTER_TILE_TEMPLATE_DARK;
+  }
+  const osmDark = isOsmTileUrl(url);
+  return {
+    url,
+    attribution: osmDark ? OSM_RASTER_ATTRIBUTION : CARTO_ATTRIBUTION,
+    layerExtras: {
+      maxNativeZoom: 19,
+      detectRetina: !osmDark,
+      subdomains: osmDark ? '' : 'abcd',
+    },
+    tileVisual: osmDark ? 'osm' : 'carto-dark',
+  };
+}
+
+/** @deprecated используйте rasterBasemapSpec / addRasterBasemapForTheme(map, mode, lang) */
 export function basemapRasterOptions() {
   return {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; CARTO',
+    attribution: CARTO_ATTRIBUTION,
     noWrap: true,
     bounds: L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180)),
     maxNativeZoom: 19,
     subdomains: 'abcd',
     detectRetina: true,
   } as const;
+}
+
+function basemapRasterLayerOptions(
+  attribution: string,
+  extras: RasterBasemapSpec['layerExtras'],
+): L.TileLayerOptions {
+  return {
+    attribution,
+    noWrap: true,
+    bounds: L.latLngBounds(L.latLng(-85, -180), L.latLng(85, 180)),
+    maxNativeZoom: extras.maxNativeZoom,
+    subdomains: extras.subdomains,
+    detectRetina: extras.detectRetina,
+  };
 }
 
 /** Карта после remove() или в переходном состоянии — не добавлять слои. */
@@ -71,12 +199,15 @@ export function isMapReadyForLayers(map: L.Map): boolean {
   }
 }
 
-export function addRasterBasemapForTheme(map: L.Map, mode: ColorMode): L.TileLayer {
-  const url =
-    mode === 'dark'
-      ? process.env.REACT_APP_MAP_RASTER_DARK_URL?.trim() || RASTER_TILE_TEMPLATE_DARK
-      : process.env.REACT_APP_MAP_RASTER_LIGHT_URL?.trim() || RASTER_TILE_TEMPLATE_LIGHT;
-  return L.tileLayer(url, { ...basemapRasterOptions() }).addTo(map);
+export function addRasterBasemapForTheme(
+  map: L.Map,
+  mode: ColorMode,
+  i18nLang: string,
+): L.TileLayer {
+  const spec = rasterBasemapSpec(mode, i18nLang);
+  return L.tileLayer(spec.url, basemapRasterLayerOptions(spec.attribution, spec.layerExtras)).addTo(
+    map,
+  );
 }
 
 /** @deprecated используйте addRasterBasemapForTheme; OSM оставлен для совместимости вызовов */
