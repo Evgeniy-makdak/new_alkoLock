@@ -6,6 +6,7 @@ import { IconButton } from '@mui/material';
 
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
+import { useSocket } from '../contexts/SocketContext';
 import styles from './ChatPanel.module.scss';
 import { DialogActions } from './DialogActions';
 import MessageFeed from './MessageFeed';
@@ -26,6 +27,7 @@ function ChatPanel({
   onScrollToBottomDone,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const { dialogsUnreadCounts } = useSocket();
   const {
     closeSession,
     toggleSessionMinimize,
@@ -120,12 +122,28 @@ function ChatPanel({
       }
 
       if (session.messages) {
-        const currentMessageCount = session.messages.length;
+        const activeSid =
+          session.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+            ? String(session.selectedDialog.id)
+            : session.assignedDialogId &&
+                String(session.assignedDialogId) !== '0' &&
+                String(session.assignedDialogId) !== 'assigned'
+              ? String(session.assignedDialogId)
+              : null;
+        const msgsForUnread =
+          activeSid != null
+            ? session.messages.filter(
+                (msg: any) => String(msg.dialogId ?? msg.dialog?.id ?? '') === activeSid,
+              )
+            : [];
+
+        const currentMessageCount = msgsForUnread.length;
         if (currentMessageCount !== lastMessageCountRef.current) {
           lastMessageCountRef.current = currentMessageCount;
         }
 
-        const count = session.messages.reduce((acc: number, msg: any) => {
+        const strictCount = msgsForUnread.reduce((acc: number, msg: any) => {
+          if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
           if (
             msg.messageStatus === 'TO_OPERATOR' &&
             (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
@@ -135,6 +153,14 @@ function ChatPanel({
           }
           return acc;
         }, 0);
+        const relaxedCount = msgsForUnread.reduce((acc: number, msg: any) => {
+          if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
+          if (msg.messageStatus === 'TO_OPERATOR' && !msg.is_read) {
+            return acc + 1;
+          }
+          return acc;
+        }, 0);
+        const count = Math.max(strictCount, relaxedCount);
 
         stableSetUnreadCount(count);
         // Синхронизация в сессию сразу при вычислении для корректного превью при сворачивании
@@ -601,7 +627,26 @@ function ChatPanel({
     isDialogEnded,
     isSendingMessage,
     lastSendError,
+    assignedDialogId,
   } = session;
+
+  const activeDialogNumericId =
+    selectedDialog?.id != null && String(selectedDialog.id) !== '0'
+      ? Number(selectedDialog.id)
+      : assignedDialogId != null &&
+          String(assignedDialogId) !== '0' &&
+          String(assignedDialogId) !== 'assigned'
+        ? Number(assignedDialogId)
+        : NaN;
+  const socketEntry = Number.isFinite(activeDialogNumericId)
+    ? dialogsUnreadCounts.get(activeDialogNumericId)
+    : undefined;
+  /**
+   * Локальная лента может отставать от WS; обычно max(local, socket).
+   * Явный 0 в карте после прочтения — не держим «1» из устаревшего msg.is_read.
+   */
+  const displayUnreadCount =
+    socketEntry === 0 ? 0 : Math.max(unreadCount, session.unreadCount ?? 0, socketEntry ?? 0);
 
   if (isMinimized) {
     return (
@@ -610,9 +655,9 @@ function ChatPanel({
           <h3>
             {selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}
           </h3>
-          {unreadCount > 0 && (
+          {displayUnreadCount > 0 && (
             <span className={styles.unreadBadgeMinimized}>
-              {unreadCount > 99 ? '99+' : unreadCount}
+              {displayUnreadCount > 99 ? '99+' : displayUnreadCount}
             </span>
           )}
           <IconButton
@@ -634,8 +679,10 @@ function ChatPanel({
     <div className={styles.panel} data-session-id={sessionId}>
       <div className={styles.chatHeader}>
         <h3>{selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}</h3>
-        {unreadCount > 0 && (
-          <span className={styles.unreadBadge}>{unreadCount > 99 ? '99+' : unreadCount}</span>
+        {displayUnreadCount > 0 && (
+          <span className={styles.unreadBadge}>
+            {displayUnreadCount > 99 ? '99+' : displayUnreadCount}
+          </span>
         )}
         <div className={styles.headerActions}>
           <IconButton size="small" onClick={handleMinimize} title={t('chat.minimizeDialog')}>
@@ -691,7 +738,7 @@ function ChatPanel({
           userId={selectedUsers[0]}
           selectedUserName={selectedUserName}
           onMarkMessagesAsRead={handleMarkMessagesAsRead}
-          unreadCount={unreadCount}
+          unreadCount={displayUnreadCount}
           scrollToBottomOnExpand={scrollToBottomOnExpand}
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}

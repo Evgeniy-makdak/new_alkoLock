@@ -185,11 +185,15 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
 
       const currentDialogId = session.selectedDialog?.id || session.assignedDialogId;
       const messageDialogId = messageData.dialog?.id || messageData.dialogId;
+      const inUnreadPreview = session.unreadDialogs?.some(
+        (d: any) => String(d.id) === String(messageDialogId),
+      );
 
       if (
         messageDialogId &&
         currentDialogId &&
-        messageDialogId.toString() !== currentDialogId.toString()
+        messageDialogId.toString() !== currentDialogId.toString() &&
+        !inUnreadPreview
       ) {
         return;
       }

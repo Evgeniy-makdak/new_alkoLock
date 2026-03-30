@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BsArrowDown, BsCheck2, BsCheck2All, BsPencil } from 'react-icons/bs';
 import { FaReply, FaTimes, FaTrash } from 'react-icons/fa';
 
@@ -96,6 +96,21 @@ function MessageFeed({
 
   const session = getSession(sessionId);
   const pagination = session?.pagination;
+
+  const feedDialogId =
+    session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+      ? String(session.selectedDialog.id)
+      : session?.assignedDialogId &&
+          String(session.assignedDialogId) !== '0' &&
+          String(session.assignedDialogId) !== 'assigned'
+        ? String(session.assignedDialogId)
+        : null;
+
+  /** Не показывать в основной ленте сообщения «чужих» диалогов (превью в той же сессии). */
+  const messagesInActiveDialog = useMemo(() => {
+    if (!feedDialogId) return [];
+    return messages.filter((msg) => String(msg.dialogId ?? msg.dialog?.id ?? '') === feedDialogId);
+  }, [messages, feedDialogId]);
 
   const calculateUnreadMessages = useCallback(() => {
     let count = 0;
@@ -904,7 +919,7 @@ function MessageFeed({
           </div>
         )}
 
-        {messages.map((msg, index) => {
+        {messagesInActiveDialog.map((msg, index) => {
           const originalMessage = msg.replyTo
             ? findOriginalMessage(msg.replyTo)
             : msg.replyToMessage;
@@ -921,8 +936,8 @@ function MessageFeed({
             (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
             !msg.is_read &&
             (!lastSeenMessageId ||
-              messages.findIndex((m) => m.id === msg.id) >
-                messages.findIndex((m) => m.id === lastSeenMessageId));
+              messagesInActiveDialog.findIndex((m) => m.id === msg.id) >
+                messagesInActiveDialog.findIndex((m) => m.id === lastSeenMessageId));
 
           const isFirstUnread =
             msg.messageStatus === 'TO_OPERATOR' &&

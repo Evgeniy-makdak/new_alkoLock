@@ -23,9 +23,13 @@ interface SocketContextType {
   dialogsUnreadCounts: Map<number, number>;
   setUnreadCount: (count: number) => void;
   updateDialogUnreadCount: (dialogId: number, count: number) => void;
-  incrementDialogUnreadCount: (dialogId: number, amount?: number) => void;
+  /** Слияние снимка из REST: не затираем локальный счётчик нулём, пока агрегат по WS больше нуля (устаревший API). */
+  mergeDialogUnreadFromApi: (dialogId: number, apiCount: number) => void;
+  incrementDialogUnreadCount: (dialogId: number, amount?: number, dedupeKey?: string) => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
+  /** Снимает и очищает очередь входящих сообщений чата (OPERATOR / user queue), чтобы не терять их при перезаписи lastMessage. */
+  flushIncomingChatMessages: () => any[];
 }
 
 const SocketContext = createContext<SocketContextType | null>(null);
@@ -46,8 +50,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const processedMessagesRef = useRef<Set<string>>(new Set());
   const useDetailedCountsRef = useRef<boolean>(false);
   const hasDetailedDataRef = useRef<boolean>(false);
+  const unreadAggregateRef = useRef<number>(0);
+  const incomingChatMessagesQueueRef = useRef<any[]>([]);
+  /** Предотвращает повторный +1 при двойном вызове handleIncomingMessage на одно сообщение. */
+  const incrementDedupeByMessageRef = useRef<Set<string>>(new Set());
 
   const [apiConfig, setApiConfig] = useState<{ apiUrl: string; wsUrl: string } | null>(null);
+
+  useEffect(() => {
+    unreadAggregateRef.current = unreadCount;
+  }, [unreadCount]);
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -86,20 +98,30 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     setDialogsUnreadCounts(new Map());
     useDetailedCountsRef.current = false;
     hasDetailedDataRef.current = false;
+    incrementDedupeByMessageRef.current.clear();
+  }, []);
+
+  const flushIncomingChatMessages = useCallback((): any[] => {
+    const q = incomingChatMessagesQueueRef.current;
+    incomingChatMessagesQueueRef.current = [];
+    return q;
   }, []);
 
   const calculateTotalUnread = useCallback((): number => {
+    let mapSum = 0;
+    dialogsUnreadCounts.forEach((count, dialogId) => {
+      if (dialogId > 0 && count > 0) {
+        mapSum += count;
+      }
+    });
+
     if (!useDetailedCountsRef.current || !hasDetailedDataRef.current) {
       return unreadCount;
     }
 
-    let total = 0;
-    dialogsUnreadCounts.forEach((count, dialogId) => {
-      if (dialogId > 0 && count > 0) {
-        total += count;
-      }
-    });
-    return total;
+    // Агрегат /user/queue/unread и per-dialog карта иногда расходятся по таймингу; не показывать 0,
+    // пока сумма по карте или общий кадр говорит о непрочитанном.
+    return Math.max(unreadCount, mapSum);
   }, [dialogsUnreadCounts, unreadCount]);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
@@ -119,19 +141,96 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     });
   }, []);
 
-  const incrementDialogUnreadCount = useCallback((dialogId: number, amount = 1) => {
-    useDetailedCountsRef.current = true;
-    hasDetailedDataRef.current = true;
+  const incrementDialogUnreadCount = useCallback(
+    (dialogId: number, amount = 1, dedupeKey?: string) => {
+      if (dedupeKey) {
+        if (incrementDedupeByMessageRef.current.has(dedupeKey)) {
+          chatUnreadTrace('socket.incrementDialogUnread (skip duplicate)', { dialogId, dedupeKey });
+          return;
+        }
+        incrementDedupeByMessageRef.current.add(dedupeKey);
+        setTimeout(() => incrementDedupeByMessageRef.current.delete(dedupeKey), 120_000);
+      }
+      // Кадры /queue/unread/{branch} задают абсолют; +1 здесь при том же сообщении даёт «1→2» (OPEN/ACTIVE).
+      if (hasDetailedDataRef.current) {
+        chatUnreadTrace('socket.incrementDialogUnread (skip +1, WS per-dialog authoritative)', {
+          dialogId,
+          dedupeKey,
+        });
+        return;
+      }
+      useDetailedCountsRef.current = true;
+      hasDetailedDataRef.current = true;
+      setDialogsUnreadCounts((prev) => {
+        const newMap = new Map(prev);
+        const current = newMap.get(dialogId) || 0;
+        const newCount = current + amount;
+        newMap.set(dialogId, newCount);
+        chatUnreadTrace('socket.incrementDialogUnread', {
+          dialogId,
+          amount,
+          prev: current,
+          next: newCount,
+          mapAfter: unreadMapToRecord(newMap),
+        });
+        return newMap;
+      });
+    },
+    [],
+  );
+
+  const mergeDialogUnreadFromApi = useCallback((dialogId: number, apiCount: number) => {
     setDialogsUnreadCounts((prev) => {
+      const prevCount = prev.get(dialogId) ?? 0;
+      // REST-список «непрочитанных» часто отстаёт от WS; в detailed-режиме не затирать уже известный >0 нулём с API
+      if (apiCount === 0 && prevCount > 0 && hasDetailedDataRef.current) {
+        chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip stale API zero, hasDetailedData)', {
+          dialogId,
+          apiCount,
+          preserved: prevCount,
+          aggregateUnread: unreadAggregateRef.current,
+          mapAfter: unreadMapToRecord(prev),
+        });
+        return prev;
+      }
+      if (apiCount === 0 && prevCount > 0 && unreadAggregateRef.current > 0) {
+        const cap = unreadAggregateRef.current;
+        const positiveIds: number[] = [];
+        prev.forEach((c, id) => {
+          if (id > 0 && c > 0) positiveIds.push(id);
+        });
+        const onlyThisDialog = positiveIds.length === 1 && positiveIds[0] === dialogId;
+        const nextVal = onlyThisDialog ? Math.min(prevCount, cap) : prevCount;
+        if (nextVal === prevCount) {
+          chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip stale API zero)', {
+            dialogId,
+            apiCount,
+            preserved: prevCount,
+            aggregateUnread: cap,
+            mapAfter: unreadMapToRecord(prev),
+          });
+          return prev;
+        }
+        const cappedMap = new Map(prev);
+        cappedMap.set(dialogId, nextVal);
+        chatUnreadTrace('socket.mergeDialogUnreadFromApi (cap to aggregate, stale API zero)', {
+          dialogId,
+          prevCount,
+          nextVal,
+          aggregateUnread: cap,
+          mapAfter: unreadMapToRecord(cappedMap),
+        });
+        return cappedMap;
+      }
       const newMap = new Map(prev);
-      const current = newMap.get(dialogId) || 0;
-      const newCount = current + amount;
-      newMap.set(dialogId, newCount);
-      chatUnreadTrace('socket.incrementDialogUnread', {
+      if (useDetailedCountsRef.current || dialogId > 0) {
+        newMap.set(dialogId, apiCount);
+      }
+      chatUnreadTrace('socket.mergeDialogUnreadFromApi (applied)', {
         dialogId,
-        amount,
-        prev: current,
-        next: newCount,
+        apiCount,
+        prevCount,
+        aggregateUnread: unreadAggregateRef.current,
         mapAfter: unreadMapToRecord(newMap),
       });
       return newMap;
@@ -144,25 +243,30 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       useDetailed: useDetailedCountsRef.current,
       hasDetailedData: hasDetailedDataRef.current,
     });
+    unreadAggregateRef.current = count;
     setUnreadCount(count);
-  }, []);
-
-  useEffect(() => {
-    if (!useDetailedCountsRef.current || !hasDetailedDataRef.current) return;
-    let total = 0;
-    dialogsUnreadCounts.forEach((count, dialogId) => {
-      if (dialogId > 0 && count > 0) total += count;
-    });
-    setUnreadCount((prev) => {
-      if (prev === total) return prev;
-      chatUnreadTrace('socket.deriveTotalUnreadFromPerDialogMap', {
-        total,
-        prev,
-        perDialog: unreadMapToRecord(dialogsUnreadCounts),
+    setDialogsUnreadCounts((prev) => {
+      const positive: { id: number; c: number }[] = [];
+      prev.forEach((c, id) => {
+        if (id > 0 && c > 0) positive.push({ id, c });
       });
-      return total;
+      if (positive.length !== 1) return prev;
+      const { id: onlyId, c: onlyC } = positive[0]!;
+      // Агрегат 0 после STATUS_UPDATE может опережать снимок по филиалу; не обнулять карту
+      // только по нему — нулевой per-dialog придёт с /queue/unread/{branch} или updateDialogUnread.
+      if (count <= 0) return prev;
+      if (onlyC <= count) return prev;
+      const nextMap = new Map(prev);
+      nextMap.set(onlyId, count);
+      chatUnreadTrace('socket.reconcileSingleDialogMapToUserAggregate', {
+        dialogId: onlyId,
+        mapWas: onlyC,
+        aggregate: count,
+        mapAfter: unreadMapToRecord(nextMap),
+      });
+      return nextMap;
     });
-  }, [dialogsUnreadCounts]);
+  }, []);
 
   const sendStompFrame = (command: string, headers: any = {}, body: string = '') => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
@@ -205,6 +309,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     isConnectingRef.current = false;
     subscriptionsRef.current.clear();
     processedMessagesRef.current.clear();
+    incomingChatMessagesQueueRef.current = [];
+    incrementDedupeByMessageRef.current.clear();
+    unreadAggregateRef.current = 0;
     setUnreadCount(0);
     resetDialogCounts();
   };
@@ -280,9 +387,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const connectWebSocket = (branchId: string) => {
     if (isConnectingRef.current || !apiConfig) return;
 
+    const branchIdNorm = String(branchId).trim();
+
     disconnectWebSocket();
     setConnectionStatus('connecting');
-    setCurrentBranchId(branchId);
+    setCurrentBranchId(branchIdNorm);
     isConnectingRef.current = true;
 
     const { apiUrl, wsUrl: configWsUrl } = apiConfig;
@@ -359,7 +468,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             isConnectingRef.current = false;
 
             setTimeout(() => {
-              subscribeToTopics(branchId);
+              subscribeToTopics(branchIdNorm);
             }, 100);
             return;
           }
@@ -378,7 +487,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
             try {
               const parsedBody = JSON.parse(cleanedBody);
-              const destination = frame.headers.destination || frame.headers.Destination;
+              const destination = String(
+                frame.headers.destination || frame.headers.Destination || '',
+              ).trim();
 
               if (destination === '/user/queue/errors') {
                 setLastMessage({
@@ -393,20 +504,15 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
               if (destination === '/user/queue/unread') {
                 chatUnreadTrace('socket.frame /user/queue/unread', {
                   countUnMessages: parsedBody?.countUnMessages,
-                  skippedBecauseUsingPerDialogTotals: Boolean(
-                    useDetailedCountsRef.current && hasDetailedDataRef.current,
-                  ),
                   rawKeys:
                     parsedBody && typeof parsedBody === 'object' ? Object.keys(parsedBody) : [],
                 });
+                // Всегда применяем агрегат по пользователю — иначе при hasDetailedData глобальный бейдж
+                // залипает на 0 (раньше пропускали кадр из‑за per-dialog режима).
                 if (parsedBody && typeof parsedBody.countUnMessages === 'number') {
-                  if (!(useDetailedCountsRef.current && hasDetailedDataRef.current)) {
-                    useDetailedCountsRef.current = false;
-                    hasDetailedDataRef.current = false;
-                    updateUnreadCountDirect(parsedBody.countUnMessages);
-                  }
+                  updateUnreadCountDirect(parsedBody.countUnMessages);
                 }
-              } else if (destination === `/queue/unread/${currentBranchId}`) {
+              } else if (destination === `/queue/unread/${branchIdNorm}`) {
                 if (Array.isArray(parsedBody)) {
                   const hasRealDialogs = parsedBody.some(
                     (item: any) =>
@@ -420,7 +526,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                       (d: any) => d.dialogId && typeof d.countUnMessages === 'number',
                     ).length;
                     chatUnreadTrace('socket.frame /queue/unread/{branch} array(per-dialog)', {
-                      branchId: currentBranchId,
+                      branchId: branchIdNorm,
                       dialogRows: dialogCount,
                       snapshot: parsedBody.map((d: any) => ({
                         dialogId: d.dialogId,
@@ -435,7 +541,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   } else {
                     const firstItem = parsedBody[0];
                     chatUnreadTrace('socket.frame /queue/unread/{branch} array(fallback total)', {
-                      branchId: currentBranchId,
+                      branchId: branchIdNorm,
                       length: parsedBody.length,
                       firstCountUnMessages: firstItem?.countUnMessages,
                     });
@@ -448,7 +554,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                 } else if (parsedBody?.dialogId && typeof parsedBody.countUnMessages === 'number') {
                   if (parsedBody.dialogId > 0) {
                     chatUnreadTrace('socket.frame /queue/unread/{branch} single dialog object', {
-                      branchId: currentBranchId,
+                      branchId: branchIdNorm,
                       dialogId: parsedBody.dialogId,
                       countUnMessages: parsedBody.countUnMessages,
                     });
@@ -462,7 +568,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   !parsedBody.dialogId
                 ) {
                   chatUnreadTrace('socket.frame /queue/unread/{branch} aggregate object', {
-                    branchId: currentBranchId,
+                    branchId: branchIdNorm,
                     countUnMessages: parsedBody.countUnMessages,
                     skippedBecausePerDialogMode: Boolean(
                       useDetailedCountsRef.current && hasDetailedDataRef.current,
@@ -493,6 +599,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   hasDetailedDataRef.current = true;
                 }
 
+                incomingChatMessagesQueueRef.current.push(parsedBody);
                 setLastMessage({
                   data: parsedBody,
                   type: destination,
@@ -506,14 +613,15 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
                   rawBody: cleanedBody,
                   destination: destination,
                 });
-              } else if (destination === `/topic/dialog/status/${currentBranchId}`) {
+              } else if (destination === `/topic/dialog/status/${branchIdNorm}`) {
                 setLastMessage({
                   data: parsedBody,
                   type: 'DIALOG_STATUS_UPDATE',
                   rawBody: cleanedBody,
                   destination: destination,
                 });
-              } else if (destination === `/topic/operator/messages/${currentBranchId}`) {
+              } else if (destination === `/topic/operator/messages/${branchIdNorm}`) {
+                incomingChatMessagesQueueRef.current.push(parsedBody);
                 setLastMessage({
                   data: parsedBody,
                   type: 'OPERATOR_MESSAGE',
@@ -574,9 +682,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         isConnectingRef.current = false;
         subscriptionsRef.current.clear();
         processedMessagesRef.current.clear();
+        incomingChatMessagesQueueRef.current = [];
+        incrementDedupeByMessageRef.current.clear();
         setLastMessage({
           type: 'connection_closed',
-          data: { code: event.code, reason: event.reason, branchId },
+          data: { code: event.code, reason: event.reason, branchId: branchIdNorm },
         });
 
         if (event.code !== 1000 && event.reason !== 'Смена филиала') {
@@ -637,9 +747,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         dialogsUnreadCounts,
         setUnreadCount: updateUnreadCountDirect,
         updateDialogUnreadCount,
+        mergeDialogUnreadFromApi,
         incrementDialogUnreadCount,
         calculateTotalUnread,
         resetDialogCounts,
+        flushIncomingChatMessages,
       }}>
       {children}
     </SocketContext.Provider>

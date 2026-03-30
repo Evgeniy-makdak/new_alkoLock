@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -103,10 +103,14 @@ function truncatePreviewLine(text: string, maxLen: number): string {
 function unreadCountForPreviewEntry(
   dialog: UnreadDialog,
   dialogsUnreadCounts: Map<number, number> | undefined,
+  /** Если в превью ровно одна строка «непрочитанных», подтягиваем общий WS-счётчик (карта по диалогу отстаёт). */
+  solePreviewSocketTotalHint: number = 0,
 ): number {
   const fromSocket = (dialogsUnreadCounts || new Map()).get(dialog.id) ?? 0;
   const fromApi = Number(dialog.countUnMessages ?? dialog.countUnreadMess ?? 0);
-  return Math.max(fromSocket, Number.isFinite(fromApi) ? fromApi : 0);
+  const base = Math.max(fromSocket, Number.isFinite(fromApi) ? fromApi : 0);
+  if (solePreviewSocketTotalHint <= 0) return base;
+  return Math.max(base, solePreviewSocketTotalHint);
 }
 
 function minimizedSessionPreviewRaw(
@@ -164,7 +168,8 @@ const useOperatorPermissions = () => {
 const ChatToggleButton = () => {
   const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession } = useChat();
-  const { unreadCount } = useSocket();
+  const { calculateTotalUnread } = useSocket();
+  const iconUnreadTotal = calculateTotalUnread();
 
   const handleToggle = () => {
     if (isChatOpen) {
@@ -178,7 +183,7 @@ const ChatToggleButton = () => {
     }
   };
 
-  const tooltipTitle = t('chat.toggleTooltip', { count: unreadCount });
+  const tooltipTitle = t('chat.toggleTooltip', { count: iconUnreadTotal });
 
   return (
     <Tooltip title={tooltipTitle} placement="left">
@@ -190,7 +195,7 @@ const ChatToggleButton = () => {
           size="large">
           {isChatOpen ? <CloseIcon /> : <ChatIcon />}
         </IconButton>
-        <UnreadMessagesBadge count={unreadCount} />
+        <UnreadMessagesBadge count={iconUnreadTotal} />
       </div>
     </Tooltip>
   );
@@ -243,74 +248,17 @@ const ChatContainer = () => {
   } = useChat();
   const {
     lastMessage,
-    setUnreadCount,
     dialogsUnreadCounts,
     unreadCount: socketUnreadTotal,
+    calculateTotalUnread,
   } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
-  const processedMessagesRef = useRef<Map<string, number>>(new Map());
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
   const hasChatPermissions = useOperatorPermissions();
 
-  const getMessageId = (message: any): string => {
-    if (!message) return 'empty';
-
-    if (message.type && message.data) {
-      if (Array.isArray(message.data)) {
-        const arrayHash = message.data
-          .map((item: any) => `${item.dialogId}_${item.countUnMessages}`)
-          .join('|');
-        return `${message.type}_${arrayHash}`;
-      } else if (typeof message.data === 'object') {
-        const dataStr = JSON.stringify({
-          countUnMessages: message.data.countUnMessages,
-          dialogId: message.data.dialogId,
-        });
-        return `${message.type}_${dataStr}`;
-      }
-    }
-
-    return `${message.type}_${JSON.stringify(message.data)}`;
-  };
-
-  useEffect(() => {
-    if (!lastMessage) return;
-
-    const messageId = getMessageId(lastMessage);
-    const now = Date.now();
-    const lastProcessed = processedMessagesRef.current.get(messageId);
-
-    if (lastProcessed && now - lastProcessed < 30000) {
-      return;
-    }
-
-    processedMessagesRef.current.set(messageId, now);
-
-    const cleanupThreshold = now - 30000;
-    processedMessagesRef.current.forEach((timestamp, id) => {
-      if (timestamp < cleanupThreshold) {
-        processedMessagesRef.current.delete(id);
-      }
-    });
-
-    if (
-      lastMessage.type === '/user/queue/unread' &&
-      lastMessage.data?.countUnMessages !== undefined
-    ) {
-      setUnreadCount(lastMessage.data.countUnMessages);
-    }
-
-    if (
-      lastMessage.data &&
-      lastMessage.data.countUnMessages !== undefined &&
-      !Array.isArray(lastMessage.data)
-    ) {
-      setUnreadCount(lastMessage.data.countUnMessages);
-    }
-
-    // Инкремент unreadCount для свёрнутых сессий выполняется в ChatContext.handleIncomingMessage
-    // через атомарный incrementUnreadCount — дублирование здесь убрано
-  }, [lastMessage, setUnreadCount]);
+  // Агрегат и карта по диалогам ведёт только SocketContext (кадры WS). Ранее здесь
+  // вызывался setUnreadCount по любому lastMessage с countUnMessages — в том числе
+  // DIALOGS_UPDATE с 0 — это обнуляло бейдж и ломало mergeDialogUnreadFromApi.
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -395,6 +343,11 @@ const ChatContainer = () => {
     [sessions, hasSessionWithUser],
   );
 
+  const solePreviewSocketUnreadHint = useMemo(() => {
+    if (dedupedUnreadPreviewRows.length !== 1) return 0;
+    return calculateTotalUnread();
+  }, [dedupedUnreadPreviewRows, calculateTotalUnread]);
+
   const dialogIdsToFetch = useMemo(() => {
     const ids = new Set<number>();
     dedupedUnreadPreviewRows.forEach(({ dialog }) => ids.add(dialog.id));
@@ -469,7 +422,11 @@ const ChatContainer = () => {
     });
 
     dedupedUnreadPreviewRows.forEach(({ dialog, sessionId }) => {
-      const unreadCount = unreadCountForPreviewEntry(dialog, dialogsUnreadCounts);
+      const unreadCount = unreadCountForPreviewEntry(
+        dialog,
+        dialogsUnreadCounts,
+        solePreviewSocketUnreadHint,
+      );
       const raw = (dialogPreviewLines[dialog.id] || '').trim();
       const subtitle = truncatePreviewLine(raw, 60);
       items.push({
@@ -491,6 +448,7 @@ const ChatContainer = () => {
     dialogPreviewLines,
     attachmentLabel,
     t,
+    solePreviewSocketUnreadHint,
   ]);
 
   useEffect(() => {
@@ -501,8 +459,13 @@ const ChatContainer = () => {
         badge: e.unread,
         title: e.title,
       }));
+    const listUnreadSum = compactMinimizedEntries.reduce((s, e) => s + e.unread, 0);
+    const minimizedListToggleBadge =
+      listUnreadSum > 0 ? listUnreadSum : compactMinimizedEntries.length;
     chatUnreadTrace('render.ChatFooter badge snapshot', {
-      globalIconBadge: socketUnreadTotal,
+      globalIconBadge: calculateTotalUnread(),
+      socketAggregateUnreadOnly: socketUnreadTotal,
+      minimizedListToggleBadge,
       socketDialogMapEntries: unreadMapToRecord(dialogsUnreadCounts),
       unreadPreviewRows: previewUnreadBadges,
       minimizedSessionsUnread: sessions
@@ -518,6 +481,7 @@ const ChatContainer = () => {
     sessions,
     lastMessage?.type,
     lastMessage?.destination,
+    calculateTotalUnread,
   ]);
 
   if (!hasChatPermissions) {
@@ -532,6 +496,9 @@ const ChatContainer = () => {
   const minimizedSessions = sessions.filter((session) => session.isMinimized);
 
   const hasUnreadInCompactList = compactMinimizedEntries.some((e) => e.unread > 0);
+  const compactListUnreadSum = compactMinimizedEntries.reduce((s, e) => s + e.unread, 0);
+  const minimizedListToggleBadge =
+    compactListUnreadSum > 0 ? compactListUnreadSum : compactMinimizedEntries.length;
 
   return (
     <div className={styles.chatContainer}>
@@ -555,7 +522,7 @@ const ChatContainer = () => {
                     : styles.minimizedListCountBadge
                 }
                 aria-hidden>
-                {compactMinimizedEntries.length > 99 ? '99+' : compactMinimizedEntries.length}
+                {minimizedListToggleBadge > 99 ? '99+' : minimizedListToggleBadge}
               </span>
             </div>
           </Tooltip>
@@ -657,7 +624,11 @@ const ChatContainer = () => {
         })}
 
         {dedupedUnreadPreviewRows.map(({ dialog, sessionId }, index) => {
-          const unreadCount = unreadCountForPreviewEntry(dialog, dialogsUnreadCounts);
+          const unreadCount = unreadCountForPreviewEntry(
+            dialog,
+            dialogsUnreadCounts,
+            solePreviewSocketUnreadHint,
+          );
           const raw = (dialogPreviewLines[dialog.id] || '').trim();
           const line = truncatePreviewLine(raw, 30);
 

@@ -18,6 +18,32 @@ import { ChatContextType, ChatPagination } from './types/ChatTypes';
 
 const ChatContext = createContext<ChatContextType | null>(null);
 
+function isChatDialogClosedStatus(status: unknown): boolean {
+  if (status == null || status === '') return false;
+  return String(status).toUpperCase() === 'CLOSED';
+}
+
+/**
+ * Входит в счётчики как непрочитанное для оператора.
+ * Исключаем только исходящие оператору (TO_USER) и уже READ. Для OPEN бэк иногда шлёт
+ * другие/пустые messageStatus — если это не TO_USER, считаем входящим.
+ */
+function isOperatorUnreadForCounters(messageData: any): boolean {
+  if (!messageData || messageData.is_read) return false;
+  const ms = String(messageData.messageStatus ?? '').toUpperCase();
+  if (ms === 'TO_USER') return false;
+  return String(messageData.confirmStatus ?? '').toUpperCase() !== 'READ';
+}
+
+function buildChatMessageDedupeKey(messageData: any, dialogIdStr: string | null): string {
+  const u = messageData?.uuid ?? messageData?.id;
+  if (u != null && u !== '') return `u:${u}`;
+  const d = dialogIdStr ?? '';
+  const ca = String(messageData?.createdAt ?? messageData?.created_at ?? '');
+  const t = String(messageData?.text ?? '').slice(0, 48);
+  return `d:${d}:${ca}:${t}`;
+}
+
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
@@ -64,12 +90,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     stompClient,
     dialogsUnreadCounts: socketDialogsUnreadCounts,
     updateDialogUnreadCount: socketUpdateDialogUnreadCount,
+    mergeDialogUnreadFromApi: socketMergeDialogUnreadFromApi,
     incrementDialogUnreadCount: socketIncrementDialogUnreadCount,
+    flushIncomingChatMessages,
   } = useSocket();
 
   const onUnreadDialogsLoaded = useCallback(
     (dialogs: { id: number; countUnreadMess?: number; countUnMessages?: number }[]) => {
-      chatUnreadTrace('context.onUnreadDialogsLoaded (API → socketUpdateDialogUnread)', {
+      chatUnreadTrace('context.onUnreadDialogsLoaded (API → mergeDialogUnreadFromApi)', {
         dialogCount: dialogs.length,
         rows: dialogs.map((d) => ({
           id: d.id,
@@ -78,18 +106,19 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       });
       const currentSessions = sessionsRef.current;
       dialogs.forEach((d) => {
-        const isOpenInExpandedSession = currentSessions.some(
-          (s: any) =>
-            !s.isMinimized &&
-            (String(s.selectedDialog?.id) === String(d.id) ||
-              String(s.assignedDialogId) === String(d.id)),
-        );
-        if (isOpenInExpandedSession) return;
         const count = d.countUnMessages ?? d.countUnreadMess ?? 0;
-        socketUpdateDialogUnreadCount(d.id, count);
+        const fromSocket = socketDialogsUnreadCounts.get(d.id) ?? 0;
+        const isBoundToSession = currentSessions.some(
+          (s: any) =>
+            String(s.selectedDialog?.id) === String(d.id) ||
+            String(s.assignedDialogId) === String(d.id),
+        );
+        // Уже есть ненулевой счётчик с WS, а REST вернул 0 — лаг API; не перезаписывать карту
+        if (isBoundToSession && count === 0 && fromSocket > 0) return;
+        socketMergeDialogUnreadFromApi(d.id, count);
       });
     },
-    [socketUpdateDialogUnreadCount],
+    [socketMergeDialogUnreadFromApi, socketDialogsUnreadCounts],
   );
 
   const {
@@ -117,27 +146,62 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
       const dialogIdStr = String(dialogId);
       const dialogIdNum = parseInt(dialogIdStr, 10);
+      const notReadByBackend = (msg: any) =>
+        String(msg.confirmStatus ?? '').toUpperCase() !== 'READ';
       const count = session.messages.filter((msg: any) => {
         const msgDialogId = msg.dialogId?.toString() || msg.dialog?.id?.toString() || '';
         return (
           msgDialogId === dialogIdStr &&
           msg.messageStatus === 'TO_OPERATOR' &&
           (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-          !msg.is_read
+          !msg.is_read &&
+          notReadByBackend(msg)
         );
       }).length;
+      // Пока confirmStatus не SENT/DELIVERED, строгий счётчик 0, но сообщение уже непрочитано —
+      // иначе socketIncrement перезаписывается нулём (см. логи setDialogUnread absolute 0 сразу после increment).
+      const relaxedUnread = session.messages.filter((msg: any) => {
+        const msgDialogId = msg.dialogId?.toString() || msg.dialog?.id?.toString() || '';
+        return (
+          msgDialogId === dialogIdStr &&
+          msg.messageStatus === 'TO_OPERATOR' &&
+          !msg.is_read &&
+          notReadByBackend(msg)
+        );
+      }).length;
+      const countForSocket = Math.max(count, relaxedUnread);
+      const fromSocketMap = !isNaN(dialogIdNum)
+        ? (socketDialogsUnreadCounts.get(dialogIdNum) ?? 0)
+        : 0;
+      const hasAnyMessageForDialog = session.messages.some((msg: any) => {
+        const msgDialogId = msg.dialogId?.toString() || msg.dialog?.id?.toString() || '';
+        return msgDialogId === dialogIdStr;
+      });
+      // Пока в ленте нет сообщений этого диалога — не доверяем локальному 0 (ещё не подгрузили).
+      // Если сообщения есть и локально непрочитанных нет — обнуляем карту, иначе после прочтения
+      // Math.max(0, старый socket) вечно держит 2 на бейдже.
+      const merged =
+        countForSocket === 0 && hasAnyMessageForDialog
+          ? 0
+          : Math.max(countForSocket, fromSocketMap);
+      const unreadForSession = merged;
 
-      updateSession(sessionId, { unreadCount: count });
+      updateSession(sessionId, { unreadCount: unreadForSession });
       if (!isNaN(dialogIdNum)) {
         chatUnreadTrace('context.updateSessionUnreadCount (messages → session + socket map)', {
           sessionId,
           dialogId: dialogIdStr,
           count,
+          relaxedUnread,
+          countForSocket,
+          fromSocketMap,
+          hasAnyMessageForDialog,
+          merged,
         });
-        socketUpdateDialogUnreadCount(dialogIdNum, count);
+        socketUpdateDialogUnreadCount(dialogIdNum, merged);
       }
     },
-    [getSession, updateSession, socketUpdateDialogUnreadCount],
+    [getSession, updateSession, socketUpdateDialogUnreadCount, socketDialogsUnreadCounts],
   );
 
   const recalculateSessionUnreadCount = useCallback(
@@ -160,7 +224,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           (msg: any) =>
             msg.messageStatus === 'TO_OPERATOR' &&
             (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-            !msg.is_read,
+            !msg.is_read &&
+            String(msg.confirmStatus ?? '').toUpperCase() !== 'READ',
         ).length;
         updateSession(sessionId, { unreadCount: count });
       }
@@ -516,49 +581,58 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleIncomingMessage = useCallback(
     async (messageData: any) => {
-      const incomingUserId = messageData?.createdBy?.id;
-      if (!incomingUserId) return;
-
-      const messageId = messageData.uuid || messageData.id;
-      if (messageId && refs.processedIncomingMessagesRef.current.has(messageId)) {
-        return;
-      }
-
-      if (messageId) {
-        refs.processedIncomingMessagesRef.current.add(messageId);
-        setTimeout(() => refs.processedIncomingMessagesRef.current.delete(messageId), 5000);
-      }
-
-      const currentSessions = sessionsRef.current;
-      const userIdNum = parseInt(String(incomingUserId), 10);
       const messageDialogId = messageData.dialog?.id ?? messageData.dialogId;
       const dialogIdStr = messageDialogId != null ? String(messageDialogId) : null;
 
-      let existingSession = currentSessions.find(
-        (s) => s.selectedUsers && s.selectedUsers.includes(userIdNum),
-      );
-      if (!existingSession && dialogIdStr) {
+      const incomingUserIdRaw =
+        messageData?.createdBy?.id ??
+        messageData?.dialog?.owner?.id ??
+        messageData?.user?.id ??
+        messageData?.clientInfo?.id ??
+        messageData?.clientInfo?.userId ??
+        messageData?.senderInfo?.id;
+
+      const allowDialogOnlyMatch =
+        (incomingUserIdRaw == null || incomingUserIdRaw === '') &&
+        dialogIdStr != null &&
+        String(messageData?.messageStatus ?? '').toUpperCase() !== 'TO_USER';
+
+      if ((incomingUserIdRaw == null || incomingUserIdRaw === '') && !allowDialogOnlyMatch) {
+        return;
+      }
+
+      const processingKey = buildChatMessageDedupeKey(messageData, dialogIdStr);
+      if (refs.processedIncomingMessagesRef.current.has(processingKey)) {
+        return;
+      }
+      refs.processedIncomingMessagesRef.current.add(processingKey);
+      setTimeout(() => refs.processedIncomingMessagesRef.current.delete(processingKey), 120_000);
+
+      const currentSessions = sessionsRef.current;
+      const resolvedUserIdForMatch = incomingUserIdRaw ?? messageData?.dialog?.owner?.id ?? null;
+      const userIdNum =
+        resolvedUserIdForMatch != null && resolvedUserIdForMatch !== ''
+          ? parseInt(String(resolvedUserIdForMatch), 10)
+          : NaN;
+
+      // Сначала явная привязка к dialogId / превью непрочитанных / истории — иначе find по userId
+      // захватывает развёрнутое окно, и сообщение «перекидывает» диалог в основную панель.
+      let existingSession: (typeof currentSessions)[number] | undefined;
+      let foundViaUnreadDialogs = false;
+      let dialogToOpen: any = null;
+
+      if (dialogIdStr) {
         existingSession = currentSessions.find(
           (s) =>
             (s.selectedDialog?.id != null && String(s.selectedDialog.id) === dialogIdStr) ||
             (s.assignedDialogId != null && String(s.assignedDialogId) === dialogIdStr),
         );
       }
-      if (!existingSession && messageData.dialog?.owner?.id) {
-        const ownerId = parseInt(String(messageData.dialog.owner.id), 10);
-        if (!isNaN(ownerId)) {
-          existingSession = currentSessions.find(
-            (s) => s.selectedUsers && s.selectedUsers.includes(ownerId),
-          );
-        }
-      }
       if (!existingSession && dialogIdStr && currentSessions.length > 0) {
         existingSession = currentSessions.find((s) =>
           s.messages?.some((m: any) => String(m.dialog?.id ?? m.dialogId ?? '') === dialogIdStr),
         );
       }
-      let foundViaUnreadDialogs = false;
-      let dialogToOpen: any = null;
       if (!existingSession && dialogIdStr) {
         const sessionWithUnread = currentSessions.find((s) =>
           s.unreadDialogs?.some(
@@ -580,57 +654,25 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       }
+      if (!existingSession && !Number.isNaN(userIdNum) && userIdNum > 0) {
+        existingSession = currentSessions.find(
+          (s) =>
+            s.selectedUsers && s.selectedUsers.length > 0 && s.selectedUsers.includes(userIdNum),
+        );
+      }
+      if (!existingSession && messageData.dialog?.owner?.id) {
+        const ownerId = parseInt(String(messageData.dialog.owner.id), 10);
+        if (!isNaN(ownerId)) {
+          existingSession = currentSessions.find(
+            (s) => s.selectedUsers && s.selectedUsers.includes(ownerId),
+          );
+        }
+      }
 
       if (existingSession) {
-        const sessionHasDialog =
-          existingSession.selectedDialog?.id != null &&
-          String(existingSession.selectedDialog.id) === dialogIdStr;
-
-        if (foundViaUnreadDialogs && dialogToOpen) {
-          const isClosedInPreview = dialogToOpen?.status === 'CLOSED';
-          if (!isClosedInPreview) {
-            await forceLoadUnreadDialogs(existingSession.id);
-            await dialogHandlers.openUnreadDialogWithStatus(
-              existingSession.id,
-              dialogToOpen,
-              openUnreadDialog,
-            );
-            if (dialogIdStr) {
-              sessionsRef.current.forEach((s: any) => {
-                if (
-                  s.id !== existingSession.id &&
-                  s.unreadDialogs?.some(
-                    (d: any) => String(d.id) === dialogIdStr || d.id?.toString() === dialogIdStr,
-                  )
-                ) {
-                  updateSession(s.id, {
-                    unreadDialogs: s.unreadDialogs.filter(
-                      (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
-                    ),
-                  });
-                }
-              });
-            }
-          }
-        } else if (!sessionHasDialog && dialogIdStr && messageData.dialog) {
-          await forceLoadUnreadDialogs(existingSession.id);
-          const ownerName = messageData.dialog.owner?.fullName || messageData.createdBy?.fullName;
-          updateSession(existingSession.id, {
-            selectedDialog: {
-              ...messageData.dialog,
-              client_name: ownerName || messageData.dialog.client_name,
-            },
-            assignedDialogId: dialogIdStr,
-            selectedUsers: messageData.dialog.owner?.id
-              ? [messageData.dialog.owner.id]
-              : existingSession.selectedUsers,
-            selectedUserName: ownerName || existingSession.selectedUserName,
-            unreadDialogs:
-              existingSession.unreadDialogs?.filter(
-                (d: any) => String(d.id) !== dialogIdStr && d.id?.toString() !== dialogIdStr,
-              ) || [],
-          });
-          await dialogHandlers.loadDialogHistory(existingSession.id, dialogIdStr, true, 0, true);
+        // Не открывать диалог в основной панели по WS (ни openUnread, ни подмена selectedDialog) —
+        // только счётчики, сообщения в сессию и превью; раскрытие — по клику оператора.
+        if (foundViaUnreadDialogs && dialogIdStr) {
           sessionsRef.current.forEach((s: any) => {
             if (
               s.id !== existingSession.id &&
@@ -647,38 +689,36 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
 
-        const isClosedInPreview = foundViaUnreadDialogs && dialogToOpen?.status === 'CLOSED';
-        if (!isClosedInPreview) {
+        const activeDialogIdRaw =
+          existingSession.selectedDialog?.id != null &&
+          String(existingSession.selectedDialog.id) !== '0'
+            ? String(existingSession.selectedDialog.id)
+            : existingSession.assignedDialogId != null &&
+                String(existingSession.assignedDialogId) !== '0' &&
+                String(existingSession.assignedDialogId) !== 'assigned'
+              ? String(existingSession.assignedDialogId)
+              : null;
+
+        // Не смешивать ленту: пустое основное окно или другой выбранный диалог — не капаем сообщение в messages[]
+        const shouldAppendMessageToSession =
+          dialogIdStr == null || (activeDialogIdRaw != null && activeDialogIdRaw === dialogIdStr);
+
+        const isClosedInPreview =
+          foundViaUnreadDialogs && isChatDialogClosedStatus(dialogToOpen?.status);
+        if (!isClosedInPreview && shouldAppendMessageToSession) {
           await messageHandlers.addMessageFromWebSocket(existingSession.id, messageData);
         }
 
         const messageDialogId = messageData.dialog?.id ?? messageData.dialogId;
-        const isUnread =
-          messageData.messageStatus === 'TO_OPERATOR' &&
-          (messageData.confirmStatus === 'SENT' || messageData.confirmStatus === 'DELIVERED') &&
-          !messageData.is_read;
-        if (messageDialogId != null && isUnread) {
-          socketIncrementDialogUnreadCount(Number(messageDialogId), 1);
+        if (messageDialogId != null && isOperatorUnreadForCounters(messageData)) {
+          socketIncrementDialogUnreadCount(Number(messageDialogId), 1, processingKey);
         }
 
-        const wasClaimed = existingSession.assignedDialogId || existingSession.selectedDialog?.id;
-        const didExpand =
-          (foundViaUnreadDialogs && !isClosedInPreview) ||
-          !sessionHasDialog ||
-          (existingSession.isMinimized && wasClaimed);
-        if ((foundViaUnreadDialogs && !isClosedInPreview) || !sessionHasDialog) {
-          expandSession(existingSession.id);
-          setActiveSessionId(existingSession.id);
-        } else if (existingSession.isMinimized && wasClaimed) {
-          expandSession(existingSession.id);
-          const dialogId =
-            messageData.dialog?.id ?? messageData.dialogId ?? existingSession.selectedDialog?.id;
-          if (dialogId) {
-            dialogHandlers.forceRefreshSessionMessages(existingSession.id).catch(() => {});
-          }
-        } else if (!existingSession.isMinimized) {
+        if (!existingSession.isMinimized) {
           setActiveSessionId(existingSession.id);
         }
+
+        const didExpand = false;
 
         refreshAllOpenSessions();
 
@@ -688,11 +728,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (existingSession.isMinimized && !didExpand) {
-          if (
-            messageData.messageStatus === 'TO_OPERATOR' &&
-            (messageData.confirmStatus === 'SENT' || messageData.confirmStatus === 'DELIVERED') &&
-            !messageData.is_read
-          ) {
+          if (isOperatorUnreadForCounters(messageData)) {
             incrementUnreadCount(existingSession.id, 1);
           }
         } else if (!isClosedInPreview) {
@@ -717,25 +753,32 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         ) {
           setTimeout(() => {
             const currentSession = getSession(existingSession.id);
-            if (currentSession?.selectedDialog?.status) {
-              const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
-                existingSession.id,
-                messageData.uuid,
-              );
-              if (sendResult) {
-                refs.deliveredStatusesRef.current.add(messageData.uuid);
-              }
+            if (!currentSession) return;
+            const dialogSt = currentSession.selectedDialog?.status;
+            const incomingClosed = isChatDialogClosedStatus(messageData.dialog?.status);
+            if (!dialogSt && !incomingClosed) return;
+            // CLOSED по сессии или по самому сообщению (selectedDialog иногда не CLOSED при несоответствии).
+            const treatAsClosed = incomingClosed || isChatDialogClosedStatus(dialogSt);
+            if (treatAsClosed && (!isChatOpen || currentSession.isMinimized)) {
+              return;
+            }
+            const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
+              existingSession.id,
+              messageData.uuid,
+            );
+            if (sendResult) {
+              refs.deliveredStatusesRef.current.add(messageData.uuid);
             }
           }, 1000);
         }
 
         return;
       } else {
-        const hasExpanded = currentSessions.some((s) => !s.isMinimized);
         const dialogId = messageData.dialog?.id ?? messageData.dialogId;
         const dialogIdStr = dialogId != null ? String(dialogId) : null;
 
-        const newSessionId = enhancedCreateNewSession({ asMinimized: hasExpanded });
+        // Вход по WS при пустых сессиях: не разворачивать главное окно — только мини-превью (как у «только иконка чата»).
+        const newSessionId = enhancedCreateNewSession({ asMinimized: true });
 
         for (let i = 0; i < 20; i++) {
           await new Promise((r) => setTimeout(r, 50));
@@ -755,7 +798,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
 
-        if (!hasExpanded && dialogIdStr) {
+        if (dialogIdStr) {
           await forceLoadUnreadDialogs(newSessionId);
           await dialogHandlers.loadDialogHistory(newSessionId, dialogIdStr, true, 0, true);
         }
@@ -778,40 +821,40 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         await messageHandlers.addMessageFromWebSocket(newSessionId, messageData);
 
-        const isUnreadNew =
-          messageData.messageStatus === 'TO_OPERATOR' &&
-          (messageData.confirmStatus === 'SENT' || messageData.confirmStatus === 'DELIVERED') &&
-          !messageData.is_read;
-        if (dialogId != null && isUnreadNew) {
-          socketIncrementDialogUnreadCount(Number(dialogId), 1);
+        if (dialogId != null && isOperatorUnreadForCounters(messageData)) {
+          socketIncrementDialogUnreadCount(Number(dialogId), 1, processingKey);
+          incrementUnreadCount(newSessionId, 1);
         }
 
-        expandSession(newSessionId);
         setActiveSessionId(newSessionId);
 
-        fetchUserInfo(parseInt(incomingUserId)).then((userData: any) => {
-          if (userData) {
-            updateSession(newSessionId, {
-              selectedUsers: [userData.id],
-              selectedUserName: getUserFullName(userData),
-              usersCache: new Map([[userData.id, userData]]),
-              hasLoadedDialogs: true,
-            });
+        const fetchUserIdRaw =
+          incomingUserIdRaw ?? messageData.dialog?.owner?.id ?? messageData?.createdBy?.id;
+        if (fetchUserIdRaw != null && fetchUserIdRaw !== '') {
+          fetchUserInfo(parseInt(String(fetchUserIdRaw), 10)).then((userData: any) => {
+            if (userData) {
+              updateSession(newSessionId, {
+                selectedUsers: [userData.id],
+                selectedUserName: getUserFullName(userData),
+                usersCache: new Map([[userData.id, userData]]),
+                hasLoadedDialogs: true,
+              });
 
-            if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
-              const dId = messageData.dialog?.id ?? dialogId;
-              if (dId) {
-                dialogHandlers
-                  .loadDialogHistory(newSessionId, String(dId), true, 0, true)
-                  .catch(console.error);
-              } else {
-                dialogHandlers
-                  .refreshMessagesForUserId(newSessionId, userData.id)
-                  .catch(console.error);
+              if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
+                const dId = messageData.dialog?.id ?? dialogId;
+                if (dId) {
+                  dialogHandlers
+                    .loadDialogHistory(newSessionId, String(dId), true, 0, true)
+                    .catch(console.error);
+                } else {
+                  dialogHandlers
+                    .refreshMessagesForUserId(newSessionId, userData.id)
+                    .catch(console.error);
+                }
               }
             }
-          }
-        });
+          });
+        }
 
         if (dialogId) {
           updateSessionUnreadCount(newSessionId, String(dialogId));
@@ -825,14 +868,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         ) {
           setTimeout(() => {
             const currentSession = getSession(newSessionId);
-            if (currentSession?.selectedDialog?.status) {
-              const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
-                newSessionId,
-                messageData.uuid,
-              );
-              if (sendResult) {
-                refs.deliveredStatusesRef.current.add(messageData.uuid);
-              }
+            if (!currentSession) return;
+            const dialogSt = currentSession.selectedDialog?.status;
+            const incomingClosed = isChatDialogClosedStatus(messageData.dialog?.status);
+            if (!dialogSt && !incomingClosed) return;
+            const treatAsClosed = incomingClosed || isChatDialogClosedStatus(dialogSt);
+            if (treatAsClosed && (!isChatOpen || currentSession.isMinimized)) {
+              return;
+            }
+            const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
+              newSessionId,
+              messageData.uuid,
+            );
+            if (sendResult) {
+              refs.deliveredStatusesRef.current.add(messageData.uuid);
             }
           }, 1000);
         }
@@ -847,22 +896,59 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       statusHandlers,
       dialogHandlers,
       messageHandlers,
-      openUnreadDialog,
       forceLoadUnreadDialogs,
       incrementUnreadCount,
       sendMessageStatus,
       setActiveSessionId,
-      expandSession,
       refreshAllOpenSessions,
       updateSessionUnreadCount,
       socketIncrementDialogUnreadCount,
       refs,
+      isChatOpen,
     ],
   );
 
   useEffect(() => {
     const processIncomingMessage = async () => {
+      const queued = flushIncomingChatMessages();
+      for (const raw of queued) {
+        let messageData = raw;
+        if (
+          messageData?.content &&
+          Array.isArray(messageData.content) &&
+          messageData.content.length > 0
+        ) {
+          messageData = messageData.content[0];
+        }
+        if (messageData) {
+          await handleIncomingMessage(messageData);
+        }
+      }
+
       if (!lastMessage) return;
+
+      const lmDest = typeof lastMessage.destination === 'string' ? lastMessage.destination : '';
+      const isWsChatLastMessage =
+        lastMessage.type === '/user/queue/messages' ||
+        lastMessage.type === 'OPERATOR_MESSAGE' ||
+        lmDest.startsWith('/topic/operator/messages/');
+
+      if (isWsChatLastMessage) {
+        if (queued.length === 0) {
+          let messageData = lastMessage.data;
+          if (
+            messageData?.content &&
+            Array.isArray(messageData.content) &&
+            messageData.content.length > 0
+          ) {
+            messageData = messageData.content[0];
+          }
+          if (messageData) {
+            await handleIncomingMessage(messageData);
+          }
+        }
+        return;
+      }
 
       if (
         lastMessage.type === 'STATUS_UPDATE' ||
@@ -1041,26 +1127,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
         return;
       }
-
-      if (lastMessage.type === '/user/queue/messages') {
-        await handleIncomingMessage(lastMessage.data);
-        return;
-      }
-
-      if (lastMessage.type === 'OPERATOR_MESSAGE') {
-        let messageData = lastMessage.data;
-        if (
-          messageData?.content &&
-          Array.isArray(messageData.content) &&
-          messageData.content.length > 0
-        ) {
-          messageData = messageData.content[0];
-        }
-        if (messageData) {
-          await handleIncomingMessage(messageData);
-        }
-        return;
-      }
     };
 
     processIncomingMessage();
@@ -1085,6 +1151,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     handleDialogStatusUpdate,
     handleStatusUpdate,
     handleIncomingMessage,
+    flushIncomingChatMessages,
     refs,
   ]);
 
