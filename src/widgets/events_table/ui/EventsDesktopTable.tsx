@@ -235,9 +235,17 @@ export const EventsDesktopTable = ({
           pointer
           onRowClick={handleRowClick}
           onCellClick={handleRowClick}
-          getRowClassName={(params) =>
-            params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
-          }
+          getRowClassName={(params) => {
+            const idStr = String(params.id);
+            const classes: string[] = [];
+            if (idStr === tableData.rows[selectedRowIndex]?.id) {
+              classes.push('selected-row');
+            }
+            if (tableData.highlightedEventIds?.has(idStr)) {
+              classes.push(styles.rowNewlyArrived);
+            }
+            return classes.filter(Boolean).join(' ');
+          }}
           sx={{
             '& .MuiDataGrid-virtualScroller': {
               overflowX: 'auto',

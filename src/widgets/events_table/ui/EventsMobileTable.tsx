@@ -720,7 +720,7 @@ export const EventsMobileTable = ({
               key={row.id}
               className={`${styles.mobileRow} ${
                 index === selectedRowIndex ? styles.selectedRow : ''
-              }`}
+              } ${tableData.highlightedEventIds?.has(String(row.id)) ? styles.rowNewlyArrived : ''}`}
               onClick={() => handleRowClick(row)}>
               <div className={styles.dateTime}>
                 {formatDateTimeForMobile(

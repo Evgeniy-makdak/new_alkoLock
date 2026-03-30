@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { eventsFilterPanelStore } from '@features/events_filter_panel';
 import { UsersApi } from '@shared/api/baseQuerys';
@@ -16,6 +16,7 @@ import { useEventsApi } from '../api/useEventsApi';
 import { ValuesHeader, useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useEventsStore } from '../model/eventsStore';
+import { useDeviceEventsNewRowsHighlight } from './useDeviceEventsNewRowsHighlight';
 
 export const useEventsTable = () => {
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
@@ -88,6 +89,48 @@ export const useEventsTable = () => {
 
   const { isLoading, data, refetch } = useEventsApi(queryOptions);
 
+  const highlightBaselineKey = useMemo(
+    () =>
+      JSON.stringify({
+        page: state.page,
+        pageSize: state.pageSize,
+        sortModel: state.sortModel,
+        startDate: queryOptions.startDate,
+        endDate: queryOptions.endDate,
+        search: inputWidthDelay,
+        users: queryOptions.filterOptions.users,
+        cars: queryOptions.filterOptions.cars,
+        alcolock: queryOptions.filterOptions.alcolock,
+        eventsByType: queryOptions.filterOptions.eventsByType,
+        level: queryOptions.filterOptions.level,
+        currentUserId,
+        permission,
+        role,
+      }),
+    [
+      state.page,
+      state.pageSize,
+      state.sortModel,
+      queryOptions.startDate,
+      queryOptions.endDate,
+      inputWidthDelay,
+      queryOptions.filterOptions.users,
+      queryOptions.filterOptions.cars,
+      queryOptions.filterOptions.alcolock,
+      queryOptions.filterOptions.eventsByType,
+      queryOptions.filterOptions.level,
+      currentUserId,
+      permission,
+      role,
+    ],
+  );
+
+  const highlightedEventIds = useDeviceEventsNewRowsHighlight(
+    data?.data?.content,
+    highlightBaselineKey,
+    isLoading,
+  );
+
   const rows = useGetRows(data?.data?.content);
   const columns = useGetColumns(refetch, newRefetch);
   const totalCount = data?.data?.totalElements;
@@ -117,6 +160,7 @@ export const useEventsTable = () => {
     changeTableState,
     changeTableSorts,
     isLoading,
+    highlightedEventIds,
     page,
     setPage,
     // Добавляем методы для мобильной версии
