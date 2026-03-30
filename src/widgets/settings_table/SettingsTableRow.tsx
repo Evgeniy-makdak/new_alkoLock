@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import EditIcon from '@mui/icons-material/Edit';
 import { Box, IconButton, Tooltip, Typography } from '@mui/material';
@@ -18,6 +19,7 @@ export const SettingsTableRow: React.FC<SettingsTableRowProps> = ({
   unit,
   onEditClick,
 }) => {
+  const { t } = useTranslation();
   return (
     <Box
       sx={{
@@ -38,7 +40,7 @@ export const SettingsTableRow: React.FC<SettingsTableRowProps> = ({
           </Typography>
         )}
       </div>
-      <Tooltip title="Редактировать">
+      <Tooltip title={t('common.edit')}>
         <IconButton
           onClick={onEditClick}
           color="default"

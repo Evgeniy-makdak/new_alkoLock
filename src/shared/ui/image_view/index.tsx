@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Tooltip } from '@mui/material';
 
@@ -14,10 +15,11 @@ type ImageViewProps = {
 export const IMAGE_PREVIEW_WRAPPER_STYLE = style.wrapper;
 
 export const ImageView: FC<ImageViewProps> = ({ styleImage, styleWrapper, onClick, src }) => {
+  const { t } = useTranslation();
   return (
     // eslint-disable-next-line prettier/prettier
     <Tooltip
-      title="Посмотреть фото"
+      title={t('tooltips.viewPhoto')}
       PopperProps={{
         modifiers: [
           {

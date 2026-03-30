@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Box, Tooltip, keyframes } from '@mui/material';
 
 const progress = keyframes`
@@ -10,9 +12,10 @@ const progress = keyframes`
 `;
 
 export const CustomLinearLoader = () => {
+  const { t } = useTranslation();
   return (
     <Tooltip
-      title="Выполняется обработка данных"
+      title={t('tooltips.processingData')}
       placement="top"
       arrow
       disableInteractive // Это предотвращает закрытие тултипа при наведении на него

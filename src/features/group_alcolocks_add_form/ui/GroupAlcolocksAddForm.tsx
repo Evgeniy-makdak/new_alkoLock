@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -26,6 +27,7 @@ const alertText = (
 );
 
 export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId, close }) => {
+  const { t } = useTranslation();
   const { alcolocks, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupAlcolocksAddForm(branchId, close);
   return (
@@ -55,7 +57,7 @@ export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId,
       </Stack>
       <AppAlert
         severity="warning"
-        title={'Внимание!'}
+        title={t('tooltips.attention')}
         text={alertText}
         onClose={closeAlert}
         onSubmit={onSubmit}

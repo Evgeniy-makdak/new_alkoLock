@@ -110,7 +110,7 @@ export const RoleMobileTable = ({ onRoleClick }: RoleMobileTableProps) => {
   const renderActionButtons = (row: any) => {
     return (
       <>
-        <Tooltip title="Редактировать">
+        <Tooltip title={t('common.edit')}>
           <IconButton
             size="small"
             onClick={(e) => handleEditRoleClick(row.id, e)}
@@ -119,7 +119,7 @@ export const RoleMobileTable = ({ onRoleClick }: RoleMobileTableProps) => {
             <Edit fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Удалить">
+        <Tooltip title={t('common.delete')}>
           <IconButton
             size="small"
             onClick={(e) => handleDeleteRoleClick(row.id, e)}

@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -25,6 +26,7 @@ const alertText = (
   </>
 );
 export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId }) => {
+  const { t } = useTranslation();
   const { users, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupUserAddForm(branchId, close);
 
@@ -61,7 +63,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
 
       <AppAlert
         severity="warning"
-        title={'Внимание!'}
+        title={t('tooltips.attention')}
         text={alertText}
         onClose={closeAlert}
         onSubmit={onSubmit}

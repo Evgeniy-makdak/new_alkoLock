@@ -586,7 +586,7 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                             e.stopPropagation();
                             addModalData.handleClickAddUser(email, email);
                           }}
-                          title="Редактировать">
+                          title={t('common.edit')}>
                           <Edit />
                         </IconButton>
                         <IconButton
@@ -598,7 +598,7 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                               `рассылку для email: ${email}`,
                             );
                           }}
-                          title="Деактивировать">
+                          title={t('common.deactivate')}>
                           <HighlightOffIcon />
                         </IconButton>
                       </>
@@ -613,7 +613,7 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                               `рассылку для email: ${email}`,
                             );
                           }}
-                          title="Активировать">
+                          title={t('common.activate')}>
                           <CheckCircleOutlineRoundedIcon />
                         </IconButton>
                         <IconButton
@@ -625,7 +625,7 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
                               `рассылку для email: ${email}`,
                             );
                           }}
-                          title="Удалить навсегда">
+                          title={t('common.deletePermanently')}>
                           <Delete />
                         </IconButton>
                       </>

@@ -159,55 +159,55 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
     },
   };
 
-  const toolbarTranslations: Record<string, string | Record<string, string>> = {
-    bold: 'Жирный',
-    italic: 'Курсив',
-    underline: 'Подчёркнутый',
-    strike: 'Зачёркнутый',
-    blockquote: 'Цитата',
-    'code-block': 'Блок кода',
-    direction: 'Направление текста',
-    color: 'Цвет текста',
-    background: 'Цвет фона',
-    font: 'Шрифт',
-    align: 'Выравнивание',
-    link: 'Вставить ссылку',
-    image: 'Вставить изображение',
-    clean: 'Очистить форматирование',
-  };
-
   useEffect(() => {
-    if (quillRef.current) {
-      const editor = quillRef.current.getEditor();
-      const toolbar = editor.getModule('toolbar');
+    if (!quillRef.current) return;
+    const toolbarTranslations: Record<string, string | Record<string, string>> = {
+      bold: t('editorToolbar.bold'),
+      italic: t('editorToolbar.italic'),
+      underline: t('editorToolbar.underline'),
+      strike: t('editorToolbar.strike'),
+      blockquote: t('editorToolbar.blockquote'),
+      'code-block': t('editorToolbar.codeBlock'),
+      direction: t('editorToolbar.direction'),
+      color: t('editorToolbar.color'),
+      background: t('editorToolbar.background'),
+      font: t('editorToolbar.font'),
+      align: t('editorToolbar.align'),
+      link: t('editorToolbar.link'),
+      image: t('editorToolbar.image'),
+      clean: t('editorToolbar.clean'),
+    };
+    const editor = quillRef.current.getEditor();
+    const toolbar = editor.getModule('toolbar');
 
-      if (toolbar) {
-        toolbar.container.querySelectorAll('button, span').forEach((button: HTMLElement) => {
-          const format = button.classList[0]?.replace(
-            'ql-',
-            '',
-          ) as keyof typeof toolbarTranslations;
+    if (toolbar) {
+      toolbar.container.querySelectorAll('button, span').forEach((button: HTMLElement) => {
+        const format = button.classList[0]?.replace('ql-', '') as keyof typeof toolbarTranslations;
 
-          if (format in toolbarTranslations) {
-            const translation = toolbarTranslations[format];
+        if (format in toolbarTranslations) {
+          const translation = toolbarTranslations[format];
 
-            if (typeof translation === 'string') {
-              button.setAttribute('title', translation);
-            } else if (typeof translation === 'object' && button.dataset.value) {
-              const subTranslation = translation[button.dataset.value];
-              if (subTranslation) {
-                button.setAttribute('title', subTranslation);
-              }
+          if (typeof translation === 'string') {
+            button.setAttribute('title', translation);
+          } else if (typeof translation === 'object' && button.dataset.value) {
+            const subTranslation = translation[button.dataset.value];
+            if (subTranslation) {
+              button.setAttribute('title', subTranslation);
             }
           }
-        });
-      }
+        }
+      });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [t]);
 
   return (
-    <Backdrop open={true} sx={{ zIndex: 1300, color: '#fff' }}>
+    <Backdrop
+      open={true}
+      sx={{
+        zIndex: 1300,
+        backgroundColor: (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.72)' : 'rgba(0, 0, 0, 0.5)',
+      }}>
       <Box
         ref={formRef}
         onClick={(e) => e.stopPropagation()}
@@ -217,7 +217,8 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           maxWidth: 'none',
           display: 'flex',
           flexDirection: 'column',
-          backgroundColor: 'white',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
           borderRadius: '8px',
           boxShadow: 3,
         }}>
@@ -229,12 +230,7 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
             alignItems: 'center',
             position: 'relative',
           }}>
-          <Typography
-            fontWeight={600}
-            variant="h6"
-            sx={{
-              color: 'black !important',
-            }}>
+          <Typography fontWeight={600} variant="h6" color="text.primary">
             {isEditing ? t('modals.editTemplate') : t('modals.addTemplate')}
           </Typography>
           <Tooltip title={t('common.closeWindow')}>
@@ -243,10 +239,10 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
               onClick={onClose}
               aria-label="close"
               sx={{
-                color: (theme) => theme.palette.grey[500],
+                color: 'text.secondary',
                 '&:hover': {
-                  backgroundColor: 'transparent',
-                  color: (theme) => theme.palette.grey[700],
+                  backgroundColor: 'action.hover',
+                  color: 'text.primary',
                 },
               }}>
               <CloseIcon />
@@ -264,7 +260,7 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
             endAdornment: (
               <InputAdornment position="end">
                 <IconButton onClick={handleClearName} edge="end">
-                  <Tooltip title="Очистить">
+                  <Tooltip title={t('datePicker.clear')}>
                     <ClearIcon />
                   </Tooltip>
                 </IconButton>
@@ -289,51 +285,101 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           ))}
         </TextField>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-          <Tooltip title="Назад">
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            mb: 1,
+            '& .MuiIconButton-root': { color: 'text.secondary' },
+          }}>
+          <Tooltip title={t('tooltips.richTextUndo')}>
             <IconButton onClick={handleUndo}>
               <UndoIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Вперёд">
+          <Tooltip title={t('tooltips.richTextRedo')}>
             <IconButton onClick={handleRedo}>
               <RedoIcon />
             </IconButton>
           </Tooltip>
         </Box>
 
-        <ReactQuill
-          ref={quillRef}
-          value={content}
-          onChange={setContent}
-          theme="snow"
-          modules={modules}
-          formats={[
-            'font',
-            'size',
-            'list',
-            'bold',
-            'italic',
-            'underline',
-            'strike',
-            'blockquote',
-            'code-block',
-            'script',
-            'indent',
-            'direction',
-            'color',
-            'background',
-            'align',
-            'link',
-            'image',
-          ]}
-          style={{
-            height: '300px',
-            minHeight: '200px',
-            width: '100%',
-            color: 'black',
-          }}
-        />
+        <Box
+          sx={{
+            '& .ql-toolbar.ql-snow': {
+              borderColor: 'divider',
+              bgcolor: 'background.default',
+            },
+            '& .ql-container.ql-snow': {
+              borderColor: 'divider',
+              bgcolor: 'background.default',
+            },
+            '& .ql-editor': {
+              color: 'text.primary',
+              minHeight: 280,
+            },
+            '& .ql-editor.ql-blank::before': {
+              color: 'text.disabled',
+            },
+            '& .ql-stroke': {
+              stroke: (theme) => theme.palette.text.primary,
+            },
+            '& .ql-fill': {
+              fill: (theme) => theme.palette.text.primary,
+            },
+            '& .ql-picker': {
+              color: 'text.primary',
+            },
+            '& .ql-picker-options': {
+              bgcolor: 'background.paper',
+              borderColor: 'divider',
+            },
+            '& .ql-picker-label': {
+              borderColor: 'divider',
+            },
+            '& .ql-snow .ql-picker.ql-expanded .ql-picker-label': {
+              borderColor: 'divider',
+            },
+            '& .ql-snow.ql-toolbar button:hover .ql-stroke': {
+              stroke: (theme) => theme.palette.primary.main,
+            },
+            '& .ql-snow.ql-toolbar button:hover .ql-fill': {
+              fill: (theme) => theme.palette.primary.main,
+            },
+          }}>
+          <ReactQuill
+            ref={quillRef}
+            value={content}
+            onChange={setContent}
+            theme="snow"
+            modules={modules}
+            formats={[
+              'font',
+              'size',
+              'list',
+              'bold',
+              'italic',
+              'underline',
+              'strike',
+              'blockquote',
+              'code-block',
+              'script',
+              'indent',
+              'direction',
+              'color',
+              'background',
+              'align',
+              'link',
+              'image',
+            ]}
+            style={{
+              height: '300px',
+              minHeight: '200px',
+              width: '100%',
+            }}
+          />
+        </Box>
 
         <Box sx={{ mt: 7, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
           <Tooltip title={isEditing ? t('form.saveChanges') : t('modals.addTemplate')}>
@@ -341,34 +387,28 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
               variant="outlined"
               onClick={handleSave}
               sx={{
-                '&&': {
-                  background: 'transparent !important',
-                  border: '1px solid grey !important',
-                  color: 'black !important',
-                  minWidth: '100px !important',
-                },
+                minWidth: 100,
+                borderColor: 'divider',
+                color: 'text.primary',
                 '&:hover': {
-                  background: 'rgba(0, 0, 0, 0.04) !important',
-                  border: '1px solid grey !important',
+                  borderColor: 'text.secondary',
+                  backgroundColor: 'action.hover',
                 },
               }}>
               {isEditing ? t('common.save') : t('common.add')}
             </Button>
           </Tooltip>
-          <Tooltip title="Отменить">
+          <Tooltip title={t('common.cancel')}>
             <Button
               variant="outlined"
               onClick={onClose}
               sx={{
-                '&&': {
-                  background: 'transparent !important',
-                  border: '1px solid grey !important',
-                  color: 'black !important',
-                  minWidth: '100px !important',
-                },
+                minWidth: 100,
+                borderColor: 'divider',
+                color: 'text.primary',
                 '&:hover': {
-                  background: 'rgba(0, 0, 0, 0.04) !important',
-                  border: '1px solid grey !important',
+                  borderColor: 'text.secondary',
+                  backgroundColor: 'action.hover',
                 },
               }}>
               {t('common.cancel')}

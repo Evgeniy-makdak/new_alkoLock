@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -22,6 +23,7 @@ export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
   close,
   targetBranch,
 }) => {
+  const { t } = useTranslation();
   const {
     error,
     branchSelect,
@@ -61,7 +63,7 @@ export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
       </Stack>
       <AppAlert
         severity="warning"
-        title={'Внимание!'}
+        title={t('tooltips.attention')}
         text={alertText}
         onClose={closeAlert}
         onSubmit={onSubmit}

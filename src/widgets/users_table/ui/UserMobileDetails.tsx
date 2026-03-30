@@ -146,9 +146,9 @@ export const UsersMobileTable = ({
   // Функция для получения подсказки для кнопки удаления
   const getDeleteTooltip = (row: any) => {
     if (row.isActive === false) {
-      return 'Удалить навсегда';
+      return t('common.deletePermanently');
     }
-    return 'Деактивировать';
+    return t('common.deactivate');
   };
 
   return (
@@ -265,7 +265,7 @@ export const UsersMobileTable = ({
 
               {/* Кнопки действий */}
               <div className={styles.rowActions}>
-                <Tooltip title="Редактировать">
+                <Tooltip title={t('common.edit')}>
                   <IconButton
                     size="small"
                     onClick={(e) => {
@@ -280,7 +280,7 @@ export const UsersMobileTable = ({
 
                 {/* Кнопка восстановления для неактивных пользователей */}
                 {row.isActive === false && (
-                  <Tooltip title="Активировать">
+                  <Tooltip title={t('common.activate')}>
                     <IconButton
                       size="small"
                       onClick={(e) => {

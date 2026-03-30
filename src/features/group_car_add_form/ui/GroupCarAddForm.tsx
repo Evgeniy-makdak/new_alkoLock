@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -25,6 +26,7 @@ const alertText = (
 );
 
 export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) => {
+  const { t } = useTranslation();
   const { cars, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupCarAddForm(branchId, close);
   return (
@@ -55,7 +57,7 @@ export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) =
       </Stack>
       <AppAlert
         severity="warning"
-        title={'Внимание!'}
+        title={t('tooltips.attention')}
         text={alertText}
         onClose={closeAlert}
         onSubmit={onSubmit}

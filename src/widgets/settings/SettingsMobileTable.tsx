@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
@@ -34,6 +35,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
   handleEditClick,
   handleResetToDefault,
 }) => {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <Box
@@ -90,7 +92,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                 Действия:
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <Tooltip title="Редактировать">
+                <Tooltip title={t('common.edit')}>
                   <IconButton
                     onClick={() => handleEditClick(row)}
                     size="small"
@@ -105,7 +107,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     <ModeEditIcon fontSize="small" />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Восстановить значение по умолчанию">
+                <Tooltip title={t('common.resetToDefault')}>
                   <IconButton
                     onClick={() => handleResetToDefault(row)}
                     size="small"

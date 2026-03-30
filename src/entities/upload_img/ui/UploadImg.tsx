@@ -122,14 +122,14 @@ export const UploadImg: FC<UploadImgProps> = ({
                     data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM}
                     className={style.reletive}
                     key={file.src}>
-                    <Tooltip title="Удалить фото">
+                    <Tooltip title={t('tooltips.deletePhoto')}>
                       <DeleteForeverOutlinedIcon
                         data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_DELETE}
                         onClick={() => handleDeleteImg(file.src)}
                         className={style.deleteIcon}
                       />
                     </Tooltip>
-                    <Tooltip title="Посмотреть фото">
+                    <Tooltip title={t('tooltips.viewPhoto')}>
                       <RemoveRedEyeOutlinedIcon
                         data-testid={testids.UPLOAD_FILE_IMAGE_LIST_ITEM_VIEW}
                         onClick={() => openPreview(file.src)}

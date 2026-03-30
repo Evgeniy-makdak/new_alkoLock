@@ -95,7 +95,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   />
                 </Tooltip>
 
-                <Tooltip title="Редактировать">
+                <Tooltip title={t('common.edit')}>
                   <span style={{ visibility: template.createdBy?.id === 0 ? 'hidden' : 'visible' }}>
                     <IconButton
                       onClick={(e) => {
@@ -136,7 +136,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   </IconButton>
                 </Tooltip>
 
-                <Tooltip title="Удалить">
+                <Tooltip title={t('common.delete')}>
                   <span style={{ visibility: template.createdBy?.id === 0 ? 'hidden' : 'visible' }}>
                     <IconButton
                       onClick={(e) => {

@@ -133,12 +133,12 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
                     border: 'none',
                     borderBottom: 'none',
                   }}>
-                  <Tooltip title="Редактировать">
+                  <Tooltip title={t('common.edit')}>
                     <IconButton onClick={() => handleEditClick(row)}>
                       <ModeEditIcon />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Восстановить значение по умолчанию">
+                  <Tooltip title={t('common.resetToDefault')}>
                     <IconButton onClick={() => handleResetToDefault(row)}>
                       <AutorenewIcon />
                     </IconButton>

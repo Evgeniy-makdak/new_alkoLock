@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BsArrowDown, BsCheck2, BsCheck2All, BsPencil } from 'react-icons/bs';
 import { FaReply, FaTimes, FaTrash } from 'react-icons/fa';
 
@@ -49,6 +50,7 @@ function MessageFeed({
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
 }: MessageFeedProps) {
+  const { t } = useTranslation();
   const renderCountRef = useRef(0);
   renderCountRef.current++;
 
@@ -833,13 +835,13 @@ function MessageFeed({
   const getStatusIcon = (message: any) => {
     if (message.messageStatus === 'TO_USER') {
       if (message.confirmStatus === 'READ') {
-        return <BsCheck2All className={styles.delivered} title="Прочитано" />;
+        return <BsCheck2All className={styles.delivered} title={t('chat.statusRead')} />;
       } else if (message.confirmStatus === 'DELIVERED') {
-        return <BsCheck2All className={styles.sent} title="Доставлено" />;
+        return <BsCheck2All className={styles.sent} title={t('chat.statusDelivered')} />;
       } else if (message.confirmStatus === 'SENT') {
-        return <BsCheck2 className={styles.sent} title="Отправлено" />;
+        return <BsCheck2 className={styles.sent} title={t('chat.statusSent')} />;
       } else {
-        return <BsCheck2 className={styles.sent} title="Отправлено" />;
+        return <BsCheck2 className={styles.sent} title={t('chat.statusSent')} />;
       }
     }
     return null;
@@ -961,7 +963,7 @@ function MessageFeed({
                   className={styles.replyIndicator}
                   onClick={(e) => handleQuoteClick(originalMessage, e)}
                   style={{ cursor: 'pointer' }}
-                  title="Нажмите для перехода к цитируемому сообщению">
+                  title={t('chat.jumpToQuotedMessage')}>
                   <div className={styles.replyAuthor}>
                     Ответ на{' '}
                     {originalMessage.messageStatus === 'TO_USER'
@@ -1008,7 +1010,7 @@ function MessageFeed({
                         borderRadius: '4px',
                         cursor: 'pointer',
                       }}>
-                      Сохранить
+                      {t('common.save')}
                     </button>
                     <button
                       onClick={handleCancelEdit}
@@ -1020,7 +1022,7 @@ function MessageFeed({
                         borderRadius: '4px',
                         cursor: 'pointer',
                       }}>
-                      Отмена
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -1156,7 +1158,9 @@ function MessageFeed({
                 <div className={styles.messageActions}>
                   {(dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED') &&
                     !isDialogBlockedByOtherOperator && (
-                      <button onClick={(e) => handleReplyClick(msg, e)} title="Ответить">
+                      <button
+                        onClick={(e) => handleReplyClick(msg, e)}
+                        title={t('chat.replyAction')}>
                         <FaReply size={12} />
                       </button>
                     )}
@@ -1168,14 +1172,14 @@ function MessageFeed({
                         {isOperatorMessage && (
                           <button
                             onClick={(e) => handleEditClick(msg, e)}
-                            title="Редактировать"
+                            title={t('common.edit')}
                             disabled={!canEditDelete}>
                             <BsPencil size={12} />
                           </button>
                         )}
                         <button
                           onClick={(e) => handleDeleteClick(msg, e)}
-                          title="Удалить сообщение"
+                          title={t('chat.deleteMessage')}
                           disabled={!canEditDelete}>
                           <FaTrash size={12} />
                         </button>
@@ -1211,7 +1215,7 @@ function MessageFeed({
                     <button
                       className={styles.removeAttachment}
                       onClick={(e) => handleRemoveAttachment(index, e)}
-                      title="Удалить файл"
+                      title={t('chat.deleteFile')}
                       style={{
                         position: 'absolute',
                         top: '4px',
@@ -1237,7 +1241,7 @@ function MessageFeed({
                     <button
                       className={styles.removeAttachment}
                       onClick={(e) => handleRemoveAttachment(index, e)}
-                      title="Удалить файл"
+                      title={t('chat.deleteFile')}
                       style={{
                         position: 'absolute',
                         top: '4px',
@@ -1268,7 +1272,9 @@ function MessageFeed({
           className={styles.scrollToBottomBtn}
           onClick={() => scrollToBottom()}
           title={
-            unreadCount > 0 ? `Новые сообщения: ${unreadCount}` : 'Перейти к последнему сообщению'
+            unreadCount > 0
+              ? t('chat.newMessagesCount', { count: unreadCount })
+              : t('chat.scrollToLastMessage')
           }>
           <BsArrowDown />
           {unreadCount > 0 && (

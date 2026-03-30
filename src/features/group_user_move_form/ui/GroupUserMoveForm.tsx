@@ -1,4 +1,5 @@
 import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
 
@@ -18,6 +19,7 @@ export type GroupUserMoveFormProps = {
 };
 
 export const GroupUserMoveForm: FC<GroupUserMoveFormProps> = ({ user, close, targetBranch }) => {
+  const { t } = useTranslation();
   const {
     error,
     branchSelect,
@@ -57,7 +59,7 @@ export const GroupUserMoveForm: FC<GroupUserMoveFormProps> = ({ user, close, tar
       </Stack>
       <AppAlert
         severity="warning"
-        title={'Внимание!'}
+        title={t('tooltips.attention')}
         text={alertText}
         onClose={closeAlert}
         onSubmit={onSubmit}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
@@ -13,6 +14,7 @@ interface ChipCopyTextIconProps extends ChipOwnProps {
 }
 
 export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
+  const { t } = useTranslation();
   const { copyText, click, style, ...rest } = props;
   const [state, setState] = useState(false);
 
@@ -32,7 +34,7 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
       onClick={() => (copyContent(`${copyText || props.label}`, setState), click && click())}
       clickable
       icon={
-        <Tooltip title="Копировать">
+        <Tooltip title={t('tooltips.copy')}>
           {!state ? <ContentCopyIcon color="inherit" /> : <DoneAllIcon color="inherit" />}
         </Tooltip>
       }

@@ -225,7 +225,7 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
                     borderBottom: 'none',
                   }}>
                   <Tooltip
-                    title={template.actual ? 'Активный' : 'Активировать'}
+                    title={template.actual ? t('tooltips.templateActive') : t('common.activate')}
                     disableInteractive
                     open={activeTooltip === `status-${template.id}`}
                     onOpen={() => onTooltipOpen(`status-${template.id}`)}
@@ -239,7 +239,7 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
                     </IconButton>
                   </Tooltip>
                   <Tooltip
-                    title="Редактировать"
+                    title={t('common.edit')}
                     disableInteractive
                     open={activeTooltip === `edit-${template.id}`}
                     onOpen={() => onTooltipOpen(`edit-${template.id}`)}
@@ -257,7 +257,7 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
                     </span>
                   </Tooltip>
                   <Tooltip
-                    title="Удалить"
+                    title={t('common.delete')}
                     disableInteractive
                     open={activeTooltip === `delete-${template.id}`}
                     onOpen={() => onTooltipOpen(`delete-${template.id}`)}

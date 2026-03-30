@@ -390,7 +390,7 @@ export const GroupMobileTable = ({
   const renderActionButtons = (row: any) => {
     return (
       <>
-        <Tooltip title="Редактировать">
+        <Tooltip title={t('common.edit')}>
           <IconButton
             size="small"
             onClick={(e) => {
@@ -402,7 +402,7 @@ export const GroupMobileTable = ({
             <Edit fontSize="small" />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Удалить">
+        <Tooltip title={t('common.delete')}>
           <IconButton
             size="small"
             onClick={(e) => {

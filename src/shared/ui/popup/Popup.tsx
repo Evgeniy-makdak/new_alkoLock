@@ -1,10 +1,16 @@
 import { ReactNode } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
-import { Tooltip } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+  Tooltip,
+} from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 
 import { testids } from '@shared/const/testid';
 
@@ -18,10 +24,8 @@ interface PopupProps {
   buttons?: ReactNode[];
   closeonClickSpace?: boolean;
   onCloseModal?: () => void;
-  styles?: { size: string; substr: string };
+  styles?: { size: string; substr: string } | null;
 }
-
-const DATA_SET = 'poput';
 
 export const Popup = ({
   isOpen,
@@ -31,59 +35,97 @@ export const Popup = ({
   buttons = [],
   closeonClickSpace = true,
   onCloseModal,
-  styles = null, // HELP => тут нужно передать нужную высоту и ширину
+  styles = null,
 }: PopupProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
 
-  const handleClickOutside = (e: React.SyntheticEvent<HTMLDivElement>) => {
-    const { target } = e;
-    if (target === e.currentTarget) return;
-    if (!('dataset' in target)) return;
-    if (typeof target.dataset !== 'object') return;
-    if (!('clickId' in target.dataset)) return;
-    if (target?.dataset?.clickId && closeonClickSpace) {
-      e.stopPropagation();
-      (onCloseModal ?? toggleModal)();
-      window.location.reload();
-    }
+  const handleClose = () => {
+    (onCloseModal ?? toggleModal)();
   };
 
-  return isOpen
-    ? createPortal(
-        <div
-          data-testid={`${testids.POPUP}`}
-          data-click-id={DATA_SET}
-          className={`${style.popup} `}
-          onClick={handleClickOutside}>
-          <div
-            className={`${styles ? styles : style.size} ${style.substr}`}
-            style={{
-              backgroundColor: theme.palette.background.paper,
-              color: theme.palette.text.primary,
-            }}>
-            <button
-              data-testid={`${testids.POPUP_CLOSE_BUTTON}`}
-              className={style.close}
-              onClick={onCloseModal ?? toggleModal}
-              style={{ color: theme.palette.text.secondary }}>
-              <Tooltip title={t('common.closeWindow')}>
-                <CloseIcon />
-              </Tooltip>
-            </button>
+  const paperClassName = styles
+    ? `${styles.size} ${styles.substr}`
+    : `${style.size} ${style.substr}`;
 
-            <div className={style.header}>
-              <h4 className={style.title} style={{ color: theme.palette.text.primary }}>
-                {headerTitle}
-              </h4>
-            </div>
+  return (
+    <Dialog
+      data-testid={testids.POPUP}
+      open={isOpen}
+      onClose={(_, reason) => {
+        if (reason === 'backdropClick' && !closeonClickSpace) return;
+        handleClose();
+      }}
+      maxWidth={false}
+      slotProps={{
+        backdrop: {
+          sx: {
+            backgroundColor: alpha(
+              theme.palette.common.black,
+              theme.palette.mode === 'dark' ? 0.65 : 0.5,
+            ),
+          },
+        },
+      }}
+      PaperProps={{
+        className: paperClassName,
+        sx: {
+          minWidth: 550,
+          maxHeight: '99vh',
+          borderRadius: '16px',
+          backgroundImage: 'none',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          position: 'relative',
+          p: 0,
+        },
+      }}>
+      <Tooltip title={t('common.closeWindow')}>
+        <IconButton
+          data-testid={`${testids.POPUP_CLOSE_BUTTON}`}
+          aria-label={t('common.closeWindow')}
+          onClick={handleClose}
+          sx={{
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            zIndex: 1,
+            color: 'text.secondary',
+          }}>
+          <CloseIcon />
+        </IconButton>
+      </Tooltip>
 
-            <div className={style.body}>{body}</div>
+      {headerTitle ? (
+        <DialogTitle sx={{ px: 3.5, pt: 2.5, pr: 6, pb: 0, fontSize: 18, fontWeight: 'bold' }}>
+          {headerTitle}
+        </DialogTitle>
+      ) : null}
 
-            {buttons && <div className={style.buttons}>{buttons}</div>}
-          </div>
-        </div>,
-        document.body,
-      )
-    : null;
+      <DialogContent
+        sx={{
+          px: 3.5,
+          pt: headerTitle ? 1 : 3,
+          pb: buttons?.length ? 1 : 2,
+          overflow: 'auto',
+          color: 'text.primary',
+        }}>
+        {body}
+      </DialogContent>
+
+      {buttons && buttons.length > 0 ? (
+        <DialogActions
+          sx={{
+            px: 3.5,
+            pb: 2,
+            pt: 0,
+            justifyContent: 'flex-end',
+            gap: 1,
+            '& > button:first-of-type': { mr: 0 },
+          }}>
+          {buttons}
+        </DialogActions>
+      ) : null}
+    </Dialog>
+  );
 };

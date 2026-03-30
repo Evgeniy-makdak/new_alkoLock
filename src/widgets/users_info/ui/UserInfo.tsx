@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Avatar, Stack, Tooltip } from '@mui/material';
 
@@ -17,6 +18,7 @@ type UserInfoProps = {
 };
 
 export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
+  const { t } = useTranslation();
   const { fields, isLoading, src, open, toggle, firstLetter } = useUserInfo(
     selectedUserId,
     closeTab,
@@ -31,7 +33,7 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
             <Stack marginBottom={3} alignItems={'center'} justifyContent={'center'}>
               {src ? (
                 <Tooltip
-                  title="Посмотреть фото"
+                  title={t('tooltips.viewPhoto')}
                   PopperProps={{
                     modifiers: [
                       {

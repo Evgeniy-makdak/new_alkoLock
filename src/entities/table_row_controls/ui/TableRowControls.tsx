@@ -87,7 +87,7 @@ export const TableRowControls: FC<TableRowControlsProps> = ({
     <div className={style.controls}>
       {/* Стрелочка "Перенести" - отображается всегда когда arrowIcon=true и visible=true */}
       {visible && arrowIcon && (
-        <Tooltip title="Перенести" open={hoveredButton === 'arrow'}>
+        <Tooltip title={t('common.move')} open={hoveredButton === 'arrow'}>
           <span>
             <GridActionsCellItem
               data-testid={testidEdit}

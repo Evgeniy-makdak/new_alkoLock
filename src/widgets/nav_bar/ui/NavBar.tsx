@@ -385,12 +385,12 @@ export const NavBar = () => {
               <div className={style.versionContainer}>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    {t('nav.frontend')}: v {frontendVersion}
+                    frontend: v {frontendVersion}
                   </Typography>
                 </div>
                 <div className={style.versionItem}>
                   <Typography variant="inherit" className={style.versionText}>
-                    {t('nav.backend')}: v {backendVersion}
+                    backend: v {backendVersion}
                   </Typography>
                 </div>
               </div>

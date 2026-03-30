@@ -146,7 +146,7 @@ export const AlkolocksMobileTable = ({
   };
 
   const getStatusText = (isActive: boolean) => {
-    return isActive ? 'Активен' : 'Неактивен';
+    return isActive ? t('tooltips.recordActive') : t('tooltips.recordInactive');
   };
 
   const handleResetAllFilters = () => {
@@ -424,7 +424,7 @@ export const AlkolocksMobileTable = ({
     if (row.isActive === true) {
       return (
         <>
-          <Tooltip title="Редактировать">
+          <Tooltip title={t('common.edit')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -436,7 +436,7 @@ export const AlkolocksMobileTable = ({
               <Edit fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Деактивировать">
+          <Tooltip title={t('common.deactivate')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -455,7 +455,7 @@ export const AlkolocksMobileTable = ({
     if (row.isActive === false) {
       return (
         <>
-          <Tooltip title="Активировать">
+          <Tooltip title={t('common.activate')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -467,7 +467,7 @@ export const AlkolocksMobileTable = ({
               <CheckCircleOutlineRounded fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Удалить навсегда">
+          <Tooltip title={t('common.deletePermanently')}>
             <IconButton
               size="small"
               onClick={(e) => {

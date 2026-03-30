@@ -152,7 +152,7 @@ export const UsersMobileTable = ({
   };
 
   const getStatusText = (isActive: boolean) => {
-    return isActive ? 'Активен' : 'Неактивен';
+    return isActive ? t('tooltips.recordActive') : t('tooltips.recordInactive');
   };
 
   const handleResetAllFilters = () => {
@@ -469,9 +469,9 @@ export const UsersMobileTable = ({
   const getAccessTooltip = (row: any) => {
     const access = row.ACCESS || row.access;
     if (access === 'Запрещен' || access === 'Disabled' || access === false) {
-      return 'Доступ запрещен';
+      return t('tooltips.accessDenied');
     }
-    return 'Доступ разрешен';
+    return t('tooltips.accessAllowed');
   };
 
   const renderActionButtons = (row: any) => {
@@ -479,7 +479,7 @@ export const UsersMobileTable = ({
 
     if (userIsSuperAdmin) {
       return (
-        <Tooltip title="Редактировать">
+        <Tooltip title={t('common.edit')}>
           <IconButton
             size="small"
             onClick={(e) => {
@@ -497,7 +497,7 @@ export const UsersMobileTable = ({
     if (row.isActive === true) {
       return (
         <>
-          <Tooltip title="Редактировать">
+          <Tooltip title={t('common.edit')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -509,7 +509,7 @@ export const UsersMobileTable = ({
               <Edit fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Деактивировать">
+          <Tooltip title={t('common.deactivate')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -528,7 +528,7 @@ export const UsersMobileTable = ({
     if (row.isActive === false) {
       return (
         <>
-          <Tooltip title="Активировать">
+          <Tooltip title={t('common.activate')}>
             <IconButton
               size="small"
               onClick={(e) => {
@@ -540,7 +540,7 @@ export const UsersMobileTable = ({
               <CheckCircleOutlineRounded fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Удалить навсегда">
+          <Tooltip title={t('common.deletePermanently')}>
             <IconButton
               size="small"
               onClick={(e) => {

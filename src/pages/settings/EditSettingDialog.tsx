@@ -103,10 +103,10 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             onClick={() => handleCloseModal({}, 'buttonClick')}
             aria-label="close"
             sx={{
-              color: (theme) => theme.palette.grey[500],
+              color: 'text.secondary',
               '&:hover': {
-                backgroundColor: 'transparent',
-                color: (theme) => theme.palette.grey[700],
+                backgroundColor: 'action.hover',
+                color: 'text.primary',
               },
             }}>
             <CloseIcon />
@@ -169,15 +169,12 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
               onClick={handleSave}
               disabled={isSaving || errors[editingField?.name]?.length > 0}
               sx={{
-                '&&': {
-                  background: 'transparent !important',
-                  border: '1px solid grey !important',
-                  color: 'black !important',
-                  minWidth: '100px !important',
-                },
+                minWidth: 100,
+                borderColor: 'divider',
+                color: 'text.primary',
                 '&:hover': {
-                  background: 'rgba(0, 0, 0, 0.04) !important',
-                  border: '1px solid grey !important',
+                  borderColor: 'text.secondary',
+                  backgroundColor: 'action.hover',
                 },
               }}>
               {t('common.save')}
@@ -189,15 +186,12 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
               onClick={() => handleCloseModal({}, 'buttonClick')}
               disabled={isSaving}
               sx={{
-                '&&': {
-                  background: 'transparent !important',
-                  border: '1px solid grey !important',
-                  color: 'black !important',
-                  minWidth: '100px !important',
-                },
+                minWidth: 100,
+                borderColor: 'divider',
+                color: 'text.primary',
                 '&:hover': {
-                  background: 'rgba(0, 0, 0, 0.04) !important',
-                  border: '1px solid grey !important',
+                  borderColor: 'text.secondary',
+                  backgroundColor: 'action.hover',
                 },
               }}>
               {t('common.cancel')}

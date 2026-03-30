@@ -617,7 +617,7 @@ export const AttachmentsMobileTable = ({
               <div className={styles.rowMain}>
                 <div className={styles.dateTime}>{row.DATE_CREATE || 'Дата не указана'}</div>
                 {tableData.isVisibleActionsColum && (
-                  <Tooltip title="Удалить">
+                  <Tooltip title={t('common.delete')}>
                     <IconButton
                       size="small"
                       onClick={(e) => {

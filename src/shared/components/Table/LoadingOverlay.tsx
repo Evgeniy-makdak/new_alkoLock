@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 import { Box, LinearProgress, Tooltip } from '@mui/material';
 
 interface LoadingOverlayProps {
@@ -5,8 +7,9 @@ interface LoadingOverlayProps {
 }
 
 export const LoadingOverlay = ({ fullWidth = true }: LoadingOverlayProps) => {
+  const { t } = useTranslation();
   return (
-    <Tooltip title="Выполняется обработка данных" placement="top" arrow>
+    <Tooltip title={t('tooltips.processingData')} placement="top" arrow>
       <Box
         sx={{
           position: 'absolute',

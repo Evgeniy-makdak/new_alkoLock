@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import {
   readGhostPrankRuntimeEnabled,
@@ -61,6 +62,7 @@ function makeBloodDroplets(cx: number, cy: number, count: number): BloodDrop[] {
 }
 
 export const EventsGhostPrank = () => {
+  const { t } = useTranslation();
   const [runtimeEnabled, setRuntimeEnabled] = useState(readGhostPrankRuntimeEnabled);
   const [phase, setPhase] = useState<Phase>(() =>
     readGhostPrankRuntimeEnabled() ? 'haunting' : 'done',
@@ -201,7 +203,7 @@ export const EventsGhostPrank = () => {
           style={{ transform }}
           onClick={onGhostClick}
           role="presentation"
-          title="Бу!">
+          title={t('tooltips.ghostPrank')}>
           <svg className={styles.svg} viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="eventsGhostGlow" cx="50%" cy="35%" r="65%">

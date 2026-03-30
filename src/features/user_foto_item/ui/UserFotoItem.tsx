@@ -5,6 +5,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useTranslation } from 'react-i18next';
+
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import RemoveRedEyeOutlinedIcon from '@mui/icons-material/RemoveRedEyeOutlined';
@@ -41,6 +43,7 @@ export const UserFotoItem = ({
   userId,
   userActive,
 }: UserFotoItemProps) => {
+  const { t } = useTranslation();
   const {
     isLoadingImage,
     handleDeleteImage,
@@ -94,7 +97,7 @@ export const UserFotoItem = ({
               justifyContent={'space-around'}>
               {/* Кнопка "Удалить фото" с проверкой */}
               {!isDisabled() && (
-                <Tooltip title="Удалить фото из галереи">
+                <Tooltip title={t('tooltips.deletePhotoFromGallery')}>
                   <span onClick={handleDeleteImage}>
                     <DeleteForeverOutlinedIcon color={'inherit'} />
                   </span>
@@ -103,20 +106,20 @@ export const UserFotoItem = ({
 
               {/* Кнопка "Сменить фото профиля" с проверкой */}
               {!isAvatar && !isDisabled() && (
-                <Tooltip title="Сменить фото профиля">
+                <Tooltip title={t('tooltips.changeProfilePhoto')}>
                   <span onClick={handleChangeAvatar}>
                     <AccountCircleOutlinedIcon color={'inherit'} />
                   </span>
                 </Tooltip>
               )}
-              <Tooltip title="Посмотреть фото">
+              <Tooltip title={t('tooltips.viewPhoto')}>
                 <span onClick={onClickView}>
                   <RemoveRedEyeOutlinedIcon />
                 </span>
               </Tooltip>
             </Stack>
             {isAvatar && (
-              <Tooltip title="Аватар профиля">
+              <Tooltip title={t('tooltips.profileAvatar')}>
                 <span className={style.avatar}>
                   <AccountCircleOutlinedIcon />
                 </span>
