@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { EVENTS_PAGE_GHOST_PRANK_ENABLED } from '../config/eventsGhostPrankEnabled';
+import {
+  readGhostPrankRuntimeEnabled,
+  writeGhostPrankRuntimeEnabled,
+} from '../config/eventsGhostPrankEnabled';
 import styles from './EventsGhostPrank.module.scss';
 
 const SPLATTER_CLEANUP_MS = 4500;
@@ -58,8 +61,9 @@ function makeBloodDroplets(cx: number, cy: number, count: number): BloodDrop[] {
 }
 
 export const EventsGhostPrank = () => {
+  const [runtimeEnabled, setRuntimeEnabled] = useState(readGhostPrankRuntimeEnabled);
   const [phase, setPhase] = useState<Phase>(() =>
-    EVENTS_PAGE_GHOST_PRANK_ENABLED ? 'haunting' : 'done',
+    readGhostPrankRuntimeEnabled() ? 'haunting' : 'done',
   );
   const [transform, setTransform] = useState('translate(0vw, 0vh)');
   const [droplets, setDroplets] = useState<BloodDrop[]>([]);
@@ -68,13 +72,49 @@ export const EventsGhostPrank = () => {
   const waypointsRef = useRef(buildWaypoints(12));
 
   useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (
+        e.ctrlKey &&
+        e.shiftKey &&
+        !e.altKey &&
+        !e.metaKey &&
+        e.key.toLowerCase() === 'g' &&
+        !e.repeat
+      ) {
+        e.preventDefault();
+        setRuntimeEnabled((prev) => {
+          const next = !prev;
+          writeGhostPrankRuntimeEnabled(next);
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', onKey, { capture: false });
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  useEffect(() => {
+    if (runtimeEnabled) {
+      setPhase('haunting');
+      waypointsRef.current = buildWaypoints(12);
+      setDroplets([]);
+      setFlashPos(null);
+      setTransform('translate(0vw, 0vh)');
+    } else {
+      setPhase('done');
+      setDroplets([]);
+      setFlashPos(null);
+    }
+  }, [runtimeEnabled]);
+
+  useEffect(() => {
     if (phase !== 'splatter' || droplets.length === 0) return undefined;
     const t = window.setTimeout(() => setPhase('done'), SPLATTER_CLEANUP_MS);
     return () => window.clearTimeout(t);
   }, [phase, droplets.length]);
 
   useEffect(() => {
-    if (!EVENTS_PAGE_GHOST_PRANK_ENABLED || phase !== 'haunting') return undefined;
+    if (!runtimeEnabled || phase !== 'haunting') return undefined;
 
     const entranceStart = { x: -0.08, y: 1.08 };
     const firstTarget = waypointsRef.current[0];
@@ -119,7 +159,7 @@ export const EventsGhostPrank = () => {
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [phase]);
+  }, [phase, runtimeEnabled]);
 
   const onGhostClick = (e: React.MouseEvent) => {
     const el = ghostRef.current;
@@ -137,7 +177,7 @@ export const EventsGhostPrank = () => {
     setPhase('splatter');
   };
 
-  if (!EVENTS_PAGE_GHOST_PRANK_ENABLED) return null;
+  if (!runtimeEnabled) return null;
   if (phase === 'done') return null;
 
   return (
