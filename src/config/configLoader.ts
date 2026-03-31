@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLog';
 
-/** В public/build config.json подставьте свой хост вместо плейсхолдера; иначе берутся значения по умолчанию ниже. */
+/** Шаблон из config.json: `{DOMAIN}` меняется на этот хост, если в файле не указали свой URL целиком. */
+const DEFAULT_APP_DOMAIN_HOST = 'alcolock-test.lsystems.ru';
+
+/** Шаблон из config.json: замените {DOMAIN} на свой хост (или оставьте — подставится тестовый по умолчанию). */
+export const CONFIG_DOMAIN_PLACEHOLDER = '{DOMAIN}';
+/** @deprecated совместимость со старым шаблоном */
 export const CONFIG_URL_PLACEHOLDER = 'YOUR_SERVER_HOST';
 
 export interface AppConfig {
@@ -21,8 +26,8 @@ class ConfigLoader {
   private loadingPromise: Promise<AppConfig> | null = null;
 
   private defaultConfig: AppConfig = {
-    apiUrl: 'https://alcolock-test.lsystems.ru/',
-    wsUrl: 'wss://alcolock-test.lsystems.ru/ws/websocket',
+    apiUrl: `https://${DEFAULT_APP_DOMAIN_HOST}/`,
+    wsUrl: `wss://${DEFAULT_APP_DOMAIN_HOST}/ws/websocket`,
   };
 
   private constructor() {}
@@ -52,20 +57,31 @@ class ConfigLoader {
     return config;
   }
 
-  /** Если в config.json оставлены плейсхолдеры или пустые строки — используем встроенный тестовый домен. */
+  /**
+   * Пустая строка → дефолтный полный URL.
+   * `https://{DOMAIN}/` и `wss://{DOMAIN}/...` → подстановка defaultDomainHost (можно не менять config при коммитах).
+   * Любой другой URL без плейсхолдеров → как в файле (прод).
+   */
   private resolvePlaceholders(merged: AppConfig): AppConfig {
-    const ph = CONFIG_URL_PLACEHOLDER;
-    const api =
-      typeof merged.apiUrl === 'string' &&
-      merged.apiUrl.trim() !== '' &&
-      !merged.apiUrl.includes(ph)
-        ? merged.apiUrl
-        : this.defaultConfig.apiUrl;
-    const ws =
-      typeof merged.wsUrl === 'string' && merged.wsUrl.trim() !== '' && !merged.wsUrl.includes(ph)
-        ? merged.wsUrl
-        : this.defaultConfig.wsUrl;
-    return { ...merged, apiUrl: api, wsUrl: ws };
+    const host = DEFAULT_APP_DOMAIN_HOST;
+
+    const resolveOne = (value: string | undefined, fallback: string): string => {
+      if (typeof value !== 'string' || value.trim() === '') return fallback;
+      let v = value;
+      if (v.includes(CONFIG_DOMAIN_PLACEHOLDER)) {
+        v = v.split(CONFIG_DOMAIN_PLACEHOLDER).join(host);
+      }
+      if (v.includes(CONFIG_URL_PLACEHOLDER)) {
+        v = v.split(CONFIG_URL_PLACEHOLDER).join(host);
+      }
+      return v;
+    };
+
+    return {
+      ...merged,
+      apiUrl: resolveOne(merged.apiUrl, this.defaultConfig.apiUrl),
+      wsUrl: resolveOne(merged.wsUrl, this.defaultConfig.wsUrl),
+    };
   }
 
   private async loadConfigInternal(): Promise<AppConfig> {

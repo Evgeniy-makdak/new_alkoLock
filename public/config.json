@@ -1,4 +1,4 @@
 {
-  "apiUrl": "https://YOUR_SERVER_HOST/",
-  "wsUrl": "wss://YOUR_SERVER_HOST/ws/websocket"
+  "apiUrl": "https://{DOMAIN}/",
+  "wsUrl": "wss://{DOMAIN}/ws/websocket"
 }

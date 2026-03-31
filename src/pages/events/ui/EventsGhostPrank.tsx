@@ -16,6 +16,7 @@ const IMPACT_MS = 280;
 const RECOVER_MS = 620;
 const SPARK_CLEANUP_MS = 520;
 const SPARK_COUNT = 28;
+const CRACK_CLEANUP_MS = 3150;
 const ATTACK_GAP_MIN_MS = 7500;
 const ATTACK_GAP_MAX_MS = 17500;
 
@@ -23,6 +24,13 @@ type Phase = 'haunting' | 'splatter' | 'done';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';
 type Sp = { id: string; left: number; top: number; sx: number; sy: number; dur: number };
+type GlassCrackBurst = {
+  id: number;
+  xPct: number;
+  yPct: number;
+  main: string[];
+  hair: string[];
+};
 type AttackMode = 'wander' | 'recede' | 'charge' | 'impact' | 'recover';
 
 type BloodDrop = {
@@ -159,6 +167,49 @@ function makeEyeSparks(
   });
 }
 
+function createCrackRng(seed: number) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
+}
+
+function buildGlassCrackPaths(seed: number): { main: string[]; hair: string[] } {
+  const rnd = createCrackRng(seed);
+  const main: string[] = [];
+  const hair: string[] = [];
+  const rays = 8 + Math.floor(rnd() * 4);
+  for (let i = 0; i < rays; i++) {
+    let ang = (i / rays) * Math.PI * 2 + (rnd() - 0.5) * 0.55;
+    let d = 'M 0 0';
+    let x = 0;
+    let y = 0;
+    const steps = 12 + Math.floor(rnd() * 10);
+    for (let s = 0; s < steps; s++) {
+      const step = 2.8 + rnd() * 5.5;
+      ang += (rnd() - 0.5) * 0.42;
+      x += Math.cos(ang) * step;
+      y += Math.sin(ang) * step;
+      d += ` L ${x.toFixed(2)} ${y.toFixed(2)}`;
+    }
+    main.push(d);
+  }
+  const hairs = 8 + Math.floor(rnd() * 5);
+  for (let i = 0; i < hairs; i++) {
+    const ang = rnd() * Math.PI * 2;
+    const len = 12 + rnd() * 42;
+    const w = (rnd() - 0.5) * 5;
+    const x1 = Math.cos(ang) * len * 0.42 + w;
+    const y1 = Math.sin(ang) * len * 0.42 - w * 0.3;
+    const x2 = Math.cos(ang) * len;
+    const y2 = Math.sin(ang) * len;
+    hair.push(`M 0 0 L ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)}`);
+  }
+  return { main, hair };
+}
+
 function rotForEdge(edge: Edge, chargeT: number): number {
   const lean = 12 * easeInCubic(chargeT);
   switch (edge) {
@@ -189,6 +240,8 @@ export const EventsGhostPrank = () => {
   const [faceAngry, setFaceAngry] = useState(false);
   const [screenBump, setScreenBump] = useState(0);
   const [sparks, setSparks] = useState<Sp[]>([]);
+  const [glassCrack, setGlassCrack] = useState<GlassCrackBurst | null>(null);
+  const crackSeqRef = useRef(0);
   const ghostRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const waypointsRef = useRef(buildWaypoints(12));
@@ -258,6 +311,7 @@ export const EventsGhostPrank = () => {
       setFlashPos(null);
       setFaceAngry(false);
       setSparks([]);
+      setGlassCrack(null);
       setTransform('translate(0vw, 0vh) translate(-50%, -50%) rotate(0deg) skewX(0deg) scale(1)');
       reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       attackRef.current.mode = 'wander';
@@ -267,6 +321,7 @@ export const EventsGhostPrank = () => {
       setFlashPos(null);
       setFaceAngry(false);
       setSparks([]);
+      setGlassCrack(null);
     }
   }, [runtimeEnabled]);
 
@@ -292,6 +347,12 @@ export const EventsGhostPrank = () => {
   }, [sparks]);
 
   useEffect(() => {
+    if (!glassCrack) return undefined;
+    const id = window.setTimeout(() => setGlassCrack(null), CRACK_CLEANUP_MS);
+    return () => window.clearTimeout(id);
+  }, [glassCrack]);
+
+  useEffect(() => {
     if (!runtimeEnabled || phase !== 'haunting') return undefined;
 
     const entranceStart = { x: -0.08, y: 1.08 };
@@ -312,6 +373,18 @@ export const EventsGhostPrank = () => {
       const el = ghostRef.current;
       if (el) {
         const r = el.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const iw = window.innerWidth || 1;
+        const ih = window.innerHeight || 1;
+        crackSeqRef.current += 1;
+        const crackSeed = crackSeqRef.current * 7919 + Math.floor(performance.now());
+        setGlassCrack({
+          id: crackSeqRef.current,
+          xPct: (cx / iw) * 100,
+          yPct: (cy / ih) * 100,
+          ...buildGlassCrackPaths(crackSeed),
+        });
         const leftEye = { x: r.left + r.width * 0.36, y: r.top + r.height * 0.35 };
         const rightEye = { x: r.left + r.width * 0.64, y: r.top + r.height * 0.35 };
         setSparks(makeEyeSparks(leftEye, rightEye, a.edge));
@@ -537,6 +610,16 @@ export const EventsGhostPrank = () => {
     });
     window.setTimeout(() => setFlashPos(null), 240);
 
+    const iw = window.innerWidth || 1;
+    const ih = window.innerHeight || 1;
+    crackSeqRef.current += 1;
+    setGlassCrack({
+      id: crackSeqRef.current,
+      xPct: (cx / iw) * 100,
+      yPct: (cy / ih) * 100,
+      ...buildGlassCrackPaths(crackSeqRef.current * 11003 + Math.floor(performance.now())),
+    });
+
     setSparks([]);
     setDroplets(makeBloodDroplets(cx, cy, DROP_COUNT));
     setPhase('splatter');
@@ -547,6 +630,24 @@ export const EventsGhostPrank = () => {
 
   return (
     <div ref={rootRef} className={styles.root} aria-hidden>
+      {glassCrack ? (
+        <svg
+          className={styles.crackSvg}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden>
+          <g transform={`translate(${glassCrack.xPct} ${glassCrack.yPct})`}>
+            {glassCrack.main.map((d, i) => (
+              <path key={`m-${glassCrack.id}-${i}`} className={styles.crackPath} d={d} />
+            ))}
+            {glassCrack.hair.map((d, i) => (
+              <path key={`h-${glassCrack.id}-${i}`} className={styles.crackPathHair} d={d} />
+            ))}
+          </g>
+        </svg>
+      ) : null}
+
       {flashPos ? (
         <div
           className={styles.flash}
