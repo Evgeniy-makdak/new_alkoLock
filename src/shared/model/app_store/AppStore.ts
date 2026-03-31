@@ -3,6 +3,7 @@ import 'react-router-dom';
 import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
+import { writeGhostPrankRuntimeEnabled } from '@pages/events/config/eventsGhostPrankEnabled';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { routers } from '@shared/config/routers';
 import { StorageKeys } from '@shared/const/storageKeys';
@@ -106,6 +107,8 @@ export const appStore = create<AppStore>()((set, get) => ({
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
     localStorage.removeItem(StorageKeys.OFFICE);
+    /* Шутка только по горячим клавишам; после выхода флаг сбрасывается. */
+    writeGhostPrankRuntimeEnabled(false);
   },
   setAuthError: (message) => set({ authError: message }),
   setUserFullName: (fullName: string) => set({ fullName: fullName }),

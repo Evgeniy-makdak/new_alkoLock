@@ -5,6 +5,9 @@
  * **`EVENTS_PAGE_GHOST_PRANK_ENABLED`** — значение по умолчанию, если в `localStorage` ещё не сохраняли выбор.
  *
  * **Переключение в рантайме:** **Ctrl+Alt+Shift+B** или **Ctrl+Alt+Shift+H** на «События» (в `localStorage`).
+ *
+ * Ключ `alcolock.eventsGhostPrank.enabled` используется только этим модулем и `EventsGhostPrank`; на авторизацию, API и прочий UI не влияет.
+ * При `appStore.logout()` пишется `false`. Включение — только горячими клавишами на «События» (см. `AppStore.ts`).
  */
 export const EVENTS_PAGE_GHOST_PRANK_ENABLED = false;
 
