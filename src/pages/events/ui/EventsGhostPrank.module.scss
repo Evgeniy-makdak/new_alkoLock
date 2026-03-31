@@ -6,6 +6,31 @@
   overflow: hidden;
 }
 
+.root.screenShake {
+  animation: ghostScreenBump 0.34s ease-out;
+}
+
+@keyframes ghostScreenBump {
+  0% {
+    transform: translate(0, 0);
+  }
+  15% {
+    transform: translate(4px, -3px);
+  }
+  35% {
+    transform: translate(-5px, 2px);
+  }
+  55% {
+    transform: translate(3px, 3px);
+  }
+  75% {
+    transform: translate(-2px, -1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
 .ghost {
   position: absolute;
   left: 0;
@@ -26,6 +51,50 @@
   height: 100%;
   display: block;
   opacity: 0.9;
+}
+
+.moodNormal,
+.moodAngry {
+  transition: opacity 0.12s ease-out;
+}
+
+.moodAngry {
+  pointer-events: none;
+}
+
+.sparkLayer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1195;
+}
+
+.spark {
+  position: fixed;
+  width: 5px;
+  height: 5px;
+  margin: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fffef5 0%, #ffe082 35%, #ff9800 65%, #e65100 100%);
+  box-shadow:
+    0 0 8px #ffecb3,
+    0 0 14px rgba(255, 193, 7, 0.85);
+  transform: translate(-50%, -50%);
+  animation-name: ghostSparkFly;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes ghostSparkFly {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(0.15);
+    opacity: 0;
+  }
 }
 
 .flash {
@@ -103,8 +172,21 @@
     transition: transform 0.6s ease-out;
   }
 
+  .root.screenShake {
+    animation: none;
+  }
+
+  .moodNormal,
+  .moodAngry {
+    transition: none;
+  }
+
   .bloodDrop {
     animation-duration: 1.2s !important;
     animation-timing-function: linear !important;
+  }
+
+  .spark {
+    animation-duration: 0.18s !important;
   }
 }

@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLog';
 
+/** В public/build config.json подставьте свой хост вместо плейсхолдера; иначе берутся значения по умолчанию ниже. */
+export const CONFIG_URL_PLACEHOLDER = 'YOUR_SERVER_HOST';
+
 export interface AppConfig {
   /** Базовый URL приложения (без /api). Пример: https://domain.com/ */
   apiUrl: string;
@@ -49,6 +52,22 @@ class ConfigLoader {
     return config;
   }
 
+  /** Если в config.json оставлены плейсхолдеры или пустые строки — используем встроенный тестовый домен. */
+  private resolvePlaceholders(merged: AppConfig): AppConfig {
+    const ph = CONFIG_URL_PLACEHOLDER;
+    const api =
+      typeof merged.apiUrl === 'string' &&
+      merged.apiUrl.trim() !== '' &&
+      !merged.apiUrl.includes(ph)
+        ? merged.apiUrl
+        : this.defaultConfig.apiUrl;
+    const ws =
+      typeof merged.wsUrl === 'string' && merged.wsUrl.trim() !== '' && !merged.wsUrl.includes(ph)
+        ? merged.wsUrl
+        : this.defaultConfig.wsUrl;
+    return { ...merged, apiUrl: api, wsUrl: ws };
+  }
+
   private async loadConfigInternal(): Promise<AppConfig> {
     try {
       // Путь от корня сайта (config.json в public/). При подпапке — учитываем PUBLIC_URL
@@ -82,8 +101,9 @@ class ConfigLoader {
 
         // Мержим с дефолтными значениями (externalConfig перезаписывает defaultConfig)
         const merged = { ...this.defaultConfig, ...externalConfig } as AppConfig;
-        setStompDebugFromRuntimeConfig(merged.chatStompDebug);
-        return merged;
+        const resolved = this.resolvePlaceholders(merged);
+        setStompDebugFromRuntimeConfig(resolved.chatStompDebug);
+        return resolved;
       } else {
         setStompDebugFromRuntimeConfig(undefined);
         return this.defaultConfig;

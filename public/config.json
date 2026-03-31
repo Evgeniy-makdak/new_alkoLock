@@ -1,4 +1,4 @@
 {
-  "apiUrl": "https://alcolock-test.lsystems.ru/",
-  "wsUrl": "wss://alcolock-test.lsystems.ru/ws/websocket"
+  "apiUrl": "https://YOUR_SERVER_HOST/",
+  "wsUrl": "wss://YOUR_SERVER_HOST/ws/websocket"
 }

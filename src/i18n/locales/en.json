@@ -79,7 +79,7 @@
     "processingData": "Processing data…",
     "attention": "Attention!",
     "templateActive": "Active",
-    "ghostPrank": "Boo!",
+    "ghostPrank": "Boo! Events: Ctrl+Shift+G or Ctrl+Alt+G (focus not in an input). Else the browser may capture the shortcut.",
     "recordActive": "Active",
     "recordInactive": "Inactive",
     "accessAllowed": "Access allowed",

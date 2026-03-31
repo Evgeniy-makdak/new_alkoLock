@@ -79,7 +79,7 @@
     "processingData": "Выполняется обработка данных",
     "attention": "Внимание!",
     "templateActive": "Активный",
-    "ghostPrank": "Бу!",
+    "ghostPrank": "Бу! «События»: Ctrl+Shift+G или Ctrl+Alt+G (курсор не в поле ввода). Иначе может открыться поиск браузера.",
     "recordActive": "Активен",
     "recordInactive": "Неактивен",
     "accessAllowed": "Доступ разрешён",
