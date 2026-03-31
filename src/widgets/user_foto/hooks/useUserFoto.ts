@@ -32,11 +32,11 @@ export const useUserFoto = (userId: ID) => {
   );
   const client = useQueryClient();
   const deleteImageMemo = useCallback(
-    (imageID: ID) => {
-      deleteImage(imageID, userId);
+    (imageID: ID, galleryUrl?: string | null) => {
+      deleteImage(imageID, userId, galleryUrl ? { url: galleryUrl } : undefined);
       client.resetQueries({ queryKey: [QueryKeys.AVATAR] });
     },
-    [userId],
+    [userId, deleteImage, client],
   );
 
   const listBodiesKey = listUrl?.map((item: { body: string }) => item.body).join('\u0001') ?? '';

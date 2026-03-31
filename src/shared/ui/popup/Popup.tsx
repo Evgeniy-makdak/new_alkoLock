@@ -51,6 +51,7 @@ export const Popup = ({
   return (
     <Dialog
       data-testid={testids.POPUP}
+      disableEnforceFocus
       open={isOpen}
       onClose={(_, reason) => {
         if (reason === 'backdropClick' && !closeonClickSpace) return;

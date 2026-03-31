@@ -17,7 +17,7 @@ import { useUserFotoItemApi } from '../api/useUserFotoItemApi';
 export const useUserFotoItem = (
   image: ImageStateInStore,
   setImageToStoreAfterLoadingMemo: (image: ImageStateInStore) => void,
-  deleteImage: (imageID: ID) => void,
+  deleteImage: (imageID: ID, galleryUrl?: string | null) => void,
   changeAvatarMemo: (idImage: ID) => void,
   userId: ID,
 ) => {
@@ -65,12 +65,13 @@ export const useUserFotoItem = (
     if (!imageId) return;
     await clearCache();
 
-    const res = await deleteFotos(imageId);
-    if (res?.isError) {
+    const res = await deleteFotos(String(imageId));
+    const is404 = res?.isError && res?.status === StatusCode.NOT_FOUND;
+    if (res?.isError && !is404) {
       enqueueSnackbar('Ошибка удаления фотографии', { variant: 'error' });
       return;
     }
-    deleteImage(image?.id);
+    deleteImage(imageId, image?.url ?? null);
   };
 
   const handleChangeAvatar = async () => {

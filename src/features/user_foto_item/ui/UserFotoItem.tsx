@@ -29,7 +29,7 @@ type UserFotoItemProps = {
   /** Активен ли пользователь (из строки таблицы) — без отдельного GET api/users на каждую миниатюру */
   userActive: boolean;
   onClickView: () => void;
-  deleteImageMemo: (imageID: ID) => void;
+  deleteImageMemo: (imageID: ID, galleryUrl?: string | null) => void;
   setImageToStoreAfterLoadingMemo: (image: ImageStateInStore) => void;
   changeAvatarMemo: (idImage: ID) => void;
 };

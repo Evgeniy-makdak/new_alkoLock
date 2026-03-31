@@ -55,7 +55,7 @@ type UsersFotoStore = {
   setNotSavedImageInDataBase: (imageList: ImageState[], userId: ID) => void;
   imageHasNoUpload: (userId: ID, message?: string) => void;
   getUserImages: (urls: string[], userId: ID) => void;
-  deleteImage: (idImage: ID, userId: ID) => void;
+  deleteImage: (idImage: ID, userId: ID, opts?: { url?: string | null }) => void;
   changeAvatar: (idImage: ID, isUser: ID, isAvatar?: boolean) => void;
   updateUserImages: (userId: ID, images: ImageStateInStore[]) => void;
   /** После PUT user: привести isAvatar в галерее в соответствие с userPhotoDTO.default с бэка */
@@ -218,10 +218,24 @@ export const userFotoStore = create<UsersFotoStore>()((set, get) => ({
     }));
   },
 
-  deleteImage: (idImage, userId) => {
+  deleteImage: (idImage, userId, opts) => {
+    if (!userId) return;
+    const hasId = idImage != null && String(idImage).length > 0;
+    if (!hasId && !opts?.url) return;
+
     const state = get().usersImages;
     const prevImage = state[userId] || [];
-    const newState = prevImage.filter((item) => item?.id !== idImage);
+    const idStr = hasId ? String(idImage) : '';
+
+    const newState = prevImage.filter((item) => {
+      if (idStr && item?.id != null && String(item.id) === idStr) {
+        return false;
+      }
+      if (idStr && item?.id == null && opts?.url && galleryRefMatchesStoreItem(opts.url, item)) {
+        return false;
+      }
+      return true;
+    });
 
     set((prev) => ({ ...prev, usersImages: { ...state, [userId]: newState } }));
   },

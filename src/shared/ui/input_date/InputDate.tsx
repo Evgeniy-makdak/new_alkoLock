@@ -120,6 +120,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
     [outerTheme, themeOverride],
   );
   const textFieldProps = pickerProps?.slotProps?.textField || {};
+  const userPopperSlot = pickerProps?.slotProps?.popper;
   const [open, setOpen] = useState(false);
   const minDate = minDateFlag ? dayjs().add(1, 'day') : undefined;
 
@@ -152,6 +153,28 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
     [t],
   );
 
+  const mergedPopperSlot = useMemo(() => {
+    const raw = userPopperSlot;
+    const rest =
+      raw != null && typeof raw === 'object' ? { ...(raw as Record<string, unknown>) } : {};
+    const userSx =
+      raw != null && typeof raw === 'object' && 'sx' in raw
+        ? (raw as { sx?: unknown }).sx
+        : undefined;
+    delete rest.sx;
+    const extraSx = Array.isArray(userSx) ? userSx : userSx != null ? [userSx] : [];
+    return {
+      ...rest,
+      disablePortal: false,
+      sx: [
+        (theme: Theme) => ({
+          zIndex: Math.max(theme.zIndex.tooltip, theme.zIndex.modal) + 10000,
+        }),
+        ...extraSx,
+      ],
+    };
+  }, [userPopperSlot]);
+
   return (
     <MuiLocalizationProvider>
       <ThemeProvider theme={myTheme}>
@@ -176,6 +199,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
               id: 'ACTION_BAR',
             },
             popper: {
+              ...mergedPopperSlot,
               id: `POPER ${pickerProps.testid}_POPER`,
               onKeyDown: (e: React.KeyboardEvent) => {
                 e.stopPropagation();

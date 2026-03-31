@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { enqueueSnackbar } from 'notistack';
 
@@ -122,8 +122,22 @@ export const useUploadImg = (
   };
 
   const handleEventUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleLoadImg(e?.target?.files);
+    const input = e.currentTarget;
+    const { files } = input;
+    void (async () => {
+      try {
+        await handleLoadImg(files);
+      } finally {
+        input.value = '';
+      }
+    })();
   };
+
+  useEffect(() => {
+    if (images.length === 0 && inputRef.current) {
+      inputRef.current.value = '';
+    }
+  }, [images.length]);
 
   return {
     preview,
