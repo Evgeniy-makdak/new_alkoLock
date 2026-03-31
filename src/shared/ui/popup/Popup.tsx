@@ -98,7 +98,17 @@ export const Popup = ({
       </Tooltip>
 
       {headerTitle ? (
-        <DialogTitle sx={{ px: 3.5, pt: 2.5, pr: 6, pb: 0, fontSize: 18, fontWeight: 'bold' }}>
+        <DialogTitle
+          sx={{
+            px: 3.5,
+            pt: 2.5,
+            pr: 6,
+            pb: 0,
+            fontSize: 18,
+            fontWeight: 'bold',
+            borderBottom: 'none',
+            boxShadow: 'none',
+          }}>
           {headerTitle}
         </DialogTitle>
       ) : null}
@@ -110,6 +120,10 @@ export const Popup = ({
           pb: buttons?.length ? 1 : 2,
           overflow: 'auto',
           color: 'text.primary',
+          borderTop: 'none',
+          borderBottom: 'none',
+          backgroundImage: 'none',
+          boxShadow: 'none',
         }}>
         {body}
       </DialogContent>

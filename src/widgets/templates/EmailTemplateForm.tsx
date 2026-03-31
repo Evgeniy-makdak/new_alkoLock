@@ -16,19 +16,21 @@ import UndoIcon from '@mui/icons-material/Undo';
 import {
   Backdrop,
   Box,
-  Button,
   FormControl,
   FormHelperText,
   IconButton,
   InputAdornment,
   MenuItem,
+  Stack,
   TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
 
 import { TemplatesApi } from '@shared/api/baseQuerys';
+import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { TEMPLATE_TYPES_LABEL_MAP } from '@shared/lib/templateTypesLabelMap';
+import { Button } from '@shared/ui/button';
 
 import { EmailTemplate } from './EmailTemplatesPage';
 
@@ -279,15 +281,16 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           maxHeight: '99vh',
           overflow: 'auto',
         }}>
-        {/* Заголовок формы */}
+        {/* Заголовок — как в GroupAddForm + Popup: h6, отступ снизу, без линий */}
         <Box
           sx={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'relative',
+            alignItems: 'flex-start',
+            gap: 1,
+            mb: 2,
           }}>
-          <Typography fontWeight={600} variant="h6" color="text.primary">
+          <Typography fontWeight={600} variant="h6" color="text.primary" sx={{ flex: 1, pr: 1 }}>
             {isEditing ? t('modals.editTemplate') : t('modals.addTemplate')}
           </Typography>
           <Tooltip title={t('common.closeWindow')}>
@@ -296,6 +299,7 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
               onClick={onClose}
               aria-label="close"
               sx={{
+                mt: -0.5,
                 color: 'text.secondary',
                 '&:hover': {
                   backgroundColor: 'action.hover',
@@ -307,215 +311,169 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           </Tooltip>
         </Box>
 
-        <TextField
-          label={t('form.templateName')}
-          fullWidth
-          margin="dense"
-          value={name}
-          error={Boolean(fieldErrors.name)}
-          helperText={fieldErrors.name}
-          onChange={(e) => {
-            setFieldErrors((prev) => ({ ...prev, name: '' }));
-            setName(e.target.value);
-          }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton onClick={handleClearName} edge="end">
-                  <Tooltip title={t('datePicker.clear')}>
-                    <ClearIcon />
-                  </Tooltip>
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+        <Stack gap={3}>
+          <TextField
+            label={t('form.templateName')}
+            fullWidth
+            value={name}
+            error={Boolean(fieldErrors.name)}
+            helperText={fieldErrors.name}
+            onChange={(e) => {
+              setFieldErrors((prev) => ({ ...prev, name: '' }));
+              setName(e.target.value);
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton onClick={handleClearName} edge="end">
+                    <Tooltip title={t('datePicker.clear')}>
+                      <ClearIcon />
+                    </Tooltip>
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
 
-        <TextField
-          label={t('tables.templateType')}
-          fullWidth
-          margin="dense"
-          select
-          value={templateType}
-          error={Boolean(fieldErrors.templateType)}
-          helperText={fieldErrors.templateType}
-          onChange={(e) => {
-            setFieldErrors((prev) => ({ ...prev, templateType: '' }));
-            setTemplateType(e.target.value);
-          }}>
-          {templateTypes.map((type) => (
-            <MenuItem key={type.id} value={type.type}>
-              {t(TEMPLATE_TYPES_LABEL_MAP[type.name] ?? `templateTypes.${type.type}`, {
-                defaultValue: type.name,
-              })}
-            </MenuItem>
-          ))}
-        </TextField>
+          <TextField
+            label={t('tables.templateType')}
+            fullWidth
+            select
+            value={templateType}
+            error={Boolean(fieldErrors.templateType)}
+            helperText={fieldErrors.templateType}
+            onChange={(e) => {
+              setFieldErrors((prev) => ({ ...prev, templateType: '' }));
+              setTemplateType(e.target.value);
+            }}>
+            {templateTypes.map((type) => (
+              <MenuItem key={type.id} value={type.type}>
+                {t(TEMPLATE_TYPES_LABEL_MAP[type.name] ?? `templateTypes.${type.type}`, {
+                  defaultValue: type.name,
+                })}
+              </MenuItem>
+            ))}
+          </TextField>
 
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            mb: 0.5,
-            mt: 0.5,
-            '& .MuiIconButton-root': { color: 'text.secondary' },
-          }}>
-          <Tooltip title={t('tooltips.richTextUndo')}>
-            <IconButton onClick={handleUndo}>
-              <UndoIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={t('tooltips.richTextRedo')}>
-            <IconButton onClick={handleRedo}>
-              <RedoIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              '& .MuiIconButton-root': { color: 'text.secondary' },
+            }}>
+            <Tooltip title={t('tooltips.richTextUndo')}>
+              <IconButton onClick={handleUndo}>
+                <UndoIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('tooltips.richTextRedo')}>
+              <IconButton onClick={handleRedo}>
+                <RedoIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
 
-        <FormControl
-          fullWidth
-          error={Boolean(fieldErrors.content)}
-          sx={{
-            mb: 4,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 0,
-            '& .quill': {
+          <FormControl
+            fullWidth
+            error={Boolean(fieldErrors.content)}
+            sx={{
               display: 'flex',
               flexDirection: 'column',
-              width: '100%',
-              height: 'auto !important',
-            },
-            '& .ql-toolbar.ql-snow': {
-              borderColor: 'divider',
-              bgcolor: 'background.default',
-              flexShrink: 0,
-            },
-            '& .ql-container.ql-snow': {
-              borderColor: 'divider',
-              bgcolor: 'background.default',
-              flex: '1 1 auto',
-              minHeight: 200,
-              height: 'auto !important',
-              fontSize: '1rem',
-            },
-            '& .ql-editor': {
-              color: 'text.primary',
-              minHeight: 196,
-            },
-            '& .ql-editor.ql-blank::before': {
-              color: 'text.disabled',
-            },
-            '& .ql-stroke': {
-              stroke: (theme) => theme.palette.text.primary,
-            },
-            '& .ql-fill': {
-              fill: (theme) => theme.palette.text.primary,
-            },
-            '& .ql-picker': {
-              color: 'text.primary',
-            },
-            '& .ql-picker-options': {
-              bgcolor: 'background.paper',
-              borderColor: 'divider',
-            },
-            '& .ql-picker-label': {
-              borderColor: 'divider',
-            },
-            '& .ql-snow .ql-picker.ql-expanded .ql-picker-label': {
-              borderColor: 'divider',
-            },
-            '& .ql-snow.ql-toolbar button:hover .ql-stroke': {
-              stroke: (theme) => theme.palette.primary.main,
-            },
-            '& .ql-snow.ql-toolbar button:hover .ql-fill': {
-              fill: (theme) => theme.palette.primary.main,
-            },
-          }}>
-          <ReactQuill
-            ref={quillRef}
-            value={content}
-            onChange={(v) => {
-              setFieldErrors((prev) => ({ ...prev, content: '' }));
-              setContent(v);
-            }}
-            theme="snow"
-            modules={modules}
-            formats={[
-              'font',
-              'size',
-              'list',
-              'bold',
-              'italic',
-              'underline',
-              'strike',
-              'blockquote',
-              'code-block',
-              'script',
-              'indent',
-              'direction',
-              'color',
-              'background',
-              'align',
-              'link',
-              'image',
-            ]}
-          />
-          {fieldErrors.content ? <FormHelperText>{fieldErrors.content}</FormHelperText> : null}
-        </FormControl>
-
-        <Box
-          sx={{
-            mt: 3,
-            mb: 0.5,
-            pt: 2,
-            pb: 0.5,
-            display: 'flex',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            gap: 2,
-            flexShrink: 0,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          }}>
-          <Tooltip title={isEditing ? t('form.saveChanges') : t('modals.addTemplate')}>
-            <span>
-              <Button
-                variant="outlined"
-                onClick={handleSave}
-                disabled={saveDisabled}
-                sx={{
-                  minWidth: 100,
-                  borderColor: 'divider',
-                  color: 'text.primary',
-                  fontWeight: 600,
-                  '&:hover': {
-                    borderColor: 'text.secondary',
-                    backgroundColor: 'action.hover',
-                  },
-                }}>
-                {isEditing ? t('common.save') : t('common.add')}
-              </Button>
-            </span>
-          </Tooltip>
-          <Tooltip title={t('common.cancel')}>
-            <Button
-              variant="outlined"
-              onClick={onClose}
-              sx={{
-                minWidth: 100,
+              gap: 0,
+              '& .quill': {
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                height: 'auto !important',
+              },
+              '& .ql-toolbar.ql-snow': {
                 borderColor: 'divider',
+                bgcolor: 'background.default',
+                flexShrink: 0,
+              },
+              '& .ql-container.ql-snow': {
+                borderColor: 'divider',
+                bgcolor: 'background.default',
+                flex: '1 1 auto',
+                minHeight: 200,
+                height: 'auto !important',
+                fontSize: '1rem',
+              },
+              '& .ql-editor': {
                 color: 'text.primary',
-                '&:hover': {
-                  borderColor: 'text.secondary',
-                  backgroundColor: 'action.hover',
-                },
-              }}>
+                minHeight: 196,
+              },
+              '& .ql-editor.ql-blank::before': {
+                color: 'text.disabled',
+              },
+              '& .ql-stroke': {
+                stroke: (theme) => theme.palette.text.primary,
+              },
+              '& .ql-fill': {
+                fill: (theme) => theme.palette.text.primary,
+              },
+              '& .ql-picker': {
+                color: 'text.primary',
+              },
+              '& .ql-picker-options': {
+                bgcolor: 'background.paper',
+                borderColor: 'divider',
+              },
+              '& .ql-picker-label': {
+                borderColor: 'divider',
+              },
+              '& .ql-snow .ql-picker.ql-expanded .ql-picker-label': {
+                borderColor: 'divider',
+              },
+              '& .ql-snow.ql-toolbar button:hover .ql-stroke': {
+                stroke: (theme) => theme.palette.primary.main,
+              },
+              '& .ql-snow.ql-toolbar button:hover .ql-fill': {
+                fill: (theme) => theme.palette.primary.main,
+              },
+            }}>
+            <ReactQuill
+              ref={quillRef}
+              value={content}
+              onChange={(v) => {
+                setFieldErrors((prev) => ({ ...prev, content: '' }));
+                setContent(v);
+              }}
+              theme="snow"
+              modules={modules}
+              formats={[
+                'font',
+                'size',
+                'list',
+                'bold',
+                'italic',
+                'underline',
+                'strike',
+                'blockquote',
+                'code-block',
+                'script',
+                'indent',
+                'direction',
+                'color',
+                'background',
+                'align',
+                'link',
+                'image',
+              ]}
+            />
+            {fieldErrors.content ? <FormHelperText>{fieldErrors.content}</FormHelperText> : null}
+          </FormControl>
+
+          <ButtonFormWrapper>
+            <Button type="button" disabled={saveDisabled} onClick={handleSave}>
+              {isEditing ? t('common.save') : t('common.add')}
+            </Button>
+            <Button type="button" onClick={onClose}>
               {t('common.cancel')}
             </Button>
-          </Tooltip>
-        </Box>
+          </ButtonFormWrapper>
+        </Stack>
       </Box>
     </Backdrop>
   );
