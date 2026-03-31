@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLog';
 
-interface AppConfig {
+export interface AppConfig {
   /** Базовый URL приложения (без /api). Пример: https://domain.com/ */
   apiUrl: string;
   wsUrl: string;
-  [key: string]: string;
+  /**
+   * Включить логи [Chat/STOMP] в консоли (диагностика WebSocket).
+   * В config.json: true или "true". Без .env.
+   */
+  chatStompDebug?: boolean | string;
 }
 
 class ConfigLoader {
@@ -67,19 +72,24 @@ class ConfigLoader {
         try {
           externalConfig = JSON.parse(text) as Partial<AppConfig>;
         } catch {
+          setStompDebugFromRuntimeConfig(undefined);
           return this.defaultConfig;
         }
         if (!externalConfig || typeof externalConfig !== 'object') {
+          setStompDebugFromRuntimeConfig(undefined);
           return this.defaultConfig;
         }
 
         // Мержим с дефолтными значениями (externalConfig перезаписывает defaultConfig)
-        const merged = { ...this.defaultConfig, ...externalConfig };
+        const merged = { ...this.defaultConfig, ...externalConfig } as AppConfig;
+        setStompDebugFromRuntimeConfig(merged.chatStompDebug);
         return merged;
       } else {
+        setStompDebugFromRuntimeConfig(undefined);
         return this.defaultConfig;
       }
     } catch {
+      setStompDebugFromRuntimeConfig(undefined);
       return this.defaultConfig;
     }
   }
@@ -99,12 +109,16 @@ class ConfigLoader {
   reset(): void {
     this.config = null;
     this.loadingPromise = null;
+    setStompDebugFromRuntimeConfig(undefined);
   }
 
   // Метод для обновления конфигурации (например, из UI)
   updateConfig(newConfig: Partial<AppConfig>): void {
     if (this.config) {
       this.config = { ...this.config, ...newConfig };
+      if (Object.prototype.hasOwnProperty.call(newConfig, 'chatStompDebug')) {
+        setStompDebugFromRuntimeConfig(this.config.chatStompDebug);
+      }
     }
   }
 }

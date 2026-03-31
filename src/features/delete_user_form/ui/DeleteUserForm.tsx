@@ -12,12 +12,16 @@ import { Button } from '@shared/ui/button';
 import { useDeleteUserForm } from '../hooks/useDeleteUserForm';
 
 type DeleteUserFormProps = {
-  user: { id: ID; text: ReactNode };
+  user: { id: ID; text: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const DeleteUserForm: FC<DeleteUserFormProps> = ({ user, closeModal, closeAside }) => {
+const DeleteUserFormInner: FC<{
+  user: { id: ID; text: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ user, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleDelete, isLoading } = useDeleteUserForm(user.id, closeModal, closeAside);
   return (
@@ -49,4 +53,9 @@ export const DeleteUserForm: FC<DeleteUserFormProps> = ({ user, closeModal, clos
       </Stack>
     </>
   );
+};
+
+export const DeleteUserForm: FC<DeleteUserFormProps> = ({ user, closeModal, closeAside }) => {
+  if (!user) return null;
+  return <DeleteUserFormInner user={user} closeModal={closeModal} closeAside={closeAside} />;
 };

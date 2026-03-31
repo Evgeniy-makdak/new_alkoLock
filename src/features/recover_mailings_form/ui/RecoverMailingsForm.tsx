@@ -12,16 +12,16 @@ import { Button } from '@shared/ui/button';
 import { useRecoverMailingsForm } from '../hooks/useRecoverMailingsForm';
 
 type RecoverMailingsFormProps = {
-  mailing: { id: ID; text?: ReactNode };
+  mailing: { id: ID; text?: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const RecoverMailingsForm: FC<RecoverMailingsFormProps> = ({
-  mailing,
-  closeModal,
-  closeAside,
-}) => {
+const RecoverMailingsFormInner: FC<{
+  mailing: { id: ID; text?: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ mailing, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverMailingsForm(mailing.id, closeModal, closeAside);
 
@@ -54,5 +54,16 @@ export const RecoverMailingsForm: FC<RecoverMailingsFormProps> = ({
         </ButtonFormWrapper>
       </Stack>
     </>
+  );
+};
+
+export const RecoverMailingsForm: FC<RecoverMailingsFormProps> = ({
+  mailing,
+  closeModal,
+  closeAside,
+}) => {
+  if (!mailing) return null;
+  return (
+    <RecoverMailingsFormInner mailing={mailing} closeModal={closeModal} closeAside={closeAside} />
   );
 };

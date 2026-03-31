@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
+import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
@@ -12,17 +12,19 @@ import { Button } from '@shared/ui/button';
 
 import { useAlkolockTrueDeleteForm } from '../hooks/useAlkolockTrueDeleteForm';
 
-export const AlkolockTrueDeleteForm = ({
-  alkolock,
-  closeTrueDeleteModal,
-}: {
+type AlkolockTrueDeleteFormProps = {
+  alkolock: { id: ID; text: any } | null;
+  closeTrueDeleteModal: () => void;
+};
+
+const AlkolockTrueDeleteFormInner: FC<{
   alkolock: { id: ID; text: any };
   closeTrueDeleteModal: () => void;
-}) => {
+}> = ({ alkolock, closeTrueDeleteModal }) => {
   const { t } = useTranslation();
-  const { onTrueDelete, isLoading } = useAlkolockTrueDeleteForm(alkolock?.id, closeTrueDeleteModal);
+  const { onTrueDelete, isLoading } = useAlkolockTrueDeleteForm(alkolock.id, closeTrueDeleteModal);
 
-  const displayText = alkolock?.text;
+  const displayText = alkolock.text;
 
   return (
     <>
@@ -52,5 +54,15 @@ export const AlkolockTrueDeleteForm = ({
         </ButtonFormWrapper>
       </Stack>
     </>
+  );
+};
+
+export const AlkolockTrueDeleteForm: FC<AlkolockTrueDeleteFormProps> = ({
+  alkolock,
+  closeTrueDeleteModal,
+}) => {
+  if (!alkolock) return null;
+  return (
+    <AlkolockTrueDeleteFormInner alkolock={alkolock} closeTrueDeleteModal={closeTrueDeleteModal} />
   );
 };

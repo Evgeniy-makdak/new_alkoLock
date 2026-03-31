@@ -5,6 +5,7 @@ import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../../api';
+import { stompDebugLog } from '../../lib/stompDebugLog';
 import { useSocket } from '../SocketContext';
 
 export const useChatMessages = (
@@ -13,7 +14,7 @@ export const useChatMessages = (
   updateSession: (sessionId: string, updates: any) => void,
   getSession: (sessionId: string) => any,
 ) => {
-  const { stompClient } = useSocket();
+  const { stompClient, isConnected, connectionStatus } = useSocket();
   const [responseTimers, setResponseTimers] = useState<Map<string, NodeJS.Timeout[]>>(new Map());
   const [processedUserMessageIds, setProcessedUserMessageIds] = useState<Map<string, number[]>>(
     new Map(),
@@ -207,6 +208,13 @@ export const useChatMessages = (
         const cleanStompMessage = JSON.parse(JSON.stringify(stompMessage));
 
         if (!stompClient || !stompClient.connected) {
+          stompDebugLog('sendMessage blocked: STOMP not ready', {
+            hasStompClient: Boolean(stompClient),
+            stompConnected: stompClient?.connected === true,
+            contextIsConnected: isConnected,
+            connectionStatus,
+            dialogId: finalDialogId,
+          });
           throw new Error('STOMP клиент не подключен');
         }
 
@@ -219,6 +227,11 @@ export const useChatMessages = (
         });
 
         if (sendResult === false) {
+          stompDebugLog('sendMessage blocked: stompClient.publish returned false', {
+            destination: '/app/chat.send',
+            stompConnected: stompClient.connected,
+            connectionStatus,
+          });
           throw new Error('Не удалось отправить сообщение через STOMP');
         }
 
@@ -307,6 +320,8 @@ export const useChatMessages = (
       getSession,
       updateSession,
       stompClient,
+      isConnected,
+      connectionStatus,
       sendTimeouts,
       generateUUID,
       getCurrentUserInfo,

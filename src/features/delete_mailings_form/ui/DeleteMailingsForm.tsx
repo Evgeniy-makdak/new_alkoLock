@@ -12,16 +12,16 @@ import { Button } from '@shared/ui/button';
 import { useDeleteMailingsForm } from '../hooks/useDeleteMailingsForm';
 
 type DeleteMailingsFormProps = {
-  mailing: { id: ID; text: ReactNode };
+  mailing: { id: ID; text: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
-  mailing,
-  closeModal,
-  closeAside,
-}) => {
+const DeleteMailingsFormInner: FC<{
+  mailing: { id: ID; text: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ mailing, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleDelete, isLoading } = useDeleteMailingsForm(mailing.id, closeModal, closeAside);
   return (
@@ -52,5 +52,16 @@ export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
         </ButtonFormWrapper>
       </Stack>
     </>
+  );
+};
+
+export const DeleteMailingsForm: FC<DeleteMailingsFormProps> = ({
+  mailing,
+  closeModal,
+  closeAside,
+}) => {
+  if (!mailing) return null;
+  return (
+    <DeleteMailingsFormInner mailing={mailing} closeModal={closeModal} closeAside={closeAside} />
   );
 };

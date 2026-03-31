@@ -12,12 +12,16 @@ import { Button } from '@shared/ui/button';
 import { useRecoverCarForm } from '../hooks/useRecoverCarForm';
 
 type RecoverCarFormProps = {
-  car: { id: ID; text?: ReactNode };
+  car: { id: ID; text?: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, closeAside }) => {
+const RecoverCarFormInner: FC<{
+  car: { id: ID; text?: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ car, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverCarForm(car.id, closeModal, closeAside);
   return (
@@ -49,4 +53,9 @@ export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, close
       </Stack>
     </>
   );
+};
+
+export const RecoverCarForm: FC<RecoverCarFormProps> = ({ car, closeModal, closeAside }) => {
+  if (!car) return null;
+  return <RecoverCarFormInner car={car} closeModal={closeModal} closeAside={closeAside} />;
 };

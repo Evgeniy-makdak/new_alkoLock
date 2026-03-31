@@ -12,12 +12,16 @@ import { Button } from '@shared/ui/button';
 import { useRecoverUserForm } from '../hooks/useRecoverUserForm';
 
 type RecoverUserFormProps = {
-  user: { id: ID; text?: ReactNode };
+  user: { id: ID; text?: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const RecoverUserForm: FC<RecoverUserFormProps> = ({ user, closeModal, closeAside }) => {
+const RecoverUserFormInner: FC<{
+  user: { id: ID; text?: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ user, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverUserForm(user.id, closeModal, closeAside);
 
@@ -51,4 +55,9 @@ export const RecoverUserForm: FC<RecoverUserFormProps> = ({ user, closeModal, cl
       </Stack>
     </>
   );
+};
+
+export const RecoverUserForm: FC<RecoverUserFormProps> = ({ user, closeModal, closeAside }) => {
+  if (!user) return null;
+  return <RecoverUserFormInner user={user} closeModal={closeModal} closeAside={closeAside} />;
 };

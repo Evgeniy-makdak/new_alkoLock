@@ -13,17 +13,17 @@ import { Button } from '@shared/ui/button';
 
 import { useRecoverAlcolockForm } from '../hooks/useRecoverAlcolockForm';
 
-type RecoverCarFormProps = {
-  alcolock: { id: ID; text?: any };
+type RecoverAlcolockFormProps = {
+  alcolock: { id: ID; text?: any } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const RecoverAlcolockForm: FC<RecoverCarFormProps> = ({
-  alcolock,
-  closeModal,
-  closeAside,
-}) => {
+const RecoverAlcolockFormInner: FC<{
+  alcolock: { id: ID; text?: any };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ alcolock, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const { handleRecover, isLoading } = useRecoverAlcolockForm(alcolock.id, closeModal, closeAside);
 
@@ -71,5 +71,16 @@ export const RecoverAlcolockForm: FC<RecoverCarFormProps> = ({
         </ButtonFormWrapper>
       </Stack>
     </>
+  );
+};
+
+export const RecoverAlcolockForm: FC<RecoverAlcolockFormProps> = ({
+  alcolock,
+  closeModal,
+  closeAside,
+}) => {
+  if (!alcolock) return null;
+  return (
+    <RecoverAlcolockFormInner alcolock={alcolock} closeModal={closeModal} closeAside={closeAside} />
   );
 };

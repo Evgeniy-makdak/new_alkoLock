@@ -11,6 +11,12 @@ import {
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { configLoader } from '../../../config/configLoader';
+import {
+  setStompDebugFromRuntimeConfig,
+  stompDebugLog,
+  stompDebugMaskWsUrl,
+  websocketReadyStateLabel,
+} from '../lib/stompDebugLog';
 import { chatUnreadTrace, unreadMapToRecord } from './chatUnreadTrace';
 
 interface SocketContextType {
@@ -65,9 +71,15 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const loadConfig = async () => {
       try {
         const config = await configLoader.loadConfig();
+        stompDebugLog('config loaded', {
+          apiUrl: config?.apiUrl,
+          wsUrl: config?.wsUrl,
+        });
         setApiConfig(config);
       } catch (error) {
         console.error('Ошибка загрузки конфигурации WebSocket:', error);
+        setStompDebugFromRuntimeConfig(undefined);
+        stompDebugLog('config load failed, using fallback URLs', { error: String(error) });
         setApiConfig({
           apiUrl: 'https://alcolock-test.lsystems.ru/',
           wsUrl: 'wss://alcolock-test.lsystems.ru/ws/websocket',
@@ -270,6 +282,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   const sendStompFrame = (command: string, headers: any = {}, body: string = '') => {
     if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) {
+      if (command === 'SEND') {
+        stompDebugLog('sendStompFrame skipped (cannot send)', {
+          command,
+          hasSocket: Boolean(socketRef.current),
+          readyState: socketRef.current?.readyState,
+          readyStateLabel: websocketReadyStateLabel(socketRef.current?.readyState),
+        });
+      }
       return false;
     }
 
@@ -283,11 +303,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       socketRef.current.send(frame);
       return true;
     } catch (error) {
+      stompDebugLog('sendStompFrame WebSocket.send threw', {
+        command,
+        error: String(error),
+      });
       return false;
     }
   };
 
   const disconnectWebSocket = () => {
+    stompDebugLog('disconnectWebSocket called', {
+      hadSocket: Boolean(socketRef.current),
+      hadStompClient: Boolean(stompClientRef.current),
+      stompConnected: stompClientRef.current?.connected === true,
+    });
     if (socketRef.current) {
       sendStompFrame('DISCONNECT');
       socketRef.current.close(1000, 'Смена филиала');
@@ -382,10 +411,20 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       topics,
       note: '/user/queue/unread — общий счётчик; /queue/unread/{branchId} — разбивка по dialogId',
     });
+    stompDebugLog('STOMP subscribed to topics', {
+      branchId: currentBranchId,
+      count: topics.length,
+    });
   };
 
   const connectWebSocket = (branchId: string) => {
-    if (isConnectingRef.current || !apiConfig) return;
+    if (isConnectingRef.current || !apiConfig) {
+      stompDebugLog('connectWebSocket bail', {
+        isConnecting: isConnectingRef.current,
+        hasApiConfig: Boolean(apiConfig),
+      });
+      return;
+    }
 
     const branchIdNorm = String(branchId).trim();
 
@@ -402,6 +441,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (!wsUrl) {
+      stompDebugLog('connectWebSocket no wsUrl after config', { apiUrl, configWsUrl });
       setConnectionStatus('error');
       isConnectingRef.current = false;
       return;
@@ -409,6 +449,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     const token = getAuthToken();
     if (!token) {
+      stompDebugLog('connectWebSocket no auth token', { branchId: branchIdNorm });
       setConnectionStatus('error');
       isConnectingRef.current = false;
       return;
@@ -416,6 +457,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const finalWsUrl = `${wsUrl}?token=${encodeURIComponent(token)}`;
+      stompDebugLog('WebSocket connecting', {
+        branchId: branchIdNorm,
+        wsUrlMasked: stompDebugMaskWsUrl(finalWsUrl),
+      });
       const socket = new WebSocket(finalWsUrl);
       socketRef.current = socket;
 
@@ -451,6 +496,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       stompClientRef.current = stompClient;
 
       socket.onopen = () => {
+        stompDebugLog('WebSocket onopen, sending STOMP CONNECT', {
+          branchId: branchIdNorm,
+          urlMasked: stompDebugMaskWsUrl(finalWsUrl),
+        });
         sendStompFrame('CONNECT', {
           'accept-version': '1.1,1.0',
           'heart-beat': '10000,10000',
@@ -462,6 +511,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
           const frame = parseStompFrame(event.data);
 
           if (frame.command === 'CONNECTED') {
+            stompDebugLog('STOMP CONNECTED received', {
+              branchId: branchIdNorm,
+              headers: frame.headers,
+            });
             setIsConnected(true);
             setConnectionStatus('connected');
             stompClient.connected = true;
@@ -652,6 +705,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           } else if (frame.command === 'ERROR') {
+            stompDebugLog('STOMP ERROR frame', {
+              branchId: branchIdNorm,
+              headers: frame.headers,
+              bodyPreview:
+                typeof frame.body === 'string' ? frame.body.slice(0, 500) : String(frame.body),
+            });
             setLastMessage({ type: 'error', data: frame });
             setConnectionStatus('error');
             isConnectingRef.current = false;
@@ -662,6 +721,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       };
 
       socket.onerror = (error) => {
+        stompDebugLog('WebSocket onerror', {
+          branchId: branchIdNorm,
+          wsUrlMasked: stompDebugMaskWsUrl(finalWsUrl),
+          event: error && typeof error === 'object' ? String(error.type) : String(error),
+        });
         setIsConnected(false);
         setConnectionStatus('error');
         stompClient.connected = false;
@@ -676,6 +740,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       };
 
       socket.onclose = (event) => {
+        stompDebugLog('WebSocket onclose', {
+          branchId: branchIdNorm,
+          code: event.code,
+          reason: event.reason || '',
+          wasClean: event.wasClean,
+          wsUrlMasked: stompDebugMaskWsUrl(finalWsUrl),
+        });
         setIsConnected(false);
         setConnectionStatus('disconnected');
         stompClient.connected = false;
@@ -699,6 +770,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       };
     } catch (error) {
       console.error('Ошибка создания WebSocket:', error);
+      stompDebugLog('connectWebSocket constructor threw', {
+        branchId: branchIdNorm,
+        error: String(error),
+      });
       setConnectionStatus('error');
       isConnectingRef.current = false;
     }

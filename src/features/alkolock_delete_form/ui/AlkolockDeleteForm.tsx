@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React from 'react';
+import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
@@ -12,17 +12,19 @@ import { Button } from '@shared/ui/button';
 
 import { useAlkolockDeleteForm } from '../hooks/useAlkolockDeleteForm';
 
-export const AlkolockDeleteForm = ({
-  alkolock,
-  closeDeleteModal,
-}: {
+type AlkolockDeleteFormProps = {
+  alkolock: { id: ID; text: any } | null;
+  closeDeleteModal: () => void;
+};
+
+const AlkolockDeleteFormInner: FC<{
   alkolock: { id: ID; text: any };
   closeDeleteModal: () => void;
-}) => {
+}> = ({ alkolock, closeDeleteModal }) => {
   const { t } = useTranslation();
-  const { handleDelete, isLoading } = useAlkolockDeleteForm(alkolock?.id, closeDeleteModal);
+  const { handleDelete, isLoading } = useAlkolockDeleteForm(alkolock.id, closeDeleteModal);
 
-  const displayText = alkolock?.text;
+  const displayText = alkolock.text;
 
   return (
     <>
@@ -53,4 +55,9 @@ export const AlkolockDeleteForm = ({
       </Stack>
     </>
   );
+};
+
+export const AlkolockDeleteForm: FC<AlkolockDeleteFormProps> = ({ alkolock, closeDeleteModal }) => {
+  if (!alkolock) return null;
+  return <AlkolockDeleteFormInner alkolock={alkolock} closeDeleteModal={closeDeleteModal} />;
 };

@@ -11,13 +11,17 @@ import { Button } from '@shared/ui/button';
 
 import { useTrueDeleteUserForm } from '../hooks/useTrueDeleteUserForm';
 
-type TrueDeleteUserForm = {
-  user: { id: ID; text?: ReactNode };
+type TrueDeleteUserFormProps = {
+  user: { id: ID; text?: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const TrueDeleteUserForm: FC<TrueDeleteUserForm> = ({ user, closeModal, closeAside }) => {
+const TrueDeleteUserFormInner: FC<{
+  user: { id: ID; text?: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ user, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const onTrueDelete = useTrueDeleteUserForm(user.id, closeModal, closeAside);
   return (
@@ -40,4 +44,13 @@ export const TrueDeleteUserForm: FC<TrueDeleteUserForm> = ({ user, closeModal, c
       </Stack>
     </>
   );
+};
+
+export const TrueDeleteUserForm: FC<TrueDeleteUserFormProps> = ({
+  user,
+  closeModal,
+  closeAside,
+}) => {
+  if (!user) return null;
+  return <TrueDeleteUserFormInner user={user} closeModal={closeModal} closeAside={closeAside} />;
 };

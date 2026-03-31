@@ -11,17 +11,17 @@ import { Button } from '@shared/ui/button';
 
 import { useTrueDeleteMailingsForm } from '../hooks/useTrueDeleteMailingsForm';
 
-type TrueDeleteMailingsForm = {
-  mailing: { id: ID; text?: ReactNode };
+type TrueDeleteMailingsFormProps = {
+  mailing: { id: ID; text?: ReactNode } | null;
   closeModal: () => void;
   closeAside: () => void;
 };
 
-export const TrueDeleteMailingsForm: FC<TrueDeleteMailingsForm> = ({
-  mailing,
-  closeModal,
-  closeAside,
-}) => {
+const TrueDeleteMailingsFormInner: FC<{
+  mailing: { id: ID; text?: ReactNode };
+  closeModal: () => void;
+  closeAside: () => void;
+}> = ({ mailing, closeModal, closeAside }) => {
   const { t } = useTranslation();
   const onTrueDelete = useTrueDeleteMailingsForm(mailing.id, closeModal, closeAside);
   return (
@@ -43,5 +43,20 @@ export const TrueDeleteMailingsForm: FC<TrueDeleteMailingsForm> = ({
         </ButtonFormWrapper>
       </Stack>
     </>
+  );
+};
+
+export const TrueDeleteMailingsForm: FC<TrueDeleteMailingsFormProps> = ({
+  mailing,
+  closeModal,
+  closeAside,
+}) => {
+  if (!mailing) return null;
+  return (
+    <TrueDeleteMailingsFormInner
+      mailing={mailing}
+      closeModal={closeModal}
+      closeAside={closeAside}
+    />
   );
 };

@@ -12,11 +12,14 @@ import { Button } from '@shared/ui/button';
 import { useDeleteCarForm } from '../hooks/useDeleteCarForm';
 
 type DeleteCarFormProps = {
-  car: { id: ID; text: ReactNode };
+  car: { id: ID; text: ReactNode } | null;
   closeModal: () => void;
 };
 
-export const DeleteCarForm: FC<DeleteCarFormProps> = ({ car, closeModal }) => {
+const DeleteCarFormInner: FC<{
+  car: { id: ID; text: ReactNode };
+  closeModal: () => void;
+}> = ({ car, closeModal }) => {
   const { t } = useTranslation();
   const { handleDelete, isLoading } = useDeleteCarForm(car.id, closeModal);
   return (
@@ -48,4 +51,9 @@ export const DeleteCarForm: FC<DeleteCarFormProps> = ({ car, closeModal }) => {
       </Stack>
     </div>
   );
+};
+
+export const DeleteCarForm: FC<DeleteCarFormProps> = ({ car, closeModal }) => {
+  if (!car) return null;
+  return <DeleteCarFormInner car={car} closeModal={closeModal} />;
 };

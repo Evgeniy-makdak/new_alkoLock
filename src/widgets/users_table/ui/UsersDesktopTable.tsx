@@ -355,7 +355,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
       <Popup
         body={
           <DeleteUserForm
-            user={deleteUserModalData.deleteUser as { id: ID; text: ReactNode }}
+            user={deleteUserModalData.deleteUser}
             closeModal={deleteUserModalData.closeDeleteModal}
             closeAside={deleteUserModalData.closeAside}
           />
