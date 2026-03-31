@@ -729,16 +729,33 @@
   min-height: 0;
 }
 
-/* Стрелка «вниз» — в потоке под пунктами, без наезда на последнюю иконку */
-.carouselViewportCompact > .carouselButtonBottom {
+/* Слот под стрелку «вниз» — всегда одной высоты при totalPages>1, см. комментарий в NavBar.tsx */
+.carouselBottomReserve {
+  position: relative;
+  flex-shrink: 0;
+  align-self: center;
+  margin-top: 14px;
+  margin-bottom: 8px;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.carouselBottomPlaceholder {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+/* В компактной колонке стрелка в потоке (базовый .carouselButtonBottom — absolute для прочих каруселей) */
+.carouselBottomReserve .carouselButtonBottom {
   position: relative;
   bottom: auto;
   left: auto;
   transform: none;
-  align-self: center;
-  flex-shrink: 0;
-  margin-top: 14px;
-  margin-bottom: 8px;
 }
 
 /* Только зона пунктов меню (без стрелки вниз) — стабильная высота для расчёта «страницы» */

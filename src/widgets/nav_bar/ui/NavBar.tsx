@@ -310,7 +310,7 @@ export const NavBar = () => {
               />
             </div>
 
-            {/* Место под стрелку «вверх» всегда резервируем при нескольких страницах — иначе на p>0 появляется кнопка, область ссылок сжимается, visibleItemsCount падает и slice(1*perPage) захватывает последний пункт предыдущей страницы (дубль «Привязки»). */}
+            {/* Место под стрелки всегда резервируем при нескольких страницах: иначе при появлении/исчезновении кнопки меняется высота списка, visibleItemsCount пересчитывается и slice() дублирует или пропускает пункты (дубль на границе страниц / пропадание «Рассылки»). */}
             {totalPages > 1 && (
               <div style={{ position: 'relative', height: '26px', marginBottom: '4px' }}>
                 {canScrollUp ? (
@@ -348,14 +348,20 @@ export const NavBar = () => {
                   </div>
                 </div>
 
-                {totalPages > 1 && canScrollDown && (
-                  <IconButton
-                    className={style.carouselButtonBottom}
-                    onClick={handleNext}
-                    disabled={!canScrollDown || isAnimating}
-                    size="small">
-                    <KeyboardArrowDownIcon />
-                  </IconButton>
+                {totalPages > 1 && (
+                  <div className={style.carouselBottomReserve}>
+                    {canScrollDown ? (
+                      <IconButton
+                        className={style.carouselButtonBottom}
+                        onClick={handleNext}
+                        disabled={!canScrollDown || isAnimating}
+                        size="small">
+                        <KeyboardArrowDownIcon />
+                      </IconButton>
+                    ) : (
+                      <div className={style.carouselBottomPlaceholder} aria-hidden />
+                    )}
+                  </div>
                 )}
               </div>
             </div>
