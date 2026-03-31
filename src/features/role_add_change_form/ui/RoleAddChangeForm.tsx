@@ -30,6 +30,7 @@ export const RoleAddChangeForm: FC<RoleAddChangeFormProps> = ({ closeModal, id }
     carsPermission,
     usersPermission,
     onChangePermissions,
+    isDirty,
   } = useRoleAddChangeForm(id, closeModal);
   return (
     <Loader isLoading={isLoading}>
@@ -87,7 +88,7 @@ export const RoleAddChangeForm: FC<RoleAddChangeFormProps> = ({ closeModal, id }
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>
-              <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
+              <Button testid={testids.POPUP_ACTION_BUTTON} type="submit" disabled={!isDirty}>
                 {id ? 'сохранить' : 'добавить'}
               </Button>
               <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>

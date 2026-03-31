@@ -34,6 +34,7 @@ export const RoleAddChangeForm_new: FC<RoleAddChangeFormProps> = ({ closeModal, 
     setUpdatePermissions,
     setDeletePermissions,
     permissionOptions,
+    isDirty,
   } = useRoleAddChangeForm_new(id, closeModal);
 
   // Обработчик потери фокуса с обрезкой пробелов
@@ -104,7 +105,7 @@ export const RoleAddChangeForm_new: FC<RoleAddChangeFormProps> = ({ closeModal, 
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>
-              <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
+              <Button testid={testids.POPUP_ACTION_BUTTON} type="submit" disabled={!isDirty}>
                 {id ? t('common.save') : t('common.add')}
               </Button>
               <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>

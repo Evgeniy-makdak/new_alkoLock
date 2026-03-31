@@ -40,6 +40,7 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
     register,
     isLoadingCar,
     isDataLoaded,
+    isDirty,
   } = useCarAddChangeForm(id, closeModal);
 
   // Обработчик потери фокуса с обрезкой пробелов
@@ -130,7 +131,9 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>
-              <Button type="submit">{id ? t('common.save') : t('common.add')}</Button>
+              <Button type="submit" disabled={!isDirty}>
+                {id ? t('common.save') : t('common.add')}
+              </Button>
               <Button onClick={closeModal}>{t('common.cancel')}</Button>
             </ButtonFormWrapper>
           </>

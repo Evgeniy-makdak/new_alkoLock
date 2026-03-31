@@ -194,7 +194,17 @@ export const useMailingsAddChangeForm = (id: ID, close: () => void, onSuccess?: 
 
   // ПРОСТАЯ И РАБОЧАЯ ПРОВЕРКА ИЗМЕНЕНИЙ
   const hasChanges = (): boolean => {
-    if (!id) return true;
+    if (!id) {
+      const nameFilled = Boolean(currentValues.name?.trim());
+      const hasEventData = eventTypesWithIntervals.some(
+        (et) =>
+          Boolean(et.eventType?.trim()) ||
+          et.timeIntervals.some(
+            (ti) => Boolean(ti.startTime?.trim()) || Boolean(ti.endTime?.trim()),
+          ),
+      );
+      return nameFilled || hasEventData;
+    }
 
     // 1. Проверяем изменился ли email
     if (currentValues.name?.trim() !== email) {
@@ -549,6 +559,7 @@ export const useMailingsAddChangeForm = (id: ID, close: () => void, onSuccess?: 
     errorName,
     register,
     handleSubmit: handleSubmit(onSubmit),
+    hasMailingChanges: hasChanges(),
     isLoading: isLoading || isLoadingEvents,
     eventTypesWithIntervals,
     setEventTypesWithIntervals: updateEventTypesWithIntervals,

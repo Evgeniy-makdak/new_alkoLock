@@ -16,7 +16,7 @@ import TimeToLeaveOutlinedIcon from '@mui/icons-material/TimeToLeaveOutlined';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ExtractTypeFromArray } from '@shared/types/utility';
 
-export const frontendVersion = '1.124.4';
+export const frontendVersion = '1.125.0';
 
 export const NAV_LINKS = [
   { path: RoutePaths.events, nameKey: 'nav.events', icon: <InsertInvitationOutlinedIcon /> },

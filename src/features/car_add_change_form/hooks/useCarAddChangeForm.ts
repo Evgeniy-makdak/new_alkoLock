@@ -54,7 +54,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     clearErrors,
     setValue,
     watch,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm({
     resolver: yupResolver(schema) as any,
     defaultValues,
@@ -63,7 +63,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   useEffect(() => {
     if (!isLoadingCar && defaultValues) {
       Object.keys(defaultValues).forEach((key) => {
-        setValue(key as keyof Form, defaultValues[key as keyof Form]);
+        setValue(key as keyof Form, defaultValues[key as keyof Form], { shouldDirty: false });
       });
       setIsDataLoaded(true);
     }
@@ -71,31 +71,31 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   const onChangeDate = (value: Dayjs) => {
     clearErrors('year');
-    setValue('year', value as never);
+    setValue('year', value as never, { shouldDirty: true });
     if (value && value.isValid()) {
-      setValue('yearText', value.year().toString() as never);
+      setValue('yearText', value.year().toString() as never, { shouldDirty: true });
     }
   };
 
   const onChangeYearText = (yearText: string) => {
     clearErrors('year');
-    setValue('yearText', yearText as never);
+    setValue('yearText', yearText as never, { shouldDirty: true });
 
     if (yearText && /^\d{4}$/.test(yearText)) {
       const yearNum = parseInt(yearText);
       if (yearNum >= 1900 && yearNum <= dayjs().year()) {
         const date = dayjs().year(yearNum);
-        setValue('year', date as never);
+        setValue('year', date as never, { shouldDirty: true });
       }
     } else if (yearText === '') {
-      setValue('year', dateNow as never);
+      setValue('year', dateNow as never, { shouldDirty: true });
     }
   };
 
   const onSelect = (type: 'type' | 'color', value: string | Value | (string | Value)[]) => {
     clearErrors(type);
     const values = ArrayUtils.getArrayValues(value);
-    setValue(type, values);
+    setValue(type, values, { shouldDirty: true });
   };
 
   const getErrorMessage = (name: keyof Form) =>
@@ -162,5 +162,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     yearTextValue: watch('yearText'),
     isLoadingCar,
     isDataLoaded,
+    isDirty,
   };
 };

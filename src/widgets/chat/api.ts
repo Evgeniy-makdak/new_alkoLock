@@ -43,6 +43,13 @@ const getToken = (): string | null => {
   return cookie ? cookie.split('=')[1] : null;
 };
 
+/** База из конфига может быть с /api или с /api/; пути вроде chat/... — без ведущего /. Иначе получается .../apichat/... */
+const joinApiUrl = (base: string, path: string) => {
+  const trimmedBase = base.replace(/\/+$/, '');
+  const trimmedPath = path.replace(/^\/+/, '');
+  return `${trimmedBase}/${trimmedPath}`;
+};
+
 const createRequest = async (url: string, options: RequestInit = {}, useCredentials = true) => {
   const currentApiUrl = apiUrl || (await initializeApiUrl());
   const token = getToken();
@@ -64,7 +71,7 @@ const createRequest = async (url: string, options: RequestInit = {}, useCredenti
   }
 
   try {
-    const response = await fetch(`${currentApiUrl}${url}`, fetchOptions);
+    const response = await fetch(joinApiUrl(currentApiUrl, url), fetchOptions);
 
     if (!response.ok) {
       if (response.status === 401) {
@@ -191,7 +198,7 @@ const uploadFile = async (
   const formData = new FormData();
   formData.append('file', file);
 
-  const response = await fetch(`${currentApiUrl}chat/upload`, {
+  const response = await fetch(joinApiUrl(currentApiUrl, 'chat/upload'), {
     method: 'POST',
     body: formData,
     headers: {

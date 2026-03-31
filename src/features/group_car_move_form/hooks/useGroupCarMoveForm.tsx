@@ -9,7 +9,12 @@ import { useGroupCarMoveFormApi } from '../api/useGroupCarMoveFormApi';
 import type { GroupCarMoveFormProps } from '../ui/GroupCarMoveForm';
 import style from '../ui/GroupCarMoveForm.module.scss';
 
-export const useGroupCarMoveForm = ({ car, close }: GroupCarMoveFormProps) => {
+type GroupCarMoveFormHookInput = {
+  car: NonNullable<GroupCarMoveFormProps['car']>;
+  close: GroupCarMoveFormProps['close'];
+};
+
+export const useGroupCarMoveForm = ({ car, close }: GroupCarMoveFormHookInput) => {
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [widthDevice, setWidthDevice] = useState(false);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);

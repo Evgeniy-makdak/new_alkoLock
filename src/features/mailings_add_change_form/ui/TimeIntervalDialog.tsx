@@ -34,17 +34,24 @@ export const TimeIntervalDialog: React.FC<TimeIntervalDialogProps> = ({
 
   const startTimeRef = useRef<HTMLInputElement>(null);
   const endTimeRef = useRef<HTMLInputElement>(null);
+  /** Значения на момент открытия — кнопка неактивна, пока не изменили хотя бы одно поле. */
+  const baselineRef = useRef({ start: '', end: '' });
 
   useEffect(() => {
     if (interval) {
       setStartTime(interval.startTime);
       setEndTime(interval.endTime);
+      baselineRef.current = { start: interval.startTime, end: interval.endTime };
     } else {
       setStartTime('');
       setEndTime('');
+      baselineRef.current = { start: '', end: '' };
     }
     setErrors({ startTime: '', endTime: '', overlap: '' });
   }, [interval, open]);
+
+  const isIntervalDirty =
+    startTime !== baselineRef.current.start || endTime !== baselineRef.current.end;
 
   const timeToMinutes = (time: string): number => {
     if (!time || time.length !== 5) return 0;
@@ -287,6 +294,7 @@ export const TimeIntervalDialog: React.FC<TimeIntervalDialogProps> = ({
       <DialogActions>
         <Button
           onClick={handleSave}
+          disabled={!isIntervalDirty}
           variant="outlined"
           sx={{
             color: '#000',

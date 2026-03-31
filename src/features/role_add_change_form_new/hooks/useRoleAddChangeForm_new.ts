@@ -37,7 +37,7 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
     setValue,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<Form>({
     resolver: yupResolver(schema),
     defaultValues: {
@@ -188,6 +188,7 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
     register,
     handleSubmit: handleSubmit(onSubmit),
     isLoading,
+    isDirty,
     createPermissions: currentValues.createPermissions,
     readPermissions: currentValues.readPermissions,
     updatePermissions: currentValues.updatePermissions,

@@ -17,6 +17,8 @@ import {
   Backdrop,
   Box,
   Button,
+  FormControl,
+  FormHelperText,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -50,10 +52,18 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
   const [templateTypes, setTemplateTypes] = useState<{ id: number; type: string; name: string }[]>(
     [],
   );
+  const [baseline, setBaseline] = useState({ name: '', content: '', templateType: '' });
+  const [fieldErrors, setFieldErrors] = useState({
+    name: '',
+    templateType: '',
+    content: '',
+  });
   const quillRef = useRef<ReactQuill>(null);
   const formRef = useRef<HTMLDivElement>(null);
+  const backdropNodeRef = useRef<HTMLDivElement>(null);
 
-  const isEditing = template && template.id;
+  /** id > 0 — реальное редактирование; id 0/null — «Добавить» (в таблице передаётся заглушка с id: 0). */
+  const isEditing = Boolean(template?.id);
 
   useEffect(() => {
     const fetchTemplateTypes = async () => {
@@ -74,27 +84,69 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
     fetchTemplateTypes();
   }, []);
 
+  /** Пустой Quill и эквиваленты для сравнения и валидации. */
+  const normalizeRichText = (html: string) => {
+    const raw = (html ?? '').trim();
+    if (!raw) return '';
+    const compact = raw.replace(/\s+/g, ' ').trim();
+    if (
+      compact === '' ||
+      compact === '<p></p>' ||
+      compact === '<p><br></p>' ||
+      compact === '<br>' ||
+      compact === '<p><br /></p>'
+    ) {
+      return '';
+    }
+    return html ?? '';
+  };
+
+  const templateSyncKey = template == null ? 'new' : String(template.id);
   useEffect(() => {
     if (template) {
-      setName(template.name ?? '');
-      setContent(template.content ?? '');
-      setTemplateType(template.templateType.type ?? '');
+      const n = template.name ?? '';
+      const c = template.content ?? '';
+      const tt = template.templateType.type ?? '';
+      setName(n);
+      setContent(c);
+      setTemplateType(tt);
+      setBaseline({ name: n, content: c, templateType: tt });
+      setFieldErrors({ name: '', templateType: '', content: '' });
     } else {
       setName('');
       setContent('');
       setTemplateType('');
+      setBaseline({ name: '', content: '', templateType: '' });
+      setFieldErrors({ name: '', templateType: '', content: '' });
     }
-  }, [template, templateTypes]);
+    // Не зависеть от templateTypes: иначе при приходе типов с API эффект сбрасывает уже введённый текст (режим «Добавить»).
+    // Примитивы шаблона вместо объекта template — иначе лишние сбросы при новой ссылке на тот же шаблон.
+  }, [templateSyncKey, template?.name, template?.content, template?.templateType?.type]);
+
+  const normName = (s: string) => (s ?? '').trim();
+  const normContent = (html: string) => normalizeRichText(html);
+  const isFormDirty =
+    normName(name) !== normName(baseline.name) ||
+    normContent(content) !== normContent(baseline.content) ||
+    (templateType ?? '').trim() !== (baseline.templateType ?? '').trim();
+
+  /** Как в других модалках: активна при любых несохранённых правках; обязательные поля — через подсказки под полями. */
+  const saveDisabled = !isFormDirty;
 
   const handleSave = () => {
-    if (!name?.trim() || !content?.trim() || !templateType?.trim()) {
-      alert('Заполните все поля!');
-      return;
-    }
+    const req = t('validation.required');
+    const next = { name: '', templateType: '', content: '' };
+    if (!normName(name)) next.name = req;
+    if (!(templateType ?? '').trim()) next.templateType = req;
+    if (!normContent(content)) next.content = req;
 
     const selectedTemplateType = templateTypes.find((t) => t.type === templateType);
-    if (!selectedTemplateType) {
-      alert('Выбран неверный тип шаблона!');
+    if ((templateType ?? '').trim() && !selectedTemplateType) {
+      next.templateType = t('validation.notValidData');
+    }
+
+    if (next.name || next.templateType || next.content) {
+      setFieldErrors(next);
       return;
     }
 
@@ -202,7 +254,9 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
 
   return (
     <Backdrop
+      ref={backdropNodeRef}
       open={true}
+      TransitionProps={{ nodeRef: backdropNodeRef }}
       sx={{
         zIndex: 1300,
         backgroundColor: (theme) =>
@@ -212,15 +266,18 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
         ref={formRef}
         onClick={(e) => e.stopPropagation()}
         sx={{
-          p: 1,
-          width: '50%',
-          maxWidth: 'none',
+          p: 3.5,
+          width: '100%',
+          maxWidth: 720,
+          minWidth: { xs: 280, sm: 550 },
           display: 'flex',
           flexDirection: 'column',
           bgcolor: 'background.paper',
           color: 'text.primary',
-          borderRadius: '8px',
+          borderRadius: '16px',
           boxShadow: 3,
+          maxHeight: '99vh',
+          overflow: 'auto',
         }}>
         {/* Заголовок формы */}
         <Box
@@ -253,9 +310,14 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
         <TextField
           label={t('form.templateName')}
           fullWidth
-          margin="normal"
+          margin="dense"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          error={Boolean(fieldErrors.name)}
+          helperText={fieldErrors.name}
+          onChange={(e) => {
+            setFieldErrors((prev) => ({ ...prev, name: '' }));
+            setName(e.target.value);
+          }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -272,10 +334,15 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
         <TextField
           label={t('tables.templateType')}
           fullWidth
-          margin="normal"
+          margin="dense"
           select
           value={templateType}
-          onChange={(e) => setTemplateType(e.target.value)}>
+          error={Boolean(fieldErrors.templateType)}
+          helperText={fieldErrors.templateType}
+          onChange={(e) => {
+            setFieldErrors((prev) => ({ ...prev, templateType: '' }));
+            setTemplateType(e.target.value);
+          }}>
           {templateTypes.map((type) => (
             <MenuItem key={type.id} value={type.type}>
               {t(TEMPLATE_TYPES_LABEL_MAP[type.name] ?? `templateTypes.${type.type}`, {
@@ -290,7 +357,8 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
             display: 'flex',
             alignItems: 'center',
             gap: 1,
-            mb: 1,
+            mb: 0.5,
+            mt: 0.5,
             '& .MuiIconButton-root': { color: 'text.secondary' },
           }}>
           <Tooltip title={t('tooltips.richTextUndo')}>
@@ -305,19 +373,36 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           </Tooltip>
         </Box>
 
-        <Box
+        <FormControl
+          fullWidth
+          error={Boolean(fieldErrors.content)}
           sx={{
+            mb: 4,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0,
+            '& .quill': {
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              height: 'auto !important',
+            },
             '& .ql-toolbar.ql-snow': {
               borderColor: 'divider',
               bgcolor: 'background.default',
+              flexShrink: 0,
             },
             '& .ql-container.ql-snow': {
               borderColor: 'divider',
               bgcolor: 'background.default',
+              flex: '1 1 auto',
+              minHeight: 200,
+              height: 'auto !important',
+              fontSize: '1rem',
             },
             '& .ql-editor': {
               color: 'text.primary',
-              minHeight: 280,
+              minHeight: 196,
             },
             '& .ql-editor.ql-blank::before': {
               color: 'text.disabled',
@@ -351,7 +436,10 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
           <ReactQuill
             ref={quillRef}
             value={content}
-            onChange={setContent}
+            onChange={(v) => {
+              setFieldErrors((prev) => ({ ...prev, content: '' }));
+              setContent(v);
+            }}
             theme="snow"
             modules={modules}
             formats={[
@@ -373,30 +461,43 @@ export const EmailTemplateForm: React.FC<EmailTemplateFormProps> = ({
               'link',
               'image',
             ]}
-            style={{
-              height: '300px',
-              minHeight: '200px',
-              width: '100%',
-            }}
           />
-        </Box>
+          {fieldErrors.content ? <FormHelperText>{fieldErrors.content}</FormHelperText> : null}
+        </FormControl>
 
-        <Box sx={{ mt: 7, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+        <Box
+          sx={{
+            mt: 3,
+            mb: 0.5,
+            pt: 2,
+            pb: 0.5,
+            display: 'flex',
+            justifyContent: 'flex-end',
+            alignItems: 'center',
+            gap: 2,
+            flexShrink: 0,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}>
           <Tooltip title={isEditing ? t('form.saveChanges') : t('modals.addTemplate')}>
-            <Button
-              variant="outlined"
-              onClick={handleSave}
-              sx={{
-                minWidth: 100,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  borderColor: 'text.secondary',
-                  backgroundColor: 'action.hover',
-                },
-              }}>
-              {isEditing ? t('common.save') : t('common.add')}
-            </Button>
+            <span>
+              <Button
+                variant="outlined"
+                onClick={handleSave}
+                disabled={saveDisabled}
+                sx={{
+                  minWidth: 100,
+                  borderColor: 'divider',
+                  color: 'text.primary',
+                  fontWeight: 600,
+                  '&:hover': {
+                    borderColor: 'text.secondary',
+                    backgroundColor: 'action.hover',
+                  },
+                }}>
+                {isEditing ? t('common.save') : t('common.add')}
+              </Button>
+            </span>
           </Tooltip>
           <Tooltip title={t('common.cancel')}>
             <Button

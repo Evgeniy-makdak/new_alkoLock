@@ -61,6 +61,7 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
     watch,
     formState: {
       errors: { name },
+      isDirty,
     },
   } = useForm({
     resolver: yupResolver(schema),
@@ -101,6 +102,7 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
     register,
     handleSubmit: handleSubmit(onSubmit),
     isLoading,
+    isDirty,
     permissions,
     alkolockPermission: watch('alkolockPermission'),
     attachPermission: watch('attachPermission'),

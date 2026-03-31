@@ -41,6 +41,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
     originalVehicleId,
     isSubmitting,
     newVehicleData,
+    isDirty,
   } = useAlkozamkiForm(id, closeModal);
 
   // Обработчик потери фокуса с обрезкой пробелов
@@ -105,7 +106,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting || !isDirty}>
                 {id ? t('common.save') : t('common.add')}
               </Button>
               <Button onClick={closeModal}>{t('common.cancel')}</Button>

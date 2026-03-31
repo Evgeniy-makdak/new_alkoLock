@@ -13,6 +13,7 @@ export const useGroupAddForm = (close: () => void, branch?: { id: ID; name: stri
     handleSubmit,
     formState: {
       errors: { name },
+      isDirty,
     },
   } = useForm({
     defaultValues: {
@@ -53,5 +54,6 @@ export const useGroupAddForm = (close: () => void, branch?: { id: ID; name: stri
     error: !!name,
     message: typeof name?.message === 'string' ? name?.message : '',
     isLoading,
+    isDirty,
   };
 };

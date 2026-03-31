@@ -14,15 +14,15 @@ import style from './GroupAlcolockMoveForm.module.scss';
 
 export type GroupAlcolockMoveFormProps = {
   close: () => void;
-  alcolock: { id: ID; text: string };
+  alcolock: { id: ID; text: string } | null;
   targetBranch?: ID;
 };
 
-export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
-  alcolock,
-  close,
-  targetBranch,
-}) => {
+const GroupAlcolockMoveFormInner: FC<{
+  alcolock: { id: ID; text: string };
+  close: () => void;
+  targetBranch?: ID;
+}> = ({ alcolock, close, targetBranch }) => {
   const { t } = useTranslation();
   const {
     error,
@@ -71,5 +71,16 @@ export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
         className={style.alert}
       />
     </div>
+  );
+};
+
+export const GroupAlcolockMoveForm: FC<GroupAlcolockMoveFormProps> = ({
+  alcolock,
+  close,
+  targetBranch,
+}) => {
+  if (!alcolock) return null;
+  return (
+    <GroupAlcolockMoveFormInner alcolock={alcolock} close={close} targetBranch={targetBranch} />
   );
 };

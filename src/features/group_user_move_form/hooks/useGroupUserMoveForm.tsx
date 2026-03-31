@@ -10,7 +10,12 @@ import ArrayUtils from '@shared/utils/ArrayUtils';
 import { useGroupUserMoveFormApi } from '../api/useGroupUserMoveFormApi';
 import type { GroupUserMoveFormProps } from '../ui/GroupUserMoveForm';
 
-export const useGroupUserMoveForm = ({ user, close }: GroupUserMoveFormProps) => {
+type GroupUserMoveFormHookInput = {
+  user: NonNullable<GroupUserMoveFormProps['user']>;
+  close: GroupUserMoveFormProps['close'];
+};
+
+export const useGroupUserMoveForm = ({ user, close }: GroupUserMoveFormHookInput) => {
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);
   const [error, setError] = useState(false);

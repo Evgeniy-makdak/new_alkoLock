@@ -16,7 +16,7 @@ type GroupAddFormProps = {
 
 export const GroupAddForm: FC<GroupAddFormProps> = ({ close, branch }) => {
   const { t } = useTranslation();
-  const { register, submit, error, message } = useGroupAddForm(close, branch);
+  const { register, submit, error, message, isDirty } = useGroupAddForm(close, branch);
 
   // Обработчик потери фокуса с обрезкой пробелов
   const handleBlurWithTrim = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -50,7 +50,9 @@ export const GroupAddForm: FC<GroupAddFormProps> = ({ close, branch }) => {
           onBlur={handleBlurWithTrim}
         />
         <ButtonFormWrapper>
-          <Button type="submit">{branch?.id ? t('common.save') : t('common.add')}</Button>
+          <Button type="submit" disabled={!isDirty}>
+            {branch?.id ? t('common.save') : t('common.add')}
+          </Button>
           <Button onClick={close}>{t('common.cancel')}</Button>
         </ButtonFormWrapper>
       </Stack>

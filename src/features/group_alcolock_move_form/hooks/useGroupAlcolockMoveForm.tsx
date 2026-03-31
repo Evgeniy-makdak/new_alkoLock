@@ -8,7 +8,12 @@ import ArrayUtils from '@shared/utils/ArrayUtils';
 import { useGroupAlcolockMoveFormApi } from '../api/useGroupAlcolockMoveFormApi';
 import type { GroupAlcolockMoveFormProps } from '../ui/GroupAlcolockMoveForm';
 
-export const useGroupAlcolockMoveForm = ({ alcolock, close }: GroupAlcolockMoveFormProps) => {
+type GroupAlcolockMoveFormHookInput = {
+  alcolock: NonNullable<GroupAlcolockMoveFormProps['alcolock']>;
+  close: GroupAlcolockMoveFormProps['close'];
+};
+
+export const useGroupAlcolockMoveForm = ({ alcolock, close }: GroupAlcolockMoveFormHookInput) => {
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [withVehicle, setWithVehicle] = useState(false);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);

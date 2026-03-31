@@ -29,7 +29,7 @@ export const useAttachmentsForm = (closeModal: () => void) => {
   const onSelect = (type: keyof AttachmentAddForm, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
     clearErrors(['driverId', 'carId']);
-    setValue(type, values);
+    setValue(type, values, { shouldDirty: true });
   };
 
   const onAddAtachment = async () => {
@@ -68,5 +68,6 @@ export const useAttachmentsForm = (closeModal: () => void) => {
     onAddAtachment,
     errorDriver: formState.errors?.driverId ? true : false,
     errorCar: formState.errors?.carId ? true : false,
+    isDirty: formState.isDirty,
   };
 };

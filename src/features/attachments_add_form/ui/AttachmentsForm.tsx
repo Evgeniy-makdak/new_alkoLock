@@ -18,7 +18,7 @@ interface AttachmentAddFormProps {
 
 export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
   const { t } = useTranslation();
-  const { carId, driverId, onSelect, onAddAtachment, errorCar, errorDriver } =
+  const { carId, driverId, onSelect, onAddAtachment, errorCar, errorDriver, isDirty } =
     useAttachmentsForm(onClose);
 
   return (
@@ -56,7 +56,8 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
       <ButtonFormWrapper>
         <Button
           testid={`${testids.POPUP_ACTION_BUTTON}_${testids.page_attachments.attachments_popup_add_attach.ATTACHMENTS_ADD_ATTACH}`}
-          onClick={onAddAtachment}>
+          onClick={onAddAtachment}
+          disabled={!isDirty}>
           {t('common.add')}
         </Button>
         <Button

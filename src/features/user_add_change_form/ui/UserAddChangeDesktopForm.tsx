@@ -209,16 +209,6 @@ export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ cl
                   selectProps={{ disabled: isGlobalAdmin, value: state.state.disabled }}
                   options={accessList}
                 />
-                <UploadImg
-                  testId={
-                    testids.page_users.users_widget_add_user_popup
-                      .USERS_WIDGET_ADD_USER_POPUP_ADD_FOTO
-                  }
-                  images={state.state.images}
-                  setImage={state.handlers.setAvatar}
-                  title={t('form.uploadAvatar')}
-                  userId={id}
-                />
               </InputsColumnWrapper>
               <InputsColumnWrapper>
                 <RolesSelect
@@ -314,15 +304,26 @@ export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ cl
                     </div>
                   </>
                 )}
+                <UploadImg
+                  testId={
+                    testids.page_users.users_widget_add_user_popup
+                      .USERS_WIDGET_ADD_USER_POPUP_ADD_FOTO
+                  }
+                  images={state.state.images}
+                  setImage={state.handlers.setAvatar}
+                  title={t('form.uploadAvatar')}
+                  userId={id}
+                />
               </InputsColumnWrapper>
             </div>
             {!alert && (
               <ButtonFormWrapper>
-                {(!id || hasFormChanges) && (
-                  <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
-                    {id ? t('common.save') : t('common.add')}
-                  </Button>
-                )}
+                <Button
+                  testid={testids.POPUP_ACTION_BUTTON}
+                  type="submit"
+                  disabled={!hasFormChanges}>
+                  {id ? t('common.save') : t('common.add')}
+                </Button>
                 <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>
                   {t('common.cancel')}
                 </Button>

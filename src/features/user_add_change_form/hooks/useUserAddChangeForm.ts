@@ -73,6 +73,21 @@ async function resolvePhotoIdForUnsetAvatar(userId: ID): Promise<ID | undefined>
   return undefined;
 }
 
+function getUserGroupItemId(g: any): string {
+  return String(g?.value ?? g?.id ?? g?.groupId ?? g?.group?.id ?? '');
+}
+
+/** Набор id ролей для сравнения: без дублей, порядок не важен. */
+function normalizeUserGroupIds(groups: any[] | undefined | null): string[] {
+  if (!Array.isArray(groups)) return [];
+  const ids = groups.map(getUserGroupItemId).filter((id) => id !== '');
+  return Array.from(new Set(ids)).sort();
+}
+
+function sortedRoleIdListsEqual(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((v, i) => v === b[i]);
+}
+
 export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const { t } = useTranslation();
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -81,6 +96,8 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const serverProfilePhotoIdRef = useRef<ID | undefined>(undefined);
   const [photoMutationPending, setPhotoMutationPending] = useState(false);
   const photoMutationPendingRef = useRef(false);
+  /** Эталон набора ролей после reset/reconcile — чтобы «убрал и вернул ту же роль» не держало форму dirty. */
+  const baselineUserGroupIdsRef = useRef<string[]>([]);
   const { user, isLoading, changeItem, addGalleryPhoto, createItem, groups, avatar } =
     useUserAddChangeFormApi(id);
   const { values, isGlobalAdmin, isUserDriver, isReadOnly } = groupsMapper(user, groups);
@@ -145,6 +162,9 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
   useEffect(() => {
     reset(initUser.defaultValues);
+    baselineUserGroupIdsRef.current = normalizeUserGroupIds(
+      initUser.defaultValues.userGroups as any,
+    );
   }, [isLoading, id, userPhotoSyncKey]);
 
   useEffect(() => {
@@ -255,15 +275,11 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
   // а также синхронизируем selectedRoleIds в zustand.
   // =======================
 
-  // Вспомогалки для надёжного извлечения id и дедупликации
-  const getGroupId = (g: any): string =>
-    String(g?.value ?? g?.id ?? g?.groupId ?? g?.group?.id ?? '');
-
   const uniqById = (arr: any[]) => {
     const seen = new Set<string>();
     const out: any[] = [];
     for (const it of arr) {
-      const idStr = getGroupId(it);
+      const idStr = getUserGroupItemId(it);
       if (!idStr || seen.has(idStr)) continue;
       seen.add(idStr);
       out.push(it);
@@ -294,13 +310,13 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     // Санитизируем текущие роли формы: оставляем только те, что реально существуют
     const sanitized = uniqById(
       currentUserGroups.filter((it) => {
-        const idStr = getGroupId(it);
+        const idStr = getUserGroupItemId(it);
         return idStr && availableIds.has(idStr);
       }),
     );
 
-    const prevIds = currentUserGroups.map((it) => getGroupId(it));
-    const nextIds = sanitized.map((it) => getGroupId(it));
+    const prevIds = currentUserGroups.map((it) => getUserGroupItemId(it));
+    const nextIds = sanitized.map((it) => getUserGroupItemId(it));
 
     // Логи для диагностики порядка событий (можно удалить после проверки)
     // eslint-disable-next-line no-console
@@ -319,6 +335,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
 
     if (needUpdateForm) {
       setValue('userGroups', sanitized, { shouldDirty: false });
+      baselineUserGroupIdsRef.current = normalizeUserGroupIds(sanitized);
     }
 
     // В любом случае синхронизируем zustand-стор под актуальные id
@@ -638,6 +655,15 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     elem.permissions?.includes(Permissions.SYSTEM_DRIVER_ACCOUNT as never),
   );
 
+  const watchedUserGroups = watch('userGroups');
+  const rolesMatchBaseline = sortedRoleIdListsEqual(
+    normalizeUserGroupIds(watchedUserGroups),
+    baselineUserGroupIdsRef.current,
+  );
+  const dirtyFieldKeys = Object.keys(formState.dirtyFields ?? {});
+  const onlyUserGroupsDirty =
+    rolesMatchBaseline && dirtyFieldKeys.length === 1 && dirtyFieldKeys[0] === 'userGroups';
+
   return {
     control,
     state,
@@ -648,7 +674,12 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     accessList: initUser.accessList,
     closeAlert,
     alert,
-    /** Режим редактирования: есть несохранённые изменения полей или фото / снятие аватара */
-    hasFormChanges: isDirty || photoMutationPending,
+    /**
+     * Режим редактирования: изменения полей / фото.
+     * Для multiselect ролей RHF часто оставляет dirty при том же наборе id (другие объекты из списка);
+     * resetField ломал Autocomplete — учитываем только семантику набора id относительно baseline.
+     */
+    hasFormChanges:
+      photoMutationPending || !rolesMatchBaseline || (isDirty && !onlyUserGroupsDirty),
   };
 };

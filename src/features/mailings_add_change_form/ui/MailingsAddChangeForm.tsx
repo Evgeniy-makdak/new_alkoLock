@@ -32,6 +32,7 @@ export const MailingsAddChangeForm: FC<MailingsAddChangeFormProps> = ({ closeMod
     addEventType,
     removeEventType,
     validationErrors,
+    hasMailingChanges,
   } = useMailingsAddChangeForm(id, closeModal);
 
   return (
@@ -110,7 +111,10 @@ export const MailingsAddChangeForm: FC<MailingsAddChangeFormProps> = ({ closeMod
                 </Box>
               </InputsColumnWrapper>
               <ButtonFormWrapper>
-                <Button testid={testids.POPUP_ACTION_BUTTON} type="submit">
+                <Button
+                  testid={testids.POPUP_ACTION_BUTTON}
+                  type="submit"
+                  disabled={!hasMailingChanges}>
                   {id ? t('common.save') : t('common.add')}
                 </Button>
                 <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>

@@ -710,16 +710,6 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                   }}
                 />
               </div>
-              <UploadImg
-                testId={
-                  testids.page_users.users_widget_add_user_popup
-                    .USERS_WIDGET_ADD_USER_POPUP_ADD_FOTO
-                }
-                images={state.state.images}
-                setImage={state.handlers.setAvatar}
-                title={t('form.uploadAvatar')}
-                userId={id}
-              />
               {isUserDriver && (
                 <>
                   <TextField
@@ -862,19 +852,28 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                   </div>
                 </>
               )}
+              <UploadImg
+                testId={
+                  testids.page_users.users_widget_add_user_popup
+                    .USERS_WIDGET_ADD_USER_POPUP_ADD_FOTO
+                }
+                images={state.state.images}
+                setImage={state.handlers.setAvatar}
+                title={t('form.uploadAvatar')}
+                userId={id}
+              />
             </div>
 
             {!alert ? (
               <div className={style.mobileFormActions}>
-                {(!id || hasFormChanges) && (
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    fullWidth
-                    className={style.submitButton}>
-                    {id ? t('common.save') : t('common.add')}
-                  </Button>
-                )}
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  className={style.submitButton}
+                  disabled={!hasFormChanges}>
+                  {id ? t('common.save') : t('common.add')}
+                </Button>
                 <Button
                   onClick={closeModal}
                   variant="outlined"

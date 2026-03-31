@@ -61,6 +61,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     watch,
     formState: {
       errors: { name: nameAlkolock, serialNumber },
+      isDirty,
       // errors: { name: nameAlkolock, serialNumber, uid },
     },
   } = useForm({
@@ -73,7 +74,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   useEffect(() => {
     if (defaultValues) {
       Object.keys(defaultValues).forEach((key) => {
-        setValue(key as keyof Form, defaultValues[key as keyof Form]);
+        setValue(key as keyof Form, defaultValues[key as keyof Form], { shouldDirty: false });
       });
     }
   }, [alkolock?.name, car, setValue]);
@@ -89,7 +90,7 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
     const values = ArrayUtils.getArrayValues(value);
-    setValue(type, values);
+    setValue(type, values, { shouldDirty: true });
   };
 
   const errorName = nameAlkolock ? nameAlkolock.message.toString() : '';
@@ -307,5 +308,6 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     originalVehicleId,
     newVehicleData,
     isSubmitting,
+    isDirty,
   };
 };

@@ -14,11 +14,15 @@ import style from './GroupUserMoveForm.module.scss';
 
 export type GroupUserMoveFormProps = {
   close: () => void;
-  user: { id: ID; text: string };
+  user: { id: ID; text: string } | null;
   targetBranch?: ID;
 };
 
-export const GroupUserMoveForm: FC<GroupUserMoveFormProps> = ({ user, close, targetBranch }) => {
+const GroupUserMoveFormInner: FC<{
+  user: { id: ID; text: string };
+  close: () => void;
+  targetBranch?: ID;
+}> = ({ user, close, targetBranch }) => {
   const { t } = useTranslation();
   const {
     error,
@@ -68,4 +72,9 @@ export const GroupUserMoveForm: FC<GroupUserMoveFormProps> = ({ user, close, tar
       />
     </>
   );
+};
+
+export const GroupUserMoveForm: FC<GroupUserMoveFormProps> = ({ user, close, targetBranch }) => {
+  if (!user) return null;
+  return <GroupUserMoveFormInner user={user} close={close} targetBranch={targetBranch} />;
 };

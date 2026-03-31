@@ -14,11 +14,15 @@ import style from './GroupCarMoveForm.module.scss';
 
 export type GroupCarMoveFormProps = {
   close: () => void;
-  car: { id: ID; text: string };
+  car: { id: ID; text: string } | null;
   targetBranch?: ID;
 };
 
-export const GroupCarMoveForm: FC<GroupCarMoveFormProps> = ({ car, close, targetBranch }) => {
+const GroupCarMoveFormInner: FC<{
+  car: { id: ID; text: string };
+  close: () => void;
+  targetBranch?: ID;
+}> = ({ car, close, targetBranch }) => {
   const { t } = useTranslation();
   const {
     error,
@@ -68,4 +72,9 @@ export const GroupCarMoveForm: FC<GroupCarMoveFormProps> = ({ car, close, target
       />
     </>
   );
+};
+
+export const GroupCarMoveForm: FC<GroupCarMoveFormProps> = ({ car, close, targetBranch }) => {
+  if (!car) return null;
+  return <GroupCarMoveFormInner car={car} close={close} targetBranch={targetBranch} />;
 };

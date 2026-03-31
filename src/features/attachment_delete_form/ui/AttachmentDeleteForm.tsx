@@ -1,3 +1,4 @@
+import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Stack, Typography } from '@mui/material';
@@ -10,12 +11,15 @@ import { Button } from '@shared/ui/button';
 
 import { useAttachmentDeleteForm } from '../hooks/useAttachmentDeleteForm';
 
-interface AttachmentDeleteFormProps {
+type AttachmentDeleteFormProps = {
+  attach: { id: ID; text: string } | null;
+  closeModal: () => void;
+};
+
+const AttachmentDeleteFormInner: FC<{
   attach: { id: ID; text: string };
   closeModal: () => void;
-}
-
-export const AttachmentDeleteForm = ({ attach, closeModal }: AttachmentDeleteFormProps) => {
+}> = ({ attach, closeModal }) => {
   const { t } = useTranslation();
   const handleDelete = useAttachmentDeleteForm(attach.id, closeModal);
   return (
@@ -42,4 +46,9 @@ export const AttachmentDeleteForm = ({ attach, closeModal }: AttachmentDeleteFor
       </Stack>
     </div>
   );
+};
+
+export const AttachmentDeleteForm: FC<AttachmentDeleteFormProps> = ({ attach, closeModal }) => {
+  if (!attach) return null;
+  return <AttachmentDeleteFormInner attach={attach} closeModal={closeModal} />;
 };

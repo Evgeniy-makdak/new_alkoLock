@@ -13,10 +13,13 @@ import { useRoleDeleteForm } from '../hooks/useRoleDeleteForm';
 
 type RoleDeleteFormProps = {
   closeModal: () => void;
-  role: { id: ID; text: ReactNode };
+  role: { id: ID; text: ReactNode } | null;
 };
 
-export const RoleDeleteForm: FC<RoleDeleteFormProps> = ({ role, closeModal }) => {
+const RoleDeleteFormInner: FC<{
+  role: { id: ID; text: ReactNode };
+  closeModal: () => void;
+}> = ({ role, closeModal }) => {
   const { t } = useTranslation();
   const { handleDelete } = useRoleDeleteForm(role.id, closeModal);
   return (
@@ -37,4 +40,9 @@ export const RoleDeleteForm: FC<RoleDeleteFormProps> = ({ role, closeModal }) =>
       </ButtonFormWrapper>
     </div>
   );
+};
+
+export const RoleDeleteForm: FC<RoleDeleteFormProps> = ({ role, closeModal }) => {
+  if (!role) return null;
+  return <RoleDeleteFormInner role={role} closeModal={closeModal} />;
 };
