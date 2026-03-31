@@ -4,14 +4,14 @@
  *
  * **`EVENTS_PAGE_GHOST_PRANK_ENABLED`** — значение по умолчанию, если в `localStorage` ещё не сохраняли выбор.
  *
- * **Переключение в рантайме:** **Ctrl+Shift+G** на странице «События» (сохраняется в `localStorage`).
+ * **Переключение в рантайме:** **Ctrl+Alt+Shift+B** или **Ctrl+Alt+Shift+H** на «События» (в `localStorage`).
  */
 export const EVENTS_PAGE_GHOST_PRANK_ENABLED = false;
 
 const STORAGE_KEY = 'alcolock.eventsGhostPrank.enabled';
 
 /** Комбинация для переключения (документация / подсказки). */
-export const EVENTS_GHOST_PRANK_TOGGLE_SHORTCUT = 'Ctrl+Shift+G' as const;
+export const EVENTS_GHOST_PRANK_TOGGLE_SHORTCUT = 'Ctrl+Alt+Shift+B' as const;
 
 export function readGhostPrankRuntimeEnabled(): boolean {
   if (typeof window === 'undefined') return EVENTS_PAGE_GHOST_PRANK_ENABLED;

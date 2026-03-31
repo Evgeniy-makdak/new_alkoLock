@@ -69,6 +69,55 @@
   opacity: 0.9;
 }
 
+/* Надпись при ударе: в том же портале, что искры */
+.impactSlogan {
+  position: fixed;
+  z-index: 1;
+  max-width: min(92vw, 28em);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: clamp(1.05rem, 3.8vmin, 1.85rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  color: #c62828;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow:
+    0 0 14px rgba(255, 255, 255, 1),
+    0 0 28px rgba(255, 248, 220, 0.85),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  animation: ghostSloganDrip 10s linear forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes ghostSloganDrip {
+  0% {
+    transform: translate(-50%, -50%) translateY(0) scale(0.12) rotate(-4deg);
+    opacity: 0;
+  }
+
+  5% {
+    transform: translate(-50%, -50%) translateY(0) scale(1.12) rotate(1deg);
+    opacity: 1;
+  }
+
+  9% {
+    transform: translate(-50%, -50%) translateY(0) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+
+  82% {
+    opacity: 0.95;
+  }
+
+  100% {
+    transform: translate(-50%, -50%) translateY(var(--drip-end, 85vh)) scale(0.88) rotate(2deg);
+    opacity: 0;
+  }
+}
+
 .moodNormal,
 .moodAngry {
   transition: opacity 0.12s ease-out;
@@ -76,6 +125,33 @@
 
 .moodAngry {
   pointer-events: none;
+}
+
+/* Рот доброго призрака: челюсть относительно верхней губы */
+.ghostMouth {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+}
+
+.ghostMouthWander {
+  animation: ghostMouthWander 0.88s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes ghostMouthWander {
+  0%,
+  100% {
+    transform: scaleY(0.68);
+  }
+  28% {
+    transform: scaleY(1.06);
+  }
+  48% {
+    transform: scaleY(0.82);
+  }
+  72% {
+    transform: scaleY(1.12);
+  }
 }
 
 .crackSvg {
@@ -127,37 +203,48 @@
   }
 }
 
+/* Портал в body — не режется overflow у .root; поверх основного UI */
 .sparkLayer {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1195;
+  z-index: 12050;
+  isolation: isolate;
 }
 
 .spark {
   position: fixed;
-  width: 5px;
-  height: 5px;
+  width: 9px;
+  height: 9px;
   margin: 0;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #fffef5 0%, #ffe082 35%, #ff9800 65%, #e65100 100%);
+  background: radial-gradient(circle at 32% 32%, #ffffff 0%, #fff8e1 22%, #ffca28 52%, #ff9800 78%, #e65100 100%);
   box-shadow:
-    0 0 8px #ffecb3,
-    0 0 14px rgba(255, 193, 7, 0.85);
+    0 0 10px #fff59d,
+    0 0 20px rgba(255, 193, 7, 0.95),
+    0 0 34px rgba(255, 152, 0, 0.6);
   transform: translate(-50%, -50%);
   animation-name: ghostSparkFly;
-  animation-timing-function: ease-out;
+  /* linear: при длинном разлёте ease-out слишком рано тушит opacity — искры «пропадают» */
+  animation-timing-function: linear;
   animation-fill-mode: forwards;
   will-change: transform, opacity;
 }
 
 @keyframes ghostSparkFly {
   0% {
-    transform: translate(-50%, -50%) translate(0, 0) scale(1.1);
+    transform: translate(-50%, -50%) translate(0, 0) scale(1.2);
     opacity: 1;
   }
+  /* дольше остаются яркими на траектории */
+  45% {
+    opacity: 0.95;
+  }
+  78% {
+    opacity: 0.65;
+  }
   100% {
-    transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(0.15);
+    transform: translate(-50%, -50%) translate(var(--sx), var(--sy)) scale(0.45);
     opacity: 0;
   }
 }
@@ -257,5 +344,13 @@
 
   .spark {
     animation-duration: 0.18s !important;
+  }
+
+  .ghostMouthWander {
+    animation: none;
+  }
+
+  .impactSlogan {
+    animation-duration: 2.8s;
   }
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -14,11 +15,13 @@ const RECEDE_MS = 780;
 const CHARGE_MS = 880;
 const IMPACT_MS = 280;
 const RECOVER_MS = 620;
-const SPARK_CLEANUP_MS = 520;
-const SPARK_COUNT = 28;
+const SPARK_CLEANUP_MS = 1100;
+const SPARK_COUNT = 40;
 const CRACK_CLEANUP_MS = 3150;
-const ATTACK_GAP_MIN_MS = 7500;
-const ATTACK_GAP_MAX_MS = 17500;
+const IMPACT_SLOGAN_CLEANUP_MS = 10400;
+/** Пауза между циклами «блуждание → удар» (случайно в диапазоне), мс. Меньше — чаще врезания. */
+const ATTACK_GAP_MIN_MS = 3200;
+const ATTACK_GAP_MAX_MS = 8500;
 
 type Phase = 'haunting' | 'splatter' | 'done';
 
@@ -31,6 +34,7 @@ type GlassCrackBurst = {
   main: string[];
   hair: string[];
 };
+type ImpactSlogan = { id: number; left: number; top: number; dripPx: number };
 type AttackMode = 'wander' | 'recede' | 'charge' | 'impact' | 'recover';
 
 type BloodDrop = {
@@ -136,6 +140,11 @@ function makeEyeSparks(
   rightEye: { x: number; y: number },
   edge: Edge,
 ): Sp[] {
+  const iw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const ih = typeof window !== 'undefined' ? window.innerHeight : 768;
+  /** Базовая дальность ~половина диагонали — искры долетают почти до краёв экрана */
+  const reach = Math.hypot(iw, ih) * 0.5;
+
   const outwardBias = (): number => {
     switch (edge) {
       case 'left':
@@ -154,15 +163,15 @@ function makeEyeSparks(
   return Array.from({ length: SPARK_COUNT }, (_, i) => {
     const fromLeft = i % 2 === 0;
     const base = fromLeft ? leftEye : rightEye;
-    const angle = outwardBias() + (Math.random() - 0.5) * 0.5;
-    const dist = 36 + Math.random() * 100;
+    const angle = outwardBias() + (Math.random() - 0.5) * 1.05;
+    const dist = reach * (0.42 + Math.random() * 0.58);
     return {
       id: `sp-${i}-${Math.random().toString(36).slice(2, 9)}`,
       left: base.x,
       top: base.y,
       sx: Math.cos(angle) * dist,
-      sy: Math.sin(angle) * dist + (Math.random() - 0.5) * 24,
-      dur: 0.32 + Math.random() * 0.22,
+      sy: Math.sin(angle) * dist + (Math.random() - 0.5) * reach * 0.12,
+      dur: 0.58 + Math.random() * 0.5,
     };
   });
 }
@@ -241,7 +250,9 @@ export const EventsGhostPrank = () => {
   const [screenBump, setScreenBump] = useState(0);
   const [sparks, setSparks] = useState<Sp[]>([]);
   const [glassCrack, setGlassCrack] = useState<GlassCrackBurst | null>(null);
+  const [impactSlogan, setImpactSlogan] = useState<ImpactSlogan | null>(null);
   const crackSeqRef = useRef(0);
+  const sloganSeqRef = useRef(0);
   const ghostRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const waypointsRef = useRef(buildWaypoints(12));
@@ -281,17 +292,15 @@ export const EventsGhostPrank = () => {
 
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (e.key.toLowerCase() !== 'g') return;
-
+      /* Физические клавиши (раскладка не важна). Ctrl+Shift+G в Chrome — поиск. */
       const ctrl = e.ctrlKey && !e.metaKey;
-      const comboShift = ctrl && e.shiftKey && !e.altKey;
-      const comboAlt = ctrl && e.altKey && !e.shiftKey;
-      if (!comboShift && !comboAlt) return;
+      const isToggle = (e.code === 'KeyB' || e.code === 'KeyH') && ctrl && e.altKey && e.shiftKey;
+      if (!isToggle) return;
 
       if (isTypingTarget(e.target)) return;
 
       e.preventDefault();
-      e.stopPropagation();
+      e.stopImmediatePropagation();
 
       setRuntimeEnabled((prev) => {
         const next = !prev;
@@ -312,6 +321,7 @@ export const EventsGhostPrank = () => {
       setFaceAngry(false);
       setSparks([]);
       setGlassCrack(null);
+      setImpactSlogan(null);
       setTransform('translate(0vw, 0vh) translate(-50%, -50%) rotate(0deg) skewX(0deg) scale(1)');
       reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       attackRef.current.mode = 'wander';
@@ -322,6 +332,7 @@ export const EventsGhostPrank = () => {
       setFaceAngry(false);
       setSparks([]);
       setGlassCrack(null);
+      setImpactSlogan(null);
     }
   }, [runtimeEnabled]);
 
@@ -351,6 +362,12 @@ export const EventsGhostPrank = () => {
     const id = window.setTimeout(() => setGlassCrack(null), CRACK_CLEANUP_MS);
     return () => window.clearTimeout(id);
   }, [glassCrack]);
+
+  useEffect(() => {
+    if (!impactSlogan) return undefined;
+    const id = window.setTimeout(() => setImpactSlogan(null), IMPACT_SLOGAN_CLEANUP_MS);
+    return () => window.clearTimeout(id);
+  }, [impactSlogan]);
 
   useEffect(() => {
     if (!runtimeEnabled || phase !== 'haunting') return undefined;
@@ -388,6 +405,13 @@ export const EventsGhostPrank = () => {
         const leftEye = { x: r.left + r.width * 0.36, y: r.top + r.height * 0.35 };
         const rightEye = { x: r.left + r.width * 0.64, y: r.top + r.height * 0.35 };
         setSparks(makeEyeSparks(leftEye, rightEye, a.edge));
+        sloganSeqRef.current += 1;
+        setImpactSlogan({
+          id: sloganSeqRef.current,
+          left: cx,
+          top: cy,
+          dripPx: Math.max(ih - cy + 140, ih * 0.58),
+        });
       }
     };
 
@@ -660,25 +684,42 @@ export const EventsGhostPrank = () => {
         />
       ) : null}
 
-      {sparks.length > 0 ? (
-        <div className={styles.sparkLayer} aria-hidden>
-          {sparks.map((s) => (
-            <span
-              key={s.id}
-              className={styles.spark}
-              style={
-                {
-                  left: s.left,
-                  top: s.top,
-                  ['--sx' as string]: `${s.sx}px`,
-                  ['--sy' as string]: `${s.sy}px`,
-                  animationDuration: `${s.dur}s`,
-                } as React.CSSProperties
-              }
-            />
-          ))}
-        </div>
-      ) : null}
+      {typeof document !== 'undefined' && (sparks.length > 0 || impactSlogan)
+        ? createPortal(
+            <div className={styles.sparkLayer} aria-hidden>
+              {sparks.map((s) => (
+                <span
+                  key={s.id}
+                  className={styles.spark}
+                  style={
+                    {
+                      left: s.left,
+                      top: s.top,
+                      ['--sx' as string]: `${s.sx}px`,
+                      ['--sy' as string]: `${s.sy}px`,
+                      animationDuration: `${s.dur}s`,
+                    } as React.CSSProperties
+                  }
+                />
+              ))}
+              {impactSlogan ? (
+                <div
+                  key={impactSlogan.id}
+                  className={styles.impactSlogan}
+                  style={
+                    {
+                      left: impactSlogan.left,
+                      top: impactSlogan.top,
+                      ['--drip-end' as string]: `${impactSlogan.dripPx}px`,
+                    } as React.CSSProperties
+                  }>
+                  {t('tooltips.ghostForehead')}
+                </div>
+              ) : null}
+            </div>,
+            document.body,
+          )
+        : null}
 
       {phase === 'haunting' ? (
         <div
@@ -700,8 +741,8 @@ export const EventsGhostPrank = () => {
               d="M100 28c-48 0-78 38-78 88v92c0 18 16 28 32 22 14-5 22-18 30-28 8 12 20 28 40 28s32-16 40-28c8 10 16 23 30 28 16 6 32-4 32-22v-92c0-50-30-88-78-88z"
             />
             <path
-              fill="#f5f5fa"
-              opacity="0.95"
+              fill="#ebe8f2"
+              opacity="0.72"
               d="M42 180c-6 28 28 42 48 22l10-12c16 18 44 18 60 0l10 12c20 20 54 6 48-22v-18c-42 22-88 22-128 0l-48 18z"
             />
             <g className={styles.moodNormal} style={{ opacity: faceAngry ? 0 : 1 }}>
@@ -709,6 +750,30 @@ export const EventsGhostPrank = () => {
               <ellipse cx="128" cy="98" rx="14" ry="20" fill="#1a1a24" />
               <ellipse cx="76" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
               <ellipse cx="132" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
+              <g className={`${styles.ghostMouth} ${!faceAngry ? styles.ghostMouthWander : ''}`}>
+                {/* Рот как у «злого»: тёмная полость + обводка; при блуждании анимируется scaleY */}
+                <path
+                  fill="#2a222c"
+                  stroke="#14141c"
+                  strokeWidth="2.2"
+                  strokeLinejoin="round"
+                  d="M 80 136 C 80 127 88 122 100 122 C 112 122 120 127 120 136 C 120 146 110 155 100 157 C 90 155 80 146 80 136 Z"
+                />
+                <path
+                  d="M 86 128 Q 100 120 114 128"
+                  fill="none"
+                  stroke="#1a1a24"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M 89 127 L 89 130 M 95 126 L 95 130 M 101 126 L 101 130 M 107 126 L 107 130 M 113 127 L 113 130"
+                  stroke="#f0eef8"
+                  strokeWidth="1.65"
+                  strokeLinecap="round"
+                  opacity="0.82"
+                />
+              </g>
             </g>
             <g className={styles.moodAngry} style={{ opacity: faceAngry ? 1 : 0 }}>
               <path
