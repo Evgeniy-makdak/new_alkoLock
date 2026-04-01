@@ -24,6 +24,8 @@ interface CarsSelectProps<T> {
   reset?: any;
   includeIsActive?: boolean;
   isAttachment?: boolean;
+  /** Опции вне выдачи API (дедуп по value). Не влияет на запрос к серверу. */
+  alwaysIncludeOptions?: Value[];
 }
 
 export function CarsSelect<T>({
@@ -35,6 +37,7 @@ export function CarsSelect<T>({
   includeIsActive,
   reset,
   isAttachment,
+  alwaysIncludeOptions,
   ...rest
 }: CarsSelectProps<T>) {
   const { inputValue, onChange, isLoading, carList } = useCarsSelect(
@@ -45,6 +48,7 @@ export function CarsSelect<T>({
     isActive,
     includeIsActive,
     isAttachment,
+    alwaysIncludeOptions,
   );
 
   useEffect(() => {

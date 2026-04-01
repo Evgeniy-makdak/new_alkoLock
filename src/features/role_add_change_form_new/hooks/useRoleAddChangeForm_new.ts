@@ -95,7 +95,7 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
       const currentRead = currentValues.readPermissions;
       const toAdd = permissions.filter((p) => !currentRead.includes(p));
       if (toAdd.length > 0) {
-        setValue('readPermissions', [...currentRead, ...toAdd].sort());
+        setValue('readPermissions', [...currentRead, ...toAdd].sort(), { shouldDirty: true });
       }
     },
     [currentValues.readPermissions, setValue],
@@ -107,13 +107,17 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
       const currentUpdate = currentValues.updatePermissions;
       const hasChatInUpdate = currentUpdate.includes(CHAT_ENTITY);
 
-      setValue('createPermissions', [...newCreatePermissions].sort());
+      setValue('createPermissions', [...newCreatePermissions].sort(), { shouldDirty: true });
       syncReadPermissions(newCreatePermissions);
 
       if (hasChatInCreate && !hasChatInUpdate) {
-        setValue('updatePermissions', [...currentUpdate, CHAT_ENTITY].sort());
+        setValue('updatePermissions', [...currentUpdate, CHAT_ENTITY].sort(), {
+          shouldDirty: true,
+        });
       } else if (!hasChatInCreate && hasChatInUpdate) {
-        setValue('updatePermissions', currentUpdate.filter((p) => p !== CHAT_ENTITY).sort());
+        setValue('updatePermissions', currentUpdate.filter((p) => p !== CHAT_ENTITY).sort(), {
+          shouldDirty: true,
+        });
       }
     },
     [currentValues.updatePermissions, setValue, syncReadPermissions],
@@ -125,13 +129,17 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
       const currentCreate = currentValues.createPermissions;
       const hasChatInCreate = currentCreate.includes(CHAT_ENTITY);
 
-      setValue('updatePermissions', [...newUpdatePermissions].sort());
+      setValue('updatePermissions', [...newUpdatePermissions].sort(), { shouldDirty: true });
       syncReadPermissions(newUpdatePermissions);
 
       if (hasChatInUpdate && !hasChatInCreate) {
-        setValue('createPermissions', [...currentCreate, CHAT_ENTITY].sort());
+        setValue('createPermissions', [...currentCreate, CHAT_ENTITY].sort(), {
+          shouldDirty: true,
+        });
       } else if (!hasChatInUpdate && hasChatInCreate) {
-        setValue('createPermissions', currentCreate.filter((p) => p !== CHAT_ENTITY).sort());
+        setValue('createPermissions', currentCreate.filter((p) => p !== CHAT_ENTITY).sort(), {
+          shouldDirty: true,
+        });
       }
     },
     [currentValues.createPermissions, setValue, syncReadPermissions],
@@ -147,18 +155,21 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
         setValue(
           'createPermissions',
           currentValues.createPermissions.filter((p) => !removedPermissions.includes(p)).sort(),
+          { shouldDirty: true },
         );
         setValue(
           'updatePermissions',
           currentValues.updatePermissions.filter((p) => !removedPermissions.includes(p)).sort(),
+          { shouldDirty: true },
         );
         setValue(
           'deletePermissions',
           currentValues.deletePermissions.filter((p) => !removedPermissions.includes(p)).sort(),
+          { shouldDirty: true },
         );
       }
 
-      setValue('readPermissions', [...newReadPermissions].sort());
+      setValue('readPermissions', [...newReadPermissions].sort(), { shouldDirty: true });
     },
     [currentValues, setValue],
   );
@@ -197,7 +208,7 @@ export const useRoleAddChangeForm_new = (id: ID, close: () => void) => {
     setReadPermissions: handleReadPermissionsChange,
     setUpdatePermissions: handleUpdatePermissionsChange,
     setDeletePermissions: (permissions: string[]) => {
-      setValue('deletePermissions', [...permissions].sort());
+      setValue('deletePermissions', [...permissions].sort(), { shouldDirty: true });
       syncReadPermissions(permissions);
     },
     permissionOptions,

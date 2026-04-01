@@ -21,7 +21,7 @@ export const EVENTS_GHOST_PRANK_DISABLED = false;
 export const EVENTS_PAGE_GHOST_PRANK_ENABLED = true;
 
 /** Задержка после простоя, **мс** (дробные мс допустимы). Слишком большое значение обрежется до `EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS`. */
-export const EVENTS_GHOST_PRANK_IDLE_DELAY_MS = 20 * 1000;
+export const EVENTS_GHOST_PRANK_IDLE_DELAY_MS = 1 * 60 * 1000;
 
 /** Допустимый диапазон задержки (мс): от 0 (сразу) до 1 часа включительно. */
 export const EVENTS_GHOST_PRANK_IDLE_DELAY_MIN_MS = 0;

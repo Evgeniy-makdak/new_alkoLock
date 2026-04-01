@@ -42,6 +42,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
     isSubmitting,
     newVehicleData,
     isDirty,
+    alwaysIncludeVehicleOptions,
   } = useAlkozamkiForm(id, closeModal);
 
   // Обработчик потери фокуса с обрезкой пробелов
@@ -103,6 +104,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 setValueStore={onSelect}
                 label={t('tables.installedOnVehicle')}
                 reset={reset}
+                alwaysIncludeOptions={alwaysIncludeVehicleOptions}
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>

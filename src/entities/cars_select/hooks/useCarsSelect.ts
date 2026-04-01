@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 
 import type { ID } from '@shared/types/BaseQueryTypes';
-import { mapOptions } from '@shared/ui/search_multiple_select';
+import { type Value, mapOptions } from '@shared/ui/search_multiple_select';
 
 import { useCarListQuery } from '../api/useCarListQuery';
 import { adapterMapOptions } from '../lib/adapterMapOptions';
@@ -15,6 +15,8 @@ export const useCarsSelect = (
   isActive?: boolean,
   includeIsActive?: boolean,
   isAttachment?: boolean,
+  /** Варианты, которых нет в ответе API (напр. ТС уже привязано к этому алкозамку при редактировании). */
+  alwaysIncludeOptions?: Value[],
 ) => {
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,9 +60,23 @@ export const useCarsSelect = (
     return adapterMapOptions(car as any, vieBranch);
   });
 
-  const filteredCarList = carListMapped.filter((car) =>
-    car.label.toLowerCase().includes(inputValue.toLowerCase()),
-  );
+  const mergedList = (() => {
+    const byVal = new Map<string, Value>();
+    for (const opt of alwaysIncludeOptions ?? []) {
+      byVal.set(String(opt.value), opt);
+    }
+    for (const item of carListMapped) {
+      const k = String(item.value);
+      if (!byVal.has(k)) byVal.set(k, item);
+    }
+    return Array.from(byVal.values());
+  })();
+
+  const q = inputValue.trim().toLowerCase();
+  const filteredCarList = mergedList.filter((car) => {
+    if (!q) return true;
+    return car.label.toLowerCase().includes(q);
+  });
 
   return { onChange, onReset, isLoading, carList: filteredCarList, inputValue, onInputChange };
 };

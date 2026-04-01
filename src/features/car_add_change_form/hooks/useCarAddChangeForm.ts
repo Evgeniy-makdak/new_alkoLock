@@ -53,6 +53,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     handleSubmit,
     clearErrors,
     setValue,
+    resetField,
     watch,
     formState: { errors, isDirty },
   } = useForm({
@@ -69,8 +70,13 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     }
   }, [isLoadingCar, defaultValues, setValue]);
 
-  const onChangeDate = (value: Dayjs) => {
+  const onChangeDate = (value: Dayjs | null) => {
     clearErrors('year');
+    if (!id && (value == null || !value.isValid())) {
+      resetField('year');
+      resetField('yearText');
+      return;
+    }
     setValue('year', value as never, { shouldDirty: true });
     if (value && value.isValid()) {
       setValue('yearText', value.year().toString() as never, { shouldDirty: true });
@@ -88,7 +94,12 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         setValue('year', date as never, { shouldDirty: true });
       }
     } else if (yearText === '') {
-      setValue('year', dateNow as never, { shouldDirty: true });
+      if (!id) {
+        resetField('year');
+        resetField('yearText');
+      } else {
+        setValue('year', dateNow as never, { shouldDirty: true });
+      }
     }
   };
 

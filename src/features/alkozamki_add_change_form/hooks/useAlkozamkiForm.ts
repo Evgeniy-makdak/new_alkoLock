@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { enqueueSnackbar } from 'notistack';
@@ -17,6 +17,12 @@ import { Formatters } from '@shared/utils/formatters';
 
 import { useAlkozamkiFormApi } from '../api/useAlkozamkiFormApi';
 import { type Form, schema } from '../lib/validate';
+
+const ALKOZAMKI_ADD_DEFAULTS: Form = {
+  name: '',
+  serialNumber: '',
+  tc: [],
+};
 
 export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
@@ -37,26 +43,20 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
   } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const defaultValues =
-    alkolock && !isLoadingAlkolock
-      ? {
-          name: alkolock?.name || '',
-          serialNumber: alkolock?.serialNumber || '',
-          uid: alkolock?.serviceId || '',
-          tc: car
-            ? [
-                {
-                  label: Formatters.carNameFormatter(car),
-                  value: car?.id,
-                },
-              ]
-            : [],
-        }
-      : null;
+  const editingDefaults = useMemo((): Form | null => {
+    if (!id || !alkolock || isLoadingAlkolock) return null;
+    const v = alkolock.vehicleBind?.vehicle;
+    return {
+      name: alkolock.name || '',
+      serialNumber: String(alkolock.serialNumber ?? ''),
+      tc: v ? [{ label: Formatters.carNameFormatter(v), value: v.id }] : [],
+    };
+  }, [id, isLoadingAlkolock, alkolock?.id]);
 
   const {
     register,
     handleSubmit,
+    reset,
     setValue,
     watch,
     formState: {
@@ -65,27 +65,32 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
       // errors: { name: nameAlkolock, serialNumber, uid },
     },
   } = useForm({
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //@ts-expect-error
     resolver: yupResolver(schema),
-    defaultValues,
+    defaultValues: ALKOZAMKI_ADD_DEFAULTS,
   });
 
   useEffect(() => {
-    if (defaultValues) {
-      Object.keys(defaultValues).forEach((key) => {
-        setValue(key as keyof Form, defaultValues[key as keyof Form], { shouldDirty: false });
-      });
+    if (!id) {
+      reset(ALKOZAMKI_ADD_DEFAULTS, { keepDirty: false });
+      return;
     }
-  }, [alkolock?.name, car, setValue]);
+    if (editingDefaults) {
+      reset(editingDefaults, { keepDirty: false });
+    }
+  }, [id, editingDefaults, reset]);
 
   const customReset = () => {
-    setValue('tc', [
-      {
-        label: Formatters.carNameFormatter(car),
-        value: car?.id,
-      },
-    ] as never);
+    if (!car?.id) return;
+    setValue(
+      'tc',
+      [
+        {
+          label: Formatters.carNameFormatter(car),
+          value: car.id,
+        },
+      ] as never,
+      { shouldDirty: false },
+    );
   };
 
   const onSelect = (type: keyof Form, value: string | Value | (string | Value)[]) => {
@@ -287,7 +292,19 @@ export const useAlkozamkiForm = (id?: ID, closeModal?: () => void) => {
     }
   };
 
+  /** При редактировании: ТС, привязанное к алкозамку с бэка — всегда в списке выбора (после сброса крестиком). */
+  const alwaysIncludeVehicleOptions: { label: string; value: ID }[] | undefined =
+    id && car
+      ? [
+          {
+            label: Formatters.carNameFormatter(car),
+            value: car.id,
+          },
+        ]
+      : undefined;
+
   return {
+    alwaysIncludeVehicleOptions,
     reset: customReset,
     errorName,
     errorSerialNumber,

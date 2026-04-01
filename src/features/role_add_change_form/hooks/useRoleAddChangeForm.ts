@@ -75,9 +75,10 @@ export const useRoleAddChangeForm = (id: ID, close: () => void) => {
     setValue(
       TypesOfForm.attachPermission,
       Math.max(Number(usersPermission), Number(carsPermission)),
+      { shouldDirty: true },
     );
 
-    setValue(type, value);
+    setValue(type, value, { shouldDirty: true });
   };
 
   const errorName = name ? name.message.toString() : '';
