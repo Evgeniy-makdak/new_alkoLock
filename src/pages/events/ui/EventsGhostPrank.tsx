@@ -34,7 +34,7 @@ type GlassCrackBurst = {
   main: string[];
   hair: string[];
 };
-type ImpactSlogan = { id: number; left: number; top: number; dripPx: number };
+type ImpactSlogan = { id: number; left: number; top: number; dripPx: number; label: string };
 type AttackMode = 'wander' | 'recede' | 'charge' | 'impact' | 'recover';
 
 type BloodDrop = {
@@ -54,6 +54,15 @@ type BloodDrop = {
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+/** «сегодня ДД.ММ ЧЧ:ММ» в локальном времени */
+function formatGhostImpactSlogan(now: Date = new Date()): string {
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  return `сегодня ${dd}.${mm} ${hh}:${min}`;
+}
 
 function buildWaypoints(count: number): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
@@ -411,6 +420,7 @@ export const EventsGhostPrank = () => {
           left: cx,
           top: cy,
           dripPx: Math.max(ih - cy + 140, ih * 0.58),
+          label: formatGhostImpactSlogan(),
         });
       }
     };
@@ -713,7 +723,7 @@ export const EventsGhostPrank = () => {
                       ['--drip-end' as string]: `${impactSlogan.dripPx}px`,
                     } as React.CSSProperties
                   }>
-                  {t('tooltips.ghostForehead')}
+                  {impactSlogan.label}
                 </div>
               ) : null}
             </div>,
