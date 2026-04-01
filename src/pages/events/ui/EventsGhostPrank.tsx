@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 
+import type { TFunction } from 'i18next';
+
 import {
+  getGhostPrankIdleDelayMs,
   readGhostPrankRuntimeEnabled,
   writeGhostPrankRuntimeEnabled,
 } from '../config/eventsGhostPrankEnabled';
@@ -23,6 +26,12 @@ const IMPACT_SLOGAN_CLEANUP_MS = 10400;
 const ATTACK_GAP_MIN_MS = 3200;
 const ATTACK_GAP_MAX_MS = 8500;
 
+/** Отключение «призрака» на тач-устройствах: удержание без движения */
+const GHOST_LONG_PRESS_MS = 1200;
+const GHOST_LONG_PRESS_MOVE_PX = 22;
+
+const IDLE_MOUSEMOVE_THROTTLE_MS = 400;
+
 type Phase = 'haunting' | 'splatter' | 'done';
 
 type Edge = 'left' | 'right' | 'top' | 'bottom';
@@ -34,7 +43,16 @@ type GlassCrackBurst = {
   main: string[];
   hair: string[];
 };
-type ImpactSlogan = { id: number; left: number; top: number; dripPx: number; label: string };
+type ImpactSlogan = { id: number; left: number; top: number; dripPx: number; text: string };
+
+function formatGhostImpactSlogan(t: TFunction): string {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, '0');
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mi = String(now.getMinutes()).padStart(2, '0');
+  return `${t('tooltips.ghostForeheadToday')} ${dd}.${mm} ${hh}:${mi}`;
+}
 type AttackMode = 'wander' | 'recede' | 'charge' | 'impact' | 'recover';
 
 type BloodDrop = {
@@ -54,15 +72,6 @@ type BloodDrop = {
 const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 const easeInCubic = (t: number) => t * t * t;
 const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
-
-/** «сегодня ДД.ММ ЧЧ:ММ» в локальном времени */
-function formatGhostImpactSlogan(now: Date = new Date()): string {
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const hh = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-  return `сегодня ${dd}.${mm} ${hh}:${min}`;
-}
 
 function buildWaypoints(count: number): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
@@ -246,10 +255,17 @@ function rotForEdge(edge: Edge, chargeT: number): number {
 
 export const EventsGhostPrank = () => {
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  tRef.current = t;
+  const idleDelayMs = getGhostPrankIdleDelayMs();
+  const idleLatchedRef = useRef(false);
   const [runtimeEnabled, setRuntimeEnabled] = useState(readGhostPrankRuntimeEnabled);
-  const [phase, setPhase] = useState<Phase>(() =>
-    readGhostPrankRuntimeEnabled() ? 'haunting' : 'done',
-  );
+  const [idleReady, setIdleReady] = useState(() => idleDelayMs === 0);
+  const [phase, setPhase] = useState<Phase>(() => {
+    const enabled = readGhostPrankRuntimeEnabled();
+    if (!enabled) return 'done';
+    return idleDelayMs === 0 ? 'haunting' : 'done';
+  });
   const [transform, setTransform] = useState(
     'translate(0vw, 0vh) translate(-50%, -50%) rotate(0deg) skewX(0deg) scale(1)',
   );
@@ -262,6 +278,11 @@ export const EventsGhostPrank = () => {
   const [impactSlogan, setImpactSlogan] = useState<ImpactSlogan | null>(null);
   const crackSeqRef = useRef(0);
   const sloganSeqRef = useRef(0);
+  const skipNextGhostClickRef = useRef(false);
+  const ghostLongPressTimerRef = useRef<number | null>(null);
+  const ghostLongPressOriginRef = useRef<{ x: number; y: number } | null>(null);
+  /** Пока палец на призраке — анимация паузится, не нужно «гоняться» за ним при long-press */
+  const ghostTouchHoldRef = useRef(false);
   const ghostRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const waypointsRef = useRef(buildWaypoints(12));
@@ -288,6 +309,105 @@ export const EventsGhostPrank = () => {
     impactEndScale: 1,
     impactEndRot: 0,
   });
+
+  const [coarsePointer, setCoarsePointer] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia('(hover: none) and (pointer: coarse)');
+    const onChange = () => setCoarsePointer(mq.matches);
+    onChange();
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+
+  const clearGhostLongPressTimer = () => {
+    const id = ghostLongPressTimerRef.current;
+    if (id !== null) {
+      window.clearTimeout(id);
+      ghostLongPressTimerRef.current = null;
+    }
+    ghostLongPressOriginRef.current = null;
+  };
+
+  const endGhostTouch = () => {
+    ghostTouchHoldRef.current = false;
+    clearGhostLongPressTimer();
+  };
+
+  useEffect(() => () => clearGhostLongPressTimer(), []);
+
+  /** Простой как у скринсейвера: первый показ только после тишины в окне (пока страница «События» открыта). */
+  useEffect(() => {
+    if (!runtimeEnabled) {
+      idleLatchedRef.current = false;
+      setIdleReady(false);
+      return undefined;
+    }
+
+    if (idleDelayMs === 0) {
+      idleLatchedRef.current = true;
+      setIdleReady(true);
+      return undefined;
+    }
+
+    let timeoutId: number | null = null;
+    let lastMouseMoveReset = 0;
+
+    const fireIdle = () => {
+      idleLatchedRef.current = true;
+      setIdleReady(true);
+    };
+
+    const arm = () => {
+      if (idleLatchedRef.current) return;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      setIdleReady(false);
+      timeoutId = window.setTimeout(() => {
+        timeoutId = null;
+        fireIdle();
+      }, idleDelayMs);
+    };
+
+    const onActivity = () => {
+      if (idleLatchedRef.current) return;
+      arm();
+    };
+
+    const onMouseMove = () => {
+      if (idleLatchedRef.current) return;
+      const now = Date.now();
+      if (now - lastMouseMoveReset < IDLE_MOUSEMOVE_THROTTLE_MS) return;
+      lastMouseMoveReset = now;
+      arm();
+    };
+
+    arm();
+
+    window.addEventListener('pointerdown', onActivity, { capture: true, passive: true });
+    window.addEventListener('keydown', onActivity, true);
+    window.addEventListener('wheel', onActivity, { passive: true });
+    window.addEventListener('scroll', onActivity, { capture: true, passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener('touchstart', onActivity, { capture: true, passive: true });
+
+    return () => {
+      if (timeoutId !== null) window.clearTimeout(timeoutId);
+      window.removeEventListener('pointerdown', onActivity, true);
+      window.removeEventListener('keydown', onActivity, true);
+      window.removeEventListener('wheel', onActivity);
+      window.removeEventListener('scroll', onActivity, true);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchstart', onActivity, true);
+    };
+  }, [idleDelayMs, runtimeEnabled]);
+
   useEffect(() => {
     const isTypingTarget = (target: EventTarget | null) => {
       const el = target as HTMLElement | null;
@@ -322,19 +442,7 @@ export const EventsGhostPrank = () => {
   }, []);
 
   useEffect(() => {
-    if (runtimeEnabled) {
-      setPhase('haunting');
-      waypointsRef.current = buildWaypoints(12);
-      setDroplets([]);
-      setFlashPos(null);
-      setFaceAngry(false);
-      setSparks([]);
-      setGlassCrack(null);
-      setImpactSlogan(null);
-      setTransform('translate(0vw, 0vh) translate(-50%, -50%) rotate(0deg) skewX(0deg) scale(1)');
-      reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      attackRef.current.mode = 'wander';
-    } else {
+    if (!runtimeEnabled) {
       setPhase('done');
       setDroplets([]);
       setFlashPos(null);
@@ -342,8 +450,30 @@ export const EventsGhostPrank = () => {
       setSparks([]);
       setGlassCrack(null);
       setImpactSlogan(null);
+      return;
     }
-  }, [runtimeEnabled]);
+    if (!idleReady) {
+      setPhase('done');
+      setDroplets([]);
+      setFlashPos(null);
+      setFaceAngry(false);
+      setSparks([]);
+      setGlassCrack(null);
+      setImpactSlogan(null);
+      return;
+    }
+    setPhase('haunting');
+    waypointsRef.current = buildWaypoints(12);
+    setDroplets([]);
+    setFlashPos(null);
+    setFaceAngry(false);
+    setSparks([]);
+    setGlassCrack(null);
+    setImpactSlogan(null);
+    setTransform('translate(0vw, 0vh) translate(-50%, -50%) rotate(0deg) skewX(0deg) scale(1)');
+    reducedMotionRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    attackRef.current.mode = 'wander';
+  }, [runtimeEnabled, idleReady]);
 
   useEffect(() => {
     if (phase !== 'splatter' || droplets.length === 0) return undefined;
@@ -420,7 +550,7 @@ export const EventsGhostPrank = () => {
           left: cx,
           top: cy,
           dripPx: Math.max(ih - cy + 140, ih * 0.58),
-          label: formatGhostImpactSlogan(),
+          text: formatGhostImpactSlogan(tRef.current),
         });
       }
     };
@@ -438,6 +568,11 @@ export const EventsGhostPrank = () => {
     };
 
     const tick = (now: number) => {
+      if (ghostTouchHoldRef.current) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
       const reduce = reducedMotionRef.current;
       let nx: number;
       let ny: number;
@@ -633,6 +768,11 @@ export const EventsGhostPrank = () => {
   }, [phase, runtimeEnabled]);
 
   const onGhostClick = (e: React.MouseEvent) => {
+    if (skipNextGhostClickRef.current) {
+      skipNextGhostClickRef.current = false;
+      e.preventDefault();
+      return;
+    }
     const el = ghostRef.current;
     const rect = el?.getBoundingClientRect();
     const cx = rect ? rect.left + rect.width / 2 : e.clientX;
@@ -723,7 +863,7 @@ export const EventsGhostPrank = () => {
                       ['--drip-end' as string]: `${impactSlogan.dripPx}px`,
                     } as React.CSSProperties
                   }>
-                  {impactSlogan.label}
+                  {impactSlogan.text}
                 </div>
               ) : null}
             </div>,
@@ -733,92 +873,122 @@ export const EventsGhostPrank = () => {
 
       {phase === 'haunting' ? (
         <div
-          ref={ghostRef}
           className={styles.ghost}
           style={{ transform }}
           onClick={onGhostClick}
+          onTouchStart={(e) => {
+            if (e.touches.length !== 1) return;
+            ghostTouchHoldRef.current = true;
+            clearGhostLongPressTimer();
+            skipNextGhostClickRef.current = false;
+            const touch = e.touches[0];
+            ghostLongPressOriginRef.current = { x: touch.clientX, y: touch.clientY };
+            ghostLongPressTimerRef.current = window.setTimeout(() => {
+              ghostLongPressTimerRef.current = null;
+              ghostLongPressOriginRef.current = null;
+              skipNextGhostClickRef.current = true;
+              ghostTouchHoldRef.current = false;
+              writeGhostPrankRuntimeEnabled(false);
+              setRuntimeEnabled(false);
+            }, GHOST_LONG_PRESS_MS);
+          }}
+          onTouchMove={(e) => {
+            if (!ghostLongPressTimerRef.current || !ghostLongPressOriginRef.current) return;
+            const touch = e.touches[0];
+            const ox = ghostLongPressOriginRef.current.x;
+            const oy = ghostLongPressOriginRef.current.y;
+            const dx = touch.clientX - ox;
+            const dy = touch.clientY - oy;
+            if (dx * dx + dy * dy > GHOST_LONG_PRESS_MOVE_PX * GHOST_LONG_PRESS_MOVE_PX) {
+              clearGhostLongPressTimer();
+            }
+          }}
+          onTouchEnd={endGhostTouch}
+          onTouchCancel={endGhostTouch}
           role="presentation"
-          title={t('tooltips.ghostPrank')}>
-          <svg className={styles.svg} viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <radialGradient id="eventsGhostGlow" cx="50%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#fafafa" />
-                <stop offset="100%" stopColor="#e8e8f0" />
-              </radialGradient>
-            </defs>
-            <path
-              fill="url(#eventsGhostGlow)"
-              d="M100 28c-48 0-78 38-78 88v92c0 18 16 28 32 22 14-5 22-18 30-28 8 12 20 28 40 28s32-16 40-28c8 10 16 23 30 28 16 6 32-4 32-22v-92c0-50-30-88-78-88z"
-            />
-            <path
-              fill="#ebe8f2"
-              opacity="0.72"
-              d="M42 180c-6 28 28 42 48 22l10-12c16 18 44 18 60 0l10 12c20 20 54 6 48-22v-18c-42 22-88 22-128 0l-48 18z"
-            />
-            <g className={styles.moodNormal} style={{ opacity: faceAngry ? 0 : 1 }}>
-              <ellipse cx="72" cy="98" rx="14" ry="20" fill="#1a1a24" />
-              <ellipse cx="128" cy="98" rx="14" ry="20" fill="#1a1a24" />
-              <ellipse cx="76" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
-              <ellipse cx="132" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
-              <g className={`${styles.ghostMouth} ${!faceAngry ? styles.ghostMouthWander : ''}`}>
-                {/* Рот как у «злого»: тёмная полость + обводка; при блуждании анимируется scaleY */}
+          title={coarsePointer ? t('tooltips.ghostPrankMobile') : t('tooltips.ghostPrank')}>
+          <div ref={ghostRef} className={styles.ghostCore}>
+            <svg className={styles.svg} viewBox="0 0 200 260" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <radialGradient id="eventsGhostGlow" cx="50%" cy="35%" r="65%">
+                  <stop offset="0%" stopColor="#fafafa" />
+                  <stop offset="100%" stopColor="#e8e8f0" />
+                </radialGradient>
+              </defs>
+              <path
+                fill="url(#eventsGhostGlow)"
+                d="M100 28c-48 0-78 38-78 88v92c0 18 16 28 32 22 14-5 22-18 30-28 8 12 20 28 40 28s32-16 40-28c8 10 16 23 30 28 16 6 32-4 32-22v-92c0-50-30-88-78-88z"
+              />
+              <path
+                fill="#ebe8f2"
+                opacity="0.72"
+                d="M42 180c-6 28 28 42 48 22l10-12c16 18 44 18 60 0l10 12c20 20 54 6 48-22v-18c-42 22-88 22-128 0l-48 18z"
+              />
+              <g className={styles.moodNormal} style={{ opacity: faceAngry ? 0 : 1 }}>
+                <ellipse cx="72" cy="98" rx="14" ry="20" fill="#1a1a24" />
+                <ellipse cx="128" cy="98" rx="14" ry="20" fill="#1a1a24" />
+                <ellipse cx="76" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
+                <ellipse cx="132" cy="94" rx="5" ry="7" fill="#fff" opacity="0.5" />
+                <g className={`${styles.ghostMouth} ${!faceAngry ? styles.ghostMouthWander : ''}`}>
+                  {/* Рот как у «злого»: тёмная полость + обводка; при блуждании анимируется scaleY */}
+                  <path
+                    fill="#2a222c"
+                    stroke="#14141c"
+                    strokeWidth="2.2"
+                    strokeLinejoin="round"
+                    d="M 80 136 C 80 127 88 122 100 122 C 112 122 120 127 120 136 C 120 146 110 155 100 157 C 90 155 80 146 80 136 Z"
+                  />
+                  <path
+                    d="M 86 128 Q 100 120 114 128"
+                    fill="none"
+                    stroke="#1a1a24"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M 89 127 L 89 130 M 95 126 L 95 130 M 101 126 L 101 130 M 107 126 L 107 130 M 113 127 L 113 130"
+                    stroke="#f0eef8"
+                    strokeWidth="1.65"
+                    strokeLinecap="round"
+                    opacity="0.82"
+                  />
+                </g>
+              </g>
+              <g className={styles.moodAngry} style={{ opacity: faceAngry ? 1 : 0 }}>
                 <path
-                  fill="#2a222c"
-                  stroke="#14141c"
-                  strokeWidth="2.2"
-                  strokeLinejoin="round"
-                  d="M 80 136 C 80 127 88 122 100 122 C 112 122 120 127 120 136 C 120 146 110 155 100 157 C 90 155 80 146 80 136 Z"
-                />
-                <path
-                  d="M 86 128 Q 100 120 114 128"
-                  fill="none"
+                  d="M52 82 L88 94"
                   stroke="#1a1a24"
-                  strokeWidth="3.2"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <path
+                  d="M148 82 L112 94"
+                  stroke="#1a1a24"
+                  strokeWidth="9"
+                  strokeLinecap="round"
+                  fill="none"
+                />
+                <ellipse cx="72" cy="104" rx="13" ry="9" fill="#2a1018" />
+                <ellipse cx="128" cy="104" rx="13" ry="9" fill="#2a1018" />
+                <ellipse cx="70" cy="102" rx="4" ry="3" fill="#c62828" opacity="0.85" />
+                <ellipse cx="126" cy="102" rx="4" ry="3" fill="#c62828" opacity="0.85" />
+                <path
+                  d="M76 148 Q100 128 124 148"
+                  stroke="#1a1a24"
+                  strokeWidth="5"
+                  fill="none"
                   strokeLinecap="round"
                 />
                 <path
-                  d="M 89 127 L 89 130 M 95 126 L 95 130 M 101 126 L 101 130 M 107 126 L 107 130 M 113 127 L 113 130"
-                  stroke="#f0eef8"
-                  strokeWidth="1.65"
+                  d="M88 154 L94 162 M100 154 L100 164 M112 154 L106 162"
+                  stroke="#1a1a24"
+                  strokeWidth="3.5"
                   strokeLinecap="round"
-                  opacity="0.82"
                 />
               </g>
-            </g>
-            <g className={styles.moodAngry} style={{ opacity: faceAngry ? 1 : 0 }}>
-              <path
-                d="M52 82 L88 94"
-                stroke="#1a1a24"
-                strokeWidth="9"
-                strokeLinecap="round"
-                fill="none"
-              />
-              <path
-                d="M148 82 L112 94"
-                stroke="#1a1a24"
-                strokeWidth="9"
-                strokeLinecap="round"
-                fill="none"
-              />
-              <ellipse cx="72" cy="104" rx="13" ry="9" fill="#2a1018" />
-              <ellipse cx="128" cy="104" rx="13" ry="9" fill="#2a1018" />
-              <ellipse cx="70" cy="102" rx="4" ry="3" fill="#c62828" opacity="0.85" />
-              <ellipse cx="126" cy="102" rx="4" ry="3" fill="#c62828" opacity="0.85" />
-              <path
-                d="M76 148 Q100 128 124 148"
-                stroke="#1a1a24"
-                strokeWidth="5"
-                fill="none"
-                strokeLinecap="round"
-              />
-              <path
-                d="M88 154 L94 162 M100 154 L100 164 M112 154 L106 162"
-                stroke="#1a1a24"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-              />
-            </g>
-          </svg>
+            </svg>
+          </div>
         </div>
       ) : null}
 

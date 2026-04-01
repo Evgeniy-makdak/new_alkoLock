@@ -107,8 +107,8 @@ export const appStore = create<AppStore>()((set, get) => ({
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
     localStorage.removeItem(StorageKeys.OFFICE);
-    /* Шутка только по горячим клавишам; после выхода флаг сбрасывается. */
-    writeGhostPrankRuntimeEnabled(false);
+    /* Следующая сессия: призрак на «События» включён (`alcolock.eventsGhostPrank.enabled`). */
+    writeGhostPrankRuntimeEnabled(true);
   },
   setAuthError: (message) => set({ authError: message }),
   setUserFullName: (fullName: string) => set({ fullName: fullName }),

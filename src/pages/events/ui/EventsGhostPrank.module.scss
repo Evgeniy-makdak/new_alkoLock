@@ -46,20 +46,39 @@
   }
 }
 
+/* Внешний хитбокс: padding даёт большую зону тапа вокруг видимого призрака */
 .ghost {
   position: absolute;
   left: 0;
   top: 0;
   z-index: 5;
-  /* ≈ 1/10 меньшей стороны экрана (20vmin = 20% от min(vw, vh)) */
-  width: 20vmin;
-  height: 20vmin;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  width: max-content;
+  height: max-content;
+  padding: clamp(18px, 7vmin, 42px);
   pointer-events: auto;
   cursor: pointer;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
   will-change: transform;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* Само изображение призрака (центр для эффектов и ref) */
+.ghostCore {
+  width: 20vmin;
+  height: 20vmin;
+  min-width: 56px;
+  min-height: 56px;
+  max-width: 118px;
+  max-height: 118px;
+  flex-shrink: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 .svg {
