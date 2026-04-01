@@ -79,7 +79,7 @@
     "processingData": "Processing data…",
     "attention": "Attention!",
     "templateActive": "Active",
-    "ghostPrank": "Boo! Events: Ctrl+Alt+Shift+B or Ctrl+Alt+Shift+H (focus not in an input). Avoid Ctrl+Shift+G (Chrome find).",
+    "ghostPrank": "Boo! Any admin sidebar page: Ctrl+Alt+Shift+B or Ctrl+Alt+Shift+H (focus not in an input). Avoid Ctrl+Shift+G (Chrome find).",
     "ghostPrankMobile": "While your finger is on it, the ghost stops. Hold ~1.2s without sliding much to turn the prank off until next login. A quick tap still plays the splatter.",
     "ghostForeheadToday": "today",
     "recordActive": "Active",

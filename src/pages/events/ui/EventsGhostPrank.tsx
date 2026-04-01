@@ -253,12 +253,25 @@ function rotForEdge(edge: Edge, chargeT: number): number {
   }
 }
 
+function isTypingTargetEl(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null;
+  if (!el) return false;
+  const tag = el.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+  if (el.isContentEditable) return true;
+  if (el.closest('[contenteditable="true"]')) return true;
+  return false;
+}
+
 export const EventsGhostPrank = () => {
   const { t } = useTranslation();
   const tRef = useRef(t);
   tRef.current = t;
   const idleDelayMs = getGhostPrankIdleDelayMs();
   const idleLatchedRef = useRef(false);
+  const idleArmRef = useRef<(() => void) | null>(null);
+  /** После splatter на десктопе — снова ждать простоя (скринсейвер). На таче не выставляется. */
+  const pendingRestartIdleAfterSplatterRef = useRef(false);
   const [runtimeEnabled, setRuntimeEnabled] = useState(readGhostPrankRuntimeEnabled);
   const [idleReady, setIdleReady] = useState(() => idleDelayMs === 0);
   const [phase, setPhase] = useState<Phase>(() => {
@@ -324,6 +337,9 @@ export const EventsGhostPrank = () => {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  const coarsePointerRef = useRef(coarsePointer);
+  coarsePointerRef.current = coarsePointer;
+
   const clearGhostLongPressTimer = () => {
     const id = ghostLongPressTimerRef.current;
     if (id !== null) {
@@ -375,6 +391,8 @@ export const EventsGhostPrank = () => {
       }, idleDelayMs);
     };
 
+    idleArmRef.current = arm;
+
     const onActivity = () => {
       if (idleLatchedRef.current) return;
       arm();
@@ -398,6 +416,7 @@ export const EventsGhostPrank = () => {
     window.addEventListener('touchstart', onActivity, { capture: true, passive: true });
 
     return () => {
+      idleArmRef.current = null;
       if (timeoutId !== null) window.clearTimeout(timeoutId);
       window.removeEventListener('pointerdown', onActivity, true);
       window.removeEventListener('keydown', onActivity, true);
@@ -408,17 +427,91 @@ export const EventsGhostPrank = () => {
     };
   }, [idleDelayMs, runtimeEnabled]);
 
+  const applySplatterAtScreenPoint = (cx: number, cy: number, restartDesktopIdleCycle: boolean) => {
+    if (restartDesktopIdleCycle) {
+      pendingRestartIdleAfterSplatterRef.current = true;
+    }
+
+    setFlashPos({
+      x: `${cx}px`,
+      y: `${cy}px`,
+    });
+    window.setTimeout(() => setFlashPos(null), 240);
+
+    const iw = window.innerWidth || 1;
+    const ih = window.innerHeight || 1;
+    crackSeqRef.current += 1;
+    setGlassCrack({
+      id: crackSeqRef.current,
+      xPct: (cx / iw) * 100,
+      yPct: (cy / ih) * 100,
+      ...buildGlassCrackPaths(crackSeqRef.current * 11003 + Math.floor(performance.now())),
+    });
+
+    setSparks([]);
+    setDroplets(makeBloodDroplets(cx, cy, DROP_COUNT));
+    setPhase('splatter');
+  };
+
+  /** Десктоп: как скринсейвер — движение мыши или стрелки снимают призрака со splatter и запускают новый цикл простоя. */
   useEffect(() => {
-    const isTypingTarget = (target: EventTarget | null) => {
-      const el = target as HTMLElement | null;
-      if (!el) return false;
-      const tag = el.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-      if (el.isContentEditable) return true;
-      if (el.closest('[contenteditable="true"]')) return true;
-      return false;
+    if (coarsePointer) return undefined;
+    if (!runtimeEnabled || phase !== 'haunting') return undefined;
+
+    const burstFromGhostCenter = () => {
+      const el = ghostRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      applySplatterAtScreenPoint(cx, cy, true);
     };
 
+    window.addEventListener('mousemove', burstFromGhostCenter, { passive: true });
+    return () => window.removeEventListener('mousemove', burstFromGhostCenter);
+  }, [coarsePointer, runtimeEnabled, phase]);
+
+  useEffect(() => {
+    if (coarsePointer) return undefined;
+    if (!runtimeEnabled || phase !== 'haunting') return undefined;
+
+    const onArrowKey = (e: KeyboardEvent) => {
+      if (e.repeat) return;
+      const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      if (!keys.includes(e.key)) return;
+      if (isTypingTargetEl(e.target)) return;
+      e.preventDefault();
+      const el = ghostRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      applySplatterAtScreenPoint(rect.left + rect.width / 2, rect.top + rect.height / 2, true);
+    };
+
+    window.addEventListener('keydown', onArrowKey, true);
+    return () => window.removeEventListener('keydown', onArrowKey, true);
+  }, [coarsePointer, runtimeEnabled, phase]);
+
+  /** После splatter на десктопе снова отсчитываем простой до следующего появления. */
+  useEffect(() => {
+    if (phase !== 'done') return;
+    if (!pendingRestartIdleAfterSplatterRef.current) return;
+    pendingRestartIdleAfterSplatterRef.current = false;
+    if (coarsePointerRef.current || !runtimeEnabled) return;
+
+    idleLatchedRef.current = false;
+    setIdleReady(false);
+
+    if (idleDelayMs === 0) {
+      queueMicrotask(() => {
+        idleLatchedRef.current = true;
+        setIdleReady(true);
+      });
+    } else {
+      queueMicrotask(() => idleArmRef.current?.());
+    }
+  }, [phase, runtimeEnabled, idleDelayMs]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
       /* Физические клавиши (раскладка не важна). Ctrl+Shift+G в Chrome — поиск. */
@@ -426,7 +519,7 @@ export const EventsGhostPrank = () => {
       const isToggle = (e.code === 'KeyB' || e.code === 'KeyH') && ctrl && e.altKey && e.shiftKey;
       if (!isToggle) return;
 
-      if (isTypingTarget(e.target)) return;
+      if (isTypingTargetEl(e.target)) return;
 
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -777,26 +870,8 @@ export const EventsGhostPrank = () => {
     const rect = el?.getBoundingClientRect();
     const cx = rect ? rect.left + rect.width / 2 : e.clientX;
     const cy = rect ? rect.top + rect.height / 2 : e.clientY;
-
-    setFlashPos({
-      x: `${cx}px`,
-      y: `${cy}px`,
-    });
-    window.setTimeout(() => setFlashPos(null), 240);
-
-    const iw = window.innerWidth || 1;
-    const ih = window.innerHeight || 1;
-    crackSeqRef.current += 1;
-    setGlassCrack({
-      id: crackSeqRef.current,
-      xPct: (cx / iw) * 100,
-      yPct: (cy / ih) * 100,
-      ...buildGlassCrackPaths(crackSeqRef.current * 11003 + Math.floor(performance.now())),
-    });
-
-    setSparks([]);
-    setDroplets(makeBloodDroplets(cx, cy, DROP_COUNT));
-    setPhase('splatter');
+    /* Десктоп: как со скринсейвера — после «лопания» снова ждём простоя; мобильный: один проход как раньше */
+    applySplatterAtScreenPoint(cx, cy, !coarsePointerRef.current);
   };
 
   if (!runtimeEnabled) return null;

@@ -11,7 +11,6 @@ import { EventsTable } from '@widgets/events_table';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import { useEventsPage } from '../hooks/useEventsPage';
-import { EventsGhostPrank } from './EventsGhostPrank';
 
 const Events: React.FC = () => {
   const { handleClickRow, handleCloseAside, selectedEventId, tabs, activeTab, setActiveTab } =
@@ -43,7 +42,6 @@ const Events: React.FC = () => {
 
   return (
     <>
-      <EventsGhostPrank />
       {isMobile || isTablet ? <div style={{ height: '50px' }} /> : null}
 
       <PageWrapper

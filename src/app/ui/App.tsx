@@ -2,6 +2,8 @@ import { Outlet, useLocation } from 'react-router-dom';
 
 import { CircularProgress, useMediaQuery } from '@mui/material';
 
+import { isGhostPrankGloballyDisabled } from '@pages/events/config/eventsGhostPrankEnabled';
+import { EventsGhostPrank } from '@pages/events/ui/EventsGhostPrank';
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
@@ -55,6 +57,7 @@ export function App() {
             <RoleChipStyles />
             <div className={style.contentWrapper}>
               <Outlet />
+              {isGhostPrankGloballyDisabled() ? null : <EventsGhostPrank />}
             </div>
             <ChatFooter />
           </div>
