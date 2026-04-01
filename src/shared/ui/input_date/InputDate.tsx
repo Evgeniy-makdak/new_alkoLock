@@ -119,8 +119,10 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
         : createTheme(outerTheme, { components: inputDatePickerComponents }),
     [outerTheme, themeOverride],
   );
-  const textFieldProps = pickerProps?.slotProps?.textField || {};
-  const userPopperSlot = pickerProps?.slotProps?.popper;
+  const userSlotProps = pickerProps?.slotProps ?? {};
+  const textFieldProps = userSlotProps.textField || {};
+  const userFieldSlot = userSlotProps.field;
+  const userPopperSlot = userSlotProps.popper;
   const [open, setOpen] = useState(false);
   const minDate = minDateFlag ? dayjs().add(1, 'day') : undefined;
 
@@ -193,7 +195,7 @@ export const InputDate: FC<MyInputDateProps> = (props) => {
             clearButton: ClearButton,
           }}
           slotProps={{
-            field: { clearable: true },
+            field: { clearable: true, ...userFieldSlot },
             actionBar: {
               actions: ['clear'],
               id: 'ACTION_BAR',

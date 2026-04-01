@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC, FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TextField, Typography } from '@mui/material';
@@ -40,7 +40,7 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
     register,
     isLoadingCar,
     isDataLoaded,
-    isDirty,
+    submitDisabled,
   } = useCarAddChangeForm(id, closeModal);
 
   // Обработчик потери фокуса с обрезкой пробелов
@@ -117,13 +117,18 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
               />
               <InputDate
                 disableFuture
-                value={yearValue}
+                value={yearValue ?? null}
                 views={['year']}
                 testid={testids.page_transports.transports_widget_add_car_popup.CAR_POPUP_YEAR}
                 slotProps={{
                   textField: {
                     error: !!errorYear,
                     helperText: errorYear,
+                    onBlur: (e: FocusEvent<HTMLInputElement>) => {
+                      if (!id && e.target.value.trim() === '') {
+                        onSetDate(null);
+                      }
+                    },
                   },
                 }}
                 label={t('form.yearOfManufacture')}
@@ -131,7 +136,7 @@ export const CarAddChangeForm: FC<CarAddChangeFormProps> = ({ closeModal, id }) 
               />
             </InputsColumnWrapper>
             <ButtonFormWrapper>
-              <Button type="submit" disabled={!isDirty}>
+              <Button type="submit" disabled={submitDisabled}>
                 {id ? t('common.save') : t('common.add')}
               </Button>
               <Button onClick={closeModal}>{t('common.cancel')}</Button>

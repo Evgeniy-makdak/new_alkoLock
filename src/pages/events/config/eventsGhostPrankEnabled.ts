@@ -25,7 +25,7 @@ export const EVENTS_GHOST_PRANK_IDLE_DELAY_MS = 1 * 60 * 1000;
 
 /** Допустимый диапазон задержки (мс): от 0 (сразу) до 1 часа включительно. */
 export const EVENTS_GHOST_PRANK_IDLE_DELAY_MIN_MS = 0;
-export const EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS = 60 * 60 * 1000;
+export const EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS = 59 * 60 * 1000;
 
 const STORAGE_KEY = 'alcolock.eventsGhostPrank.enabled';
 

@@ -18,6 +18,35 @@ import { type Form, schema } from '../lib/validate';
 
 const dateNow = dayjs();
 
+/** Сравнение состояния формы с дефолтами (год как null, если нет валидной даты) — для кнопки «Добавить», т.к. isDirty после MUI DatePicker может оставаться true. */
+function carFormSnapshotKey(f: Form) {
+  const yearVal = f.year;
+  const yearNorm =
+    yearVal != null && dayjs.isDayjs(yearVal) && yearVal.isValid() ? yearVal.year() : null;
+  return JSON.stringify({
+    mark: f.mark ?? '',
+    model: f.model ?? '',
+    vin: f.vin ?? '',
+    registrationNumber: f.registrationNumber ?? '',
+    type: f.type ?? [],
+    color: f.color ?? [],
+    year: yearNorm,
+    yearText: f.yearText ?? '',
+  });
+}
+
+/** Фиксированное состояние формы «Добавить ТС»; не сравниваем с defaultValues из useMemo (рассинхрон year / yearText с MUI). */
+const CAR_ADD_SUBMIT_BASELINE_KEY = carFormSnapshotKey({
+  mark: '',
+  model: '',
+  vin: '',
+  registrationNumber: '',
+  type: [],
+  color: [],
+  year: null,
+  yearText: '',
+});
+
 export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
   const selectedBranch = appStore.getState().selectedBranchState;
   const { car, isLoadingCar, changeItem, createItem } = useCarAddChangeFormApi(id);
@@ -32,8 +61,8 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
         registrationNumber: car?.registrationNumber || '',
         type: typeSelectValueFormatter(car?.type) || [],
         color: colorSelectValueFormatter(car?.color) || [],
-        year: car?.year ? dateNow.year(car.year) : dateNow,
-        yearText: car?.year ? car.year.toString() : '',
+        year: car?.year != null ? dateNow.year(car.year) : (null as Form['year']),
+        yearText: car?.year != null ? car.year.toString() : '',
       };
     }
     return {
@@ -43,7 +72,7 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
       registrationNumber: '',
       type: [],
       color: [],
-      year: dateNow,
+      year: null as Form['year'],
       yearText: '',
     };
   }, [car, isLoadingCar]);
@@ -53,7 +82,6 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     handleSubmit,
     clearErrors,
     setValue,
-    resetField,
     watch,
     formState: { errors, isDirty },
   } = useForm({
@@ -70,11 +98,23 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     }
   }, [isLoadingCar, defaultValues, setValue]);
 
+  const yearWatched = watch('year') as Form['year'];
+  const yearTextWatched = watch('yearText');
+
+  useEffect(() => {
+    if (id) return;
+    const yearEmpty = yearWatched == null || (dayjs.isDayjs(yearWatched) && !yearWatched.isValid());
+    if (yearEmpty && (yearTextWatched ?? '') !== '') {
+      setValue('yearText', '', { shouldDirty: false, shouldValidate: false });
+    }
+  }, [id, yearWatched, yearTextWatched, setValue]);
+
   const onChangeDate = (value: Dayjs | null) => {
     clearErrors('year');
-    if (!id && (value == null || !value.isValid())) {
-      resetField('year');
-      resetField('yearText');
+    const isEmpty = value == null || (dayjs.isDayjs(value) && !value.isValid());
+    if (!id && isEmpty) {
+      setValue('year', null as never, { shouldDirty: false, shouldValidate: false });
+      setValue('yearText', '' as never, { shouldDirty: false, shouldValidate: false });
       return;
     }
     setValue('year', value as never, { shouldDirty: true });
@@ -95,8 +135,8 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
       }
     } else if (yearText === '') {
       if (!id) {
-        resetField('year');
-        resetField('yearText');
+        setValue('year', null as never, { shouldDirty: false, shouldValidate: false });
+        setValue('yearText', '' as never, { shouldDirty: false, shouldValidate: false });
       } else {
         setValue('year', dateNow as never, { shouldDirty: true });
       }
@@ -121,14 +161,17 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
       }, {} as Form);
 
       let year: number;
-      if (trimmedData.year && typeof trimmedData.year === 'object' && 'year' in trimmedData.year) {
+      if (
+        trimmedData.year &&
+        typeof trimmedData.year === 'object' &&
+        'year' in trimmedData.year &&
+        typeof (trimmedData.year as Dayjs).year === 'function'
+      ) {
         year = (trimmedData.year as Dayjs).year();
-        //@ts-expect-error: временное решение
       } else if (trimmedData.yearText && /^\d{4}$/.test(trimmedData.yearText)) {
-        //@ts-expect-error: временное решение
-        year = parseInt(trimmedData.yearText);
+        year = parseInt(trimmedData.yearText, 10);
       } else {
-        year = dateNow.year();
+        return;
       }
 
       const payload = {
@@ -154,6 +197,11 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     }
   };
 
+  const formValues = watch() as Form;
+  const submitDisabled = id
+    ? !isDirty
+    : carFormSnapshotKey(formValues) === CAR_ADD_SUBMIT_BASELINE_KEY;
+
   return {
     errorMark: getErrorMessage('mark'),
     errorModel: getErrorMessage('model'),
@@ -162,17 +210,18 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     errorType: getErrorMessage('type'),
     errorColor: getErrorMessage('color'),
     errorYear: getErrorMessage('year'),
-    selectType: watch('type'),
-    selectColor: watch('color'),
+    selectType: formValues.type,
+    selectColor: formValues.color,
     handleSubmit: handleSubmit(onSubmit),
     onSetDate: onChangeDate,
     onSetYearText: onChangeYearText,
     onSelect,
     register,
-    yearValue: watch('year'),
-    yearTextValue: watch('yearText'),
+    yearValue: formValues.year,
+    yearTextValue: formValues.yearText,
     isLoadingCar,
     isDataLoaded,
     isDirty,
+    submitDisabled,
   };
 };

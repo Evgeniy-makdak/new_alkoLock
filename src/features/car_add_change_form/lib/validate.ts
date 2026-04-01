@@ -13,7 +13,9 @@ export type Form = {
   registrationNumber: string;
   color: Values;
   type: Values;
-  year?: Dayjs;
+  /** Пусто в форме добавления; после выбора года в DatePicker — Dayjs */
+  year?: Dayjs | null;
+  yearText?: string;
 };
 
 yup.addMethod(object, 'dayjs', function method(message) {
@@ -100,6 +102,7 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   //@ts-expect-error
   year: object().dayjs().required(ValidationMessages.required),
+  yearText: yup.string().optional(),
   color: yup
     .array<Value, Value>()
     .min(1, 'Поле "Цвет" должно содержать 1 значение')

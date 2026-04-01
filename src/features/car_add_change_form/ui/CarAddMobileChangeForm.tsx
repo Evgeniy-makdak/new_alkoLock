@@ -38,7 +38,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
     yearTextValue,
     isLoadingCar,
     isDataLoaded,
-    isDirty,
+    submitDisabled,
   } = useCarAddChangeForm(id, closeModal);
 
   const [yearPickerAnchor, setYearPickerAnchor] = useState<HTMLButtonElement | null>(null);
@@ -256,7 +256,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
             <div className={style.mobileFormActions}>
               <Button
                 type="submit"
-                disabled={!isDirty}
+                disabled={submitDisabled}
                 sx={{
                   padding: '12px !important',
                   fontSize: '16px !important',
