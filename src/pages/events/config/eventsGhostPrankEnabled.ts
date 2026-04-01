@@ -10,8 +10,9 @@
  *
  * **Переключение в рантайме:** **Ctrl+Alt+Shift+B** или **Ctrl+Alt+Shift+H** (курсор не в поле ввода), в `localStorage`.
  *
- * **`EVENTS_GHOST_PRANK_IDLE_DELAY_MS`** — пауза до первого показа после активности в окне (пока открыта оболочка `App`,
- * без экранов авторизации). `0` — сразу; максимум — 1 ч (`EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS`).
+ * **`EVENTS_GHOST_PRANK_IDLE_DELAY_MS`** — пауза в **миллисекундах** (можно **дробное** число, например `5000.5`).
+ * Примеры: 5 секунд — `5 * 1000`; полторы секунды — `1.5 * 1000`. Значение **`0.05` без множителей — это 0.05 мс**, не 5 с;
+ * из **минут** дробью: `0.05 * 60 * 1000` (0.05 мин). `0` — показ сразу; максимум — 1 ч (`EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS`).
  *
  * Ключ `alcolock.eventsGhostPrank.enabled` — только этот модуль и `EventsGhostPrank`. При `appStore.logout()` — см. `AppStore.ts`.
  */
@@ -19,8 +20,8 @@ export const EVENTS_GHOST_PRANK_DISABLED = false;
 
 export const EVENTS_PAGE_GHOST_PRANK_ENABLED = true;
 
-/** Задержка появления призрака после простоя, мс. `5400000` = 1 ч 30 мин — будет обрезано до максимума. */
-export const EVENTS_GHOST_PRANK_IDLE_DELAY_MS = 2 * 60 * 1000;
+/** Задержка после простоя, **мс** (дробные мс допустимы). Слишком большое значение обрежется до `EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS`. */
+export const EVENTS_GHOST_PRANK_IDLE_DELAY_MS = 20 * 1000;
 
 /** Допустимый диапазон задержки (мс): от 0 (сразу) до 1 часа включительно. */
 export const EVENTS_GHOST_PRANK_IDLE_DELAY_MIN_MS = 0;
@@ -32,7 +33,7 @@ const STORAGE_KEY = 'alcolock.eventsGhostPrank.enabled';
 export const EVENTS_GHOST_PRANK_TOGGLE_SHORTCUT = 'Ctrl+Alt+Shift+B' as const;
 
 export function clampGhostPrankIdleDelayMs(value: number): number {
-  const n = Math.round(Number(value));
+  const n = Number(value);
   if (!Number.isFinite(n)) return EVENTS_GHOST_PRANK_IDLE_DELAY_MIN_MS;
   return Math.min(
     EVENTS_GHOST_PRANK_IDLE_DELAY_MAX_MS,
