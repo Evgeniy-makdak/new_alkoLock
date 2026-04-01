@@ -16,7 +16,7 @@
  *
  * Ключ `alcolock.eventsGhostPrank.enabled` — только этот модуль и `EventsGhostPrank`. При `appStore.logout()` — см. `AppStore.ts`.
  */
-export const EVENTS_GHOST_PRANK_DISABLED = false;
+export const EVENTS_GHOST_PRANK_DISABLED = true;
 
 export const EVENTS_PAGE_GHOST_PRANK_ENABLED = true;
 
