@@ -5,9 +5,12 @@ import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 /** Длительность подсветки строк с только что пришедшими событиями (мс). */
 export const NEW_DEVICE_EVENT_HIGHLIGHT_MS = 5000;
 
+/** Если после пустого снимка почти сразу пришла полная страница — не считать все строки «новыми». */
+const EMPTY_TO_FULL_GRACE_MS = 1000;
+
 /**
  * Сравнивает текущую страницу результатов с предыдущим снимком при авто-рефетче (refetchInterval).
- * Первый успешный ответ после смены фильтров/страницы — только базовая линия, без подсветки.
+ * Первый успешный ответ после смены фильтров/страницы/филиала — только базовая линия, без подсветки.
  */
 export function useDeviceEventsNewRowsHighlight(
   content: IDeviceAction[] | undefined,
@@ -16,6 +19,7 @@ export function useDeviceEventsNewRowsHighlight(
 ) {
   const prevBaselineKeyRef = useRef<string | null>(null);
   const prevIdsRef = useRef<Set<string> | null>(null);
+  const emptySnapshotAtRef = useRef<number>(0);
   const timersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(() => new Set());
 
@@ -36,21 +40,35 @@ export function useDeviceEventsNewRowsHighlight(
 
     if (prevBaselineKeyRef.current !== baselineKey) {
       prevBaselineKeyRef.current = baselineKey;
-      prevIdsRef.current = new Set(idSet);
+      prevIdsRef.current = null;
+      emptySnapshotAtRef.current = 0;
       timersRef.current.forEach(clearTimeout);
       timersRef.current.clear();
       setHighlightedIds(new Set());
+    }
+
+    if (prevIdsRef.current === null) {
+      prevIdsRef.current = new Set(idSet);
+      emptySnapshotAtRef.current = idSet.size === 0 ? Date.now() : 0;
       return;
     }
 
     const prev = prevIdsRef.current;
-    if (!prev) {
+
+    if (
+      prev.size === 0 &&
+      idSet.size > 0 &&
+      emptySnapshotAtRef.current > 0 &&
+      Date.now() - emptySnapshotAtRef.current < EMPTY_TO_FULL_GRACE_MS
+    ) {
       prevIdsRef.current = new Set(idSet);
+      emptySnapshotAtRef.current = 0;
       return;
     }
 
     const newlyArrived = ids.filter((id) => !prev.has(id));
     prevIdsRef.current = new Set(idSet);
+    emptySnapshotAtRef.current = idSet.size === 0 ? Date.now() : 0;
 
     if (newlyArrived.length === 0) return;
 

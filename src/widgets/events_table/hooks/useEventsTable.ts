@@ -10,6 +10,7 @@ import { SortsTypes } from '@shared/config/queryParamsEnums';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
+import { appStore } from '@shared/model/app_store/AppStore';
 import { Formatters } from '@shared/utils/formatters';
 
 import { useEventsApi } from '../api/useEventsApi';
@@ -30,6 +31,7 @@ export const useEventsTable = () => {
   );
 
   const { resetFilters, filters, hasActiveFilters } = eventsFilterPanelStore();
+  const eventsBranchId = appStore((s) => s.selectedBranchState?.id);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [inputWidthDelay] = useDebounce(searchQuery, InputSearchDelay);
@@ -92,6 +94,7 @@ export const useEventsTable = () => {
   const highlightBaselineKey = useMemo(
     () =>
       JSON.stringify({
+        branchId: eventsBranchId,
         page: state.page,
         pageSize: state.pageSize,
         sortModel: state.sortModel,
@@ -108,6 +111,7 @@ export const useEventsTable = () => {
         role,
       }),
     [
+      eventsBranchId,
       state.page,
       state.pageSize,
       state.sortModel,
