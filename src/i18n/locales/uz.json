@@ -1,6 +1,7 @@
 {
   "nav": {
     "events": "Voqealar",
+    "reports": "Hisobotlar",
     "users": "Foydalanuvchilar",
     "roles": "Rollar",
     "groups": "Guruhlar",
@@ -619,6 +620,26 @@
     "exceedsMax": "«{{name}}» — maksimal {{mb}} MB dan oshadi",
     "processingFailed": "«{{name}}» — qayta ishlash xatosi",
     "uploadRejected": "{{count}} ta fayl yuklanmadi:\n\n{{list}}\n\nFaqat JPG, PNG, BMP rasmlari {{mb}} MB gacha ruxsat etiladi."
+  },
+  "reports": {
+    "pageTitle": "Voqealar hisoboti",
+    "createReport": "Hisobot yaratish",
+    "totalEvents": "Tanlovdagi voqealar soni",
+    "chartByDay": "Kunlar kesimida dinamika",
+    "chartByType": "Voqealar turi boʻyicha taqsimot",
+    "chartSobriety": "Testlash («testlash …» turidagi voqealar)",
+    "chartTopUsers": "Foydalanuvchilar boʻyicha (top)",
+    "chartTopDevices": "Alkozamoklar boʻyicha (top)",
+    "chartTopVehicles": "Transport vositalari boʻyicha (top)",
+    "sobriety": {
+      "passed": "Test muvaffaqiyatli",
+      "failed": "Test muvaffaqiyatsiz",
+      "interrupted": "Test toʻxtatildi"
+    },
+    "otherBucket": "Boshqa turlar",
+    "tooltipCount": "Soni",
+    "loadError": "Maʼlumotlarni yuklab boʻlmadi",
+    "empty": "Joriy filtrlar boʻyicha voqealar yoʻq."
   },
   "errors": {
     "userExists": "Foydalanuvchi allaqachon mavjud",

@@ -1,6 +1,7 @@
 {
   "nav": {
     "events": "Events",
+    "reports": "Reports",
     "users": "Users",
     "roles": "Roles",
     "groups": "Groups",
@@ -621,6 +622,26 @@
     "exceedsMax": "\"{{name}}\" — exceeds maximum size {{mb}} MB",
     "processingFailed": "\"{{name}}\" — processing error",
     "uploadRejected": "Failed to upload {{count}} file(s):\n\n{{list}}\n\nOnly images (JPG, PNG, BMP) up to {{mb}} MB are allowed."
+  },
+  "reports": {
+    "pageTitle": "Event reports",
+    "createReport": "Create report",
+    "totalEvents": "Events in selection",
+    "chartByDay": "Trend by day",
+    "chartByType": "By event type",
+    "chartSobriety": "Testing (events with “testing …” type only)",
+    "chartTopUsers": "By user (top)",
+    "chartTopDevices": "By interlock (top)",
+    "chartTopVehicles": "By vehicle (top)",
+    "sobriety": {
+      "passed": "Test passed",
+      "failed": "Test failed",
+      "interrupted": "Test interrupted"
+    },
+    "otherBucket": "Other types",
+    "tooltipCount": "Count",
+    "loadError": "Failed to load data",
+    "empty": "No events for current filters."
   },
   "errors": {
     "userExists": "User already exists",

@@ -12,9 +12,11 @@ export const useTypeEventSelectApi = (
   currentUserId?: number,
   currentBranchId?: number,
 ) => {
-  // "Слабый выдох" (id 63) всегда исключаем из фильтра — он только в карточке "Тестирование прервано".
-  // События 22, 23, 24 (Тестирование пройдено/не пройдено/прервано) отображаются в списке.
-  const finalExcludedIds = Array.from(new Set([...(excludedIds ?? []), 63]));
+  // Id 63 для api/event-types — «Слабый выдох» (не показывать в фильтре событий).
+  // Для service-history-event-types id 63 — отдельная сущность; не подмешиваем в список исключений.
+  const finalExcludedIds = useNewEndpoint
+    ? Array.from(new Set([...(excludedIds ?? [])]))
+    : Array.from(new Set([...(excludedIds ?? []), 63]));
   const finalIsIn = isIn || false;
 
   const { data, isLoading } = useConfiguredQuery(

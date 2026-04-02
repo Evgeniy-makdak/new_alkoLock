@@ -18,8 +18,11 @@ export const useTypeEventSelect = (
   const currentBranchId = appStore.getState().selectedBranchState?.id as number;
   const currentUserId = authId ? Number(authId) : undefined;
 
-  // 63 (Слабый выдох) всегда исключаем из фильтра
-  const excludedIdsToUse = Array.from(new Set([...(excludedIds ?? []), 63]));
+  // 63 («Слабый выдох») скрываем только для общего справочника device-events.
+  // У service-history-event-types свои id (63 там — другой тип), плюс не смешиваем с whitelist API.
+  const excludedIdsToUse = useNewEndpoint
+    ? Array.from(new Set([...(excludedIds ?? [])]))
+    : Array.from(new Set([...(excludedIds ?? []), 63]));
 
   const { events, isLoading, isError } = useTypeEventSelectApi(
     searchQuery,

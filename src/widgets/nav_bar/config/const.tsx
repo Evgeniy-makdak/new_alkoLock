@@ -1,4 +1,5 @@
 /* eslint-disable prettier/prettier */
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import AttachmentIcon from '@mui/icons-material/Attachment';
 import BallotIcon from '@mui/icons-material/Ballot';
 import ContactsOutlinedIcon from '@mui/icons-material/ContactsOutlined';
@@ -35,6 +36,7 @@ export const NAV_LINKS = [
   { path: RoutePaths.mailings, nameKey: 'nav.mailings', icon: <EmailOutlinedIcon /> },
   { path: RoutePaths.messages, nameKey: 'nav.messageTemplates', icon: <AttachmentIcon /> },
   { path: RoutePaths.settings, nameKey: 'nav.settings', icon: <HandymanIcon /> },
+  { path: RoutePaths.reports, nameKey: 'nav.reports', icon: <AssessmentOutlinedIcon /> },
   { path: RoutePaths.map, nameKey: 'nav.map', icon: <MapIcon /> },
 ];
 

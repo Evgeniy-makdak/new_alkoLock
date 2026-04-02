@@ -3,6 +3,7 @@ import { RoutePaths } from './routePathsEnum';
 /** Маршруты, где тема и язык живут в строке TableHeaderWrapper (TableHeaderEndToolbar). */
 const INLINE_TABLE_TOOLBAR_PREFIXES: readonly string[] = [
   RoutePaths.events,
+  RoutePaths.reports,
   RoutePaths.users,
   RoutePaths.mailings,
   RoutePaths.roles_new,

@@ -3,6 +3,7 @@ export enum RoutePaths {
   root = '/',
   auth = '/authorization',
   events = '/events',
+  reports = '/reports',
   users = '/users',
   mailings = '/mailings',
   roles_new = '/roles_new',

@@ -59,9 +59,7 @@ export const HistoryFilterPanel = ({ open, onFilterChange }: HistoryFilterPanelP
           <TypeEventSelect
             multiple={true}
             name="typeEvent"
-            isIn={true}
             useNewEndpoint={true}
-            excludedIds={[1, 2, 3, 4, 5]}
             setValueStore={(name, value) =>
               handleEventFilterChange(name as keyof HistoryFilters, value)
             }

@@ -84,11 +84,21 @@ export const NavBar = () => {
         return sliderState && showMapTab;
       }
 
-      if (sliderState && (link.path === RoutePaths.messages || link.path === RoutePaths.settings)) {
+      if (
+        sliderState &&
+        (link.path === RoutePaths.messages ||
+          link.path === RoutePaths.settings ||
+          link.path === RoutePaths.reports)
+      ) {
         return false;
       }
 
-      if (!sliderState && link.path !== RoutePaths.messages && link.path !== RoutePaths.settings) {
+      if (
+        !sliderState &&
+        link.path !== RoutePaths.messages &&
+        link.path !== RoutePaths.settings &&
+        link.path !== RoutePaths.reports
+      ) {
         return false;
       }
 
@@ -171,7 +181,9 @@ export const NavBar = () => {
         ? RoutePaths.events
         : location.pathname === RoutePaths.settings
           ? RoutePaths.settings
-          : RoutePaths.messages,
+          : location.pathname === RoutePaths.reports
+            ? RoutePaths.reports
+            : RoutePaths.messages,
     );
   };
 
@@ -179,6 +191,8 @@ export const NavBar = () => {
     if (location.pathname === RoutePaths.messages) {
       setSliderState(false);
     } else if (location.pathname === RoutePaths.settings) {
+      setSliderState(false);
+    } else if (location.pathname === RoutePaths.reports) {
       setSliderState(false);
     }
   }, [location.pathname, setSliderState]);

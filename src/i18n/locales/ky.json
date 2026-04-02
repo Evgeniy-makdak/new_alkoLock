@@ -1,6 +1,7 @@
 {
   "nav": {
     "events": "Окуялар",
+    "reports": "Отчёттор",
     "users": "Колдонуучулар",
     "roles": "Рөлдөр",
     "groups": "Топтор",
@@ -619,6 +620,26 @@
     "exceedsMax": "«{{name}}» — эң көп {{mb}} МБ чегинен ашат",
     "processingFailed": "«{{name}}» — иштетүү катасы",
     "uploadRejected": "{{count}} файл жүктөлбөдү:\n\n{{list}}\n\nТек JPG, PNG, BMP сүрөттөрү {{mb}} МБ чейин уруксат этилет."
+  },
+  "reports": {
+    "pageTitle": "Окуялар боюнча отчёттор",
+    "createReport": "Отчёт түзүү",
+    "totalEvents": "Тандоодогу окуялар",
+    "chartByDay": "Күндөр боюнча динамика",
+    "chartByType": "Окуя түрү боюнча бөлүнүш",
+    "chartSobriety": "Тестирлөө («тестирлөө …» түрүндөгү окуялар гана)",
+    "chartTopUsers": "Колдонуучулар боюнча (топ)",
+    "chartTopDevices": "Алкозамоктор боюнча (топ)",
+    "chartTopVehicles": "Транспорт каражаттары боюнча (топ)",
+    "sobriety": {
+      "passed": "Тестирлөө өттү",
+      "failed": "Тестирлөө өтпөдү",
+      "interrupted": "Тестирлөө үзүлдү"
+    },
+    "otherBucket": "Башка түрлөр",
+    "tooltipCount": "Саны",
+    "loadError": "Маалымат жүктөлбөдү",
+    "empty": "Азыркы чыпкалар боюнча окуя жок."
   },
   "errors": {
     "userExists": "Колдонуучу мурунтан эле бар",

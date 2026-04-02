@@ -15,6 +15,7 @@ import { History } from '@pages/history';
 import { Mailings } from '@pages/mailings';
 import { MapPage } from '@pages/map/MapPage';
 import { NotFound } from '@pages/not_found';
+import { ReportsPage } from '@pages/reports/ui/ReportsPage';
 import { Roles_new } from '@pages/roles_new';
 import { SettingsPage } from '@pages/settings/SettingsPage';
 import EmailTemplatesPage from '@pages/templates/EmailTemplatesPage';
@@ -77,6 +78,10 @@ export const routers = createBrowserRouter([
       {
         path: RoutePaths.settings,
         element: <SettingsPage />,
+      },
+      {
+        path: RoutePaths.reports,
+        element: <ReportsPage />,
       },
       {
         path: RoutePaths.map,
