@@ -22,6 +22,10 @@ import { REPORT_CHART_OTHER_KEY } from '../lib/aggregateReportData';
 
 const PIE_COLORS = ['#1976d2', '#2e7d32', '#ed6c02', '#9c27b0', '#d32f2f', '#00838f'];
 
+function renderSobrietyPieLabel({ name, percent }: { name: string; percent: number }) {
+  return `${name} ${(percent * 100).toFixed(0)}%`;
+}
+
 interface ReportsChartsProps {
   data: ReportAggregates | null;
 }
@@ -155,7 +159,7 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
                   cx="50%"
                   cy="50%"
                   outerRadius={88}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                  label={renderSobrietyPieLabel}>
                   {sobrietyPie.map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
