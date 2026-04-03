@@ -20,9 +20,15 @@ import styles from './EventsFilterPanel.module.scss';
 interface EventsFilterPanelProps {
   open: boolean;
   onFilterChange: () => void;
+  /** Вертикальная раскладка (модалка на планшете и т.п.) */
+  layout?: 'default' | 'stacked';
 }
 
-export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelProps) => {
+export const EventsFilterPanel = ({
+  open,
+  onFilterChange,
+  layout = 'default',
+}: EventsFilterPanelProps) => {
   const { t } = useTranslation();
   const { filters: eventFilters, setFilters: setEventFilters } = useEventsFilterPanel();
   const handleEventFilterChange = (name: keyof EventsFilters, value: any) => {
@@ -38,13 +44,16 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
   const isUsersSelectDisabled = hasServiceOrDriverAccess && !hasReadPermission;
 
   const isMobile = useMediaQuery('(max-width:768px)');
+  const useStackedLayout = layout === 'stacked' || isMobile;
 
   return (
     <>
       {open && (
         <div
           className={
-            isMobile ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}` : undefined
+            useStackedLayout
+              ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}`
+              : undefined
           }>
           <FilterPanel>
             <UsersSelect

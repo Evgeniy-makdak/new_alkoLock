@@ -38,6 +38,7 @@ import { reportsFiltersStore } from '../model/reportsFiltersStore';
 import styles from './Reports.module.scss';
 import { ReportsCharts } from './ReportsCharts';
 import { ReportsFilterPanel } from './ReportsFilterPanel';
+import { ReportsMobileToolbar } from './ReportsMobileToolbar';
 
 const outlineModalButtonSx = (theme: Theme) => ({
   textTransform: 'uppercase' as const,
@@ -168,41 +169,57 @@ export function ReportsPage() {
 
   const emailLabel = userEmail?.trim() || t('reports.emailUnknown');
 
+  const isCompactHeader = isMobile || isTablet;
+
   return (
     <>
       {isMobile || isTablet ? <div style={{ height: '50px' }} /> : null}
       <PageWrapper>
         <div className={styles.wrapper}>
           <div className={styles.titleBlock}>
-            <h1 className={styles.title}>{t('reports.pageTitle')}</h1>
+            <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
+              {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
+            </Typography>
           </div>
 
-          <TableHeaderWrapper>
-            <InputsDates
-              onClear={clearDates}
-              inputStartTestId={
-                testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE
-              }
-              inputEndTestId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE}
-              onChangeStartDate={setStartDate}
-              onChangeEndDate={setEndDate}
-              valueStartDatePicker={startDate}
-              valueEndDatePicker={endDate}
+          {isCompactHeader ? (
+            <ReportsMobileToolbar
+              onCreateReport={() => void beginReportGeneration()}
+              onResetFilters={handleResetFilters}
+              isGenerating={isGenerating}
             />
-            <TableHeaderEndToolbar>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<BarChartIcon />}
-                disabled={isGenerating}
-                onClick={() => void beginReportGeneration()}>
-                {t('reports.createReport')}
-              </Button>
-              <ResetFilters reset={handleResetFilters} />
-            </TableHeaderEndToolbar>
-          </TableHeaderWrapper>
+          ) : (
+            <>
+              <TableHeaderWrapper>
+                <InputsDates
+                  onClear={clearDates}
+                  inputStartTestId={
+                    testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE
+                  }
+                  inputEndTestId={
+                    testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE
+                  }
+                  onChangeStartDate={setStartDate}
+                  onChangeEndDate={setEndDate}
+                  valueStartDatePicker={startDate}
+                  valueEndDatePicker={endDate}
+                />
+                <TableHeaderEndToolbar>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    startIcon={<BarChartIcon />}
+                    disabled={isGenerating}
+                    onClick={() => void beginReportGeneration()}>
+                    {t('reports.createReport')}
+                  </Button>
+                  <ResetFilters reset={handleResetFilters} />
+                </TableHeaderEndToolbar>
+              </TableHeaderWrapper>
 
-          <ReportsFilterPanel />
+              <ReportsFilterPanel />
+            </>
+          )}
 
           <div className={styles.scrollArea}>
             {lastError ? (

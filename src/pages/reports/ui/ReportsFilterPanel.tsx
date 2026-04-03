@@ -15,7 +15,12 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { ReportsFilters } from '../model/reportsFiltersStore';
 import { reportsFiltersStore } from '../model/reportsFiltersStore';
 
-export function ReportsFilterPanel() {
+type ReportsFilterPanelProps = {
+  /** Вертикальная раскладка (модалка на планшете и т.п.) */
+  layout?: 'default' | 'stacked';
+};
+
+export function ReportsFilterPanel({ layout = 'default' }: ReportsFilterPanelProps) {
   const { t } = useTranslation();
   const filters = reportsFiltersStore((s) => s.filters);
   const setFilters = reportsFiltersStore((s) => s.setFilters);
@@ -32,11 +37,12 @@ export function ReportsFilterPanel() {
   const isUsersSelectDisabled = hasServiceOrDriverAccess && !hasReadPermission;
 
   const isMobile = useMediaQuery('(max-width:768px)');
+  const useStackedLayout = layout === 'stacked' || isMobile;
 
   return (
     <div
       className={
-        isMobile ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}` : undefined
+        useStackedLayout ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}` : undefined
       }>
       <FilterPanel>
         <UsersSelect

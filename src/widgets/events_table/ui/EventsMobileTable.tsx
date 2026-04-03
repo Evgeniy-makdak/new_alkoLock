@@ -687,22 +687,32 @@ export const EventsMobileTable = ({
               </button>
             </div>
             <div className={styles.filterModalBody}>
-              <div className={styles.mobileChipContainer}>
-                <EventsFilterPanel open={true} onFilterChange={() => {}} />
-              </div>
+              <EventsFilterPanel open={true} onFilterChange={() => {}} layout="stacked" />
             </div>
             <div className={styles.filterModalFooter}>
               <Button
                 variant="outlined"
+                color="inherit"
                 onClick={handleClearAllFilters}
-                className={styles.clearButton}>
-                Очистить фильтры
+                sx={{
+                  flex: 1,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  borderColor: 'divider',
+                  color: 'text.secondary',
+                  '&:hover': {
+                    borderColor: 'text.disabled',
+                    backgroundColor: 'action.hover',
+                  },
+                }}>
+                {t('common.clearFilters')}
               </Button>
               <Button
                 variant="contained"
+                color="primary"
                 onClick={handleApplyFilters}
-                className={styles.applyButton}>
-                Применить
+                sx={{ flex: 1, textTransform: 'none', fontWeight: 500 }}>
+                {t('modals.apply')}
               </Button>
             </div>
           </div>

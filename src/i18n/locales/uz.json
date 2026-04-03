@@ -48,6 +48,7 @@
     "reset": "Tiklash",
     "resetToDefault": "Standart qiymatga tiklash",
     "resetFilters": "Filtrlarni tiklash",
+    "clearFilters": "Filtrlarni tozalash",
     "loading": "Yuklanmoqda...",
     "noData": "Ma'lumot yo'q",
     "confirm": "Tasdiqlash",
