@@ -64,7 +64,7 @@ export const appStore = create<AppStore>()((set, get) => ({
     const selectedBranchState = data?.selectedBranchState || state.selectedBranchState;
     const auth = isNotUndefined(data?.auth) ? data.auth : state.auth;
     const isAdmin = isNotUndefined(data?.isAdmin) ? data?.isAdmin : state.isAdmin;
-    const email = isNotUndefined(data?.email) ? data?.email : null;
+    const email = isNotUndefined(data?.email) ? data.email : state.email;
     const permissions = data?.permissions ? data?.permissions : state?.permissions;
     const assignmentBranch = data?.assignmentBranch
       ? data?.assignmentBranch

@@ -1,4 +1,5 @@
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { create } from 'zustand';
 
 import { arraysHasLength } from '@shared/lib/arraysHasLength';
@@ -42,10 +43,14 @@ const computeHasActive = (filters: ReportsFilters) =>
     filters.typeEvent,
   ]);
 
+export const defaultReportsStartDate = (): Dayjs => dayjs().subtract(7, 'day').startOf('day');
+
+export const defaultReportsEndDate = (): Dayjs => dayjs().endOf('day');
+
 export const reportsFiltersStore = create<ReportsFiltersStore>()((set, get) => ({
   filters: emptyFilters(),
-  startDate: null,
-  endDate: null,
+  startDate: defaultReportsStartDate(),
+  endDate: defaultReportsEndDate(),
   hasActiveFilters: false,
   setFilters(type, value) {
     const readyValue = ArrayUtils.getArrayValues(value);
@@ -61,8 +66,8 @@ export const reportsFiltersStore = create<ReportsFiltersStore>()((set, get) => (
   resetAll() {
     set({
       filters: emptyFilters(),
-      startDate: null,
-      endDate: null,
+      startDate: defaultReportsStartDate(),
+      endDate: defaultReportsEndDate(),
       hasActiveFilters: false,
     });
   },

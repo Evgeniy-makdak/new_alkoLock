@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import CryptoJS from 'crypto-js';
 
-import { UsersApi } from '@shared/api/baseQuerys';
+import { ChatsApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { configLoader } from '../../config/configLoader';
@@ -154,7 +154,7 @@ const uploadAttachments = async (files: File[]): Promise<{ attachmentIds: string
         formData.append('hash', hash);
         formData.append('image', file);
 
-        const response = await UsersApi.addPhoto(formData, operatorId);
+        const response = await ChatsApi.addPhoto(formData, operatorId);
 
         if (response?.data?.[0]) {
           const firstImage = response.data[0] as PhotoResponseItem;

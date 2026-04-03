@@ -21,9 +21,40 @@ import type { ReportAggregates } from '../lib/aggregateReportData';
 import { REPORT_CHART_OTHER_KEY } from '../lib/aggregateReportData';
 
 const PIE_COLORS = ['#1976d2', '#2e7d32', '#ed6c02', '#9c27b0', '#d32f2f', '#00838f'];
+const RADIAN = Math.PI / 180;
 
-function renderSobrietyPieLabel({ name, percent }: { name: string; percent: number }) {
-  return `${name} ${(percent * 100).toFixed(0)}%`;
+type SobrietyPieLabelProps = {
+  cx: number;
+  cy: number;
+  midAngle: number;
+  innerRadius: number;
+  outerRadius: number;
+  percent: number;
+  name: string;
+  fill: string;
+};
+
+type SobrietyPieSliceLabelProps = Omit<SobrietyPieLabelProps, 'fill'>;
+
+function SobrietyPieLabel({
+  cx,
+  cy,
+  midAngle,
+  innerRadius,
+  outerRadius,
+  percent,
+  name,
+  fill,
+}: SobrietyPieLabelProps) {
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const textAnchor = x > cx ? 'start' : 'end';
+  return (
+    <text x={x} y={y} fill={fill} textAnchor={textAnchor} dominantBaseline="central" fontSize={11}>
+      {`${name} ${(percent * 100).toFixed(0)}%`}
+    </text>
+  );
 }
 
 interface ReportsChartsProps {
@@ -33,6 +64,11 @@ interface ReportsChartsProps {
 export function ReportsCharts({ data }: ReportsChartsProps) {
   const { t } = useTranslation();
   const theme = useTheme();
+
+  const chartAxisColor =
+    theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.text.primary;
+  const chartGridColor = theme.palette.divider;
+  const axisTickStyle = { fill: chartAxisColor, fontSize: 10 };
 
   const reportTooltipProps = useMemo(() => {
     const countLabel = t('reports.tooltipCount');
@@ -92,25 +128,40 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
     );
   }
 
-  const topBar = (title: string, rows: { name: string; count: number }[], fill: string) => (
-    <Paper sx={{ p: 2, minHeight: 300 }}>
-      <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-        {title}
-      </Typography>
-      <ResponsiveContainer width="100%" height={240}>
-        <BarChart
-          layout="vertical"
-          data={rows.map((r) => ({ ...r, displayName: formatAxisLabel(r.name) }))}
-          margin={{ left: 8, right: 12 }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis type="number" allowDecimals={false} />
-          <YAxis type="category" dataKey="displayName" width={130} tick={{ fontSize: 10 }} />
-          <Tooltip {...reportTooltipProps} />
-          <Bar dataKey="count" fill={fill} radius={[0, 4, 4, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    </Paper>
-  );
+  const topBar = (title: string, rows: { name: string; count: number }[], fill: string) => {
+    const chartHeight = Math.max(280, rows.length * 24);
+    const yAxisWidth = Math.min(280, 140 + Math.min(rows.length, 40) * 2);
+    return (
+      <Paper sx={{ p: 2, maxHeight: '72vh', overflow: 'auto' }}>
+        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+          {title}
+        </Typography>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart
+            layout="vertical"
+            data={rows.map((r) => ({ ...r, displayName: formatAxisLabel(r.name) }))}
+            margin={{ left: 8, right: 12 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+            <XAxis
+              type="number"
+              allowDecimals={false}
+              tick={axisTickStyle}
+              stroke={chartAxisColor}
+            />
+            <YAxis
+              type="category"
+              dataKey="displayName"
+              width={yAxisWidth}
+              tick={axisTickStyle}
+              stroke={chartAxisColor}
+            />
+            <Tooltip {...reportTooltipProps} />
+            <Bar dataKey="count" fill={fill} radius={[0, 4, 4, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Paper>
+    );
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
@@ -132,9 +183,9 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
           </Typography>
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={data.byDay}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-              <YAxis allowDecimals={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+              <XAxis dataKey="name" tick={axisTickStyle} stroke={chartAxisColor} />
+              <YAxis allowDecimals={false} tick={axisTickStyle} stroke={chartAxisColor} />
               <Tooltip {...reportTooltipProps} />
               <Bar dataKey="count" fill={theme.palette.primary.main} radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -159,13 +210,20 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
                   cx="50%"
                   cy="50%"
                   outerRadius={88}
-                  label={renderSobrietyPieLabel}>
+                  label={(props: SobrietyPieSliceLabelProps) => (
+                    <SobrietyPieLabel {...props} fill={chartAxisColor} />
+                  )}>
                   {sobrietyPie.map((_, i) => (
                     <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip {...reportTooltipProps} />
-                <Legend />
+                <Legend
+                  wrapperStyle={{ color: chartAxisColor, paddingTop: 12 }}
+                  formatter={(value: string) => (
+                    <span style={{ color: chartAxisColor }}>{value}</span>
+                  )}
+                />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -181,9 +239,20 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
             layout="vertical"
             data={byTypeForChart}
             margin={{ left: 8, right: 20, bottom: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" allowDecimals={false} />
-            <YAxis type="category" dataKey="displayName" width={168} tick={{ fontSize: 10 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke={chartGridColor} />
+            <XAxis
+              type="number"
+              allowDecimals={false}
+              tick={axisTickStyle}
+              stroke={chartAxisColor}
+            />
+            <YAxis
+              type="category"
+              dataKey="displayName"
+              width={168}
+              tick={axisTickStyle}
+              stroke={chartAxisColor}
+            />
             <Tooltip {...reportTooltipProps} />
             <Bar dataKey="count" fill={theme.palette.secondary.main} radius={[0, 4, 4, 0]} />
           </BarChart>
@@ -196,9 +265,9 @@ export function ReportsCharts({ data }: ReportsChartsProps) {
           gridTemplateColumns: { xs: '1fr', md: '1fr 1fr', xl: '1fr 1fr 1fr' },
           gap: 2,
         }}>
-        {topBar(t('reports.chartTopUsers'), data.topUsers, theme.palette.primary.dark)}
-        {topBar(t('reports.chartTopDevices'), data.topDevices, theme.palette.info.main)}
-        {topBar(t('reports.chartTopVehicles'), data.topVehicles, theme.palette.success.main)}
+        {topBar(t('reports.chartByUsers'), data.topUsers, theme.palette.primary.dark)}
+        {topBar(t('reports.chartByDevices'), data.topDevices, theme.palette.info.main)}
+        {topBar(t('reports.chartByVehicles'), data.topVehicles, theme.palette.success.main)}
       </Box>
     </Box>
   );

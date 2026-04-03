@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 
-import { UsersApi } from '@shared/api/baseQuerys';
+import { ChatsApi } from '@shared/api/baseQuerys';
 
 import api from '../../api';
 import { ChatConfig } from '../chatConfig';
@@ -58,7 +58,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
         }
 
         try {
-          const response = await UsersApi.getPhotoByFileName(fileName);
+          const response = await ChatsApi.getPhotoByFileName(fileName);
           if (response?.data) {
             const blob = response.data;
             const imageUrl = URL.createObjectURL(blob);

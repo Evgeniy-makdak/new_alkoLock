@@ -84,14 +84,16 @@ export function aggregateReportData(events: IDeviceAction[]): ReportAggregates {
     value: sobriety.get(key) ?? 0,
   }));
 
+  const allRanked = Number.MAX_SAFE_INTEGER;
+
   return {
     total: events.length,
     byEventType: topSorted(byType, 12, { mergeTail: true }),
     byDay: byDaySorted,
     sobrietyOnly,
-    topUsers: topUserRowsFromBucket(userBuckets, 8),
-    topDevices: topSorted(devices, 8),
-    topVehicles: topSorted(vehicles, 8),
+    topUsers: topUserRowsFromBucket(userBuckets, allRanked),
+    topDevices: topSorted(devices, allRanked),
+    topVehicles: topSorted(vehicles, allRanked),
   };
 }
 

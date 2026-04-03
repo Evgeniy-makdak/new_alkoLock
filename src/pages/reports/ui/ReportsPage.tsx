@@ -2,7 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import BarChartIcon from '@mui/icons-material/BarChart';
-import { Alert, Button, Typography, useMediaQuery } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
+import {
+  Alert,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  IconButton,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+} from '@mui/material';
+import { type Theme, alpha, useTheme } from '@mui/material/styles';
 
 import { PageWrapper } from '@layout/page_wrapper';
 import { UsersApi } from '@shared/api/baseQuerys';
@@ -14,20 +26,40 @@ import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
-import { type ReportAggregates, aggregateReportData } from '../lib/aggregateReportData';
+import { aggregateReportData } from '../lib/aggregateReportData';
 import { buildReportsEventsQuery } from '../lib/buildReportsEventsQuery';
-import { fetchAllDeviceEventsForReport } from '../lib/fetchAllDeviceEventsForReport';
+import {
+  fetchAllDeviceEventsForReport,
+  fetchReportEventsTotalCount,
+  isReportFetchAbortError,
+} from '../lib/fetchAllDeviceEventsForReport';
+import { REPORT_OVERSIZE_THRESHOLD, reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsFiltersStore } from '../model/reportsFiltersStore';
 import styles from './Reports.module.scss';
 import { ReportsCharts } from './ReportsCharts';
 import { ReportsFilterPanel } from './ReportsFilterPanel';
 
+const outlineModalButtonSx = (theme: Theme) => ({
+  textTransform: 'uppercase' as const,
+  borderRadius: 1,
+  py: 1,
+  px: 2,
+  color: theme.palette.text.primary,
+  borderColor: theme.palette.text.primary,
+  '&:hover': {
+    borderColor: theme.palette.text.primary,
+    backgroundColor: alpha(theme.palette.text.primary, 0.04),
+  },
+});
+
 export function ReportsPage() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
 
   const branchId = appStore((s) => s.selectedBranchState?.id);
+  const userEmail = appStore((s) => s.email);
 
   const startDate = reportsFiltersStore((s) => s.startDate);
   const endDate = reportsFiltersStore((s) => s.endDate);
@@ -36,9 +68,16 @@ export function ReportsPage() {
   const setEndDate = reportsFiltersStore((s) => s.setEndDate);
   const clearDates = reportsFiltersStore((s) => s.clearDates);
 
+  const isGenerating = reportGenerationStore((s) => s.isGenerating);
+  const lastAggregates = reportGenerationStore((s) => s.lastAggregates);
+  const lastError = reportGenerationStore((s) => s.lastError);
+
   const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [permission, setPermission] = useState<string[]>([]);
   const [role, setRole] = useState<number[]>([]);
+
+  const [oversizeOpen, setOversizeOpen] = useState(false);
+  const [oversizeCount, setOversizeCount] = useState(0);
 
   useEffect(() => {
     void (async () => {
@@ -57,43 +96,77 @@ export function ReportsPage() {
     })();
   }, []);
 
-  const [aggregates, setAggregates] = useState<ReportAggregates | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const loadReport = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const buildQuery = useCallback(
+    (page: number, limit: number) => {
       const st = reportsFiltersStore.getState();
-      const raw = await fetchAllDeviceEventsForReport((page) =>
-        buildReportsEventsQuery({
-          page,
-          limit: 200,
-          searchQuery: '',
-          startDate: st.startDate,
-          endDate: st.endDate,
-          filters: st.filters,
-          currentUserId,
-          permission,
-          role,
-          branchId,
-        }),
+      return buildReportsEventsQuery({
+        page,
+        limit,
+        searchQuery: '',
+        startDate: st.startDate,
+        endDate: st.endDate,
+        filters: st.filters,
+        currentUserId,
+        permission,
+        role,
+        branchId,
+      });
+    },
+    [branchId, currentUserId, permission, role],
+  );
+
+  const executeReportLoad = useCallback(async () => {
+    reportGenerationStore.getState().start();
+    const signal = reportGenerationStore.getState().getAbortSignal();
+    try {
+      const raw = await fetchAllDeviceEventsForReport(
+        (page) => buildQuery(page, 200),
+        (loaded, total) => reportGenerationStore.getState().setProgress(loaded, total),
+        signal,
       );
-      setAggregates(aggregateReportData(raw));
+      reportGenerationStore.getState().completeSuccess(aggregateReportData(raw));
     } catch (e) {
-      setAggregates(null);
-      setError(e instanceof Error ? e.message : t('reports.loadError'));
-    } finally {
-      setLoading(false);
+      if (isReportFetchAbortError(e) || (e instanceof DOMException && e.name === 'AbortError')) {
+        reportGenerationStore.getState().finishCancelled();
+        return;
+      }
+      reportGenerationStore
+        .getState()
+        .completeError(e instanceof Error ? e.message : t('reports.loadError'));
     }
-  }, [branchId, currentUserId, permission, role, t]);
+  }, [buildQuery, t]);
+
+  const beginReportGeneration = useCallback(async () => {
+    if (reportGenerationStore.getState().isGenerating) {
+      return;
+    }
+    reportGenerationStore.getState().prepareNewReportView();
+    try {
+      const total = await fetchReportEventsTotalCount((page) => buildQuery(page, 1));
+      if (total >= REPORT_OVERSIZE_THRESHOLD) {
+        setOversizeCount(total);
+        setOversizeOpen(true);
+        return;
+      }
+      await executeReportLoad();
+    } catch (e) {
+      reportGenerationStore
+        .getState()
+        .completeError(e instanceof Error ? e.message : t('reports.loadError'));
+    }
+  }, [buildQuery, executeReportLoad, t]);
+
+  const handleConfirmOversize = useCallback(() => {
+    setOversizeOpen(false);
+    void executeReportLoad();
+  }, [executeReportLoad]);
 
   const handleResetFilters = () => {
     resetAll();
-    setAggregates(null);
-    setError(null);
+    reportGenerationStore.getState().clearResults();
   };
+
+  const emailLabel = userEmail?.trim() || t('reports.emailUnknown');
 
   return (
     <>
@@ -121,8 +194,8 @@ export function ReportsPage() {
                 variant="contained"
                 size="small"
                 startIcon={<BarChartIcon />}
-                disabled={loading}
-                onClick={() => void loadReport()}>
+                disabled={isGenerating}
+                onClick={() => void beginReportGeneration()}>
                 {t('reports.createReport')}
               </Button>
               <ResetFilters reset={handleResetFilters} />
@@ -132,19 +205,114 @@ export function ReportsPage() {
           <ReportsFilterPanel />
 
           <div className={styles.scrollArea}>
-            {error ? (
+            {lastError ? (
               <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
+                {lastError}
               </Alert>
             ) : null}
-            {loading ? (
+            {isGenerating && !lastAggregates ? (
               <Typography color="text.secondary">{t('common.loading')}</Typography>
             ) : (
-              <ReportsCharts data={aggregates} />
+              <ReportsCharts data={lastAggregates} />
             )}
           </div>
         </div>
       </PageWrapper>
+
+      <Dialog
+        open={oversizeOpen}
+        disableEnforceFocus
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick') return;
+          setOversizeOpen(false);
+        }}
+        maxWidth={false}
+        slotProps={{
+          backdrop: {
+            sx: {
+              backgroundColor: alpha(
+                theme.palette.common.black,
+                theme.palette.mode === 'dark' ? 0.65 : 0.5,
+              ),
+            },
+          },
+        }}
+        PaperProps={{
+          sx: {
+            minWidth: { xs: 'min(100%, 520px)', sm: 550 },
+            maxWidth: 560,
+            borderRadius: '16px',
+            backgroundImage: 'none',
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            position: 'relative',
+            p: 0,
+          },
+        }}>
+        <Tooltip title={t('common.closeWindow')}>
+          <IconButton
+            aria-label={t('common.closeWindow')}
+            onClick={() => setOversizeOpen(false)}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              zIndex: 1,
+              color: 'text.secondary',
+            }}>
+            <CloseIcon />
+          </IconButton>
+        </Tooltip>
+
+        <Typography
+          component="div"
+          sx={{
+            px: 3.5,
+            pt: 2.5,
+            pr: 6,
+            pb: 0,
+            fontSize: 18,
+            fontWeight: 'bold',
+          }}>
+          {t('reports.oversizeDialogTitle')}
+        </Typography>
+
+        <DialogContent
+          sx={{
+            px: 3.5,
+            pt: 2,
+            pb: 1,
+            color: 'text.primary',
+            typography: 'body1',
+          }}>
+          {t('reports.oversizeDialogBody', {
+            count: oversizeCount,
+            email: emailLabel,
+          })}
+        </DialogContent>
+
+        <DialogActions
+          sx={{
+            px: 3.5,
+            pb: 2.5,
+            pt: 1,
+            justifyContent: 'flex-end',
+            gap: 2,
+          }}>
+          <Button
+            variant="outlined"
+            onClick={handleConfirmOversize}
+            sx={outlineModalButtonSx(theme)}>
+            {t('reports.oversizeContinue')}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => setOversizeOpen(false)}
+            sx={outlineModalButtonSx(theme)}>
+            {t('common.cancel')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

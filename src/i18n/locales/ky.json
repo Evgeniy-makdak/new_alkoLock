@@ -628,9 +628,15 @@
     "chartByDay": "Күндөр боюнча динамика",
     "chartByType": "Окуя түрү боюнча бөлүнүш",
     "chartSobriety": "Тестирлөө («тестирлөө …» түрүндөгү окуялар гана)",
-    "chartTopUsers": "Колдонуучулар боюнча (топ)",
-    "chartTopDevices": "Алкозамоктор боюнча (топ)",
-    "chartTopVehicles": "Транспорт каражаттары боюнча (топ)",
+    "chartByUsers": "Колдонуучулар боюнча",
+    "chartByDevices": "Алкозамоктор боюнча",
+    "chartByVehicles": "Транспорт каражаттары боюнча",
+    "progressTitle": "Отчёт даярдалууда",
+    "progressLoaded": "Жүктөлдү: {{loaded}} / {{total}}",
+    "progressConnecting": "Серверге суроо…",
+    "progressEta": "Орточо {{time}} калды",
+    "progressEtaComputing": "Убакыт бааланууда…",
+    "progressStop": "Отчёт жүктөөн токтотуу",
     "sobriety": {
       "passed": "Тестирлөө өттү",
       "failed": "Тестирлөө өтпөдү",
@@ -639,7 +645,11 @@
     "otherBucket": "Башка түрлөр",
     "tooltipCount": "Саны",
     "loadError": "Маалымат жүктөлбөдү",
-    "empty": "Азыркы чыпкалар боюнча окуя жок."
+    "empty": "Азыркы чыпкалар боюнча окуя жок.",
+    "oversizeDialogTitle": "Чоң көлөмдөгү маалымат",
+    "oversizeDialogBody": "Отчётто {{count}} жазуудан көп бар. Түзүү узак убакыт алшы мүмкүн, бирок фон режиминде иштейт. Толук отчёт PDF түрүндө сиздин {{email}} электрондук почтаңызга жөнөтүлөт. Улантуу?",
+    "oversizeContinue": "Улантуу",
+    "emailUnknown": "көрсөтүлбөгөн"
   },
   "errors": {
     "userExists": "Колдонуучу мурунтан эле бар",

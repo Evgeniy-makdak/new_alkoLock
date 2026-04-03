@@ -628,9 +628,15 @@
     "chartByDay": "Kunlar kesimida dinamika",
     "chartByType": "Voqealar turi boʻyicha taqsimot",
     "chartSobriety": "Testlash («testlash …» turidagi voqealar)",
-    "chartTopUsers": "Foydalanuvchilar boʻyicha (top)",
-    "chartTopDevices": "Alkozamoklar boʻyicha (top)",
-    "chartTopVehicles": "Transport vositalari boʻyicha (top)",
+    "chartByUsers": "Foydalanuvchilar boʻyicha",
+    "chartByDevices": "Alkozamoklar boʻyicha",
+    "chartByVehicles": "Transport vositalari boʻyicha",
+    "progressTitle": "Hisobot tayyorlanmoqda",
+    "progressLoaded": "Yuklangan: {{loaded}} / {{total}}",
+    "progressConnecting": "Server soʻrovi…",
+    "progressEta": "Taxminan {{time}} qoldi",
+    "progressEtaComputing": "Qolgan vaqt hisoblanmoqda…",
+    "progressStop": "Hisobotni yuklashni to‘xtatish",
     "sobriety": {
       "passed": "Test muvaffaqiyatli",
       "failed": "Test muvaffaqiyatsiz",
@@ -639,7 +645,11 @@
     "otherBucket": "Boshqa turlar",
     "tooltipCount": "Soni",
     "loadError": "Maʼlumotlarni yuklab boʻlmadi",
-    "empty": "Joriy filtrlar boʻyicha voqealar yoʻq."
+    "empty": "Joriy filtrlar boʻyicha voqealar yoʻq.",
+    "oversizeDialogTitle": "Katta hajmdagi maʼlumot",
+    "oversizeDialogBody": "Hisobotda {{count}} dan ortiq yozuv bor. Tayyorlash uzoq vaqt olishi mumkin, lekin fon rejimida bajariladi. Batafsil hisobot PDF shaklida sizning {{email}} elektron pochtangizga yuboriladi. Davom etish?",
+    "oversizeContinue": "Davom etish",
+    "emailUnknown": "koʻrsatilmagan"
   },
   "errors": {
     "userExists": "Foydalanuvchi allaqachon mavjud",

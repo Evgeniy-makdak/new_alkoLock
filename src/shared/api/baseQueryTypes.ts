@@ -98,6 +98,9 @@ export function getQuery<T>({
       headers: headersReg,
     })
     .catch((e) => {
+      if (axios.isAxiosError(e) && e.code === 'ERR_CANCELED') {
+        return Promise.reject(e);
+      }
       return viewResErrors(e);
     });
 }

@@ -676,8 +676,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     alert,
     /**
      * Режим редактирования: изменения полей / фото.
-     * Для multiselect ролей RHF часто оставляет dirty при том же наборе id (другие объекты из списка);
-     * resetField ломал Autocomplete — учитываем только семантику набора id относительно baseline.
+     * Для multiselect ролей RHF часто оставляет dirty при том же наборе id — учитываем семантику набора id относительно baseline.
      */
     hasFormChanges:
       photoMutationPending || !rolesMatchBaseline || (isDirty && !onlyUserGroupsDirty),

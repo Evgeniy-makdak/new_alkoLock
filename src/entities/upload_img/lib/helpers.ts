@@ -9,11 +9,9 @@ export async function getFileHashAndEncodeBase64(file: File | Blob) {
     const arrayBuffer = await file.arrayBuffer();
     const uint8Array = new Uint8Array(arrayBuffer);
 
-    // Вычисление MD5 хэша
-    const wordArray = CryptoJS.lib.WordArray.create(uint8Array); // Преобразование в формат, подходящий для crypto-js
+    const wordArray = CryptoJS.lib.WordArray.create(uint8Array);
     const hash = CryptoJS.MD5(wordArray);
 
-    // Кодирование хэша в строку Base64url
     const base64EncodedHash = CryptoJS.enc.Base64url.stringify(hash);
 
     return base64EncodedHash;

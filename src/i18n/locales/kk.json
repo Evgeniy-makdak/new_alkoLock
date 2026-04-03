@@ -628,9 +628,15 @@
     "chartByDay": "Күндер бойынша динамика",
     "chartByType": "Оқиға түрі бойынша бөлу",
     "chartSobriety": "Тестілеу («тестілеу …» түріндегі оқиғалар)",
-    "chartTopUsers": "Пайдаланушылар бойынша (топ)",
-    "chartTopDevices": "Алкозамоктар бойынша (топ)",
-    "chartTopVehicles": "Көлік құралдары бойынша (топ)",
+    "chartByUsers": "Пайдаланушылар бойынша",
+    "chartByDevices": "Алкозамоктар бойынша",
+    "chartByVehicles": "Көлік құралдары бойынша",
+    "progressTitle": "Есеп құралу",
+    "progressLoaded": "Жүктелді: {{loaded}} / {{total}}",
+    "progressConnecting": "Серверге сұраныс…",
+    "progressEta": "Шамамен {{time}} қалды",
+    "progressEtaComputing": "Уақытты бағалау…",
+    "progressStop": "Есеп жүктеуін тоқтату",
     "sobriety": {
       "passed": "Тестілеу сәтті",
       "failed": "Тестілеу сәтсіз",
@@ -639,7 +645,11 @@
     "otherBucket": "Басқа түрлер",
     "tooltipCount": "Саны",
     "loadError": "Деректерді жүктеу мүмкін болмады",
-    "empty": "Ағымдағы сүзгілер бойынша оқиғалар жоқ."
+    "empty": "Ағымдағы сүзгілер бойынша оқиғалар жоқ.",
+    "oversizeDialogTitle": "Көлемді деректер",
+    "oversizeDialogBody": "Есепте {{count}} жазбадан астам бар. Құрау ұзақ уақыт алуы мүмкін, бірақ фонда орындалады. Толық есеп PDF түрінде {{email}} электрондық поштаңызға жіберіледі. Жалғастыру?",
+    "oversizeContinue": "Жалғастыру",
+    "emailUnknown": "көрсетілмеген"
   },
   "errors": {
     "userExists": "Пайдаланушы әлдеқашан бар",

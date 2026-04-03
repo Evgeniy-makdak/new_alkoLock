@@ -94,6 +94,27 @@ export class AttachmentsApi {
   }
 }
 
+/** POST/GET фото для чата (`/chats/photos/...`). Галерея пользователя — `UsersApi` (`/users/photos/...`). */
+export class ChatsApi {
+  static addPhoto(data: FormData, userId: ID) {
+    return postQuery<AddPhotoResponse, FormData>({
+      url: `api/v1/chats/photos/${userId}`,
+      data,
+      headers: {},
+    });
+  }
+
+  static getPhotoByFileName(photoId: string) {
+    return getQuery<Blob>({
+      url: `api/v1/chats/photos/${photoId}`,
+      config: {
+        responseType: 'blob',
+        headers: { 'Cache-Control': 'no-cache' },
+      },
+    });
+  }
+}
+
 export class UsersApi {
   static getAvatar(id: ID) {
     return getQuery<Blob>({
@@ -429,9 +450,10 @@ export class AlcolocksApi {
 }
 
 export class EventsApi {
-  static getList(options: QueryOptions) {
+  static getList(options: QueryOptions, axiosConfig?: AxiosRequestConfig) {
     return getQuery<{ content: IDeviceAction[]; totalElements: number }>({
       url: getEventsApiURL(options),
+      config: axiosConfig,
     });
   }
 

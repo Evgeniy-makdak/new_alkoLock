@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback } from 'react';
 
-import { UsersApi } from '@shared/api/baseQuerys';
+import { ChatsApi } from '@shared/api/baseQuerys';
 
 import { ChatRefs } from './useChatRefs';
 
@@ -37,7 +37,7 @@ const processAttachments = async (attachments: any[]): Promise<any[]> => {
           continue;
         }
 
-        const response = await UsersApi.getPhotoByFileName(fileName);
+        const response = await ChatsApi.getPhotoByFileName(fileName);
         if (response?.data) {
           const blob = response.data;
           const imageUrl = URL.createObjectURL(blob);
@@ -77,7 +77,7 @@ const processAttachments = async (attachments: any[]): Promise<any[]> => {
         }
 
         try {
-          const response = await UsersApi.getPhotoByFileName(fileName);
+          const response = await ChatsApi.getPhotoByFileName(fileName);
           if (response?.data) {
             const blob = response.data;
             const imageUrl = URL.createObjectURL(blob);

@@ -630,9 +630,15 @@
     "chartByDay": "Trend by day",
     "chartByType": "By event type",
     "chartSobriety": "Testing (events with “testing …” type only)",
-    "chartTopUsers": "By user (top)",
-    "chartTopDevices": "By interlock (top)",
-    "chartTopVehicles": "By vehicle (top)",
+    "chartByUsers": "By user",
+    "chartByDevices": "By interlock",
+    "chartByVehicles": "By vehicle",
+    "progressTitle": "Building report",
+    "progressLoaded": "Loaded {{loaded}} of {{total}} events",
+    "progressConnecting": "Contacting server…",
+    "progressEta": "About {{time}} left",
+    "progressEtaComputing": "Estimating time remaining…",
+    "progressStop": "Stop loading report",
     "sobriety": {
       "passed": "Test passed",
       "failed": "Test failed",
@@ -641,7 +647,11 @@
     "otherBucket": "Other types",
     "tooltipCount": "Count",
     "loadError": "Failed to load data",
-    "empty": "No events for current filters."
+    "empty": "No events for current filters.",
+    "oversizeDialogTitle": "Large dataset",
+    "oversizeDialogBody": "The report contains more than {{count}} records. Generating the report may take a long time, but it will run in the background. A detailed report will be sent as a PDF to your email {{email}}. Continue?",
+    "oversizeContinue": "Continue",
+    "emailUnknown": "not specified"
   },
   "errors": {
     "userExists": "User already exists",
