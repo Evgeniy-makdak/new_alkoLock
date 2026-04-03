@@ -743,6 +743,7 @@ function ChatPanel({
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}
           isDialogBlockedByOtherOperator={isDialogReallyBlocked}
+          isDialogEnded={isDialogEnded}
         />
       </div>
 

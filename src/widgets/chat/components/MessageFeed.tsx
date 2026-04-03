@@ -32,6 +32,7 @@ interface MessageFeedProps {
   onScrollToBottomDone?: () => void;
   dialogStatus?: string;
   isDialogBlockedByOtherOperator?: boolean;
+  isDialogEnded?: boolean;
 }
 
 function MessageFeed({
@@ -49,6 +50,7 @@ function MessageFeed({
   onScrollToBottomDone,
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
+  isDialogEnded = false,
 }: MessageFeedProps) {
   const { t } = useTranslation();
   const renderCountRef = useRef(0);
@@ -98,6 +100,10 @@ function MessageFeed({
 
   const session = getSession(sessionId);
   const pagination = session?.pagination;
+
+  /** Как в MessageInput: ответ/редактирование только если диалог «забран» и можно писать. */
+  const canInteractWithMessages =
+    dialogStatus === 'CLOSED' && !isDialogBlockedByOtherOperator && !isDialogEnded;
 
   const feedDialogId =
     session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
@@ -929,7 +935,10 @@ function MessageFeed({
           const isDeleted = msg.id && deletedMessages.has(msg.id);
           const isEditing = msg.id === editingMessageId;
           const isOperatorMessage = msg.messageStatus === 'TO_USER';
-          const canEditDelete = canEditOrDelete(msg);
+          const canEditDelete = canEditOrDelete(msg) && canInteractWithMessages;
+          const showReplyControl = canInteractWithMessages && !!onReplyToMessage;
+          const showEditDeleteBar = canEditDelete;
+          const showMessageActionsRow = showReplyControl || showEditDeleteBar;
           const senderName = getSenderName(msg);
           const messageStyle = getMessageStyle(msg);
           const statusIcon = getStatusIcon(msg);
@@ -1154,37 +1163,32 @@ function MessageFeed({
                 )}
               </div>
 
-              {!isDeleted && (
+              {!isDeleted && showMessageActionsRow && (
                 <div className={styles.messageActions}>
-                  {(dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED') &&
-                    !isDialogBlockedByOtherOperator && (
-                      <button
-                        onClick={(e) => handleReplyClick(msg, e)}
-                        title={t('chat.replyAction')}>
-                        <FaReply size={12} />
-                      </button>
-                    )}
+                  {showReplyControl && (
+                    <button onClick={(e) => handleReplyClick(msg, e)} title={t('chat.replyAction')}>
+                      <FaReply size={12} />
+                    </button>
+                  )}
 
-                  {canEditDelete &&
-                    (dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED') &&
-                    !isDialogBlockedByOtherOperator && (
-                      <>
-                        {isOperatorMessage && (
-                          <button
-                            onClick={(e) => handleEditClick(msg, e)}
-                            title={t('common.edit')}
-                            disabled={!canEditDelete}>
-                            <BsPencil size={12} />
-                          </button>
-                        )}
+                  {showEditDeleteBar && (
+                    <>
+                      {isOperatorMessage && (
                         <button
-                          onClick={(e) => handleDeleteClick(msg, e)}
-                          title={t('chat.deleteMessage')}
+                          onClick={(e) => handleEditClick(msg, e)}
+                          title={t('common.edit')}
                           disabled={!canEditDelete}>
-                          <FaTrash size={12} />
+                          <BsPencil size={12} />
                         </button>
-                      </>
-                    )}
+                      )}
+                      <button
+                        onClick={(e) => handleDeleteClick(msg, e)}
+                        title={t('chat.deleteMessage')}
+                        disabled={!canEditDelete}>
+                        <FaTrash size={12} />
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
