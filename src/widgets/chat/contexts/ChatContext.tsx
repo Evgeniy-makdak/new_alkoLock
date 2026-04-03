@@ -4,6 +4,10 @@ import { appStore } from '@shared/model/app_store/AppStore';
 
 import i18n from '../../../i18n';
 import { ChatConfig } from '../contexts/chatConfig';
+import {
+  pickSessionMatchingDialogId,
+  resolveSessionDialogIdForUnread,
+} from '../lib/resolveSessionDialogIdForUnread';
 import { useSocket } from './SocketContext';
 import { chatUnreadTrace } from './chatUnreadTrace';
 import { useChatAttachments } from './hooks/useChatAttachments';
@@ -210,8 +214,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         sessionsRef.current.find((s: any) => s.id === sessionId) ?? getSession(sessionId);
       if (!session?.messages) return;
 
+      const resolved = resolveSessionDialogIdForUnread(session);
       const effectiveDialogId =
         dialogId ||
+        (resolved != null ? String(resolved) : undefined) ||
         session.selectedDialog?.id?.toString() ||
         session.assignedDialogId ||
         session.messages[0]?.dialog?.id?.toString() ||
@@ -622,10 +628,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       let dialogToOpen: any = null;
 
       if (dialogIdStr) {
-        existingSession = currentSessions.find(
-          (s) =>
-            (s.selectedDialog?.id != null && String(s.selectedDialog.id) === dialogIdStr) ||
-            (s.assignedDialogId != null && String(s.assignedDialogId) === dialogIdStr),
+        existingSession = pickSessionMatchingDialogId(
+          currentSessions,
+          dialogIdStr,
+          Number.isNaN(userIdNum) ? undefined : userIdNum,
         );
       }
       if (!existingSession && dialogIdStr && currentSessions.length > 0) {
@@ -699,9 +705,24 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
               ? String(existingSession.assignedDialogId)
               : null;
 
-        // Не смешивать ленту: пустое основное окно или другой выбранный диалог — не капаем сообщение в messages[]
+        const ownerMatchesSession =
+          existingSession.selectedUsers &&
+          existingSession.selectedUsers.length > 0 &&
+          !Number.isNaN(userIdNum) &&
+          userIdNum > 0 &&
+          existingSession.selectedUsers.includes(userIdNum);
+
+        // Не смешивать ленту: другой выбранный диалог — не капаем. Если dialogId ещё не привязан к сессии,
+        // но владелец совпадает — капаем. Если в метаданных «чужой» dialogId, но владелец сообщения = эта сессия —
+        // капаем (восстановление метаданных в addMessageFromWebSocket).
         const shouldAppendMessageToSession =
-          dialogIdStr == null || (activeDialogIdRaw != null && activeDialogIdRaw === dialogIdStr);
+          dialogIdStr == null ||
+          (activeDialogIdRaw != null && activeDialogIdRaw === dialogIdStr) ||
+          (activeDialogIdRaw == null && Boolean(ownerMatchesSession) && dialogIdStr != null) ||
+          (activeDialogIdRaw != null &&
+            dialogIdStr != null &&
+            activeDialogIdRaw !== dialogIdStr &&
+            Boolean(ownerMatchesSession));
 
         const isClosedInPreview =
           foundViaUnreadDialogs && isChatDialogClosedStatus(dialogToOpen?.status);
@@ -731,16 +752,19 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           if (isOperatorUnreadForCounters(messageData)) {
             incrementUnreadCount(existingSession.id, 1);
           }
-        } else if (!isClosedInPreview) {
-          const messageDialogId = messageData.dialog?.id || messageData.dialogId;
-          const sessionDialogId =
+        }
+
+        /* Свёрнутая и развёрнутая: пересчёт session.unreadCount и стыковка с WS-картой (раньше только для развёрнутой — бейджи превью не жили онлайн). */
+        if (!isClosedInPreview) {
+          const messageDialogIdForUnread = messageData.dialog?.id || messageData.dialogId;
+          const sessionDialogIdFallback =
             existingSession.selectedDialog?.id || existingSession.assignedDialogId;
 
           setTimeout(() => {
-            if (messageDialogId) {
-              updateSessionUnreadCount(existingSession.id, messageDialogId.toString());
-            } else if (sessionDialogId && sessionDialogId !== '0') {
-              updateSessionUnreadCount(existingSession.id, sessionDialogId.toString());
+            if (messageDialogIdForUnread) {
+              updateSessionUnreadCount(existingSession.id, messageDialogIdForUnread.toString());
+            } else if (sessionDialogIdFallback && sessionDialogIdFallback !== '0') {
+              updateSessionUnreadCount(existingSession.id, sessionDialogIdFallback.toString());
             }
           }, 200);
         }
@@ -1192,12 +1216,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     if (!socketDialogsUnreadCounts || socketDialogsUnreadCounts.size === 0) return;
     const currentSessions = sessionsRef.current;
     currentSessions.forEach((session) => {
-      const dialogId =
-        session.selectedDialog?.id != null
-          ? Number(session.selectedDialog.id)
-          : session.assignedDialogId != null
-            ? Number(session.assignedDialogId)
-            : null;
+      const dialogId = resolveSessionDialogIdForUnread(session);
       if (dialogId == null || !socketDialogsUnreadCounts.has(dialogId)) return;
       const count = socketDialogsUnreadCounts.get(dialogId)!;
       if (count !== (session.unreadCount ?? 0)) {

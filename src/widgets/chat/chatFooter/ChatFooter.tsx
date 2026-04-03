@@ -27,6 +27,7 @@ import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
 import { chatUnreadTrace, unreadMapToRecord } from '../contexts/chatUnreadTrace';
+import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
@@ -103,14 +104,40 @@ function truncatePreviewLine(text: string, maxLen: number): string {
 function unreadCountForPreviewEntry(
   dialog: UnreadDialog,
   dialogsUnreadCounts: Map<number, number> | undefined,
-  /** Если в превью ровно одна строка «непрочитанных», подтягиваем общий WS-счётчик (карта по диалогу отстаёт). */
+  /** Только если для dialogId ещё нет ключа в карте: прежний обходной путь, когда карта отстаёт. */
   solePreviewSocketTotalHint: number = 0,
 ): number {
-  const fromSocket = (dialogsUnreadCounts || new Map()).get(dialog.id) ?? 0;
+  const map = dialogsUnreadCounts || new Map();
+  // Есть явная запись по этому диалогу — только она (иначе при ровно одной строке превью
+  // solePreviewSocketTotalHint = общий агрегат и «чужой» +1 заливает бейдж другого dialogId).
+  if (map.has(dialog.id)) {
+    return map.get(dialog.id)!;
+  }
   const fromApi = Number(dialog.countUnMessages ?? dialog.countUnreadMess ?? 0);
-  const base = Math.max(fromSocket, Number.isFinite(fromApi) ? fromApi : 0);
+  const base = Number.isFinite(fromApi) ? fromApi : 0;
   if (solePreviewSocketTotalHint <= 0) return base;
   return Math.max(base, solePreviewSocketTotalHint);
+}
+
+/**
+ * Счётчик на превью свёрнутой сессии: dialogId из ленты (если однозначен), иначе метаданные;
+ * если в WS-карте есть запись для этого id — она приоритетнее session.unreadCount.
+ */
+function effectiveMinimizedSessionUnread(
+  session: {
+    selectedDialog?: { id?: unknown };
+    assignedDialogId?: unknown;
+    unreadCount?: number;
+    messages?: any[];
+  },
+  dialogsUnreadCounts: Map<number, number> | undefined,
+): number {
+  const dialogId = resolveSessionDialogIdForUnread(session);
+  const map = dialogsUnreadCounts;
+  if (dialogId != null && map != null && map.has(dialogId)) {
+    return map.get(dialogId)!;
+  }
+  return session.unreadCount ?? 0;
 }
 
 function minimizedSessionPreviewRaw(
@@ -417,7 +444,7 @@ const ChatContainer = () => {
           session.selectedDialog?.client_name ||
           t('chat.newChatFallback'),
         subtitle: subtitle || undefined,
-        unread: session.unreadCount ?? 0,
+        unread: effectiveMinimizedSessionUnread(session, dialogsUnreadCounts),
       });
     });
 
@@ -470,7 +497,10 @@ const ChatContainer = () => {
       unreadPreviewRows: previewUnreadBadges,
       minimizedSessionsUnread: sessions
         .filter((s) => s.isMinimized)
-        .map((s) => ({ sessionId: s.id, unread: s.unreadCount ?? 0 })),
+        .map((s) => ({
+          sessionId: s.id,
+          unread: effectiveMinimizedSessionUnread(s, dialogsUnreadCounts),
+        })),
       lastMessageType: lastMessage?.type,
       lastMessageDestination: lastMessage?.destination,
     });
@@ -596,12 +626,11 @@ const ChatContainer = () => {
             minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
             30,
           );
+          const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
           return (
             <div
               key={`minimized-${session.id}`}
-              className={`${styles.minimizedChat} ${
-                (session.unreadCount ?? 0) > 0 ? styles.hasUnread : ''
-              }`}
+              className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
               style={{
                 bottom: `${120 + index * 60}px`,
                 right: '540px',
@@ -615,7 +644,7 @@ const ChatContainer = () => {
                     t('chat.newChatFallback')}
                 </span>
                 <span className={styles.unreadBadge}>
-                  {(session.unreadCount ?? 0) > 99 ? '99+' : (session.unreadCount ?? 0)}
+                  {minimizedUnread > 99 ? '99+' : minimizedUnread}
                 </span>
               </div>
               {previewLine ? <div className={styles.lastMessage}>{previewLine}</div> : null}

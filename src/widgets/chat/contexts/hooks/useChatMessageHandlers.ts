@@ -189,11 +189,23 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
         (d: any) => String(d.id) === String(messageDialogId),
       );
 
+      const messageOwnerRaw =
+        messageData?.dialog?.owner?.id ?? messageData?.createdBy?.id ?? messageData?.user?.id;
+      const messageOwnerNum =
+        messageOwnerRaw != null && messageOwnerRaw !== ''
+          ? parseInt(String(messageOwnerRaw), 10)
+          : NaN;
+      const ownerMatchesSession =
+        !Number.isNaN(messageOwnerNum) &&
+        messageOwnerNum > 0 &&
+        Boolean(session.selectedUsers?.includes(messageOwnerNum));
+
       if (
         messageDialogId &&
         currentDialogId &&
         messageDialogId.toString() !== currentDialogId.toString() &&
-        !inUnreadPreview
+        !inUnreadPreview &&
+        !ownerMatchesSession
       ) {
         return;
       }
@@ -266,6 +278,23 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
         rawAttaches: attachmentsData,
       };
 
+      const shouldPatchDialogMeta =
+        Boolean(messageData.dialog) &&
+        Boolean(messageDialogId) &&
+        ownerMatchesSession &&
+        (!currentDialogId || messageDialogId.toString() !== currentDialogId.toString());
+
+      const dialogMetaPatch =
+        shouldPatchDialogMeta && messageData.dialog
+          ? {
+              assignedDialogId: messageDialogId!.toString(),
+              selectedDialog: {
+                ...(session.selectedDialog || {}),
+                ...messageData.dialog,
+              },
+            }
+          : {};
+
       if (existingMessage) {
         const updatedMessages = session.messages.map((msg: any) =>
           msg.uuid === messageData.uuid || msg.id === messageData.id
@@ -273,10 +302,11 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
             : msg,
         );
 
-        updateSession(sessionId, { messages: updatedMessages });
+        updateSession(sessionId, { messages: updatedMessages, ...dialogMetaPatch });
       } else {
         updateSession(sessionId, {
           messages: [...session.messages, newMessage],
+          ...dialogMetaPatch,
         });
       }
     },
