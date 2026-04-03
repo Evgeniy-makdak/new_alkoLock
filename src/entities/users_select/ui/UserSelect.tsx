@@ -38,6 +38,8 @@ export const UsersSelect = <T,>({
   includeActiveOnly,
   vieBranch = false,
   excludeSuperAdmin = false,
+  placeholder,
+  disabled,
   ...rest
 }: UsersSelectProps<T>): JSX.Element => {
   const displayBranchName = showBranchName || vieBranch;
@@ -55,12 +57,21 @@ export const UsersSelect = <T,>({
     includeActiveOnly,
   );
 
+  const placeholderResolved =
+    disabled && driversList.length === 1
+      ? placeholder?.trim()
+        ? placeholder
+        : driversList[0].label
+      : placeholder;
+
   return (
     <SearchMultipleSelect
       onReset={onReset}
       onInputChange={onChange}
       isLoading={isLoading}
       values={driversList}
+      disabled={disabled}
+      placeholder={placeholderResolved}
       {...rest}
     />
   );

@@ -41,6 +41,7 @@ export type SearchMultipleSelectProps<T> = {
     value: string | Values | Value | (string | Values | Value)[],
   ) => void;
   helperText?: string;
+  placeholder?: string;
   serverFilter?: boolean;
   allowCustomEvents?: boolean;
   getTooltipTitle?: (value: string) => string;
@@ -64,6 +65,8 @@ export function SearchMultipleSelect<T>({
   serverFilter = true,
   getTooltipTitle,
   slotProps: userSlotProps,
+  disabled,
+  placeholder,
   ...rest
 }: SearchMultipleSelectProps<T>) {
   const { t } = useTranslation();
@@ -110,18 +113,40 @@ export function SearchMultipleSelect<T>({
     // Пустая строка label у OutlinedInput оставляет «вырез» в рамке — пропадает верхняя граница (иногда нестабильно из‑за legend)
     const displayLabel = typeof label === 'string' && label.trim() !== '' ? label : undefined;
     const inputPropsNoLabel = displayLabel === undefined ? { notched: false as const } : {};
+    // Иначе не сжатый label перекрывает поле и placeholder не показывается (виден только текст label).
+    const shrinkLabel =
+      focused ||
+      !!hasValue ||
+      displayLabel === undefined ||
+      !!(disabled && placeholder && String(placeholder).trim() !== '');
     return (
       <TextField
         helperText={helperText}
         {...prop}
         label={displayLabel}
         error={error}
+        disabled={disabled}
+        placeholder={placeholder}
+        sx={
+          disabled
+            ? (theme) => ({
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: theme.palette.action.hover,
+                  cursor: 'not-allowed',
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: theme.palette.text.disabled,
+                  opacity: 1,
+                },
+              })
+            : undefined
+        }
         InputProps={{
           ...prop.InputProps,
           ...inputPropsNoLabel,
         }}
         InputLabelProps={{
-          shrink: focused || !!hasValue || displayLabel === undefined,
+          shrink: shrinkLabel,
         }}
       />
     );
@@ -209,6 +234,7 @@ export function SearchMultipleSelect<T>({
     <div className={style.searchSelect}>
       <Autocomplete
         {...rest}
+        disabled={disabled}
         slotProps={mergedSlotProps}
         getOptionLabel={(option) => {
           // ВАЖНОЕ ИСПРАВЛЕНИЕ: всегда возвращаем строку

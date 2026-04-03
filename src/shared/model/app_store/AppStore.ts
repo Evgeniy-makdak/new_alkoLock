@@ -80,7 +80,7 @@ export const appStore = create<AppStore>()((set, get) => ({
       permissions,
       assignmentBranch,
       authId,
-      userFullName,
+      fullName: userFullName,
     };
     set(newState);
   },

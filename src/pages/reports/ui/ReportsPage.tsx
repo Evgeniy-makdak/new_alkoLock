@@ -12,7 +12,6 @@ import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
-import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import { type ReportAggregates, aggregateReportData } from '../lib/aggregateReportData';
@@ -27,8 +26,6 @@ export function ReportsPage() {
   const { t } = useTranslation();
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
-
-  const [searchQuery, setSearchQuery] = useState('');
 
   const branchId = appStore((s) => s.selectedBranchState?.id);
 
@@ -73,7 +70,7 @@ export function ReportsPage() {
         buildReportsEventsQuery({
           page,
           limit: 200,
-          searchQuery,
+          searchQuery: '',
           startDate: st.startDate,
           endDate: st.endDate,
           filters: st.filters,
@@ -90,11 +87,10 @@ export function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  }, [branchId, currentUserId, permission, role, searchQuery, t]);
+  }, [branchId, currentUserId, permission, role, t]);
 
   const handleResetFilters = () => {
     resetAll();
-    setSearchQuery('');
     setAggregates(null);
     setError(null);
   };
@@ -109,12 +105,6 @@ export function ReportsPage() {
           </div>
 
           <TableHeaderWrapper>
-            <SearchInput
-              testId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_SEARCH_INPUT}
-              value={searchQuery}
-              onClear={() => setSearchQuery('')}
-              setState={setSearchQuery}
-            />
             <InputsDates
               onClear={clearDates}
               inputStartTestId={

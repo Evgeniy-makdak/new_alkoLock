@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useMediaQuery } from '@mui/material';
@@ -30,19 +29,13 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
     setEventFilters(name, value);
     onFilterChange();
   };
-  const { permissions: storePermissionsFromUsers } = appStore();
-  const [userInfo] = useState({
-    surname: '',
-    firstName: '',
-    middleName: '',
-  });
+  const { permissions: storePermissionsFromUsers, fullName: userFullNameFromStore } = appStore();
 
   const hasServiceOrDriverAccess =
     storePermissionsFromUsers.includes('SYSTEM_SERVICE_ACCOUNT') ||
     storePermissionsFromUsers.includes('SYSTEM_DRIVER_ACCOUNT');
   const hasReadPermission = storePermissionsFromUsers.includes('PERMISSION_EVENTS_READ');
   const isUsersSelectDisabled = hasServiceOrDriverAccess && !hasReadPermission;
-  const userLabel = `${userInfo.surname} ${userInfo.firstName} ${userInfo.middleName}`.trim();
 
   const isMobile = useMediaQuery('(max-width:768px)');
 
@@ -68,8 +61,11 @@ export const EventsFilterPanel = ({ open, onFilterChange }: EventsFilterPanelPro
               testid={
                 testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER
               }
-              label={isUsersSelectDisabled ? userLabel : t('filters.searchByUser')}
+              label={t('filters.searchByUser')}
               disabled={isUsersSelectDisabled}
+              placeholder={
+                isUsersSelectDisabled && userFullNameFromStore ? userFullNameFromStore : undefined
+              }
             />
             <CarsSelect
               multiple={true}
