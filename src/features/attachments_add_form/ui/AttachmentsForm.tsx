@@ -41,6 +41,7 @@ export const AttachmentAddForm = ({ onClose }: AttachmentAddFormProps) => {
           excludeDisabledUsers={false}
           excludeUserWithId2={true} // Во вкладке Привязки в окне Привязка алкозамка
           onlyWithDriverId={true} // При false отображает только водителей.
+          isAttachment={true} // модалка «Привязка»: только активные пользователи (full-name)
           value={driverId}
           setValueStore={onSelect}
           testid={
