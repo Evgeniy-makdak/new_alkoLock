@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { type MutableRefObject, useEffect } from 'react';
+import { type MutableRefObject, useEffect, useRef } from 'react';
 
 import { type GridPaginationModel, type GridSortModel, useGridApiRef } from '@mui/x-data-grid';
 import type { GridApiCommunity } from '@mui/x-data-grid/internals';
@@ -45,17 +45,31 @@ export const useSavedLocalTableSorts = (
     },
   });
 
+  // Всегда указывает на последнее актуальное состояние (предотвращает stale closure).
+  // changeTableState/changeTableSorts вызываются из обратных вызовов DataGrid,
+  // которые могут захватить устаревший state через замыкание.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
+  // Флаг: блокирует обратные вызовы DataGrid (onPaginationModelChange, onSortModelChange)
+  // во время программного восстановления состояния из localStorage. Без него
+  // setSortModel / setPage синхронно стреляют коллбеками с новыми ссылками объектов
+  // и перезаписывают текущую страницу через changeTableSorts (stale closure на state).
+  const isRestoring = useRef(false);
+
   const changeTableState = (stateOfTable: GridPaginationModel) => {
+    if (isRestoring.current) return;
     setItemState({
-      ...state,
+      ...stateRef.current,
       page: stateOfTable.page,
       pageSize: stateOfTable.pageSize,
     });
   };
 
   const changeTableSorts = (model: GridSortModel) => {
+    if (isRestoring.current) return;
     setItemState({
-      ...state,
+      ...stateRef.current,
       sortModel: model,
     });
   };
@@ -63,9 +77,11 @@ export const useSavedLocalTableSorts = (
   useEffect(() => {
     if (!apiRef?.current) return;
 
+    isRestoring.current = true;
     apiRef?.current?.setPage && apiRef?.current?.setPage(state.page);
     apiRef?.current?.setPageSize && apiRef?.current?.setPageSize(state.pageSize);
     apiRef?.current?.setSortModel && apiRef?.current?.setSortModel(state.sortModel);
+    isRestoring.current = false;
   }, [apiRef?.current]);
 
   return [state, apiRef, changeTableState, changeTableSorts];

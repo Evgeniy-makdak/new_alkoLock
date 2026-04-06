@@ -63,6 +63,55 @@
       outline: none !important;
       border: none !important;
     }
+
+    // Окраска строк по режиму (светлая тема)
+    .MuiDataGrid-row.row-mode-emergency .MuiDataGrid-cell {
+      color: #d32f2f;
+    }
+    .MuiDataGrid-row.row-mode-service .MuiDataGrid-cell {
+      color: #ed6c02;
+    }
+  }
+}
+
+// Тёмная тема
+:global(html[data-theme='dark']) .scrollableTable {
+  :global {
+    .MuiDataGrid-row.row-mode-emergency .MuiDataGrid-cell {
+      color: #ef9a9a;
+    }
+    .MuiDataGrid-row.row-mode-service .MuiDataGrid-cell {
+      color: #ffb74d;
+    }
+  }
+}
+
+// Окраска строк мобильного списка по режиму
+.modeEmergency {
+  .alcolockName,
+  .detailValue {
+    color: #d32f2f;
+  }
+}
+.modeService {
+  .alcolockName,
+  .detailValue {
+    color: #ed6c02;
+  }
+}
+
+:global(html[data-theme='dark']) {
+  .modeEmergency {
+    .alcolockName,
+    .detailValue {
+      color: #ef9a9a;
+    }
+  }
+  .modeService {
+    .alcolockName,
+    .detailValue {
+      color: #ffb74d;
+    }
   }
 }
 

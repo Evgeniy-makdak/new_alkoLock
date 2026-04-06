@@ -659,9 +659,14 @@ export const AlkolocksMobileTable = ({
           tableData.rows.map((row, index) => (
             <div
               key={row.id}
-              className={`${styles.mobileRow} ${
-                index === selectedRowIndex ? styles.selectedRow : ''
-              }`}
+              className={[
+                styles.mobileRow,
+                index === selectedRowIndex ? styles.selectedRow : '',
+                row.mode === 'Аварийный' ? styles.modeEmergency : '',
+                row.mode === 'Сервисный' ? styles.modeService : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
               onClick={() => handleRowClick(row)}>
               <div className={styles.rowMainInfo}>
                 <div className={styles.alcolockInfo}>

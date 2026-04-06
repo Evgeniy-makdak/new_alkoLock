@@ -32,6 +32,7 @@ export const useGetRows = (data: IAlcolock[]): GridRowsProp => {
         return {
           id: item.id,
           isProcessing,
+          mode: item?.mode ?? '',
           [ValuesHeader.NAMING]: item?.name ?? '-',
           [ValuesHeader.SERIAL_NUMBER]: item.serialNumber ?? '-',
           [ValuesHeader.TC]: Formatters.carNameFormatter(car) || '-',

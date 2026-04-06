@@ -48,8 +48,14 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const tableWrapperRef = useRef<HTMLDivElement>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const isInputFocused = useRef(false);
+  // Хранит предыдущее значение prevBranch для корректного определения смены филиала.
+  // prevBranch при первом рендере = null (из Alkozamki.tsx), а реальный id бранча
+  // появляется позже (после useEffect в Alkozamki.tsx). Без этого ref-а эффект
+  // ниже ошибочно вызывает setPage(0) при переходе null→id во время первого клика
+  // на пагинацию (handleCloseAside вызывает ре-рендер Alkozamki, который впервые
+  // передаёт реальный prevBranch).
+  const prevBranchTracker = useRef(prevBranch);
 
   // Проверка на открытые модальные окна
   const isAnyModalOpen =
@@ -58,16 +64,9 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
     recoverAlcolockModalData.isOpen ||
     !!trueDeleteAlcolockModalData.trueDeleteAlcolock;
 
-  // Инициализация таблицы
-  useEffect(() => {
-    if (tableData.apiRef?.current && !isInitialized) {
-      setIsInitialized(true);
-    }
-  }, [tableData.apiRef, isInitialized]);
-
   // Эффект для обработки выбранного алкозамка
   useEffect(() => {
-    if (!isInitialized || !selectedAlcolockId) return;
+    if (!selectedAlcolockId || !tableData.apiRef?.current) return;
 
     const handleSelection = () => {
       if (!tableData.apiRef?.current) return;
@@ -77,18 +76,17 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
         tableData.apiRef.current.scrollToIndexes({ rowIndex });
         tableData.apiRef.current.setRowSelectionModel([selectedAlcolockId]);
       } else {
-        // Если не нашли на текущей странице, пробуем найти на других
         tableData.apiRef.current.setPage(0);
       }
     };
 
     const timer = setTimeout(handleSelection, 100);
     return () => clearTimeout(timer);
-  }, [selectedAlcolockId, tableData.rows, isInitialized, tableData.apiRef]);
+  }, [selectedAlcolockId, tableData.rows]);
 
   // Блокировка фокуса и скролла таблицы при открытых модальных окнах
   useEffect(() => {
-    if (!isInitialized || !tableWrapperRef.current) return;
+    if (!tableWrapperRef.current) return;
 
     const tableElement = tableWrapperRef.current.querySelector('.MuiDataGrid-root');
     if (tableElement) {
@@ -102,26 +100,34 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
         (tableElement as HTMLElement).style.opacity = '1';
       }
     }
-  }, [isAnyModalOpen, isInitialized]);
+  }, [isAnyModalOpen]);
 
-  // Обработчики фильтров и сортировки - СБРОС СТРАНИЦЫ ОСТАВЛЕН
+  // Сброс страницы при смене фильтров/сортировки — идентично Events/Users
   useEffect(() => {
-    if (isInitialized && statusFilter && tableData.apiRef?.current) {
+    if (statusFilter && tableData.apiRef?.current) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [statusFilter, isInitialized, tableData.apiRef]);
+  }, [statusFilter]);
 
+  // Сбрасывает страницу только при реальной смене филиала (оба значения не null).
+  // Игнорирует переход null → id, который возникает при первом клике пагинации:
+  // handleCloseAside() вызывает ре-рендер Alkozamki.tsx, который впервые передаёт
+  // реальный prevBranch (из prevBranch.current, обновлённого в useEffect Alkozamki).
   useEffect(() => {
-    if (isInitialized && tableData.apiRef?.current) {
+    const prev = prevBranchTracker.current;
+    prevBranchTracker.current = prevBranch;
+    if (prev != null && prevBranch != null && prev !== prevBranch) {
+      tableData.apiRef?.current?.setPage(0);
+    }
+  }, [prevBranch]);
+
+  // Deps — примитивы (field + sort), а не ссылка на массив.
+  // Именно так сделано в Events/Users: смена ссылки объекта не вызывает лишний сброс страницы.
+  useEffect(() => {
+    if (tableData.sortModel && tableData.apiRef?.current) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [prevBranch, isInitialized, tableData.apiRef]);
-
-  useEffect(() => {
-    if (isInitialized && tableData.sortModel && tableData.apiRef?.current) {
-      tableData.apiRef.current.setPage(0);
-    }
-  }, [tableData.sortModel, isInitialized, tableData.apiRef]);
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
 
   // Обработчик клавиатуры
   useEffect(() => {
@@ -211,7 +217,7 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
 
   // Блокировка фокуса при модальных окнах
   useEffect(() => {
-    if (!isInitialized || !tableWrapperRef.current || !isAnyModalOpen) return;
+    if (!tableWrapperRef.current || !isAnyModalOpen) return;
 
     const gridElement = tableWrapperRef.current.querySelector('.MuiDataGrid-root');
     if (gridElement) {
@@ -223,7 +229,7 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
         activeElement.blur();
       }
     }
-  }, [isAnyModalOpen, isInitialized]);
+  }, [isAnyModalOpen]);
 
   const handleRowClick = (params: any) => {
     // Обрабатываем клик по любой ячейке строки - БЕЗ СБРОСА СТРАНИЦЫ
@@ -304,53 +310,54 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
       </TableHeaderWrapper>
 
       <div className={styles.scrollableTable}>
-        {isInitialized ? (
-          <Table
-            sortingMode="server"
-            rowCount={tableData.totalCount}
-            paginationMode="server"
-            onSortModelChange={tableData.changeTableSorts}
-            apiRef={tableData.apiRef}
-            onPaginationModelChange={handlePaginationModelChange}
-            pageNumber={tableData.page}
-            loading={tableData.isLoading}
-            columns={tableData.headers}
-            rows={tableData.rows}
-            pointer
-            onRowClick={handleRowClick}
-            onCellClick={handleRowClick}
-            getRowClassName={(params) =>
-              params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
-            }
-            sx={{
-              '& .MuiDataGrid-virtualScroller': {
-                overflowX: 'auto',
-              },
-              // Полностью отключаем фокус и выделение для всех ячеек
-              '& .MuiDataGrid-cell': {
-                outline: 'none !important',
-              },
-              '& .MuiDataGrid-cell:focus': {
-                outline: 'none !important',
-              },
-              '& .MuiDataGrid-cell:focus-within': {
-                outline: 'none !important',
-              },
-              // Отключаем выделение ячеек
-              '& .MuiDataGrid-cell--withRenderer': {
-                outline: 'none !important',
-              },
-              // Отключаем box-shadow при фокусе
-              '& .MuiDataGrid-cell:focus::after': {
-                content: 'none !important',
-              },
-            }}
-            disableRowSelectionOnClick={false}
-            hideFooterSelectedRowCount={true}
-          />
-        ) : (
-          <div>Инициализация таблицы...</div>
-        )}
+        <Table
+          sortingMode="server"
+          rowCount={tableData.totalCount}
+          paginationMode="server"
+          onSortModelChange={tableData.changeTableSorts}
+          apiRef={tableData.apiRef}
+          onPaginationModelChange={handlePaginationModelChange}
+          pageNumber={tableData.page}
+          loading={tableData.isLoading}
+          columns={tableData.headers}
+          rows={tableData.rows}
+          pointer
+          onRowClick={handleRowClick}
+          onCellClick={handleRowClick}
+          getRowClassName={(params) => {
+            const modeClass =
+              params.row.mode === 'Аварийный'
+                ? 'row-mode-emergency'
+                : params.row.mode === 'Сервисный'
+                  ? 'row-mode-service'
+                  : '';
+            const selectedClass =
+              params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : '';
+            return [modeClass, selectedClass].filter(Boolean).join(' ');
+          }}
+          sx={{
+            '& .MuiDataGrid-virtualScroller': {
+              overflowX: 'auto',
+            },
+            '& .MuiDataGrid-cell': {
+              outline: 'none !important',
+            },
+            '& .MuiDataGrid-cell:focus': {
+              outline: 'none !important',
+            },
+            '& .MuiDataGrid-cell:focus-within': {
+              outline: 'none !important',
+            },
+            '& .MuiDataGrid-cell--withRenderer': {
+              outline: 'none !important',
+            },
+            '& .MuiDataGrid-cell:focus::after': {
+              content: 'none !important',
+            },
+          }}
+          disableRowSelectionOnClick={false}
+          hideFooterSelectedRowCount={true}
+        />
       </div>
 
       <Popup
