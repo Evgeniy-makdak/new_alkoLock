@@ -1,3 +1,38 @@
+/* =============================================================
+   VehiclePopup — семантические цвета, реактивные к data-theme
+   Все классы vp-* живут здесь, чтобы мгновенно реагировать
+   на смену темы без перерисовки попапа (без инлайн-стилей).
+   ============================================================= */
+
+/* Светлая тема (дефолт) */
+.vp-close-btn      { color: rgba(0, 0, 0, 0.45); }
+.vp-date           { color: rgba(0, 0, 0, 0.5); }
+.vp-view-link      { color: #1976d2; }
+.vp-mode--working  { color: #2e7d32; }
+.vp-mode--emergency{ color: #d32f2f; }
+.vp-mode--service  { color: #ed6c02; }
+.vp-status--online { color: #2e7d32; }
+.vp-status--offline{ color: #d32f2f; }
+.vp-event-type     { font-weight: 500; }
+.vp-event--passed  { color: #2e7d32; }
+.vp-event--failed  { color: #d32f2f; }
+.vp-event--interrupted { color: #ed6c02; }
+
+/* Тёмная тема */
+[data-theme='dark'] {
+  .vp-close-btn      { color: rgba(255, 255, 255, 0.6); }
+  .vp-date           { color: rgba(255, 255, 255, 0.5); }
+  .vp-view-link      { color: #90caf9; }
+  .vp-mode--working  { color: #66bb6a; }
+  .vp-mode--emergency{ color: #ef9a9a; }
+  .vp-mode--service  { color: #ffb74d; }
+  .vp-status--online { color: #66bb6a; }
+  .vp-status--offline{ color: #ef9a9a; }
+  .vp-event--passed  { color: #66bb6a; }
+  .vp-event--failed  { color: #ef9a9a; }
+  .vp-event--interrupted { color: #ffb74d; }
+}
+
 /* Фон под тайлами и Leaflet UI в тёмной теме (data-theme выставляет ColorModeProvider) */
 
 [data-theme='dark'] {

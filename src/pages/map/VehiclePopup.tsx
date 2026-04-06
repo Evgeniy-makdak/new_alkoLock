@@ -62,11 +62,18 @@ const isEventDataComplete = (event: VehicleEventsGroup): boolean => {
 
 const NO_DATA_RU = 'Нет данных';
 
+/** Возвращает CSS-класс для типа события (без инлайновых цветов — тема через CSS). */
+function eventTypeClass(eventType: string): string {
+  if (eventType.includes('Тестирование пройдено')) return 'vp-event--passed';
+  if (eventType.includes('Тестирование не пройдено')) return 'vp-event--failed';
+  if (eventType.includes('Тестирование прервано')) return 'vp-event--interrupted';
+  return 'vp-event--default';
+}
+
 export const VehiclePopup = ({
   event,
   labels,
   acceptLanguage,
-  getEventColor,
   formatDate,
   onClose,
   onViewAllEvents,
@@ -92,6 +99,7 @@ export const VehiclePopup = ({
 
   const closeButton = document.createElement('span');
   closeButton.innerHTML = '&times;';
+  closeButton.className = 'vp-close-btn';
   closeButton.style.position = 'absolute';
   closeButton.style.right = '4px';
   closeButton.style.top = '5px';
@@ -154,11 +162,11 @@ export const VehiclePopup = ({
   modeText.textContent = `${labels.mode}: ${displayMode}`;
 
   if (rawMode === 'Рабочий') {
-    modeText.style.color = '#2e7d32';
+    modeText.className = 'vp-mode--working';
   } else if (rawMode === 'Аварийный') {
-    modeText.style.color = '#d32f2f';
+    modeText.className = 'vp-mode--emergency';
   } else if (rawMode === 'Сервисный') {
-    modeText.style.color = '#ed6c02';
+    modeText.className = 'vp-mode--service';
   }
 
   modeInfo.appendChild(modeText);
@@ -172,7 +180,7 @@ export const VehiclePopup = ({
   statusInfo.appendChild(statusIcon);
   const statusText = document.createElement('span');
   statusText.textContent = `${labels.status}: ${deviceStatus ? labels.online : labels.offline}`;
-  statusText.style.color = deviceStatus ? '#2e7d32' : '#d32f2f';
+  statusText.className = deviceStatus ? 'vp-status--online' : 'vp-status--offline';
   statusInfo.appendChild(statusText);
 
   const deviceInfo = document.createElement('div');
@@ -248,11 +256,11 @@ export const VehiclePopup = ({
     const dateCell = document.createElement('div');
     dateCell.textContent = formatDate(ev.timestamp || '');
     dateCell.style.gridColumn = '1';
+    dateCell.className = 'vp-date';
 
     const typeCell = document.createElement('div');
     typeCell.textContent = ev.eventType || labels.unknownEvent;
-    typeCell.style.color = getEventColor(ev.eventType || '');
-    typeCell.style.fontWeight = '500';
+    typeCell.className = `${eventTypeClass(ev.eventType || '')} vp-event-type`;
     typeCell.style.gridColumn = '2';
 
     eventsTable.appendChild(dateCell);
@@ -260,7 +268,7 @@ export const VehiclePopup = ({
   });
 
   const viewEventsLink = document.createElement('div');
-  viewEventsLink.style.color = '#1976d2';
+  viewEventsLink.className = 'vp-view-link';
   viewEventsLink.style.textDecoration = 'none';
   viewEventsLink.style.marginTop = '4px';
   viewEventsLink.style.display = 'block';

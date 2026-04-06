@@ -107,7 +107,7 @@ export const SettingsPage = () => {
     try {
       setLoading(true);
       const settingsData = await SettingsApi.getAllSettings(selectedBranchId);
-      setSettings(settingsData);
+      setSettings(settingsData ?? []);
     } catch (error) {
       setNotification({
         open: true,
