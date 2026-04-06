@@ -35,12 +35,6 @@ const modalSecondaryButtonSx = {
   },
 };
 
-const modalPrimaryButtonSx = {
-  flex: 1,
-  textTransform: 'none' as const,
-  fontWeight: 500,
-};
-
 export function ReportsMobileToolbar({
   onCreateReport,
   onResetFilters,
@@ -406,11 +400,32 @@ export function ReportsMobileToolbar({
                 {t('common.clearFilters')}
               </Button>
               <Button
-                variant="contained"
-                color="primary"
+                variant="outlined"
                 disabled={isGenerating}
                 onClick={handleCreateReportFromModal}
-                sx={modalPrimaryButtonSx}>
+                sx={(theme) => ({
+                  flex: 1,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                  fontSize: '14px',
+                  letterSpacing: '0.1px',
+                  borderRadius: '10px',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.06)' : '#ffffff',
+                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.16)' : '#e0e0e0',
+                  color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.87)' : '#333333',
+                  '&:hover': {
+                    bgcolor:
+                      theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.10)' : 'rgba(0,0,0,0.04)',
+                    borderColor:
+                      theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.22)' : '#bdbdbd',
+                  },
+                  '&.Mui-disabled': {
+                    borderColor:
+                      theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : '#e0e0e0',
+                    color:
+                      theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.30)' : 'rgba(0,0,0,0.26)',
+                  },
+                })}>
                 {t('reports.createReport')}
               </Button>
             </div>
