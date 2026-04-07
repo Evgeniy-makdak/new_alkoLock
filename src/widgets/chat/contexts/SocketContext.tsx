@@ -258,6 +258,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     unreadAggregateRef.current = count;
     setUnreadCount(count);
     setDialogsUnreadCounts((prev) => {
+      // Когда есть детальные per-dialog данные (hasDetailedData=true), агрегат /user/queue/unread
+      // представляет очередь конкретного пользователя, а не суммарный счётчик одного диалога.
+      // Пример бага: диалог 83 (CLOSED) в карте с count=10; новое сообщение в диалоге 96
+      // (CLOSED, не в карте) → агрегат=1 для очереди 96, но reconcile ошибочно применял бы
+      // его к диалогу 83, обнуляя до 1. Когда hasDetailedData=true, per-dialog данные
+      // авторитетны — не трогаем карту агрегатом.
+      if (hasDetailedDataRef.current) return prev;
       const positive: { id: number; c: number }[] = [];
       prev.forEach((c, id) => {
         if (id > 0 && c > 0) positive.push({ id, c });
