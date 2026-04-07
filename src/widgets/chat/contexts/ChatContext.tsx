@@ -48,6 +48,30 @@ function buildChatMessageDedupeKey(messageData: any, dialogIdStr: string | null)
   return `d:${d}:${ca}:${t}`;
 }
 
+/**
+ * Бэк может прислать подтверждение DELIVERED/READ на те же destination, что и обычные сообщения чата.
+ * Тогда фрейм не проходит handleIncomingMessage (нет user/dialog) и не доходит до ветки /user/queue/status.
+ */
+function parseWsChatStatusReceipt(payload: any): {
+  statusRaw: string;
+  looksLikeChatPayload: boolean;
+} | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const statusRaw = payload.status != null ? String(payload.status).toUpperCase() : '';
+  const hasUuidMessage = payload.uuidMessage != null && String(payload.uuidMessage).trim() !== '';
+  if (!hasUuidMessage || !['DELIVERED', 'READ', 'SENT'].includes(statusRaw)) {
+    return null;
+  }
+  const looksLikeChatPayload =
+    payload.messageStatus === 'TO_USER' ||
+    payload.messageStatus === 'TO_OPERATOR' ||
+    (payload.text != null && String(payload.text).trim() !== '') ||
+    (Array.isArray(payload.attaches) && payload.attaches.length > 0) ||
+    (Array.isArray(payload.attachments) && payload.attachments.length > 0) ||
+    (Array.isArray(payload.pathsToAttaches) && payload.pathsToAttaches.length > 0);
+  return { statusRaw, looksLikeChatPayload };
+}
+
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
@@ -945,6 +969,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           messageData = messageData.content[0];
         }
         if (messageData) {
+          const receipt = parseWsChatStatusReceipt(messageData);
+          if (receipt) {
+            handleStatusUpdate({ ...messageData, status: receipt.statusRaw });
+            if (!receipt.looksLikeChatPayload) {
+              continue;
+            }
+          }
           await handleIncomingMessage(messageData);
         }
       }
@@ -958,16 +989,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         lmDest.startsWith('/topic/operator/messages/');
 
       if (isWsChatLastMessage) {
-        if (queued.length === 0) {
-          let messageData = lastMessage.data;
-          if (
-            messageData?.content &&
-            Array.isArray(messageData.content) &&
-            messageData.content.length > 0
-          ) {
-            messageData = messageData.content[0];
+        let messageData = lastMessage.data;
+        if (
+          messageData?.content &&
+          Array.isArray(messageData.content) &&
+          messageData.content.length > 0
+        ) {
+          messageData = messageData.content[0];
+        }
+        if (messageData) {
+          const receipt = parseWsChatStatusReceipt(messageData);
+          if (receipt) {
+            handleStatusUpdate({ ...messageData, status: receipt.statusRaw });
           }
-          if (messageData) {
+          if (queued.length === 0 && (!receipt || receipt.looksLikeChatPayload)) {
             await handleIncomingMessage(messageData);
           }
         }
