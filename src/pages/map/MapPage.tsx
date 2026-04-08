@@ -743,8 +743,7 @@ export const MapPage = () => {
     startPolling,
   } = useVehiclesTableApi(
     {
-      sortBy: 'DATE_OCCURRENT',
-      order: 'desc',
+      // sortBy/order не задаём — в getCarListURL подставится &sort=manufacturer,model,registrationNumber
       // startDate: startDate?.toISOString(),
       // endDate: endDate?.toISOString(),
       forMap: true,
