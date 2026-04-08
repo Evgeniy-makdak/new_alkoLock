@@ -24,6 +24,12 @@ interface ChatPanelProps {
   onScrollToBottomDone?: () => void;
 }
 
+function getLastOperatorIdFromDialog(d: any): number | string | undefined {
+  if (!d || typeof d !== 'object') return undefined;
+  const lo = d.lastOperator ?? d.last_operator ?? d.dialog?.lastOperator ?? d.dialog?.last_operator;
+  return lo?.id;
+}
+
 function ChatPanel({
   sessionId,
   onMinimize,
@@ -338,11 +344,12 @@ function ChatPanel({
               });
             }
 
+            const incomingLo = dialogDetails.lastOperator ?? dialogDetails.last_operator;
             updateSession(sessionId, {
               selectedDialog: {
                 ...session.selectedDialog,
                 status: dialogDetails.status,
-                lastOperator: dialogDetails.lastOperator,
+                ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
               },
             });
           }
@@ -631,7 +638,7 @@ function ChatPanel({
       const effectiveStatus = String(sel.status || '').trim();
       if (effectiveStatus !== 'CLOSED') return;
 
-      const lastOpId = sel.lastOperator?.id ?? sel.dialog?.lastOperator?.id;
+      const lastOpId = getLastOperatorIdFromDialog(sel);
       if (lastOpId == null || Number(lastOpId) !== uid) return;
 
       setIsTransferLoading(true);
@@ -785,8 +792,7 @@ function ChatPanel({
         : '0';
 
   const dialogStatusEffective = String(selectedDialog?.status || dialogStatus || '');
-  const lastOpIdForTransfer =
-    selectedDialog?.lastOperator?.id ?? selectedDialog?.dialog?.lastOperator?.id;
+  const lastOpIdForTransfer = getLastOperatorIdFromDialog(selectedDialog);
   const uidNum = authId != null ? Number(authId) : NaN;
   const canTransferDialog =
     selectedUsers.length > 0 &&

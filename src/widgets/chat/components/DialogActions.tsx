@@ -71,7 +71,8 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     }
 
     if (justAssignedRef.current && assignedDialogIdRef.current === dialogId) {
-      if (dialogData?.lastOperator?.id === currentUserId) {
+      const loId = dialogData?.lastOperator?.id ?? dialogData?.last_operator?.id;
+      if (loId != null && Number(loId) === Number(currentUserId)) {
         lastValidDialogDataRef.current = dialogData;
         justAssignedRef.current = false;
       }
@@ -83,21 +84,30 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
     const dataToUse = dialogData || lastValidDialogDataRef.current;
 
-    if (dataToUse && dataToUse.lastOperator) {
-      const operatorId = dataToUse.lastOperator.id;
+    const rootLo = dataToUse?.lastOperator ?? dataToUse?.last_operator;
+    if (dataToUse && rootLo) {
+      const operatorId = rootLo.id;
       setLastOperatorId(operatorId);
-      setIsDialogOwner(operatorId === currentUserId);
+      setIsDialogOwner(Number(operatorId) === Number(currentUserId));
 
-      if (operatorId === currentUserId) {
+      if (Number(operatorId) === Number(currentUserId)) {
         lastValidDialogDataRef.current = dataToUse;
       }
-    } else if (dataToUse && dataToUse.dialog?.lastOperator) {
-      const operatorId = dataToUse.dialog.lastOperator.id;
-      setLastOperatorId(operatorId);
-      setIsDialogOwner(operatorId === currentUserId);
+    } else if (dataToUse) {
+      const nestedLo = dataToUse.dialog?.lastOperator ?? dataToUse.dialog?.last_operator;
+      if (nestedLo) {
+        const operatorId = nestedLo.id;
+        setLastOperatorId(operatorId);
+        setIsDialogOwner(Number(operatorId) === Number(currentUserId));
 
-      if (operatorId === currentUserId) {
-        lastValidDialogDataRef.current = dataToUse;
+        if (Number(operatorId) === Number(currentUserId)) {
+          lastValidDialogDataRef.current = dataToUse;
+        }
+      } else if (dialogStatus === 'CLOSED') {
+        fetchDialogDetails();
+      } else {
+        setLastOperatorId(null);
+        setIsDialogOwner(false);
       }
     } else if (dialogStatus === 'CLOSED') {
       fetchDialogDetails();
@@ -130,13 +140,17 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
     try {
       const dialogDetails = await api.getDialogDetails(dialogId);
-      if (dialogDetails.lastOperator) {
-        const operatorId = dialogDetails.lastOperator.id;
+      const detailsLo = dialogDetails?.lastOperator ?? dialogDetails?.last_operator;
+      if (detailsLo) {
+        const operatorId = detailsLo.id;
         setLastOperatorId(operatorId);
         setIsDialogOwner(operatorId === currentUserId);
 
         if (operatorId === currentUserId) {
-          lastValidDialogDataRef.current = dialogDetails;
+          lastValidDialogDataRef.current = {
+            ...dialogDetails,
+            lastOperator: detailsLo,
+          };
         }
       } else {
         setLastOperatorId(null);
@@ -171,6 +185,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               ...response,
               lastOperator:
                 (response as any).lastOperator ??
+                (response as any).last_operator ??
                 (currentUserId
                   ? {
                       id: currentUserId,
@@ -213,6 +228,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               ...ud,
               lastOperator:
                 ud.lastOperator ??
+                ud.last_operator ??
                 (currentUserId
                   ? {
                       id: currentUserId,

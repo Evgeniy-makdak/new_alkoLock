@@ -1,9 +1,30 @@
 import { useCallback, useRef } from 'react';
 
+import { appStore } from '@shared/model/app_store/AppStore';
 import { UnreadDialog } from '@widgets/chat/api/dialogsApi';
 
 import api from '../../api';
 import { chatSessionTrace } from '../chatUnreadTrace';
+
+/** После assign текущий оператор — локер; бэкенд иногда отдаёт только last_operator или без поля. */
+function normalizeAssignedDialogResponse(response: any): any {
+  if (!response || typeof response !== 'object') return response;
+  const meName = appStore.getState().fullName;
+  const authId = appStore.getState().authId;
+  const rawLo = (response as any).lastOperator ?? (response as any).last_operator;
+  const lastOperator =
+    rawLo ??
+    (authId != null && authId !== ''
+      ? { id: authId, ...(meName ? { fullName: meName } : {}) }
+      : undefined);
+  return { ...response, lastOperator };
+}
+
+function mergeListDialogLastOperator(d: any): any {
+  if (!d || typeof d !== 'object') return d;
+  const rawLo = d.lastOperator ?? d.last_operator;
+  return rawLo != null ? { ...d, lastOperator: rawLo } : { ...d };
+}
 
 export const useChatDialogs = (
   getSession: (sessionId: string) => any,
@@ -20,13 +41,14 @@ export const useChatDialogs = (
     async (sessionId: string, userId: number): Promise<any> => {
       try {
         const response = await api.assignDialog(userId.toString());
+        const normalized = normalizeAssignedDialogResponse(response);
         updateSession(sessionId, {
-          assignedDialogId: response?.id || null,
-          selectedDialog: response || null,
+          assignedDialogId: normalized?.id || null,
+          selectedDialog: normalized || null,
           lastSendError: null,
         });
 
-        return response;
+        return normalized;
       } catch (error: any) {
         console.error('Ошибка блокировки диалога:', error);
 
@@ -38,13 +60,14 @@ export const useChatDialogs = (
             );
 
             if (userDialog) {
+              const merged = mergeListDialogLastOperator(userDialog);
               updateSession(sessionId, {
-                selectedDialog: userDialog,
+                selectedDialog: merged,
                 assignedDialogId: userDialog.id,
                 hasLoadedDialogs: true,
                 lastSendError: null,
               });
-              return userDialog;
+              return merged;
             } else {
               updateSession(sessionId, {
                 assignedDialogId: 'assigned',
