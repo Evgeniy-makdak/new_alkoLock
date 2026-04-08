@@ -508,6 +508,32 @@ export function getUserListURLToChat(
   return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&all.isActive.in=true&sort=surname,firstName,middleName`;
 }
 
+/** Операторы с правом PERMISSION_OPERATOR_CHATS_CREATE — список для передачи диалога в чате. */
+export function getChatTransferOperatorsListURL({
+  filterOptions,
+  searchQuery,
+  page,
+  limit,
+  excludeUserId,
+}: QueryOptions & { excludeUserId?: ID }) {
+  const branchId = filterOptions?.branchId;
+  const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
+
+  let queries = `any.assignment.branch.id.in=${branchId}`;
+  queries += `&any.id.in=2`;
+  queries +=
+    '&all.groupMembership.group.permissions.permission.equals=PERMISSION_OPERATOR_CHATS_CREATE';
+  queries += '&all.isActive.in=true';
+  if (excludeUserId != null && String(excludeUserId).trim() !== '') {
+    queries += `&all.id.notIn=${excludeUserId}`;
+  }
+  if (trimmedQuery) {
+    queries += `&all.match.contains=${trimmedQuery}`;
+  }
+
+  return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&sort=surname,firstName,middleName`;
+}
+
 /////////////////////////////////////////////////////////CARS API ===================================================
 
 const getSortQueryCar = (orderType: SortTypes | string, order: GridSortDirection) => {

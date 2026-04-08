@@ -10,6 +10,7 @@ import {
   getBranchListUrl,
   getCarListURL,
   getCarSwitchBranchUrl,
+  getChatTransferOperatorsListURL,
   getCreateAlkolocksURL,
   getCreateAttachmentApiURL,
   getDriverAllotmentsByBranchId,
@@ -216,6 +217,12 @@ export class UsersApi {
   static getListToChat(options: QueryOptions & { isAttachment?: boolean }, widthCars = false) {
     return getQuery<{ content: IUser[]; totalElements: number }>({
       url: getUserListURLToChat(options, widthCars),
+    });
+  }
+
+  static getListForChatTransfer(options: QueryOptions & { excludeUserId?: ID }) {
+    return getQuery<{ content: IUser[]; totalElements: number }>({
+      url: getChatTransferOperatorsListURL(options),
     });
   }
 

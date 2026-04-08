@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useState } from 'react';
 
+import { chatSessionTrace } from '../chatUnreadTrace';
 import { ChatSession } from '../types/ChatTypes';
 
 export const useChatSessions = () => {
@@ -51,6 +52,7 @@ export const useChatSessions = () => {
         isSendingMessage: false,
         lastSendError: null,
         assignedDialogId: null,
+        transferRecipientFullName: null,
         unreadDialogs: [],
         isLoadingUnreadDialogs: false,
       };
@@ -93,54 +95,83 @@ export const useChatSessions = () => {
       if (!sessionToToggle) return prev;
 
       const isCurrentlyMinimized = sessionToToggle.isMinimized;
+      const snap = (list: ChatSession[]) =>
+        list.map((s) => ({
+          id: s.id,
+          min: s.isMinimized,
+          user: s.selectedUsers?.[0],
+          dialog:
+            s.selectedDialog?.id != null
+              ? String(s.selectedDialog.id)
+              : s.assignedDialogId != null
+                ? String(s.assignedDialogId)
+                : null,
+        }));
+
+      chatSessionTrace('toggleSessionMinimize.before', {
+        sessionId,
+        expanding: isCurrentlyMinimized,
+        sessions: snap(prev),
+      });
 
       if (isCurrentlyMinimized) {
-        const currentlyExpandedSession = prev.find((s) => !s.isMinimized);
-
         setActiveSessionId(sessionId);
 
-        return prev.map((session) => {
+        /* Сворачиваем все прочие развёрнутые, иначе остаётся 2+ expanded — второе окно
+         * перекрывается карточкой и «пропадает» из превью. */
+        const next = prev.map((session) => {
           if (session.id === sessionId) {
             return { ...session, isMinimized: false };
           }
-          if (currentlyExpandedSession && session.id === currentlyExpandedSession.id) {
+          if (!session.isMinimized) {
             return { ...session, isMinimized: true };
           }
           return session;
         });
+        chatSessionTrace('toggleSessionMinimize.afterExpandFromPreview', { sessions: snap(next) });
+        return next;
       } else {
-        return prev.map((session) =>
+        const next = prev.map((session) =>
           session.id === sessionId ? { ...session, isMinimized: true } : session,
         );
+        chatSessionTrace('toggleSessionMinimize.afterMinimize', { sessions: snap(next) });
+        return next;
       }
     });
   }, []);
 
   /**
-   * Разворачивание сессии: сворачивает раскрытую, разворачивает указанную.
-   * Обе сессии остаются в массиве (swap визуального порядка).
+   * Показать только эту сессию развёрнутой: target — на передний план, остальные свернуть.
+   * Работает и для клика по превью (был свёрнут), и для починки состояния «несколько expanded».
    */
   const expandSession = useCallback((sessionId: string) => {
     setActiveSessionId(sessionId);
     setSessions((prev) => {
-      const targetSession = prev.find((s) => s.id === sessionId);
-      if (!targetSession) return prev;
+      const snap = (list: ChatSession[]) =>
+        list.map((s) => ({
+          id: s.id,
+          min: s.isMinimized,
+          user: s.selectedUsers?.[0],
+          dialog:
+            s.selectedDialog?.id != null
+              ? String(s.selectedDialog.id)
+              : s.assignedDialogId != null
+                ? String(s.assignedDialogId)
+                : null,
+        }));
 
-      const expandedSession = prev.find((s) => !s.isMinimized);
-
-      if (!targetSession.isMinimized) {
+      if (!prev.some((s) => s.id === sessionId)) {
+        chatSessionTrace('expandSession.skipMissing', { sessionId, sessions: snap(prev) });
         return prev;
       }
-
-      if (!expandedSession) {
-        return prev.map((s) => (s.id === sessionId ? { ...s, isMinimized: false } : s));
-      }
-
-      return prev.map((s) => {
+      chatSessionTrace('exclusiveExpand.before', { sessionId, sessions: snap(prev) });
+      const next = prev.map((s) => {
         if (s.id === sessionId) return { ...s, isMinimized: false };
-        if (s.id === expandedSession.id) return { ...s, isMinimized: true };
+        if (!s.isMinimized) return { ...s, isMinimized: true };
         return s;
       });
+      chatSessionTrace('exclusiveExpand.after', { sessionId, sessions: snap(next) });
+      return next;
     });
   }, []);
 
@@ -211,43 +242,56 @@ export const useChatSessions = () => {
     const keyToSessionMap = new Map<string, string>();
     const sessionsToRemove = new Set<string>();
 
-    sessions.forEach((session) => {
-      if (session.selectedUsers && session.selectedUsers.length > 0) {
-        const userId = session.selectedUsers[0];
-        const dialogId =
-          session.selectedDialog?.id ??
-          session.assignedDialogId ??
-          session.messages?.[0]?.dialog?.id ??
-          session.messages?.[0]?.dialogId;
-        const key = `${userId}_${dialogId ?? 'none'}`;
+    const dedupKeyForSession = (session: ChatSession): string | null => {
+      if (!session.selectedUsers?.length) return null;
+      const userId = session.selectedUsers[0];
+      const raw =
+        session.selectedDialog?.id ??
+        session.assignedDialogId ??
+        session.messages?.[0]?.dialog?.id ??
+        session.messages?.[0]?.dialogId;
+      const str = raw !== undefined && raw !== null ? String(raw).trim() : '';
+      const resolved = str !== '' && str !== '0' && str !== 'assigned' ? str : null;
+      /* Пока нет однозначного id диалога — не склеиваем сессии по «user_none»,
+       * иначе два свёрнутых чата / обмен местами приводит к удалению превью. */
+      if (resolved === null) return `${userId}_pending_${session.id}`;
+      return `${userId}_${resolved}`;
+    };
 
-        if (keyToSessionMap.has(key)) {
-          const existingSessionId = keyToSessionMap.get(key)!;
-          const existingSession = getSession(existingSessionId);
-          if (existingSession && session) {
-            if (!existingSession.isMinimized && session.isMinimized) {
-              sessionsToRemove.add(session.id);
-            } else if (existingSession.isMinimized && !session.isMinimized) {
+    sessions.forEach((session) => {
+      const key = dedupKeyForSession(session);
+      if (!key) return;
+
+      if (keyToSessionMap.has(key)) {
+        const existingSessionId = keyToSessionMap.get(key)!;
+        const existingSession = getSession(existingSessionId);
+        if (existingSession && session) {
+          if (!existingSession.isMinimized && session.isMinimized) {
+            sessionsToRemove.add(session.id);
+          } else if (existingSession.isMinimized && !session.isMinimized) {
+            sessionsToRemove.add(existingSessionId);
+            keyToSessionMap.set(key, session.id);
+          } else {
+            const existingCreationTime = parseInt(existingSessionId);
+            const currentCreationTime = parseInt(session.id);
+            if (currentCreationTime > existingCreationTime) {
               sessionsToRemove.add(existingSessionId);
               keyToSessionMap.set(key, session.id);
             } else {
-              const existingCreationTime = parseInt(existingSessionId);
-              const currentCreationTime = parseInt(session.id);
-              if (currentCreationTime > existingCreationTime) {
-                sessionsToRemove.add(existingSessionId);
-                keyToSessionMap.set(key, session.id);
-              } else {
-                sessionsToRemove.add(session.id);
-              }
+              sessionsToRemove.add(session.id);
             }
           }
-        } else {
-          keyToSessionMap.set(key, session.id);
         }
+      } else {
+        keyToSessionMap.set(key, session.id);
       }
     });
 
     if (sessionsToRemove.size > 0) {
+      chatSessionTrace('removeDuplicateSessions.removing', {
+        ids: Array.from(sessionsToRemove),
+        keyToSession: Object.fromEntries(keyToSessionMap),
+      });
       setSessions((prev) => prev.filter((session) => !sessionsToRemove.has(session.id)));
 
       if (activeSessionId && sessionsToRemove.has(activeSessionId)) {

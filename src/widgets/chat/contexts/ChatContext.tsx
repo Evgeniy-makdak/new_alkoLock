@@ -9,7 +9,7 @@ import {
   resolveSessionDialogIdForUnread,
 } from '../lib/resolveSessionDialogIdForUnread';
 import { useSocket } from './SocketContext';
-import { chatUnreadTrace } from './chatUnreadTrace';
+import { chatSessionTrace, chatUnreadTrace } from './chatUnreadTrace';
 import { useChatAttachments } from './hooks/useChatAttachments';
 import { useChatDialogHandlers } from './hooks/useChatDialogHandlers';
 import { useChatDialogs } from './hooks/useChatDialogs';
@@ -156,7 +156,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     loadDialogDetails,
     openUnreadDialog,
     loadingUnreadDialogsRef,
-  } = useChatDialogs(getSession, updateSession, onUnreadDialogsLoaded);
+  } = useChatDialogs(
+    getSession,
+    updateSession,
+    onUnreadDialogsLoaded,
+    /* После открытия непрочитанного — только выравнивание isMinimized; WS/UI счётчики не трогаем. */
+    expandSession,
+  );
 
   const {
     uploadAttachments,
@@ -314,6 +320,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           pendingAttachments: [],
           isSendingMessage: false,
           hasSentMessage: false,
+          transferRecipientFullName: null,
           pagination: defaultPagination,
         });
       }, 50);
@@ -1277,11 +1284,59 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const openUnreadDialogWithStatus = useCallback(
     async (sessionId: string, dialog: any) => {
-      await dialogHandlers.openUnreadDialogWithStatus(sessionId, dialog, openUnreadDialog);
+      const incomingId = dialog?.id != null ? String(dialog.id) : '';
+      const s = incomingId ? getSession(sessionId) : undefined;
+
+      const rawCur = s?.selectedDialog?.id ?? s?.assignedDialogId;
+      const cur =
+        rawCur != null &&
+        String(rawCur).trim() !== '' &&
+        String(rawCur) !== '0' &&
+        String(rawCur) !== 'assigned'
+          ? String(rawCur)
+          : '';
+
+      const hasUsers = (s?.selectedUsers?.length ?? 0) > 0;
+      const hasOtherDialogOpen = Boolean(s && incomingId && cur && cur !== incomingId && hasUsers);
+
+      let targetSessionId = sessionId;
+
+      if (hasOtherDialogOpen) {
+        const list = s!.unreadDialogs ?? [];
+        chatSessionTrace('openUnreadDialog.splitNewSession', {
+          fromSessionId: sessionId,
+          currentDialogId: cur,
+          incomingDialogId: incomingId,
+        });
+        updateSession(sessionId, {
+          isMinimized: true,
+          unreadDialogs: list.filter((d: { id: number }) => d.id !== dialog.id),
+        });
+        /* Не enhancedCreateNewSession: у него setTimeout(50) сбрасывает сессию и сотрёт диалог. */
+        targetSessionId = createNewSession();
+        refs.sessionCreationTimeRef.current.set(targetSessionId, Date.now());
+        updateSession(targetSessionId, {
+          unreadDialogs: [...list],
+        });
+      }
+
+      await dialogHandlers.openUnreadDialogWithStatus(targetSessionId, dialog, openUnreadDialog);
+
       const dialogId = dialog?.id != null ? String(dialog.id) : undefined;
-      setTimeout(() => recalculateSessionUnreadCount(sessionId, dialogId), 400);
+      setTimeout(() => recalculateSessionUnreadCount(targetSessionId, dialogId), 400);
+      if (targetSessionId !== sessionId) {
+        setTimeout(() => recalculateSessionUnreadCount(sessionId, undefined), 400);
+      }
     },
-    [dialogHandlers.openUnreadDialogWithStatus, openUnreadDialog, recalculateSessionUnreadCount],
+    [
+      getSession,
+      updateSession,
+      createNewSession,
+      dialogHandlers.openUnreadDialogWithStatus,
+      openUnreadDialog,
+      recalculateSessionUnreadCount,
+      refs.sessionCreationTimeRef,
+    ],
   );
 
   const contextValue: ChatContextType = {

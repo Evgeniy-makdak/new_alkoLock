@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Close, Minimize } from '@mui/icons-material';
-import { IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+
+import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
@@ -11,6 +14,7 @@ import styles from './ChatPanel.module.scss';
 import { DialogActions } from './DialogActions';
 import MessageFeed from './MessageFeed';
 import MessageInput from './MessageInput';
+import { TransferOperatorSelect } from './TransferOperatorSelect';
 import UsersSelect from './UsersSelect';
 
 interface ChatPanelProps {
@@ -27,6 +31,7 @@ function ChatPanel({
   onScrollToBottomDone,
 }: ChatPanelProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { dialogsUnreadCounts } = useSocket();
   const {
     closeSession,
@@ -58,6 +63,9 @@ function ChatPanel({
   const [dialogStatus, setDialogStatus] = useState<string>('');
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isDialogReallyBlocked, setIsDialogReallyBlocked] = useState(false);
+  const [isTransferLoading, setIsTransferLoading] = useState(false);
+
+  const authId = appStore((state) => state.authId);
 
   const isUpdatingRef = useRef(false);
   const prevSessionIdRef = useRef<string>(sessionId);
@@ -362,6 +370,7 @@ function ChatPanel({
           messages: [],
           hasSentMessage: false,
           isDialogEnded: false,
+          transferRecipientFullName: null,
           pagination: {
             currentPage: 0,
             totalPages: 0,
@@ -395,6 +404,7 @@ function ChatPanel({
           isDialogEnded: false,
           hasLoadedDialogs: false,
           lastSendError: null,
+          transferRecipientFullName: null,
           pagination: {
             currentPage: 0,
             totalPages: 0,
@@ -577,6 +587,7 @@ function ChatPanel({
       setDialogStatus(status);
       if (session?.selectedDialog) {
         updateSession(sessionId, {
+          ...(status === 'OPEN' ? { transferRecipientFullName: null } : {}),
           selectedDialog: {
             ...session.selectedDialog,
             status: status,
@@ -585,6 +596,88 @@ function ChatPanel({
       }
     },
     [sessionId, updateSession, session?.selectedDialog],
+  );
+
+  const handleTransferToOperator = useCallback(
+    async (targetOperatorId: number, pickedLabel: string) => {
+      const live = getSession(sessionId);
+      if (!live || isTransferLoading) return;
+
+      const sel = live.selectedDialog;
+      const rawDialogId = sel?.id;
+      const assigned = live.assignedDialogId;
+      const effectiveDialogId =
+        rawDialogId != null && String(rawDialogId) !== '0'
+          ? String(rawDialogId)
+          : assigned != null &&
+              String(assigned) !== '' &&
+              String(assigned) !== '0' &&
+              String(assigned) !== 'assigned'
+            ? String(assigned)
+            : '';
+
+      const uid = authId != null ? Number(authId) : NaN;
+      if (
+        !effectiveDialogId ||
+        effectiveDialogId === '0' ||
+        targetOperatorId === uid ||
+        !Number.isFinite(uid) ||
+        !sel ||
+        sel.id === '0'
+      ) {
+        return;
+      }
+
+      const effectiveStatus = String(sel.status || '').trim();
+      if (effectiveStatus !== 'CLOSED') return;
+
+      const lastOpId = sel.lastOperator?.id ?? sel.dialog?.lastOperator?.id;
+      if (lastOpId == null || Number(lastOpId) !== uid) return;
+
+      setIsTransferLoading(true);
+      try {
+        const statusForTransfer = effectiveStatus || 'ACTIVE';
+        const updated = await api.transferDialog(
+          effectiveDialogId,
+          targetOperatorId,
+          statusForTransfer,
+        );
+
+        const sessionNow = getSession(sessionId);
+        const baseDialog = sessionNow?.selectedDialog || {};
+        const mergedDialog =
+          updated && typeof updated === 'object'
+            ? {
+                ...baseDialog,
+                ...updated,
+                lastOperator: (updated as any).lastOperator ??
+                  (updated as any).dialog?.lastOperator ?? { id: targetOperatorId },
+              }
+            : {
+                ...baseDialog,
+                lastOperator: { id: targetOperatorId },
+              };
+
+        const lo = mergedDialog.lastOperator as
+          | { fullName?: string; firstName?: string; surname?: string }
+          | undefined;
+        const recipientName =
+          lo?.fullName || [lo?.firstName, lo?.surname].filter(Boolean).join(' ') || pickedLabel;
+
+        updateSession(sessionId, {
+          selectedDialog: mergedDialog as any,
+          assignedDialogId: mergedDialog.id != null ? String(mergedDialog.id) : effectiveDialogId,
+          hasLoadedDialogs: true,
+          lastSendError: null,
+          transferRecipientFullName: recipientName || null,
+        });
+      } catch (error) {
+        console.error('Ошибка передачи диалога:', error);
+      } finally {
+        setIsTransferLoading(false);
+      }
+    },
+    [isTransferLoading, authId, sessionId, getSession, updateSession],
   );
 
   const handleMarkMessagesAsRead = useCallback(
@@ -628,6 +721,7 @@ function ChatPanel({
     isSendingMessage,
     lastSendError,
     assignedDialogId,
+    transferRecipientFullName = null,
   } = session;
 
   const activeDialogNumericId =
@@ -673,7 +767,49 @@ function ChatPanel({
     );
   }
 
-  const hasExistingDialog = selectedDialog && selectedDialog.id !== '0';
+  const hasExistingDialog =
+    (selectedDialog?.id != null && String(selectedDialog.id) !== '0') ||
+    (assignedDialogId != null &&
+      String(assignedDialogId) !== '' &&
+      String(assignedDialogId) !== '0' &&
+      String(assignedDialogId) !== 'assigned');
+
+  /** id диалога для действий (в т.ч. transfer), если в selectedDialog ещё не проставлен */
+  const resolvedDialogIdForActions =
+    selectedDialog?.id != null && String(selectedDialog.id) !== '0'
+      ? String(selectedDialog.id)
+      : assignedDialogId != null &&
+          String(assignedDialogId) !== '' &&
+          String(assignedDialogId) !== 'assigned'
+        ? String(assignedDialogId)
+        : '0';
+
+  const dialogStatusEffective = String(selectedDialog?.status || dialogStatus || '');
+  const lastOpIdForTransfer =
+    selectedDialog?.lastOperator?.id ?? selectedDialog?.dialog?.lastOperator?.id;
+  const uidNum = authId != null ? Number(authId) : NaN;
+  const canTransferDialog =
+    selectedUsers.length > 0 &&
+    !!hasExistingDialog &&
+    dialogStatusEffective === 'CLOSED' &&
+    lastOpIdForTransfer != null &&
+    Number.isFinite(uidNum) &&
+    Number(lastOpIdForTransfer) === uidNum;
+
+  const showTransferSection =
+    selectedUsers.length > 0 &&
+    resolvedDialogIdForActions !== '0' &&
+    dialogStatusEffective === 'CLOSED';
+
+  const blockingOperatorLo =
+    selectedDialog?.lastOperator ??
+    selectedDialog?.dialog?.lastOperator ??
+    selectedDialog?.last_operator;
+  const blockingOperatorDisplay =
+    blockingOperatorLo &&
+    (blockingOperatorLo.fullName ||
+      [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
+      (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
@@ -710,6 +846,47 @@ function ChatPanel({
           onCheckExistingSession={handleCheckExistingSession}
           displayUserName={getDisplayUserName()}
         />
+        {showTransferSection ? (
+          <div className={styles.transferRow}>
+            {transferRecipientFullName && !canTransferDialog ? (
+              <Box
+                sx={{
+                  mt: 1.5,
+                  p: 1.25,
+                  borderRadius: 1,
+                  border: '1px solid',
+                  borderColor:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(144, 202, 249, 0.45)'
+                      : theme.palette.primary.light,
+                  bgcolor:
+                    theme.palette.mode === 'dark'
+                      ? 'rgba(144, 202, 249, 0.1)'
+                      : 'rgba(25, 118, 210, 0.08)',
+                }}>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    lineHeight: 1.4,
+                    color:
+                      theme.palette.mode === 'dark'
+                        ? theme.palette.primary.light
+                        : theme.palette.primary.dark,
+                  }}>
+                  {t('chat.dialogTransferredToOperator', {
+                    fullName: transferRecipientFullName,
+                  })}
+                </Typography>
+              </Box>
+            ) : (
+              <TransferOperatorSelect
+                disabled={isTransferLoading || !canTransferDialog}
+                selectionResetKey={`${resolvedDialogIdForActions}-${selectedUsers[0] ?? ''}`}
+                onOperatorSelected={(id, label) => void handleTransferToOperator(id, label)}
+              />
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className={styles.dialogActionsContainer}>
@@ -717,7 +894,7 @@ function ChatPanel({
           <DialogActions
             sessionId={sessionId}
             userId={selectedUsers[0]}
-            dialogId={selectedDialog?.id || '0'}
+            dialogId={resolvedDialogIdForActions}
             hasExistingDialog={hasExistingDialog}
             onDialogStatusChange={updateDialogStatus}
             dialogData={selectedDialog}
@@ -768,6 +945,9 @@ function ChatPanel({
           lastSendError={lastSendError}
           dialogStatus={dialogStatus}
           isDialogBlockedByOtherOperator={isDialogReallyBlocked}
+          blockingOperatorLabel={
+            isDialogReallyBlocked ? blockingOperatorDisplay || undefined : undefined
+          }
         />
       </div>
     </div>

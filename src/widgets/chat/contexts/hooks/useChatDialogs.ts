@@ -3,11 +3,14 @@ import { useCallback, useRef } from 'react';
 import { UnreadDialog } from '@widgets/chat/api/dialogsApi';
 
 import api from '../../api';
+import { chatSessionTrace } from '../chatUnreadTrace';
 
 export const useChatDialogs = (
   getSession: (sessionId: string) => any,
   updateSession: (sessionId: string, updates: any) => void,
   onUnreadDialogsLoaded?: (dialogs: UnreadDialog[]) => void,
+  /** После открытия диалога — одна развёрнутая сессия (как при клике по превью чата). */
+  ensureExclusiveExpanded?: (sessionId: string) => void,
 ) => {
   const loadingUnreadDialogsRef = useRef<Set<string>>(new Set());
   const loadDialogInProgressRef = useRef<Set<string>>(new Set());
@@ -146,13 +149,19 @@ export const useChatDialogs = (
             hasMoreMessages: false,
           },
         });
+        chatSessionTrace('openUnreadDialog.patched', {
+          sessionId,
+          dialogId,
+          ownerId: dialog.owner?.id,
+        });
+        ensureExclusiveExpanded?.(sessionId);
       } catch (error) {
         console.error('Ошибка открытия диалога:', error);
       } finally {
         setTimeout(() => dialogLoadingRef.current.delete(dialogId), 1000);
       }
     },
-    [getSession, updateSession],
+    [getSession, updateSession, ensureExclusiveExpanded],
   );
 
   return {

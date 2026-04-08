@@ -26,12 +26,17 @@ import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
 import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
-import { chatUnreadTrace, unreadMapToRecord } from '../contexts/chatUnreadTrace';
+import { chatSessionTrace, chatUnreadTrace, unreadMapToRecord } from '../contexts/chatUnreadTrace';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
 const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
+
+/** Геометрия `.chatFooter` (десктоп): отступ справа + ширина; превью ставим левее развёрнутого окна с зазором. */
+const CHAT_FOOTER_RIGHT = 80;
+const CHAT_FOOTER_WIDTH = 520;
+const MINIMIZED_PREVIEW_RIGHT = CHAT_FOOTER_RIGHT + CHAT_FOOTER_WIDTH + 72;
 
 function normalizeSessionDialogId(raw: unknown): number | null {
   if (raw === undefined || raw === null || raw === 'assigned') return null;
@@ -333,6 +338,24 @@ const ChatContainer = () => {
 
   const handleExpandSession = useCallback(
     (sessionId: string) => {
+      const snap = sessions.map((s) => ({
+        id: s.id,
+        min: s.isMinimized,
+        user: s.selectedUsers?.[0],
+        dialog:
+          s.selectedDialog?.id != null
+            ? String(s.selectedDialog.id)
+            : s.assignedDialogId != null
+              ? String(s.assignedDialogId)
+              : null,
+        unread: s.unreadCount,
+      }));
+      chatSessionTrace('ChatFooter.handleExpandSession', {
+        targetSessionId: sessionId,
+        sessions: snap,
+        expandedIds: sessions.filter((s) => !s.isMinimized).map((s) => s.id),
+        minimizedIds: sessions.filter((s) => s.isMinimized).map((s) => s.id),
+      });
       setJustExpandedSessionId(sessionId);
       expandSession(sessionId);
     },
@@ -633,7 +656,7 @@ const ChatContainer = () => {
               className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
               style={{
                 bottom: `${120 + index * 60}px`,
-                right: '540px',
+                right: `${MINIMIZED_PREVIEW_RIGHT}px`,
                 zIndex: 1000 - index,
               }}
               onClick={() => handleExpandSession(session.id)}>
@@ -669,7 +692,7 @@ const ChatContainer = () => {
               }`}
               style={{
                 bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
-                right: '540px',
+                right: `${MINIMIZED_PREVIEW_RIGHT}px`,
                 zIndex: 1000 - (minimizedSessions.length + index),
               }}
               onClick={async () => {

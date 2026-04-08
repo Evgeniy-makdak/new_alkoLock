@@ -233,8 +233,22 @@ const completeDialog = async (dialogId: string) => {
   return response?.data;
 };
 
-const transferDialog = async (transferData: any) => {
-  const response = await DialogsApi.transferDialog(transferData);
+const transferDialog = async (
+  dialogId: string | number,
+  operatorId: number,
+  dialogStatus: string,
+) => {
+  const d = typeof dialogId === 'string' ? parseInt(dialogId, 10) : Number(dialogId);
+  const o = Number(operatorId);
+  const status = String(dialogStatus ?? '').trim() || 'ACTIVE';
+  if (!Number.isFinite(d) || !Number.isFinite(o)) {
+    throw new Error('transferDialog: invalid dialogId or operatorId');
+  }
+  const response = await DialogsApi.transferDialog({
+    dialogId: d,
+    operatorId: o,
+    dialogStatus: status,
+  });
   return response?.data;
 };
 
