@@ -17,3 +17,27 @@
   border-color: rgba(255, 255, 255, 0.12);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
 }
+
+/** Компактная скорость над маркером (только при движении, км/ч крупной цифрой). */
+.map-marker-speed-chip {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(33, 33, 33, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
+}
+
+[data-theme='dark'] .map-marker-speed-chip {
+  background: rgba(80, 80, 80, 0.55);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.95);
+}

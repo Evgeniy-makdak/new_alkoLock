@@ -30,6 +30,8 @@ type VehiclePopupProps = {
   onClose: () => void;
   onViewAllEvents: (markerCoords?: { lat: number; lng: number }) => void;
   deviceStatus?: boolean;
+  /** Уже локализованная строка средней скорости (км/ч), если есть данные полинга координат. */
+  speedLine?: string;
   key?: string;
 };
 
@@ -78,6 +80,7 @@ export const VehiclePopup = ({
   onClose,
   onViewAllEvents,
   deviceStatus,
+  speedLine,
   key,
 }: VehiclePopupProps) => {
   // Проверяем полноту данных - если данные неполные, возвращаем null
@@ -300,6 +303,13 @@ export const VehiclePopup = ({
   infoContainer.appendChild(deviceInfo);
   infoContainer.appendChild(modeInfo);
   infoContainer.appendChild(statusInfo);
+  if (speedLine && speedLine.trim() !== '') {
+    const speedInfo = document.createElement('div');
+    speedInfo.style.marginBottom = '6px';
+    speedInfo.style.color = '#424242';
+    speedInfo.textContent = speedLine;
+    infoContainer.appendChild(speedInfo);
+  }
   popupContent.appendChild(infoContainer);
   popupContent.appendChild(addressInfo);
   popupContent.appendChild(eventsTable);

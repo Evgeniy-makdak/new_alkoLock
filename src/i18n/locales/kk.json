@@ -133,7 +133,7 @@
     "titleProduct": "«Алкозамок-М СМАРТ»",
     "enter": "Кіру",
     "resetPassword": "Құпия сөзді қалпына келтіру",
-    "copyright": "© 2009-{{year}} «Лазерные системы» АҚ. Барлық құқықтар қорғалған",
+    "copyright": "© 2024-{{year}} «Лазерные системы» АҚ. Барлық құқықтар қорғалған",
     "resetPasswordTitle": "Құпия сөзді қалпына келтіру",
     "resetPasswordDescription": "Жүйеде тіркелген пайдаланушының email-ін енгізіңіз — құпия сөзді қалпына келтіру үшін растау коды жіберіледі.",
     "send": "Жіберу",
@@ -408,7 +408,8 @@
       "noCoordinates": "Координаттар көрсетілмеген",
       "unknownEvent": "Белгісіз оқиға",
       "viewAllEvents": "Барлық оқиғаларды көру",
-      "eventType": "Оқиға түрі"
+      "eventType": "Оқиға түрі",
+      "avgSpeed": "Орташа жылдамдық: {{kmh}} км/сағ"
     },
     "markerTooltipMode": "Режим",
     "eventDetails": {
@@ -550,8 +551,6 @@
     "dialogTitleFallback": "Пайдаланушымен диалог",
     "minimizeDialog": "Диалогты жию",
     "closeDialog": "Диалогты жабу",
-    "minimizedListTooltip": "Жинақталған диалогтар және хабарламалар",
-    "minimizedListTitle": "Жинақталған диалогтар",
     "usersLabel": "Пайдаланушылар",
     "searchUsersPlaceholder": "Пайдаланушыларды іздеу...",
     "usersNotFound": "Пайдаланушылар табылмады",

@@ -134,7 +134,7 @@
     "titleProduct": "«Alcolock-M SMART»",
     "enter": "Sign in",
     "resetPassword": "Reset password",
-    "copyright": "© 2009-{{year}} JSC «Laser Systems». All rights reserved",
+    "copyright": "© 2024-{{year}} JSC «Laser Systems». All rights reserved",
     "resetPasswordTitle": "Password recovery",
     "resetPasswordDescription": "Enter the email of a user registered in the system to receive a confirmation code for password recovery.",
     "send": "Send",
@@ -409,7 +409,8 @@
       "noCoordinates": "Coordinates not specified",
       "unknownEvent": "Unknown event",
       "viewAllEvents": "View all events",
-      "eventType": "Event type"
+      "eventType": "Event type",
+      "avgSpeed": "Average speed: {{kmh}} km/h"
     },
     "markerTooltipMode": "Mode",
     "eventDetails": {
@@ -552,8 +553,6 @@
     "dialogTitleFallback": "Dialog with user",
     "minimizeDialog": "Minimize dialog",
     "closeDialog": "Close dialog",
-    "minimizedListTooltip": "Minimized dialogs and notifications",
-    "minimizedListTitle": "Minimized dialogs",
     "usersLabel": "Users",
     "searchUsersPlaceholder": "Search users...",
     "usersNotFound": "No users found",

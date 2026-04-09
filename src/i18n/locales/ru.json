@@ -134,7 +134,7 @@
     "titleProduct": "«Алкозамок-М СМАРТ»",
     "enter": "Вход",
     "resetPassword": "Восстановить пароль",
-    "copyright": "© 2009-{{year}} АО «Лазерные системы». Все права защищены",
+    "copyright": "© 2024-{{year}} АО «Лазерные системы». Все права защищены",
     "resetPasswordTitle": "Восстановление пароля",
     "resetPasswordDescription": "Введите email пользователя, зарегистрированного в системе, для отправки кода подтверждения на восстановление пароля.",
     "send": "Отправить",
@@ -317,7 +317,8 @@
       "noCoordinates": "Координаты не указаны",
       "unknownEvent": "Неизвестное событие",
       "viewAllEvents": "Посмотреть все события",
-      "eventType": "Тип события"
+      "eventType": "Тип события",
+      "avgSpeed": "Средняя скорость: {{kmh}} км/ч"
     },
     "markerTooltipMode": "Режим",
     "eventDetails": {
@@ -552,8 +553,6 @@
     "dialogTitleFallback": "Диалог с пользователем",
     "minimizeDialog": "Свернуть диалог",
     "closeDialog": "Закрыть диалог",
-    "minimizedListTooltip": "Свёрнутые диалоги и уведомления",
-    "minimizedListTitle": "Свёрнутые диалоги",
     "usersLabel": "Пользователи",
     "searchUsersPlaceholder": "Поиск пользователей...",
     "usersNotFound": "Пользователи не найдены",

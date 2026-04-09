@@ -17,6 +17,8 @@ import { VehicleEventsGroup } from './types';
 type MapMarkersProps = {
   map: L.Map | null;
   events: VehicleEventsGroup[];
+  /** Оценочная средняя скорость (км/ч) по смене координат между опросами api/vehicles. */
+  vehicleSpeedsKmh?: Record<string, number>;
   numberedMode?: boolean;
   listItemClickedVehicleId?: string | null;
   onListItemClickedProcessed?: () => void;
@@ -37,6 +39,7 @@ type MapMarkersProps = {
 export const MapMarkers = ({
   map,
   events,
+  vehicleSpeedsKmh = {},
   numberedMode = false,
   listItemClickedVehicleId = null,
   onListItemClickedProcessed,
@@ -137,11 +140,14 @@ export const MapMarkers = ({
     return require(`./images/${normalizedType}/${normalizedType}_${colorForPath}.svg`);
   };
 
-  const getIconDimensions = () => {
+  const SPEED_CHIP_ABOVE_MARKER_PX = 22;
+
+  const getIconDimensions = (withSpeedChip = false) => {
     const PIN_TIP_HEIGHT = 10;
     const circleW = 64;
     const circleH = 56;
-    const h = circleH + PIN_TIP_HEIGHT;
+    const chipH = withSpeedChip ? SPEED_CHIP_ABOVE_MARKER_PX : 0;
+    const h = chipH + circleH + PIN_TIP_HEIGHT;
     return { size: [circleW, h] as [number, number], anchor: [circleW / 2, h] as [number, number] };
   };
 
@@ -149,6 +155,7 @@ export const MapMarkers = ({
     mode?: string,
     vehicleType?: string,
     vehicleColor?: string,
+    speedChip?: { value: number; title: string } | null,
   ): HTMLDivElement => {
     const typeLower = vehicleType?.toLowerCase() || '';
     const hasLabel = typeLower === 'taxi' || typeLower === 'shared' || typeLower === 'other';
@@ -179,6 +186,14 @@ export const MapMarkers = ({
     iconContainer.style.height = '56px';
     iconContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
     iconContainer.style.background = 'rgba(255,255,255,0.95)';
+
+    if (speedChip && speedChip.value > 0) {
+      const chip = document.createElement('div');
+      chip.className = 'map-marker-speed-chip';
+      chip.textContent = String(speedChip.value);
+      chip.setAttribute('title', speedChip.title);
+      iconElement.appendChild(chip);
+    }
 
     const iconPath = getVehicleIconPath(vehicleType, vehicleColor);
     const iconSize = hasLabel ? 28 : 20;
@@ -382,7 +397,7 @@ export const MapMarkers = ({
     return outer;
   };
 
-  const getNumberedIconDimensions = (registrationNumber?: string) => {
+  const getNumberedIconDimensions = (registrationNumber?: string, withSpeedChip = false) => {
     const { firstLetter, digits, lastLetters, region } = formatPlateParts(registrationNumber || '');
     const innerHeight = 32;
     const rightWidth = 38 + Math.max(0, (region.length - 2) * 8);
@@ -394,7 +409,9 @@ export const MapMarkers = ({
     const padding = 4;
     const borderWidth = 2;
     const width = innerWidth + padding * 2 + borderWidth * 2;
-    const height = innerHeight + padding * 2 + borderWidth * 2;
+    const plateHeight = innerHeight + padding * 2 + borderWidth * 2;
+    const chipH = withSpeedChip ? SPEED_CHIP_ABOVE_MARKER_PX : 0;
+    const height = chipH + plateHeight;
     return {
       size: [width, height] as [number, number],
       anchor: [width / 2, height] as [number, number],
@@ -427,6 +444,19 @@ export const MapMarkers = ({
     [dateLocale, t],
   );
 
+  const vehicleSpeedsRef = useRef<Record<string, number>>({});
+  vehicleSpeedsRef.current = vehicleSpeedsKmh;
+
+  const formatSpeedLine = useCallback(
+    (vid: string | null | undefined) => {
+      if (!vid) return undefined;
+      const raw = vehicleSpeedsRef.current[vid];
+      const kmh = raw != null && Number.isFinite(raw) ? raw : 0;
+      return t('map.popup.avgSpeed', { kmh: Math.round(kmh) });
+    },
+    [t],
+  );
+
   /** Актуально для колбэка setInterval опроса статуса (замыкание иначе держит локаль с момента открытия попапа). */
   const popupI18nRef = useRef<{
     labels: VehiclePopupLabels;
@@ -434,18 +464,21 @@ export const MapMarkers = ({
     formatDate: (dateString: string) => string;
     getEventColor: (eventType: string) => string;
     vehicleModes: Record<string, string | undefined>;
+    formatSpeedLine: (vid: string | null | undefined) => string | undefined;
   }>({
     labels: vehiclePopupLabels,
     acceptLanguage: i18n.language,
     formatDate,
     getEventColor,
     vehicleModes,
+    formatSpeedLine,
   });
   popupI18nRef.current.labels = vehiclePopupLabels;
   popupI18nRef.current.acceptLanguage = i18n.language;
   popupI18nRef.current.formatDate = formatDate;
   popupI18nRef.current.getEventColor = getEventColor;
   popupI18nRef.current.vehicleModes = vehicleModes;
+  popupI18nRef.current.formatSpeedLine = formatSpeedLine;
 
   const getDeviceStatus = async (
     deviceId: string,
@@ -594,6 +627,7 @@ export const MapMarkers = ({
             setSelectedVehicleId(vehicleId || null);
           },
           deviceStatus,
+          speedLine: formatSpeedLine(vehicleId),
           key: `popup-${vehicleId}-${Date.now()}`,
         }),
       );
@@ -707,6 +741,7 @@ export const MapMarkers = ({
                 setSelectedVehicleId(currentVehicleId || null);
               },
               deviceStatus: refreshed,
+              speedLine: i18nSnap.formatSpeedLine(currentVehicleId || ''),
               key: `popup-${currentVehicleId}-${Date.now()}`,
             }),
           );
@@ -727,94 +762,106 @@ export const MapMarkers = ({
       formatDate,
       getEventColor,
       onViewAllEventsWithCoords,
+      formatSpeedLine,
     ],
   );
 
-  const refreshOpenPopup = useCallback(() => {
-    if (!popupRef.current || !popupDataRef.current) return;
+  const refreshOpenPopup = useCallback(
+    (options?: { speedOnly?: boolean }) => {
+      if (!popupRef.current || !popupDataRef.current) return;
 
-    const vehicleId = popupDataRef.current.vehicle?.registrationNumber;
-    if (!vehicleId) return;
+      const vehicleId = popupDataRef.current.vehicle?.registrationNumber;
+      if (!vehicleId) return;
 
-    const modeFromEvent =
-      popupDataRef.current.vehicle?.monitoringDevice?.mode ||
-      popupDataRef.current.events[0]?.action?.device?.mode;
-    const currentMode = modeFromEvent ?? vehicleModes[vehicleId];
-    const marker = markersRef.current.find(
-      (m) => (m as any)._event?.vehicle?.registrationNumber === vehicleId,
-    );
-    const markerCoords = marker?.getLatLng();
+      const modeFromEvent =
+        popupDataRef.current.vehicle?.monitoringDevice?.mode ||
+        popupDataRef.current.events[0]?.action?.device?.mode;
+      const currentMode = modeFromEvent ?? vehicleModes[vehicleId];
+      const marker = markersRef.current.find(
+        (m) => (m as any)._event?.vehicle?.registrationNumber === vehicleId,
+      );
+      const markerCoords = marker?.getLatLng();
 
-    popupDataRef.current = {
-      ...popupDataRef.current,
-      mode: currentMode,
-      vehicle: {
-        ...popupDataRef.current.vehicle,
-        monitoringDevice: {
-          ...popupDataRef.current.vehicle?.monitoringDevice,
-          mode: currentMode,
-        },
-      },
-    };
-
-    const resolvedDeviceId =
-      (popupDataRef.current.vehicle?.monitoringDevice as any)?.id ||
-      popupDataRef.current.events.find((ev) => ev?.action?.device?.id)?.action?.device?.id ||
-      popupDataRef.current.events[0]?.action?.device?.id;
-
-    const updatePopupContent = (deviceStatus: boolean) => {
-      popupRef.current?.setContent(
-        VehiclePopup({
-          event: {
-            vehicle: popupDataRef.current!.vehicle,
-            events: popupDataRef.current!.events,
-            latitude: markerCoords?.lat ?? popupDataRef.current!.latitude,
-            longitude: markerCoords?.lng ?? popupDataRef.current!.longitude,
+      popupDataRef.current = {
+        ...popupDataRef.current,
+        mode: currentMode,
+        vehicle: {
+          ...popupDataRef.current.vehicle,
+          monitoringDevice: {
+            ...popupDataRef.current.vehicle?.monitoringDevice,
             mode: currentMode,
           },
-          labels: vehiclePopupLabels,
-          acceptLanguage: i18n.language,
-          getEventColor,
-          formatDate,
-          onClose: () => {
-            popupRef.current?.remove();
-            setOpenedPopupVehicleId(null);
-            setSelectedVehicleId(null);
-            popupRef.current = null;
-            pendingPopupRef.current = null;
-            popupDataRef.current = null;
-            if (deviceStatusIntervalRef.current !== null) {
-              window.clearInterval(deviceStatusIntervalRef.current);
-              deviceStatusIntervalRef.current = null;
-            }
-            onCloseAllPanels?.();
-          },
-          onViewAllEvents: (coords) => {
-            if (coords) onViewAllEventsWithCoords?.(vehicleId, coords);
-            setSelectedVehicleId(vehicleId || null);
-          },
-          deviceStatus,
-          key: `popup-${vehicleId}-${Date.now()}`,
-        }),
-      );
-    };
+        },
+      };
 
-    if (resolvedDeviceId) {
-      getDeviceStatus(String(resolvedDeviceId), { force: true }).then(updatePopupContent);
-    } else {
-      updatePopupContent(false);
-    }
-  }, [
-    vehicleModes,
-    setOpenedPopupVehicleId,
-    setSelectedVehicleId,
-    onCloseAllPanels,
-    onViewAllEventsWithCoords,
-    vehiclePopupLabels,
-    i18n.language,
-    formatDate,
-    getEventColor,
-  ]);
+      const resolvedDeviceId =
+        (popupDataRef.current.vehicle?.monitoringDevice as any)?.id ||
+        popupDataRef.current.events.find((ev) => ev?.action?.device?.id)?.action?.device?.id ||
+        popupDataRef.current.events[0]?.action?.device?.id;
+
+      const updatePopupContent = (deviceStatus: boolean) => {
+        popupRef.current?.setContent(
+          VehiclePopup({
+            event: {
+              vehicle: popupDataRef.current!.vehicle,
+              events: popupDataRef.current!.events,
+              latitude: markerCoords?.lat ?? popupDataRef.current!.latitude,
+              longitude: markerCoords?.lng ?? popupDataRef.current!.longitude,
+              mode: currentMode,
+            },
+            labels: vehiclePopupLabels,
+            acceptLanguage: i18n.language,
+            getEventColor,
+            formatDate,
+            onClose: () => {
+              popupRef.current?.remove();
+              setOpenedPopupVehicleId(null);
+              setSelectedVehicleId(null);
+              popupRef.current = null;
+              pendingPopupRef.current = null;
+              popupDataRef.current = null;
+              if (deviceStatusIntervalRef.current !== null) {
+                window.clearInterval(deviceStatusIntervalRef.current);
+                deviceStatusIntervalRef.current = null;
+              }
+              onCloseAllPanels?.();
+            },
+            onViewAllEvents: (coords) => {
+              if (coords) onViewAllEventsWithCoords?.(vehicleId, coords);
+              setSelectedVehicleId(vehicleId || null);
+            },
+            deviceStatus,
+            speedLine: formatSpeedLine(vehicleId),
+            key: `popup-${vehicleId}-${Date.now()}`,
+          }),
+        );
+      };
+
+      if (options?.speedOnly === true) {
+        const cached = lastKnownDeviceStatusByVehicleRef.current[vehicleId] ?? false;
+        updatePopupContent(cached);
+        return;
+      }
+
+      if (resolvedDeviceId) {
+        getDeviceStatus(String(resolvedDeviceId), { force: true }).then(updatePopupContent);
+      } else {
+        updatePopupContent(false);
+      }
+    },
+    [
+      vehicleModes,
+      setOpenedPopupVehicleId,
+      setSelectedVehicleId,
+      onCloseAllPanels,
+      onViewAllEventsWithCoords,
+      vehiclePopupLabels,
+      i18n.language,
+      formatDate,
+      getEventColor,
+      formatSpeedLine,
+    ],
+  );
 
   /** Leaflet-попап — отдельный DOM; при смене языка пересобираем контент (подписи, Nominatim). */
   useEffect(() => {
@@ -823,6 +870,11 @@ export const MapMarkers = ({
     // только i18n.language: не привязываем refreshOpenPopup (иначе лишние обновления при vehicleModes и т.д.)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i18n.language]);
+
+  /** Опрос /vehicles обновляет скорость — перерисовка попапа без повторного getDeviceStatus. */
+  useEffect(() => {
+    refreshOpenPopup({ speedOnly: true });
+  }, [vehicleSpeedsKmh, refreshOpenPopup]);
 
   useEffect(() => {
     if (!map) return;
@@ -981,20 +1033,49 @@ export const MapMarkers = ({
       }
     });
 
+    const getSpeedChipForMarker = (vehicleId: string) => {
+      const raw = vehicleSpeedsKmh[vehicleId];
+      if (raw == null || !Number.isFinite(raw)) return null;
+      const kmh = Math.round(raw);
+      if (kmh <= 0) return null;
+      return {
+        value: kmh,
+        title: t('map.popup.avgSpeed', { kmh }),
+      };
+    };
+
     const getIconForEvent = (vehicleId: string, newEvent: VehicleEventsGroup, newMode?: string) => {
+      const chip = getSpeedChipForMarker(vehicleId);
       if (numberedMode) {
         const isSelected = vehicleId === openedPopupVehicleId;
-        const dims = getNumberedIconDimensions(vehicleId);
+        const dims = getNumberedIconDimensions(vehicleId, chip != null);
+        const plateEl = createRegistrationNumberIconElement(vehicleId, isSelected);
+        let html: string;
+        if (chip) {
+          const wrap = document.createElement('div');
+          wrap.style.display = 'flex';
+          wrap.style.flexDirection = 'column';
+          wrap.style.alignItems = 'center';
+          const chipEl = document.createElement('div');
+          chipEl.className = 'map-marker-speed-chip';
+          chipEl.textContent = String(chip.value);
+          chipEl.setAttribute('title', chip.title);
+          wrap.appendChild(chipEl);
+          wrap.appendChild(plateEl);
+          html = wrap.outerHTML;
+        } else {
+          html = plateEl.outerHTML;
+        }
         return L.divIcon({
-          html: createRegistrationNumberIconElement(vehicleId, isSelected).outerHTML,
+          html,
           iconSize: dims.size,
           iconAnchor: dims.anchor,
           className: 'custom-car-icon',
         });
       }
-      const dims = getIconDimensions();
+      const dims = getIconDimensions(chip != null);
       return L.divIcon({
-        html: createCarIconElement(newMode, newEvent.vehicle?.type, newEvent.vehicle?.color)
+        html: createCarIconElement(newMode, newEvent.vehicle?.type, newEvent.vehicle?.color, chip)
           .outerHTML,
         iconSize: dims.size,
         iconAnchor: dims.anchor,
@@ -1049,13 +1130,21 @@ export const MapMarkers = ({
           }
 
           const isSelected = vehicleId === openedPopupVehicleId;
+          const rawSp = vehicleSpeedsKmh[vehicleId];
+          const chipRound =
+            rawSp != null && Number.isFinite(rawSp) && Math.round(rawSp) > 0
+              ? Math.round(rawSp)
+              : 0;
+          const prevChipRound = (marker as any)._speedChipRound ?? 0;
+          const speedChipChanged = chipRound !== prevChipRound;
           const iconChanged =
             (marker as any)._numberedMode !== numberedMode ||
             (!numberedMode && currentMode !== newMode) ||
             (numberedMode && (marker as any)._isSelected !== isSelected);
-          if (iconChanged) {
+          if (iconChanged || speedChipChanged) {
             (marker as any)._isSelected = isSelected;
             (marker as any)._numberedMode = numberedMode;
+            (marker as any)._speedChipRound = chipRound;
             const newIcon = getIconForEvent(vehicleId, mergedEvent, newMode);
             marker.setIcon(newIcon);
             (marker as any)._currentMode = newMode;
@@ -1075,6 +1164,11 @@ export const MapMarkers = ({
           line2.textContent = `${t('map.markerTooltipMode')}: ${newMode || t('map.popup.noData')}`;
           tooltipContent.appendChild(line1);
           tooltipContent.appendChild(line2);
+          const line3 = document.createElement('div');
+          const kmhHint = vehicleSpeedsKmh[vehicleId];
+          const kmhDisp = kmhHint != null && Number.isFinite(kmhHint) ? kmhHint : 0;
+          line3.textContent = t('map.popup.avgSpeed', { kmh: Math.round(kmhDisp) });
+          tooltipContent.appendChild(line3);
 
           marker.unbindTooltip();
           marker.bindTooltip(tooltipContent, {
@@ -1137,6 +1231,11 @@ export const MapMarkers = ({
         icon: getIconForEvent(vehicleId, event, deviceMode),
       }).addTo(map);
 
+      const rawNew = vehicleSpeedsKmh[vehicleId];
+      (marker as any)._speedChipRound =
+        rawNew != null && Number.isFinite(rawNew) && Math.round(rawNew) > 0
+          ? Math.round(rawNew)
+          : 0;
       (marker as any)._event = event;
       (marker as any)._currentMode = deviceMode;
       (marker as any)._numberedMode = numberedMode;
@@ -1153,6 +1252,11 @@ export const MapMarkers = ({
       line2.textContent = `${t('map.markerTooltipMode')}: ${deviceMode || t('map.popup.noData')}`;
       tooltipContent.appendChild(line1);
       tooltipContent.appendChild(line2);
+      const line3New = document.createElement('div');
+      const kmhNew = vehicleSpeedsKmh[vehicleId];
+      const kmhDispNew = kmhNew != null && Number.isFinite(kmhNew) ? kmhNew : 0;
+      line3New.textContent = t('map.popup.avgSpeed', { kmh: Math.round(kmhDispNew) });
+      tooltipContent.appendChild(line3New);
 
       marker.bindTooltip(tooltipContent, {
         permanent: false,
@@ -1228,6 +1332,7 @@ export const MapMarkers = ({
     setVehicleMode,
     i18n.language,
     t,
+    vehicleSpeedsKmh,
   ]);
 
   return null;

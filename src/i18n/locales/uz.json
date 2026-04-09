@@ -133,7 +133,7 @@
     "titleProduct": "«Alkozamok-M SMART»",
     "enter": "Kirish",
     "resetPassword": "Parolni tiklash",
-    "copyright": "© 2009-{{year}} «Лазерные системы» AJ. Barcha huquqlar himoyalangan",
+    "copyright": "© 2024-{{year}} «Лазерные системы» AJ. Barcha huquqlar himoyalangan",
     "resetPasswordTitle": "Parolni tiklash",
     "resetPasswordDescription": "Tizimda ro'yxatdan o'tgan foydalanuvchining email manzilini kiriting — parolni tiklash uchun tasdiqlash kodi yuboriladi.",
     "send": "Yuborish",
@@ -408,7 +408,8 @@
       "noCoordinates": "Koordinatalar ko'rsatilmagan",
       "unknownEvent": "Noma'lum hodisa",
       "viewAllEvents": "Barcha hodisalarni ko'rish",
-      "eventType": "Hodisa turi"
+      "eventType": "Hodisa turi",
+      "avgSpeed": "O'rtacha tezlik: {{kmh}} km/soat"
     },
     "markerTooltipMode": "Rejim",
     "eventDetails": {
@@ -550,8 +551,6 @@
     "dialogTitleFallback": "Foydalanuvchi bilan dialog",
     "minimizeDialog": "Dialogni yig'ish",
     "closeDialog": "Dialogni yopish",
-    "minimizedListTooltip": "Yig'ilgan dialoglar va bildirishnomalar",
-    "minimizedListTitle": "Yig'ilgan dialoglar",
     "usersLabel": "Foydalanuvchilar",
     "searchUsersPlaceholder": "Foydalanuvchilarni qidirish...",
     "usersNotFound": "Foydalanuvchilar topilmadi",

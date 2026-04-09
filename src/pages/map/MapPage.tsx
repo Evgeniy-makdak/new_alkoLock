@@ -48,6 +48,12 @@ import {
 } from './mapBasemap';
 import './mapTheme.scss';
 import './mapTooltip.scss';
+import {
+  type SpeedCalculationOptions,
+  type VehicleSpeedTracker,
+  createVehicleSpeedTracker,
+  updateVehicleSpeed,
+} from './mapVehicleSpeed';
 import { EventData, VehicleEventsGroup } from './types';
 
 const DEFAULT_MAP_CENTER: [number, number] = [59.9343, 30.3351]; // Санкт-Петербург
@@ -722,19 +728,6 @@ export const MapPage = () => {
 
   const handleFreezeToggle = (checked: boolean) => {
     setFreezeMarkers(checked);
-    // if (!checked) {
-    //   setShowRoutes(false);
-    //   setClickedVehicleEvents([]);
-    //   // Удаляем все дополнительные маркеры при выключении заморозки
-    //   if (mainMarkerRef.current) {
-    //     mainMarkerRef.current.remove();
-    //     mainMarkerRef.current = null;
-    //   }
-    // }
-    // else {
-    //   // Сохраняем текущие маркеры при заморозке
-    //   setFrozenMarkersData(latestEvents);
-    // }
   };
 
   const {
@@ -743,9 +736,6 @@ export const MapPage = () => {
     startPolling,
   } = useVehiclesTableApi(
     {
-      // sortBy/order не задаём — в getCarListURL подставится &sort=manufacturer,model,registrationNumber
-      // startDate: startDate?.toISOString(),
-      // endDate: endDate?.toISOString(),
       forMap: true,
       limit: 25,
       searchQuery: '',
@@ -768,6 +758,60 @@ export const MapPage = () => {
       startPolling();
     }
   }, [freezeMarkers, stopPolling, startPolling]);
+
+  /** Скорость по смене координат между опросами api/vehicles с учётом дорожной сети. */
+  const vehicleTrackersRef = useRef<Record<string, VehicleSpeedTracker>>({});
+  const [vehicleSpeedsKmh, setVehicleSpeedsKmh] = useState<Record<string, number>>({});
+
+  // Конфигурация расчёта скорости для региона (можно вынести в .env при необходимости)
+  const speedOptions: SpeedCalculationOptions = {
+    minDistanceMeters: 8, // 8 метров — минимальное значимое перемещение
+    minTimeSeconds: 1.5, // 1.5 секунды — минимальный интервал между замерами
+    maxSpeedKmh: 130, // Максимальная скорость для региона
+    smoothingFactor: 0.35, // Базовое сглаживание
+    roadCurvatureFactor: 1.12, // +12% к расстоянию из-за извилистости дорог (настройте под свой регион)
+    lowSpeedThreshold: 12, // Ниже 12 км/ч — считаем пробкой/парковкой
+    lowSpeedSmoothingFactor: 0.12, // Сильное сглаживание в пробках
+    adaptiveSmoothing: true, // Адаптивное сглаживание включено
+  };
+
+  useEffect(() => {
+    const content = vehiclesResponse?.content;
+
+    // Сброс трекеров, если нет данных
+    if (!content?.length) {
+      vehicleTrackersRef.current = {};
+      setVehicleSpeedsKmh({});
+      return;
+    }
+
+    const now = Date.now();
+    const nextSpeeds: Record<string, number> = {};
+    const updatedTrackers = { ...vehicleTrackersRef.current };
+
+    for (const v of content) {
+      const reg = v.registrationNumber;
+      if (!reg || v.latitude == null || v.longitude == null) continue;
+
+      const lat = Number(v.latitude);
+      const lng = Number(v.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+      // Получаем текущий трекер для ТС или создаём новый
+      let tracker = updatedTrackers[reg];
+      if (!tracker) {
+        tracker = createVehicleSpeedTracker(0);
+      }
+
+      // Обновляем скорость на основе новых координат
+      const updatedTracker = updateVehicleSpeed(tracker, lat, lng, now, speedOptions);
+      updatedTrackers[reg] = updatedTracker;
+      nextSpeeds[reg] = updatedTracker.currentSpeedKmh;
+    }
+
+    vehicleTrackersRef.current = updatedTrackers;
+    setVehicleSpeedsKmh(nextSpeeds);
+  }, [vehiclesResponse]);
 
   const filterRegistrationNumbers = useMemo(() => {
     if (!hasMapFilters) return null;
@@ -1085,12 +1129,6 @@ export const MapPage = () => {
       invalidate();
     });
   }, [colorMode, i18n.language, scheduleBasemapWork]);
-
-  // const handleResetFilters = () => {
-  //   setStartDate(null);
-  //   setEndDate(null);
-  //   setSearchQuery('');
-  // };
 
   const getClickedVehicleEvents = () => {
     if (!selectedVehicleId) return [];
@@ -1498,6 +1536,7 @@ export const MapPage = () => {
             onCloseAllPanels={handleCloseAllPanels}
             popupRef={popupRef}
             freezeMarkers={freezeMarkers}
+            vehicleSpeedsKmh={vehicleSpeedsKmh}
           />
           {freezeMarkers &&
             showRoutes &&

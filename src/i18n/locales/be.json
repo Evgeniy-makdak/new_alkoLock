@@ -134,7 +134,7 @@
     "titleProduct": "«Алказамок-М СМАРТ»",
     "enter": "Уваход",
     "resetPassword": "Аднавіць пароль",
-    "copyright": "© 2009-{{year}} ААТ «Лазерные системы». Усе правы абаронены",
+    "copyright": "© 2024-{{year}} ААТ «Лазерные системы». Усе правы абаронены",
     "resetPasswordTitle": "Аднаўленне пароля",
     "resetPasswordDescription": "Увядзіце email карыстальніка, зарэгістраванага ў сістэме, каб адправіць код пацвярджэння для аднаўлення пароля.",
     "send": "Адправіць",
@@ -317,7 +317,8 @@
       "noCoordinates": "Каардынаты не пазначаны",
       "unknownEvent": "Невядомая падзея",
       "viewAllEvents": "Паглядзець усе падзеі",
-      "eventType": "Тып падзеі"
+      "eventType": "Тып падзеі",
+      "avgSpeed": "Сярэдняя хуткасць: {{kmh}} км/г"
     },
     "markerTooltipMode": "Рэжым",
     "eventDetails": {
@@ -551,8 +552,6 @@
     "dialogTitleFallback": "Дыялог з карыстальнікам",
     "minimizeDialog": "Згарнуць дыялог",
     "closeDialog": "Зачыніць дыялог",
-    "minimizedListTooltip": "Згорнутыя дыялогі і апавяшчэнні",
-    "minimizedListTitle": "Згорнутыя дыялогі",
     "usersLabel": "Карыстальнікі",
     "searchUsersPlaceholder": "Пошук карыстальнікаў...",
     "usersNotFound": "Карыстальнікі не знойдзены",

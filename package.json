@@ -3,6 +3,7 @@
   "name": "alcolocks",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:8080",
   "dependencies": {
     "@devfamily/admiral": "^5.12.0",
     "@emotion/react": "^11.13.3",
@@ -62,7 +63,6 @@
     "prepare": "husky install",
     "precommit": "yarn format && yarn lint && yarn lint:fix",
     "watch": "yarn typed-scss-modules src --watch",
-    "proxy": "http://localhost:8080",
     "start": "set SASS_WARN_DEPRECATION=0 && craco start --silent",
     "build": "set SASS_WARN_DEPRECATION=0 && craco build --silent"
   },

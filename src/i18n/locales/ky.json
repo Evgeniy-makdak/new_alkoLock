@@ -133,7 +133,7 @@
     "titleProduct": "«Алкозамок-М СМАРТ»",
     "enter": "Кириш",
     "resetPassword": "Сыр сөздү калыбына келтирүү",
-    "copyright": "© 2009-{{year}} «Лазерные системы» ААК. Бардык укуктар корголгон",
+    "copyright": "© 2024-{{year}} «Лазерные системы» ААК. Бардык укуктар корголгон",
     "resetPasswordTitle": "Сыр сөздү калыбына келтирүү",
     "resetPasswordDescription": "Системада катталган колдонуучунун email дарегин киргизиңиз — сыр сөздү калыбына келтирүү үчүн ырастоо коду жөнөтүлөт.",
     "send": "Жөнөтүү",
@@ -408,7 +408,8 @@
       "noCoordinates": "Координаттар көрсөтүлгөн жок",
       "unknownEvent": "Белгисиз окуя",
       "viewAllEvents": "Бардык окуяларды көрүү",
-      "eventType": "Окуя түрү"
+      "eventType": "Окуя түрү",
+      "avgSpeed": "Орточо ылдамдык: {{kmh}} км/саат"
     },
     "markerTooltipMode": "Режим",
     "eventDetails": {
@@ -550,8 +551,6 @@
     "dialogTitleFallback": "Колдонуучу менен диалог",
     "minimizeDialog": "Диалогту жыйноо",
     "closeDialog": "Диалогту жабуу",
-    "minimizedListTooltip": "Жыйналган диалогдор жана кабарлоолор",
-    "minimizedListTitle": "Жыйналган диалогдор",
     "usersLabel": "Колдонуучулар",
     "searchUsersPlaceholder": "Колдонуучуларды издөө...",
     "usersNotFound": "Колдонуучулар табылган жок",
