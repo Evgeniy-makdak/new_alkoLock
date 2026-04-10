@@ -117,7 +117,26 @@
     "notValidData": "Деректер дұрыс емес",
     "notValidName": "Аты дұрыс емес",
     "notValidVin": "VIN дұрыс емес",
+    "notValidUUID4": "UID пішімі XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX болуы керек",
+    "notValidMacAddress": "MAC мекенжайы дұрыс емес",
     "notValidPasswordLength": "Құпия сөз кем дегенде 8 таңбадан тұруы керек",
+    "notValidSerialNumber": "Сериялық нөмір 1-ден 20 таңбаға дейін болуы керек",
+    "similarDateOfLicense": "Куәлік берілген күні жарамдылық мерзімінен ертерек болуы керек",
+    "defaultError": "Тексеру қатесі",
+    "passwordsMustMatch": "Жаңа құпия сөз ағымдағы құпия сөзбен сәйкес келмеуі керек",
+    "dateIssueMaxToday": "Берілген күн бүгіннен кейін болмауы керек",
+    "dateExpirationMinToday": "Аяқталу күні бүгіннен ерте болмауы керек",
+    "expirationDateBeforeIssue": "Аяқталу күні берілген күннен кейін болуы керек",
+    "invalidDateFormat": "Күн пішімі қате",
+    "invalidDate": "Күн дұрыс емес",
+    "birthDateNotFuture": "Туған күн бүгіннен кейін болмауы керек",
+    "minAge14": "Жасы кемінде 14 болуы керек",
+    "issueDateNotFuture": "Берілген күн бүгіннен кейін болмауы керек",
+    "expirationDateNotPast": "Аяқталу күні бүгіннен ерте болмауы керек",
+    "singleColorRequired": "\"Түс\" өрісінде 1 мән болуы керек",
+    "singleTypeRequired": "\"Түр\" өрісінде 1 мән болуы керек",
+    "yearNotAbove": "Жыл {{max}} мәнінен аспауы керек",
+    "yearNotBelow": "Жыл {{min}} мәнінен төмен болмауы керек",
     "passwordsNotMustMatch": "Құпия сөздер сәйкес келмейді",
     "passwordCharsetRule": "Құпия сөзде латын және/немесе кирилл әріптері және кем дегенде бір сан болуы керек. Арнайы таңбалар мен тыныс белгілеріне рұқсат етіледі.",
     "verificationCodeLength": "Код 6 таңбадан тұруы керек",
@@ -294,6 +313,7 @@
     "repeatPassword": "Құпия сөзді қайталаңыз",
     "uploadAvatar": "Профиль аватарын жүктеу",
     "upload": "Жүктеу",
+    "uploadToGallery": "Галереяға жүктеу",
     "roleName": "Рөл атауы",
     "createRights": "Құру құқықтары",
     "readRights": "Оқу құқықтары",
@@ -362,7 +382,18 @@
     "licenseNumber": "ВУ нөмірі",
     "issueDate": "Берілген күні",
     "expiration": "Мерзімі",
-    "categories": "Санаттар"
+    "categories": "Санаттар",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Тестілеу өтпеді",
+      "deviceTestErrorInterrupted": "Үрлеу үзіліп қалды",
+      "testFalsification": "Үрлеуді бұрмалау",
+      "failed": "Мас",
+      "passed": "Сау",
+      "foreignObjectInCuvetteDuringExhalation": "Үрлеу кезінде кюветаға бөгде зат түсті",
+      "shortExhale": "Қысқа үрлеу",
+      "weakExhale": "Әлсіз үрлеу",
+      "alcoholBackground": "Спирттік фон анықталды"
+    }
   },
   "filters": {
     "searchByUser": "Пайдаланушы бойынша іздеу",
@@ -467,7 +498,21 @@
     "activeRequestMessage": "Бұл құрылғы үшін белсенді өтініш бар",
     "displayError": "Сервистік режимді көрсету қатесі",
     "serverRequest": "Сервер сұрауы",
-    "appRequest": "Қолданба сұрауы"
+    "appRequest": "Қолданба сұрауы",
+    "status": {
+      "driverWaiting": "Жүргізушіні күту",
+      "operatorWaiting": "Операторды күту",
+      "operatorRejected": "Оператор қабылдамады",
+      "driverRejected": "Жүргізуші қабылдамады",
+      "offlineSwitch": "Офлайн ауыстыру",
+      "driverConfirmed": "Жүргізуші растады",
+      "operatorConfirmed": "Оператор растады",
+      "expired": "Өңдеу уақыты аяқталды"
+    },
+    "process": {
+      "activate": "Қосу",
+      "deactivate": "Өшіру"
+    }
   },
   "modals": {
     "addUser": "Пайдаланушы қосу",

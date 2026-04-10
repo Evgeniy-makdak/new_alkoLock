@@ -118,7 +118,26 @@
     "notValidData": "Некарэктныя даныя",
     "notValidName": "Некарэктнае імя",
     "notValidVin": "Некарэктны VIN",
+    "notValidUUID4": "Увядзіце UID у фармаце XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+    "notValidMacAddress": "Некарэктны MAC-адрас",
     "notValidPasswordLength": "Пароль павінен змяшчаць мінімум 8 сімвалаў",
+    "notValidSerialNumber": "Серыйны нумар павінен змяшчаць ад 1 да 20 сімвалаў",
+    "similarDateOfLicense": "Дата выдачы пасведчання павінна быць раней за дату заканчэння",
+    "defaultError": "Памылка праверкі",
+    "passwordsMustMatch": "Новы пароль не павінен супадаць з бягучым",
+    "dateIssueMaxToday": "Дата выдачы не можа быць пазней за сённяшнюю дату",
+    "dateExpirationMinToday": "Дата заканчэння не можа быць раней за сённяшнюю дату",
+    "expirationDateBeforeIssue": "Дата заканчэння павінна быць пазней за дату выдачы",
+    "invalidDateFormat": "Няправільны фармат даты",
+    "invalidDate": "Некарэктная дата",
+    "birthDateNotFuture": "Дата нараджэння не можа быць пазней за сённяшнюю дату",
+    "minAge14": "Узрост павінен быць не менш за 14 гадоў",
+    "issueDateNotFuture": "Дата выдачы не можа быць пазней за сённяшнюю дату",
+    "expirationDateNotPast": "Дата заканчэння не можа быць раней за сённяшнюю дату",
+    "singleColorRequired": "Поле \"Колер\" павінна змяшчаць 1 значэнне",
+    "singleTypeRequired": "Поле \"Тып\" павінна змяшчаць 1 значэнне",
+    "yearNotAbove": "Год не павінен перавышаць {{max}}",
+    "yearNotBelow": "Год не павінен быць ніжэй за {{min}}",
     "passwordsNotMustMatch": "Паролі не супадаюць",
     "passwordCharsetRule": "Пароль павінен змяшчаць літары лацінскага і/або кірылічнага алфавіта, а таксама лічбы. Дапускаюцца спецыяльныя сімвалы і знакі прыпынку",
     "verificationCodeLength": "Код павінен змяшчаць 6 сімвалаў",
@@ -345,6 +364,7 @@
     "repeatPassword": "Паўтарыць пароль",
     "uploadAvatar": "Загрузіць аватар профілю",
     "upload": "Загрузіць",
+    "uploadToGallery": "Загрузіць у галерэю",
     "roleName": "Назва ролі",
     "createRights": "Правы на стварэнне",
     "readRights": "Правы на чытанне",
@@ -413,7 +433,18 @@
     "licenseNumber": "Нумар ВУ",
     "issueDate": "Дата выдачы",
     "expiration": "Тэрмін",
-    "categories": "Катэгорыі"
+    "categories": "Катэгорыі",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Тэст не пройдзены",
+      "deviceTestErrorInterrupted": "Выдых перарваны",
+      "testFalsification": "Фальсіфікацыя выдыху",
+      "failed": "Нецвярозы",
+      "passed": "Цвярозы",
+      "foreignObjectInCuvetteDuringExhalation": "Пападанне старонняга прадмета ў кювету падчас выдыху",
+      "shortExhale": "Кароткі выдых",
+      "weakExhale": "Слабы выдых",
+      "alcoholBackground": "Выяўлены алкагольны фон"
+    }
   },
   "filters": {
     "searchByUser": "Пошук па карыстальніку",
@@ -468,7 +499,21 @@
     "activeRequestMessage": "Для гэтай прылады ёсць актыўная заяўка",
     "displayError": "Памылка адлюстравання сэрвіснага рэжыму",
     "serverRequest": "Запыт сервера",
-    "appRequest": "Запыт дадатка"
+    "appRequest": "Запыт дадатка",
+    "status": {
+      "driverWaiting": "Чаканне кіроўцы",
+      "operatorWaiting": "Чаканне аператара",
+      "operatorRejected": "Адхілена аператарам",
+      "driverRejected": "Адхілена кіроўцам",
+      "offlineSwitch": "Афлайн-пераключэнне",
+      "driverConfirmed": "Пацверджана кіроўцам",
+      "operatorConfirmed": "Пацверджана аператарам",
+      "expired": "Час апрацоўкі скончыўся"
+    },
+    "process": {
+      "activate": "Уключэнне",
+      "deactivate": "Выключэнне"
+    }
   },
   "modals": {
     "addUser": "Дадаванне карыстальніка",

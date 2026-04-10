@@ -232,25 +232,25 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
     if (!value) return '';
 
     if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
-      return 'Неверный формат даты';
+      return t('validation.invalidDateFormat');
     }
 
     const date = parseDateFromInput(value);
     if (!date) {
-      return 'Некорректная дата';
+      return t('validation.invalidDate');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date > today) {
-      return 'Дата рождения не может быть позднее сегодняшнего дня';
+      return t('validation.birthDateNotFuture');
     }
 
     // Проверяем что возраст не меньше 14 лет
     const minBirthDate = new Date();
     minBirthDate.setFullYear(today.getFullYear() - 14);
     if (date > minBirthDate) {
-      return 'Возраст должен быть не менее 14 лет';
+      return t('validation.minAge14');
     }
 
     return '';
@@ -260,18 +260,18 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
     if (!value) return '';
 
     if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
-      return 'Неверный формат даты';
+      return t('validation.invalidDateFormat');
     }
 
     const date = parseDateFromInput(value);
     if (!date) {
-      return 'Некорректная дата';
+      return t('validation.invalidDate');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date > today) {
-      return 'Дата выдачи не может быть позднее сегодняшнего дня';
+      return t('validation.issueDateNotFuture');
     }
 
     return '';
@@ -281,18 +281,18 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
     if (!value) return '';
 
     if (!/^\d{2}\.\d{2}\.\d{4}$/.test(value)) {
-      return 'Неверный формат даты';
+      return t('validation.invalidDateFormat');
     }
 
     const date = parseDateFromInput(value);
     if (!date) {
-      return 'Некорректная дата';
+      return t('validation.invalidDate');
     }
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (date < today) {
-      return 'Дата окончания не может быть ранее сегодняшнего дня';
+      return t('validation.expirationDateNotPast');
     }
 
     return '';

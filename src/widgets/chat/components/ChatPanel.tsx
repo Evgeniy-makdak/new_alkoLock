@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Close, Minimize } from '@mui/icons-material';
@@ -10,6 +10,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
 import { useSocket } from '../contexts/SocketContext';
+import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './ChatPanel.module.scss';
 import { DialogActions } from './DialogActions';
 import MessageFeed from './MessageFeed';
@@ -28,6 +29,24 @@ function getLastOperatorIdFromDialog(d: any): number | string | undefined {
   if (!d || typeof d !== 'object') return undefined;
   const lo = d.lastOperator ?? d.last_operator ?? d.dialog?.lastOperator ?? d.dialog?.last_operator;
   return lo?.id;
+}
+
+/** Активный dialogId для ленты: мета сессии или fallback из сообщений (пока selectedDialog не проставлен). */
+function resolveActiveFeedDialogIdStr(session: any): string | null {
+  if (!session) return null;
+  let sid =
+    session.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+      ? String(session.selectedDialog.id)
+      : session.assignedDialogId &&
+          String(session.assignedDialogId) !== '0' &&
+          String(session.assignedDialogId) !== 'assigned'
+        ? String(session.assignedDialogId)
+        : null;
+  if (sid == null && session.messages?.length) {
+    const m = session.messages.find((x: any) => x.dialogId != null || x.dialog?.id != null);
+    if (m) sid = String(m.dialogId ?? m.dialog?.id ?? '');
+  }
+  return sid && sid !== '' ? sid : null;
 }
 
 function ChatPanel({
@@ -56,6 +75,7 @@ function ChatPanel({
   } = useChat();
 
   const session = getSession(sessionId);
+  const resolvedFeedDialogIdStr = useMemo(() => resolveActiveFeedDialogIdStr(session), [session]);
 
   /** Актуальный getSession без подписки useCallback на usersCache — иначе цикл запросов в UsersSelect. */
   const getSessionLiveRef = useRef(getSession);
@@ -78,6 +98,7 @@ function ChatPanel({
   const lastMessageCountRef = useRef<number>(0);
   const lastStableUnreadCountRef = useRef<number>(0);
   const unreadCountDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const headerUnreadLogRef = useRef<number | null>(null);
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
   const refreshAfterReadTriggeredRef = useRef(false);
@@ -95,14 +116,10 @@ function ChatPanel({
 
   const stableSetUnreadCount = useCallback((newCount: number) => {
     if (unreadCountDebounceRef.current) clearTimeout(unreadCountDebounceRef.current);
-
-    unreadCountDebounceRef.current = setTimeout(() => {
-      if (newCount !== lastStableUnreadCountRef.current) {
-        setUnreadCount(newCount);
-        lastStableUnreadCountRef.current = newCount;
-      }
-      unreadCountDebounceRef.current = null;
-    }, 150);
+    if (newCount !== lastStableUnreadCountRef.current) {
+      lastStableUnreadCountRef.current = newCount;
+      setUnreadCount(newCount);
+    }
   }, []);
 
   useEffect(() => {
@@ -136,14 +153,7 @@ function ChatPanel({
       }
 
       if (session.messages) {
-        const activeSid =
-          session.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
-            ? String(session.selectedDialog.id)
-            : session.assignedDialogId &&
-                String(session.assignedDialogId) !== '0' &&
-                String(session.assignedDialogId) !== 'assigned'
-              ? String(session.assignedDialogId)
-              : null;
+        const activeSid = resolvedFeedDialogIdStr;
         const msgsForUnread =
           activeSid != null
             ? session.messages.filter(
@@ -190,6 +200,7 @@ function ChatPanel({
   }, [
     session,
     sessionId,
+    resolvedFeedDialogIdStr,
     getPendingAttachments,
     attachments,
     dialogStatus,
@@ -287,31 +298,11 @@ function ChatPanel({
         !session.selectedDialog?.status;
 
       if (hasDialogId && isDialogClosed) {
-        loadDialogHistory(sessionId, session.selectedDialog.id).then(() => {
-          // После загрузки истории прокручиваем вниз
-          setTimeout(() => {
-            const messageFeed = document.querySelector(
-              `[data-session-id="${sessionId}"] .${styles.feed}`,
-            );
-            if (messageFeed) {
-              messageFeed.scrollTop = messageFeed.scrollHeight;
-            }
-          }, 100);
-        });
+        loadDialogHistory(sessionId, session.selectedDialog.id).catch(console.error);
       } else if (isDialogOpen && !hasDialogId) {
         loadMessagesByUserId(sessionId, userId)
           .catch(console.error)
-          .finally(() => {
-            // После загрузки сообщений прокручиваем вниз
-            setTimeout(() => {
-              const messageFeed = document.querySelector(
-                `[data-session-id="${sessionId}"] .${styles.feed}`,
-              );
-              if (messageFeed) {
-                messageFeed.scrollTop = messageFeed.scrollHeight;
-              }
-            }, 100);
-          });
+          .finally(() => undefined);
       }
 
       initialLoadDoneRef.current = true;
@@ -690,6 +681,10 @@ function ChatPanel({
   const handleMarkMessagesAsRead = useCallback(
     (messageIds: string[]) => {
       if (messageIds.length > 0) {
+        operatorUnreadDebug('READ на бэк + локальное обновление ленты', {
+          sessionId,
+          messageIds,
+        });
         messageIds.forEach((messageId) => {
           sendReadStatusForMessageId(sessionId, messageId);
         });
@@ -714,6 +709,68 @@ function ChatPanel({
     [sessionId, sendReadStatusForMessageId, session?.messages, updateSession],
   );
 
+  const activeDialogNumericId = useMemo(() => {
+    if (!resolvedFeedDialogIdStr) return NaN;
+    const n = Number(resolvedFeedDialogIdStr);
+    return Number.isFinite(n) ? n : NaN;
+  }, [resolvedFeedDialogIdStr]);
+
+  const feedUnreadFromMessages = useMemo(() => {
+    if (!session?.messages?.length || !resolvedFeedDialogIdStr) return 0;
+    const activeSid = resolvedFeedDialogIdStr;
+    const msgs = session.messages.filter(
+      (msg: any) => String(msg.dialogId ?? msg.dialog?.id ?? '') === activeSid,
+    );
+    const strict = msgs.reduce((acc: number, msg: any) => {
+      if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
+      if (
+        msg.messageStatus === 'TO_OPERATOR' &&
+        (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
+        !msg.is_read
+      ) {
+        return acc + 1;
+      }
+      return acc;
+    }, 0);
+    const relaxed = msgs.reduce((acc: number, msg: any) => {
+      if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
+      if (msg.messageStatus === 'TO_OPERATOR' && !msg.is_read) return acc + 1;
+      return acc;
+    }, 0);
+    return Math.max(strict, relaxed);
+  }, [session, resolvedFeedDialogIdStr]);
+
+  const socketEntry = Number.isFinite(activeDialogNumericId)
+    ? dialogsUnreadCounts.get(activeDialogNumericId)
+    : undefined;
+
+  const displayUnreadCount = session
+    ? Math.max(unreadCount, session.unreadCount ?? 0, socketEntry ?? 0, feedUnreadFromMessages)
+    : 0;
+
+  useEffect(() => {
+    if (!session) return;
+    if (headerUnreadLogRef.current === displayUnreadCount) return;
+    headerUnreadLogRef.current = displayUnreadCount;
+    operatorUnreadDebug('Шапка открытого чата: бейдж непрочитанных', {
+      sessionId,
+      dialogId: Number.isFinite(activeDialogNumericId) ? activeDialogNumericId : null,
+      показываем: displayUnreadCount,
+      локальныйСтейтПанели: unreadCount,
+      sessionUnreadCount: session.unreadCount,
+      wsКартаПоДиалогу: socketEntry ?? null,
+      подсчётПоСообщениям: feedUnreadFromMessages,
+    });
+  }, [
+    session,
+    sessionId,
+    displayUnreadCount,
+    unreadCount,
+    socketEntry,
+    feedUnreadFromMessages,
+    activeDialogNumericId,
+  ]);
+
   if (!session) return null;
 
   const {
@@ -730,24 +787,6 @@ function ChatPanel({
     assignedDialogId,
     transferRecipientFullName = null,
   } = session;
-
-  const activeDialogNumericId =
-    selectedDialog?.id != null && String(selectedDialog.id) !== '0'
-      ? Number(selectedDialog.id)
-      : assignedDialogId != null &&
-          String(assignedDialogId) !== '0' &&
-          String(assignedDialogId) !== 'assigned'
-        ? Number(assignedDialogId)
-        : NaN;
-  const socketEntry = Number.isFinite(activeDialogNumericId)
-    ? dialogsUnreadCounts.get(activeDialogNumericId)
-    : undefined;
-  /**
-   * Локальная лента может отставать от WS; обычно max(local, socket).
-   * Явный 0 в карте после прочтения — не держим «1» из устаревшего msg.is_read.
-   */
-  const displayUnreadCount =
-    socketEntry === 0 ? 0 : Math.max(unreadCount, session.unreadCount ?? 0, socketEntry ?? 0);
 
   if (isMinimized) {
     return (
@@ -921,7 +960,8 @@ function ChatPanel({
           userId={selectedUsers[0]}
           selectedUserName={selectedUserName}
           onMarkMessagesAsRead={handleMarkMessagesAsRead}
-          unreadCount={displayUnreadCount}
+          unreadCount={feedUnreadFromMessages}
+          expandUnreadHintCount={displayUnreadCount}
           scrollToBottomOnExpand={scrollToBottomOnExpand}
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}

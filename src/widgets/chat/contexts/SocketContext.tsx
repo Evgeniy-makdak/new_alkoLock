@@ -11,6 +11,7 @@ import {
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { configLoader } from '../../../config/configLoader';
+import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   setStompDebugFromRuntimeConfig,
   stompDebugLog,
@@ -29,6 +30,13 @@ interface SocketContextType {
   dialogsUnreadCounts: Map<number, number>;
   setUnreadCount: (count: number) => void;
   updateDialogUnreadCount: (dialogId: number, count: number) => void;
+  /** Пересчёт из ленты сессии: с prev из актуальной Map — иначе гонка с абсолютным WS затирает счётчик нулём при пустой ленте. */
+  reconcileDialogUnreadFromSessionFeed: (
+    dialogId: number,
+    feedUnreadCount: number,
+    hasAnyMessageForDialog: boolean,
+    onApplied: (next: number, prevSocket: number) => void,
+  ) => void;
   /** Слияние снимка из REST: не затираем локальный счётчик нулём, пока агрегат по WS больше нуля (устаревший API). */
   mergeDialogUnreadFromApi: (dialogId: number, apiCount: number) => void;
   incrementDialogUnreadCount: (dialogId: number, amount?: number, dedupeKey?: string) => void;
@@ -121,9 +129,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
   const calculateTotalUnread = useCallback((): number => {
     let mapSum = 0;
+    let mapDialogEntryCount = 0;
     dialogsUnreadCounts.forEach((count, dialogId) => {
-      if (dialogId > 0 && count > 0) {
-        mapSum += count;
+      if (dialogId > 0) {
+        mapDialogEntryCount++;
+        if (count > 0) {
+          mapSum += count;
+        }
       }
     });
 
@@ -131,12 +143,27 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return unreadCount;
     }
 
-    // Агрегат /user/queue/unread и per-dialog карта иногда расходятся по таймингу; не показывать 0,
-    // пока сумма по карте или общий кадр говорит о непрочитанном.
-    return Math.max(unreadCount, mapSum);
+    // Кадры /queue/unread/{branch}: сумма по карте совпадает с бейджами превью. Агрегат /user/queue/unread
+    // нередко выше и не успевает уменьшиться — Math.max оставлял «9» при сумме превью «6».
+    if (mapSum > 0) {
+      return mapSum;
+    }
+
+    // В карте уже есть диалоги (в т.ч. с count=0 после READ) — не держим общий бейдж на устаревшем queue.
+    if (mapDialogEntryCount > 0) {
+      return 0;
+    }
+
+    // Per-dialog режим включён, но карта ещё пуста (между кадрами) — ориентируемся на пользовательский агрегат.
+    return unreadCount;
   }, [dialogsUnreadCounts, unreadCount]);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
+    operatorUnreadDebug('WS: абсолютное значение непрочитанных по dialogId', {
+      dialogId,
+      count,
+      perDialogРежим: useDetailedCountsRef.current,
+    });
     setDialogsUnreadCounts((prev) => {
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
@@ -152,6 +179,45 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       return newMap;
     });
   }, []);
+
+  const reconcileDialogUnreadFromSessionFeed = useCallback(
+    (
+      dialogId: number,
+      feedUnreadCount: number,
+      hasAnyMessageForDialog: boolean,
+      onApplied: (next: number, prevSocket: number) => void,
+    ) => {
+      setDialogsUnreadCounts((prev) => {
+        const prevSocket = prev.get(dialogId) ?? 0;
+        const next = hasAnyMessageForDialog
+          ? feedUnreadCount
+          : Math.max(feedUnreadCount, prevSocket);
+        Promise.resolve().then(() => onApplied(next, prevSocket));
+        if (prev.get(dialogId) === next) {
+          return prev;
+        }
+        const newMap = new Map(prev);
+        newMap.set(dialogId, next);
+        operatorUnreadDebug('WS: согласование карты с пересчётом ленты (из prev Map)', {
+          dialogId,
+          feedUnreadCount,
+          hasAnyMessageForDialog,
+          prevSocket,
+          next,
+        });
+        chatUnreadTrace('socket.reconcileDialogUnreadFromSessionFeed', {
+          dialogId,
+          feedUnreadCount,
+          hasAnyMessageForDialog,
+          prevSocket,
+          next,
+          mapAfter: unreadMapToRecord(newMap),
+        });
+        return newMap;
+      });
+    },
+    [],
+  );
 
   const incrementDialogUnreadCount = useCallback(
     (dialogId: number, amount = 1, dedupeKey?: string) => {
@@ -250,6 +316,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const updateUnreadCountDirect = useCallback((count: number) => {
+    operatorUnreadDebug('WS: общий агрегат непрочитанных (/user/queue/unread и т.п.)', {
+      count,
+      детальныеСчётчикиПоДиалогам: hasDetailedDataRef.current,
+    });
     chatUnreadTrace('socket.setTotalUnread (branch/user aggregate)', {
       count,
       useDetailed: useDetailedCountsRef.current,
@@ -829,6 +899,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         dialogsUnreadCounts,
         setUnreadCount: updateUnreadCountDirect,
         updateDialogUnreadCount,
+        reconcileDialogUnreadFromSessionFeed,
         mergeDialogUnreadFromApi,
         incrementDialogUnreadCount,
         calculateTotalUnread,

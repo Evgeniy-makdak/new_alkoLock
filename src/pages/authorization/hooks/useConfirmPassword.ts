@@ -157,7 +157,7 @@ export const useConfirmPassword = () => {
         //@ts-expect-error: временное решение
         onSuccess: (response: {
           status: StatusCode;
-          detail: ValidationMessages;
+          detail: string;
           data: { message: string };
         }) => {
           if (response?.status === StatusCode.SUCCESS) {

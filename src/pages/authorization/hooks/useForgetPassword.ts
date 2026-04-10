@@ -64,7 +64,7 @@ export const useForgetPassword = () => {
 
     mutate(requestData, {
       //@ts-expect-error: временное решение
-      onSuccess: (response: { status: StatusCode; detail: ValidationMessages }) => {
+      onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
           navigate(RoutePaths.auth); // Перенаправление на страницу входа

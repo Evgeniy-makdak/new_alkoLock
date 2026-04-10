@@ -9,7 +9,6 @@ import { useMediaQuery } from '@mui/material';
 
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
-import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { EditSettingDialog } from './EditSettingDialog';
@@ -230,9 +229,7 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === updatedSetting.id ? updatedSetting : s)));
 
-      const displayName = SETTINGS_LABEL_MAP[editingField.label]
-        ? t(SETTINGS_LABEL_MAP[editingField.label])
-        : editingField.label;
+      const displayName = editingField.label;
       setNotification({
         open: true,
         message: t('settingsPage.parameterChangedSuccess', { name: displayName }),
@@ -241,9 +238,7 @@ export const SettingsPage = () => {
 
       handleCloseModal({}, 'buttonClick');
     } catch (error) {
-      const displayName = SETTINGS_LABEL_MAP[editingField.label]
-        ? t(SETTINGS_LABEL_MAP[editingField.label])
-        : editingField.label;
+      const displayName = editingField.label;
       setNotification({
         open: true,
         message: t('settingsPage.parameterChangeError', { name: displayName }),
@@ -273,18 +268,14 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === resetSetting.id ? resetSetting : s)));
 
-      const displayName = SETTINGS_LABEL_MAP[settingToReset.label]
-        ? t(SETTINGS_LABEL_MAP[settingToReset.label])
-        : settingToReset.label;
+      const displayName = settingToReset.label;
       setNotification({
         open: true,
         message: t('settingsPage.parameterResetSuccess', { name: displayName }),
         severity: 'success',
       });
     } catch (error) {
-      const displayName = SETTINGS_LABEL_MAP[settingToReset.label]
-        ? t(SETTINGS_LABEL_MAP[settingToReset.label])
-        : settingToReset.label;
+      const displayName = settingToReset.label;
       setNotification({
         open: true,
         message: t('settingsPage.parameterResetError', { name: displayName }),
@@ -394,11 +385,7 @@ export const SettingsPage = () => {
 
       <ResetConfirmationDialog
         open={resetDialogOpen}
-        settingName={
-          settingToReset?.label && SETTINGS_LABEL_MAP[settingToReset.label]
-            ? t(SETTINGS_LABEL_MAP[settingToReset.label])
-            : (settingToReset?.label ?? '')
-        }
+        settingName={settingToReset?.label ?? ''}
         onClose={handleResetCancel}
         onConfirm={handleResetConfirm}
       />

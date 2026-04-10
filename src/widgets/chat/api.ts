@@ -310,15 +310,17 @@ const sendDeliveryConfirmWS = (
   stompClient: any,
   uuidMessage: string,
   status: 'DELIVERED' | 'READ',
-) => {
+): boolean => {
   if (!stompClient?.connected) return false;
 
   const message = { uuidMessage, status };
-  return stompClient.publish({
+  stompClient.publish({
     destination: '/app/chat.delivery.confirm',
     body: JSON.stringify(message),
     headers: { 'content-type': 'application/json' },
   });
+  // @stomp/stompjs Client.publish возвращает void; иначе вызывающий код считает отправку неудачной
+  return true;
 };
 
 const requestMessageStatusWS = (stompClient: any, messageUUIDs: string[]) => {

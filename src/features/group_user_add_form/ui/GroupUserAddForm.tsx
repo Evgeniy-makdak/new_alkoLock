@@ -51,7 +51,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
           excludeSuperAdmin={true}
           showBranchName={true}
         />
-        {error && <span className={style.errorText}>Обязательное поле</span>}
+        {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>

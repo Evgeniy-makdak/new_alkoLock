@@ -117,7 +117,26 @@
     "notValidData": "Noto'g'ri ma'lumot",
     "notValidName": "Noto'g'ri ism",
     "notValidVin": "Noto'g'ri VIN",
+    "notValidUUID4": "UID XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX formatida bo'lishi kerak",
+    "notValidMacAddress": "Noto'g'ri MAC manzil",
     "notValidPasswordLength": "Parol kamida 8 belgidan iborat bo'lishi kerak",
+    "notValidSerialNumber": "Seriya raqami 1 dan 20 gacha belgidan iborat bo'lishi kerak",
+    "similarDateOfLicense": "Guvohnoma berilgan sana tugash sanasidan oldin bo'lishi kerak",
+    "defaultError": "Tekshirish xatosi",
+    "passwordsMustMatch": "Yangi parol joriy parol bilan mos kelmasligi kerak",
+    "dateIssueMaxToday": "Berilgan sana bugungi kundan keyin bo'lmasligi kerak",
+    "dateExpirationMinToday": "Tugash sanasi bugungi kundan oldin bo'lmasligi kerak",
+    "expirationDateBeforeIssue": "Tugash sanasi berilgan sanadan keyin bo'lishi kerak",
+    "invalidDateFormat": "Noto'g'ri sana formati",
+    "invalidDate": "Noto'g'ri sana",
+    "birthDateNotFuture": "Tug'ilgan sana bugungi kundan keyin bo'lmasligi kerak",
+    "minAge14": "Yosh kamida 14 bo'lishi kerak",
+    "issueDateNotFuture": "Berilgan sana bugungi kundan keyin bo'lmasligi kerak",
+    "expirationDateNotPast": "Tugash sanasi bugungi kundan oldin bo'lmasligi kerak",
+    "singleColorRequired": "\"Rang\" maydoni 1 ta qiymatga ega bo'lishi kerak",
+    "singleTypeRequired": "\"Tur\" maydoni 1 ta qiymatga ega bo'lishi kerak",
+    "yearNotAbove": "Yil {{max}} dan oshmasligi kerak",
+    "yearNotBelow": "Yil {{min}} dan past bo'lmasligi kerak",
     "passwordsNotMustMatch": "Parollar mos kelmaydi",
     "passwordCharsetRule": "Parolda lotin va/yoki kirill harflari hamda kamida bitta raqam bo'lishi kerak. Maxsus belgilar va tinish belgilariga ruxsat beriladi.",
     "verificationCodeLength": "Kod 6 belgidan iborat bo'lishi kerak",
@@ -294,6 +313,7 @@
     "repeatPassword": "Parolni takrorlang",
     "uploadAvatar": "Profil rasmini yuklash",
     "upload": "Yuklash",
+    "uploadToGallery": "Galereyaga yuklash",
     "roleName": "Rol nomi",
     "createRights": "Yaratish huquqlari",
     "readRights": "O'qish huquqlari",
@@ -362,7 +382,18 @@
     "licenseNumber": "Guvohnoma raqami",
     "issueDate": "Berilgan sana",
     "expiration": "Muddati",
-    "categories": "Toifalar"
+    "categories": "Toifalar",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Testdan o'tmadi",
+      "deviceTestErrorInterrupted": "Puflash to'xtatildi",
+      "testFalsification": "Puflash qalbakilashtirildi",
+      "failed": "Mast",
+      "passed": "Hushyor",
+      "foreignObjectInCuvetteDuringExhalation": "Puflash paytida kyuvetaga begona narsa tushdi",
+      "shortExhale": "Qisqa puflash",
+      "weakExhale": "Kuchsiz puflash",
+      "alcoholBackground": "Spirt foni aniqlandi"
+    }
   },
   "filters": {
     "searchByUser": "Foydalanuvchi bo'yicha qidirish",
@@ -467,7 +498,21 @@
     "activeRequestMessage": "Ushbu qurilma uchun faol so'rov mavjud",
     "displayError": "Xizmat rejimini ko'rsatishda xato",
     "serverRequest": "Server so'rovi",
-    "appRequest": "Ilova so'rovi"
+    "appRequest": "Ilova so'rovi",
+    "status": {
+      "driverWaiting": "Haydovchini kutish",
+      "operatorWaiting": "Operatorni kutish",
+      "operatorRejected": "Operator rad etdi",
+      "driverRejected": "Haydovchi rad etdi",
+      "offlineSwitch": "Oflayn o'zgartirish",
+      "driverConfirmed": "Haydovchi tasdiqladi",
+      "operatorConfirmed": "Operator tasdiqladi",
+      "expired": "Qayta ishlash vaqti tugadi"
+    },
+    "process": {
+      "activate": "Yoqish",
+      "deactivate": "O'chirish"
+    }
   },
   "modals": {
     "addUser": "Foydalanuvchi qo'shish",

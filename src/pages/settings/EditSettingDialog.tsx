@@ -18,8 +18,6 @@ import {
   Typography,
 } from '@mui/material';
 
-import { SETTINGS_LABEL_MAP } from '../../shared/lib/settingsLabelMap';
-
 interface EditSettingDialogProps {
   open: boolean;
   isSaving: boolean;
@@ -120,11 +118,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
           overflowX: 'hidden',
         }}>
         <Stack gap={3}>
-          <Typography gutterBottom>
-            {editingField?.label && SETTINGS_LABEL_MAP[editingField.label]
-              ? t(SETTINGS_LABEL_MAP[editingField.label])
-              : editingField?.label}
-          </Typography>
+          <Typography gutterBottom>{editingField?.label}</Typography>
           <TextField
             autoFocus
             margin="dense"

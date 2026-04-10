@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { ChipProps } from '@mui/material';
 import type { GridRowsProp } from '@mui/x-data-grid';
@@ -23,17 +24,27 @@ export interface Row {
   INITIATOR: string;
   STATE: string;
   PROCESS: string;
+  stateKey: ServiceModeStatusKey;
 }
 
-export const chipColor: { [key: string]: ChipProps['color'] } = {
-  'Ожидание водителя': 'warning',
-  'Ожидание оператора': 'warning',
-  'Оператор отклонил': 'error',
-  'Водитель отклонил': 'secondary',
-  'Офлайн-переключение': 'secondary',
-  'Водитель подтвердил': 'success',
-  'Оператор подтвердил': 'success',
-  'Истекло время обработки': 'error',
+export type ServiceModeStatusKey =
+  | 'driverWaiting'
+  | 'operatorWaiting'
+  | 'operatorRejected'
+  | 'driverRejected'
+  | 'offlineSwitch'
+  | 'driverConfirmed'
+  | 'operatorConfirmed'
+  | 'unknown';
+
+export const chipColor: { [key in ServiceModeStatusKey]?: ChipProps['color'] } = {
+  driverWaiting: 'warning',
+  operatorWaiting: 'warning',
+  operatorRejected: 'error',
+  driverRejected: 'secondary',
+  offlineSwitch: 'secondary',
+  driverConfirmed: 'success',
+  operatorConfirmed: 'success',
 };
 
 const getStatus = (item: IDeviceAction) => {
@@ -50,41 +61,42 @@ const getStatus = (item: IDeviceAction) => {
     (event) => event.eventType === EventType.ACCEPTED,
   );
 
-  let status;
+  let status: ServiceModeStatusKey;
 
   if (lastEvent?.eventType === EventType.SERVER_REQUEST) {
-    status = 'Ожидание водителя';
+    status = 'driverWaiting';
   } else if (lastEvent?.eventType === EventType.APP_REQUEST) {
-    status = 'Ожидание оператора';
+    status = 'operatorWaiting';
   } else if (lastEvent?.eventType === EventType.REJECTED) {
     if (isAcknowledged) {
-      status = 'Оператор отклонил';
+      status = 'operatorRejected';
     } else if (requestType === EventType.SERVER_REQUEST) {
-      status = 'Водитель отклонил';
+      status = 'driverRejected';
     } else {
-      status = 'Оператор отклонил';
+      status = 'operatorRejected';
     }
   } else if (hasAcceptedEvent) {
     if (isAcknowledged) {
-      status = 'Водитель подтвердил';
+      status = 'driverConfirmed';
     } else if (requestType === EventType.SERVER_REQUEST) {
-      status = 'Водитель подтвердил';
+      status = 'driverConfirmed';
     } else {
-      status = 'Оператор подтвердил';
+      status = 'operatorConfirmed';
     }
   } else if (
     lastEvent?.eventType === EventType.OFFLINE_DEACTIVATION ||
     lastEvent?.eventType === EventType.OFFLINE_ACTIVATION
   ) {
-    status = 'Офлайн-переключение';
+    status = 'offlineSwitch';
   } else {
-    status = '-';
+    status = 'unknown';
   }
 
   return { lastEvent, status };
 };
 
 export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
+  const { t } = useTranslation();
   const [filteredData, setFilteredData] = useState<IDeviceAction[]>([]);
   const [autoHideTimeout, setAutoHideTimeout] = useState<number | null>(null);
   const { length } = useCountContext();
@@ -128,7 +140,7 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
     // Проверяем и скрываем обработанные строки через указанное время
     filteredData.forEach((item) => {
       const { status } = getStatus(item);
-      if (status === 'Водитель подтвердил' || status === 'Оператор подтвердил') {
+      if (status === 'driverConfirmed' || status === 'operatorConfirmed') {
         const remainingTime = autoHideTimeout - (Date.now() - new Date(item.finishedAt).getTime());
 
         if (remainingTime > 0) {
@@ -154,12 +166,39 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
   const rows = useMemo(() => {
     return filteredData.map((item) => {
       const { lastEvent, status } = getStatus(item);
-      let process;
+      let process: string;
+      let statusLabel: string;
+
+      switch (status) {
+        case 'driverWaiting':
+          statusLabel = t('serviceMode.status.driverWaiting');
+          break;
+        case 'operatorWaiting':
+          statusLabel = t('serviceMode.status.operatorWaiting');
+          break;
+        case 'operatorRejected':
+          statusLabel = t('serviceMode.status.operatorRejected');
+          break;
+        case 'driverRejected':
+          statusLabel = t('serviceMode.status.driverRejected');
+          break;
+        case 'offlineSwitch':
+          statusLabel = t('serviceMode.status.offlineSwitch');
+          break;
+        case 'driverConfirmed':
+          statusLabel = t('serviceMode.status.driverConfirmed');
+          break;
+        case 'operatorConfirmed':
+          statusLabel = t('serviceMode.status.operatorConfirmed');
+          break;
+        default:
+          statusLabel = '-';
+      }
 
       if (item.type === 'SERVICE_MODE_ACTIVATE') {
-        process = 'Включение';
+        process = t('serviceMode.process.activate');
       } else if (item.type === 'SERVICE_MODE_DEACTIVATE') {
-        process = 'Выключение';
+        process = t('serviceMode.process.deactivate');
       } else {
         process = '-';
       }
@@ -169,18 +208,19 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
         idDevice: item?.device?.id,
         lastEvent: lastEvent,
         finishedAt: item.occurredAt,
-        state: status,
+        state: statusLabel,
+        stateKey: status,
         [ValuesHeader.DATE]: Formatters.formatISODate(item.createdAt) ?? '-',
         [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord)
           : '-',
         [ValuesHeader.INITIATOR]: Formatters.nameFormatter(item.userAction),
-        [ValuesHeader.STATE]: status,
+        [ValuesHeader.STATE]: statusLabel,
         [ValuesHeader.PROCESS]: process,
       };
     });
-  }, [filteredData]);
+  }, [filteredData, t]);
 
   return rows;
 };

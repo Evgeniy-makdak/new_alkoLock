@@ -95,7 +95,7 @@ yup.addMethod(yup.object, 'birthDate', function method(message) {
       yesterday.setDate(yesterday.getDate() - 1); // Устанавливаем вчерашнюю дату для проверки
 
       if (value && !isDateBefore(value, yesterday)) {
-        return context.createError({ message: 'Некорректное значение' });
+        return context.createError({ message: i18n.t('validation.notValidData') });
       }
 
       return true;
@@ -205,7 +205,7 @@ const validatePassword = (value: string, context: yup.TestContext<Form>) => {
 
 const validateEmail = (value: string, context: yup.TestContext<Form>) => {
   if (isStringMatchGapStartOrFinish(value)) {
-    return context.createError({ message: 'В строке есть пробелы' });
+    return context.createError({ message: i18n.t('validation.stringHasInvalidSpaces') });
   }
 
   if (value.length === 0) {
@@ -259,7 +259,7 @@ export const schema = (
       .mixed<any>()
       .nullable()
       .typeError(ValidationMessages.notValidData)
-      .test('is-valid-birth-date', 'Некорректное значение', (value) => {
+      .test('is-valid-birth-date', i18n.t('validation.notValidData'), (value) => {
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         return !value || (isValidDate(value) && isDateBefore(value, yesterday));

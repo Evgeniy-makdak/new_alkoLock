@@ -46,7 +46,7 @@ export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId,
           setValueStore={onSelect}
           label="Поиск по алкозамкам"
         />
-        {error && <span className={style.errorText}>Обязательное поле</span>}
+        {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>

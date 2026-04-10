@@ -1,4 +1,5 @@
 import { type FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Stack } from '@mui/material';
 
@@ -17,6 +18,7 @@ type UserAddFoto = {
 };
 
 export const UserAddFoto: FC<UserAddFoto> = ({ userId, userActive }) => {
+  const { t } = useTranslation();
   const { setUploadImage, lengthMoreZero, uploadImage, onSubmit, isLoading } =
     useUserAddFoto(userId);
 
@@ -40,7 +42,7 @@ export const UserAddFoto: FC<UserAddFoto> = ({ userId, userActive }) => {
 
       {lengthMoreZero && (
         <Button isLoading={isLoading} onClick={onSubmit}>
-          Загрузить в галерею
+          {t('form.uploadToGallery')}
         </Button>
       )}
     </Stack>

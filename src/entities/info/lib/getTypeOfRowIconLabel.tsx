@@ -154,6 +154,31 @@ export const summaryExhaleResult = {
   ALCOHOL_BACKGROUND: <ExhaleResultChip color="warning" label="Обнаружен спиртовой фон" />,
 };
 
+export const getSummaryExhaleResult = (t: (key: string) => string) => ({
+  DEVICE_TEST_ERROR_HIGH_CONCENTRATION: (
+    <ExhaleResultChip color="error" label={t('info.summary.deviceTestErrorHighConcentration')} />
+  ),
+  DEVICE_TEST_ERROR_INTERRUPTED: (
+    <ExhaleResultChip color="warning" label={t('info.summary.deviceTestErrorInterrupted')} />
+  ),
+  TEST_FALSIFICATION: (
+    <ExhaleResultChip color="error" label={t('info.summary.testFalsification')} />
+  ),
+  FAILED: <ExhaleResultChip color="error" label={t('info.summary.failed')} />,
+  PASSED: <ExhaleResultChip color="success" label={t('info.summary.passed')} />,
+  INGESTION_FOREIGN_OBJECT_INTO_CUVETTE_DURING_EXHALATION: (
+    <ExhaleResultChip
+      color="warning"
+      label={t('info.summary.foreignObjectInCuvetteDuringExhalation')}
+    />
+  ),
+  SHORT_EXHALE: <ExhaleResultChip color="warning" label={t('info.summary.shortExhale')} />,
+  WEAK_EXHALE: <ExhaleResultChip color="warning" label={t('info.summary.weakExhale')} />,
+  ALCOHOL_BACKGROUND: (
+    <ExhaleResultChip color="warning" label={t('info.summary.alcoholBackground')} />
+  ),
+});
+
 export type TypeSummaryExhaleResult = keyof typeof summaryExhaleResult;
 
 export interface Field {

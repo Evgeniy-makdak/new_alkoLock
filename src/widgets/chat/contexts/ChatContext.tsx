@@ -4,6 +4,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 
 import i18n from '../../../i18n';
 import { ChatConfig } from '../contexts/chatConfig';
+import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
   resolveSessionDialogIdForUnread,
@@ -117,7 +118,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     lastMessage,
     stompClient,
     dialogsUnreadCounts: socketDialogsUnreadCounts,
-    updateDialogUnreadCount: socketUpdateDialogUnreadCount,
+    reconcileDialogUnreadFromSessionFeed: socketReconcileDialogUnreadFromSessionFeed,
     mergeDialogUnreadFromApi: socketMergeDialogUnreadFromApi,
     incrementDialogUnreadCount: socketIncrementDialogUnreadCount,
     flushIncomingChatMessages,
@@ -204,38 +205,42 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }).length;
       const countForSocket = Math.max(count, relaxedUnread);
-      const fromSocketMap = !isNaN(dialogIdNum)
-        ? (socketDialogsUnreadCounts.get(dialogIdNum) ?? 0)
-        : 0;
       const hasAnyMessageForDialog = session.messages.some((msg: any) => {
         const msgDialogId = msg.dialogId?.toString() || msg.dialog?.id?.toString() || '';
         return msgDialogId === dialogIdStr;
       });
-      // Пока в ленте нет сообщений этого диалога — не доверяем локальному 0 (ещё не подгрузили).
-      // Если сообщения есть и локально непрочитанных нет — обнуляем карту, иначе после прочтения
-      // Math.max(0, старый socket) вечно держит 2 на бейдже.
-      const merged =
-        countForSocket === 0 && hasAnyMessageForDialog
-          ? 0
-          : Math.max(countForSocket, fromSocketMap);
-      const unreadForSession = merged;
-
-      updateSession(sessionId, { unreadCount: unreadForSession });
-      if (!isNaN(dialogIdNum)) {
-        chatUnreadTrace('context.updateSessionUnreadCount (messages → session + socket map)', {
-          sessionId,
-          dialogId: dialogIdStr,
-          count,
-          relaxedUnread,
-          countForSocket,
-          fromSocketMap,
-          hasAnyMessageForDialog,
-          merged,
-        });
-        socketUpdateDialogUnreadCount(dialogIdNum, merged);
+      if (isNaN(dialogIdNum)) {
+        updateSession(sessionId, { unreadCount: countForSocket });
+        return;
       }
+
+      /** Карту обновляем через functional setState с prev — иначе после абсолютного WS (=1) пересчёт
+       * с устаревшим snapshot из пропсов пишет 0 и затирает бейдж (естьСообщенияДиалогаВЛенте: false). */
+      socketReconcileDialogUnreadFromSessionFeed(
+        dialogIdNum,
+        countForSocket,
+        hasAnyMessageForDialog,
+        (next, prevSocket) => {
+          operatorUnreadDebug('Пересчёт непрочитанных → сессия и WS-карта', {
+            sessionId,
+            dialogId: dialogIdStr,
+            свёрнута: session.isMinimized,
+            строгоВЛенте: count,
+            расширенныйПодсчёт: relaxedUnread,
+            вКартуПишем: next,
+            былоВКартеWs: prevSocket,
+            естьСообщенияДиалогаВЛенте: hasAnyMessageForDialog,
+            подсчётПоЛентеДляСессии: countForSocket,
+            примечание:
+              !hasAnyMessageForDialog && countForSocket === 0 && prevSocket > 0
+                ? 'лента пуста по dialogId — не затираем prev в Map'
+                : undefined,
+          });
+          updateSession(sessionId, { unreadCount: next });
+        },
+      );
     },
-    [getSession, updateSession, socketUpdateDialogUnreadCount, socketDialogsUnreadCounts],
+    [getSession, updateSession, socketReconcileDialogUnreadFromSessionFeed],
   );
 
   const recalculateSessionUnreadCount = useCallback(
@@ -656,7 +661,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       // захватывает развёрнутое окно, и сообщение «перекидывает» диалог в основную панель.
       let existingSession: (typeof currentSessions)[number] | undefined;
       let foundViaUnreadDialogs = false;
-      let dialogToOpen: any = null;
 
       if (dialogIdStr) {
         existingSession = pickSessionMatchingDialogId(
@@ -683,11 +687,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           if (matchingDialog) {
             existingSession = sessionWithUnread;
             foundViaUnreadDialogs = true;
-            dialogToOpen = matchingDialog;
           } else if (messageData.dialog) {
             existingSession = sessionWithUnread;
             foundViaUnreadDialogs = true;
-            dialogToOpen = messageData.dialog;
           }
         }
       }
@@ -755,9 +757,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             activeDialogIdRaw !== dialogIdStr &&
             Boolean(ownerMatchesSession));
 
-        const isClosedInPreview =
-          foundViaUnreadDialogs && isChatDialogClosedStatus(dialogToOpen?.status);
-        if (!isClosedInPreview && shouldAppendMessageToSession) {
+        if (shouldAppendMessageToSession) {
           await messageHandlers.addMessageFromWebSocket(existingSession.id, messageData);
         }
 
@@ -786,19 +786,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         /* Свёрнутая и развёрнутая: пересчёт session.unreadCount и стыковка с WS-картой (раньше только для развёрнутой — бейджи превью не жили онлайн). */
-        if (!isClosedInPreview) {
-          const messageDialogIdForUnread = messageData.dialog?.id || messageData.dialogId;
-          const sessionDialogIdFallback =
-            existingSession.selectedDialog?.id || existingSession.assignedDialogId;
+        const messageDialogIdForUnread = messageData.dialog?.id || messageData.dialogId;
+        const sessionDialogIdFallback =
+          existingSession.selectedDialog?.id || existingSession.assignedDialogId;
 
-          setTimeout(() => {
-            if (messageDialogIdForUnread) {
-              updateSessionUnreadCount(existingSession.id, messageDialogIdForUnread.toString());
-            } else if (sessionDialogIdFallback && sessionDialogIdFallback !== '0') {
-              updateSessionUnreadCount(existingSession.id, sessionDialogIdFallback.toString());
-            }
-          }, 200);
-        }
+        setTimeout(() => {
+          if (messageDialogIdForUnread) {
+            updateSessionUnreadCount(existingSession.id, messageDialogIdForUnread.toString());
+          } else if (sessionDialogIdFallback && sessionDialogIdFallback !== '0') {
+            updateSessionUnreadCount(existingSession.id, sessionDialogIdFallback.toString());
+          }
+        }, 200);
 
         if (
           messageData.uuid &&
@@ -1232,11 +1230,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         if (!session.selectedDialog?.status) return;
 
         const timerId = setTimeout(() => {
-          const sentMessages = session.messages.filter(
-            (msg: any) => msg.messageStatus === 'TO_OPERATOR' && msg.confirmStatus === 'SENT',
+          const pendingDeliveryMessages = session.messages.filter(
+            (msg: any) =>
+              msg.messageStatus === 'TO_OPERATOR' &&
+              !msg.is_read &&
+              String(msg.confirmStatus ?? '').toUpperCase() !== 'READ' &&
+              (String(msg.confirmStatus ?? '').toUpperCase() === 'SENT' ||
+                String(msg.confirmStatus ?? '').toUpperCase() === 'DELIVERED'),
           );
 
-          if (sentMessages.length > 0) {
+          if (pendingDeliveryMessages.length > 0) {
             statusHandlers.sendDeliveredStatusesForSession(activeSessionId);
           }
         }, 1000);
@@ -1261,6 +1264,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const dialogId = resolveSessionDialogIdForUnread(session);
       if (dialogId == null || !socketDialogsUnreadCounts.has(dialogId)) return;
       const count = socketDialogsUnreadCounts.get(dialogId)!;
+      if (session.isMinimized && count < (session.unreadCount ?? 0)) {
+        chatUnreadTrace('context.sync session.unreadCount skip (minimized, WS ниже локального)', {
+          sessionId: session.id,
+          dialogId,
+          wsCount: count,
+          prevSessionUnread: session.unreadCount ?? 0,
+        });
+        return;
+      }
       if (count !== (session.unreadCount ?? 0)) {
         chatUnreadTrace('context.sync session.unreadCount из SocketContext map', {
           sessionId: session.id,

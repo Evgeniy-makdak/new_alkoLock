@@ -14,7 +14,7 @@ import type { IAttachmentItems } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
 import style from '../ui/AvtoServiceTable.module.scss';
-import { chipColor } from './getRows';
+import { type ServiceModeStatusKey, chipColor } from './getRows';
 
 export enum ValuesHeader {
   DATE = SortTypes.DATE_CREATE,
@@ -72,7 +72,8 @@ export const useGetColumns = (
         minWidth: 220,
         renderCell: (params) => {
           const state = params?.formattedValue || '';
-          return <Chip className={style.chipFont} color={chipColor[state]} label={state} />;
+          const stateKey = params?.row?.stateKey as ServiceModeStatusKey | undefined;
+          return <Chip className={style.chipFont} color={chipColor[stateKey]} label={state} />;
         },
         sortable: false,
       },

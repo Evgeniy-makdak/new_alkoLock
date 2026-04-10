@@ -118,7 +118,26 @@
     "notValidData": "Некорректные данные",
     "notValidName": "Некорректное имя",
     "notValidVin": "Некорректный VIN",
+    "notValidUUID4": "Введите UID в формате XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+    "notValidMacAddress": "Некорректный MAC-адрес",
     "notValidPasswordLength": "Пароль должен содержать минимум 8 символов",
+    "notValidSerialNumber": "Серийный номер должен содержать от 1 до 20 символов",
+    "similarDateOfLicense": "Дата получения прав должна быть меньше даты истечения срока прав",
+    "defaultError": "Ошибка валидации",
+    "passwordsMustMatch": "Новый пароль не должен совпадать с текущим",
+    "dateIssueMaxToday": "Дата выдачи не может быть позже сегодняшнего дня",
+    "dateExpirationMinToday": "Дата окончания не может быть раньше сегодняшнего дня",
+    "expirationDateBeforeIssue": "Дата окончания должна быть позже даты выдачи",
+    "invalidDateFormat": "Неверный формат даты",
+    "invalidDate": "Некорректная дата",
+    "birthDateNotFuture": "Дата рождения не может быть позднее сегодняшнего дня",
+    "minAge14": "Возраст должен быть не менее 14 лет",
+    "issueDateNotFuture": "Дата выдачи не может быть позднее сегодняшнего дня",
+    "expirationDateNotPast": "Дата окончания не может быть ранее сегодняшнего дня",
+    "singleColorRequired": "Поле \"Цвет\" должно содержать 1 значение",
+    "singleTypeRequired": "Поле \"Тип\" должно содержать 1 значение",
+    "yearNotAbove": "Год не должен превышать {{max}}",
+    "yearNotBelow": "Год должен быть не ниже {{min}}",
     "passwordsNotMustMatch": "Пароли не совпадают",
     "passwordCharsetRule": "Пароль должен содержать буквы латинского и/или кириллического алфавитов, а также цифры. Допускаются спец.символы и знаки пунктуации",
     "verificationCodeLength": "Код должен содержать 6 символов",
@@ -345,6 +364,7 @@
     "repeatPassword": "Повторить пароль",
     "uploadAvatar": "Загрузить аватар профиля",
     "upload": "Загрузить",
+    "uploadToGallery": "Загрузить в галерею",
     "roleName": "Название роли",
     "createRights": "Права на создание",
     "readRights": "Права на чтение",
@@ -413,7 +433,18 @@
     "licenseNumber": "Номер ВУ",
     "issueDate": "Дата выдачи",
     "expiration": "Срок",
-    "categories": "Категории"
+    "categories": "Категории",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Тестирование не пройдено",
+      "deviceTestErrorInterrupted": "Выдох прерван",
+      "testFalsification": "Фальсификация выдоха",
+      "failed": "Нетрезвый",
+      "passed": "Трезвый",
+      "foreignObjectInCuvetteDuringExhalation": "Попадание постороннего предмета в кювету во время выдоха",
+      "shortExhale": "Короткий выдох",
+      "weakExhale": "Слабый выдох",
+      "alcoholBackground": "Обнаружен спиртовой фон"
+    }
   },
   "filters": {
     "searchByUser": "Поиск по пользователю",
@@ -468,7 +499,21 @@
     "activeRequestMessage": "Для данного устройства есть активная заявка",
     "displayError": "Ошибка в отображении сервисного режима",
     "serverRequest": "Запрос сервера",
-    "appRequest": "Запрос приложения"
+    "appRequest": "Запрос приложения",
+    "status": {
+      "driverWaiting": "Ожидание водителя",
+      "operatorWaiting": "Ожидание оператора",
+      "operatorRejected": "Оператор отклонил",
+      "driverRejected": "Водитель отклонил",
+      "offlineSwitch": "Офлайн-переключение",
+      "driverConfirmed": "Водитель подтвердил",
+      "operatorConfirmed": "Оператор подтвердил",
+      "expired": "Истекло время обработки"
+    },
+    "process": {
+      "activate": "Включение",
+      "deactivate": "Выключение"
+    }
   },
   "modals": {
     "addUser": "Добавление пользователя",

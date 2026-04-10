@@ -118,7 +118,26 @@
     "notValidData": "Invalid data",
     "notValidName": "Invalid name",
     "notValidVin": "Invalid VIN",
+    "notValidUUID4": "Enter UID in format XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX",
+    "notValidMacAddress": "Invalid MAC address",
     "notValidPasswordLength": "Password must be at least 8 characters",
+    "notValidSerialNumber": "Serial number must contain from 1 to 20 characters",
+    "similarDateOfLicense": "Issue date must be earlier than expiration date",
+    "defaultError": "Validation error",
+    "passwordsMustMatch": "New password must not match current password",
+    "dateIssueMaxToday": "Issue date cannot be later than today",
+    "dateExpirationMinToday": "Expiration date cannot be earlier than today",
+    "expirationDateBeforeIssue": "Expiration date must be later than issue date",
+    "invalidDateFormat": "Invalid date format",
+    "invalidDate": "Invalid date",
+    "birthDateNotFuture": "Birth date cannot be later than today",
+    "minAge14": "Age must be at least 14 years",
+    "issueDateNotFuture": "Issue date cannot be later than today",
+    "expirationDateNotPast": "Expiration date cannot be earlier than today",
+    "singleColorRequired": "Field \"Color\" must contain 1 value",
+    "singleTypeRequired": "Field \"Type\" must contain 1 value",
+    "yearNotAbove": "Year must not exceed {{max}}",
+    "yearNotBelow": "Year must not be below {{min}}",
     "passwordsNotMustMatch": "Passwords do not match",
     "passwordCharsetRule": "The password must include Latin and/or Cyrillic letters and at least one digit. Special characters and punctuation are allowed.",
     "verificationCodeLength": "The code must be 6 characters",
@@ -295,6 +314,7 @@
     "repeatPassword": "Repeat password",
     "uploadAvatar": "Upload profile avatar",
     "upload": "Upload",
+    "uploadToGallery": "Upload to gallery",
     "roleName": "Role Name",
     "createRights": "Create Rights",
     "readRights": "Read Rights",
@@ -363,7 +383,18 @@
     "licenseNumber": "License number",
     "issueDate": "Issue date",
     "expiration": "Expiration",
-    "categories": "Categories"
+    "categories": "Categories",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Test failed",
+      "deviceTestErrorInterrupted": "Exhalation interrupted",
+      "testFalsification": "Exhalation falsification",
+      "failed": "Drunk",
+      "passed": "Sober",
+      "foreignObjectInCuvetteDuringExhalation": "Foreign object in cuvette during exhalation",
+      "shortExhale": "Short exhalation",
+      "weakExhale": "Weak exhalation",
+      "alcoholBackground": "Alcohol background detected"
+    }
   },
   "filters": {
     "searchByUser": "Search by user",
@@ -468,7 +499,21 @@
     "activeRequestMessage": "There is an active request for this device",
     "displayError": "Error displaying service mode",
     "serverRequest": "Server request",
-    "appRequest": "App request"
+    "appRequest": "App request",
+    "status": {
+      "driverWaiting": "Waiting for driver",
+      "operatorWaiting": "Waiting for operator",
+      "operatorRejected": "Rejected by operator",
+      "driverRejected": "Rejected by driver",
+      "offlineSwitch": "Offline switch",
+      "driverConfirmed": "Confirmed by driver",
+      "operatorConfirmed": "Confirmed by operator",
+      "expired": "Processing timeout expired"
+    },
+    "process": {
+      "activate": "Activation",
+      "deactivate": "Deactivation"
+    }
   },
   "modals": {
     "addUser": "Add User",

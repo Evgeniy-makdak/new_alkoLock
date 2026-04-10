@@ -4,6 +4,44 @@ import { useCallback, useState } from 'react';
 import { chatSessionTrace } from '../chatUnreadTrace';
 import { ChatSession } from '../types/ChatTypes';
 
+function feedDialogIdStr(s: ChatSession): string | null {
+  if (s.selectedDialog?.id != null && String(s.selectedDialog.id) !== '0') {
+    return String(s.selectedDialog.id);
+  }
+  const ad = s.assignedDialogId;
+  if (ad != null && String(ad) !== '' && String(ad) !== '0' && String(ad) !== 'assigned') {
+    return String(ad);
+  }
+  if (s.messages?.length) {
+    const m = s.messages.find((x: any) => x.dialogId != null || x.dialog?.id != null);
+    if (m) {
+      const id = String(m.dialogId ?? m.dialog?.id ?? '');
+      if (id !== '') return id;
+    }
+  }
+  return null;
+}
+
+/** Входящие с SENT при раскрытом чате отображаем как DELIVERED до ответа бэка. */
+function normalizeExpandedSessionInboundStatus(s: ChatSession): ChatSession {
+  const expanded = { ...s, isMinimized: false };
+  const fid = feedDialogIdStr(expanded);
+  if (!fid || !expanded.messages?.length) return expanded;
+  const messages = expanded.messages.map((msg: any) => {
+    const mid = msg.dialogId?.toString() || msg.dialog?.id?.toString() || '';
+    if (
+      mid === fid &&
+      msg.messageStatus === 'TO_OPERATOR' &&
+      String(msg.confirmStatus ?? '').toUpperCase() === 'SENT' &&
+      !msg.is_read
+    ) {
+      return { ...msg, confirmStatus: 'DELIVERED' };
+    }
+    return msg;
+  });
+  return { ...expanded, messages };
+}
+
 export const useChatSessions = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -166,7 +204,7 @@ export const useChatSessions = () => {
       }
       chatSessionTrace('exclusiveExpand.before', { sessionId, sessions: snap(prev) });
       const next = prev.map((s) => {
-        if (s.id === sessionId) return { ...s, isMinimized: false };
+        if (s.id === sessionId) return normalizeExpandedSessionInboundStatus(s);
         if (!s.isMinimized) return { ...s, isMinimized: true };
         return s;
       });

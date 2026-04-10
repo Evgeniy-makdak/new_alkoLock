@@ -152,6 +152,7 @@ export const useChatDialogs = (
 
       try {
         updateSession(sessionId, {
+          isMinimized: false,
           selectedDialog: {
             id: dialogId,
             client_name: dialog.owner.fullName,

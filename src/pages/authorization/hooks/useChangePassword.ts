@@ -66,7 +66,7 @@ export const useChangePassword = () => {
 
     mutate(data, {
       //@ts-expect-error: временное решение
-      onSuccess: (response: { status: StatusCode; detail: ValidationMessages }) => {
+      onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
           navigate(RoutePaths.auth);

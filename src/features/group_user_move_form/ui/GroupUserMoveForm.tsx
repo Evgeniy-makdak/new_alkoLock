@@ -52,7 +52,7 @@ const GroupUserMoveFormInner: FC<{
           label="Поиск по группам"
           filter={targetBranch}
         />
-        {error && <span className={style.errorText}>Обязательное поле</span>}
+        {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>

@@ -117,7 +117,26 @@
     "notValidData": "Маалымат туура эмес",
     "notValidName": "Аты туура эмес",
     "notValidVin": "VIN туура эмес",
+    "notValidUUID4": "UID XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX форматында болушу керек",
+    "notValidMacAddress": "MAC дарек туура эмес",
     "notValidPasswordLength": "Сыр сөз кем дегенде 8 символдон турушу керек",
+    "notValidSerialNumber": "Сериялык номер 1ден 20 символго чейин болушу керек",
+    "similarDateOfLicense": "Күбөлүктүн берилген күнү мөөнөтү бүткөн күндөн эрте болушу керек",
+    "defaultError": "Текшерүү катасы",
+    "passwordsMustMatch": "Жаңы сыр сөз азыркы сыр сөз менен дал келбеши керек",
+    "dateIssueMaxToday": "Берилген күн бүгүнкү күндөн кеч болбошу керек",
+    "dateExpirationMinToday": "Аяктоо күнү бүгүнкү күндөн эрте болбошу керек",
+    "expirationDateBeforeIssue": "Аяктоо күнү берилген күндөн кийин болушу керек",
+    "invalidDateFormat": "Күндүн форматы туура эмес",
+    "invalidDate": "Күн туура эмес",
+    "birthDateNotFuture": "Туулган күн бүгүнкү күндөн кеч болбошу керек",
+    "minAge14": "Жашы кеминде 14 болушу керек",
+    "issueDateNotFuture": "Берилген күн бүгүнкү күндөн кеч болбошу керек",
+    "expirationDateNotPast": "Аяктоо күнү бүгүнкү күндөн эрте болбошу керек",
+    "singleColorRequired": "\"Түс\" талаасында 1 маани болушу керек",
+    "singleTypeRequired": "\"Түр\" талаасында 1 маани болушу керек",
+    "yearNotAbove": "Жыл {{max}} маанисинен ашпашы керек",
+    "yearNotBelow": "Жыл {{min}} маанисинен төмөн болбошу керек",
     "passwordsNotMustMatch": "Сыр сөздөр дал келбейт",
     "passwordCharsetRule": "Сыр сөздө латын жана/же кирилл тамгалары жана жок дегенде бир сан болушу керек. Атайын символдор жана тыныш белгилерине уруксат берилет.",
     "verificationCodeLength": "Код 6 символдон турушу керек",
@@ -294,6 +313,7 @@
     "repeatPassword": "Сыр сөздү кайталаңыз",
     "uploadAvatar": "Профиль аватарын жүктөө",
     "upload": "Жүктөө",
+    "uploadToGallery": "Галереяга жүктөө",
     "roleName": "Рөл аталышы",
     "createRights": "Түзүү укуктары",
     "readRights": "Окуу укуктары",
@@ -362,7 +382,18 @@
     "licenseNumber": "ВУ номери",
     "issueDate": "Берилген күнү",
     "expiration": "Мөөнөтү",
-    "categories": "Категориялар"
+    "categories": "Категориялар",
+    "summary": {
+      "deviceTestErrorHighConcentration": "Тесттен өткөн жок",
+      "deviceTestErrorInterrupted": "Үйлөө үзгүлтүккө учурады",
+      "testFalsification": "Үйлөөнү бурмалоо",
+      "failed": "Мас",
+      "passed": "Сергек",
+      "foreignObjectInCuvetteDuringExhalation": "Үйлөө маалында кюветага бөтөн нерсе түштү",
+      "shortExhale": "Кыска үйлөө",
+      "weakExhale": "Алсыз үйлөө",
+      "alcoholBackground": "Спирттик фон табылды"
+    }
   },
   "filters": {
     "searchByUser": "Колдонуучу боюнча издөө",
@@ -467,7 +498,21 @@
     "activeRequestMessage": "Бул түзмөк үчүн активдүү өтүнүч бар",
     "displayError": "Сервистик режимди көрсөтүүдө ката",
     "serverRequest": "Сервер суроосу",
-    "appRequest": "Колдонмо суроосу"
+    "appRequest": "Колдонмо суроосу",
+    "status": {
+      "driverWaiting": "Айдоочуну күтүү",
+      "operatorWaiting": "Операторду күтүү",
+      "operatorRejected": "Оператор четке какты",
+      "driverRejected": "Айдоочу четке какты",
+      "offlineSwitch": "Офлайн которуу",
+      "driverConfirmed": "Айдоочу ырастады",
+      "operatorConfirmed": "Оператор ырастады",
+      "expired": "Иштетүү убактысы бүттү"
+    },
+    "process": {
+      "activate": "Күйгүзүү",
+      "deactivate": "Өчүрүү"
+    }
   },
   "modals": {
     "addUser": "Колдонуучу кошуу",

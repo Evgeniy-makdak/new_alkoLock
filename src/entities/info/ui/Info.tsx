@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, Divider } from '@mui/material';
@@ -7,8 +8,8 @@ import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext';
 
 import {
   type Field,
+  getSummaryExhaleResult,
   getTypeOfRowIconLabel,
-  summaryExhaleResult,
 } from '../lib/getTypeOfRowIconLabel';
 import { getTypeOfRowIconValue } from '../lib/getTypeOfRowIconValue';
 import style from './Info.module.scss';
@@ -24,8 +25,10 @@ type InfoProps = {
 };
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
+  const { t } = useTranslation();
   const { alkoId } = useAlkoContext();
   const navigate = useNavigate();
+  const summaryExhaleResult = getSummaryExhaleResult(t);
   const onClick = (id: string) => {
     navigate('/alkozamki', { state: { selectedId: id } });
   };

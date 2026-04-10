@@ -6,6 +6,8 @@ import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 import { ValidationRules } from '@shared/validations/validation_rules';
 
+import i18n from '../../../i18n';
+
 export type Form = {
   mark: string;
   model: string;
@@ -27,14 +29,14 @@ yup.addMethod(object, 'dayjs', function method(message) {
     const isValid = value?.isValid && value?.isValid();
 
     if (!isValid) {
-      return ctx.createError({ message: 'Невалидное значение' });
+      return ctx.createError({ message: i18n.t('validation.notValidData') });
     }
 
     const year = value.year();
     if (year > maxYear) {
-      return ctx.createError({ message: `Год не должен превышать ${maxYear}` });
+      return ctx.createError({ message: i18n.t('validation.yearNotAbove', { max: maxYear }) });
     } else if (year < minYear) {
-      return ctx.createError({ message: `Год должен быть не ниже ${minYear}` });
+      return ctx.createError({ message: i18n.t('validation.yearNotBelow', { min: minYear }) });
     }
     return true;
   });
@@ -105,10 +107,10 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
   yearText: yup.string().optional(),
   color: yup
     .array<Value, Value>()
-    .min(1, 'Поле "Цвет" должно содержать 1 значение')
-    .max(1, 'Поле "Цвет" должно содержать 1 значение'),
+    .min(1, i18n.t('validation.singleColorRequired'))
+    .max(1, i18n.t('validation.singleColorRequired')),
   type: yup
     .array<Value, Value>()
-    .min(1, 'Поле "Тип" должно содержать 1 значение')
-    .max(1, 'Поле "Тип" должно содержать 1 значение'),
+    .min(1, i18n.t('validation.singleTypeRequired'))
+    .max(1, i18n.t('validation.singleTypeRequired')),
 });

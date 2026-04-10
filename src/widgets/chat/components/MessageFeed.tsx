@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { CircularProgress } from '@mui/material';
 
 import { useChat } from '../contexts/ChatContext';
+import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './MessageFeed.module.scss';
 
 interface MessageFeedProps {
@@ -28,11 +29,45 @@ interface MessageFeedProps {
   totalPages?: number;
   onMarkMessagesAsRead?: (messageIds: string[]) => void;
   unreadCount?: number;
+  /** Подсказка для сценария expand до загрузки ленты (обычно max-счётчик из шапки/WS). */
+  expandUnreadHintCount?: number;
   scrollToBottomOnExpand?: boolean;
   onScrollToBottomDone?: () => void;
   dialogStatus?: string;
   isDialogBlockedByOtherOperator?: boolean;
   isDialogEnded?: boolean;
+}
+
+/** Как relaxed в updateSessionUnreadCount: входящие не READ, не только SENT/DELIVERED — иначе скролл к первому не срабатывает. */
+function isInboundUnreadForExpandScroll(msg: any): boolean {
+  return (
+    msg.messageStatus === 'TO_OPERATOR' &&
+    !msg.is_read &&
+    String(msg.confirmStatus ?? '').toUpperCase() !== 'READ'
+  );
+}
+
+function resolveFeedDialogIdFromSession(session: any, allMessages: any[]): string | null {
+  let id =
+    session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+      ? String(session.selectedDialog.id)
+      : session?.assignedDialogId &&
+          String(session.assignedDialogId) !== '0' &&
+          String(session.assignedDialogId) !== 'assigned'
+        ? String(session.assignedDialogId)
+        : null;
+  if (id == null && Array.isArray(allMessages) && allMessages.length > 0) {
+    const m = allMessages.find((x: any) => x.dialogId != null || x.dialog?.id != null);
+    if (m) id = String(m.dialogId ?? m.dialog?.id ?? '');
+  }
+  return id && id !== '' ? id : null;
+}
+
+function parseMessageTimeMs(msg: any): number {
+  const raw = msg?.created_at ?? msg?.createdAt ?? null;
+  if (!raw) return Number.POSITIVE_INFINITY;
+  const t = new Date(raw).getTime();
+  return Number.isNaN(t) ? Number.POSITIVE_INFINITY : t;
 }
 
 function MessageFeed({
@@ -46,6 +81,7 @@ function MessageFeed({
   selectedUserName,
   onMarkMessagesAsRead,
   unreadCount: externalUnreadCount,
+  expandUnreadHintCount = 0,
   scrollToBottomOnExpand,
   onScrollToBottomDone,
   dialogStatus = '',
@@ -67,9 +103,22 @@ function MessageFeed({
   const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
   const visibleMessagesIds = useRef<Set<string>>(new Set());
   const sentReadStatusesRef = useRef<Set<string>>(new Set());
+
+  const readSentTrackingKeys = useCallback((msg: any): string[] => {
+    const keys: string[] = [];
+    if (msg?.uuid != null && String(msg.uuid).trim() !== '') keys.push(String(msg.uuid));
+    if (msg?.id != null) keys.push(String(msg.id));
+    return keys;
+  }, []);
   const firstUnreadMessageRef = useRef<{ id: string; index: number } | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const needsScrollToBottomRef = useRef(false);
+  /** Сценарий после expand: держим специальную логику скролла активной, даже если проп уже стал false. */
+  const expandScrollPendingRef = useRef(false);
+  /** Раскрытие окна при непрочитанных входящих: прокрутка к первому непрочитанному вместо низа. */
+  const needsScrollToFirstUnreadRef = useRef(false);
+  /** Блокирует принудительный скролл вниз после раскрытия с непрочитанными (layout/messagesJustLoaded/load). */
+  const suppressBottomScrollAfterExpandUnreadRef = useRef(false);
   const scrollDoneCallbackRef = useRef<(() => void) | undefined>(undefined);
   const prevMessageLenRef = useRef(messages.length);
 
@@ -105,26 +154,24 @@ function MessageFeed({
   const canInteractWithMessages =
     dialogStatus === 'CLOSED' && !isDialogBlockedByOtherOperator && !isDialogEnded;
 
-  const feedDialogId =
-    session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
-      ? String(session.selectedDialog.id)
-      : session?.assignedDialogId &&
-          String(session.assignedDialogId) !== '0' &&
-          String(session.assignedDialogId) !== 'assigned'
-        ? String(session.assignedDialogId)
-        : null;
+  const feedDialogId = useMemo(
+    () => resolveFeedDialogIdFromSession(session, messages),
+    [session, messages],
+  );
 
   /** Не показывать в основной ленте сообщения «чужих» диалогов (превью в той же сессии). */
   const messagesInActiveDialog = useMemo(() => {
     if (!feedDialogId) return [];
     return messages.filter((msg) => String(msg.dialogId ?? msg.dialog?.id ?? '') === feedDialogId);
   }, [messages, feedDialogId]);
+  const hasUnreadOnExpandHint =
+    !!scrollToBottomOnExpand &&
+    (expandUnreadHintCount > 0 || messagesInActiveDialog.some(isInboundUnreadForExpandScroll));
 
   const calculateUnreadMessages = useCallback(() => {
     let count = 0;
-
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
+    for (let i = messagesInActiveDialog.length - 1; i >= 0; i--) {
+      const msg = messagesInActiveDialog[i];
 
       if (
         msg.messageStatus === 'TO_OPERATOR' &&
@@ -140,10 +187,15 @@ function MessageFeed({
     }
 
     return count;
-  }, [messages, lastSeenMessageId]);
+  }, [messagesInActiveDialog, lastSeenMessageId]);
 
   const sendReadStatusForVisibleMessages = useCallback(() => {
     if (!onMarkMessagesAsRead) {
+      return;
+    }
+    // Пока не завершили позиционирование после раскрытия с непрочитанными,
+    // не отправляем READ по видимости: это преждевременно помечает "хвост" как прочитанный.
+    if (expandScrollPendingRef.current || needsScrollToFirstUnreadRef.current) {
       return;
     }
 
@@ -153,55 +205,107 @@ function MessageFeed({
 
     const messagesToMarkAsRead: string[] = [];
 
-    messages.forEach((msg) => {
+    messagesInActiveDialog.forEach((msg) => {
       const messageIdentifier = msg.id ? String(msg.id) : null;
-      const msgKey = msg.uuid || msg.id;
+      const trackKeys = readSentTrackingKeys(msg);
+      const callbackId =
+        msg.uuid != null && String(msg.uuid).trim() !== ''
+          ? String(msg.uuid)
+          : msg.id != null
+            ? String(msg.id)
+            : '';
 
-      if (!msgKey) return;
+      if (!callbackId) return;
 
       const isVisible = messageIdentifier
         ? visibleMessagesIds.current.has(messageIdentifier)
-        : false;
-      const alreadySent = sentReadStatusesRef.current.has(msgKey);
+        : msg.uuid
+          ? visibleMessagesIds.current.has(String(msg.uuid))
+          : false;
+      const alreadySent = trackKeys.some((k) => sentReadStatusesRef.current.has(k));
 
       const canSendRead =
         (msg.confirmStatus === 'DELIVERED' || msg.confirmStatus === 'SENT') && !alreadySent;
       const shouldSend = isVisible && msg.messageStatus === 'TO_OPERATOR' && canSendRead;
 
       if (shouldSend) {
-        messagesToMarkAsRead.push(msgKey);
-        sentReadStatusesRef.current.add(msgKey);
+        messagesToMarkAsRead.push(callbackId);
+        trackKeys.forEach((k) => sentReadStatusesRef.current.add(k));
       }
     });
 
     if (messagesToMarkAsRead.length > 0) {
+      operatorUnreadDebug('Отправка READ по видимости ленты', {
+        sessionId,
+        dialogId: feedDialogId,
+        ids: messagesToMarkAsRead,
+      });
       messagesToMarkAsRead.forEach((messageId, index) => {
         setTimeout(() => {
           onMarkMessagesAsRead([messageId]);
         }, index * 500);
       });
     }
-  }, [messages, onMarkMessagesAsRead]);
+  }, [messagesInActiveDialog, onMarkMessagesAsRead, sessionId, feedDialogId, readSentTrackingKeys]);
 
   useEffect(() => {
     const count = calculateUnreadMessages();
     setInternalUnreadCount(count);
-
-    if (isAtBottom && count > 0 && messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      setLastSeenMessageId(lastMessage.id);
-      setInternalUnreadCount(0);
-    }
-  }, [messages, isAtBottom, calculateUnreadMessages]);
+  }, [messages, calculateUnreadMessages]);
 
   const unreadCount = externalUnreadCount !== undefined ? externalUnreadCount : internalUnreadCount;
 
   const messagesJustLoaded = messages.length > 0 && prevMessageLenRef.current === 0;
   prevMessageLenRef.current = messages.length;
 
-  if (scrollToBottomOnExpand || (messages.length > 0 && isInitialLoad) || messagesJustLoaded) {
-    needsScrollToBottomRef.current = true;
-  }
+  useEffect(() => {
+    if (scrollToBottomOnExpand) {
+      expandScrollPendingRef.current = true;
+      const hasUnreadInboundInFeed = messagesInActiveDialog.some(isInboundUnreadForExpandScroll);
+      const hasUnreadHintFromBadge = expandUnreadHintCount > 0;
+      const shouldScrollToFirstUnread = hasUnreadInboundInFeed || hasUnreadHintFromBadge;
+
+      needsScrollToFirstUnreadRef.current = shouldScrollToFirstUnread;
+      // Важный момент: пока лента после expand ещё пустая, нельзя заранее ставить скролл вниз.
+      // Иначе после прихода history это перехватывает фокус и уводит к нижнему сообщению.
+      needsScrollToBottomRef.current =
+        !shouldScrollToFirstUnread && messagesInActiveDialog.length > 0;
+
+      if (shouldScrollToFirstUnread) {
+        suppressBottomScrollAfterExpandUnreadRef.current = true;
+        // Принудительно убираем возможный "унаследованный" низ от предыдущего состояния
+        // до того, как начнётся закрепление на первом непрочитанном.
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = 0;
+        }
+        operatorUnreadDebug('Раскрытие с непрочитанными: включаем блокировку автоскролла вниз', {
+          sessionId,
+          feedDialogId,
+          непрочитанныхВЛенте: messagesInActiveDialog.filter(isInboundUnreadForExpandScroll).length,
+          подсказкаИзБейджа: hasUnreadHintFromBadge,
+        });
+      }
+      return;
+    }
+
+    if (
+      ((messages.length > 0 && isInitialLoad) || messagesJustLoaded) &&
+      !suppressBottomScrollAfterExpandUnreadRef.current &&
+      !expandScrollPendingRef.current
+    ) {
+      needsScrollToFirstUnreadRef.current = false;
+      needsScrollToBottomRef.current = true;
+    }
+  }, [
+    scrollToBottomOnExpand,
+    messagesInActiveDialog,
+    expandUnreadHintCount,
+    sessionId,
+    feedDialogId,
+    messages.length,
+    isInitialLoad,
+    messagesJustLoaded,
+  ]);
 
   useEffect(() => {
     scrollDoneCallbackRef.current = onScrollToBottomDone;
@@ -210,7 +314,13 @@ function MessageFeed({
   useEffect(() => {
     if (messages.length > 0 && isInitialLoad) {
       setIsInitialLoad(false);
-      needsScrollToBottomRef.current = true;
+      if (
+        !needsScrollToFirstUnreadRef.current &&
+        !hasUnreadOnExpandHint &&
+        !suppressBottomScrollAfterExpandUnreadRef.current
+      ) {
+        needsScrollToBottomRef.current = true;
+      }
 
       const lastReadMessage = [...messages]
         .reverse()
@@ -218,43 +328,46 @@ function MessageFeed({
 
       if (lastReadMessage) {
         setLastSeenMessageId(lastReadMessage.id);
-      } else if (messages.length > 0) {
-        setLastSeenMessageId(messages[messages.length - 1].id);
+      } else if (messagesInActiveDialog.length > 0) {
+        setLastSeenMessageId(messagesInActiveDialog[messagesInActiveDialog.length - 1].id);
       }
 
       let firstUnreadIndex = -1;
-      let firstUnreadId = null;
 
-      for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i];
+      for (let i = 0; i < messagesInActiveDialog.length; i++) {
+        const msg = messagesInActiveDialog[i];
         if (
           msg.messageStatus === 'TO_OPERATOR' &&
           (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
           !msg.is_read
         ) {
           firstUnreadIndex = i;
-          firstUnreadId = msg.id;
           break;
         }
       }
 
-      if (firstUnreadId) {
+      if (firstUnreadIndex >= 0) {
+        const um = messagesInActiveDialog[firstUnreadIndex];
         firstUnreadMessageRef.current = {
-          id: firstUnreadId,
+          id: String(um.id ?? um.uuid ?? firstUnreadIndex),
           index: firstUnreadIndex,
         };
       } else {
         firstUnreadMessageRef.current = null;
       }
     }
-  }, [messages, isInitialLoad]);
+  }, [messages, messagesInActiveDialog, isInitialLoad, hasUnreadOnExpandHint]);
 
   useLayoutEffect(() => {
+    if (hasUnreadOnExpandHint) return;
+    if (suppressBottomScrollAfterExpandUnreadRef.current) return;
+    if (expandScrollPendingRef.current) return;
+    if (needsScrollToFirstUnreadRef.current) return;
     if (!needsScrollToBottomRef.current) return;
     const container = scrollRef.current;
     if (!container || messages.length === 0) return;
     container.scrollTop = container.scrollHeight;
-  });
+  }, [hasUnreadOnExpandHint, messages.length]);
 
   const getFirstVisibleMessageId = useCallback((): string | null => {
     if (!scrollRef.current || messages.length === 0) return null;
@@ -445,19 +558,25 @@ function MessageFeed({
         loadFirstPageRef.current = false;
 
         setTimeout(() => {
-          if (scrollRef.current) {
-            scrollRef.current.scrollTo({
-              top: scrollRef.current.scrollHeight,
-              behavior: 'smooth',
-            });
-            setIsAtBottom(true);
-            setIsAtTop(false);
+          const container = scrollRef.current;
+          if (!container) return;
+          if (
+            suppressBottomScrollAfterExpandUnreadRef.current ||
+            needsScrollToFirstUnreadRef.current
+          ) {
+            return;
+          }
+          container.scrollTo({
+            top: container.scrollHeight,
+            behavior: 'smooth',
+          });
+          setIsAtBottom(true);
+          setIsAtTop(false);
 
-            if (messages.length > 0) {
-              const lastMessage = messages[messages.length - 1];
-              setLastSeenMessageId(lastMessage.id);
-              setInternalUnreadCount(0);
-            }
+          if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            setLastSeenMessageId(lastMessage.id);
+            setInternalUnreadCount(0);
           }
         }, 200);
       }, 1000);
@@ -551,18 +670,27 @@ function MessageFeed({
         scrollTriggerHistoryRef.current.down = false;
       }
 
-      if (isBottom && messages.length > 0) {
-        const lastMessage = messages[messages.length - 1];
-        if (lastMessage.id !== lastSeenMessageId) {
+      if (isBottom && messagesInActiveDialog.length > 0) {
+        const stillUnreadInbound = messagesInActiveDialog.some(isInboundUnreadForExpandScroll);
+        const lastMessage = messagesInActiveDialog[messagesInActiveDialog.length - 1];
+        if (!stillUnreadInbound && lastMessage.id !== lastSeenMessageId) {
           setLastSeenMessageId(lastMessage.id);
           setInternalUnreadCount(0);
+        }
+        if (
+          isBottom &&
+          !stillUnreadInbound &&
+          !needsScrollToFirstUnreadRef.current &&
+          !hasUnreadOnExpandHint
+        ) {
+          suppressBottomScrollAfterExpandUnreadRef.current = false;
         }
       }
 
       sendReadStatusForVisibleMessages();
     }, 200);
   }, [
-    messages,
+    messagesInActiveDialog,
     isAtBottom,
     isAtTop,
     pagination,
@@ -571,6 +699,7 @@ function MessageFeed({
     updateVisibleMessages,
     lastSeenMessageId,
     sendReadStatusForVisibleMessages,
+    hasUnreadOnExpandHint,
   ]);
 
   useEffect(() => {
@@ -596,11 +725,15 @@ function MessageFeed({
   }, [messages.length, sessionId, updateVisibleMessages, sendReadStatusForVisibleMessages]);
 
   useEffect(() => {
+    if (hasUnreadOnExpandHint) return;
+    if (suppressBottomScrollAfterExpandUnreadRef.current) return;
+    if (expandScrollPendingRef.current) return;
     if (!needsScrollToBottomRef.current || messages.length === 0) return;
+    if (needsScrollToFirstUnreadRef.current) return;
 
     let stopped = false;
     let attempts = 0;
-    const maxAttempts = 30;
+    const maxAttempts = 120;
 
     const tryScroll = () => {
       if (stopped) return;
@@ -629,30 +762,207 @@ function MessageFeed({
       stopped = true;
       clearInterval(intervalId);
     };
-  }, [messages]);
+  }, [messages, hasUnreadOnExpandHint]);
 
+  /** Раскрытие минимизированного окна: непрочитанные входящие — к первому, без массового READ. */
   useEffect(() => {
-    if (unreadCount > 0 && messages.length > 0) {
-      const unreadMessages = messages.filter(
-        (msg) =>
-          msg.messageStatus === 'TO_OPERATOR' &&
-          (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-          !msg.is_read,
-      );
+    // Важно: иногда флаг needsScrollToFirstUnreadRef сбрасывается раньше, чем история успевает прийти.
+    // suppressBottomScrollAfterExpandUnreadRef — более «долгоживущий» сигнал сценария expand с непрочитанными.
+    if (
+      (!needsScrollToFirstUnreadRef.current &&
+        !suppressBottomScrollAfterExpandUnreadRef.current &&
+        !expandScrollPendingRef.current) ||
+      messagesInActiveDialog.length === 0
+    ) {
+      return;
+    }
+    if (!needsScrollToFirstUnreadRef.current && suppressBottomScrollAfterExpandUnreadRef.current) {
+      needsScrollToFirstUnreadRef.current = true;
+    }
 
-      if (unreadMessages.length > 0) {
-        const visibleUnread = unreadMessages.filter((msg) => {
-          const messageIdentifier = msg.id ? String(msg.id) : null;
-          return messageIdentifier && visibleMessagesIds.current.has(messageIdentifier);
-        });
-
-        if (visibleUnread.length > 0 && onMarkMessagesAsRead) {
-          const messageIds = visibleUnread.map((m) => m.uuid || m.id);
-          onMarkMessagesAsRead(messageIds);
+    /** Самое раннее по времени непрочитанное входящее (порядок массива может расходиться с ответом API). */
+    const findFirstUnreadInbound = () => {
+      let best: { msg: (typeof messagesInActiveDialog)[0]; i: number } | null = null;
+      let bestTime = Infinity;
+      let bestIdNum = Infinity;
+      for (let i = 0; i < messagesInActiveDialog.length; i++) {
+        const msg = messagesInActiveDialog[i];
+        if (isInboundUnreadForExpandScroll(msg)) {
+          const tt = parseMessageTimeMs(msg);
+          const idNum = Number(msg.id);
+          const idKey = Number.isFinite(idNum) ? idNum : Infinity;
+          const betterTime = tt < bestTime;
+          const sameTimeEarlierId =
+            tt === bestTime && (idKey < bestIdNum || (idKey === bestIdNum && i < best!.i));
+          if (best === null || betterTime || sameTimeEarlierId) {
+            bestTime = tt;
+            bestIdNum = idKey;
+            best = { msg, i };
+          }
         }
       }
-    }
-  }, [unreadCount, messages, onMarkMessagesAsRead, visibleMessagesIds]);
+      return best;
+    };
+
+    let stopped = false;
+    let attempts = 0;
+    const maxAttempts = 30;
+    const poller: { id: ReturnType<typeof setInterval> | null } = { id: null };
+
+    const clearPoller = () => {
+      if (poller.id !== null) {
+        clearInterval(poller.id);
+        poller.id = null;
+      }
+    };
+
+    const tryScrollFirstUnread = () => {
+      if (stopped) return;
+      if (!needsScrollToFirstUnreadRef.current) {
+        stopped = true;
+        clearPoller();
+        return;
+      }
+      const c = scrollRef.current;
+      if (!c) return;
+
+      const found = findFirstUnreadInbound();
+      if (!found) {
+        stopped = true;
+        needsScrollToFirstUnreadRef.current = false;
+        needsScrollToBottomRef.current = false;
+        expandScrollPendingRef.current = false;
+        scrollDoneCallbackRef.current?.();
+        clearPoller();
+        operatorUnreadDebug('Первый непрочитанный не найден — без fallback вниз', {
+          sessionId,
+          dialogId: feedDialogId,
+        });
+        return;
+      }
+
+      const domId = `message-${found.msg.id || found.msg.uuid || found.i}`;
+      const candidates = Array.from(c.querySelectorAll('[id^="message-"]')) as HTMLElement[];
+      const elById = candidates.find((node) => node.id === domId) ?? null;
+      const elByData = candidates.find((node) => {
+        const dataId = node.getAttribute('data-message-id');
+        const dataUuid = node.getAttribute('data-message-uuid');
+        return (
+          String(dataId ?? '') === String(found.msg.id ?? '') ||
+          String(dataUuid ?? '') === String(found.msg.uuid ?? '')
+        );
+      });
+      const elByIndex = found.i >= 0 && found.i < candidates.length ? candidates[found.i] : null;
+      const el = elById ?? elByData ?? elByIndex ?? null;
+      if (el) {
+        const unreadCandidates = messagesInActiveDialog
+          .map((m, idx) => ({ m, idx }))
+          .filter(({ m }) => isInboundUnreadForExpandScroll(m))
+          .map(({ m, idx }, ord) => ({
+            порядокНепрочитанного: ord + 1,
+            uiИндекс: idx,
+            id: String(m.id ?? ''),
+            uuid: String(m.uuid ?? ''),
+            confirmStatus: m.confirmStatus,
+            text: String(m.text ?? '').slice(0, 40),
+            created_at: m.created_at ?? m.createdAt,
+          }));
+        // Нижний край первого непрочитанного совмещаем с низом вьюпорта: более новые сообщения (2…7) ниже — их смотрим скроллом вниз.
+        const cRect = c.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        const deltaBottom = elRect.bottom - cRect.bottom;
+        const nextTop = Math.max(0, c.scrollTop + deltaBottom + 8);
+        c.scrollTop = nextTop;
+        stopped = true;
+        needsScrollToFirstUnreadRef.current = false;
+        expandScrollPendingRef.current = false;
+        firstUnreadMessageRef.current = {
+          id: String(found.msg.id ?? found.msg.uuid ?? found.i),
+          index: found.i,
+        };
+        setIsAtBottom(false);
+        setIsAtTop(false);
+        scrollDoneCallbackRef.current?.();
+        clearPoller();
+        const c2 = scrollRef.current;
+        operatorUnreadDebug('Скролл при раскрытии: закреплено первое непрочитанное', {
+          sessionId,
+          dialogId: feedDialogId,
+          domId,
+          индексВЛенте: found.i,
+          текст: String(found.msg.text ?? '').slice(0, 80),
+          confirmStatus: found.msg.confirmStatus,
+          is_read: found.msg.is_read,
+          created_at: found.msg.created_at ?? found.msg.createdAt,
+          scrollTop: c2?.scrollTop,
+          scrollHeight: c2?.scrollHeight,
+          clientHeight: c2?.clientHeight,
+          выбранныйПорядокНепрочитанного: unreadCandidates.find(
+            (x) => x.id === String(found.msg.id ?? ''),
+          )?.порядокНепрочитанного,
+          непрочитанныеКандидаты: unreadCandidates,
+          блокировкаДнаДоПрокруткиОператором: true,
+        });
+        setTimeout(() => {
+          updateVisibleMessages();
+          sendReadStatusForVisibleMessages();
+        }, 50);
+        return;
+      }
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        stopped = true;
+        needsScrollToFirstUnreadRef.current = false;
+        needsScrollToBottomRef.current = false;
+        expandScrollPendingRef.current = false;
+        setIsAtBottom(false);
+        scrollDoneCallbackRef.current?.();
+        clearPoller();
+        operatorUnreadDebug('Первый непрочитанный: DOM не найден, позицию не меняем', {
+          sessionId,
+          domId,
+          попыток: attempts,
+        });
+      }
+    };
+
+    poller.id = setInterval(tryScrollFirstUnread, 50);
+    tryScrollFirstUnread();
+    return () => {
+      stopped = true;
+      clearPoller();
+    };
+  }, [
+    messages,
+    messagesInActiveDialog,
+    updateVisibleMessages,
+    sendReadStatusForVisibleMessages,
+    sessionId,
+    feedDialogId,
+  ]);
+
+  useEffect(() => {
+    suppressBottomScrollAfterExpandUnreadRef.current = false;
+    expandScrollPendingRef.current = false;
+  }, [sessionId]);
+
+  useEffect(() => {
+    if (!feedDialogId) return;
+    const rows = messagesInActiveDialog.filter(isInboundUnreadForExpandScroll).map((m: any) => ({
+      id: String(m.id ?? m.uuid ?? ''),
+      confirmStatus: m.confirmStatus,
+      is_read: m.is_read,
+      фрагментТекста: String(m.text ?? '').slice(0, 60),
+      created_at: m.created_at,
+    }));
+    operatorUnreadDebug('Снимок непрочитанных входящих в активной ленте', {
+      sessionId,
+      dialogId: feedDialogId,
+      количество: rows.length,
+      сообщения: rows,
+    });
+  }, [messagesInActiveDialog, sessionId, feedDialogId]);
 
   useEffect(() => {
     return () => {
@@ -663,6 +973,7 @@ function MessageFeed({
   }, []);
 
   const scrollToBottom = (forceLoadFirstPage: boolean = false) => {
+    suppressBottomScrollAfterExpandUnreadRef.current = false;
     const session = getSession(sessionId);
     const dialogId = session?.selectedDialog?.id;
 
@@ -675,8 +986,8 @@ function MessageFeed({
           behavior: 'smooth',
         });
 
-        if (messages.length > 0) {
-          const lastMessage = messages[messages.length - 1];
+        if (messagesInActiveDialog.length > 0) {
+          const lastMessage = messagesInActiveDialog[messagesInActiveDialog.length - 1];
           setLastSeenMessageId(lastMessage.id);
           setInternalUnreadCount(0);
         }
@@ -860,7 +1171,7 @@ function MessageFeed({
 
     const currentPage = pagination.currentPage || 0;
     const prevMessages = lastMessagesRef.current;
-    const currentMessages = messages;
+    const currentMessages = messagesInActiveDialog;
 
     if (currentMessages.length > prevMessages.length) {
       const newMessages = currentMessages.slice(prevMessages.length);
@@ -902,16 +1213,15 @@ function MessageFeed({
     }
 
     lastMessagesRef.current = [...currentMessages];
-  }, [messages, session, pagination, handleLoadFirstPage]);
+  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage]);
 
   useEffect(() => {
     messages.forEach((msg) => {
-      const msgKey = msg.id ?? msg.uuid;
-      if (msg.confirmStatus === 'READ' && sentReadStatusesRef.current.has(msgKey)) {
-        sentReadStatusesRef.current.delete(msgKey);
-      }
+      const isRead = String(msg.confirmStatus ?? '').toUpperCase() === 'READ' || msg.is_read;
+      if (!isRead) return;
+      readSentTrackingKeys(msg).forEach((k) => sentReadStatusesRef.current.delete(k));
     });
-  }, [messages]);
+  }, [messages, readSentTrackingKeys]);
 
   return (
     <>
@@ -954,7 +1264,7 @@ function MessageFeed({
             msg.messageStatus === 'TO_OPERATOR' &&
             (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
             !msg.is_read &&
-            firstUnreadMessageRef.current?.id === msg.id;
+            firstUnreadMessageRef.current?.id === String(msg.id ?? msg.uuid ?? index);
 
           const messageKey = msg.id || msg.uuid || `index-${index}`;
 

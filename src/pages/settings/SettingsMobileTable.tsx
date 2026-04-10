@@ -13,8 +13,6 @@ import {
   useTheme,
 } from '@mui/material';
 
-import { SETTINGS_LABEL_MAP } from '@shared/lib/settingsLabelMap';
-
 interface SettingRow {
   id: number;
   label: string;
@@ -88,9 +86,7 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                 {t('tables.changeableParam')}:
               </Typography>
               <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                {row.label && SETTINGS_LABEL_MAP[row.label]
-                  ? t(SETTINGS_LABEL_MAP[row.label])
-                  : row.label}
+                {row.label}
               </Typography>
             </Box>
 
