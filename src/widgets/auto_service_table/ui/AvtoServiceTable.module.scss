@@ -30,6 +30,16 @@
   padding: 16px;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
+  box-sizing: border-box;
+
+  /* Резерв под плавающий блок тема+язык (App), без налезания на заголовок */
+  @media (max-width: 768px) {
+    padding-right: 108px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+  }
 }
 
 .scrollableTable {

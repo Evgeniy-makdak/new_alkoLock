@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { useTranslation } from 'react-i18next';
+
 import { TextField } from '@mui/material';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper';
@@ -7,7 +9,6 @@ import { Button, ButtonsType } from '@shared/ui/button';
 import { Loader } from '@shared/ui/loader';
 
 import { useActivateForm } from '../hooks/useActivateForm';
-import { LABEL_TEXT } from '../lib/const';
 import style from './ActivateForm.module.scss';
 
 interface ActivateForm {
@@ -17,6 +18,7 @@ interface ActivateForm {
 }
 
 export const ActivateForm = ({ onValidSubmit, isLoading, handleClosePopup }: ActivateForm) => {
+  const { t } = useTranslation();
   const { error, duration, handleSubmit, register } = useActivateForm();
   return (
     <Loader isLoading={isLoading}>
@@ -25,7 +27,7 @@ export const ActivateForm = ({ onValidSubmit, isLoading, handleClosePopup }: Act
           <TextField
             helperText={<span className={style.errorMessage}>{error}</span>}
             error={!!duration}
-            label={LABEL_TEXT}
+            label={t('serviceMode.activationPeriodHours')}
             {...register('duration')}
             type="number"
           />
@@ -36,10 +38,10 @@ export const ActivateForm = ({ onValidSubmit, isLoading, handleClosePopup }: Act
             type="submit"
             disabled={!!duration}
             typeButton={ButtonsType.action}>
-            {'Включить'}
+            {t('serviceMode.enable')}
           </Button>
           <Button key={'action_2'} typeButton={ButtonsType.action} onClick={handleClosePopup}>
-            {'Нет'}
+            {t('serviceMode.no')}
           </Button>
         </ButtonFormWrapper>
       </form>

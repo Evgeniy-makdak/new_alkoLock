@@ -3,6 +3,8 @@ import * as yup from 'yup';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
+
 // import { ValidationRules } from '@shared/validations/validation_rules';
 
 export interface Form {
@@ -19,7 +21,7 @@ const validateRequiredField = (value: string, context: yup.TestContext<Form>) =>
   }
 
   if (value.match(/^\s+|\s+$/g)) {
-    return context.createError({ message: 'В строке есть пробелы' });
+    return context.createError({ message: i18n.t('validation.stringHasInvalidSpaces') });
   }
 
   return true;
@@ -39,15 +41,15 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
       name: 'serialNumber',
       test(value, context) {
         if (!value || value.trim().length === 0) {
-          return context.createError({ message: 'Обязательное поле' });
+          return context.createError({ message: ValidationMessages.required });
         }
 
         if (value.match(/^\s+|\s+$/g)) {
-          return context.createError({ message: 'В строке есть пробелы' });
+          return context.createError({ message: i18n.t('validation.stringHasInvalidSpaces') });
         }
 
         if (value.length > 20) {
-          return context.createError({ message: 'Максимальное количество символов 20' });
+          return context.createError({ message: ValidationMessages.notValidSerialNumber });
         }
 
         return true;

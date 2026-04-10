@@ -26,6 +26,27 @@
   border-left: 1px solid rgba(0, 0, 0, 0.12);
 }
 
+/* Inline-таблицы, ≤1024px: один ряд с меньшими кнопками + слот «+» из TableHeaderActions */
+.themeLangClusterCompact {
+  flex-wrap: nowrap;
+  gap: 0;
+
+  :global(.MuiIconButton-root) {
+    padding: 4px;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+}
+
+.mobileTrailingSlot {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: 2px;
+}
+
 :global(html[data-theme='dark']) {
   .themeLangClusterSeparated {
     border-left-color: rgba(255, 255, 255, 0.14);

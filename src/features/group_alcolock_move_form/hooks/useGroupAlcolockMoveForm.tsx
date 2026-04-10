@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useToggle } from '@shared/hooks/useToggle';
 import { FormCheckbox } from '@shared/ui/form_checkbox';
@@ -14,6 +15,7 @@ type GroupAlcolockMoveFormHookInput = {
 };
 
 export const useGroupAlcolockMoveForm = ({ alcolock, close }: GroupAlcolockMoveFormHookInput) => {
+  const { t } = useTranslation();
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [withVehicle, setWithVehicle] = useState(false);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);
@@ -45,7 +47,9 @@ export const useGroupAlcolockMoveForm = ({ alcolock, close }: GroupAlcolockMoveF
   };
   const alertText = (
     <>
-      При перемещении выбранного алкозамка его связи с ТС будут <b>разорваны</b>.
+      {t('modals.moveAlcolockAlertP1a')}
+      <b>{t('modals.moveAlcolockAlertP1b')}</b>
+      {t('modals.moveAlcolockAlertP1c')}
       <br />
       <FormCheckbox
         checkBox={{
@@ -54,11 +58,11 @@ export const useGroupAlcolockMoveForm = ({ alcolock, close }: GroupAlcolockMoveF
             setWithVehicle(checked);
           },
         }}
-        label="Сохранить связи с ТС"
+        label={t('modals.moveAlcolockKeepVehicleLinks')}
       />
       <br />
       <br />
-      Пожалуйста, подтвердите действие.
+      {t('modals.moveAlcolockAlertP2')}
     </>
   );
   const showAlert = openAlert && !error && branchSelect.length > 0;

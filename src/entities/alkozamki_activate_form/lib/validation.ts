@@ -2,6 +2,8 @@ import * as yup from 'yup';
 
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
+
 export interface Form {
   duration: number;
 }
@@ -10,12 +12,16 @@ export const schema: yup.ObjectSchema<Form> = yup
   .object({
     duration: yup
       .number()
-      .transform((val) => (Number.isNaN(val) ? null : val))
-      .nullable('значение должно быть числом')
-      .positive('значение должно быть больше 0')
-      .integer('значение должно быть числом')
+      .transform((val, originalValue) => {
+        if (originalValue === '' || originalValue === null || originalValue === undefined) {
+          return undefined;
+        }
+        return Number.isNaN(val) ? undefined : val;
+      })
+      .typeError(() => i18n.t('serviceMode.durationMustBeNumber'))
       .required(ValidationMessages.required)
-      .min(1, 'значение должно быть больше 0')
-      .max(99, 'Нельзя установить более чем на 99 часов'),
+      .integer(() => i18n.t('serviceMode.durationMustBeNumber'))
+      .min(1, () => i18n.t('serviceMode.durationMustBePositive'))
+      .max(99, () => i18n.t('serviceMode.durationMaxHours', { max: 99 })),
   })
   .required(ValidationMessages.required);

@@ -5,6 +5,7 @@ import { CircularProgress, useMediaQuery } from '@mui/material';
 import { isGhostPrankGloballyDisabled } from '@pages/events/config/eventsGhostPrankEnabled';
 import { EventsGhostPrank } from '@pages/events/ui/EventsGhostPrank';
 import { GlobalReportProgress } from '@pages/reports/ui/GlobalReportProgress';
+import { TableHeaderMobileTrailingProvider } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
@@ -24,7 +25,9 @@ export function App() {
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
   const isNarrowViewport = isMobile || isTablet;
-  const showFloatingThemeSlot = !pathHasInlineTableToolbar(location.pathname) || isNarrowViewport;
+  const hasInlineTableToolbar = pathHasInlineTableToolbar(location.pathname);
+  // Планшет/десктоп с inline-шапкой: только TableHeaderEndToolbar. Телефон (≤768): отдельные MobileTable — плавающий кластер, смещённый от «+».
+  const showFloatingThemeSlot = !hasInlineTableToolbar || isMobile;
 
   /** Только «Шаблоны сообщений»: на телефоне тема/язык — второй ряд под полем поиска */
   const themeSlotBelowMobileSearch =
@@ -37,6 +40,20 @@ export function App() {
   const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
   const showThemeInFloatingSlot = !themeInMapToolbar;
   const showLangInFloatingSlot = !hideLanguageOnMap;
+
+  const themeSlotPhoneInlineTable = hasInlineTableToolbar && isMobile && !themeSlotMapMobile;
+  /** Мобильные страницы без «+» в шапке: кластер тема/язык у правого края (не отступ под Add) */
+  const phoneThemeFlushRightRoutePrefixes = [
+    RoutePaths.autoService,
+    RoutePaths.historyAutoService,
+    RoutePaths.events,
+    RoutePaths.reports,
+  ] as const;
+  const themeSlotPhoneInlineFlushRight =
+    themeSlotPhoneInlineTable &&
+    phoneThemeFlushRightRoutePrefixes.some(
+      (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
+    );
 
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
@@ -51,16 +68,18 @@ export function App() {
           <div className={style.content}>
             {showFloatingThemeSlot && (showThemeInFloatingSlot || showLangInFloatingSlot) ? (
               <div
-                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''}`}>
+                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''} ${themeSlotPhoneInlineTable ? style.themeToggleSlotPhoneInlineTable : ''} ${themeSlotPhoneInlineFlushRight ? style.themeToggleSlotPhoneInlineFlushRight : ''}`}>
                 {showThemeInFloatingSlot ? <ThemeToggleControl /> : null}
                 {showLangInFloatingSlot ? <AppLanguageSelect appearance="toolbar" /> : null}
               </div>
             ) : null}
             <RoleChipStyles />
-            <div className={style.contentWrapper}>
-              <Outlet />
-              {isGhostPrankGloballyDisabled() ? null : <EventsGhostPrank />}
-            </div>
+            <TableHeaderMobileTrailingProvider key={location.pathname}>
+              <div className={style.contentWrapper}>
+                <Outlet />
+                {isGhostPrankGloballyDisabled() ? null : <EventsGhostPrank />}
+              </div>
+            </TableHeaderMobileTrailingProvider>
             <ChatFooter />
           </div>
         </div>

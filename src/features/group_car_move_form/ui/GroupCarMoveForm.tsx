@@ -41,7 +41,7 @@ const GroupCarMoveFormInner: FC<{
   return (
     <>
       <Typography fontSize={16} fontWeight={600} marginBottom={2} variant="h6">
-        Перемещение ТС <span className={style.carText}>{car.text}</span>
+        {t('modals.moveVehicleTitle')} <span className={style.carText}>{car.text}</span>
       </Typography>
       <Stack gap={3}>
         <BranchSelect
@@ -49,15 +49,15 @@ const GroupCarMoveFormInner: FC<{
           error={error}
           value={branchSelect}
           setValueStore={onSelect}
-          label="Поиск по группам"
+          label={t('modals.searchGroups')}
           filter={targetBranch}
         />
         {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>переместить</Button>
-            <Button onClick={close}>отмена</Button>
+            <Button onClick={handleOpenAlert}>{t('common.move')}</Button>
+            <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}
       </Stack>

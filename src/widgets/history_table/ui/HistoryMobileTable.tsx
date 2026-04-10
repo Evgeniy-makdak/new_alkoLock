@@ -347,7 +347,7 @@ export const HistoryMobileTable = ({ prevBranch }: HistoryMobileTableProps) => {
   return (
     <div className={styles.tableWrapper}>
       <div className={styles.mobileHeader}>
-        <h2 className={styles.mobileTitle}>{t('nav.serviceModeHistory')}</h2>
+        <h2 className={styles.mobileTitle}>{t('nav.serviceModeHistoryShort')}</h2>
       </div>
 
       <div className={styles.mobileFilters}>

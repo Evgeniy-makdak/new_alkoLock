@@ -1,13 +1,16 @@
 /**
  * Диагностика непрочитанных, бейджей и скролла при раскрытии чата.
  * Логи с префиксом «[Чат:непрочитанные]».
+ * В MessageFeed при скролле к первому непрочитанному смотрите поля «лентаСообщений», «якорь…», «первоеВидимоеСообщениеId».
  *
  * localStorage.CHAT_UNREAD_DEBUG:
  *   не задано — в development логи включены;
  *   '1' — включить явно; '0' — выключить полностью.
  */
 
-const TAG = '[Чат:непрочитанные]';
+export const CHAT_UNREAD_DEBUG_TAG = '[Чат:непрочитанные]';
+
+const TAG = CHAT_UNREAD_DEBUG_TAG;
 
 export function isOperatorUnreadDebugEnabled(): boolean {
   if (typeof window === 'undefined') return false;

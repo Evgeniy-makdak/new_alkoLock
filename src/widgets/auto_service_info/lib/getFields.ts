@@ -1,8 +1,18 @@
+import type { TFunction } from 'i18next';
+
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
-export const getFields = (itemData: IDeviceAction | null | undefined) => {
+const translateMode = (mode: string, t: TFunction): string => {
+  const m = (mode || '').trim().toLowerCase();
+  if (m === 'рабочий' || m === 'working' || m === 'work') return t('deviceMode.working');
+  if (m === 'аварийный' || m === 'emergency') return t('deviceMode.emergency');
+  if (m === 'сервисный' || m === 'service') return t('deviceMode.service');
+  return mode || '-';
+};
+
+export const getFields = (itemData: IDeviceAction | null | undefined, t: TFunction) => {
   if (!itemData) return [];
   const naming = itemData?.device?.name ?? '-';
   const serialNumber = itemData?.device?.serialNumber ?? '-';
@@ -14,27 +24,29 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
   );
   const name = Formatters.nameFormatter(itemData?.userAction);
   const date = Formatters.formatISODate(itemData?.device?.vehicleBind?.createdAt) ?? '-';
+  const rawMode = itemData?.device?.mode ?? '-';
+  const modeLabel = rawMode === '-' ? '-' : translateMode(rawMode, t);
 
   return [
     {
-      label: 'Наименование',
+      label: t('tables.naming'),
       type: TypeOfRows.NAMING,
       value: { label: naming, copyble: naming === '-' ? false : true },
     },
     {
-      label: 'Режим работы',
+      label: t('tables.operatingMode'),
       type: TypeOfRows.MODE,
       value: {
-        label: itemData?.device?.mode ?? '-',
+        label: modeLabel,
       },
     },
     {
-      label: 'Серийный номер',
+      label: t('tables.serialNumber'),
       type: TypeOfRows.SERIAL_NUMBER,
       value: { label: serialNumber, copyble: serialNumber === '-' ? false : true },
     },
     {
-      label: 'Установлен на ТС',
+      label: t('tables.installedOnVehicle'),
       type: TypeOfRows.CAR,
       value: {
         label: car,
@@ -43,12 +55,12 @@ export const getFields = (itemData: IDeviceAction | null | undefined) => {
       },
     },
     {
-      label: 'Кем привязан',
+      label: t('tables.whoLinked'),
       type: TypeOfRows.USER,
       value: { label: name, copyble: name === '-' ? false : true },
     },
     {
-      label: 'Дата установки на ТС',
+      label: t('tables.installationDate'),
       type: TypeOfRows.DATE,
       value: { label: date, copyble: date === '-' ? false : true },
     },

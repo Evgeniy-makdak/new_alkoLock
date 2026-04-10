@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAutoServiceInfoApi } from '../api/useAutoServiceInfoApi';
 import { getFields } from '../lib/getFields';
 
 export const useAutoServiceInfo = (id: string | number | null, handleCloseAside?: () => void) => {
+  const { t, i18n } = useTranslation();
   const { data, isLoading, events } = useAutoServiceInfoApi(id, handleCloseAside);
   const [activeDeviceIds, setActiveDeviceIds] = useState<number[]>([]);
   const deviceAction = data?.data;
@@ -18,7 +20,7 @@ export const useAutoServiceInfo = (id: string | number | null, handleCloseAside?
     }
   }, [events?.content]);
 
-  const fields = getFields(deviceAction);
+  const fields = useMemo(() => getFields(deviceAction, t), [deviceAction, t, i18n.language]);
 
   return { deviceAction, fields, isLoading, activeDeviceIds };
 };

@@ -31,7 +31,7 @@ export const getFields = (userData: IUser, t?: TFunction): Field[] => {
 
   return [
     {
-      label: 'Пользователь',
+      label: tr('tables.user'),
       type: TypeOfRows.USER,
       value: {
         copyble: name === '-' ? false : true,

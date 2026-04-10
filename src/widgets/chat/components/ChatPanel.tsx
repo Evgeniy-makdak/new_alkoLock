@@ -788,6 +788,24 @@ function ChatPanel({
     transferRecipientFullName = null,
   } = session;
 
+  // Скролл к первому непрочитанному в MessageFeed: флаг scrollToBottomOnExpand.
+  // ChatFooter передаёт true только когда панель только что развернули из минимизации;
+  // при открытом чате там часто false — раньше это обнуляло скролл ДО проверки бейджа.
+  const shouldScrollToFirstUnreadOnExpand = useMemo(() => {
+    if (displayUnreadCount > 0) return true;
+    if (scrollToBottomOnExpand === false) return false;
+    return !!scrollToBottomOnExpand;
+  }, [displayUnreadCount, scrollToBottomOnExpand]);
+
+  useEffect(() => {
+    operatorUnreadDebug('ChatPanel → MessageFeed: флаг скролла к непрочитанным', {
+      sessionId,
+      shouldScrollToFirstUnreadOnExpand,
+      displayUnreadCount,
+      пропОтChatFooter: scrollToBottomOnExpand,
+    });
+  }, [sessionId, shouldScrollToFirstUnreadOnExpand, displayUnreadCount, scrollToBottomOnExpand]);
+
   if (isMinimized) {
     return (
       <div className={styles.minimizedPanel}>
@@ -962,7 +980,7 @@ function ChatPanel({
           onMarkMessagesAsRead={handleMarkMessagesAsRead}
           unreadCount={feedUnreadFromMessages}
           expandUnreadHintCount={displayUnreadCount}
-          scrollToBottomOnExpand={scrollToBottomOnExpand}
+          scrollToBottomOnExpand={shouldScrollToFirstUnreadOnExpand}
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}
           isDialogBlockedByOtherOperator={isDialogReallyBlocked}

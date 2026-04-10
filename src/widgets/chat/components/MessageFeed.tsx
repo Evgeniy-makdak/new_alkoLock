@@ -8,7 +8,11 @@ import dayjs from 'dayjs';
 import { CircularProgress } from '@mui/material';
 
 import { useChat } from '../contexts/ChatContext';
-import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
+import {
+  CHAT_UNREAD_DEBUG_TAG,
+  isOperatorUnreadDebugEnabled,
+  operatorUnreadDebug,
+} from '../lib/operatorUnreadDebugLog';
 import styles from './MessageFeed.module.scss';
 
 interface MessageFeedProps {
@@ -29,7 +33,6 @@ interface MessageFeedProps {
   totalPages?: number;
   onMarkMessagesAsRead?: (messageIds: string[]) => void;
   unreadCount?: number;
-  /** Подсказка для сценария expand до загрузки ленты (обычно max-счётчик из шапки/WS). */
   expandUnreadHintCount?: number;
   scrollToBottomOnExpand?: boolean;
   onScrollToBottomDone?: () => void;
@@ -38,13 +41,177 @@ interface MessageFeedProps {
   isDialogEnded?: boolean;
 }
 
-/** Как relaxed в updateSessionUnreadCount: входящие не READ, не только SENT/DELIVERED — иначе скролл к первому не срабатывает. */
-function isInboundUnreadForExpandScroll(msg: any): boolean {
-  return (
-    msg.messageStatus === 'TO_OPERATOR' &&
-    !msg.is_read &&
-    String(msg.confirmStatus ?? '').toUpperCase() !== 'READ'
-  );
+/**
+ * Согласовано с подсчётом непрочитанных в ChatPanel (relaxed): любой входящий без READ.
+ * Иначе при статусе с бэка вне SENT/DELIVERED скролл к первому непрочитанному не находит якорь, хотя бейдж > 0.
+ */
+function isInboundUnread(msg: any): boolean {
+  if (msg.messageStatus !== 'TO_OPERATOR') return false;
+  if (msg.is_read) return false;
+  const confirmStatus = String(msg.confirmStatus ?? '')
+    .trim()
+    .toUpperCase();
+  if (confirmStatus === 'READ') return false;
+  return true;
+}
+
+/** Совпадает с id строки сообщения в DOM: `message-${id ?? uuid ?? index}` (без index здесь). */
+function messageRowDomSuffix(msg: any): string {
+  const raw = msg?.id ?? msg?.uuid;
+  if (raw == null || raw === '') return '';
+  return String(raw);
+}
+
+function findFirstUnreadMessage(messages: any[]): { msg: any; index: number } | null {
+  if (!messages.length) return null;
+  for (let i = 0; i < messages.length; i++) {
+    if (isInboundUnread(messages[i])) {
+      return { msg: messages[i], index: i };
+    }
+  }
+  return null;
+}
+
+/** Снимок ленты для отладки скролла к первому непрочитанному (вкл. CHAT_UNREAD_DEBUG / dev). */
+function buildMessageTapeScrollDebugRows(messages: any[]) {
+  return messages.map((msg, index) => ({
+    index,
+    id: msg?.id ?? null,
+    uuid: msg?.uuid ?? null,
+    domSuffix: messageRowDomSuffix(msg) || '(нет id/uuid)',
+    dialogId: msg?.dialogId ?? msg?.dialog?.id ?? null,
+    messageStatus: msg?.messageStatus ?? null,
+    confirmStatus: msg?.confirmStatus ?? null,
+    confirmUpper:
+      String(msg?.confirmStatus ?? '')
+        .trim()
+        .toUpperCase() || '(пусто)',
+    is_read: !!msg?.is_read,
+    inboundUnread: isInboundUnread(msg),
+    textPreview: String(msg?.text ?? '').slice(0, 48),
+  }));
+}
+
+function collectDomMessageIdsInFeed(container: HTMLElement | null, limit = 40): string[] {
+  if (!container) return [];
+  const nodes = container.querySelectorAll('[id^="message-"]');
+  const out: string[] = [];
+  for (let i = 0; i < nodes.length && out.length < limit; i++) {
+    const id = nodes[i].id?.replace(/^message-/, '') ?? '';
+    if (id) out.push(id);
+  }
+  return out;
+}
+
+function findTopVisibleMessageIdInContainer(container: HTMLElement): string | null {
+  const containerRect = container.getBoundingClientRect();
+  const messagesElements = container.querySelectorAll('[id^="message-"]');
+  for (let i = 0; i < messagesElements.length; i++) {
+    const element = messagesElements[i];
+    const rect = element.getBoundingClientRect();
+    if (rect.bottom > containerRect.top && rect.top < containerRect.bottom) {
+      const messageId = element.id.replace('message-', '');
+      return messageId || null;
+    }
+  }
+  return null;
+}
+
+function safeJsonCloneForDebug(v: unknown): unknown {
+  if (v === null || v === undefined) return v;
+  if (typeof v !== 'object') return v;
+  try {
+    return JSON.parse(JSON.stringify(v));
+  } catch {
+    return '[циклическая/несериализуемая ссылка]';
+  }
+}
+
+/** Плоский вид ближе к ответу API `/messages` (без blob и циклов). */
+function buildApiLikeContentFromStoreMessages(messages: any[]): unknown[] {
+  return messages.map((msg) => {
+    const dialogId = msg.dialogId ?? msg.dialog?.id;
+    const dialog =
+      msg.dialog && typeof msg.dialog === 'object' && msg.dialog !== null
+        ? safeJsonCloneForDebug(msg.dialog)
+        : dialogId != null
+          ? {
+              id:
+                typeof dialogId === 'string' && /^\d+$/.test(dialogId)
+                  ? Number(dialogId)
+                  : dialogId,
+            }
+          : null;
+    const attaches = Array.isArray(msg.rawAttaches)
+      ? safeJsonCloneForDebug(msg.rawAttaches)
+      : Array.isArray(msg.attachments)
+        ? msg.attachments.map((a: any) => ({
+            id: a.id,
+            name: a.name,
+            fileName: a.fileName,
+            type: a.type,
+            extension: a.extension,
+            url: typeof a.url === 'string' ? a.url : undefined,
+          }))
+        : [];
+    const idRaw = msg.id;
+    const idOut =
+      typeof idRaw === 'number'
+        ? idRaw
+        : typeof idRaw === 'string' && /^\d+$/.test(idRaw)
+          ? Number(idRaw)
+          : idRaw;
+    return {
+      id: idOut,
+      text: msg.text ?? null,
+      uuid: msg.uuid ?? null,
+      dialog,
+      messageStatus: msg.messageStatus ?? null,
+      confirmStatus: msg.confirmStatus ?? null,
+      isActive: msg.isActive ?? true,
+      createdBy: msg.createdBy ? safeJsonCloneForDebug(msg.createdBy) : null,
+      createdAt: msg.createdAt ?? msg.created_at ?? null,
+      attaches,
+      messageUserRecord: msg.messageUserRecord
+        ? safeJsonCloneForDebug(msg.messageUserRecord)
+        : undefined,
+      formattedCreatedAt: msg.formattedCreatedAt,
+      is_read: msg.is_read,
+    };
+  });
+}
+
+/**
+ * Полные объекты ленты + JSON как у API. Без groupCollapsed — строки сразу видны в консоли.
+ */
+function logMessageFeedFullMirror(
+  title: string,
+  details: {
+    sessionId: string;
+    feedDialogId: string | null;
+    tape: any[];
+    allMessagesInSessionCount: number;
+  },
+) {
+  if (!isOperatorUnreadDebugEnabled()) return;
+  const { tape, allMessagesInSessionCount, sessionId, feedDialogId } = details;
+  const apiLike = buildApiLikeContentFromStoreMessages(tape);
+  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} | сводка`, {
+    sessionId,
+    feedDialogId,
+    лента: tape.length,
+    всегоВСессии: allMessagesInSessionCount,
+  });
+  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} — объекты ленты (стор):`, tape);
+  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} — { content } для JSON:`, { content: apiLike });
+  try {
+    console.log(
+      `${CHAT_UNREAD_DEBUG_TAG} ${title} — копируемый JSON:\n`,
+      JSON.stringify({ content: apiLike }, null, 2),
+    );
+  } catch (e) {
+    console.warn(`${CHAT_UNREAD_DEBUG_TAG} JSON.stringify не удался`, e);
+  }
 }
 
 function resolveFeedDialogIdFromSession(session: any, allMessages: any[]): string | null {
@@ -89,13 +256,10 @@ function MessageFeed({
   isDialogEnded = false,
 }: MessageFeedProps) {
   const { t } = useTranslation();
-  const renderCountRef = useRef(0);
-  renderCountRef.current++;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [isAtTop, setIsAtTop] = useState(false);
   const [deletedMessages, setDeletedMessages] = useState<Set<string>>(new Set());
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -110,17 +274,20 @@ function MessageFeed({
     if (msg?.id != null) keys.push(String(msg.id));
     return keys;
   }, []);
-  const firstUnreadMessageRef = useRef<{ id: string; index: number } | null>(null);
+
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const needsScrollToBottomRef = useRef(false);
-  /** Сценарий после expand: держим специальную логику скролла активной, даже если проп уже стал false. */
   const expandScrollPendingRef = useRef(false);
-  /** Раскрытие окна при непрочитанных входящих: прокрутка к первому непрочитанному вместо низа. */
+  const freezeAutoBottomUntilUserScrollRef = useRef(false);
+  const programmaticScrollLockRef = useRef(false);
   const needsScrollToFirstUnreadRef = useRef(false);
-  /** Блокирует принудительный скролл вниз после раскрытия с непрочитанными (layout/messagesJustLoaded/load). */
   const suppressBottomScrollAfterExpandUnreadRef = useRef(false);
   const scrollDoneCallbackRef = useRef<(() => void) | undefined>(undefined);
   const prevMessageLenRef = useRef(messages.length);
+  const hasScrolledToFirstUnreadRef = useRef(false);
+  const scrollAttemptsRef = useRef(0);
+  const prevScrollToBottomOnExpandRef = useRef(false);
+  const prevFeedDialogIdForScrollRef = useRef<string | null>(null);
 
   const scrollDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollPositionRef = useRef<number>(0);
@@ -150,7 +317,6 @@ function MessageFeed({
   const session = getSession(sessionId);
   const pagination = session?.pagination;
 
-  /** Как в MessageInput: ответ/редактирование только если диалог «забран» и можно писать. */
   const canInteractWithMessages =
     dialogStatus === 'CLOSED' && !isDialogBlockedByOtherOperator && !isDialogEnded;
 
@@ -159,49 +325,84 @@ function MessageFeed({
     [session, messages],
   );
 
-  /** Не показывать в основной ленте сообщения «чужих» диалогов (превью в той же сессии). */
   const messagesInActiveDialog = useMemo(() => {
     if (!feedDialogId) return [];
-    return messages.filter((msg) => String(msg.dialogId ?? msg.dialog?.id ?? '') === feedDialogId);
+    const filtered = messages.filter(
+      (msg) => String(msg.dialogId ?? msg.dialog?.id ?? '') === feedDialogId,
+    );
+    return [...filtered].sort((a: any, b: any) => {
+      const idA = Number(a.id);
+      const idB = Number(b.id);
+      if (Number.isFinite(idA) && Number.isFinite(idB) && idA !== idB) {
+        return idA - idB;
+      }
+      const ta = parseMessageTimeMs(a);
+      const tb = parseMessageTimeMs(b);
+      if (ta !== tb) return ta - tb;
+      return 0;
+    });
   }, [messages, feedDialogId]);
+
   const hasUnreadOnExpandHint =
     !!scrollToBottomOnExpand &&
-    (expandUnreadHintCount > 0 || messagesInActiveDialog.some(isInboundUnreadForExpandScroll));
+    (expandUnreadHintCount > 0 || messagesInActiveDialog.some(isInboundUnread));
+
+  const feedTapeDebugKey = useMemo(
+    () =>
+      messagesInActiveDialog
+        .map(
+          (m) =>
+            `${m.id ?? m.uuid ?? '?'}:${String(m.confirmStatus ?? '')}:${m.messageStatus ?? ''}:${m.is_read ? 1 : 0}`,
+        )
+        .join('|'),
+    [messagesInActiveDialog],
+  );
+
+  useEffect(() => {
+    if (!isOperatorUnreadDebugEnabled()) return;
+    operatorUnreadDebug('MessageFeed: снимок ленты и флагов', {
+      sessionId,
+      scrollToBottomOnExpand,
+      expandUnreadHintCount,
+      feedDialogId,
+      длинаЛентыАктивногоДиалога: messagesInActiveDialog.length,
+      всегоСообщенийВПропе: messages.length,
+      непрочитанныхПоЛентеInbound: messagesInActiveDialog.filter(isInboundUnread).length,
+    });
+  }, [
+    sessionId,
+    scrollToBottomOnExpand,
+    expandUnreadHintCount,
+    feedDialogId,
+    messages.length,
+    feedTapeDebugKey,
+    messagesInActiveDialog.length,
+  ]);
 
   const calculateUnreadMessages = useCallback(() => {
     let count = 0;
     for (let i = messagesInActiveDialog.length - 1; i >= 0; i--) {
       const msg = messagesInActiveDialog[i];
-
-      if (
-        msg.messageStatus === 'TO_OPERATOR' &&
-        (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-        !msg.is_read
-      ) {
+      if (isInboundUnread(msg)) {
         count++;
       }
-
       if (lastSeenMessageId && msg.id === lastSeenMessageId) {
         break;
       }
     }
-
     return count;
   }, [messagesInActiveDialog, lastSeenMessageId]);
 
   const sendReadStatusForVisibleMessages = useCallback(() => {
-    if (!onMarkMessagesAsRead) {
+    if (!onMarkMessagesAsRead) return;
+    if (
+      expandScrollPendingRef.current ||
+      needsScrollToFirstUnreadRef.current ||
+      freezeAutoBottomUntilUserScrollRef.current
+    ) {
       return;
     }
-    // Пока не завершили позиционирование после раскрытия с непрочитанными,
-    // не отправляем READ по видимости: это преждевременно помечает "хвост" как прочитанный.
-    if (expandScrollPendingRef.current || needsScrollToFirstUnreadRef.current) {
-      return;
-    }
-
-    if (visibleMessagesIds.current.size === 0) {
-      return;
-    }
+    if (visibleMessagesIds.current.size === 0) return;
 
     const messagesToMarkAsRead: string[] = [];
 
@@ -224,8 +425,10 @@ function MessageFeed({
           : false;
       const alreadySent = trackKeys.some((k) => sentReadStatusesRef.current.has(k));
 
-      const canSendRead =
-        (msg.confirmStatus === 'DELIVERED' || msg.confirmStatus === 'SENT') && !alreadySent;
+      const cs = String(msg.confirmStatus ?? '')
+        .trim()
+        .toUpperCase();
+      const canSendRead = (cs === 'DELIVERED' || cs === 'SENT') && !alreadySent;
       const shouldSend = isVisible && msg.messageStatus === 'TO_OPERATOR' && canSendRead;
 
       if (shouldSend) {
@@ -235,7 +438,7 @@ function MessageFeed({
     });
 
     if (messagesToMarkAsRead.length > 0) {
-      operatorUnreadDebug('Отправка READ по видимости ленты', {
+      operatorUnreadDebug('Sending READ by visibility', {
         sessionId,
         dialogId: feedDialogId,
         ids: messagesToMarkAsRead,
@@ -260,33 +463,57 @@ function MessageFeed({
 
   useEffect(() => {
     if (scrollToBottomOnExpand) {
+      const expandBecameTrue = !prevScrollToBottomOnExpandRef.current;
+      const dialogChanged = feedDialogId !== prevFeedDialogIdForScrollRef.current;
+      prevScrollToBottomOnExpandRef.current = true;
+
+      if (dialogChanged) {
+        prevFeedDialogIdForScrollRef.current = feedDialogId;
+        hasScrolledToFirstUnreadRef.current = false;
+        scrollAttemptsRef.current = 0;
+      } else if (expandBecameTrue) {
+        hasScrolledToFirstUnreadRef.current = false;
+        scrollAttemptsRef.current = 0;
+      }
+
       expandScrollPendingRef.current = true;
-      const hasUnreadInboundInFeed = messagesInActiveDialog.some(isInboundUnreadForExpandScroll);
-      const hasUnreadHintFromBadge = expandUnreadHintCount > 0;
-      const shouldScrollToFirstUnread = hasUnreadInboundInFeed || hasUnreadHintFromBadge;
+
+      const firstUnread = findFirstUnreadMessage(messagesInActiveDialog);
+      const hasUnreadInbound = !!firstUnread;
+      const shouldScrollToFirstUnread = hasUnreadInbound || expandUnreadHintCount > 0;
 
       needsScrollToFirstUnreadRef.current = shouldScrollToFirstUnread;
-      // Важный момент: пока лента после expand ещё пустая, нельзя заранее ставить скролл вниз.
-      // Иначе после прихода history это перехватывает фокус и уводит к нижнему сообщению.
-      needsScrollToBottomRef.current =
-        !shouldScrollToFirstUnread && messagesInActiveDialog.length > 0;
 
       if (shouldScrollToFirstUnread) {
         suppressBottomScrollAfterExpandUnreadRef.current = true;
-        // Принудительно убираем возможный "унаследованный" низ от предыдущего состояния
-        // до того, как начнётся закрепление на первом непрочитанном.
-        if (scrollRef.current) {
-          scrollRef.current.scrollTop = 0;
-        }
-        operatorUnreadDebug('Раскрытие с непрочитанными: включаем блокировку автоскролла вниз', {
+        freezeAutoBottomUntilUserScrollRef.current = true;
+        needsScrollToBottomRef.current = false;
+
+        operatorUnreadDebug('Expand with unread: will scroll to first unread', {
           sessionId,
           feedDialogId,
-          непрочитанныхВЛенте: messagesInActiveDialog.filter(isInboundUnreadForExpandScroll).length,
-          подсказкаИзБейджа: hasUnreadHintFromBadge,
+          expandUnreadHintCount,
+          firstUnreadIndex: firstUnread?.index ?? null,
+          firstUnreadId: firstUnread?.msg?.id ?? null,
+          firstUnreadUuid: firstUnread?.msg?.uuid ?? null,
+          firstUnreadDomSuffix: firstUnread ? messageRowDomSuffix(firstUnread.msg) : null,
+          лентаСообщений: buildMessageTapeScrollDebugRows(messagesInActiveDialog),
         });
+        logMessageFeedFullMirror('Expand + непрочитанные: полные сообщения', {
+          sessionId,
+          feedDialogId,
+          tape: messagesInActiveDialog,
+          allMessagesInSessionCount: messages.length,
+        });
+      } else if (messagesInActiveDialog.length > 0) {
+        needsScrollToBottomRef.current = true;
+        needsScrollToFirstUnreadRef.current = false;
+        suppressBottomScrollAfterExpandUnreadRef.current = false;
       }
       return;
     }
+
+    prevScrollToBottomOnExpandRef.current = false;
 
     if (
       ((messages.length > 0 && isInitialLoad) || messagesJustLoaded) &&
@@ -325,35 +552,10 @@ function MessageFeed({
       const lastReadMessage = [...messages]
         .reverse()
         .find((msg) => msg.messageStatus === 'TO_OPERATOR' && msg.confirmStatus === 'READ');
-
       if (lastReadMessage) {
         setLastSeenMessageId(lastReadMessage.id);
       } else if (messagesInActiveDialog.length > 0) {
         setLastSeenMessageId(messagesInActiveDialog[messagesInActiveDialog.length - 1].id);
-      }
-
-      let firstUnreadIndex = -1;
-
-      for (let i = 0; i < messagesInActiveDialog.length; i++) {
-        const msg = messagesInActiveDialog[i];
-        if (
-          msg.messageStatus === 'TO_OPERATOR' &&
-          (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-          !msg.is_read
-        ) {
-          firstUnreadIndex = i;
-          break;
-        }
-      }
-
-      if (firstUnreadIndex >= 0) {
-        const um = messagesInActiveDialog[firstUnreadIndex];
-        firstUnreadMessageRef.current = {
-          id: String(um.id ?? um.uuid ?? firstUnreadIndex),
-          index: firstUnreadIndex,
-        };
-      } else {
-        firstUnreadMessageRef.current = null;
       }
     }
   }, [messages, messagesInActiveDialog, isInitialLoad, hasUnreadOnExpandHint]);
@@ -362,46 +564,41 @@ function MessageFeed({
     if (hasUnreadOnExpandHint) return;
     if (suppressBottomScrollAfterExpandUnreadRef.current) return;
     if (expandScrollPendingRef.current) return;
+    if (freezeAutoBottomUntilUserScrollRef.current) return;
+    if (messagesInActiveDialog.some(isInboundUnread)) return;
     if (needsScrollToFirstUnreadRef.current) return;
     if (!needsScrollToBottomRef.current) return;
     const container = scrollRef.current;
     if (!container || messages.length === 0) return;
     container.scrollTop = container.scrollHeight;
-  }, [hasUnreadOnExpandHint, messages.length]);
+  }, [hasUnreadOnExpandHint, messages.length, messagesInActiveDialog]);
 
   const getFirstVisibleMessageId = useCallback((): string | null => {
     if (!scrollRef.current || messages.length === 0) return null;
-
     const container = scrollRef.current;
     const containerRect = container.getBoundingClientRect();
     const messagesElements = container.querySelectorAll('[id^="message-"]');
-
     for (let i = 0; i < messagesElements.length; i++) {
       const element = messagesElements[i];
       const rect = element.getBoundingClientRect();
-
       if (rect.top >= containerRect.top && rect.bottom <= containerRect.bottom) {
         const messageId = element.id.replace('message-', '');
         return messageId || null;
       }
     }
-
     for (let i = 0; i < messagesElements.length; i++) {
       const element = messagesElements[i];
       const rect = element.getBoundingClientRect();
-
       if (rect.top >= containerRect.top && rect.top <= containerRect.bottom) {
         const messageId = element.id.replace('message-', '');
         return messageId || null;
       }
     }
-
     return null;
   }, [messages]);
 
   const saveScrollState = useCallback(() => {
     if (!scrollRef.current) return;
-
     const container = scrollRef.current;
     scrollHeightBeforeLoadRef.current = container.scrollHeight;
     firstVisibleMessageIdRef.current = getFirstVisibleMessageId();
@@ -412,86 +609,56 @@ function MessageFeed({
       !scrollRef.current ||
       !scrollHeightBeforeLoadRef.current ||
       !firstVisibleMessageIdRef.current
-    ) {
+    )
       return;
-    }
-
     const container = scrollRef.current;
     const newScrollHeight = container.scrollHeight;
     const heightDifference = newScrollHeight - scrollHeightBeforeLoadRef.current;
-
     if (heightDifference > 0 && firstVisibleMessageIdRef.current) {
       const targetElement = document.getElementById(`message-${firstVisibleMessageIdRef.current}`);
-
       if (targetElement) {
-        setTimeout(() => {
-          targetElement.scrollIntoView({ block: 'start', behavior: 'auto' });
-        }, 50);
+        setTimeout(() => targetElement.scrollIntoView({ block: 'start', behavior: 'auto' }), 50);
       } else {
-        setTimeout(() => {
-          container.scrollTop = container.scrollTop + heightDifference;
-        }, 50);
+        setTimeout(() => (container.scrollTop = container.scrollTop + heightDifference), 50);
       }
     }
-
     scrollHeightBeforeLoadRef.current = 0;
     firstVisibleMessageIdRef.current = null;
   }, []);
 
   const updateVisibleMessages = useCallback(() => {
     if (!scrollRef.current) return;
-
     const container = scrollRef.current;
     const messagesElements = container.querySelectorAll('[id^="message-"]');
     const newVisibleIds = new Set<string>();
-
     const containerRect = container.getBoundingClientRect();
-
     messagesElements.forEach((element) => {
       const rect = element.getBoundingClientRect();
       const messageIdAttr = element.getAttribute('data-message-id');
-
       const messageIdentifier = messageIdAttr;
       const messageUuid = !messageIdAttr ? element.getAttribute('data-message-uuid') : null;
-
       const isVisible = rect.top < containerRect.bottom && rect.bottom > containerRect.top;
-
       if (isVisible) {
-        if (messageIdentifier) {
-          newVisibleIds.add(messageIdentifier);
-        } else if (messageUuid) {
-          newVisibleIds.add(messageUuid);
-        }
+        if (messageIdentifier) newVisibleIds.add(messageIdentifier);
+        else if (messageUuid) newVisibleIds.add(messageUuid);
       }
     });
-
     visibleMessagesIds.current = newVisibleIds;
   }, []);
 
   const handleLoadPreviousMessages = useCallback(async () => {
-    if (isLoadInProgressRef.current) {
-      return;
-    }
-
+    if (isLoadInProgressRef.current) return;
     const now = Date.now();
-    if (now - lastLoadTimeRef.current < 500) {
-      return;
-    }
-
-    if (!pagination?.hasMoreMessages || pagination?.isLoadingMore || loadingMoreRef.current) {
-      return;
-    }
-
+    if (now - lastLoadTimeRef.current < 500) return;
+    if (!pagination?.hasMoreMessages || pagination?.isLoadingMore || loadingMoreRef.current) return;
     saveScrollState();
-
     isLoadInProgressRef.current = true;
     lastLoadTimeRef.current = now;
     loadingMoreRef.current = true;
-
     try {
       await loadPreviousMessages(sessionId);
     } catch (error) {
-      console.error('❌ Ошибка загрузки предыдущих сообщений:', error);
+      console.error('Error loading previous messages:', error);
     } finally {
       setTimeout(() => {
         isLoadInProgressRef.current = false;
@@ -500,29 +667,18 @@ function MessageFeed({
   }, [pagination, sessionId, loadPreviousMessages, saveScrollState]);
 
   const handleLoadNextMessages = useCallback(async () => {
-    if (isLoadInProgressRef.current) {
-      return;
-    }
-
+    if (isLoadInProgressRef.current) return;
     const now = Date.now();
-    if (now - lastLoadTimeRef.current < 500) {
-      return;
-    }
-
-    if (!pagination?.hasNextMessages || pagination?.isLoadingNext || loadingNextRef.current) {
-      return;
-    }
-
+    if (now - lastLoadTimeRef.current < 500) return;
+    if (!pagination?.hasNextMessages || pagination?.isLoadingNext || loadingNextRef.current) return;
     saveScrollState();
-
     isLoadInProgressRef.current = true;
     lastLoadTimeRef.current = now;
     loadingNextRef.current = true;
-
     try {
       await loadNextMessages(sessionId);
     } catch (error) {
-      console.error('❌ Ошибка загрузки следующих сообщений:', error);
+      console.error('Error loading next messages:', error);
     } finally {
       setTimeout(() => {
         isLoadInProgressRef.current = false;
@@ -531,48 +687,31 @@ function MessageFeed({
   }, [pagination, sessionId, loadNextMessages, saveScrollState]);
 
   const handleLoadFirstPage = useCallback(async () => {
-    if (isLoadInProgressRef.current) {
-      return;
-    }
-
+    if (isLoadInProgressRef.current) return;
     const now = Date.now();
-    if (now - lastLoadTimeRef.current < 500) {
-      return;
-    }
-
-    if (!session?.selectedDialog?.id || session.selectedDialog.id === '0') {
-      return;
-    }
-
+    if (now - lastLoadTimeRef.current < 500) return;
+    if (!session?.selectedDialog?.id || session.selectedDialog.id === '0') return;
     isLoadInProgressRef.current = true;
     lastLoadTimeRef.current = now;
     loadFirstPageRef.current = true;
-
     try {
       await loadFirstPageMessages(sessionId, session.selectedDialog.id);
     } catch (error) {
-      console.error('❌ Ошибка загрузки первой страницы:', error);
+      console.error('Error loading first page:', error);
     } finally {
       setTimeout(() => {
         isLoadInProgressRef.current = false;
         loadFirstPageRef.current = false;
-
         setTimeout(() => {
           const container = scrollRef.current;
           if (!container) return;
           if (
             suppressBottomScrollAfterExpandUnreadRef.current ||
             needsScrollToFirstUnreadRef.current
-          ) {
+          )
             return;
-          }
-          container.scrollTo({
-            top: container.scrollHeight,
-            behavior: 'smooth',
-          });
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
           setIsAtBottom(true);
-          setIsAtTop(false);
-
           if (messages.length > 0) {
             const lastMessage = messages[messages.length - 1];
             setLastSeenMessageId(lastMessage.id);
@@ -585,17 +724,14 @@ function MessageFeed({
 
   useEffect(() => {
     if (messages.length === 0) return;
-
     if (loadingMoreRef.current) {
       setTimeout(() => {
         restoreScrollPosition();
-
         setTimeout(() => {
           loadingMoreRef.current = false;
         }, 100);
       }, 100);
     }
-
     if (loadingNextRef.current || loadFirstPageRef.current) {
       setTimeout(() => {
         loadingNextRef.current = false;
@@ -605,33 +741,25 @@ function MessageFeed({
   }, [messages, restoreScrollPosition]);
 
   const handleScroll = useCallback(() => {
-    if (scrollDebounceRef.current) {
-      clearTimeout(scrollDebounceRef.current);
-    }
-
+    if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
     scrollDebounceRef.current = setTimeout(() => {
       if (!scrollRef.current) return;
-
       const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
-
       const currentScrollTop = scrollTop;
       if (lastScrollPositionRef.current !== null) {
         scrollDirectionRef.current =
           currentScrollTop > lastScrollPositionRef.current ? 'down' : 'up';
       }
       lastScrollPositionRef.current = currentScrollTop;
-
       const isBottom = scrollHeight - scrollTop - clientHeight < 100;
-      const isTop = scrollTop < 100;
-
       setIsAtBottom(isBottom);
-      setIsAtTop(isTop);
-
+      if (freezeAutoBottomUntilUserScrollRef.current && !programmaticScrollLockRef.current) {
+        freezeAutoBottomUntilUserScrollRef.current = false;
+      }
       updateVisibleMessages();
-
       const shouldShowButton = !isBottom;
       setShowScrollButton(shouldShowButton);
-      if (isTop && scrollDirectionRef.current === 'up') {
+      if (scrollTop < 100 && scrollDirectionRef.current === 'up') {
         if (!scrollTriggerHistoryRef.current.up) {
           if (
             pagination?.hasMoreMessages &&
@@ -645,7 +773,6 @@ function MessageFeed({
           }
         }
       }
-
       if (isBottom && scrollDirectionRef.current === 'down') {
         if (!scrollTriggerHistoryRef.current.down) {
           if (
@@ -660,18 +787,16 @@ function MessageFeed({
           }
         }
       }
-
-      if (!isTop && !isBottom) {
+      if (scrollTop >= 100 && !isBottom) {
         scrollTriggerHistoryRef.current.up = false;
         scrollTriggerHistoryRef.current.down = false;
-      } else if (isTop && scrollDirectionRef.current === 'down') {
+      } else if (scrollTop < 100 && scrollDirectionRef.current === 'down') {
         scrollTriggerHistoryRef.current.up = false;
       } else if (isBottom && scrollDirectionRef.current === 'up') {
         scrollTriggerHistoryRef.current.down = false;
       }
-
       if (isBottom && messagesInActiveDialog.length > 0) {
-        const stillUnreadInbound = messagesInActiveDialog.some(isInboundUnreadForExpandScroll);
+        const stillUnreadInbound = messagesInActiveDialog.some(isInboundUnread);
         const lastMessage = messagesInActiveDialog[messagesInActiveDialog.length - 1];
         if (!stillUnreadInbound && lastMessage.id !== lastSeenMessageId) {
           setLastSeenMessageId(lastMessage.id);
@@ -686,13 +811,10 @@ function MessageFeed({
           suppressBottomScrollAfterExpandUnreadRef.current = false;
         }
       }
-
       sendReadStatusForVisibleMessages();
     }, 200);
   }, [
     messagesInActiveDialog,
-    isAtBottom,
-    isAtTop,
     pagination,
     handleLoadPreviousMessages,
     handleLoadNextMessages,
@@ -728,247 +850,246 @@ function MessageFeed({
     if (hasUnreadOnExpandHint) return;
     if (suppressBottomScrollAfterExpandUnreadRef.current) return;
     if (expandScrollPendingRef.current) return;
+    if (freezeAutoBottomUntilUserScrollRef.current) return;
+    if (messagesInActiveDialog.some(isInboundUnread)) return;
     if (!needsScrollToBottomRef.current || messages.length === 0) return;
     if (needsScrollToFirstUnreadRef.current) return;
 
     let stopped = false;
     let attempts = 0;
     const maxAttempts = 120;
-
     const tryScroll = () => {
       if (stopped) return;
       const c = scrollRef.current;
       if (!c) return;
-
       c.scrollTop = c.scrollHeight;
-
       attempts++;
       const isAtBot = c.scrollHeight - c.scrollTop - c.clientHeight < 5;
       const hasContent = c.scrollHeight > c.clientHeight + 10;
-
       if ((isAtBot && hasContent) || attempts >= maxAttempts) {
         stopped = true;
         needsScrollToBottomRef.current = false;
         setIsAtBottom(true);
-        setIsAtTop(false);
         scrollDoneCallbackRef.current?.();
       }
     };
-
     const intervalId = setInterval(tryScroll, 50);
     tryScroll();
-
     return () => {
       stopped = true;
       clearInterval(intervalId);
     };
-  }, [messages, hasUnreadOnExpandHint]);
+  }, [messages, hasUnreadOnExpandHint, messagesInActiveDialog]);
 
-  /** Раскрытие минимизированного окна: непрочитанные входящие — к первому, без массового READ. */
-  useEffect(() => {
-    // Важно: иногда флаг needsScrollToFirstUnreadRef сбрасывается раньше, чем история успевает прийти.
-    // suppressBottomScrollAfterExpandUnreadRef — более «долгоживущий» сигнал сценария expand с непрочитанными.
-    if (
-      (!needsScrollToFirstUnreadRef.current &&
-        !suppressBottomScrollAfterExpandUnreadRef.current &&
-        !expandScrollPendingRef.current) ||
-      messagesInActiveDialog.length === 0
-    ) {
-      return;
-    }
-    if (!needsScrollToFirstUnreadRef.current && suppressBottomScrollAfterExpandUnreadRef.current) {
-      needsScrollToFirstUnreadRef.current = true;
-    }
-
-    /** Самое раннее по времени непрочитанное входящее (порядок массива может расходиться с ответом API). */
-    const findFirstUnreadInbound = () => {
-      let best: { msg: (typeof messagesInActiveDialog)[0]; i: number } | null = null;
-      let bestTime = Infinity;
-      let bestIdNum = Infinity;
-      for (let i = 0; i < messagesInActiveDialog.length; i++) {
-        const msg = messagesInActiveDialog[i];
-        if (isInboundUnreadForExpandScroll(msg)) {
-          const tt = parseMessageTimeMs(msg);
-          const idNum = Number(msg.id);
-          const idKey = Number.isFinite(idNum) ? idNum : Infinity;
-          const betterTime = tt < bestTime;
-          const sameTimeEarlierId =
-            tt === bestTime && (idKey < bestIdNum || (idKey === bestIdNum && i < best!.i));
-          if (best === null || betterTime || sameTimeEarlierId) {
-            bestTime = tt;
-            bestIdNum = idKey;
-            best = { msg, i };
-          }
-        }
-      }
-      return best;
-    };
-
-    let stopped = false;
-    let attempts = 0;
-    const maxAttempts = 30;
-    const poller: { id: ReturnType<typeof setInterval> | null } = { id: null };
-
-    const clearPoller = () => {
-      if (poller.id !== null) {
-        clearInterval(poller.id);
-        poller.id = null;
-      }
-    };
-
-    const tryScrollFirstUnread = () => {
-      if (stopped) return;
-      if (!needsScrollToFirstUnreadRef.current) {
-        stopped = true;
-        clearPoller();
-        return;
-      }
-      const c = scrollRef.current;
-      if (!c) return;
-
-      const found = findFirstUnreadInbound();
-      if (!found) {
-        stopped = true;
-        needsScrollToFirstUnreadRef.current = false;
-        needsScrollToBottomRef.current = false;
-        expandScrollPendingRef.current = false;
-        scrollDoneCallbackRef.current?.();
-        clearPoller();
-        operatorUnreadDebug('Первый непрочитанный не найден — без fallback вниз', {
-          sessionId,
-          dialogId: feedDialogId,
-        });
-        return;
-      }
-
-      const domId = `message-${found.msg.id || found.msg.uuid || found.i}`;
-      const candidates = Array.from(c.querySelectorAll('[id^="message-"]')) as HTMLElement[];
-      const elById = candidates.find((node) => node.id === domId) ?? null;
-      const elByData = candidates.find((node) => {
-        const dataId = node.getAttribute('data-message-id');
-        const dataUuid = node.getAttribute('data-message-uuid');
-        return (
-          String(dataId ?? '') === String(found.msg.id ?? '') ||
-          String(dataUuid ?? '') === String(found.msg.uuid ?? '')
-        );
-      });
-      const elByIndex = found.i >= 0 && found.i < candidates.length ? candidates[found.i] : null;
-      const el = elById ?? elByData ?? elByIndex ?? null;
-      if (el) {
-        const unreadCandidates = messagesInActiveDialog
-          .map((m, idx) => ({ m, idx }))
-          .filter(({ m }) => isInboundUnreadForExpandScroll(m))
-          .map(({ m, idx }, ord) => ({
-            порядокНепрочитанного: ord + 1,
-            uiИндекс: idx,
-            id: String(m.id ?? ''),
-            uuid: String(m.uuid ?? ''),
-            confirmStatus: m.confirmStatus,
-            text: String(m.text ?? '').slice(0, 40),
-            created_at: m.created_at ?? m.createdAt,
-          }));
-        // Нижний край первого непрочитанного совмещаем с низом вьюпорта: более новые сообщения (2…7) ниже — их смотрим скроллом вниз.
-        const cRect = c.getBoundingClientRect();
-        const elRect = el.getBoundingClientRect();
-        const deltaBottom = elRect.bottom - cRect.bottom;
-        const nextTop = Math.max(0, c.scrollTop + deltaBottom + 8);
-        c.scrollTop = nextTop;
-        stopped = true;
-        needsScrollToFirstUnreadRef.current = false;
-        expandScrollPendingRef.current = false;
-        firstUnreadMessageRef.current = {
-          id: String(found.msg.id ?? found.msg.uuid ?? found.i),
-          index: found.i,
-        };
-        setIsAtBottom(false);
-        setIsAtTop(false);
-        scrollDoneCallbackRef.current?.();
-        clearPoller();
-        const c2 = scrollRef.current;
-        operatorUnreadDebug('Скролл при раскрытии: закреплено первое непрочитанное', {
-          sessionId,
-          dialogId: feedDialogId,
-          domId,
-          индексВЛенте: found.i,
-          текст: String(found.msg.text ?? '').slice(0, 80),
-          confirmStatus: found.msg.confirmStatus,
-          is_read: found.msg.is_read,
-          created_at: found.msg.created_at ?? found.msg.createdAt,
-          scrollTop: c2?.scrollTop,
-          scrollHeight: c2?.scrollHeight,
-          clientHeight: c2?.clientHeight,
-          выбранныйПорядокНепрочитанного: unreadCandidates.find(
-            (x) => x.id === String(found.msg.id ?? ''),
-          )?.порядокНепрочитанного,
-          непрочитанныеКандидаты: unreadCandidates,
-          блокировкаДнаДоПрокруткиОператором: true,
-        });
-        setTimeout(() => {
-          updateVisibleMessages();
-          sendReadStatusForVisibleMessages();
-        }, 50);
-        return;
-      }
-
-      attempts++;
-      if (attempts >= maxAttempts) {
-        stopped = true;
-        needsScrollToFirstUnreadRef.current = false;
-        needsScrollToBottomRef.current = false;
-        expandScrollPendingRef.current = false;
-        setIsAtBottom(false);
-        scrollDoneCallbackRef.current?.();
-        clearPoller();
-        operatorUnreadDebug('Первый непрочитанный: DOM не найден, позицию не меняем', {
-          sessionId,
-          domId,
-          попыток: attempts,
-        });
-      }
-    };
-
-    poller.id = setInterval(tryScrollFirstUnread, 50);
-    tryScrollFirstUnread();
-    return () => {
-      stopped = true;
-      clearPoller();
-    };
-  }, [
-    messages,
-    messagesInActiveDialog,
-    updateVisibleMessages,
-    sendReadStatusForVisibleMessages,
-    sessionId,
-    feedDialogId,
-  ]);
-
+  // Reset flags on session change
   useEffect(() => {
     suppressBottomScrollAfterExpandUnreadRef.current = false;
     expandScrollPendingRef.current = false;
+    freezeAutoBottomUntilUserScrollRef.current = false;
+    hasScrolledToFirstUnreadRef.current = false;
+    scrollAttemptsRef.current = 0;
+    prevScrollToBottomOnExpandRef.current = false;
+    prevFeedDialogIdForScrollRef.current = null;
   }, [sessionId]);
 
-  useEffect(() => {
-    if (!feedDialogId) return;
-    const rows = messagesInActiveDialog.filter(isInboundUnreadForExpandScroll).map((m: any) => ({
-      id: String(m.id ?? m.uuid ?? ''),
-      confirmStatus: m.confirmStatus,
-      is_read: m.is_read,
-      фрагментТекста: String(m.text ?? '').slice(0, 60),
-      created_at: m.created_at,
-    }));
-    operatorUnreadDebug('Снимок непрочитанных входящих в активной ленте', {
+  // Прокрутка к первому непрочитанному: useLayoutEffect + rAF, ключ DOM = id ?? uuid (как в разметке)
+  useLayoutEffect(() => {
+    if (!scrollToBottomOnExpand) return;
+    if (hasScrolledToFirstUnreadRef.current) return;
+    if (messagesInActiveDialog.length === 0) {
+      operatorUnreadDebug('First-unread scroll: SKIP (лента пустая)', { sessionId, feedDialogId });
+      return;
+    }
+
+    const tapeRows = buildMessageTapeScrollDebugRows(messagesInActiveDialog);
+    const firstUnread = findFirstUnreadMessage(messagesInActiveDialog);
+
+    logMessageFeedFullMirror('First-unread layout: полные сообщения (как в API)', {
       sessionId,
-      dialogId: feedDialogId,
-      количество: rows.length,
-      сообщения: rows,
+      feedDialogId,
+      tape: messagesInActiveDialog,
+      allMessagesInSessionCount: messages.length,
     });
-  }, [messagesInActiveDialog, sessionId, feedDialogId]);
+
+    operatorUnreadDebug('First-unread scroll: старт layout-effect', {
+      sessionId,
+      feedDialogId,
+      scrollToBottomOnExpand,
+      expandUnreadHintCount,
+      needsScrollToFirstUnreadRef: needsScrollToFirstUnreadRef.current,
+      якорьИндекс: firstUnread?.index ?? null,
+      якорьDomSuffix: firstUnread ? messageRowDomSuffix(firstUnread.msg) : null,
+      лентаСообщений: tapeRows,
+    });
+
+    if (!firstUnread) {
+      operatorUnreadDebug(
+        'First-unread scroll: нет якоря (findFirstUnread пусто), сбрасываем флаги',
+        {
+          sessionId,
+          feedDialogId,
+          лентаСообщений: tapeRows,
+        },
+      );
+      logMessageFeedFullMirror('Нет якоря — полные сообщения ленты', {
+        sessionId,
+        feedDialogId,
+        tape: messagesInActiveDialog,
+        allMessagesInSessionCount: messages.length,
+      });
+      expandScrollPendingRef.current = false;
+      needsScrollToFirstUnreadRef.current = false;
+      return;
+    }
+
+    const domSuffix = messageRowDomSuffix(firstUnread.msg);
+    if (!domSuffix) {
+      operatorUnreadDebug('Scroll skip: first unread has no id/uuid for DOM', {
+        sessionId,
+        feedDialogId,
+        якорьСообщение: tapeRows[firstUnread.index] ?? null,
+        лентаСообщений: tapeRows,
+      });
+      logMessageFeedFullMirror('Якорь без id/uuid — полные сообщения', {
+        sessionId,
+        feedDialogId,
+        tape: messagesInActiveDialog,
+        allMessagesInSessionCount: messages.length,
+      });
+      expandScrollPendingRef.current = false;
+      needsScrollToFirstUnreadRef.current = false;
+      return;
+    }
+
+    operatorUnreadDebug('First-unread scroll: ищем DOM и прокручиваем', {
+      sessionId,
+      feedDialogId,
+      domSuffix,
+      якорьИндекс: firstUnread.index,
+      якорьСтрока: tapeRows[firstUnread.index] ?? null,
+    });
+
+    let cancelled = false;
+    const maxAttempts = 20;
+
+    const scrollToMessage = (attempt: number) => {
+      if (cancelled) return;
+      const targetElement = document.getElementById(`message-${domSuffix}`);
+      const container = scrollRef.current;
+
+      if (attempt === 0 || attempt === 5 || attempt === 10 || attempt === maxAttempts - 1) {
+        operatorUnreadDebug('First-unread scroll: попытка DOM', {
+          sessionId,
+          attempt,
+          ищемId: `message-${domSuffix}`,
+          domНайден: !!targetElement,
+          контейнерНайден: !!container,
+          idsВЛенте: collectDomMessageIdsInFeed(container),
+        });
+      }
+
+      if (targetElement && container) {
+        programmaticScrollLockRef.current = true;
+        const elementRect = targetElement.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        const offsetTop = 28;
+        const scrollToPosition =
+          container.scrollTop + (elementRect.top - containerRect.top) - offsetTop;
+        const appliedTop = Math.max(0, scrollToPosition);
+        container.scrollTo({
+          top: appliedTop,
+          behavior: attempt === 0 ? 'auto' : 'smooth',
+        });
+
+        setTimeout(() => {
+          programmaticScrollLockRef.current = false;
+        }, 400);
+
+        hasScrolledToFirstUnreadRef.current = true;
+        needsScrollToFirstUnreadRef.current = false;
+        expandScrollPendingRef.current = false;
+
+        operatorUnreadDebug('Scroll to first unread COMPLETED (сразу после scrollTo)', {
+          sessionId,
+          feedDialogId,
+          domSuffix,
+          attempt,
+          scrollToPositionRequested: appliedTop,
+          scrollTopФакт: container.scrollTop,
+          scrollHeight: container.scrollHeight,
+          clientHeight: container.clientHeight,
+          цельОтносительноВьюпортаTop: elementRect.top - containerRect.top,
+        });
+
+        window.setTimeout(() => {
+          const c = scrollRef.current;
+          if (!c) return;
+          const topVis = findTopVisibleMessageIdInContainer(c);
+          const targetAfter = document.getElementById(`message-${domSuffix}`);
+          let targetTopAfter: number | null = null;
+          if (targetAfter) {
+            const cr = c.getBoundingClientRect();
+            const tr = targetAfter.getBoundingClientRect();
+            targetTopAfter = tr.top - cr.top;
+          }
+          operatorUnreadDebug('Scroll to first unread: замер после кадра', {
+            sessionId,
+            feedDialogId,
+            domSuffix,
+            scrollTop: c.scrollTop,
+            scrollHeight: c.scrollHeight,
+            первоеВидимоеСообщениеId: topVis,
+            якорьОтносительноКонтейнераTop: targetTopAfter,
+            совпадениеВерхСЯкорем: topVis === domSuffix || topVis === String(firstUnread.msg.id),
+          });
+        }, 80);
+
+        return;
+      }
+
+      if (attempt < maxAttempts) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => scrollToMessage(attempt + 1));
+        });
+      } else {
+        operatorUnreadDebug('Scroll to first unread FAILED after rAF retries', {
+          sessionId,
+          feedDialogId,
+          domSuffix,
+          attempts: attempt,
+          idsВЛенте: collectDomMessageIdsInFeed(scrollRef.current),
+          лентаСообщений: tapeRows,
+        });
+        logMessageFeedFullMirror('Scroll FAILED — полные сообщения ленты', {
+          sessionId,
+          feedDialogId,
+          tape: messagesInActiveDialog,
+          allMessagesInSessionCount: messages.length,
+        });
+        expandScrollPendingRef.current = false;
+        needsScrollToFirstUnreadRef.current = false;
+      }
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToMessage(0));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    messagesInActiveDialog,
+    scrollToBottomOnExpand,
+    sessionId,
+    feedDialogId,
+    expandUnreadHintCount,
+    messages.length,
+  ]);
 
   useEffect(() => {
     return () => {
-      if (scrollDebounceRef.current) {
-        clearTimeout(scrollDebounceRef.current);
-      }
+      if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
     };
   }, []);
 
@@ -976,48 +1097,31 @@ function MessageFeed({
     suppressBottomScrollAfterExpandUnreadRef.current = false;
     const session = getSession(sessionId);
     const dialogId = session?.selectedDialog?.id;
-
     if (forceLoadFirstPage || (dialogId && dialogId !== '0' && pagination?.currentPage !== 0)) {
       handleLoadFirstPage();
     } else {
       if (scrollRef.current) {
-        scrollRef.current.scrollTo({
-          top: scrollRef.current.scrollHeight,
-          behavior: 'smooth',
-        });
-
+        scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
         if (messagesInActiveDialog.length > 0) {
           const lastMessage = messagesInActiveDialog[messagesInActiveDialog.length - 1];
           setLastSeenMessageId(lastMessage.id);
           setInternalUnreadCount(0);
         }
-
         setIsAtBottom(true);
-        setIsAtTop(false);
       }
     }
   };
 
   const handleReplyClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onReplyToMessage) {
-      onReplyToMessage(message);
-    }
+    if (onReplyToMessage) onReplyToMessage(message);
   };
 
   const handleDeleteClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
-
     if (message.id && canEditOrDelete(message)) {
-      setDeletedMessages((prev) => {
-        const newSet = new Set(prev);
-        newSet.add(message.id);
-        return newSet;
-      });
-
-      if (onDeleteMessage) {
-        onDeleteMessage(message.id);
-      }
+      setDeletedMessages((prev) => new Set(prev).add(message.id));
+      if (onDeleteMessage) onDeleteMessage(message.id);
     }
   };
 
@@ -1057,7 +1161,6 @@ function MessageFeed({
         }
       }
     }
-
     return message;
   };
 
@@ -1065,28 +1168,19 @@ function MessageFeed({
     async (quoteMessage: any, e: React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-
       if (!quoteMessage) return;
-
       const session = getSession(sessionId);
       if (!session || !session.selectedDialog?.id) return;
-
       const dialogId = session.selectedDialog.id;
       const messageCreatedAt = quoteMessage.created_at || quoteMessage.createdAt;
-
       if (!messageCreatedAt) {
-        console.error('❌ Нет поля created_at в цитируемом сообщении:', {
-          messageId: quoteMessage.id,
-          messageUuid: quoteMessage.uuid,
-          availableKeys: Object.keys(quoteMessage),
-        });
+        console.error('No created_at field in quoted message');
         return;
       }
-
       try {
         await navigateToQuotedMessage(sessionId, dialogId, quoteMessage, 50);
       } catch (error) {
-        console.error('❌ Ошибка навигации к цитируемому сообщению:', error);
+        console.error('Error navigating to quoted message:', error);
       }
     },
     [sessionId, getSession, navigateToQuotedMessage],
@@ -1094,15 +1188,12 @@ function MessageFeed({
 
   const canEditOrDelete = (message: any): boolean => {
     if (!message.created_at) return false;
-
     try {
       const messageTime = dayjs(message.created_at);
       const now = dayjs();
       const minutesDiff = now.diff(messageTime, 'minute');
-
       return minutesDiff < 1;
     } catch (error) {
-      console.error('Error calculating time difference:', error);
       return false;
     }
   };
@@ -1110,10 +1201,7 @@ function MessageFeed({
   const handleRemoveAttachment = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-
-    if (onRemoveAttachment) {
-      onRemoveAttachment(index);
-    }
+    if (onRemoveAttachment) onRemoveAttachment(index);
   };
 
   const getSenderName = (message: any): string => {
@@ -1122,7 +1210,7 @@ function MessageFeed({
         message.senderInfo?.fullName ||
         message.senderInfo?.displayName ||
         message.createdBy?.fullName ||
-        'Вы'
+        'You'
       );
     } else if (message.messageStatus === 'TO_OPERATOR') {
       return (
@@ -1130,36 +1218,27 @@ function MessageFeed({
         message.senderInfo?.displayName ||
         message.createdBy?.fullName ||
         selectedUserName ||
-        'Клиент'
+        'Client'
       );
     }
-
     return message.sender === 'user'
-      ? message.senderInfo?.fullName || message.senderInfo?.displayName || 'Вы'
-      : selectedUserName || 'Клиент';
+      ? message.senderInfo?.fullName || message.senderInfo?.displayName || 'You'
+      : selectedUserName || 'Client';
   };
 
   const getMessageStyle = (message: any) => {
-    if (message.messageStatus === 'TO_USER') {
-      return styles.supportMessage;
-    } else if (message.messageStatus === 'TO_OPERATOR') {
-      return styles.userMessage;
-    }
-
+    if (message.messageStatus === 'TO_USER') return styles.supportMessage;
+    if (message.messageStatus === 'TO_OPERATOR') return styles.userMessage;
     return message.sender === 'user' ? styles.supportMessage : styles.userMessage;
   };
 
   const getStatusIcon = (message: any) => {
     if (message.messageStatus === 'TO_USER') {
-      if (message.confirmStatus === 'READ') {
+      if (message.confirmStatus === 'READ')
         return <BsCheck2All className={styles.delivered} title={t('chat.statusRead')} />;
-      } else if (message.confirmStatus === 'DELIVERED') {
+      if (message.confirmStatus === 'DELIVERED')
         return <BsCheck2All className={styles.sent} title={t('chat.statusDelivered')} />;
-      } else if (message.confirmStatus === 'SENT') {
-        return <BsCheck2 className={styles.sent} title={t('chat.statusSent')} />;
-      } else {
-        return <BsCheck2 className={styles.sent} title={t('chat.statusSent')} />;
-      }
+      return <BsCheck2 className={styles.sent} title={t('chat.statusSent')} />;
     }
     return null;
   };
@@ -1168,17 +1247,14 @@ function MessageFeed({
 
   useEffect(() => {
     if (!session || !pagination) return;
-
     const currentPage = pagination.currentPage || 0;
     const prevMessages = lastMessagesRef.current;
     const currentMessages = messagesInActiveDialog;
-
     if (currentMessages.length > prevMessages.length) {
       const newMessages = currentMessages.slice(prevMessages.length);
       const hasNewOperatorMessage = newMessages.some(
         (msg) => msg.messageStatus === 'TO_USER' && msg.confirmStatus === 'SENT',
       );
-
       if (hasNewOperatorMessage) {
         if (currentPage > 0) {
           handleLoadFirstPage();
@@ -1188,30 +1264,20 @@ function MessageFeed({
               const container = scrollRef.current;
               const isAtBottomNow =
                 container.scrollHeight - container.scrollTop - container.clientHeight < 50;
-
-              if (!isAtBottomNow) {
-                container.scrollTo({
-                  top: container.scrollHeight,
-                  behavior: 'smooth',
-                });
-              } else {
-                container.scrollTop = container.scrollHeight;
-              }
-
+              if (!isAtBottomNow)
+                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+              else container.scrollTop = container.scrollHeight;
               if (currentMessages.length > 0) {
                 const lastMessage = currentMessages[currentMessages.length - 1];
                 setLastSeenMessageId(lastMessage.id);
                 setInternalUnreadCount(0);
               }
-
               setIsAtBottom(true);
-              setIsAtTop(false);
             }
           }, 50);
         }
       }
     }
-
     lastMessagesRef.current = [...currentMessages];
   }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage]);
 
@@ -1233,7 +1299,7 @@ function MessageFeed({
         {pagination?.isLoadingMore && (
           <div className={styles.loadingIndicator}>
             <CircularProgress size={20} />
-            <p>Загрузка более старых сообщений...</p>
+            <p>Loading older messages...</p>
           </div>
         )}
 
@@ -1241,7 +1307,6 @@ function MessageFeed({
           const originalMessage = msg.replyTo
             ? findOriginalMessage(msg.replyTo)
             : msg.replyToMessage;
-
           const isDeleted = msg.id && deletedMessages.has(msg.id);
           const isEditing = msg.id === editingMessageId;
           const isOperatorMessage = msg.messageStatus === 'TO_USER';
@@ -1252,19 +1317,15 @@ function MessageFeed({
           const senderName = getSenderName(msg);
           const messageStyle = getMessageStyle(msg);
           const statusIcon = getStatusIcon(msg);
+
+          const firstUnread = findFirstUnreadMessage(messagesInActiveDialog);
+          const isFirstUnread = firstUnread && String(firstUnread.msg.id) === String(msg.id);
+
           const isUnread =
-            msg.messageStatus === 'TO_OPERATOR' &&
-            (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-            !msg.is_read &&
+            isInboundUnread(msg) &&
             (!lastSeenMessageId ||
               messagesInActiveDialog.findIndex((m) => m.id === msg.id) >
                 messagesInActiveDialog.findIndex((m) => m.id === lastSeenMessageId));
-
-          const isFirstUnread =
-            msg.messageStatus === 'TO_OPERATOR' &&
-            (msg.confirmStatus === 'SENT' || msg.confirmStatus === 'DELIVERED') &&
-            !msg.is_read &&
-            firstUnreadMessageRef.current?.id === String(msg.id ?? msg.uuid ?? index);
 
           const messageKey = msg.id || msg.uuid || `index-${index}`;
 
@@ -1284,13 +1345,11 @@ function MessageFeed({
                   style={{ cursor: 'pointer' }}
                   title={t('chat.jumpToQuotedMessage')}>
                   <div className={styles.replyAuthor}>
-                    Ответ на{' '}
-                    {originalMessage.messageStatus === 'TO_USER'
-                      ? 'сообщение пользователя'
-                      : 'ваше сообщение'}
+                    Reply to{' '}
+                    {originalMessage.messageStatus === 'TO_USER' ? 'user message' : 'your message'}
                   </div>
                   <div className={styles.replyText}>
-                    {originalMessage.text?.substring(0, 50) || 'Сообщение'}
+                    {originalMessage.text?.substring(0, 50) || 'Message'}
                     {originalMessage.text?.length > 50 ? '...' : ''}
                   </div>
                 </div>
@@ -1357,14 +1416,13 @@ function MessageFeed({
                           attachment.extension.toLowerCase(),
                         )) ||
                       (attachment.name && /\.(jpg|jpeg|png|bmp|gif)$/i.test(attachment.name));
-
                     return (
                       <div key={attIndex} style={{ marginBottom: '8px' }}>
                         {isImage && attachment.url ? (
                           <div style={{ position: 'relative', display: 'inline-block' }}>
                             <img
                               src={attachment.url}
-                              alt={attachment.name || 'Вложение'}
+                              alt={attachment.name || 'Attachment'}
                               style={{
                                 maxWidth: '200px',
                                 maxHeight: '200px',
@@ -1373,9 +1431,7 @@ function MessageFeed({
                                 border: '1px solid #ddd',
                               }}
                               onClick={() => {
-                                if (attachment.url) {
-                                  window.open(attachment.url, '_blank');
-                                }
+                                if (attachment.url) window.open(attachment.url, '_blank');
                               }}
                             />
                             <div
@@ -1385,7 +1441,7 @@ function MessageFeed({
                                 marginTop: '2px',
                                 wordBreak: 'break-all',
                               }}>
-                              {attachment.name || attachment.fileName || 'Изображение'}
+                              {attachment.name || attachment.fileName || 'Image'}
                               {attachment.size && ` (${Math.round(attachment.size / 1024)} KB)`}
                             </div>
                           </div>
@@ -1400,9 +1456,8 @@ function MessageFeed({
                               cursor: 'pointer',
                             }}
                             onClick={() => {
-                              if (attachment.url) {
-                                window.open(attachment.url, '_blank');
-                              } else if (attachment.blob) {
+                              if (attachment.url) window.open(attachment.url, '_blank');
+                              else if (attachment.blob) {
                                 const url = URL.createObjectURL(attachment.blob);
                                 const a = document.createElement('a');
                                 a.href = url;
@@ -1412,11 +1467,11 @@ function MessageFeed({
                               }
                             }}>
                             <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
-                              {attachment.name || attachment.fileName || 'Файл'}
+                              {attachment.name || attachment.fileName || 'File'}
                             </p>
                             <p style={{ margin: '0', fontSize: '0.9em', color: '#777' }}>
                               {attachment.extension &&
-                                `Тип: ${attachment.extension.toUpperCase()} `}
+                                `Type: ${attachment.extension.toUpperCase()} `}
                               {attachment.size && `(${Math.round(attachment.size / 1024)} KB)`}
                               {!attachment.size &&
                                 attachment.extension &&
@@ -1429,7 +1484,7 @@ function MessageFeed({
                                   color: '#d32f2f',
                                   fontSize: '0.8em',
                                 }}>
-                                Ошибка загрузки
+                                Upload error
                               </p>
                             )}
                           </div>
@@ -1443,7 +1498,7 @@ function MessageFeed({
               {isDeleted && (
                 <div className={styles.deletedContent}>
                   <p style={{ fontStyle: 'italic', color: '#999', margin: '0 0 4px 0' }}>
-                    Сообщение удалено
+                    Message deleted
                   </p>
                 </div>
               )}
@@ -1461,11 +1516,9 @@ function MessageFeed({
                 <span style={{ fontWeight: 'bold', color: '#777' }}>
                   {dayjs(msg.edited_at || msg.created_at).format('DD.MM.YYYY HH:mm')}
                 </span>
-
                 {msg.edited_at && (
-                  <span style={{ fontStyle: 'italic', marginLeft: '4px' }}>(изменено)</span>
+                  <span style={{ fontStyle: 'italic', marginLeft: '4px' }}>(edited)</span>
                 )}
-
                 {!isDeleted && statusIcon && (
                   <span className={styles.statusIcons} style={{ marginLeft: '4px' }}>
                     {statusIcon}
@@ -1480,7 +1533,6 @@ function MessageFeed({
                       <FaReply size={12} />
                     </button>
                   )}
-
                   {showEditDeleteBar && (
                     <>
                       {isOperatorMessage && (
@@ -1508,14 +1560,14 @@ function MessageFeed({
         {pagination?.isLoadingNext && (
           <div className={styles.loadingIndicator} style={{ marginTop: '20px' }}>
             <CircularProgress size={20} />
-            <p>Загрузка более новых сообщений...</p>
+            <p>Loading newer messages...</p>
           </div>
         )}
 
         {attachments.length > 0 && (
           <div className={`${styles.message} ${styles.supportMessage}`}>
             <p style={{ margin: '0 0 8px 0', color: '#777', fontSize: '0.9em' }}>
-              Прикрепленные файлы (не отправлены):
+              Attached files (not sent):
             </p>
             {attachments.map((file, index) => (
               <div key={index} className={styles.attachmentPreview}>

@@ -892,7 +892,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
 
             <AppAlert
               severity="warning"
-              title='При удалении у пользователя роли "Водитель" все его привязки к ТС и данные ВУ будут удалены'
+              title={t('form.driverRoleRemovalWarning', { role: t('form.driver') })}
               type="submit"
               onClose={closeAlert}
               open={alert}

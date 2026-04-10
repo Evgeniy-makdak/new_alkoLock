@@ -135,6 +135,32 @@
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
 }
 
+/*
+ * Inline-таблицы на телефоне: шапка с «+» справа — кластер тема+язык сдвигаем влево,
+ * компактнее, в один ряд с запасом под кнопку добавления.
+ */
+.themeToggleSlotPhoneInlineTable {
+  right: 58px;
+  left: auto;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 2px 6px;
+  min-height: 40px;
+
+  :global(.MuiIconButton-root) {
+    padding: 4px;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+}
+
+/* Мобильные страницы без «+» в шапке (события, отчёты, сервисный режим, …) — кластер у правого края */
+.themeToggleSlotPhoneInlineFlushRight {
+  right: 10px;
+}
+
 /* Шаблоны / Настройки на телефоне: не конкурируем с полем «Поиск» в одном ряду */
 .themeToggleSlotBelowSearchRow {
   @media (max-width: 768px) {

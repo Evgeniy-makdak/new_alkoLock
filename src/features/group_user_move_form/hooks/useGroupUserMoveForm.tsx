@@ -1,5 +1,6 @@
 /* eslint-disable no-empty-pattern */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { enqueueSnackbar } from 'notistack';
 
@@ -16,6 +17,7 @@ type GroupUserMoveFormHookInput = {
 };
 
 export const useGroupUserMoveForm = ({ user, close }: GroupUserMoveFormHookInput) => {
+  const { t } = useTranslation();
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);
   const [error, setError] = useState(false);
@@ -58,18 +60,19 @@ export const useGroupUserMoveForm = ({ user, close }: GroupUserMoveFormHookInput
       if (error?.response?.status === 400) {
         setApiMessage(error.response.data.detail);
       } else {
-        setApiMessage('Произошла ошибка при перемещении пользователя');
+        setApiMessage(t('modals.moveUserGenericError'));
       }
     }
   };
 
   const alertText = (
     <>
-      При перемещении выбранного пользователя все его текущие связи с ТС будут <b>разорваны</b>, а
-      также будут отозваны все несистемные роли.
+      {t('modals.moveUserAlertP1a')}
+      <b>{t('modals.moveUserAlertP1b')}</b>
+      {t('modals.moveUserAlertP1c')}
       <br />
       <br />
-      Пожалуйста, подтвердите действие.
+      {t('modals.moveUserAlertP2')}
     </>
   );
 

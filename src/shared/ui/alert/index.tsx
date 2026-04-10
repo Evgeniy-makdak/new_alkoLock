@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { Alert, type AlertProps, AlertTitle, Collapse, Typography } from '@mui/material';
 
@@ -24,6 +25,7 @@ export const AppAlert: FC<AppAlertProps> = ({
   open,
   ...rest
 }) => {
+  const { t } = useTranslation();
   return (
     <Collapse in={open}>
       <Alert {...rest}>
@@ -35,9 +37,9 @@ export const AppAlert: FC<AppAlertProps> = ({
         {text}
         <ButtonFormWrapper>
           <Button type={type} onClick={onSubmit}>
-            подтвердить
+            {t('common.confirm')}
           </Button>
-          <Button onClick={onClose}>отмена</Button>
+          <Button onClick={onClose}>{t('common.cancel')}</Button>
         </ButtonFormWrapper>
       </Alert>
     </Collapse>

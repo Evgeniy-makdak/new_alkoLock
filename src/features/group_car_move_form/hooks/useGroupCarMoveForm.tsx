@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useToggle } from '@shared/hooks/useToggle';
 import { FormCheckbox } from '@shared/ui/form_checkbox';
@@ -15,6 +16,7 @@ type GroupCarMoveFormHookInput = {
 };
 
 export const useGroupCarMoveForm = ({ car, close }: GroupCarMoveFormHookInput) => {
+  const { t } = useTranslation();
   const [branchSelect, setBranchSelect] = useState<Values>([]);
   const [widthDevice, setWidthDevice] = useState(false);
   const [openAlert, toggleAlert, closeAlert] = useToggle(false);
@@ -46,7 +48,9 @@ export const useGroupCarMoveForm = ({ car, close }: GroupCarMoveFormHookInput) =
   };
   const alertText = (
     <>
-      При перемещении выбранного ТС все его текущие связи с алкозамками могут быть <b>разорваны</b>.
+      {t('modals.moveVehicleAlertP1a')}
+      <b>{t('modals.moveVehicleAlertP1b')}</b>
+      {t('modals.moveVehicleAlertP1c')}
       <br />
       <FormCheckbox
         checkBox={{
@@ -55,13 +59,13 @@ export const useGroupCarMoveForm = ({ car, close }: GroupCarMoveFormHookInput) =
             setWidthDevice(checked);
           },
         }}
-        label="Сохранить связи с алкозамками"
+        label={t('modals.moveVehicleKeepAlcolockLinks')}
       />
       <br />
-      <b className={style.alertText}>Будут разорваны связи ТС - водитель в пределах этой группы</b>
+      <b className={style.alertText}>{t('modals.moveVehicleDriverWarning')}</b>
       <br />
       <br />
-      Пожалуйста, подтвердите действие.
+      {t('modals.moveVehicleAlertP2')}
     </>
   );
   const showAlert = openAlert && !error && branchSelect.length > 0;
