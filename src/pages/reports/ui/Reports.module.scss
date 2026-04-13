@@ -8,6 +8,14 @@
 
 .titleBlock {
   padding: 16px 16px 0;
+
+  @media (max-width: 1024px) {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    padding: 16px 16px 8px;
+    box-sizing: border-box;
+  }
 }
 
 .title {

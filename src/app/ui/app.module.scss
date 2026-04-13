@@ -112,13 +112,13 @@
 
 /* Мобильный/планшет: не сливаются с контентом и друг с другом (единственный блок темы/языка) */
 .themeToggleSlotNarrow {
-  gap: 10px;
-  padding: 4px 10px;
-  border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
-  min-height: 44px;
+  gap: 6px;
+  padding: 0;
+  border-radius: 0;
+  background-color: transparent;
+  border: 0;
+  box-shadow: none;
+  min-height: 40px;
 
   :global(.MuiIconButton-root) {
     flex-shrink: 0;
@@ -130,21 +130,22 @@
 }
 
 .appDark .themeToggleSlotNarrow {
-  background-color: rgba(40, 40, 40, 0.96);
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+  background-color: transparent;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /*
  * Inline-таблицы на телефоне: шапка с «+» справа — кластер тема+язык сдвигаем влево,
  * компактнее, в один ряд с запасом под кнопку добавления.
  */
-.themeToggleSlotPhoneInlineTable {
-  right: 58px;
+.themeToggleSlotPhoneInlineWithAdd {
+  top: 16px;
+  right: 62px;
   left: auto;
   justify-content: flex-end;
   gap: 2px;
-  padding: 2px 6px;
+  padding: 0;
   min-height: 40px;
 
   :global(.MuiIconButton-root) {
@@ -156,8 +157,13 @@
   }
 }
 
+.themeToggleSlotPhoneInlineWithAddNudged {
+  top: 12px;
+}
+
 /* Мобильные страницы без «+» в шапке (события, отчёты, сервисный режим, …) — кластер у правого края */
 .themeToggleSlotPhoneInlineFlushRight {
+  top: 10px;
   right: 10px;
 }
 

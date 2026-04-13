@@ -13,6 +13,8 @@ const INLINE_TABLE_TOOLBAR_PREFIXES: readonly string[] = [
   RoutePaths.attachments,
   RoutePaths.autoService,
   RoutePaths.historyAutoService,
+  RoutePaths.settings,
+  RoutePaths.messages,
 ];
 
 export function pathHasInlineTableToolbar(pathname: string): boolean {

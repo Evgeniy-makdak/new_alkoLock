@@ -1,7 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import AddIcon from '@mui/icons-material/Add';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -37,7 +36,6 @@ interface TemplatesDesktopTableProps {
   onToggleStatus: (id: number) => void;
   onEditClick: (template: EmailTemplate) => void;
   onDeleteClick: (template: EmailTemplate) => void;
-  onAddClick: () => void;
   onViewClick: (template: EmailTemplate) => void;
   onMouseEnterColumn: (field: keyof EmailTemplate) => void;
   onMouseLeaveColumn: () => void;
@@ -57,7 +55,6 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
   onToggleStatus,
   onEditClick,
   onDeleteClick,
-  onAddClick,
   onViewClick,
   onMouseEnterColumn,
   onMouseLeaveColumn,
@@ -158,33 +155,13 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
               }}>
               {t('tables.actions')}
             </TableCell>
-            <TableCell
-              sx={{
-                width: '60px',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                bgcolor: headBg,
-                border: 'none',
-                borderBottom: 'none',
-              }}>
-              <Tooltip
-                title={t('common.add')}
-                open={activeTooltip === 'add'}
-                onOpen={() => onTooltipOpen('add')}
-                onClose={onTooltipClose}
-                disableInteractive>
-                <IconButton onClick={onAddClick}>
-                  <AddIcon />
-                </IconButton>
-              </Tooltip>
-            </TableCell>
           </TableRow>
         </TableHead>
 
         <TableBody>
           {loading ? (
             <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ border: 'none', borderBottom: 'none' }}>
+              <TableCell colSpan={6} align="center" sx={{ border: 'none', borderBottom: 'none' }}>
                 <CircularProgress />
               </TableCell>
             </TableRow>
@@ -279,7 +256,6 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
                     </span>
                   </Tooltip>
                 </TableCell>
-                <TableCell sx={{ border: 'none', borderBottom: 'none' }} />
               </TableRow>
             ))
           )}

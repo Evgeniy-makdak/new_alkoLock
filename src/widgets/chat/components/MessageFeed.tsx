@@ -939,6 +939,7 @@ function MessageFeed({
       });
       expandScrollPendingRef.current = false;
       needsScrollToFirstUnreadRef.current = false;
+      freezeAutoBottomUntilUserScrollRef.current = false;
       return;
     }
 
@@ -958,6 +959,7 @@ function MessageFeed({
       });
       expandScrollPendingRef.current = false;
       needsScrollToFirstUnreadRef.current = false;
+      freezeAutoBottomUntilUserScrollRef.current = false;
       return;
     }
 
@@ -1008,6 +1010,7 @@ function MessageFeed({
         hasScrolledToFirstUnreadRef.current = true;
         needsScrollToFirstUnreadRef.current = false;
         expandScrollPendingRef.current = false;
+        freezeAutoBottomUntilUserScrollRef.current = false;
 
         operatorUnreadDebug('Scroll to first unread COMPLETED (сразу после scrollTo)', {
           sessionId,
@@ -1042,6 +1045,8 @@ function MessageFeed({
             якорьОтносительноКонтейнераTop: targetTopAfter,
             совпадениеВерхСЯкорем: topVis === domSuffix || topVis === String(firstUnread.msg.id),
           });
+          updateVisibleMessages();
+          sendReadStatusForVisibleMessages();
         }, 80);
 
         return;
@@ -1068,6 +1073,7 @@ function MessageFeed({
         });
         expandScrollPendingRef.current = false;
         needsScrollToFirstUnreadRef.current = false;
+        freezeAutoBottomUntilUserScrollRef.current = false;
       }
     };
 
@@ -1085,6 +1091,8 @@ function MessageFeed({
     feedDialogId,
     expandUnreadHintCount,
     messages.length,
+    updateVisibleMessages,
+    sendReadStatusForVisibleMessages,
   ]);
 
   useEffect(() => {

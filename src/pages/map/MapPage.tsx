@@ -40,6 +40,7 @@ import { MapRoutes } from './MapRoutes';
 import {
   addRasterBasemapForTheme,
   addVectorBasemapToLeafletMap,
+  baseLangFromI18n,
   isMapReadyForLayers,
   isVectorBasemapEnabled,
   rasterBasemapSpec,
@@ -222,6 +223,7 @@ export const MapPage = () => {
   useEffect(() => {
     const el = mapContainerRef.current;
     if (!el) return;
+    el.setAttribute('data-basemap-lang', baseLangFromI18n(i18n.language));
     el.setAttribute(
       'data-basemap-tiles',
       isVectorBasemapEnabled() ? 'vector' : rasterBasemapSpec(colorMode, i18n.language).tileVisual,

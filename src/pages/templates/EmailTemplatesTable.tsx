@@ -1,13 +1,24 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
-import { useMediaQuery } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
+
+import { useTableHeaderMobileTrailing } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
+import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
+import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
+import { ThemeToggleControl } from '@shared/theme/colorMode';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
+import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { EmailTemplate } from '../templates/types';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import { EmailTemplateForm } from './EmailTemplateForm';
 import { EmailTemplateView } from './EmailTemplateView';
-import EmailTemplatesSearch from './EmailTemplatesSearch';
 import { TemplatesDesktopTable } from './TemplatesDesktopTable';
 import { TemplatesMobileTable } from './TemplatesMobileTable';
 
@@ -36,6 +47,15 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const location = useLocation();
+  const addCircleSx = useMemo(() => getToolbarCircleIconButtonSx(theme), [theme]);
+  const isMobile = useMediaQuery('(max-width:768px)');
+  const hasInlineToolbarRoute = pathHasInlineTableToolbar(location.pathname);
+  const relocateAddToEndToolbar = hasInlineToolbarRoute && !isMobile;
+  const setTrailing = useTableHeaderMobileTrailing()?.setTrailing;
+
   const [hoveredColumn, setHoveredColumn] = useState<keyof EmailTemplate | null>(null);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
@@ -48,7 +68,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
 
-  const isMobile = useMediaQuery('(max-width:768px)');
   const shouldBlockNavigation = isEditing || isAdding || isDeleting;
 
   const handleTooltipOpen = (key: string) => setActiveTooltip(key);
@@ -136,6 +155,46 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   };
 
   useEffect(() => {
+    if (isMobile) {
+      setTrailing?.(null);
+      return;
+    }
+    if (!setTrailing) {
+      return;
+    }
+    if (!relocateAddToEndToolbar) {
+      setTrailing(null);
+      return;
+    }
+    setTrailing(
+      <Tooltip title={t('common.addTemplate')}>
+        <IconButton aria-label={t('common.addTemplate')} onClick={handleAddClick} sx={addCircleSx}>
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>,
+    );
+    return () => {
+      setTrailing(null);
+    };
+  }, [setTrailing, relocateAddToEndToolbar, handleAddClick, t, addCircleSx, isMobile]);
+
+  const templatesTableHeader = (
+    <TableHeaderWrapper>
+      <SearchInput
+        value={searchQuery}
+        setState={(value) => {
+          const next = typeof value === 'function' ? value(searchQuery) : value;
+          onSearchChange(next);
+        }}
+        onClear={() => onSearchChange('')}
+      />
+      <TableHeaderEndToolbar>
+        <ResetFilters reset={() => onSearchChange('')} />
+      </TableHeaderEndToolbar>
+    </TableHeaderWrapper>
+  );
+
+  useEffect(() => {
     if (isMobile) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -199,11 +258,48 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   if (isMobile) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
-        <EmailTemplatesSearch
-          searchQuery={searchQuery}
-          onSearchChange={onSearchChange}
-          onAddClick={handleAddClick}
-        />
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '16px',
+            background: '#fff',
+            borderBottom: '1px solid #e0e0e0',
+          }}>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#333' }}>
+            Message Templates
+          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <ThemeToggleControl variant="toolbarCircle" />
+            <Tooltip title={t('common.addTemplate')}>
+              <IconButton
+                aria-label={t('common.addTemplate')}
+                onClick={handleAddClick}
+                sx={addCircleSx}>
+                <AddIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 12,
+            padding: '16px',
+            background: '#f8f9fa',
+            borderBottom: '1px solid #e0e0e0',
+          }}>
+          <SearchInput
+            value={searchQuery}
+            setState={(value) => {
+              const next = typeof value === 'function' ? value(searchQuery) : value;
+              onSearchChange(next);
+            }}
+            onClear={() => onSearchChange('')}
+          />
+        </div>
 
         <TemplatesMobileTable
           templates={templates}
@@ -242,11 +338,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
-      <EmailTemplatesSearch
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onAddClick={handleAddClick}
-      />
+      {templatesTableHeader}
 
       <TemplatesDesktopTable
         templates={templates}
@@ -260,7 +352,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
         onToggleStatus={onToggleStatus}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
-        onAddClick={handleAddClick}
         onViewClick={openView}
         onMouseEnterColumn={setHoveredColumn}
         onMouseLeaveColumn={() => setHoveredColumn(null)}

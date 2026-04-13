@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next';
 
-import { AppConstants } from '@app/index';
 import type { Field, GetTypeOfRowIconValueProps } from '@entities/info';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IUser } from '@shared/types/BaseQueryTypes';
@@ -12,7 +11,9 @@ export const getFields = (userData: IUser, t?: TFunction): Field[] => {
   const numberPhone = userData?.phone;
   const email = userData?.email;
   const access = userData
-    ? (AppConstants.accessList.find((access) => access.value === userData.disabled)?.label ?? '-')
+    ? userData.disabled
+      ? tr('tooltips.accessDenied')
+      : tr('tooltips.accessAllowed')
     : '-';
   const numberVU = userData?.driver?.licenseCode;
   const name = Formatters.nameFormatter(userData);

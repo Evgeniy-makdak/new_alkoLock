@@ -5,21 +5,44 @@ import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
 import { IconButton, Tooltip } from '@mui/material';
 
 import { useColorMode } from './ColorModeContext';
+import style from './ThemeToggleControl.module.scss';
+
+export type ThemeToggleVariant = 'default' | 'toolbarCircle';
+
+type ThemeToggleControlProps = {
+  /** toolbarCircle — круг с обводкой как у кнопки «+» в шапках таблиц */
+  variant?: ThemeToggleVariant;
+};
 
 /**
  * Второстепенный контрол: фиксируется в области контента (см. App), не конкурирует с навигацией.
  */
-export function ThemeToggleControl() {
+export function ThemeToggleControl({ variant = 'default' }: ThemeToggleControlProps) {
   const { t } = useTranslation();
   const { mode, toggleColorMode } = useColorMode();
+  const circle = variant === 'toolbarCircle';
 
   return (
     <Tooltip title={t('nav.toggleColorMode')} placement="bottom-end">
-      <IconButton color="inherit" onClick={toggleColorMode} aria-label={t('nav.toggleColorMode')}>
+      <IconButton
+        color="inherit"
+        onClick={toggleColorMode}
+        aria-label={t('nav.toggleColorMode')}
+        className={circle ? style.toolbarCircle : undefined}
+        size={circle ? 'medium' : 'medium'}
+        sx={
+          circle
+            ? {
+                '&.MuiIconButton-root': {
+                  borderRadius: '50%',
+                },
+              }
+            : undefined
+        }>
         {mode === 'dark' ? (
-          <LightModeOutlined fontSize="small" />
+          <LightModeOutlined fontSize={circle ? 'medium' : 'small'} />
         ) : (
-          <DarkModeOutlined fontSize="small" />
+          <DarkModeOutlined fontSize={circle ? 'medium' : 'small'} />
         )}
       </IconButton>
     </Tooltip>

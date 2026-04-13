@@ -461,7 +461,12 @@
   "groups": {
     "usersTab": "КАРЫСТАЛЬНІКІ",
     "alcolocksTab": "АЛКАЗАМКІ",
-    "transportTab": "ТРАНСПАРТ"
+    "transportTab": "ТРАНСПАРТ",
+    "addUsersTitle": "Дадаць карыстальнікаў у групу",
+    "addUsersAlertPrefix": "Пры перамяшчэнні выбраных карыстальнікаў усе іх бягучыя сувязі з ТС будуць",
+    "addUsersAlertBroken": "разарваны",
+    "addUsersAlertSuffix": "а таксама будуць адкліканы ўсе несістэмныя ролі.",
+    "addUsersAlertConfirm": "Калі ласка, пацвердзіце дзеянне."
   },
   "templateTypes": {
     "password_recovery": "Аднаўленне пароля",

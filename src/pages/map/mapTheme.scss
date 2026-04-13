@@ -18,6 +18,11 @@
 .vp-event--failed  { color: #d32f2f; }
 .vp-event--interrupted { color: #ed6c02; }
 
+/* Для EN (Carto-тайлы) подгоняем вид к OSM (ru и др.) без смены языка интерфейса. */
+.leaflet-container[data-basemap-lang='en'][data-basemap-tiles='carto-voyager'] .leaflet-tile-pane img.leaflet-tile {
+  filter: brightness(0.98) contrast(1.1) saturate(1.06);
+}
+
 /* Тёмная тема */
 [data-theme='dark'] {
   .vp-close-btn      { color: rgba(255, 255, 255, 0.6); }
@@ -55,6 +60,11 @@
 
   .leaflet-container[data-basemap-tiles='jawg'] .leaflet-tile-pane img.leaflet-tile {
     filter: brightness(1.15) contrast(1.05);
+  }
+
+  /* EN + carto-dark был визуально чрезмерно тёмным — смягчаем только этот кейс. */
+  .leaflet-container[data-basemap-lang='en'][data-basemap-tiles='carto-dark'] .leaflet-tile-pane img.leaflet-tile {
+    filter: brightness(1.78) contrast(1.02) saturate(1);
   }
 
   .leaflet-control-zoom a {

@@ -4,8 +4,8 @@ import { useLocation } from 'react-router-dom';
 import { useMediaQuery } from '@mui/material';
 
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ThemeToggleControl } from '@shared/theme/colorMode';
-import { AppLanguageSelect } from '@shared/ui/app_language_select';
 
 import { useTableHeaderMobileTrailing } from '../model/TableHeaderMobileTrailingContext';
 import style from './TableHeaderEndToolbar.module.scss';
@@ -17,7 +17,7 @@ interface TableHeaderEndToolbarProps {
 }
 
 /**
- * Сброс фильтров, затем «тема + язык».
+ * Сброс фильтров, затем переключатель темы (язык — только на экране авторизации).
  * На узком экране для inline-таблиц — компактный ряд в шапке (вместе с «+» из контекста), без плавающего слота App.
  */
 export const TableHeaderEndToolbar = ({ children }: TableHeaderEndToolbarProps) => {
@@ -26,20 +26,21 @@ export const TableHeaderEndToolbar = ({ children }: TableHeaderEndToolbarProps) 
   const hasInlineToolbarRoute = pathHasInlineTableToolbar(location.pathname);
   const showThemeLangCluster = !hideThemeAndLanguage || hasInlineToolbarRoute;
   const compactMobileRow = hideThemeAndLanguage && hasInlineToolbarRoute;
-  const hasReset = children != null && children !== false;
   const { trailing } = useTableHeaderMobileTrailing() ?? { trailing: null };
+  const isSettingsRoute =
+    location.pathname === RoutePaths.settings ||
+    location.pathname.startsWith(`${RoutePaths.settings}/`);
+  const showTrailing = !!trailing && !isSettingsRoute;
+  const hasReset = children != null && children !== false;
 
   return (
     <div className={style.endToolbar}>
       {hasReset ? <div className={style.resetSlot}>{children}</div> : null}
       {showThemeLangCluster ? (
         <div
-          className={`${style.themeLangCluster} ${hasReset ? style.themeLangClusterSeparated : ''} ${compactMobileRow ? style.themeLangClusterCompact : ''}`}>
-          <ThemeToggleControl />
-          <AppLanguageSelect appearance="toolbar" size={compactMobileRow ? 'small' : 'medium'} />
-          {compactMobileRow && trailing ? (
-            <div className={style.mobileTrailingSlot}>{trailing}</div>
-          ) : null}
+          className={`${style.themeLangCluster} ${hasReset ? style.themeLangClusterSeparated : ''} ${compactMobileRow ? style.themeLangClusterCompact : ''} ${showTrailing && compactMobileRow ? style.themeLangClusterWithTrailing : ''}`}>
+          <ThemeToggleControl variant="toolbarCircle" />
+          {showTrailing ? <div className={style.mobileTrailingSlot}>{trailing}</div> : null}
         </div>
       ) : null}
     </div>

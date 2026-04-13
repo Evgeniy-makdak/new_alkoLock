@@ -9,7 +9,6 @@ import { TableHeaderMobileTrailingProvider } from '@shared/components/table_head
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
-import { AppLanguageSelect } from '@shared/ui/app_language_select';
 import ChatFooter from '@widgets/chat/chatFooter/ChatFooter';
 import { NavBar } from '@widgets/nav_bar';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
@@ -26,34 +25,39 @@ export function App() {
   const isTablet = useMediaQuery(breakpoints.tablet);
   const isNarrowViewport = isMobile || isTablet;
   const hasInlineTableToolbar = pathHasInlineTableToolbar(location.pathname);
-  // Планшет/десктоп с inline-шапкой: только TableHeaderEndToolbar. Телефон (≤768): отдельные MobileTable — плавающий кластер, смещённый от «+».
-  const showFloatingThemeSlot = !hasInlineTableToolbar || isMobile;
-
-  /** Только «Шаблоны сообщений»: на телефоне тема/язык — второй ряд под полем поиска */
-  const themeSlotBelowMobileSearch =
-    isMobile && showFloatingThemeSlot && location.pathname === RoutePaths.messages;
-
   const hideLanguageOnMap = location.pathname === RoutePaths.map;
-  /** Карта на узком экране: плашка темы как у «Параметры» (radius, высота) */
   const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
-  /** Карта на desktop: тема рядом со сбросом фильтров в MapControls, не в плавающем слоте */
+  /** На широкой карте переключатель темы в MapControls, не в плавающем слоте */
   const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
-  const showThemeInFloatingSlot = !themeInMapToolbar;
-  const showLangInFloatingSlot = !hideLanguageOnMap;
-
-  const themeSlotPhoneInlineTable = hasInlineTableToolbar && isMobile && !themeSlotMapMobile;
-  /** Мобильные страницы без «+» в шапке: кластер тема/язык у правого края (не отступ под Add) */
-  const phoneThemeFlushRightRoutePrefixes = [
-    RoutePaths.autoService,
-    RoutePaths.historyAutoService,
+  const isMessagesRoute =
+    location.pathname === RoutePaths.messages ||
+    location.pathname.startsWith(`${RoutePaths.messages}/`);
+  const isSettingsRoute =
+    location.pathname === RoutePaths.settings ||
+    location.pathname.startsWith(`${RoutePaths.settings}/`);
+  const needsMobileFloatingTheme =
+    isMobile && hasInlineTableToolbar && !isMessagesRoute && !isSettingsRoute;
+  const noAddMobileThemeRoutePrefixes = [
     RoutePaths.events,
     RoutePaths.reports,
+    RoutePaths.autoService,
+    RoutePaths.historyAutoService,
   ] as const;
   const themeSlotPhoneInlineFlushRight =
-    themeSlotPhoneInlineTable &&
-    phoneThemeFlushRightRoutePrefixes.some(
+    needsMobileFloatingTheme &&
+    noAddMobileThemeRoutePrefixes.some(
       (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
     );
+  const themeSlotPhoneInlineWithAdd = needsMobileFloatingTheme && !themeSlotPhoneInlineFlushRight;
+  const needsThemeNudgeForRolesAndAttachments =
+    themeSlotPhoneInlineWithAdd &&
+    (location.pathname === RoutePaths.roles_new ||
+      location.pathname.startsWith(`${RoutePaths.roles_new}/`) ||
+      location.pathname === RoutePaths.attachments ||
+      location.pathname.startsWith(`${RoutePaths.attachments}/`));
+
+  const showFloatingThemeSlot =
+    (!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme;
 
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
@@ -66,15 +70,14 @@ export function App() {
         <div className={style.main}>
           <NavBar />
           <div className={style.content}>
-            {showFloatingThemeSlot && (showThemeInFloatingSlot || showLangInFloatingSlot) ? (
+            {showFloatingThemeSlot ? (
               <div
-                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotBelowMobileSearch ? style.themeToggleSlotBelowSearchRow : ''} ${themeSlotPhoneInlineTable ? style.themeToggleSlotPhoneInlineTable : ''} ${themeSlotPhoneInlineFlushRight ? style.themeToggleSlotPhoneInlineFlushRight : ''}`}>
-                {showThemeInFloatingSlot ? <ThemeToggleControl /> : null}
-                {showLangInFloatingSlot ? <AppLanguageSelect appearance="toolbar" /> : null}
+                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotPhoneInlineWithAdd ? style.themeToggleSlotPhoneInlineWithAdd : ''} ${themeSlotPhoneInlineFlushRight ? style.themeToggleSlotPhoneInlineFlushRight : ''} ${needsThemeNudgeForRolesAndAttachments ? style.themeToggleSlotPhoneInlineWithAddNudged : ''}`}>
+                <ThemeToggleControl variant="toolbarCircle" />
               </div>
             ) : null}
             <RoleChipStyles />
-            <TableHeaderMobileTrailingProvider key={location.pathname}>
+            <TableHeaderMobileTrailingProvider>
               <div className={style.contentWrapper}>
                 <Outlet />
                 {isGhostPrankGloballyDisabled() ? null : <EventsGhostPrank />}

@@ -16,24 +16,25 @@ type GroupUserAddFormProps = {
   branchId: ID;
   close: () => void;
 };
-const alertText = (
-  <>
-    При перемещении выбранных пользователей все их текущие связи с ТС будут <b>разорваны</b>, а
-    также будут отозваны все несистемные роли.
-    <br />
-    <br />
-    Пожалуйста, подтвердите действие.
-  </>
-);
+
 export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId }) => {
   const { t } = useTranslation();
   const { users, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupUserAddForm(branchId, close);
+  const alertText = (
+    <>
+      {t('groups.addUsersAlertPrefix')} <b>{t('groups.addUsersAlertBroken')}</b>,{' '}
+      {t('groups.addUsersAlertSuffix')}
+      <br />
+      <br />
+      {t('groups.addUsersAlertConfirm')}
+    </>
+  );
 
   return (
     <div className={style.group}>
       <Typography fontWeight={600} marginBottom={2} variant="h6">
-        Добавить пользователей в группу
+        {t('groups.addUsersTitle')}
       </Typography>
       <Stack gap={3}>
         <UsersSelect
@@ -46,7 +47,7 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
           error={error}
           value={users}
           setValueStore={onSelect}
-          label="Поиск по пользователю"
+          label={t('filters.searchByUser')}
           equalsBranchId={false}
           excludeSuperAdmin={true}
           showBranchName={true}
@@ -55,8 +56,8 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>добавить</Button>
-            <Button onClick={close}>отмена</Button>
+            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}
       </Stack>

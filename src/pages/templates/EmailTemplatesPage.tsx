@@ -200,11 +200,16 @@ const EmailTemplatesPage: React.FC = () => {
     setSortOrder(newOrder);
   };
 
+  const handleSearchChange = (query: string) => {
+    setSearchQuery(query);
+    setPage(0);
+  };
+
   return (
     <Box
       sx={{
-        px: 3,
-        pt: { xs: 3, md: '10px' },
+        px: 0,
+        pt: 0,
         pb: 3,
         bgcolor: 'background.default',
         color: 'text.primary',
@@ -225,7 +230,7 @@ const EmailTemplatesPage: React.FC = () => {
         sortField={sortField}
         sortOrder={sortOrder}
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={handleSearchChange}
       />
     </Box>
   );

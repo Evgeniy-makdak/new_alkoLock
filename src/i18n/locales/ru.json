@@ -462,7 +462,12 @@
   "groups": {
     "usersTab": "ПОЛЬЗОВАТЕЛИ",
     "alcolocksTab": "АЛКОЗАМКИ",
-    "transportTab": "ТРАНСПОРТ"
+    "transportTab": "ТРАНСПОРТ",
+    "addUsersTitle": "Добавить пользователей в группу",
+    "addUsersAlertPrefix": "При перемещении выбранных пользователей все их текущие связи с ТС будут",
+    "addUsersAlertBroken": "разорваны",
+    "addUsersAlertSuffix": "а также будут отозваны все несистемные роли.",
+    "addUsersAlertConfirm": "Пожалуйста, подтвердите действие."
   },
   "templateTypes": {
     "password_recovery": "Восстановление пароля",

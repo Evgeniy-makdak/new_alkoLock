@@ -9,12 +9,16 @@ import { useMediaQuery } from '@mui/material';
 
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { ThemeToggleControl } from '@shared/theme/colorMode';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
+import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { EditSettingDialog } from './EditSettingDialog';
 import ResetConfirmationDialog from './ResetConfirmationDialog';
 import { SettingsMobilePagination } from './SettingsMobilePagination';
-import { SettingsSearch } from './SettingsSearch';
 import { SettingsTable } from './SettingsTable';
 
 interface Setting {
@@ -70,7 +74,6 @@ export const SettingsPage = () => {
   const [editValue, setEditValue] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [settingToReset, setSettingToReset] = useState<SettingRow | null>(null);
 
@@ -292,9 +295,6 @@ export const SettingsPage = () => {
     setSettingToReset(null);
   };
 
-  const handleTooltipOpen = (key: string) => setActiveTooltip(key);
-  const handleTooltipClose = () => setActiveTooltip(null);
-
   const settingsRows: SettingRow[] = settings.map((setting) => ({
     id: setting.id,
     label: setting.label,
@@ -313,14 +313,69 @@ export const SettingsPage = () => {
   return (
     <Box sx={{ p: 0, bgcolor: 'background.default', color: 'text.primary', minHeight: 1 }}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        <SettingsSearch
-          searchQuery={searchQuery}
-          activeTooltip={activeTooltip}
-          setSearchQuery={setSearchQuery}
-          setPage={setPage}
-          handleTooltipOpen={handleTooltipOpen}
-          handleTooltipClose={handleTooltipClose}
-        />
+        {isMobile ? (
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '16px',
+                background: '#fff',
+                borderBottom: '1px solid #e0e0e0',
+              }}>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#333' }}>
+                {t('nav.settings')}
+              </h2>
+              <ThemeToggleControl variant="toolbarCircle" />
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+                padding: '16px',
+                background: '#f8f9fa',
+                borderBottom: '1px solid #e0e0e0',
+              }}>
+              <SearchInput
+                value={searchQuery}
+                setState={(value) => {
+                  const next = typeof value === 'function' ? value(searchQuery) : value;
+                  setSearchQuery(next);
+                  setPage(0);
+                }}
+                onClear={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <TableHeaderWrapper>
+            <SearchInput
+              value={searchQuery}
+              setState={(value) => {
+                const next = typeof value === 'function' ? value(searchQuery) : value;
+                setSearchQuery(next);
+                setPage(0);
+              }}
+              onClear={() => {
+                setSearchQuery('');
+                setPage(0);
+              }}
+            />
+            <TableHeaderEndToolbar>
+              <ResetFilters
+                reset={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            </TableHeaderEndToolbar>
+          </TableHeaderWrapper>
+        )}
 
         <SettingsTable
           loading={loading}

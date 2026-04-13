@@ -462,7 +462,12 @@
   "groups": {
     "usersTab": "USERS",
     "alcolocksTab": "ALCOLOCKS",
-    "transportTab": "TRANSPORT"
+    "transportTab": "TRANSPORT",
+    "addUsersTitle": "Add users to group",
+    "addUsersAlertPrefix": "When moving selected users, all their current vehicle links will be",
+    "addUsersAlertBroken": "broken",
+    "addUsersAlertSuffix": "and all non-system roles will be revoked.",
+    "addUsersAlertConfirm": "Please confirm the action."
   },
   "templateTypes": {
     "password_recovery": "Password recovery",

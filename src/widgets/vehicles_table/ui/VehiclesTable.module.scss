@@ -83,11 +83,17 @@
 }
 
 .addButton {
-  background-color: #7a7d80;
-  color: white;
-  
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #667a8a;
+  flex-shrink: 0;
+
   &:hover {
-    background-color: #7a7d80;
+    background-color: #e0e0e0;
   }
 }
 

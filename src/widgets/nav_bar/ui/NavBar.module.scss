@@ -819,6 +819,23 @@
   }
 }
 
+/* Мобильный компакт: фиксируем единое выравнивание иконок по левому краю */
+.mobileNav .linksCompact a {
+  padding-left: 12px;
+  padding-right: 8px;
+}
+
+.mobileNav .navLink.center {
+  justify-content: flex-start;
+}
+
+.mobileNav .linksCompact .notificationsAnchor {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+}
+
 .carouselViewportCompact {
   position: relative;
   overflow-x: hidden;
