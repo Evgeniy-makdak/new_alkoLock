@@ -17,23 +17,22 @@ type GroupAlcolockAddFormProps = {
   close: () => void;
 };
 
-const alertText = (
-  <>
-    При перемещении выбранных алкозамков все их текущие связи с ТС будут <b>разорваны</b>.
-    <br />
-    <br />
-    Пожалуйста, подтвердите действие.
-  </>
-);
-
 export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId, close }) => {
   const { t } = useTranslation();
   const { alcolocks, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupAlcolocksAddForm(branchId, close);
+  const alertText = (
+    <>
+      {t('modals.addAlcolocksToGroupAlertP1a')} <b>{t('modals.addAlcolocksToGroupAlertP1b')}</b>.
+      <br />
+      <br />
+      {t('modals.addAlcolocksToGroupAlertP2')}
+    </>
+  );
   return (
     <div className={style.group}>
       <Typography fontWeight={600} marginBottom={2} variant="h6">
-        Добавить алкозамки в группу
+        {t('modals.addAlcolocksToGroupTitle')}
       </Typography>
       <Stack gap={3}>
         <AlcolockSelect
@@ -44,14 +43,14 @@ export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId,
           error={error}
           value={alcolocks}
           setValueStore={onSelect}
-          label="Поиск по алкозамкам"
+          label={t('filters.searchByAlcolock')}
         />
         {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>добавить</Button>
-            <Button onClick={close}>отмена</Button>
+            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}
       </Stack>

@@ -17,22 +17,22 @@ type GroupCarAddFormProps = {
   close: () => void;
 };
 
-const alertText = (
-  <>
-    При перемещении выбранных ТС все их текущие связи с пользователями и алкозамками будут{' '}
-    <b>разорваны</b>. <br />
-    <br /> Пожалуйста, подтвердите действие.
-  </>
-);
-
 export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) => {
   const { t } = useTranslation();
   const { cars, error, onSelect, onSubmit, showAlert, handleOpenAlert, closeAlert } =
     useGroupCarAddForm(branchId, close);
+  const alertText = (
+    <>
+      {t('modals.addVehicleToGroupAlertP1a')} <b>{t('modals.addVehicleToGroupAlertP1b')}</b>.
+      <br />
+      <br />
+      {t('modals.addVehicleToGroupAlertP2')}
+    </>
+  );
   return (
     <div className={style.group}>
       <Typography fontWeight={600} marginBottom={2} variant="h6">
-        Добавить ТС в группу
+        {t('modals.addVehicleToGroupTitle')}
       </Typography>
       <Stack gap={3}>
         <CarsSelect
@@ -43,15 +43,15 @@ export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) =
           error={error}
           value={cars}
           setValueStore={onSelect}
-          label="Поиск по ТС"
+          label={t('filters.searchByVehicle')}
           specified={undefined}
         />
         {error && <span className={style.errorText}>{t('validation.required')}</span>}
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>добавить</Button>
-            <Button onClick={close}>отмена</Button>
+            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}
       </Stack>

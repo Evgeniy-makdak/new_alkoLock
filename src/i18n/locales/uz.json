@@ -460,7 +460,12 @@
   "groups": {
     "usersTab": "FOYDALANUVCHILAR",
     "alcolocksTab": "ALKOZAMOKLAR",
-    "transportTab": "TRANSPORT"
+    "transportTab": "TRANSPORT",
+    "addUsersTitle": "Foydalanuvchilarni guruhga qo'shish",
+    "addUsersAlertPrefix": "Tanlangan foydalanuvchilar ko'chirilganda ularning TS bilan barcha joriy bog'lanishlari",
+    "addUsersAlertBroken": "uziladi",
+    "addUsersAlertSuffix": "hamda barcha tizimli bo'lmagan rollar bekor qilinadi.",
+    "addUsersAlertConfirm": "Iltimos, amalni tasdiqlang."
   },
   "templateTypes": {
     "password_recovery": "Parolni tiklash",
@@ -581,6 +586,14 @@
     "moveAlcolockTitle": "Alkozamokni ko'chirish",
     "moveVehicleTitle": "Transport vositasini ko'chirish",
     "searchGroups": "Guruhlar bo'yicha qidiruv",
+    "addVehicleToGroupTitle": "Transport vositalarini guruhga qo'shish",
+    "addVehicleToGroupAlertP1a": "Tanlangan transport vositalari ko'chirilganda ularning foydalanuvchilar va alkozamoklar bilan barcha joriy bog'lanishlari",
+    "addVehicleToGroupAlertP1b": "uziladi",
+    "addVehicleToGroupAlertP2": "Iltimos, harakatni tasdiqlang.",
+    "addAlcolocksToGroupTitle": "Alkozamoklarni guruhga qo'shish",
+    "addAlcolocksToGroupAlertP1a": "Tanlangan alkozamoklar ko'chirilganda ularning TS bilan barcha joriy bog'lanishlari",
+    "addAlcolocksToGroupAlertP1b": "uziladi",
+    "addAlcolocksToGroupAlertP2": "Iltimos, harakatni tasdiqlang.",
     "moveUserAlertP1a": "Tanlangan foydalanuvchini ko'chirishda uning TV bilan barcha joriy bog'lanishlari ",
     "moveUserAlertP1b": "uziladi",
     "moveUserAlertP1c": ", shuningdek tizimdan tashqari rollar bekor qilinadi.",

@@ -460,7 +460,12 @@
   "groups": {
     "usersTab": "КОЛДОНУУЧУЛАР",
     "alcolocksTab": "АЛКОЗАМОКТОР",
-    "transportTab": "ТРАНСПОРТ"
+    "transportTab": "ТРАНСПОРТ",
+    "addUsersTitle": "Колдонуучуларды топко кошуу",
+    "addUsersAlertPrefix": "Тандалган колдонуучуларды жылдырганда алардын ТС менен болгон бардык учурдагы байланыштары",
+    "addUsersAlertBroken": "үзүлөт",
+    "addUsersAlertSuffix": "жана бардык системалык эмес ролдор кайтарып алынат.",
+    "addUsersAlertConfirm": "Сураныч, аракетти ырастаңыз."
   },
   "templateTypes": {
     "password_recovery": "Сыр сөздү калыбына келтирүү",
@@ -581,6 +586,14 @@
     "moveAlcolockTitle": "Алкозамокту которуу",
     "moveVehicleTitle": "Унааны которуу",
     "searchGroups": "Топтор боюнча издөө",
+    "addVehicleToGroupTitle": "Унааларды топко кошуу",
+    "addVehicleToGroupAlertP1a": "Тандалган унааларды которууда алардын колдонуучулар жана алкозамоктор менен бардык учурдагы байланыштары",
+    "addVehicleToGroupAlertP1b": "үзүлөт",
+    "addVehicleToGroupAlertP2": "Аракетти ырастаңыз.",
+    "addAlcolocksToGroupTitle": "Алкозамокторду топко кошуу",
+    "addAlcolocksToGroupAlertP1a": "Тандалган алкозамокторду которууда алардын ТС менен бардык учурдагы байланыштары",
+    "addAlcolocksToGroupAlertP1b": "үзүлөт",
+    "addAlcolocksToGroupAlertP2": "Аракетти ырастаңыз.",
     "moveUserAlertP1a": "Тандалган колдонуучуну которууда анын унаа менен бардык учурдагы байланыштары ",
     "moveUserAlertP1b": "үзүлөт",
     "moveUserAlertP1c": ", ошондой эле системадан тышкы ролдордун баары кайтарылат.",

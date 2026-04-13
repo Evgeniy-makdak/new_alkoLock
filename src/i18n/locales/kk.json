@@ -460,7 +460,12 @@
   "groups": {
     "usersTab": "ПАЙДАЛАНУШЫЛАР",
     "alcolocksTab": "АЛКОЗАМОКТАР",
-    "transportTab": "КӨЛІК"
+    "transportTab": "КӨЛІК",
+    "addUsersTitle": "Пайдаланушыларды топқа қосу",
+    "addUsersAlertPrefix": "Таңдалған пайдаланушыларды жылжытқанда олардың ТС-пен барлық ағымдағы байланыстары",
+    "addUsersAlertBroken": "үзіледі",
+    "addUsersAlertSuffix": "және барлық жүйелік емес рөлдер қайтарып алынады.",
+    "addUsersAlertConfirm": "Әрекетті растаңыз."
   },
   "templateTypes": {
     "password_recovery": "Құпия сөзді қалпына келтіру",
@@ -581,6 +586,14 @@
     "moveAlcolockTitle": "Алкозамокты жылжыту",
     "moveVehicleTitle": "Көлікті жылжыту",
     "searchGroups": "Топтар бойынша іздеу",
+    "addVehicleToGroupTitle": "Көліктерді топқа қосу",
+    "addVehicleToGroupAlertP1a": "Таңдалған көліктерді жылжытқанда олардың пайдаланушылар және алкозамоктармен барлық ағымдағы байланыстары",
+    "addVehicleToGroupAlertP1b": "үзіледі",
+    "addVehicleToGroupAlertP2": "Әрекетті растаңыз.",
+    "addAlcolocksToGroupTitle": "Алкозамоктарды топқа қосу",
+    "addAlcolocksToGroupAlertP1a": "Таңдалған алкозамоктарды жылжытқанда олардың ТС-пен барлық ағымдағы байланыстары",
+    "addAlcolocksToGroupAlertP1b": "үзіледі",
+    "addAlcolocksToGroupAlertP2": "Әрекетті растаңыз.",
     "moveUserAlertP1a": "Таңдалған пайдаланушыны жылжытқанда оның көлікпен барлық ағымдағы байланыстары ",
     "moveUserAlertP1b": "үзіледі",
     "moveUserAlertP1c": ", сондай-ақ жүйелік емес рөлдердің барлығы кері алынады.",
