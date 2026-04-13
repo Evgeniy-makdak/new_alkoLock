@@ -220,12 +220,29 @@
     width: 250px !important;
     min-width: 220px !important;
     max-width: 250px !important;
+    padding-left: 8px !important;
   }
   
   .bodyCellCreatedAt {
     width: 100px !important;
     min-width: 90px !important;
     max-width: 100px !important;
+  }
+
+  .bodyCellButtonWrapper {
+    max-width: 48px !important;
+    min-width: 48px !important;
+    width: 48px !important;
+    padding-right: 10px !important;
+  }
+
+  .buttonWrapper {
+    justify-content: flex-end !important;
+    padding-right: 2px !important;
+
+    button {
+      margin-right: 12px !important;
+    }
   }
   
   .headerCellDate {
@@ -343,6 +360,7 @@
     width: 100%;
     overflow-x: auto;
     margin-left: 8px;
+    padding-right: 12px;
     
     & table {
       min-width: 600px;
@@ -472,12 +490,17 @@
     width: 200px !important;
     min-width: 180px !important;
     max-width: 200px !important;
+    padding-left: 6px !important;
   }
   
   .bodyCellCreatedAt {
     width: 80px !important;
     min-width: 70px !important;
     max-width: 80px !important;
+  }
+
+  .bodyCellButtonWrapper {
+    padding-right: 8px !important;
   }
   
   .headerCellDate {
@@ -640,7 +663,7 @@
     width: 160px !important;
     min-width: 140px !important;
     max-width: 160px !important;
-    padding-left: 0 !important;
+    padding-left: 4px !important;
     padding-right: 2px !important;
   }
   
@@ -660,7 +683,7 @@
     min-width: 32px !important;
     width: 32px !important;
     padding-left: 0 !important;
-    padding-right: 1px !important;
+    padding-right: 8px !important;
   }
   
   .buttonWrapper {
@@ -669,6 +692,10 @@
     width: 32px !important;
     justify-content: center !important;
     padding: 0 !important;
+
+    button {
+      margin-right: 12px !important;
+    }
   }
   
   .headerCell {

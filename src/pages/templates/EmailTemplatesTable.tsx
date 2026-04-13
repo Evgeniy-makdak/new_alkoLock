@@ -264,10 +264,16 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
             justifyContent: 'space-between',
             alignItems: 'center',
             padding: '16px',
-            background: '#fff',
-            borderBottom: '1px solid #e0e0e0',
+            background: theme.palette.background.paper,
+            borderBottom: `1px solid ${theme.palette.divider}`,
           }}>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#333' }}>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: '20px',
+              fontWeight: 600,
+              color: theme.palette.text.primary,
+            }}>
             Message Templates
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -288,8 +294,8 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
             flexDirection: 'column',
             gap: 12,
             padding: '16px',
-            background: '#f8f9fa',
-            borderBottom: '1px solid #e0e0e0',
+            background: theme.palette.background.default,
+            borderBottom: `1px solid ${theme.palette.divider}`,
           }}>
           <SearchInput
             value={searchQuery}

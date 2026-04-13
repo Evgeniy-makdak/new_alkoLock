@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Alert, Box, Snackbar } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
@@ -52,6 +53,7 @@ const getUnitForm = (count: number) => {
 
 export const SettingsPage = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -321,10 +323,16 @@ export const SettingsPage = () => {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '16px',
-                background: '#fff',
-                borderBottom: '1px solid #e0e0e0',
+                background: theme.palette.background.paper,
+                borderBottom: `1px solid ${theme.palette.divider}`,
               }}>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 600, color: '#333' }}>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: '20px',
+                  fontWeight: 600,
+                  color: theme.palette.text.primary,
+                }}>
                 {t('nav.settings')}
               </h2>
               <ThemeToggleControl variant="toolbarCircle" />
@@ -335,8 +343,8 @@ export const SettingsPage = () => {
                 flexDirection: 'column',
                 gap: 12,
                 padding: '16px',
-                background: '#f8f9fa',
-                borderBottom: '1px solid #e0e0e0',
+                background: theme.palette.background.default,
+                borderBottom: `1px solid ${theme.palette.divider}`,
               }}>
               <SearchInput
                 value={searchQuery}
