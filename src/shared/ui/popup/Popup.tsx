@@ -72,6 +72,8 @@ export const Popup = ({
         className: paperClassName,
         sx: {
           minWidth: 550,
+          width: 'auto',
+          maxWidth: 'calc(100vw - 32px)',
           maxHeight: '99vh',
           borderRadius: '16px',
           backgroundImage: 'none',
@@ -79,6 +81,17 @@ export const Popup = ({
           color: 'text.primary',
           position: 'relative',
           p: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          '@media (max-width:768px)': {
+            minWidth: 'unset',
+            width: 'calc(100vw - 12px)',
+            maxWidth: 'calc(100vw - 12px)',
+            height: 'auto',
+            maxHeight: 'calc(100dvh - 12px)',
+            borderRadius: '12px',
+            margin: '6px',
+          },
         },
       }}>
       <Tooltip title={t('common.closeWindow')}>
@@ -108,6 +121,12 @@ export const Popup = ({
             fontWeight: 'bold',
             borderBottom: 'none',
             boxShadow: 'none',
+            '@media (max-width:768px)': {
+              px: 2,
+              pt: 1.5,
+              pr: 5,
+              fontSize: 16,
+            },
           }}>
           {headerTitle}
         </DialogTitle>
@@ -124,6 +143,14 @@ export const Popup = ({
           borderBottom: 'none',
           backgroundImage: 'none',
           boxShadow: 'none',
+          flex: 1,
+          minHeight: 0,
+          '@media (max-width:768px)': {
+            px: 2,
+            pt: headerTitle ? 0.75 : 1.5,
+            pb: 1.25,
+            overflow: 'visible',
+          },
         }}>
         {body}
       </DialogContent>
@@ -137,6 +164,12 @@ export const Popup = ({
             justifyContent: 'flex-end',
             gap: 1,
             '& > button:first-of-type': { mr: 0 },
+            '@media (max-width:768px)': {
+              px: 2,
+              pb: 1.5,
+              flexWrap: 'wrap',
+              justifyContent: 'flex-end',
+            },
           }}>
           {buttons}
         </DialogActions>

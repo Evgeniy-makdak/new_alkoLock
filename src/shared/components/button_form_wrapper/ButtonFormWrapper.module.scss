@@ -2,4 +2,10 @@
   display: flex;
   gap: 20px;
   justify-content: flex-end;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
 }
