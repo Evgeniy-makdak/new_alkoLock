@@ -37,7 +37,7 @@ const Vehicles = () => {
       </PageWrapper>
 
       {selectedCarId && (
-        <Aside onClose={handleCloseAside}>
+        <Aside onClose={handleCloseAside} fullScreenOnMobile>
           <RowTableInfo tabs={tabs} />
         </Aside>
       )}

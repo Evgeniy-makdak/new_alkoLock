@@ -42,6 +42,9 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
   const closeEditModal = () => {
     setChangeCar(null);
   };
+  const openEditModal = (payload: { text: string; id: ID }) => {
+    setChangeCar(payload);
+  };
 
   const tableData = {
     ...state,
@@ -68,6 +71,7 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
   const editModalData = {
     changeCar,
     closeEditModal,
+    openEditModal,
     open: !!changeCar,
   };
 
@@ -76,5 +80,6 @@ export const useGroupCarTable = (groupInfo: IBranch) => {
     tableData,
     filtersData,
     editModalData,
+    refetch,
   };
 };

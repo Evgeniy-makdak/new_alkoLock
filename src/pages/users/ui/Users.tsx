@@ -75,7 +75,7 @@ const Users = () => {
       </PageWrapper>
 
       {selectedUserId && (
-        <Aside onClose={handleCloseAside}>
+        <Aside onClose={handleCloseAside} fullScreenOnMobile>
           <RowTableInfo tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
         </Aside>
       )}

@@ -1,3 +1,18 @@
+.infoContainer {
+  width: 580px;
+  max-width: 580px;
+  padding: 16px;
+  margin: 0;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+    padding: 12px 10px 10px;
+    margin: 0 auto;
+  }
+}
+
 .avatar {
   width: 100px;
   height: 100px;
@@ -8,6 +23,17 @@
     height: 100px;
     object-fit: cover;
   }
+
+  @media (max-width: 768px) {
+    width: 72px;
+    height: 72px;
+    font-size: 28px;
+
+    & img {
+      width: 72px;
+      height: 72px;
+    }
+  }
 }
 
 // TODO => вынести этот код, он повторяется как и ImagePreview
@@ -15,5 +41,12 @@
   &::before {
     width: 100px;
     height: 100px;
+  }
+
+  @media (max-width: 768px) {
+    &::before {
+      width: 72px;
+      height: 72px;
+    }
   }
 }

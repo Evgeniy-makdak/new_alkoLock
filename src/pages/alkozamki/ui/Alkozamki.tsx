@@ -34,7 +34,7 @@ const Alkozamki = () => {
 
       {/* Убрана проверка на наличие в текущей странице таблицы */}
       {selectedAlcolockId && (
-        <Aside onClose={handleCloseAside}>
+        <Aside onClose={handleCloseAside} fullScreenOnMobile>
           <RowTableInfo tabs={tabs} />
         </Aside>
       )}

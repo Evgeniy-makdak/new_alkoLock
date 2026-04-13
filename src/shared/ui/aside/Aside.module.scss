@@ -6,9 +6,34 @@
   max-height: 100vh;
 }
 
+.asideFullscreenMobile {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-left: 0;
+  background: #fff;
+  overflow-x: hidden;
+}
+
 .close {
   position: absolute;
   bottom: 8px;
   left: 8px;
   cursor: pointer;
+}
+
+.closeFullscreenMobile {
+  top: auto;
+  bottom: 12px;
+  right: auto;
+  left: 12px;
+}
+
+:global(html[data-theme='dark']) {
+  .asideFullscreenMobile {
+    background: #121212;
+  }
 }

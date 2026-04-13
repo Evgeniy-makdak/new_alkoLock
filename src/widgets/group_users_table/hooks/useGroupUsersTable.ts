@@ -42,6 +42,9 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
   const closeEditModal = () => {
     setChangeUser(null);
   };
+  const openEditModal = (payload: { text: string; id: ID }) => {
+    setChangeUser(payload);
+  };
 
   const tableData = {
     ...state,
@@ -68,6 +71,7 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
   const editModalData = {
     changeUser,
     closeEditModal,
+    openEditModal,
     open: !!changeUser,
   };
 
@@ -76,5 +80,6 @@ export const useGroupUsersTable = (groupInfo: IBranch) => {
     tableData,
     filtersData,
     editModalData,
+    refetch,
   };
 };

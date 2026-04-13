@@ -42,6 +42,9 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
   const closeEditModal = () => {
     setChangeAlcolock(null);
   };
+  const openEditModal = (payload: { text: string; id: ID }) => {
+    setChangeAlcolock(payload);
+  };
 
   const tableData = {
     ...state,
@@ -68,6 +71,7 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
   const editModalData = {
     changeAlcolock,
     closeEditModal,
+    openEditModal,
     open: !!changeAlcolock,
   };
 
@@ -76,5 +80,6 @@ export const useGroupAlcolocksTable = (groupInfo: IBranch) => {
     tableData,
     filtersData,
     editModalData,
+    refetch,
   };
 };

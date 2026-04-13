@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import { IconButton, Tooltip } from '@mui/material';
+import { IconButton, Tooltip, useMediaQuery } from '@mui/material';
 
 import { testids } from '@shared/const/testid';
 
@@ -13,20 +13,25 @@ interface AsideProps {
   onClose: () => void;
   testid?: string;
   style?: React.CSSProperties;
+  fullScreenOnMobile?: boolean;
 }
 
-export const Aside = ({ children, onClose, testid }: AsideProps) => {
+export const Aside = ({ children, onClose, testid, fullScreenOnMobile = false }: AsideProps) => {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery('(max-width:768px)');
+  const shouldUseMobileFullscreen = fullScreenOnMobile && isMobile;
 
   return (
-    <div data-testid={testid} className={style.aside}>
+    <div
+      data-testid={testid}
+      className={`${style.aside} ${shouldUseMobileFullscreen ? style.asideFullscreenMobile : ''}`}>
       {children}
 
       <Tooltip title={t('aside.collapseWindow')}>
         <IconButton
           color="info"
           data-testid={testids.INFO_TAB_CLOSE_BUTTON}
-          className={style.close}
+          className={`${style.close} ${shouldUseMobileFullscreen ? style.closeFullscreenMobile : ''}`}
           onClick={onClose}>
           <ArrowBackIosNewIcon />
         </IconButton>

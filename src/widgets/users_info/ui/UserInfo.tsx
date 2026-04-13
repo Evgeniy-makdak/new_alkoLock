@@ -26,11 +26,11 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
 
   return (
     <Loader isLoading={isLoading}>
-      <Stack maxWidth={'580px'} padding={2}>
+      <Stack className={style.infoContainer}>
         <Info
           fields={fields}
           headerCard={
-            <Stack marginBottom={3} alignItems={'center'} justifyContent={'center'}>
+            <Stack marginBottom={2} alignItems={'center'} justifyContent={'center'}>
               {src ? (
                 <Tooltip
                   title={t('tooltips.viewPhoto')}

@@ -59,6 +59,7 @@ const Events: React.FC = () => {
       {isInfoOpen && selectedEventId && (
         <Aside
           onClose={handleCloseInfo}
+          fullScreenOnMobile
           style={
             isMobile || isTablet
               ? {

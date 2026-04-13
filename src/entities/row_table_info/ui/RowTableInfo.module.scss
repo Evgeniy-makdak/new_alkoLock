@@ -4,6 +4,7 @@
   flex: 1 1;
   overflow: hidden;
   height: calc(100% - 50px);
+  min-width: 0;
 }
 
 .content {
@@ -11,6 +12,7 @@
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .contentHidden {
@@ -27,6 +29,7 @@
 .tabs {
   display: flex;
   gap: 5px;
+  min-width: 0;
 
   @media (max-width: 900px) {
     .buttonTab {
@@ -35,8 +38,14 @@
   }
   
   @media (max-width: 768px) {
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 48px 10px 8px;
+
     .buttonTab {
-      width: 180px;
+      width: auto;
+      min-width: 0;
+      flex: 1 1 calc(33.333% - 6px);
       padding: 8px 12px !important;
       font-size: 12px !important;
     }
@@ -44,7 +53,8 @@
   
   @media (max-width: 700px) {
     .buttonTab {
-      width: 170px;
+      width: auto;
+      min-width: 0;
       padding: 6px 12px !important;
       font-size: 12px !important;
     }
@@ -52,47 +62,51 @@
   
   @media (max-width: 660px) {
     .buttonTab {
-      width: 150px;
+      width: auto;
+      min-width: 0;
       font-size: 10px !important;
     }
   }
   
   @media (max-width: 620px) {
     .buttonTab {
-      width: 130px;
+      width: auto;
+      min-width: 0;
       font-size: 10px !important;
     }
   }
   
   @media (max-width: 580px) {
     .buttonTab {
-      width: 120px;
+      width: auto;
+      min-width: 0;
       font-size: 7px !important;
     }
   }
   
   @media (max-width: 520px) {
     .buttonTab {
-      width: 90px;
+      width: auto;
+      min-width: 0;
       font-size: 7px !important;
     }
   }
   
   @media (max-width: 480px) {
     .buttonTab {
-      width: 60px;
+      width: auto;
       padding: 6px 8px !important;
       font-size: 7px !important;
-      min-width: 70px;
+      min-width: 0;
     }
   }
   
   @media (max-width: 360px) {
     .buttonTab {
-      width: 70px;
+      width: auto;
       padding: 4px 6px !important;
       font-size: 7px !important;
-      min-width: 40px;
+      min-width: 0;
     }
   }
 

@@ -5,6 +5,12 @@
 .card {
   width: 580px;
   overflow-y: auto;
+  overflow-x: hidden;
+
+  @media (max-width: 768px) {
+    width: 100%;
+    max-width: 100%;
+  }
 }
 
 .zeroPaddings {
@@ -20,11 +26,12 @@
 }
 
 .label {
-  text-wrap: nowrap;
+  min-width: 0;
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  width: 50%;
+  width: 42%;
+  font-weight: 500;
 
   & svg {
     margin-left: 5px;
@@ -36,7 +43,10 @@
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  width: 50%;
+  width: 58%;
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 640px) {
@@ -47,23 +57,9 @@
 
 .row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-
-  // Для экранов ≤ 570px - переносим labelText на строку ниже title
-  @media (max-width: 570px) {
-    flex-direction: column;
-    align-items: flex-start;
-
-    .label {
-      width: 100%;
-      margin-bottom: 5px;
-    }
-
-    .value {
-      width: 100%;
-    }
-  }
+  gap: 10px;
 }
 
 .title {

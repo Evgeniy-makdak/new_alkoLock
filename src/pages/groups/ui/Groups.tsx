@@ -43,7 +43,7 @@ const Groups = () => {
 
       {selectedGroupId && (
         <Loader isLoading={isLoading}>
-          <Aside onClose={onCloseAside}>
+          <Aside onClose={onCloseAside} fullScreenOnMobile>
             <div className={style.infoTab}>
               <div className={style.name}>
                 <span>{groupName}</span>

@@ -20,10 +20,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
 
 import { TypeEventSelect } from '@entities/type_event_select';
-import {
-  EventsFilters,
-  useEventsFilterPanel,
-} from '@features/events_filter_panel/hooks/useEventsFilterPanel';
 import { StyledTable } from '@shared/styled_components/styledTable';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
@@ -107,9 +103,9 @@ export const TableHeader = ({
     dayjs.locale(adapterLocale);
   }, [adapterLocale]);
 
-  const { filters: eventFilters, setFilters: setEventFilters } = useEventsFilterPanel();
   const [localStartDate, setLocalStartDate] = React.useState<Dayjs | null>(initialStartDate);
   const [localEndDate, setLocalEndDate] = React.useState<Dayjs | null>(initialEndDate);
+  const [typeEventFilters, setTypeEventFilters] = React.useState<Values>(initialTypeEventFilters);
   const [showFilters, setShowFilters] = React.useState(false);
   const [hoveredColumn, setHoveredColumn] = React.useState<'id' | 'timestamp' | null>(null);
   // Добавляем ключ для принудительного сброса TypeEventSelect
@@ -119,7 +115,7 @@ export const TableHeader = ({
   React.useEffect(() => {
     setLocalStartDate(initialStartDate);
     setLocalEndDate(initialEndDate);
-    setEventFilters('typeEvent', initialTypeEventFilters);
+    setTypeEventFilters(initialTypeEventFilters);
     onFilterChange(initialTypeEventFilters);
     setStartDate(initialStartDate);
     setEndDate(initialEndDate);
@@ -142,10 +138,10 @@ export const TableHeader = ({
     else setEndDate(null);
   };
 
-  const handleEventFilterChange = (name: keyof EventsFilters, value: Values) => {
+  const handleEventFilterChange = (value: Values) => {
     // Фильтруем только валидные числовые значения для API
     const validValues = value.filter((v) => !isNaN(Number(v.value)));
-    setEventFilters(name, validValues);
+    setTypeEventFilters(validValues);
     onFilterChange(validValues);
   };
 
@@ -162,7 +158,7 @@ export const TableHeader = ({
     // Сбрасываем все состояния полностью
     setStartDate(null);
     setEndDate(null);
-    setEventFilters('typeEvent', []);
+    setTypeEventFilters([]);
     onFilterChange([]);
     setLocalStartDate(null);
     setLocalEndDate(null);
@@ -284,11 +280,8 @@ export const TableHeader = ({
                   key={`type-event-select-${typeEventSelectKey}`} // Ключ для принудительного сброса
                   multiple={true}
                   name="typeEvent"
-                  setValueStore={(name, value) =>
-                    handleEventFilterChange(name as keyof EventsFilters, value)
-                  }
-                  value={eventFilters.typeEvent} // Используем очищенные фильтры
-                  levelEvent={eventFilters.level}
+                  setValueStore={(_, value) => handleEventFilterChange(value)}
+                  value={typeEventFilters}
                   label={t('filters.eventType')}
                   getTooltipTitle={(label) => `${label}`}
                   sx={{ width: 150 }}
@@ -365,11 +358,8 @@ export const TableHeader = ({
                       key={`type-event-select-mobile-${typeEventSelectKey}`}
                       multiple={true}
                       name="typeEvent"
-                      setValueStore={(name, value) =>
-                        handleEventFilterChange(name as keyof EventsFilters, value)
-                      }
-                      value={eventFilters.typeEvent}
-                      levelEvent={eventFilters.level}
+                      setValueStore={(_, value) => handleEventFilterChange(value)}
+                      value={typeEventFilters}
                       label={t('filters.eventType')}
                       getTooltipTitle={(label) => `${label}`}
                       sx={{ width: '100%' }}
