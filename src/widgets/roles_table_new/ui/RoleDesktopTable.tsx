@@ -135,7 +135,9 @@ export const RoleDesktopTable: FC<RoleDesktopTableProps> = ({ prevBranch }) => {
             tableData.apiRef.current.setPage(0);
           }}
         />
-        <TableHeaderEndToolbar />
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <TableHeaderEndToolbar />
+        </div>
       </TableHeaderWrapper>
 
       <div className={styles.scrollableTable}>

@@ -278,18 +278,20 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
           valueStartDatePicker={filtersData.startDate}
           valueEndDatePicker={filtersData.endDate}
         />
-        <TableHeaderEndToolbar>
-          <ResetFilters
-            reset={() => {
-              filtersData.clearDates();
-              filtersData.setInput('');
-              resetStatusFilter();
-              handleFilterChange();
-              const event = new CustomEvent('resetFilters');
-              window.dispatchEvent(event);
-            }}
-          />
-        </TableHeaderEndToolbar>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <TableHeaderEndToolbar>
+            <ResetFilters
+              reset={() => {
+                filtersData.clearDates();
+                filtersData.setInput('');
+                resetStatusFilter();
+                handleFilterChange();
+                const event = new CustomEvent('resetFilters');
+                window.dispatchEvent(event);
+              }}
+            />
+          </TableHeaderEndToolbar>
+        </div>
       </TableHeaderWrapper>
 
       <div className={styles.scrollableTable}>

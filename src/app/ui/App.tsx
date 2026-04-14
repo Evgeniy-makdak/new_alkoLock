@@ -49,12 +49,6 @@ export function App() {
       (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
     );
   const themeSlotPhoneInlineWithAdd = needsMobileFloatingTheme && !themeSlotPhoneInlineFlushRight;
-  const needsThemeNudgeForRolesAndAttachments =
-    themeSlotPhoneInlineWithAdd &&
-    (location.pathname === RoutePaths.roles_new ||
-      location.pathname.startsWith(`${RoutePaths.roles_new}/`) ||
-      location.pathname === RoutePaths.attachments ||
-      location.pathname.startsWith(`${RoutePaths.attachments}/`));
 
   const showFloatingThemeSlot =
     (!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme;
@@ -72,7 +66,7 @@ export function App() {
           <div className={style.content}>
             {showFloatingThemeSlot ? (
               <div
-                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotPhoneInlineWithAdd ? style.themeToggleSlotPhoneInlineWithAdd : ''} ${themeSlotPhoneInlineFlushRight ? style.themeToggleSlotPhoneInlineFlushRight : ''} ${needsThemeNudgeForRolesAndAttachments ? style.themeToggleSlotPhoneInlineWithAddNudged : ''}`}>
+                className={`${style.themeToggleSlot} ${isNarrowViewport && !themeSlotMapMobile ? style.themeToggleSlotNarrow : ''} ${themeSlotMapMobile ? style.themeToggleSlotMapMobile : ''} ${themeSlotPhoneInlineWithAdd ? style.themeToggleSlotPhoneInlineWithAdd : ''} ${themeSlotPhoneInlineFlushRight ? style.themeToggleSlotPhoneInlineFlushRight : ''}`}>
                 <ThemeToggleControl variant="toolbarCircle" />
               </div>
             ) : null}

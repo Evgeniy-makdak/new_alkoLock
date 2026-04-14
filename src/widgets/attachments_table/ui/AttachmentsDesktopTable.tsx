@@ -192,18 +192,20 @@ export const AttachmentsDesktopTable = ({
               .ATTACHMENTS_WIDGET_HEADER_FILTER_BUTTON
           }
         />
-        <TableHeaderEndToolbar>
-          <ResetFilters
-            reset={() => {
-              const event = new CustomEvent('resetFilters');
-              window.dispatchEvent(event);
-              resetFilters();
-              filtersData.clearDates();
-              filtersData.setInput('');
-              tableData.apiRef.current.setPage(0);
-            }}
-          />
-        </TableHeaderEndToolbar>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', minWidth: 0 }}>
+          <TableHeaderEndToolbar>
+            <ResetFilters
+              reset={() => {
+                const event = new CustomEvent('resetFilters');
+                window.dispatchEvent(event);
+                resetFilters();
+                filtersData.clearDates();
+                filtersData.setInput('');
+                tableData.apiRef.current.setPage(0);
+              }}
+            />
+          </TableHeaderEndToolbar>
+        </div>
       </TableHeaderWrapper>
       <AttachmentsFilterPanel open={filtersData.openFilters} />
       <Table
