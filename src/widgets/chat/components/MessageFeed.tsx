@@ -999,6 +999,62 @@ function MessageFeed({
     }
   };
 
+  const markAllUnreadAsReadByJumpToLast = useCallback(() => {
+    if (!onMarkMessagesAsRead) return;
+
+    const now = Date.now();
+    const readSendTtlMs = 3500;
+    const idsToMark: string[] = [];
+    const seenIds = new Set<string>();
+
+    messagesInActiveDialog.forEach((msg) => {
+      if (msg.messageStatus !== 'TO_OPERATOR') return;
+      if (msg.is_read) return;
+
+      const cs = String(msg.confirmStatus ?? '')
+        .trim()
+        .toUpperCase();
+      if (cs === 'READ') return;
+      if (cs !== 'DELIVERED' && cs !== 'SENT') return;
+
+      const callbackId =
+        msg.uuid != null && String(msg.uuid).trim() !== ''
+          ? String(msg.uuid)
+          : msg.id != null
+            ? String(msg.id)
+            : '';
+      if (!callbackId || seenIds.has(callbackId)) return;
+
+      const trackKeys = readSentTrackingKeys(msg);
+      const alreadySent = trackKeys.some((k) => {
+        const ts = sentReadStatusesRef.current.get(k);
+        return ts != null && now - ts < readSendTtlMs;
+      });
+      if (alreadySent) return;
+
+      seenIds.add(callbackId);
+      idsToMark.push(callbackId);
+      trackKeys.forEach((k) => sentReadStatusesRef.current.set(k, now));
+    });
+
+    if (idsToMark.length === 0) return;
+
+    operatorUnreadDebug('Jump-to-last: mark ALL unread as READ', {
+      sessionId,
+      dialogId: feedDialogId,
+      ids: idsToMark,
+    });
+    onMarkMessagesAsRead(idsToMark);
+    setInternalUnreadCount(0);
+  }, [messagesInActiveDialog, onMarkMessagesAsRead, readSentTrackingKeys, sessionId, feedDialogId]);
+
+  const handleScrollToLastClick = useCallback(() => {
+    scrollToBottom();
+    // Специальное правило только для клика по кнопке "к последнему сообщению":
+    // считаем все непрочитанные в текущем диалоге прочитанными.
+    markAllUnreadAsReadByJumpToLast();
+  }, [markAllUnreadAsReadByJumpToLast]);
+
   const handleReplyClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (onReplyToMessage) onReplyToMessage(message);
@@ -1544,7 +1600,7 @@ function MessageFeed({
       {showScrollButton && !isAtBottom && (
         <button
           className={styles.scrollToBottomBtn}
-          onClick={() => scrollToBottom()}
+          onClick={handleScrollToLastClick}
           title={
             unreadCount > 0
               ? t('chat.newMessagesCount', { count: unreadCount })
