@@ -195,9 +195,19 @@ export const useConfirmPassword = () => {
         rawLower.includes('превышено количество попыток') ||
         rawLower.includes('too many attempts') ||
         rawLower.includes('attempt limit exceeded') ||
+        rawLower.includes('временно заблокирован') ||
+        rawLower.includes('заблокирована до') ||
+        rawLower.includes('процедура смены пароля') ||
+        rawLower.includes('password reset is blocked') ||
+        rawLower.includes('blocked until') ||
         localizedLower.includes('превышено количество попыток') ||
         localizedLower.includes('too many attempts') ||
-        localizedLower.includes('attempt limit exceeded');
+        localizedLower.includes('attempt limit exceeded') ||
+        localizedLower.includes('временно заблокирован') ||
+        localizedLower.includes('заблокирована до') ||
+        localizedLower.includes('процедура смены пароля') ||
+        localizedLower.includes('password reset is blocked') ||
+        localizedLower.includes('blocked until');
       if (!isAttemptsExceeded) return localizedMessage;
 
       const until = extractLockUntilLocal(rawMessage) ?? extractLockUntilLocal(localizedMessage);
