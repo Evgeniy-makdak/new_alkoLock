@@ -143,6 +143,14 @@ export const useEventsHistory = (
 
   const getEventTypeChip = (eventType: string | { label: string }) => {
     const label = typeof eventType === 'string' ? eventType : (eventType?.label ?? 'Неизвестно');
+    const mobileEventFontSize =
+      label.length > 42
+        ? '0.74rem'
+        : label.length > 30
+          ? '0.8rem'
+          : label.length > 20
+            ? '0.86rem'
+            : '0.92rem';
     let color: 'success' | 'error' | 'warning' | undefined;
 
     if (label === 'Тестирование пройдено') color = 'success';
@@ -166,7 +174,20 @@ export const useEventsHistory = (
         else if (color === 'warning') textStyle = { color: '#ed6c02', fontWeight: 500 };
       }
 
-      return <span style={textStyle}>{label}</span>;
+      return (
+        <span
+          style={{
+            ...textStyle,
+            display: 'block',
+            whiteSpace: 'normal',
+            wordBreak: 'normal',
+            overflowWrap: 'break-word',
+            lineHeight: 1.2,
+            fontSize: mobileEventFontSize,
+          }}>
+          {label}
+        </span>
+      );
     }
 
     return color ? (

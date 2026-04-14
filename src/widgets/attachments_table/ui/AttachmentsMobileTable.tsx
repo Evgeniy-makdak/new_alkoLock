@@ -408,7 +408,7 @@ export const AttachmentsMobileTable = ({
   return (
     <div className={styles.tableWrapper}>
       <div className={styles.mobileHeader}>
-        <h1 className={styles.mobileTitle}>{t('nav.attachments')}</h1>
+        <h2 className={styles.mobileTitle}>{t('nav.attachments')}</h2>
         <IconButton
           className={styles.addButton}
           onClick={handleAddAttachmentClick}
@@ -605,7 +605,7 @@ export const AttachmentsMobileTable = ({
 
       <div className={styles.mobileList}>
         {tableData.rows.length === 0 ? (
-          <div className={styles.noData}>Нет данных для отображения</div>
+          <div className={styles.noData}>{t('common.noData')}</div>
         ) : (
           tableData.rows.map((row) => (
             <div

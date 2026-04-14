@@ -64,6 +64,7 @@ export const SettingsPage = () => {
     maxValue: number;
   } | null>(null);
   const [editValue, setEditValue] = useState(0);
+  const [initialEditValue, setInitialEditValue] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -128,6 +129,7 @@ export const SettingsPage = () => {
       maxValue: row.maxValue,
     });
     setEditValue(row.value);
+    setInitialEditValue(row.value);
     setErrors({});
   };
 
@@ -139,6 +141,7 @@ export const SettingsPage = () => {
       return;
     }
     setEditingField(null);
+    setInitialEditValue(null);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -361,6 +364,7 @@ export const SettingsPage = () => {
         handleEditValueChange={handleEditValueChange}
         handlePaste={handlePaste}
         handleSave={handleSave}
+        isSaveEnabled={initialEditValue !== null && editValue !== initialEditValue}
         getDayWord={getDayWord}
         getAttemptWord={getAttemptWord}
         getSecondWord={getSecondWord}

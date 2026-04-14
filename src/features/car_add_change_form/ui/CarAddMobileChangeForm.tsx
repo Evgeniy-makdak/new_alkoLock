@@ -261,6 +261,15 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                   padding: '12px !important',
                   fontSize: '16px !important',
                   fontWeight: '600 !important',
+                  backgroundColor: '#1976d2 !important',
+                  color: '#fff !important',
+                  '&:hover': {
+                    backgroundColor: '#1565c0 !important',
+                  },
+                  '&:disabled': {
+                    backgroundColor: '#c2c5c9 !important',
+                    color: '#fff !important',
+                  },
                 }}
                 fullWidth>
                 {id ? t('common.save') : t('common.add')}
@@ -270,6 +279,13 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                 sx={{
                   padding: '12px !important',
                   fontSize: '16px !important',
+                  border: '1px solid #c2c5c9 !important',
+                  color: '#333 !important',
+                  background: 'transparent !important',
+                  '&:hover': {
+                    borderColor: '#a7adb3 !important',
+                    backgroundColor: '#f5f5f5 !important',
+                  },
                 }}
                 fullWidth>
                 {t('common.cancel')}

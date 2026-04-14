@@ -39,6 +39,7 @@ interface EditSettingDialogProps {
   handleEditValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handlePaste: (e: React.ClipboardEvent<HTMLInputElement>) => void;
   handleSave: () => void;
+  isSaveEnabled: boolean;
   getDayWord: (count: number) => string;
   getAttemptWord: (count: number) => string;
   getSecondWord: (count: number) => string;
@@ -55,6 +56,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
   handleEditValueChange,
   handlePaste,
   handleSave,
+  isSaveEnabled,
   getDayWord,
   getAttemptWord,
   getSecondWord,
@@ -167,7 +169,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             <Button
               variant="outlined"
               onClick={handleSave}
-              disabled={isSaving || errors[editingField?.name]?.length > 0}
+              disabled={isSaving || errors[editingField?.name]?.length > 0 || !isSaveEnabled}
               sx={{
                 minWidth: 100,
                 borderColor: 'divider',

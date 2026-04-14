@@ -46,8 +46,10 @@
       width: auto;
       min-width: 0;
       flex: 1 1 calc(33.333% - 6px);
-      padding: 8px 12px !important;
+      min-height: 34px;
+      padding: 8px 10px !important;
       font-size: 12px !important;
+      line-height: 1.2 !important;
     }
   }
   
@@ -80,15 +82,7 @@
     .buttonTab {
       width: auto;
       min-width: 0;
-      font-size: 7px !important;
-    }
-  }
-  
-  @media (max-width: 520px) {
-    .buttonTab {
-      width: auto;
-      min-width: 0;
-      font-size: 7px !important;
+      font-size: 11px !important;
     }
   }
   
@@ -96,7 +90,7 @@
     .buttonTab {
       width: auto;
       padding: 6px 8px !important;
-      font-size: 7px !important;
+      font-size: 10px !important;
       min-width: 0;
     }
   }
@@ -105,7 +99,7 @@
     .buttonTab {
       width: auto;
       padding: 4px 6px !important;
-      font-size: 7px !important;
+      font-size: 9px !important;
       min-width: 0;
     }
   }
@@ -142,9 +136,8 @@
       font-size: 12px !important;
     }
     
-    // Стили для кнопок при ширине 580px и ниже
     @media (max-width: 580px) {
-      font-size: 7px !important;
+      font-size: 11px !important;
     }
   }
 
@@ -159,17 +152,17 @@
     }
     
     @media (max-width: 580px) {
-      font-size: 7px !important;
+      font-size: 11px !important;
     }
     
     @media (max-width: 480px) {
       padding: 6px 8px !important;
-      font-size: 7px !important;
+      font-size: 10px !important;
     }
     
     @media (max-width: 360px) {
       padding: 4px 6px !important;
-      font-size: 7px !important;
+      font-size: 9px !important;
     }
   }
 }

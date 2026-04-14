@@ -371,7 +371,7 @@ export const useAlkozamkiServiceMode = (
                       handleCloseAside();
                     }}
                     disabled={!hasServiceModeEdit || isCrushModeFromAlkolock}>
-                    Отклонить
+                    {t('serviceMode.reject')}
                   </button>
                 </div>
               </>

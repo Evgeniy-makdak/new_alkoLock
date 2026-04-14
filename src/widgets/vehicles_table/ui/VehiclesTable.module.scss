@@ -128,10 +128,10 @@
   border-radius: 6px;
   padding: 8px 12px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   color: #777;
   transition: all 0.2s ease;
-  height: 30px;
+  height: 38px;
   width: 100%;
   min-width: 0; // Важно для правильной работы текста
   white-space: nowrap;
@@ -149,6 +149,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
   }
 }
 

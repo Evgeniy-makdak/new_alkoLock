@@ -39,7 +39,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
       {templates.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="textSecondary">
-            Шаблоны не найдены
+            {t('common.noData')}
           </Typography>
         </Box>
       ) : (
@@ -70,7 +70,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   variant="subtitle2"
                   color="textSecondary"
                   sx={{ mb: 0.5, fontSize: '0.75rem' }}>
-                  Название:
+                  {t('tables.name')}:
                 </Typography>
                 <Typography
                   variant="body2"
@@ -80,7 +80,10 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
               </Box>
 
               <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, alignItems: 'center' }}>
-                <Tooltip title={template.actual ? 'Активный' : 'Неактивный'}>
+                <Tooltip
+                  title={
+                    template.actual ? t('tooltips.templateActive') : t('tooltips.recordInactive')
+                  }>
                   <Box
                     sx={{
                       width: 12,
@@ -114,7 +117,8 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   </span>
                 </Tooltip>
 
-                <Tooltip title={template.actual ? 'Активный' : 'Активировать'}>
+                <Tooltip
+                  title={template.actual ? t('tooltips.templateActive') : t('common.activate')}>
                   <IconButton
                     onClick={(e) => {
                       e.stopPropagation();
@@ -163,7 +167,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   variant="subtitle2"
                   color="textSecondary"
                   sx={{ mb: 0.25, fontSize: '0.7rem' }}>
-                  Автор:
+                  {t('tables.author')}:
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                   {template.createdBy?.firstName || '—'}
@@ -175,7 +179,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   variant="subtitle2"
                   color="textSecondary"
                   sx={{ mb: 0.25, fontSize: '0.7rem' }}>
-                  Создан:
+                  {t('tables.creationDate')}:
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                   {template.createdAt}
@@ -187,7 +191,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   variant="subtitle2"
                   color="textSecondary"
                   sx={{ mb: 0.25, fontSize: '0.7rem' }}>
-                  Тип:
+                  {t('tables.templateType')}:
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                   {template.templateType?.name
@@ -205,7 +209,7 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
                   variant="subtitle2"
                   color="textSecondary"
                   sx={{ mb: 0.25, fontSize: '0.7rem' }}>
-                  Изменён:
+                  {t('tables.modificationDate')}:
                 </Typography>
                 <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                   {template.lastModifiedAt || '—'}

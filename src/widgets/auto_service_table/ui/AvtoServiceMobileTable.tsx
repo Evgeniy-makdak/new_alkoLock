@@ -531,7 +531,7 @@ export const AvtoServiceMobileTable = ({
 
       <div className={styles.mobileList}>
         {tableData.rows.length === 0 ? (
-          <div className={styles.noData}>Нет данных для отображения</div>
+          <div className={styles.noData}>{t('common.noData')}</div>
         ) : (
           tableData.rows.map((row, index) => (
             <div

@@ -519,7 +519,7 @@ export const MailingsMobileTable: FC<MailingsMobileTableProps> = ({
       </div>
       <div className={styles.mobileList}>
         {tableData.rows.length === 0 ? (
-          <div className={styles.noData}>Нет данных для отображения</div>
+          <div className={styles.noData}>{t('common.noData')}</div>
         ) : (
           tableData.rows
             .filter((row: any) => row._isFirstRow)

@@ -274,7 +274,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
               fontWeight: 600,
               color: theme.palette.text.primary,
             }}>
-            Message Templates
+            {t('nav.messageTemplates')}
           </h2>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <ThemeToggleControl variant="toolbarCircle" />

@@ -171,7 +171,7 @@ function MobilePaginationWithJumpComponent({
             size="small"
             type="number"
             fullWidth
-            label={t('pagination.pageNumber')}
+            placeholder={t('pagination.pageNumber')}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             inputProps={{ min: 1, max: maxPagesForDialog }}
@@ -181,7 +181,6 @@ function MobilePaginationWithJumpComponent({
                 : t('pagination.jumpHelper', { max: '…' })
             }
             FormHelperTextProps={{ sx: { fontSize: '0.7rem', mt: 0.5, mx: 0 } }}
-            InputLabelProps={{ sx: { fontSize: '0.8125rem' } }}
             sx={{
               '& .MuiInputBase-root': { minHeight: 36, fontSize: '0.875rem' },
             }}
@@ -194,11 +193,36 @@ function MobilePaginationWithJumpComponent({
           />
         </DialogContent>
         <DialogActions sx={{ px: 2, pb: 1.25, pt: 0, gap: 1 }}>
-          <Button size="small" onClick={() => setOpen(false)}>
-            {t('common.cancel')}
-          </Button>
-          <Button size="small" variant="contained" onClick={applyDialog}>
+          <Button
+            size="small"
+            variant="contained"
+            onClick={applyDialog}
+            sx={{
+              minWidth: 96,
+              textTransform: 'uppercase',
+              fontWeight: 600,
+              backgroundColor: '#667a8a',
+              color: '#fff',
+              '&:hover': { backgroundColor: '#5b6e7d' },
+            }}>
             {t('pagination.go')}
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => setOpen(false)}
+            sx={{
+              minWidth: 96,
+              textTransform: 'uppercase',
+              borderColor: '#667a8a',
+              color: '#667a8a',
+              '&:hover': {
+                borderColor: '#5b6e7d',
+                color: '#5b6e7d',
+                backgroundColor: 'rgba(102,122,138,0.08)',
+              },
+            }}>
+            {t('common.cancel')}
           </Button>
         </DialogActions>
       </Dialog>

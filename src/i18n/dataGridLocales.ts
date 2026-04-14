@@ -45,6 +45,8 @@ export const getDataGridLocaleText = () => {
     ...base,
     ...uzGridPatch,
     ...sortLocaleText,
+    noRowsLabel: t('common.noData'),
+    noResultsOverlayLabel: t('common.noData'),
     labelRowsPerPage: t('tables.rowsPerPage'),
     labelDisplayedRows: ({ from, to, count }: { from: number; to: number; count: number }) =>
       t('pagination.rowsOf', { from, to, count }),

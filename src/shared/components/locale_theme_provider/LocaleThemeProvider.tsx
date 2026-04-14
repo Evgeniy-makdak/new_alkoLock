@@ -197,6 +197,8 @@ export function LocaleThemeProvider({ children }: LocaleThemeProviderProps) {
               columnMenuSortAsc: i18n.t('tables.dataGrid.columnMenuSortAsc'),
               columnMenuSortDesc: i18n.t('tables.dataGrid.columnMenuSortDesc'),
               columnMenuUnsort: i18n.t('tables.dataGrid.columnMenuUnsort'),
+              noRowsLabel: i18n.t('common.noData'),
+              noResultsOverlayLabel: i18n.t('common.noData'),
             },
           },
         },

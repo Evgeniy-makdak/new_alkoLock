@@ -56,7 +56,7 @@
   width: 220px;
   flex-shrink: 0;
   padding-right: 6px;
-  padding-left: 2px;
+  padding-left: 10px;
 }
 
 .typeOfEventTitle {     // Заголовок "Тип события
@@ -195,8 +195,10 @@
     min-width: 220px !important;
     max-width: 250px !important;
     padding-right: 4px;
-    padding-left: 10px !important;
-    font-size: 12px;
+    padding-left: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500;
+    line-height: 1.3;
   }
   
   .dateTitle {
@@ -204,15 +206,20 @@
     width: auto !important;
     flex: 1;
     max-width: calc(100vw - 270px);
+    font-size: 14px !important;
+    font-weight: 500;
+    line-height: 1.3;
   }
   
   .dateTitleContent {
-    margin-left: 20px !important;
+    margin-left: 0 !important;
     justify-content: flex-start;
     gap: 4px;
     
-    .MuiTypography-root {
-      font-size: 12px;
+    span {
+      font-size: 14px !important;
+      font-weight: 500;
+      line-height: 1.3;
     }
   }
   
@@ -227,6 +234,8 @@
     width: 100px !important;
     min-width: 90px !important;
     max-width: 100px !important;
+    font-size: 13px !important;
+    font-weight: 500;
   }
 
   .bodyCellButtonWrapper {
@@ -469,20 +478,21 @@
     width: 200px !important;
     min-width: 180px !important;
     max-width: 200px !important;
-    padding-left: 4px !important;
-    font-size: 11px;
+    padding-left: 6px !important;
+    font-size: 14px !important;
   }
   
   .dateTitle {
     min-width: 120px !important;
     max-width: calc(100vw - 220px);
+    font-size: 14px !important;
   }
   
   .dateTitleContent {
-    margin-left: 10px !important;
+    margin-left: 0 !important;
     
-    .MuiTypography-root {
-      font-size: 11px;
+    span {
+      font-size: 14px !important;
     }
   }
   
@@ -633,9 +643,9 @@
     width: 160px !important;
     min-width: 140px !important;
     max-width: 160px !important;
-    padding-left: 2px !important;
+    padding-left: 8px !important;
     padding-right: 2px !important;
-    font-size: 10px;
+    font-size: 14px !important;
   }
   
   .dateTitle {
@@ -643,15 +653,16 @@
     width: auto !important;
     flex: 1;
     max-width: calc(100vw - 170px) !important;
+    font-size: 14px !important;
   }
   
   .dateTitleContent {
-    margin-left: 5px !important;
+    margin-left: 0 !important;
     justify-content: flex-start !important;
     min-width: 0 !important;
     
-    .MuiTypography-root {
-      font-size: 10px !important;
+    span {
+      font-size: 14px !important;
       white-space: nowrap !important;
       overflow: hidden !important;
       text-overflow: ellipsis !important;
@@ -671,7 +682,7 @@
     width: 70px !important;
     min-width: 60px !important;
     max-width: 70px !important;
-    font-size: 9px !important;
+    font-size: 12px !important;
     padding-left: 0 !important;
     padding-right: 2px !important;
     justify-content: flex-end !important;
@@ -853,20 +864,21 @@
     width: 140px !important;
     min-width: 120px !important;
     max-width: 140px !important;
-    padding-left: 1px !important;
-    font-size: 9px;
+    padding-left: 8px !important;
+    font-size: 13px !important;
   }
   
   .dateTitle {
     min-width: 80px !important;
     max-width: calc(100vw - 150px) !important;
+    font-size: 13px !important;
   }
   
   .dateTitleContent {
-    margin-left: 3px !important;
+    margin-left: 0 !important;
     
-    .MuiTypography-root {
-      font-size: 9px !important;
+    span {
+      font-size: 13px !important;
       max-width: 40px !important;
     }
   }
@@ -881,7 +893,7 @@
     width: 60px !important;
     min-width: 50px !important;
     max-width: 60px !important;
-    font-size: 8px !important;
+    font-size: 11px !important;
   }
   
   .headerCellDate {
@@ -998,6 +1010,21 @@
         height: 20px !important;
       }
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .td {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    line-height: 1.3;
+  }
+
+  .bodyCellCreatedAt {
+    line-height: 1.25;
+    white-space: normal !important;
+    text-align: right !important;
   }
 }
 
