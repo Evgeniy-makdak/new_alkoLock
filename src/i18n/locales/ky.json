@@ -173,7 +173,13 @@
     "confirmNewPassword": "Сыр сөздү ырастоо",
     "resetCodeEmailSent": "Коду камтылган кат {{email}} дарегине жөнөтүлдү",
     "codeConfirmed": "Код ырасталды",
-    "confirmCodeAttemptsExceeded": "Аракеттердин саны ашып кетти. Сыр сөздү өзгөртүү процесси {{until}} чейин бөгөттөлдү"
+    "confirmCodeInvalid": "Ырастоо коду туура эмес",
+    "confirmCodeAttemptsExceeded": "Аракеттердин саны ашып кетти. Сыр сөздү өзгөртүү процесси {{until}} чейин бөгөттөлдү",
+    "passwordChangedSuccess": "Сыр сөз ийгиликтүү өзгөртүлдү",
+    "invalidCredentials": "Логин же сыр сөз туура эмес",
+    "accessDenied": "Кирүүгө тыюу салынган",
+    "noAdminPanelAccess": "Сизде админ панелине кирүү укугу жок",
+    "fieldValidationError": "{{field}} талаасы: {{message}}"
   },
   "passwordForm": {
     "title": "Сыр сөздү өзгөртүү",

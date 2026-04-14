@@ -37,7 +37,7 @@ const convertGMTtoLocal = (gmtTimeString: string): string => {
 
 // Функция для обработки сообщений об ошибках с преобразованием времени
 const processErrorMessage = (errorMessage: string): string => {
-  if (!errorMessage || !errorMessage.includes('после')) {
+  if (!errorMessage) {
     return errorMessage;
   }
 

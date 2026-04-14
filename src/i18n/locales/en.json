@@ -175,7 +175,13 @@
     "confirmNewPassword": "Confirm password",
     "resetCodeEmailSent": "An email with the code has been sent to {{email}}",
     "codeConfirmed": "Code confirmed",
-    "confirmCodeAttemptsExceeded": "Too many attempts. Password reset is blocked until {{until}}"
+    "confirmCodeInvalid": "Invalid verification code",
+    "confirmCodeAttemptsExceeded": "Too many attempts. Password reset is blocked until {{until}}",
+    "passwordChangedSuccess": "Password changed successfully",
+    "invalidCredentials": "Invalid username or password",
+    "accessDenied": "Access denied",
+    "noAdminPanelAccess": "You do not have access to the admin panel",
+    "fieldValidationError": "Field {{field}}: {{message}}"
   },
   "datePicker": {
     "clear": "Clear",

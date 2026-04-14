@@ -175,7 +175,13 @@
     "confirmNewPassword": "Подтверждение пароля",
     "resetCodeEmailSent": "Письмо с кодом отправлено на адрес {{email}}",
     "codeConfirmed": "Код подтверждён",
-    "confirmCodeAttemptsExceeded": "Превышено количество попыток. Процедура смены пароля заблокирована до {{until}}"
+    "confirmCodeInvalid": "Неверный код подтверждения",
+    "confirmCodeAttemptsExceeded": "Превышено количество попыток. Процедура смены пароля заблокирована до {{until}}",
+    "passwordChangedSuccess": "Пароль успешно изменён",
+    "invalidCredentials": "Неверный логин или пароль",
+    "accessDenied": "Доступ запрещён",
+    "noAdminPanelAccess": "У вас нет доступа к админ-панели",
+    "fieldValidationError": "Поле {{field}}: {{message}}"
   },
   "datePicker": {
     "clear": "Очистить",

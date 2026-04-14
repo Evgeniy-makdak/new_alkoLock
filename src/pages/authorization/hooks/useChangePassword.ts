@@ -10,6 +10,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
 import { Form, schema } from '../lib/validateChange';
 
 export const useChangePassword = () => {
@@ -68,7 +69,7 @@ export const useChangePassword = () => {
       //@ts-expect-error: временное решение
       onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
-          enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
+          enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
           navigate(RoutePaths.auth);
         } else {
           const errorMessage = response?.detail || ValidationMessages.defaultError;

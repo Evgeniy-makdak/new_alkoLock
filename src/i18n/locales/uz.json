@@ -173,7 +173,13 @@
     "confirmNewPassword": "Parolni tasdiqlash",
     "resetCodeEmailSent": "Kodli xat {{email}} manziliga yuborildi",
     "codeConfirmed": "Kod tasdiqlandi",
-    "confirmCodeAttemptsExceeded": "Urinishlar soni oshib ketdi. Parolni almashtirish jarayoni {{until}} gacha bloklandi"
+    "confirmCodeInvalid": "Tasdiqlash kodi noto'g'ri",
+    "confirmCodeAttemptsExceeded": "Urinishlar soni oshib ketdi. Parolni almashtirish jarayoni {{until}} gacha bloklandi",
+    "passwordChangedSuccess": "Parol muvaffaqiyatli o'zgartirildi",
+    "invalidCredentials": "Login yoki parol noto'g'ri",
+    "accessDenied": "Kirish taqiqlangan",
+    "noAdminPanelAccess": "Sizda admin paneliga kirish huquqi yo'q",
+    "fieldValidationError": "{{field}} maydoni: {{message}}"
   },
   "passwordForm": {
     "title": "Parolni o'zgartirish",

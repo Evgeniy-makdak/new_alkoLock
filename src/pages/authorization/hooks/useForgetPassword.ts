@@ -12,6 +12,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
+import i18n from '../../../i18n';
 import { Form, schema } from '../lib/validateForget';
 
 export const useForgetPassword = () => {
@@ -34,6 +35,18 @@ export const useForgetPassword = () => {
 
   const { mutate, isLoading } = useForgetPasswordApi();
 
+  const localizeForgetPasswordError = (rawMessage: string): string => {
+    const msg = String(rawMessage || '');
+    const lower = msg.toLowerCase();
+    const isSameAsPrevious =
+      lower.includes('новый пароль совпадает с предыдущим') ||
+      lower.includes('new password matches previous password') ||
+      lower.includes('new password must not match current password') ||
+      lower.includes('пароль не должен совпадать');
+    if (isSameAsPrevious) return i18n.t('validation.newPasswordMustDifferFromCurrent');
+    return msg || ValidationMessages.defaultError;
+  };
+
   const onSubmit = async (data: Form) => {
     if (data.newPassword.length <= 3) {
       setError('newPassword', {
@@ -52,7 +65,7 @@ export const useForgetPassword = () => {
     }
 
     if (!email) {
-      enqueueSnackbar('Не удалось определить email', { variant: 'error' });
+      enqueueSnackbar(i18n.t('auth.emailNotDetermined'), { variant: 'error' });
       return;
     }
 
@@ -66,21 +79,26 @@ export const useForgetPassword = () => {
       //@ts-expect-error: временное решение
       onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
-          enqueueSnackbar('Пароль успешно изменён', { variant: 'success' });
+          enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
           navigate(RoutePaths.auth); // Перенаправление на страницу входа
         } else {
           const errorMessage = response?.detail || ValidationMessages.defaultError;
+          const localizedMessage = localizeForgetPasswordError(errorMessage);
           setError('newPassword', {
             type: 'custom',
-            message: errorMessage,
+            message: localizedMessage,
           });
         }
       },
       onError: (error: any) => {
-        const errorMessage = (error as any)?.detail || ValidationMessages.defaultError;
+        const errorMessage =
+          (error as any)?.response?.data?.detail ||
+          (error as any)?.detail ||
+          ValidationMessages.defaultError;
+        const localizedMessage = localizeForgetPasswordError(errorMessage);
         setError('newPassword', {
           type: 'custom',
-          message: errorMessage,
+          message: localizedMessage,
         });
       },
     });

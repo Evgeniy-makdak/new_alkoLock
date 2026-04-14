@@ -173,7 +173,13 @@
     "confirmNewPassword": "Құпия сөзді растау",
     "resetCodeEmailSent": "Коды бар хат {{email}} мекенжайына жіберілді",
     "codeConfirmed": "Код расталды",
-    "confirmCodeAttemptsExceeded": "Әрекеттер саны асып кетті. Құпия сөзді өзгерту рәсімі {{until}} дейін бұғатталды"
+    "confirmCodeInvalid": "Растау коды қате",
+    "confirmCodeAttemptsExceeded": "Әрекеттер саны асып кетті. Құпия сөзді өзгерту рәсімі {{until}} дейін бұғатталды",
+    "passwordChangedSuccess": "Құпия сөз сәтті өзгертілді",
+    "invalidCredentials": "Логин немесе құпия сөз қате",
+    "accessDenied": "Қолжетімділікке тыйым салынған",
+    "noAdminPanelAccess": "Сізде әкімші панеліне қолжетімділік жоқ",
+    "fieldValidationError": "{{field}} өрісі: {{message}}"
   },
   "passwordForm": {
     "title": "Құпия сөзді өзгерту",

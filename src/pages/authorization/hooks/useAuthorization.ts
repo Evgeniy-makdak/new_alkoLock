@@ -16,6 +16,7 @@ import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/Base
 import { cookieManager } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
 
+import i18n from '../../../i18n';
 import { useAuthApi } from '../api/authApi';
 import { schema } from '../lib/validate';
 
@@ -48,7 +49,12 @@ export const useAuthorization = () => {
 
     if (errors.length > 0) {
       errors.forEach((error: AuthError) => {
-        enqueueSnackbar(`Поле ${error.field} ${error.message}`, { variant: 'error' });
+        enqueueSnackbar(
+          i18n.t('auth.fieldValidationError', { field: error.field, message: error.message }),
+          {
+            variant: 'error',
+          },
+        );
       });
       return;
     }
@@ -78,9 +84,9 @@ export const useAuthorization = () => {
         }
       }
     } else if (data.status === StatusCode.UNAUTHORIZED) {
-      enqueueSnackbar(data.detail || 'Неверный логин или пароль', { variant: 'error' });
+      enqueueSnackbar(data.detail || i18n.t('auth.invalidCredentials'), { variant: 'error' });
     } else if (data.status === StatusCode.FORBIDDEN) {
-      enqueueSnackbar(data.detail || 'Доступ запрещен', { variant: 'error' });
+      enqueueSnackbar(data.detail || i18n.t('auth.accessDenied'), { variant: 'error' });
     }
   };
 
@@ -118,7 +124,7 @@ export const useAuthorization = () => {
     const branchData = accountData.assignment?.branch;
 
     if (!firstAvailableRouter) {
-      enqueueSnackbar('У вас нет доступа к Админ панели', {
+      enqueueSnackbar(i18n.t('auth.noAdminPanelAccess'), {
         variant: 'error',
       });
       return;

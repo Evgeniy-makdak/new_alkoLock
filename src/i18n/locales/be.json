@@ -174,7 +174,13 @@
     "confirmNewPassword": "Пацвярджэнне пароля",
     "resetCodeEmailSent": "Ліст з кодам адпраўлены на адрас {{email}}",
     "codeConfirmed": "Код пацверджаны",
-    "confirmCodeAttemptsExceeded": "Перавышана колькасць спроб. Працэдура змены пароля заблакіравана да {{until}}"
+    "confirmCodeInvalid": "Няправільны код пацвярджэння",
+    "confirmCodeAttemptsExceeded": "Перавышана колькасць спроб. Працэдура змены пароля заблакіравана да {{until}}",
+    "passwordChangedSuccess": "Пароль паспяхова зменены",
+    "invalidCredentials": "Няправільны лагін або пароль",
+    "accessDenied": "Доступ забаронены",
+    "noAdminPanelAccess": "У вас няма доступу да панэлі адміністратара",
+    "fieldValidationError": "Поле {{field}}: {{message}}"
   },
   "passwordForm": {
     "title": "Змяненне пароля",

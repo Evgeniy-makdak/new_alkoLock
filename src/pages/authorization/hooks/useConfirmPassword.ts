@@ -204,6 +204,33 @@ export const useConfirmPassword = () => {
       return i18n.t('auth.confirmCodeAttemptsExceeded', { until: until || '—' });
     };
 
+    const mapVerificationError = (rawMessage: string): string => {
+      const base = localizeVerificationError(rawMessage);
+      const rawLower = String(rawMessage || '').toLowerCase();
+      const baseLower = String(base || '').toLowerCase();
+      const isInvalidCode =
+        rawLower.includes('invalid verification code') ||
+        rawLower.includes('verification code is invalid') ||
+        rawLower.includes('неверный код') ||
+        rawLower.includes('неверный проверочный код') ||
+        rawLower.includes('некорректный код') ||
+        rawLower.includes('некорректный проверочный код') ||
+        rawLower.includes('invalid confirm code') ||
+        rawLower.includes('confirmation code is invalid') ||
+        rawLower.includes('код невер') ||
+        baseLower.includes('invalid verification code') ||
+        baseLower.includes('verification code is invalid') ||
+        baseLower.includes('неверный код') ||
+        baseLower.includes('неверный проверочный код') ||
+        baseLower.includes('некорректный код') ||
+        baseLower.includes('некорректный проверочный код') ||
+        baseLower.includes('invalid confirm code') ||
+        baseLower.includes('confirmation code is invalid') ||
+        baseLower.includes('код невер');
+      if (isInvalidCode) return i18n.t('auth.confirmCodeInvalid');
+      return base;
+    };
+
     mutate(
       {
         email,
@@ -223,7 +250,7 @@ export const useConfirmPassword = () => {
             });
           } else {
             const errorMessage = response?.detail || ValidationMessages.defaultError;
-            const localizedMessage = localizeVerificationError(errorMessage);
+            const localizedMessage = mapVerificationError(errorMessage);
 
             setError('verificationCode', {
               type: 'custom',
@@ -233,7 +260,7 @@ export const useConfirmPassword = () => {
         },
         onError: (error: any) => {
           const errorMessage = error?.response?.data?.detail || ValidationMessages.defaultError;
-          const localizedMessage = localizeVerificationError(errorMessage);
+          const localizedMessage = mapVerificationError(errorMessage);
 
           setError('verificationCode', {
             type: 'custom',
