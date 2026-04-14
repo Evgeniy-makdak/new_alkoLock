@@ -174,7 +174,8 @@
     "setNewPassword": "Установить новый пароль",
     "confirmNewPassword": "Подтверждение пароля",
     "resetCodeEmailSent": "Письмо с кодом отправлено на адрес {{email}}",
-    "codeConfirmed": "Код подтверждён"
+    "codeConfirmed": "Код подтверждён",
+    "confirmCodeAttemptsExceeded": "Превышено количество попыток. Процедура смены пароля заблокирована до {{until}}"
   },
   "datePicker": {
     "clear": "Очистить",

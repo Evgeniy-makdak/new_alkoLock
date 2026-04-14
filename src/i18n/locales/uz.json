@@ -172,7 +172,8 @@
     "setNewPassword": "Yangi parol o'rnatish",
     "confirmNewPassword": "Parolni tasdiqlash",
     "resetCodeEmailSent": "Kodli xat {{email}} manziliga yuborildi",
-    "codeConfirmed": "Kod tasdiqlandi"
+    "codeConfirmed": "Kod tasdiqlandi",
+    "confirmCodeAttemptsExceeded": "Urinishlar soni oshib ketdi. Parolni almashtirish jarayoni {{until}} gacha bloklandi"
   },
   "passwordForm": {
     "title": "Parolni o'zgartirish",

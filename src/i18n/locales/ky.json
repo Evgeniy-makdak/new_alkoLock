@@ -172,7 +172,8 @@
     "setNewPassword": "Жаңы сыр сөздү коюу",
     "confirmNewPassword": "Сыр сөздү ырастоо",
     "resetCodeEmailSent": "Коду камтылган кат {{email}} дарегине жөнөтүлдү",
-    "codeConfirmed": "Код ырасталды"
+    "codeConfirmed": "Код ырасталды",
+    "confirmCodeAttemptsExceeded": "Аракеттердин саны ашып кетти. Сыр сөздү өзгөртүү процесси {{until}} чейин бөгөттөлдү"
   },
   "passwordForm": {
     "title": "Сыр сөздү өзгөртүү",

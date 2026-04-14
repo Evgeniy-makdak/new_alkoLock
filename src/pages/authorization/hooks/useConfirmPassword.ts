@@ -148,6 +148,62 @@ export const useConfirmPassword = () => {
       }
     };
 
+    const extractLockUntilLocal = (message: string): string | null => {
+      const months = {
+        'янв.': 'Jan',
+        'фев.': 'Feb',
+        'мар.': 'Mar',
+        'апр.': 'Apr',
+        'мая.': 'May',
+        'июн.': 'Jun',
+        'июл.': 'Jul',
+        'авг.': 'Aug',
+        'сен.': 'Sep',
+        'окт.': 'Oct',
+        'ноя.': 'Nov',
+        'дек.': 'Dec',
+      };
+
+      try {
+        const dateMatch = message.match(/(\d{1,2}) ([а-яё]+\.) (\d{4}) г\., (\d{2}:\d{2}:\d{2})/i);
+        if (!dateMatch) return null;
+        const [dateStr] = dateMatch;
+        const [day, monthRus, year, , time] = dateStr.split(/[ ,]+/);
+        const monthEng = months[monthRus.toLowerCase() as keyof typeof months];
+        if (!monthEng) return null;
+        const date = new Date(`${monthEng} ${day} ${year} ${time} GMT`);
+        if (isNaN(date.getTime())) return null;
+        return new Intl.DateTimeFormat(i18n.language || 'ru', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+          hour12: false,
+        }).format(date);
+      } catch {
+        return null;
+      }
+    };
+
+    const localizeVerificationError = (rawMessage: string): string => {
+      const localizedMessage = convertGMTToLocal(rawMessage);
+      const rawLower = String(rawMessage || '').toLowerCase();
+      const localizedLower = String(localizedMessage || '').toLowerCase();
+      const isAttemptsExceeded =
+        rawLower.includes('превышено количество попыток') ||
+        rawLower.includes('too many attempts') ||
+        rawLower.includes('attempt limit exceeded') ||
+        localizedLower.includes('превышено количество попыток') ||
+        localizedLower.includes('too many attempts') ||
+        localizedLower.includes('attempt limit exceeded');
+      if (!isAttemptsExceeded) return localizedMessage;
+
+      const until = extractLockUntilLocal(rawMessage) ?? extractLockUntilLocal(localizedMessage);
+      return i18n.t('auth.confirmCodeAttemptsExceeded', { until: until || '—' });
+    };
+
     mutate(
       {
         email,
@@ -167,7 +223,7 @@ export const useConfirmPassword = () => {
             });
           } else {
             const errorMessage = response?.detail || ValidationMessages.defaultError;
-            const localizedMessage = convertGMTToLocal(errorMessage);
+            const localizedMessage = localizeVerificationError(errorMessage);
 
             setError('verificationCode', {
               type: 'custom',
@@ -177,7 +233,7 @@ export const useConfirmPassword = () => {
         },
         onError: (error: any) => {
           const errorMessage = error?.response?.data?.detail || ValidationMessages.defaultError;
-          const localizedMessage = convertGMTToLocal(errorMessage);
+          const localizedMessage = localizeVerificationError(errorMessage);
 
           setError('verificationCode', {
             type: 'custom',

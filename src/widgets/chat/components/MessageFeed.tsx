@@ -541,7 +541,13 @@ function MessageFeed({
       const messageIdAttr = element.getAttribute('data-message-id');
       const messageIdentifier = messageIdAttr;
       const messageUuid = !messageIdAttr ? element.getAttribute('data-message-uuid') : null;
-      const isVisible = rect.top < containerRect.bottom && rect.bottom > containerRect.top;
+      const intersectionTop = Math.max(rect.top, containerRect.top);
+      const intersectionBottom = Math.min(rect.bottom, containerRect.bottom);
+      const visibleHeight = Math.max(0, intersectionBottom - intersectionTop);
+      // Сообщение считаем "прочитанным по видимости" только если видна заметная часть,
+      // а не случайные 1-2px на границе viewport.
+      const minVisiblePx = Math.min(24, rect.height * 0.35);
+      const isVisible = visibleHeight >= minVisiblePx;
       if (isVisible) {
         if (messageIdentifier) newVisibleIds.add(messageIdentifier);
         else if (messageUuid) newVisibleIds.add(messageUuid);
@@ -1002,12 +1008,30 @@ function MessageFeed({
   const markAllUnreadAsReadByJumpToLast = useCallback(() => {
     if (!onMarkMessagesAsRead) return;
 
+    const liveSession = getSession(sessionId);
+    const activeDialogId =
+      liveSession?.selectedDialog?.id && String(liveSession.selectedDialog.id) !== '0'
+        ? String(liveSession.selectedDialog.id)
+        : liveSession?.assignedDialogId &&
+            String(liveSession.assignedDialogId) !== '' &&
+            String(liveSession.assignedDialogId) !== '0' &&
+            String(liveSession.assignedDialogId) !== 'assigned'
+          ? String(liveSession.assignedDialogId)
+          : feedDialogId
+            ? String(feedDialogId)
+            : null;
+    if (!activeDialogId) return;
+
+    const sourceMessages = (liveSession?.messages || []).filter(
+      (msg: any) => String(msg.dialogId ?? msg.dialog?.id ?? '') === activeDialogId,
+    );
+
     const now = Date.now();
     const readSendTtlMs = 3500;
     const idsToMark: string[] = [];
     const seenIds = new Set<string>();
 
-    messagesInActiveDialog.forEach((msg) => {
+    sourceMessages.forEach((msg: any) => {
       if (msg.messageStatus !== 'TO_OPERATOR') return;
       if (msg.is_read) return;
 
@@ -1046,14 +1070,73 @@ function MessageFeed({
     });
     onMarkMessagesAsRead(idsToMark);
     setInternalUnreadCount(0);
-  }, [messagesInActiveDialog, onMarkMessagesAsRead, readSentTrackingKeys, sessionId, feedDialogId]);
+  }, [onMarkMessagesAsRead, getSession, sessionId, feedDialogId, readSentTrackingKeys]);
 
-  const handleScrollToLastClick = useCallback(() => {
-    scrollToBottom();
+  const getLiveUnreadInActiveDialog = useCallback((): number => {
+    const liveSession = getSession(sessionId);
+    const activeDialogId =
+      liveSession?.selectedDialog?.id && String(liveSession.selectedDialog.id) !== '0'
+        ? String(liveSession.selectedDialog.id)
+        : liveSession?.assignedDialogId &&
+            String(liveSession.assignedDialogId) !== '' &&
+            String(liveSession.assignedDialogId) !== '0' &&
+            String(liveSession.assignedDialogId) !== 'assigned'
+          ? String(liveSession.assignedDialogId)
+          : feedDialogId
+            ? String(feedDialogId)
+            : null;
+    if (!activeDialogId) return 0;
+
+    const sourceMessages = (liveSession?.messages || []).filter(
+      (msg: any) => String(msg.dialogId ?? msg.dialog?.id ?? '') === activeDialogId,
+    );
+    return sourceMessages.reduce((acc: number, msg: any) => {
+      if (msg.messageStatus !== 'TO_OPERATOR') return acc;
+      if (msg.is_read) return acc;
+      const cs = String(msg.confirmStatus ?? '')
+        .trim()
+        .toUpperCase();
+      if (cs === 'READ') return acc;
+      if (cs !== 'DELIVERED' && cs !== 'SENT') return acc;
+      return acc + 1;
+    }, 0);
+  }, [getSession, sessionId, feedDialogId]);
+
+  const handleScrollToLastClick = useCallback(async () => {
+    const shouldLoadFirstPage = Boolean(pagination?.currentPage && pagination.currentPage !== 0);
+    if (shouldLoadFirstPage) {
+      await handleLoadFirstPage();
+    } else {
+      scrollToBottom();
+    }
     // Специальное правило только для клика по кнопке "к последнему сообщению":
     // считаем все непрочитанные в текущем диалоге прочитанными.
-    markAllUnreadAsReadByJumpToLast();
-  }, [markAllUnreadAsReadByJumpToLast]);
+    if (!shouldLoadFirstPage) {
+      markAllUnreadAsReadByJumpToLast();
+      return;
+    }
+
+    // Для сценария page != 0 ждём фактическую догрузку page=0 и добиваем READ ретраями.
+    const startedAt = Date.now();
+    const timeoutMs = 3500;
+    const stepMs = 140;
+
+    const tryMark = () => {
+      markAllUnreadAsReadByJumpToLast();
+      const unreadLeft = getLiveUnreadInActiveDialog();
+      if (unreadLeft <= 0) return;
+      if (Date.now() - startedAt >= timeoutMs) return;
+      window.setTimeout(tryMark, stepMs);
+    };
+
+    window.setTimeout(tryMark, stepMs);
+  }, [
+    pagination?.currentPage,
+    handleLoadFirstPage,
+    scrollToBottom,
+    markAllUnreadAsReadByJumpToLast,
+    getLiveUnreadInActiveDialog,
+  ]);
 
   const handleReplyClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();

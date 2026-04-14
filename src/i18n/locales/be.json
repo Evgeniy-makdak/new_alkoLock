@@ -173,7 +173,8 @@
     "setNewPassword": "Устанавіць новы пароль",
     "confirmNewPassword": "Пацвярджэнне пароля",
     "resetCodeEmailSent": "Ліст з кодам адпраўлены на адрас {{email}}",
-    "codeConfirmed": "Код пацверджаны"
+    "codeConfirmed": "Код пацверджаны",
+    "confirmCodeAttemptsExceeded": "Перавышана колькасць спроб. Працэдура змены пароля заблакіравана да {{until}}"
   },
   "passwordForm": {
     "title": "Змяненне пароля",

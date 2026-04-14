@@ -57,7 +57,7 @@ function ChatPanel({
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { dialogsUnreadCounts } = useSocket();
+  const { dialogsUnreadCounts, updateDialogUnreadCount } = useSocket();
   const {
     closeSession,
     toggleSessionMinimize,
@@ -712,10 +712,23 @@ function ChatPanel({
           }, 0);
           stableSetUnreadCount(nextUnread);
           updateSession(sessionId, { unreadCount: nextUnread });
+          const activeDialogNumericId = Number(activeDialogId);
+          if (Number.isFinite(activeDialogNumericId)) {
+            // Локально отправили READ: сразу синхронизируем per-dialog счётчик в socket-карте,
+            // чтобы исключить редкий "залипший +1" до прихода следующего WS-кадра.
+            updateDialogUnreadCount(activeDialogNumericId, nextUnread);
+          }
         }
       }
     },
-    [sessionId, sendReadStatusForMessageId, getSession, updateSession, stableSetUnreadCount],
+    [
+      sessionId,
+      sendReadStatusForMessageId,
+      getSession,
+      updateSession,
+      stableSetUnreadCount,
+      updateDialogUnreadCount,
+    ],
   );
 
   const activeDialogNumericId = useMemo(() => {

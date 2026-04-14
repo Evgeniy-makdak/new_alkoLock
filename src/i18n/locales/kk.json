@@ -172,7 +172,8 @@
     "setNewPassword": "Жаңа құпия сөзді орнату",
     "confirmNewPassword": "Құпия сөзді растау",
     "resetCodeEmailSent": "Коды бар хат {{email}} мекенжайына жіберілді",
-    "codeConfirmed": "Код расталды"
+    "codeConfirmed": "Код расталды",
+    "confirmCodeAttemptsExceeded": "Әрекеттер саны асып кетті. Құпия сөзді өзгерту рәсімі {{until}} дейін бұғатталды"
   },
   "passwordForm": {
     "title": "Құпия сөзді өзгерту",

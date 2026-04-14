@@ -174,7 +174,8 @@
     "setNewPassword": "Set new password",
     "confirmNewPassword": "Confirm password",
     "resetCodeEmailSent": "An email with the code has been sent to {{email}}",
-    "codeConfirmed": "Code confirmed"
+    "codeConfirmed": "Code confirmed",
+    "confirmCodeAttemptsExceeded": "Too many attempts. Password reset is blocked until {{until}}"
   },
   "datePicker": {
     "clear": "Clear",
