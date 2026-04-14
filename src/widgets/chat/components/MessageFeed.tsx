@@ -381,7 +381,9 @@ function MessageFeed({
         scrollAttemptsRef.current = 0;
       }
 
-      if (!shouldStartExpandFlow) {
+      // Если expand уже инициирован ранее (до прихода ленты), не выходим:
+      // нужно дождаться появления сообщений и выполнить скролл к первому непрочитанному.
+      if (!shouldStartExpandFlow && !expandScrollPendingRef.current) {
         return;
       }
       expandScrollPendingRef.current = true;
@@ -1137,6 +1139,14 @@ function MessageFeed({
     const currentMessages = messagesInActiveDialog;
     if (currentMessages.length > prevMessages.length) {
       const newMessages = currentMessages.slice(prevMessages.length);
+      const hasNewInboundUnread = newMessages.some((msg) => isInboundUnread(msg));
+      if (hasNewInboundUnread && !isAtBottom) {
+        // Оператор просматривает историю: не автоскроллим вниз при новых входящих.
+        // Непрочитанное показывается бейджом на кнопке "вниз", переход — только по клику.
+        setShowScrollButton(true);
+        lastMessagesRef.current = [...currentMessages];
+        return;
+      }
       const hasNewOperatorMessage = newMessages.some(
         (msg) => msg.messageStatus === 'TO_USER' && msg.confirmStatus === 'SENT',
       );
@@ -1164,7 +1174,7 @@ function MessageFeed({
       }
     }
     lastMessagesRef.current = [...currentMessages];
-  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage]);
+  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage, isAtBottom]);
 
   useEffect(() => {
     messages.forEach((msg) => {

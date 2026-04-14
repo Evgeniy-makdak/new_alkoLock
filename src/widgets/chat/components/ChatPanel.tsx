@@ -799,12 +799,10 @@ function ChatPanel({
 
   // Скролл к первому непрочитанному в MessageFeed: флаг scrollToBottomOnExpand.
   // ChatFooter передаёт true только когда панель только что развернули из минимизации;
-  // при открытом чате там часто false — раньше это обнуляло скролл ДО проверки бейджа.
+  // в остальных случаях автоскролл по новым входящим не должен запускаться.
   const shouldScrollToFirstUnreadOnExpand = useMemo(() => {
-    if (displayUnreadCount > 0) return true;
-    if (scrollToBottomOnExpand === false) return false;
-    return !!scrollToBottomOnExpand;
-  }, [displayUnreadCount, scrollToBottomOnExpand]);
+    return Boolean(scrollToBottomOnExpand);
+  }, [scrollToBottomOnExpand]);
 
   useEffect(() => {
     operatorUnreadDebug('ChatPanel → MessageFeed: флаг скролла к непрочитанным', {

@@ -755,6 +755,7 @@ const ChatContainer = () => {
                 zIndex: 1000 - (minimizedSessions.length + index),
               }}
               onClick={async () => {
+                setJustExpandedSessionId(sessionId);
                 await openUnreadDialog(sessionId, dialog);
               }}>
               <div className={styles.minimizedHeader}>
