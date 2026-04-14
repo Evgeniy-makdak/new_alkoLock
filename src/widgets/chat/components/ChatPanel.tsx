@@ -101,7 +101,6 @@ function ChatPanel({
   const headerUnreadLogRef = useRef<number | null>(null);
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
-  const refreshAfterReadTriggeredRef = useRef(false);
   const isSessionSwitchingRef = useRef(false);
 
   const getDisplayUserName = useCallback(() => {
@@ -216,7 +215,6 @@ function ChatPanel({
       lastStableUnreadCountRef.current = 0;
       initialLoadDoneRef.current = false;
       historyLoadAttemptedRef.current = false;
-      refreshAfterReadTriggeredRef.current = false;
       isSessionSwitchingRef.current = false;
     }
   }, [sessionId]);
@@ -387,7 +385,6 @@ function ChatPanel({
         stableSetUnreadCount(0);
         initialLoadDoneRef.current = false;
         historyLoadAttemptedRef.current = false;
-        refreshAfterReadTriggeredRef.current = false;
       } else {
         /* Иначе остаётся selectedDialog/assignedDialogId от предыдущего пользователя:
          loadMessagesByUserId уходит в refreshSessionMessages(старый dialogId), запросов по новому userId нет,
@@ -415,7 +412,6 @@ function ChatPanel({
         });
         initialLoadDoneRef.current = false;
         historyLoadAttemptedRef.current = false;
-        refreshAfterReadTriggeredRef.current = false;
       }
     },
     [sessionId, updateSession, clearPendingAttachments, stableSetUnreadCount],
@@ -476,7 +472,6 @@ function ChatPanel({
 
       initialLoadDoneRef.current = false;
       historyLoadAttemptedRef.current = false;
-      refreshAfterReadTriggeredRef.current = false;
     },
     [sessionId, updateSession, session?.usersCache],
   );
@@ -689,24 +684,38 @@ function ChatPanel({
           sendReadStatusForMessageId(sessionId, messageId);
         });
 
-        if (!refreshAfterReadTriggeredRef.current) {
-          refreshAfterReadTriggeredRef.current = true;
-          const idSet = new Set(messageIds);
-          const updatedMessages = (session?.messages || []).map((msg: any) =>
-            idSet.has(String(msg.id)) || idSet.has(String(msg.uuid))
-              ? { ...msg, is_read: true, confirmStatus: 'READ' }
-              : msg,
-          );
+        const liveSession = getSession(sessionId);
+        const idSet = new Set(messageIds);
+        const updatedMessages = (liveSession?.messages || []).map((msg: any) =>
+          idSet.has(String(msg.id)) || idSet.has(String(msg.uuid))
+            ? { ...msg, is_read: true, confirmStatus: 'READ' }
+            : msg,
+        );
+        updateSession(sessionId, { messages: updatedMessages });
 
-          updateSession(sessionId, { messages: updatedMessages });
-
-          setTimeout(() => {
-            refreshAfterReadTriggeredRef.current = false;
-          }, 5000);
+        const activeDialogId =
+          liveSession?.selectedDialog?.id && String(liveSession.selectedDialog.id) !== '0'
+            ? String(liveSession.selectedDialog.id)
+            : liveSession?.assignedDialogId &&
+                String(liveSession.assignedDialogId) !== '' &&
+                String(liveSession.assignedDialogId) !== '0' &&
+                String(liveSession.assignedDialogId) !== 'assigned'
+              ? String(liveSession.assignedDialogId)
+              : null;
+        if (activeDialogId) {
+          const nextUnread = updatedMessages.reduce((acc: number, msg: any) => {
+            if (String(msg.dialogId ?? msg.dialog?.id ?? '') !== activeDialogId) return acc;
+            if (msg.messageStatus !== 'TO_OPERATOR') return acc;
+            if (msg.is_read) return acc;
+            if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
+            return acc + 1;
+          }, 0);
+          stableSetUnreadCount(nextUnread);
+          updateSession(sessionId, { unreadCount: nextUnread });
         }
       }
     },
-    [sessionId, sendReadStatusForMessageId, session?.messages, updateSession],
+    [sessionId, sendReadStatusForMessageId, getSession, updateSession, stableSetUnreadCount],
   );
 
   const activeDialogNumericId = useMemo(() => {

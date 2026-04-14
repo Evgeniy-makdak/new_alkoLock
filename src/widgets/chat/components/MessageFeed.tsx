@@ -8,11 +8,7 @@ import dayjs from 'dayjs';
 import { CircularProgress } from '@mui/material';
 
 import { useChat } from '../contexts/ChatContext';
-import {
-  CHAT_UNREAD_DEBUG_TAG,
-  isOperatorUnreadDebugEnabled,
-  operatorUnreadDebug,
-} from '../lib/operatorUnreadDebugLog';
+import { isOperatorUnreadDebugEnabled, operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './MessageFeed.module.scss';
 
 interface MessageFeedProps {
@@ -117,103 +113,6 @@ function findTopVisibleMessageIdInContainer(container: HTMLElement): string | nu
   return null;
 }
 
-function safeJsonCloneForDebug(v: unknown): unknown {
-  if (v === null || v === undefined) return v;
-  if (typeof v !== 'object') return v;
-  try {
-    return JSON.parse(JSON.stringify(v));
-  } catch {
-    return '[циклическая/несериализуемая ссылка]';
-  }
-}
-
-/** Плоский вид ближе к ответу API `/messages` (без blob и циклов). */
-function buildApiLikeContentFromStoreMessages(messages: any[]): unknown[] {
-  return messages.map((msg) => {
-    const dialogId = msg.dialogId ?? msg.dialog?.id;
-    const dialog =
-      msg.dialog && typeof msg.dialog === 'object' && msg.dialog !== null
-        ? safeJsonCloneForDebug(msg.dialog)
-        : dialogId != null
-          ? {
-              id:
-                typeof dialogId === 'string' && /^\d+$/.test(dialogId)
-                  ? Number(dialogId)
-                  : dialogId,
-            }
-          : null;
-    const attaches = Array.isArray(msg.rawAttaches)
-      ? safeJsonCloneForDebug(msg.rawAttaches)
-      : Array.isArray(msg.attachments)
-        ? msg.attachments.map((a: any) => ({
-            id: a.id,
-            name: a.name,
-            fileName: a.fileName,
-            type: a.type,
-            extension: a.extension,
-            url: typeof a.url === 'string' ? a.url : undefined,
-          }))
-        : [];
-    const idRaw = msg.id;
-    const idOut =
-      typeof idRaw === 'number'
-        ? idRaw
-        : typeof idRaw === 'string' && /^\d+$/.test(idRaw)
-          ? Number(idRaw)
-          : idRaw;
-    return {
-      id: idOut,
-      text: msg.text ?? null,
-      uuid: msg.uuid ?? null,
-      dialog,
-      messageStatus: msg.messageStatus ?? null,
-      confirmStatus: msg.confirmStatus ?? null,
-      isActive: msg.isActive ?? true,
-      createdBy: msg.createdBy ? safeJsonCloneForDebug(msg.createdBy) : null,
-      createdAt: msg.createdAt ?? msg.created_at ?? null,
-      attaches,
-      messageUserRecord: msg.messageUserRecord
-        ? safeJsonCloneForDebug(msg.messageUserRecord)
-        : undefined,
-      formattedCreatedAt: msg.formattedCreatedAt,
-      is_read: msg.is_read,
-    };
-  });
-}
-
-/**
- * Полные объекты ленты + JSON как у API. Без groupCollapsed — строки сразу видны в консоли.
- */
-function logMessageFeedFullMirror(
-  title: string,
-  details: {
-    sessionId: string;
-    feedDialogId: string | null;
-    tape: any[];
-    allMessagesInSessionCount: number;
-  },
-) {
-  if (!isOperatorUnreadDebugEnabled()) return;
-  const { tape, allMessagesInSessionCount, sessionId, feedDialogId } = details;
-  const apiLike = buildApiLikeContentFromStoreMessages(tape);
-  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} | сводка`, {
-    sessionId,
-    feedDialogId,
-    лента: tape.length,
-    всегоВСессии: allMessagesInSessionCount,
-  });
-  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} — объекты ленты (стор):`, tape);
-  console.log(`${CHAT_UNREAD_DEBUG_TAG} ${title} — { content } для JSON:`, { content: apiLike });
-  try {
-    console.log(
-      `${CHAT_UNREAD_DEBUG_TAG} ${title} — копируемый JSON:\n`,
-      JSON.stringify({ content: apiLike }, null, 2),
-    );
-  } catch (e) {
-    console.warn(`${CHAT_UNREAD_DEBUG_TAG} JSON.stringify не удался`, e);
-  }
-}
-
 function resolveFeedDialogIdFromSession(session: any, allMessages: any[]): string | null {
   let id =
     session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
@@ -266,7 +165,7 @@ function MessageFeed({
   const [internalUnreadCount, setInternalUnreadCount] = useState<number>(0);
   const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
   const visibleMessagesIds = useRef<Set<string>>(new Set());
-  const sentReadStatusesRef = useRef<Set<string>>(new Set());
+  const sentReadStatusesRef = useRef<Map<string, number>>(new Map());
 
   const readSentTrackingKeys = useCallback((msg: any): string[] => {
     const keys: string[] = [];
@@ -423,7 +322,12 @@ function MessageFeed({
         : msg.uuid
           ? visibleMessagesIds.current.has(String(msg.uuid))
           : false;
-      const alreadySent = trackKeys.some((k) => sentReadStatusesRef.current.has(k));
+      const now = Date.now();
+      const readSendTtlMs = 3500;
+      const alreadySent = trackKeys.some((k) => {
+        const ts = sentReadStatusesRef.current.get(k);
+        return ts != null && now - ts < readSendTtlMs;
+      });
 
       const cs = String(msg.confirmStatus ?? '')
         .trim()
@@ -433,7 +337,7 @@ function MessageFeed({
 
       if (shouldSend) {
         messagesToMarkAsRead.push(callbackId);
-        trackKeys.forEach((k) => sentReadStatusesRef.current.add(k));
+        trackKeys.forEach((k) => sentReadStatusesRef.current.set(k, now));
       }
     });
 
@@ -466,6 +370,7 @@ function MessageFeed({
       const expandBecameTrue = !prevScrollToBottomOnExpandRef.current;
       const dialogChanged = feedDialogId !== prevFeedDialogIdForScrollRef.current;
       prevScrollToBottomOnExpandRef.current = true;
+      const shouldStartExpandFlow = dialogChanged || expandBecameTrue;
 
       if (dialogChanged) {
         prevFeedDialogIdForScrollRef.current = feedDialogId;
@@ -476,6 +381,9 @@ function MessageFeed({
         scrollAttemptsRef.current = 0;
       }
 
+      if (!shouldStartExpandFlow) {
+        return;
+      }
       expandScrollPendingRef.current = true;
 
       const firstUnread = findFirstUnreadMessage(messagesInActiveDialog);
@@ -498,12 +406,6 @@ function MessageFeed({
           firstUnreadUuid: firstUnread?.msg?.uuid ?? null,
           firstUnreadDomSuffix: firstUnread ? messageRowDomSuffix(firstUnread.msg) : null,
           лентаСообщений: buildMessageTapeScrollDebugRows(messagesInActiveDialog),
-        });
-        logMessageFeedFullMirror('Expand + непрочитанные: полные сообщения', {
-          sessionId,
-          feedDialogId,
-          tape: messagesInActiveDialog,
-          allMessagesInSessionCount: messages.length,
         });
       } else if (messagesInActiveDialog.length > 0) {
         needsScrollToBottomRef.current = true;
@@ -904,13 +806,6 @@ function MessageFeed({
     const tapeRows = buildMessageTapeScrollDebugRows(messagesInActiveDialog);
     const firstUnread = findFirstUnreadMessage(messagesInActiveDialog);
 
-    logMessageFeedFullMirror('First-unread layout: полные сообщения (как в API)', {
-      sessionId,
-      feedDialogId,
-      tape: messagesInActiveDialog,
-      allMessagesInSessionCount: messages.length,
-    });
-
     operatorUnreadDebug('First-unread scroll: старт layout-effect', {
       sessionId,
       feedDialogId,
@@ -931,12 +826,6 @@ function MessageFeed({
           лентаСообщений: tapeRows,
         },
       );
-      logMessageFeedFullMirror('Нет якоря — полные сообщения ленты', {
-        sessionId,
-        feedDialogId,
-        tape: messagesInActiveDialog,
-        allMessagesInSessionCount: messages.length,
-      });
       expandScrollPendingRef.current = false;
       needsScrollToFirstUnreadRef.current = false;
       freezeAutoBottomUntilUserScrollRef.current = false;
@@ -950,12 +839,6 @@ function MessageFeed({
         feedDialogId,
         якорьСообщение: tapeRows[firstUnread.index] ?? null,
         лентаСообщений: tapeRows,
-      });
-      logMessageFeedFullMirror('Якорь без id/uuid — полные сообщения', {
-        sessionId,
-        feedDialogId,
-        tape: messagesInActiveDialog,
-        allMessagesInSessionCount: messages.length,
       });
       expandScrollPendingRef.current = false;
       needsScrollToFirstUnreadRef.current = false;
@@ -994,9 +877,9 @@ function MessageFeed({
         programmaticScrollLockRef.current = true;
         const elementRect = targetElement.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        const offsetTop = 28;
+        const offsetBottom = 20;
         const scrollToPosition =
-          container.scrollTop + (elementRect.top - containerRect.top) - offsetTop;
+          container.scrollTop + (elementRect.bottom - containerRect.bottom) + offsetBottom;
         const appliedTop = Math.max(0, scrollToPosition);
         container.scrollTo({
           top: appliedTop,
@@ -1021,7 +904,7 @@ function MessageFeed({
           scrollTopФакт: container.scrollTop,
           scrollHeight: container.scrollHeight,
           clientHeight: container.clientHeight,
-          цельОтносительноВьюпортаTop: elementRect.top - containerRect.top,
+          цельОтносительноВьюпортаBottom: containerRect.bottom - elementRect.bottom,
         });
 
         window.setTimeout(() => {
@@ -1064,12 +947,6 @@ function MessageFeed({
           attempts: attempt,
           idsВЛенте: collectDomMessageIdsInFeed(scrollRef.current),
           лентаСообщений: tapeRows,
-        });
-        logMessageFeedFullMirror('Scroll FAILED — полные сообщения ленты', {
-          sessionId,
-          feedDialogId,
-          tape: messagesInActiveDialog,
-          allMessagesInSessionCount: messages.length,
         });
         expandScrollPendingRef.current = false;
         needsScrollToFirstUnreadRef.current = false;
@@ -1296,6 +1173,19 @@ function MessageFeed({
       readSentTrackingKeys(msg).forEach((k) => sentReadStatusesRef.current.delete(k));
     });
   }, [messages, readSentTrackingKeys]);
+
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      const readSendTtlMs = 3500;
+      sentReadStatusesRef.current.forEach((ts, key) => {
+        if (now - ts >= readSendTtlMs) {
+          sentReadStatusesRef.current.delete(key);
+        }
+      });
+    }, 2000);
+    return () => clearInterval(cleanupInterval);
+  }, []);
 
   return (
     <>

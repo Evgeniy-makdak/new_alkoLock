@@ -66,6 +66,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const hasDetailedDataRef = useRef<boolean>(false);
   const unreadAggregateRef = useRef<number>(0);
   const incomingChatMessagesQueueRef = useRef<any[]>([]);
+  const lastAbsoluteDialogUpdateAtRef = useRef<Map<number, number>>(new Map());
   /** Предотвращает повторный +1 при двойном вызове handleIncomingMessage на одно сообщение. */
   const incrementDedupeByMessageRef = useRef<Set<string>>(new Set());
 
@@ -119,6 +120,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     useDetailedCountsRef.current = false;
     hasDetailedDataRef.current = false;
     incrementDedupeByMessageRef.current.clear();
+    lastAbsoluteDialogUpdateAtRef.current.clear();
   }, []);
 
   const flushIncomingChatMessages = useCallback((): any[] => {
@@ -168,6 +170,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
         newMap.set(dialogId, count);
+        lastAbsoluteDialogUpdateAtRef.current.set(dialogId, Date.now());
       }
       chatUnreadTrace('socket.setDialogUnread (absolute)', {
         dialogId,
@@ -230,18 +233,36 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         setTimeout(() => incrementDedupeByMessageRef.current.delete(dedupeKey), 120_000);
       }
       // Кадры /queue/unread/{branch} задают абсолют; +1 здесь при том же сообщении даёт «1→2» (OPEN/ACTIVE).
-      if (hasDetailedDataRef.current) {
-        chatUnreadTrace('socket.incrementDialogUnread (skip +1, WS per-dialog authoritative)', {
-          dialogId,
-          dedupeKey,
-        });
-        return;
-      }
+      // Но для CLOSED per-dialog кадр может не прийти, поэтому разрешаем fallback +1.
+      // Защита от double-count: если абсолютный per-dialog кадр по этому dialogId пришёл только что,
+      // считаем его авторитетным и +1 пропускаем.
       useDetailedCountsRef.current = true;
       hasDetailedDataRef.current = true;
       setDialogsUnreadCounts((prev) => {
         const newMap = new Map(prev);
         const current = newMap.get(dialogId) || 0;
+        const lastAbsoluteAt = lastAbsoluteDialogUpdateAtRef.current.get(dialogId) ?? 0;
+        const absoluteIsFresh = Date.now() - lastAbsoluteAt < 2500;
+        if (hasDetailedDataRef.current && absoluteIsFresh) {
+          chatUnreadTrace(
+            'socket.incrementDialogUnread (skip +1, recent absolute per-dialog authoritative)',
+            {
+              dialogId,
+              dedupeKey,
+              current,
+              msSinceAbsolute: Date.now() - lastAbsoluteAt,
+            },
+          );
+          return prev;
+        }
+        if (hasDetailedDataRef.current && current > 0 && !absoluteIsFresh) {
+          chatUnreadTrace('socket.incrementDialogUnread (fallback +1 without fresh absolute)', {
+            dialogId,
+            dedupeKey,
+            current,
+            msSinceAbsolute: Date.now() - lastAbsoluteAt,
+          });
+        }
         const newCount = current + amount;
         newMap.set(dialogId, newCount);
         chatUnreadTrace('socket.incrementDialogUnread', {

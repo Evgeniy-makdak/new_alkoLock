@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
@@ -86,7 +86,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
     setIsDeleting(false);
   };
 
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setIsAdding(true);
     setIsViewing(false);
     setIsEditing(false);
@@ -101,7 +101,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
       templateType: { id: 0, type: '', name: '' },
       lastModifiedAt: '',
     });
-  };
+  }, []);
 
   const handleEditClick = (template: EmailTemplate) => {
     setIsEditing(true);
