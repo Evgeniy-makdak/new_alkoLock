@@ -151,7 +151,7 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
             tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
           }}
         />
-        <TableHeaderEndToolbar />
+        <TableHeaderEndToolbar showThemeToggle={false} />
       </TableHeaderWrapper>
       <Table
         rowCount={tableData.totalCount}

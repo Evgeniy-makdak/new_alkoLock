@@ -351,26 +351,11 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
   };
 
   const handleOpenBirthDateCalendar = () => {
-    if (birthDateNativeRef.current) {
-      const input = birthDateNativeRef.current;
+    const input = birthDateNativeRef.current;
+    if (input) {
       input.value = formatDateForNative(state.state.birthDate);
-      input.style.display = 'block';
-      input.style.position = 'fixed';
-      input.style.top = '50%';
-      input.style.left = '50%';
-      input.style.transform = 'translate(-50%, -50%)';
-      input.style.zIndex = '9999';
-      input.style.opacity = '0.01';
-      input.style.width = '100px';
-      input.style.height = '40px';
-
-      input.focus();
-      input.click();
-
-      setTimeout(() => {
-        input.style.display = 'none';
-      }, 100);
     }
+    openNativeDatePickerFromHiddenInput(input);
   };
 
   const handleClearBirthDate = () => {

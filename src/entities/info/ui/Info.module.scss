@@ -130,10 +130,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-decoration: underline;
-    text-decoration-style: dotted;
-    text-underline-offset: 2px;
   }
+}
+
+.mobileValueText {
+  text-decoration: none;
+}
+
+.mobileValueTextTruncated {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
 }
 
 .mobileValueDialog {
@@ -186,7 +193,7 @@
 }
 
 .mobileValueDialogButtonSecondary {
-  color: #a7a7a7 !important;
+  color: #1f1f1f !important;
 }
 
 .mobileValueDialogButtonPrimary {

@@ -1,10 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { type JSX, type ReactNode, useState } from 'react';
+import { type JSX, type ReactNode, useEffect, useRef, useState } from 'react';
 
 import PropTypes from 'prop-types';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Box, Button, Chip, type ChipOwnProps, Dialog, Tooltip, Typography } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  type ChipOwnProps,
+  Dialog,
+  Snackbar,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
 
@@ -20,19 +30,67 @@ export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
 
 const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: string }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isTruncated, setIsTruncated] = useState(false);
+  const [copiedOpen, setCopiedOpen] = useState(false);
+  const textRef = useRef<HTMLSpanElement | null>(null);
+
+  useEffect(() => {
+    const measureOverflow = () => {
+      const node = textRef.current;
+      if (!node) return;
+      setIsTruncated(node.scrollWidth > node.clientWidth + 1);
+    };
+
+    measureOverflow();
+    window.addEventListener('resize', measureOverflow);
+    return () => window.removeEventListener('resize', measureOverflow);
+  }, [text]);
+
+  const fallbackCopy = (value: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = value;
+    textArea.setAttribute('readonly', '');
+    textArea.style.position = 'fixed';
+    textArea.style.opacity = '0';
+    textArea.style.left = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+  };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(copyValue);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(copyValue);
+        setCopiedOpen(true);
+        return;
+      }
+      fallbackCopy(copyValue);
+      setCopiedOpen(true);
     } catch {
-      // Ignore clipboard errors silently for unsupported environments.
+      try {
+        fallbackCopy(copyValue);
+        setCopiedOpen(true);
+      } catch {
+        // Ignore clipboard errors silently for unsupported environments.
+      }
     }
   };
 
   return (
     <>
-      <button type="button" className={style.mobileValueButton} onClick={() => setIsOpen(true)}>
-        <span className={style.labelText}>{text}</span>
+      <button
+        type="button"
+        className={style.mobileValueButton}
+        onClick={() => {
+          if (isTruncated) setIsOpen(true);
+        }}>
+        <span
+          ref={textRef}
+          className={`${style.labelText} ${style.mobileValueText} ${isTruncated ? style.mobileValueTextTruncated : ''}`}>
+          {text}
+        </span>
       </button>
       <Dialog
         open={isOpen}
@@ -60,6 +118,15 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
           </Box>
         </Box>
       </Dialog>
+      <Snackbar
+        open={copiedOpen}
+        autoHideDuration={1500}
+        onClose={() => setCopiedOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <Alert onClose={() => setCopiedOpen(false)} severity="success" variant="filled">
+          Скопировано
+        </Alert>
+      </Snackbar>
     </>
   );
 };
@@ -92,7 +159,7 @@ export const getTypeOfRowIconValue = ({
       typeof label === 'string' || typeof label === 'number' ? label.toString() : null;
     const copyValue = copyText != null ? String(copyText) : labelAsText || '';
 
-    if (labelAsText && (tooltip || count >= 33)) {
+    if (labelAsText) {
       return (
         <div className={style.wrapperText}>
           <MobileExpandableValue text={labelAsText} copyValue={copyValue} />
