@@ -196,14 +196,14 @@
 .dateFieldContainer {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   width: 100%;
 }
 
 .calendarButton {
   position: absolute;
   right: 8px;
-  top: 50%;
+  top: 20px;
   transform: translateY(-50%);
   background: none;
   border: none;
@@ -230,7 +230,7 @@
 .clearDateButton {
   position: absolute;
   right: 40px;
-  top: 50%;
+  top: 20px;
   transform: translateY(-50%);
   background: none;
   border: none;

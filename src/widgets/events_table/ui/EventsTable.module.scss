@@ -586,12 +586,12 @@
 
 @media (max-width: 480px) {
   .filterModalFooter {
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
 
     .clearButton,
     .applyButton {
-      flex: none;
+      flex: 1;
     }
   }
 }
@@ -629,12 +629,12 @@
   }
 
   .filterModalFooter {
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
 
     .cancelButton,
     .applyButton {
-      flex: none;
+      flex: 1;
     }
   }
 }

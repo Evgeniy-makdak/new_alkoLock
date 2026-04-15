@@ -45,8 +45,23 @@
   flex-wrap: wrap;
   width: 58%;
   min-width: 0;
-  text-align: right;
+  text-align: left;
   overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .label,
+  .value {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .value {
+    align-items: flex-start;
+    justify-content: flex-start;
+    text-align: left;
+    word-break: break-word;
+  }
 }
 
 @media (max-width: 640px) {
@@ -79,16 +94,101 @@
 
   // Адаптивные размеры шрифта
   @media (max-width: 700px) {
-    font-size: 10px;
+    font-size: 17px;
+    line-height: 1.35;
   }
 }
 
 .wrapperText {
   max-width: 285px;
+
+  @media (max-width: 768px) {
+    max-width: 100%;
+    width: 100%;
+  }
 }
 
 .labelWrapper {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.mobileValueButton {
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  cursor: pointer;
+  display: inline-flex;
+  min-width: 0;
+
+  & .labelText {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 2px;
+  }
+}
+
+.mobileValueDialog {
+  :global(.MuiDialog-container) {
+    align-items: flex-end;
+  }
+
+  :global(.MuiDialog-paper) {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
+}
+
+.mobileValueDialogContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobileValueDialogTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mobileValueDialogText {
+  font-size: 16px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.mobileValueDialogActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.mobileValueDialogButton {
+  min-width: 128px;
+  height: 38px;
+  border: 1px solid #8f8f8f !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  color: #2f2f2f !important;
+  text-transform: uppercase !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.mobileValueDialogButtonSecondary {
+  color: #a7a7a7 !important;
+}
+
+.mobileValueDialogButtonPrimary {
+  color: #1f1f1f !important;
 }

@@ -160,20 +160,7 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
 
   const hasAdditionalInfo = additionalFields.length > 0;
 
-  const eventTypeElement = isMobile ? (
-    <span
-      style={{
-        fontSize: '10px',
-        color: '#333',
-        display: 'inline-block',
-        maxWidth: '100%',
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-      }}>
-      {eventType}
-    </span>
-  ) : (
+  const eventTypeElement = (
     <Tooltip title={eventType || ''} arrow>
       <Chip
         label={eventType}
@@ -213,7 +200,14 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
       type: TypeOfRows.STATUS,
       value: {
         copyble: false,
-        element: eventTypeElement,
+        ...(isMobile
+          ? {
+              label: eventType,
+              tooltip: true,
+            }
+          : {
+              element: eventTypeElement,
+            }),
       },
     },
     {

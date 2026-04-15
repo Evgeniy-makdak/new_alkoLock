@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import type { JSX, ReactNode } from 'react';
+import { type JSX, type ReactNode, useState } from 'react';
 
 import PropTypes from 'prop-types';
 
-import { Chip, type ChipOwnProps, Tooltip } from '@mui/material';
+import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import { Box, Button, Chip, type ChipOwnProps, Dialog, Tooltip, Typography } from '@mui/material';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
 
@@ -16,6 +17,52 @@ export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
   copyText?: string | number;
   customStyled?: boolean;
 }
+
+const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: string }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(copyValue);
+    } catch {
+      // Ignore clipboard errors silently for unsupported environments.
+    }
+  };
+
+  return (
+    <>
+      <button type="button" className={style.mobileValueButton} onClick={() => setIsOpen(true)}>
+        <span className={style.labelText}>{text}</span>
+      </button>
+      <Dialog
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        className={style.mobileValueDialog}>
+        <Box className={style.mobileValueDialogContent}>
+          <Typography className={style.mobileValueDialogTitle}>Полное значение</Typography>
+          <Typography className={style.mobileValueDialogText}>{text}</Typography>
+          <Box className={style.mobileValueDialogActions}>
+            <Button
+              variant="outlined"
+              startIcon={<ContentCopyOutlinedIcon />}
+              onClick={handleCopy}
+              className={`${style.mobileValueDialogButton} ${style.mobileValueDialogButtonSecondary}`}>
+              Копировать
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setIsOpen(false)}
+              className={`${style.mobileValueDialogButton} ${style.mobileValueDialogButtonPrimary}`}>
+              Закрыть
+            </Button>
+          </Box>
+        </Box>
+      </Dialog>
+    </>
+  );
+};
 
 export const getTypeOfRowIconValue = ({
   copyble = false,
@@ -41,19 +88,25 @@ export const getTypeOfRowIconValue = ({
 
   // На мобильных устройствах показываем просто текст
   if (isMobile) {
+    const labelAsText =
+      typeof label === 'string' || typeof label === 'number' ? label.toString() : null;
+    const copyValue = copyText != null ? String(copyText) : labelAsText || '';
+
+    if (labelAsText && (tooltip || count >= 33)) {
+      return (
+        <div className={style.wrapperText}>
+          <MobileExpandableValue text={labelAsText} copyValue={copyValue} />
+        </div>
+      );
+    }
+
     const textElement = (
       <span className={style.labelText} style={{ display: 'inline-block' }}>
         {label}
       </span>
     );
 
-    return tooltip || count >= 33 ? (
-      <Tooltip title={tooltipTitle}>
-        <div className={style.wrapperText}>{textElement}</div>
-      </Tooltip>
-    ) : (
-      <div className={style.wrapperText}>{textElement}</div>
-    );
+    return <div className={style.wrapperText}>{textElement}</div>;
   }
 
   // На десктопе показываем чипы

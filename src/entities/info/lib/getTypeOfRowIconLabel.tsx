@@ -96,7 +96,8 @@ const MobileText = ({ label, color }: { label: ReactNode; color?: string }) => {
     display: 'inline-block',
     padding: '2px 6px',
     borderRadius: '4px',
-    fontSize: '14px',
+    fontSize: '17px',
+    lineHeight: 1.35,
     fontWeight: 500,
   };
 
