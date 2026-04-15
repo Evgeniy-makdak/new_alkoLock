@@ -4,25 +4,21 @@ import { useTranslation } from 'react-i18next';
 
 import {
   Add,
-  CalendarToday,
   CheckCircleOutlineRounded,
   DeleteForever,
   Edit,
   HighlightOff,
-  KeyboardArrowDown,
-  KeyboardArrowUp,
   Lock,
   LockOpen,
 } from '@mui/icons-material';
-import { IconButton, TextField, Tooltip } from '@mui/material';
+import { IconButton, Tooltip } from '@mui/material';
 
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
-import { NativeDateHiddenInput } from '@shared/ui/native_date_hidden_input/NativeDateHiddenInput';
+import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
 import { MobileModals } from '@shared/ui/popup/MobileModals';
-import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
@@ -604,123 +600,33 @@ export const UsersMobileTable = ({
           showStatusFilter={true}
         />
 
-        <div className={styles.dateFiltersRow}>
-          <div className={styles.dateFiltersToggle}>
-            <button
-              type="button"
-              className={styles.toggleButton}
-              onClick={() => setShowDateFilters(!showDateFilters)}>
-              <span>{t('filtersByDate')}</span>
-              {showDateFilters ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </button>
-          </div>
-
-          <div className={styles.resetFiltersContainer}>
-            <ResetFilters reset={handleResetAllFilters} />
-          </div>
-        </div>
-
-        {showDateFilters && (
-          <div className={styles.customDateInputs}>
-            <div className={styles.dateFieldsContainer}>
-              <div className={styles.dateFieldContainer}>
-                <TextField
-                  label="Начальная дата"
-                  type="text"
-                  placeholder={t('datePlaceholder')}
-                  value={startDateInput}
-                  onChange={handleStartDateChange}
-                  onBlur={handleStartDateBlur}
-                  size="small"
-                  className={styles.narrowDateField}
-                  error={!!startDateError}
-                  helperText={startDateError}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  inputProps={{
-                    'data-testid':
-                      testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE,
-                    inputMode: 'numeric',
-                    pattern: '[0-9.]*',
-                    maxLength: 10,
-                  }}
-                />
-                <button
-                  type="button"
-                  className={styles.calendarButton}
-                  onClick={() => handleOpenCalendar('start')}
-                  aria-label="Открыть календарь для выбора начальной даты">
-                  <CalendarToday fontSize="small" />
-                </button>
-                {startDateInput && (
-                  <button
-                    type="button"
-                    className={styles.clearDateButton}
-                    onClick={handleClearStartDate}
-                    aria-label="Очистить начальную дату">
-                    ×
-                  </button>
-                )}
-                <NativeDateHiddenInput
-                  inputRef={startDateNativeRef}
-                  syncedIso={formatDateForNative(filtersData.startDate)}
-                  onCommit={(v) => handleNativeDateChange('start', v)}
-                  className={styles.hiddenDateInput}
-                  style={{ display: 'none' }}
-                />
-              </div>
-
-              <div className={styles.dateFieldContainer}>
-                <TextField
-                  label="Конечная дата"
-                  type="text"
-                  placeholder={t('datePlaceholder')}
-                  value={endDateInput}
-                  onChange={handleEndDateChange}
-                  onBlur={handleEndDateBlur}
-                  size="small"
-                  className={styles.narrowDateField}
-                  error={!!endDateError}
-                  helperText={endDateError}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  inputProps={{
-                    'data-testid':
-                      testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE,
-                    inputMode: 'numeric',
-                    pattern: '[0-9.]*',
-                    maxLength: 10,
-                  }}
-                />
-                <button
-                  type="button"
-                  className={styles.calendarButton}
-                  onClick={() => handleOpenCalendar('end')}
-                  aria-label="Открыть календарь для выбора конечной даты">
-                  <CalendarToday fontSize="small" />
-                </button>
-                {endDateInput && (
-                  <button
-                    type="button"
-                    className={styles.clearDateButton}
-                    onClick={handleClearEndDate}
-                    aria-label="Очистить конечную дату">
-                    ×
-                  </button>
-                )}
-                <NativeDateHiddenInput
-                  inputRef={endDateNativeRef}
-                  syncedIso={formatDateForNative(filtersData.endDate)}
-                  onCommit={(v) => handleNativeDateChange('end', v)}
-                  className={styles.hiddenDateInput}
-                  style={{ display: 'none' }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        <HiddenFiltersOfDates
+          isOpen={showDateFilters}
+          onToggle={() => setShowDateFilters(!showDateFilters)}
+          onReset={handleResetAllFilters}
+          startPlaceholder={t('datePlaceholder')}
+          endPlaceholder={t('datePlaceholder')}
+          startValue={startDateInput}
+          endValue={endDateInput}
+          startError={startDateError}
+          endError={endDateError}
+          onStartChange={handleStartDateChange}
+          onEndChange={handleEndDateChange}
+          onStartBlur={handleStartDateBlur}
+          onEndBlur={handleEndDateBlur}
+          onOpenStartCalendar={() => handleOpenCalendar('start')}
+          onOpenEndCalendar={() => handleOpenCalendar('end')}
+          onClearStart={handleClearStartDate}
+          onClearEnd={handleClearEndDate}
+          startDateTestId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE}
+          endDateTestId={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE}
+          startDateInputRef={startDateNativeRef}
+          endDateInputRef={endDateNativeRef}
+          startDateIso={formatDateForNative(filtersData.startDate)}
+          endDateIso={formatDateForNative(filtersData.endDate)}
+          onStartNativeCommit={(v) => handleNativeDateChange('start', v)}
+          onEndNativeCommit={(v) => handleNativeDateChange('end', v)}
+        />
       </div>
 
       <div className={styles.mobileList}>

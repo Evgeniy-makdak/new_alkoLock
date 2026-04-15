@@ -340,4 +340,65 @@
   }
 }
 
+@media (max-width: 768px) {
+  .dateFiltersRow {
+    justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .dateFiltersToggle {
+    flex: 0 1 240px;
+    max-width: 240px;
+    min-width: 0;
+  }
+
+  .toggleButton {
+    height: 34px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  .customDateInputs {
+    max-width: 240px;
+    width: 100%;
+    margin-top: 6px;
+  }
+
+  .dateFieldsContainer {
+    gap: 8px;
+  }
+
+  .narrowDateField {
+    width: 100%;
+
+    :global(.MuiInputBase-root) {
+      height: 42px;
+      width: 100%;
+    }
+
+    :global(input) {
+      padding: 10px 12px;
+    }
+  }
+
+  .customDateInputs .dateFieldContainer .narrowDateField :global(.MuiInputBase-root) {
+    height: 42px;
+    width: 100%;
+  }
+
+  .calendarButton {
+    right: 34px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .clearDateButton {
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
 @include mobile-table-dark;
