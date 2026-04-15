@@ -58,7 +58,7 @@ export const StatusFilter: React.FC<StatusFilterProps> = () => {
         open={isMenuOpen}
         onClose={handleMenuClose}
         PaperProps={{
-          style: { maxHeight: 150, width: '200px' },
+          style: { width: '200px' },
         }}>
         {STATUS_OPTIONS.map((option) => (
           <MenuItem

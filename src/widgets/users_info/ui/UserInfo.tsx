@@ -30,36 +30,41 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
         <Info
           fields={fields}
           headerCard={
-            <Stack marginBottom={2} alignItems={'center'} justifyContent={'center'}>
-              {src ? (
-                <Tooltip
-                  title={t('tooltips.viewPhoto')}
-                  PopperProps={{
-                    modifiers: [
-                      {
-                        name: 'preventOverflow',
-                        options: {
-                          boundary: 'window',
+            <Stack
+              marginBottom={2}
+              className={style.avatarRow}
+              sx={{ alignItems: 'center', justifyContent: 'center' }}>
+              <div className={style.avatarCenter}>
+                {src ? (
+                  <Tooltip
+                    title={t('tooltips.viewPhoto')}
+                    PopperProps={{
+                      modifiers: [
+                        {
+                          name: 'preventOverflow',
+                          options: {
+                            boundary: 'window',
+                          },
                         },
-                      },
-                      {
-                        name: 'offset',
-                        options: {
-                          offset: [0, -40],
+                        {
+                          name: 'offset',
+                          options: {
+                            offset: [0, -40],
+                          },
                         },
-                      },
-                    ],
-                  }}>
-                  <Avatar
-                    onClick={toggle}
-                    className={`${style.avatar} ${style.paper} ${IMAGE_PREVIEW_WRAPPER_STYLE}`}>
-                    <img src={src} />
-                    <ImagePreview src={src} open={open} close={toggle} />
-                  </Avatar>
-                </Tooltip>
-              ) : (
-                <Avatar className={style.avatar}>{firstLetter}</Avatar>
-              )}
+                      ],
+                    }}>
+                    <Avatar
+                      onClick={toggle}
+                      className={`${style.avatar} ${style.paper} ${IMAGE_PREVIEW_WRAPPER_STYLE}`}>
+                      <img src={src} />
+                      <ImagePreview src={src} open={open} close={toggle} />
+                    </Avatar>
+                  </Tooltip>
+                ) : (
+                  <Avatar className={style.avatar}>{firstLetter}</Avatar>
+                )}
+              </div>
             </Stack>
           }
         />
