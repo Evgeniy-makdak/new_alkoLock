@@ -22,7 +22,7 @@ export const AlkolocksTable = ({
   prevBranch,
 }: AlkolocksTableProps) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
 
   if (isMobile) {
     return (

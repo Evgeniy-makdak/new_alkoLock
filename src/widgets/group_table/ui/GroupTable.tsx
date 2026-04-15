@@ -23,7 +23,7 @@ export const GroupTable = ({
   setState,
 }: GroupTableProps) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'), { noSsr: true });
 
   if (isMobile) {
     return (

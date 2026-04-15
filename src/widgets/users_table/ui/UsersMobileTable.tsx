@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -41,6 +41,24 @@ interface UsersMobileTableProps {
   onDeleteUser: (id: ID, isActive: boolean) => void;
 }
 
+const UsersMobileHeader = memo(
+  ({ title, onAdd, addAriaLabel }: { title: string; onAdd: () => void; addAriaLabel: string }) => {
+    return (
+      <div className={styles.mobileHeader}>
+        <h2 className={styles.mobileTitle}>{title}</h2>
+        <IconButton
+          className={styles.addButton}
+          onClick={onAdd}
+          color="default"
+          aria-label={addAriaLabel}>
+          <Add />
+        </IconButton>
+      </div>
+    );
+  },
+);
+UsersMobileHeader.displayName = 'UsersMobileHeader';
+
 export const UsersMobileTable = ({
   onRowClick,
   handleCloseAside,
@@ -70,6 +88,14 @@ export const UsersMobileTable = ({
 
   const startDateNativeRef = useRef<HTMLInputElement>(null);
   const endDateNativeRef = useRef<HTMLInputElement>(null);
+  const addUserActionRef = useRef<() => void>(() => undefined);
+  addUserActionRef.current = () => {
+    if (addModalData?.handleClickAddUser) {
+      addModalData.handleClickAddUser(null);
+    } else {
+      console.error('handleClickAddUser is not available');
+    }
+  };
 
   useEffect(() => {
     if (filtersData.startDate) {
@@ -402,13 +428,9 @@ export const UsersMobileTable = ({
     return fullName || row.username || row.email || 'Не указан';
   };
 
-  const handleAddUserClick = () => {
-    if (addModalData?.handleClickAddUser) {
-      addModalData.handleClickAddUser(null);
-    } else {
-      console.error('handleClickAddUser is not available');
-    }
-  };
+  const handleAddUserClick = useCallback(() => {
+    addUserActionRef.current();
+  }, []);
 
   const handleEditUserClick = (id: ID) => {
     if (addModalData?.handleClickAddUser) {
@@ -561,16 +583,11 @@ export const UsersMobileTable = ({
 
   return (
     <div className={styles.tableWrapper}>
-      <div className={styles.mobileHeader}>
-        <h2 className={styles.mobileTitle}>{t('nav.users')}</h2>
-        <IconButton
-          className={styles.addButton}
-          onClick={handleAddUserClick}
-          color="default"
-          aria-label="Добавить пользователя">
-          <Add />
-        </IconButton>
-      </div>
+      <UsersMobileHeader
+        title={t('nav.users')}
+        onAdd={handleAddUserClick}
+        addAriaLabel="Добавить пользователя"
+      />
 
       <div className={styles.mobileFilters}>
         <SearchInput

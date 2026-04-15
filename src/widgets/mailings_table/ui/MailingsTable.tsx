@@ -11,7 +11,7 @@ type MailingsTableProps = {
 };
 
 export const MailingsTable: FC<MailingsTableProps> = ({ onBranchChange }) => {
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   if (isMobile) {
     return <MailingsMobileTable onBranchChange={onBranchChange} />;

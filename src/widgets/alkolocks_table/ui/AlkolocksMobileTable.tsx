@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -35,6 +35,24 @@ interface AlkolocksMobileTableProps {
   prevBranch?: ID;
 }
 
+const AlkolocksMobileHeader = memo(
+  ({ title, onAdd, addAriaLabel }: { title: string; onAdd: () => void; addAriaLabel: string }) => {
+    return (
+      <div className={styles.mobileHeader}>
+        <h2 className={styles.mobileTitle}>{title}</h2>
+        <IconButton
+          className={styles.addButton}
+          onClick={onAdd}
+          color="default"
+          aria-label={addAriaLabel}>
+          <Add />
+        </IconButton>
+      </div>
+    );
+  },
+);
+AlkolocksMobileHeader.displayName = 'AlkolocksMobileHeader';
+
 export const AlkolocksMobileTable = ({
   onClickRow,
   handleCloseAside,
@@ -64,6 +82,10 @@ export const AlkolocksMobileTable = ({
 
   const startDateNativeRef = useRef<HTMLInputElement>(null);
   const endDateNativeRef = useRef<HTMLInputElement>(null);
+  const addAlcolockActionRef = useRef<() => void>(() => undefined);
+  addAlcolockActionRef.current = () => {
+    addModalData.toggleAddAlcolockModal();
+  };
 
   useEffect(() => {
     if (filtersData.startDate) {
@@ -383,9 +405,9 @@ export const AlkolocksMobileTable = ({
     handleFilterChange();
   };
 
-  const handleAddAlcolockClick = () => {
-    addModalData.toggleAddAlcolockModal();
-  };
+  const handleAddAlcolockClick = useCallback(() => {
+    addAlcolockActionRef.current();
+  }, []);
 
   const handleEditAlcolockClick = (id: ID) => {
     if (addModalData.handleClickAddAlkolock) {
@@ -502,16 +524,11 @@ export const AlkolocksMobileTable = ({
 
   return (
     <div className={styles.tableWrapper}>
-      <div className={styles.mobileHeader}>
-        <h2 className={styles.mobileTitle}>{t('nav.alcolocks')}</h2>
-        <IconButton
-          className={styles.addButton}
-          onClick={handleAddAlcolockClick}
-          color="default"
-          aria-label="Добавить алкозамок">
-          <Add />
-        </IconButton>
-      </div>
+      <AlkolocksMobileHeader
+        title={t('nav.alcolocks')}
+        onAdd={handleAddAlcolockClick}
+        addAriaLabel="Добавить алкозамок"
+      />
 
       <div className={styles.mobileFilters}>
         <SearchInput

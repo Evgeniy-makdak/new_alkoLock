@@ -12,7 +12,7 @@ interface RolesTableProps {
 }
 
 export const RolesTable_new = ({ prevBranch, onRoleClick, selectedRoleId }: RolesTableProps) => {
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   if (isMobile) {
     return <RoleMobileTable onRoleClick={onRoleClick} selectedRoleId={selectedRoleId} />;

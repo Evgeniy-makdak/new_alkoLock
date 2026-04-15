@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Box, Snackbar } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
 
+import { PageWrapper } from '@layout/page_wrapper';
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
 import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
@@ -51,7 +52,7 @@ const getUnitForm = (count: number) => {
   return 'many';
 };
 
-export const SettingsPage = () => {
+export const SettingsTableWidget = () => {
   const { t } = useTranslation();
   const [notification, setNotification] = useState<{
     open: boolean;
@@ -73,6 +74,7 @@ export const SettingsPage = () => {
     maxValue: number;
   } | null>(null);
   const [editValue, setEditValue] = useState(0);
+  const [initialEditValue, setInitialEditValue] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -137,6 +139,7 @@ export const SettingsPage = () => {
       maxValue: row.maxValue,
     });
     setEditValue(row.value);
+    setInitialEditValue(row.value);
     setErrors({});
   };
 
@@ -148,6 +151,7 @@ export const SettingsPage = () => {
       return;
     }
     setEditingField(null);
+    setInitialEditValue(null);
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
@@ -310,6 +314,10 @@ export const SettingsPage = () => {
   const filteredSettingsRows = settingsRows.filter((row) =>
     row.label.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+  const isSaveEnabled =
+    initialEditValue !== null &&
+    editValue !== initialEditValue &&
+    (!editingField || errors[editingField.name]?.length === 0);
 
   return (
     <Box
@@ -422,6 +430,7 @@ export const SettingsPage = () => {
         handleEditValueChange={handleEditValueChange}
         handlePaste={handlePaste}
         handleSave={handleSave}
+        isSaveEnabled={isSaveEnabled}
         getDayWord={getDayWord}
         getAttemptWord={getAttemptWord}
         getSecondWord={getSecondWord}
@@ -448,5 +457,13 @@ export const SettingsPage = () => {
         </Alert>
       </Snackbar>
     </Box>
+  );
+};
+
+export const SettingsPage = () => {
+  return (
+    <PageWrapper>
+      <SettingsTableWidget />
+    </PageWrapper>
   );
 };

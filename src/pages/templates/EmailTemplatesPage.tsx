@@ -9,6 +9,7 @@ import { enqueueSnackbar } from 'notistack';
 import { Box } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
 
+import { PageWrapper } from '@layout/page_wrapper';
 import { TemplatesApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 
@@ -40,7 +41,7 @@ interface EmailTemplatesResponse {
   totalElements: number;
 }
 
-const EmailTemplatesPage: React.FC = () => {
+export const EmailTemplatesTableWidget: React.FC = () => {
   const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [totalCount, setTotalCount] = useState<number>();
@@ -237,6 +238,14 @@ const EmailTemplatesPage: React.FC = () => {
         onSearchChange={handleSearchChange}
       />
     </Box>
+  );
+};
+
+const EmailTemplatesPage: React.FC = () => {
+  return (
+    <PageWrapper>
+      <EmailTemplatesTableWidget />
+    </PageWrapper>
   );
 };
 

@@ -5,12 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import {
   Backdrop,
   Box,
-  Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   IconButton,
   Stack,
   TextField,
@@ -18,9 +13,13 @@ import {
   Typography,
 } from '@mui/material';
 
+import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
+import { Button } from '@shared/ui/button';
+
 interface EditSettingDialogProps {
   open: boolean;
   isSaving: boolean;
+  isSaveEnabled: boolean;
   editingField: {
     name: string;
     label: string;
@@ -46,6 +45,7 @@ interface EditSettingDialogProps {
 export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
   open,
   isSaving,
+  isSaveEnabled,
   editingField,
   editValue,
   errors,
@@ -59,66 +59,75 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
   getMinuteWord,
 }) => {
   const { t } = useTranslation();
+  if (!open || !editingField) return null;
+
+  const unitLabel =
+    editingField.unit === 'DAYS'
+      ? getDayWord(editValue)
+      : editingField.unit === 'MINUTES'
+        ? getMinuteWord(editValue)
+        : editingField.unit === 'SECONDS'
+          ? getSecondWord(editValue)
+          : getAttemptWord(editValue);
+
   return (
-    <Dialog
+    <Backdrop
       open={open}
-      onClose={handleCloseModal}
-      PaperProps={{
-        sx: {
-          padding: '20px',
-          borderRadius: '8px',
-          minWidth: '400px',
-          maxWidth: 'calc(100vw - 32px)',
-          margin: '16px',
-          overflowX: 'hidden',
-          boxShadow: '0px 4px 20px rgba(0, 0, 0, 0.1)',
-        },
-      }}>
-      <Backdrop
+      sx={{
+        zIndex: 1300,
+        backgroundColor: (theme) =>
+          theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.72)' : 'rgba(0, 0, 0, 0.5)',
+      }}
+      onClick={() => handleCloseModal({}, 'buttonClick')}>
+      <Box
+        onClick={(e) => e.stopPropagation()}
         sx={{
-          color: '#fff',
-          zIndex: (theme) => theme.zIndex.modal + 1,
-        }}
-        open={isSaving}>
-        <CircularProgress color="inherit" />
-      </Backdrop>
-
-      <DialogTitle
-        sx={{
+          p: 3.5,
+          width: '100%',
+          maxWidth: 720,
+          minWidth: { xs: 280, sm: 550 },
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '0 0 16px 0',
-          position: 'relative',
-          marginBottom: '16px',
+          flexDirection: 'column',
+          bgcolor: 'background.paper',
+          color: 'text.primary',
+          borderRadius: '16px',
+          boxShadow: 3,
+          maxHeight: '99vh',
+          overflow: 'auto',
         }}>
-        <Typography component="span" fontWeight={600} variant="h6">
-          {t('modals.editParameter')}
-        </Typography>
-        <Tooltip title={t('common.closeWindow')}>
-          <IconButton
-            edge="end"
-            onClick={() => handleCloseModal({}, 'buttonClick')}
-            aria-label="close"
-            sx={{
-              color: 'text.secondary',
-              '&:hover': {
-                backgroundColor: 'action.hover',
-                color: 'text.primary',
-              },
-            }}>
-            <CloseIcon />
-          </IconButton>
-        </Tooltip>
-      </DialogTitle>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: 1,
+            mb: 2,
+          }}>
+          <Typography fontWeight={600} variant="h6" color="text.primary" sx={{ flex: 1, pr: 1 }}>
+            {t('modals.editParameter')}
+          </Typography>
+          <Tooltip title={t('common.closeWindow')}>
+            <IconButton
+              edge="end"
+              onClick={() => handleCloseModal({}, 'buttonClick')}
+              aria-label="close"
+              sx={{
+                mt: -0.5,
+                color: 'text.secondary',
+                '&:hover': {
+                  backgroundColor: 'action.hover',
+                  color: 'text.primary',
+                },
+              }}>
+              <CloseIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
 
-      <DialogContent
-        sx={{
-          padding: '16px 0 !important',
-          overflowX: 'hidden',
-        }}>
         <Stack gap={3}>
-          <Typography gutterBottom>{editingField?.label}</Typography>
+          <Typography gutterBottom sx={{ mb: 0 }}>
+            {editingField.label}
+          </Typography>
           <TextField
             autoFocus
             margin="dense"
@@ -128,71 +137,42 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             value={editValue === 0 ? '' : editValue}
             onChange={handleEditValueChange}
             onPaste={handlePaste}
-            error={errors[editingField?.name]?.length > 0}
-            helperText={errors[editingField?.name]?.[0] || ''}
+            error={errors[editingField.name]?.length > 0}
+            helperText={errors[editingField.name]?.[0] || ''}
             InputProps={{
               endAdornment: (
                 <Typography variant="body2" color="textSecondary">
-                  {editingField?.unit === 'DAYS'
-                    ? getDayWord(editValue)
-                    : editingField?.unit === 'MINUTES'
-                      ? getMinuteWord(editValue)
-                      : editingField?.unit === 'SECONDS'
-                        ? getSecondWord(editValue)
-                        : getAttemptWord(editValue)}
+                  {unitLabel}
                 </Typography>
               ),
               inputProps: {
-                min: editingField?.minValue,
-                max: editingField?.maxValue,
+                min: editingField.minValue,
+                max: editingField.maxValue,
               },
             }}
           />
-        </Stack>
-      </DialogContent>
-
-      <DialogActions
-        sx={{
-          padding: '16px 0 0 0',
-          marginTop: '16px',
-        }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Tooltip title={t('form.saveChanges')}>
-            <Button
-              variant="outlined"
-              onClick={handleSave}
-              disabled={isSaving || errors[editingField?.name]?.length > 0}
-              sx={{
-                minWidth: 100,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  borderColor: 'text.secondary',
-                  backgroundColor: 'action.hover',
-                },
-              }}>
+          <ButtonFormWrapper>
+            <Button type="button" disabled={!isSaveEnabled || isSaving} onClick={handleSave}>
               {t('common.save')}
             </Button>
-          </Tooltip>
-          <Tooltip title={t('common.cancel')}>
             <Button
-              variant="outlined"
-              onClick={() => handleCloseModal({}, 'buttonClick')}
+              type="button"
               disabled={isSaving}
-              sx={{
-                minWidth: 100,
-                borderColor: 'divider',
-                color: 'text.primary',
-                '&:hover': {
-                  borderColor: 'text.secondary',
-                  backgroundColor: 'action.hover',
-                },
-              }}>
+              onClick={() => handleCloseModal({}, 'buttonClick')}>
               {t('common.cancel')}
             </Button>
-          </Tooltip>
-        </Box>
-      </DialogActions>
-    </Dialog>
+          </ButtonFormWrapper>
+        </Stack>
+      </Box>
+
+      <Backdrop
+        sx={{
+          color: '#fff',
+          zIndex: (theme) => theme.zIndex.modal + 1,
+        }}
+        open={isSaving}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
+    </Backdrop>
   );
 };
