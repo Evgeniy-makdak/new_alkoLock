@@ -20,7 +20,9 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { beBY, enUS, kzKZ, ruRU } from '@mui/x-date-pickers/locales';
 
 import { TypeEventSelect } from '@entities/type_event_select';
+import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { StyledTable } from '@shared/styled_components/styledTable';
+import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { Values } from '@shared/ui/search_multiple_select';
@@ -108,6 +110,12 @@ export const TableHeader = ({
   const [typeEventFilters, setTypeEventFilters] = React.useState<Values>(initialTypeEventFilters);
   const [showFilters, setShowFilters] = React.useState(false);
   const [hoveredColumn, setHoveredColumn] = React.useState<'id' | 'timestamp' | null>(null);
+  const [startDateInput, setStartDateInput] = React.useState('');
+  const [endDateInput, setEndDateInput] = React.useState('');
+  const [startDateError, setStartDateError] = React.useState('');
+  const [endDateError, setEndDateError] = React.useState('');
+  const startDateNativeRef = React.useRef<HTMLInputElement>(null);
+  const endDateNativeRef = React.useRef<HTMLInputElement>(null);
   // Добавляем ключ для принудительного сброса TypeEventSelect
   const [typeEventSelectKey, setTypeEventSelectKey] = React.useState(0);
 
@@ -125,6 +133,134 @@ export const TableHeader = ({
     setLocalStartDate(startDate);
     setLocalEndDate(endDate);
   }, [startDate, endDate]);
+
+  React.useEffect(() => {
+    setStartDateInput(localStartDate ? localStartDate.format('DD.MM.YYYY') : '');
+    setStartDateError('');
+  }, [localStartDate]);
+
+  React.useEffect(() => {
+    setEndDateInput(localEndDate ? localEndDate.format('DD.MM.YYYY') : '');
+    setEndDateError('');
+  }, [localEndDate]);
+
+  const applyDateMask = (value: string): string => {
+    const numbers = value.replace(/\D/g, '');
+    let result = '';
+    for (let i = 0; i < numbers.length; i++) {
+      if (i === 2 || i === 4) result += '.';
+      if (i >= 8) break;
+      result += numbers[i];
+    }
+    return result;
+  };
+
+  const parseDateFromInput = (inputValue: string): Dayjs | null => {
+    if (!/^\d{2}\.\d{2}\.\d{4}$/.test(inputValue)) return null;
+    const [dayStr, monthStr, yearStr] = inputValue.split('.');
+    const day = Number(dayStr);
+    const month = Number(monthStr);
+    const year = Number(yearStr);
+    if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) return null;
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day > daysInMonth) return null;
+    const d = dayjs(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
+    return d.isValid() ? d : null;
+  };
+
+  const handleStartDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = applyDateMask(e.target.value);
+    setStartDateInput(masked);
+    if (masked.length === 10) {
+      const parsed = parseDateFromInput(masked);
+      if (parsed) {
+        setStartDateError('');
+        handleStartDateChange(parsed);
+      } else {
+        setStartDateError(t('validation.invalidDate'));
+      }
+    } else if (masked.length === 0) {
+      setStartDateError('');
+      handleStartDateChange(null);
+    } else {
+      setStartDateError('');
+    }
+  };
+
+  const handleEndDateInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const masked = applyDateMask(e.target.value);
+    setEndDateInput(masked);
+    if (masked.length === 10) {
+      const parsed = parseDateFromInput(masked);
+      if (parsed) {
+        setEndDateError('');
+        handleEndDateChange(parsed);
+      } else {
+        setEndDateError(t('validation.invalidDate'));
+      }
+    } else if (masked.length === 0) {
+      setEndDateError('');
+      handleEndDateChange(null);
+    } else {
+      setEndDateError('');
+    }
+  };
+
+  const handleStartDateInputBlur = () => {
+    if (startDateInput && startDateInput.length < 10) {
+      setStartDateInput(localStartDate ? localStartDate.format('DD.MM.YYYY') : '');
+      setStartDateError('');
+    }
+  };
+
+  const handleEndDateInputBlur = () => {
+    if (endDateInput && endDateInput.length < 10) {
+      setEndDateInput(localEndDate ? localEndDate.format('DD.MM.YYYY') : '');
+      setEndDateError('');
+    }
+  };
+
+  const handleOpenStartCalendar = () => {
+    const input = startDateNativeRef.current;
+    if (input) input.value = localStartDate ? localStartDate.format('YYYY-MM-DD') : '';
+    openNativeDatePickerFromHiddenInput(input);
+  };
+
+  const handleOpenEndCalendar = () => {
+    const input = endDateNativeRef.current;
+    if (input) input.value = localEndDate ? localEndDate.format('YYYY-MM-DD') : '';
+    openNativeDatePickerFromHiddenInput(input);
+  };
+
+  const handleStartNativeCommit = (value: string) => {
+    if (!value) {
+      handleStartDateChange(null);
+      setStartDateInput('');
+      setStartDateError('');
+      return;
+    }
+    const parsed = dayjs(value);
+    if (parsed.isValid()) {
+      handleStartDateChange(parsed);
+      setStartDateInput(parsed.format('DD.MM.YYYY'));
+      setStartDateError('');
+    }
+  };
+
+  const handleEndNativeCommit = (value: string) => {
+    if (!value) {
+      handleEndDateChange(null);
+      setEndDateInput('');
+      setEndDateError('');
+      return;
+    }
+    const parsed = dayjs(value);
+    if (parsed.isValid()) {
+      handleEndDateChange(parsed);
+      setEndDateInput(parsed.format('DD.MM.YYYY'));
+      setEndDateError('');
+    }
+  };
 
   const handleStartDateChange = (newValue: Dayjs | null) => {
     setLocalStartDate(newValue);
@@ -378,35 +514,42 @@ export const TableHeader = ({
               <StyledTable.HeaderCell
                 className={style.headerCellDate}
                 style={{ paddingLeft: '5px', position: 'relative', width: '100%' }}>
-                <div
-                  style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '12px' }}>
-                  <div
-                    className={style.datePickerContainer}
-                    style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <InputDate
-                      value={localStartDate}
-                      onChange={handleStartDateChange}
-                      tooltipTitle={t('history.startDate')}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '40px',
-                          width: '180px',
-                        },
-                      }}
-                    />
-                    <InputDate
-                      value={localEndDate}
-                      onChange={handleEndDateChange}
-                      tooltipTitle={t('history.endDate')}
-                      sx={{
-                        '& .MuiInputBase-root': {
-                          height: '40px',
-                          width: '180px',
-                        },
-                      }}
-                    />
-                  </div>
-                </div>
+                <HiddenFiltersOfDates
+                  isOpen={true}
+                  forceExpanded={true}
+                  hideToggleRow={true}
+                  hideResetButton={true}
+                  onToggle={() => undefined}
+                  onReset={resetAllFilters}
+                  startPlaceholder={t('datePlaceholder')}
+                  endPlaceholder={t('datePlaceholder')}
+                  startValue={startDateInput}
+                  endValue={endDateInput}
+                  startError={startDateError}
+                  endError={endDateError}
+                  onStartChange={handleStartDateInputChange}
+                  onEndChange={handleEndDateInputChange}
+                  onStartBlur={handleStartDateInputBlur}
+                  onEndBlur={handleEndDateInputBlur}
+                  onOpenStartCalendar={handleOpenStartCalendar}
+                  onOpenEndCalendar={handleOpenEndCalendar}
+                  onClearStart={() => {
+                    setStartDateInput('');
+                    setStartDateError('');
+                    handleStartDateChange(null);
+                  }}
+                  onClearEnd={() => {
+                    setEndDateInput('');
+                    setEndDateError('');
+                    handleEndDateChange(null);
+                  }}
+                  startDateInputRef={startDateNativeRef}
+                  endDateInputRef={endDateNativeRef}
+                  startDateIso={localStartDate ? localStartDate.format('YYYY-MM-DD') : ''}
+                  endDateIso={localEndDate ? localEndDate.format('YYYY-MM-DD') : ''}
+                  onStartNativeCommit={handleStartNativeCommit}
+                  onEndNativeCommit={handleEndNativeCommit}
+                />
               </StyledTable.HeaderCell>
 
               <StyledTable.HeaderCell className={style.headerCell} />

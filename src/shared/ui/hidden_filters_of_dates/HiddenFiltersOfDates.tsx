@@ -38,6 +38,9 @@ type HiddenFiltersOfDatesProps = {
   endDateIso: string;
   onStartNativeCommit: (value: string) => void;
   onEndNativeCommit: (value: string) => void;
+  hideToggleRow?: boolean;
+  hideResetButton?: boolean;
+  forceExpanded?: boolean;
 };
 
 export const HiddenFiltersOfDates = ({
@@ -68,25 +71,33 @@ export const HiddenFiltersOfDates = ({
   endDateIso,
   onStartNativeCommit,
   onEndNativeCommit,
+  hideToggleRow = false,
+  hideResetButton = false,
+  forceExpanded = false,
 }: HiddenFiltersOfDatesProps) => {
   const { t } = useTranslation();
+  const expanded = forceExpanded || isOpen;
 
   return (
     <div className={styles.container}>
-      <div className={styles.row}>
-        <div className={styles.toggleWrap}>
-          <button type="button" className={styles.toggleButton} onClick={onToggle}>
-            <span>{t('filtersByDate')}</span>
-            {isOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-          </button>
-        </div>
+      {!hideToggleRow && (
+        <div className={styles.row}>
+          <div className={styles.toggleWrap}>
+            <button type="button" className={styles.toggleButton} onClick={onToggle}>
+              <span>{t('filtersByDate')}</span>
+              {isOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+            </button>
+          </div>
 
-        <div className={styles.resetWrap}>
-          <ResetFilters reset={onReset} />
+          {!hideResetButton && (
+            <div className={styles.resetWrap}>
+              <ResetFilters reset={onReset} />
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {isOpen && (
+      {expanded && (
         <div className={styles.expanded}>
           <div className={styles.fields}>
             <div className={styles.fieldRow}>

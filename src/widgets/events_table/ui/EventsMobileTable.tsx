@@ -600,26 +600,14 @@ export const EventsMobileTable = ({
             <div className={styles.filterModalFooter}>
               <Button
                 variant="outlined"
-                color="inherit"
                 onClick={handleClearAllFilters}
-                sx={{
-                  flex: 1,
-                  textTransform: 'none',
-                  fontWeight: 500,
-                  borderColor: 'divider',
-                  color: 'text.secondary',
-                  '&:hover': {
-                    borderColor: 'text.disabled',
-                    backgroundColor: 'action.hover',
-                  },
-                }}>
+                className={styles.clearButton}>
                 {t('common.clearFilters')}
               </Button>
               <Button
-                variant="contained"
-                color="primary"
+                variant="outlined"
                 onClick={handleApplyFilters}
-                sx={{ flex: 1, textTransform: 'none', fontWeight: 500 }}>
+                className={styles.applyButton}>
                 {t('modals.apply')}
               </Button>
             </div>
