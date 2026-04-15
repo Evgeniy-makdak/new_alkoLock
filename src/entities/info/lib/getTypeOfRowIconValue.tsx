@@ -5,7 +5,6 @@ import PropTypes from 'prop-types';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import {
-  Alert,
   Box,
   Button,
   Chip,
@@ -60,22 +59,29 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
   };
 
   const handleCopy = async () => {
+    let copied = false;
+
     try {
       if (navigator.clipboard && window.isSecureContext) {
         await navigator.clipboard.writeText(copyValue);
-        setCopiedOpen(true);
-        return;
+        copied = true;
+      } else {
+        fallbackCopy(copyValue);
+        copied = true;
       }
-      fallbackCopy(copyValue);
-      setCopiedOpen(true);
     } catch {
       try {
         fallbackCopy(copyValue);
-        setCopiedOpen(true);
+        copied = true;
       } catch {
-        // Ignore clipboard errors silently for unsupported environments.
+        copied = false;
       }
     }
+
+    setIsOpen(false);
+    setCopiedOpen(true);
+
+    return copied;
   };
 
   return (
@@ -105,7 +111,9 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
             <Button
               variant="outlined"
               startIcon={<ContentCopyOutlinedIcon />}
-              onClick={handleCopy}
+              onClick={() => {
+                void handleCopy();
+              }}
               className={`${style.mobileValueDialogButton} ${style.mobileValueDialogButtonSecondary}`}>
               Копировать
             </Button>
@@ -123,9 +131,9 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
         autoHideDuration={1500}
         onClose={() => setCopiedOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={() => setCopiedOpen(false)} severity="success" variant="filled">
+        <Box className={style.mobileCopiedToast} onClick={() => setCopiedOpen(false)}>
           Скопировано
-        </Alert>
+        </Box>
       </Snackbar>
     </>
   );
