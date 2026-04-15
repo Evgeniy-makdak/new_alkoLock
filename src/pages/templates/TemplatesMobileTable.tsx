@@ -35,7 +35,15 @@ export const TemplatesMobileTable: React.FC<TemplatesMobileTableProps> = ({
   };
 
   return (
-    <Box sx={{ p: 2, flexGrow: 1, overflow: 'auto' }}>
+    <Box
+      sx={{
+        p: 2,
+        flexGrow: 1,
+        minHeight: 0,
+        overflowY: 'scroll',
+        overflowX: 'hidden',
+        scrollbarGutter: 'stable',
+      }}>
       {templates.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="textSecondary">

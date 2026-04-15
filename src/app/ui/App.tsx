@@ -21,34 +21,24 @@ export function App() {
   const { isLoading } = useApp();
   const { mode } = useColorMode();
   const location = useLocation();
-  const isMobile = useMediaQuery(breakpoints.mobile);
-  const isTablet = useMediaQuery(breakpoints.tablet);
+  const isMobile = useMediaQuery(breakpoints.mobile, { noSsr: true });
+  const isTablet = useMediaQuery(breakpoints.tablet, { noSsr: true });
   const isNarrowViewport = isMobile || isTablet;
   const hasInlineTableToolbar = pathHasInlineTableToolbar(location.pathname);
-  const hideLanguageOnMap = location.pathname === RoutePaths.map;
-  const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
-  /** На широкой карте переключатель темы в MapControls, не в плавающем слоте */
-  const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
   const isMessagesRoute =
     location.pathname === RoutePaths.messages ||
     location.pathname.startsWith(`${RoutePaths.messages}/`);
   const isSettingsRoute =
     location.pathname === RoutePaths.settings ||
     location.pathname.startsWith(`${RoutePaths.settings}/`);
+  const hideLanguageOnMap = location.pathname === RoutePaths.map;
+  const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
+  /** На широкой карте переключатель темы в MapControls, не в плавающем слоте */
+  const themeInMapToolbar = hideLanguageOnMap && !isNarrowViewport;
   const needsMobileFloatingTheme =
     isMobile && hasInlineTableToolbar && !isMessagesRoute && !isSettingsRoute;
-  const noAddMobileThemeRoutePrefixes = [
-    RoutePaths.events,
-    RoutePaths.reports,
-    RoutePaths.autoService,
-    RoutePaths.historyAutoService,
-  ] as const;
-  const themeSlotPhoneInlineFlushRight =
-    needsMobileFloatingTheme &&
-    noAddMobileThemeRoutePrefixes.some(
-      (base) => location.pathname === base || location.pathname.startsWith(`${base}/`),
-    );
-  const themeSlotPhoneInlineWithAdd = needsMobileFloatingTheme && !themeSlotPhoneInlineFlushRight;
+  const themeSlotPhoneInlineFlushRight = needsMobileFloatingTheme;
+  const themeSlotPhoneInlineWithAdd = false;
 
   const showFloatingThemeSlot =
     (!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme;

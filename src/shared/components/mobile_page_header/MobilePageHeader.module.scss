@@ -1,0 +1,73 @@
+.header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 16px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  box-sizing: border-box;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  padding-right: 8px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  min-width: 94px;
+}
+
+.addButton {
+  width: 40px;
+  height: 40px;
+  padding: 4px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #667a8a;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: #e0e0e0;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+}
+
+.addSpacer {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+:global(html[data-theme='dark']) {
+  .header {
+    background: #1e1e1e;
+    border-bottom-color: #333;
+  }
+
+  .title {
+    color: #fff;
+  }
+
+  .addButton {
+    background-color: #2a2a2a;
+    border-color: #424242;
+    color: rgba(255, 255, 255, 0.78);
+
+    &:hover {
+      background-color: #3a3a3a;
+    }
+  }
+}

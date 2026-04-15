@@ -39,8 +39,8 @@ export const TableHeaderEndToolbar = ({ children }: TableHeaderEndToolbarProps) 
       {showThemeLangCluster ? (
         <div
           className={`${style.themeLangCluster} ${hasReset ? style.themeLangClusterSeparated : ''} ${compactMobileRow ? style.themeLangClusterCompact : ''} ${showTrailing && compactMobileRow ? style.themeLangClusterWithTrailing : ''}`}>
-          <ThemeToggleControl variant="toolbarCircle" />
           {showTrailing ? <div className={style.mobileTrailingSlot}>{trailing}</div> : null}
+          <ThemeToggleControl variant="toolbarCircle" />
         </div>
       ) : null}
     </div>

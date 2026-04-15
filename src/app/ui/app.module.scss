@@ -140,8 +140,8 @@
  * компактнее, в один ряд с запасом под кнопку добавления.
  */
 .themeToggleSlotPhoneInlineWithAdd {
-  top: 16px;
-  right: 62px;
+  top: 10px;
+  right: 10px;
   left: auto;
   justify-content: flex-end;
   gap: 2px;
@@ -161,6 +161,14 @@
 .themeToggleSlotPhoneInlineFlushRight {
   top: 10px;
   right: 10px;
+
+  :global(.MuiIconButton-root) {
+    padding: 4px;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
 }
 
 /* Шаблоны / Настройки на телефоне: не конкурируем с полем «Поиск» в одном ряду */

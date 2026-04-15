@@ -27,7 +27,7 @@ interface SettingsTableProps {
 }
 
 export const SettingsTable: React.FC<SettingsTableProps> = (props) => {
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   if (isMobile) {
     return <SettingsMobileTable {...props} />;

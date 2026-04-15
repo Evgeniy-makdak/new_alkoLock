@@ -309,6 +309,27 @@
 
     .toggleButton {
         width: 100%;
+        padding: 8px 10px;
+        font-size: 11px;
+
+        span {
+            max-width: 100px;
+        }
+    }
+}
+
+@media (max-width: 360px) {
+    .toggleButton {
+        font-size: 10px;
+        padding: 8px 8px;
+
+        span {
+            max-width: 80px;
+        }
+    }
+
+    .dateFiltersRow {
+        gap: 8px;
     }
 }
 
@@ -318,10 +339,17 @@
             :global(.MuiInputBase-root) {
                 height: 40px;
                 width: 60%;
+                font-size: 14px;
 
                 input {
                     padding: 8px 12px;
                     height: auto;
+                    font-size: 14px;
+                }
+
+                input::placeholder {
+                    font-size: 14px;
+                    opacity: 1;
                 }
             }
         }

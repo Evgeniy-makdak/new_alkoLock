@@ -21,6 +21,7 @@ export function ThemeToggleControl({ variant = 'default' }: ThemeToggleControlPr
   const { t } = useTranslation();
   const { mode, toggleColorMode } = useColorMode();
   const circle = variant === 'toolbarCircle';
+  const iconSx = circle ? { fontSize: '1.125rem' } : undefined;
 
   return (
     <Tooltip title={t('nav.toggleColorMode')} placement="bottom-end">
@@ -40,9 +41,9 @@ export function ThemeToggleControl({ variant = 'default' }: ThemeToggleControlPr
             : undefined
         }>
         {mode === 'dark' ? (
-          <LightModeOutlined fontSize={circle ? 'medium' : 'small'} />
+          <LightModeOutlined fontSize={circle ? 'small' : 'small'} sx={iconSx} />
         ) : (
-          <DarkModeOutlined fontSize={circle ? 'medium' : 'small'} />
+          <DarkModeOutlined fontSize={circle ? 'small' : 'small'} sx={iconSx} />
         )}
       </IconButton>
     </Tooltip>

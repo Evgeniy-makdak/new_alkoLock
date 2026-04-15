@@ -7,6 +7,10 @@
   border: 1px solid #e0e0e0;
   color: rgba(0, 0, 0, 0.54);
 
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+
   &:hover {
     background-color: #e0e0e0;
   }

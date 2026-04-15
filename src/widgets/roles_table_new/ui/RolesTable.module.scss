@@ -66,10 +66,12 @@
 }
 
 .mobileHeader {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px;
+  padding-right: 56px;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -84,7 +86,10 @@
 .addButton {
   width: 40px;
   height: 40px;
-  padding: 0;
+  padding: 4px;
+  position: absolute;
+  top: 10px;
+  right: 56px;
   border-radius: 50%;
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
@@ -93,6 +98,10 @@
 
   &:hover {
     background-color: #e0e0e0;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
   }
 }
 

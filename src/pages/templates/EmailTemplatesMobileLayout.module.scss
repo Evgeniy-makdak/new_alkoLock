@@ -1,0 +1,83 @@
+.mobileHeader {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  padding-right: 108px;
+  background: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.mobileTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  padding-right: 8px;
+}
+
+.addButton {
+  width: 40px;
+  height: 40px;
+  padding: 4px;
+  position: absolute;
+  top: 10px;
+  right: 56px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  color: #667a8a;
+  flex-shrink: 0;
+
+  &:hover {
+    background-color: #e0e0e0;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
+  }
+}
+
+.mobileFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  min-height: 72px;
+  box-sizing: border-box;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.themeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+:global(html[data-theme='dark']) {
+  .mobileHeader {
+    background: #1e1e1e;
+    border-bottom-color: #333;
+  }
+
+  .mobileTitle {
+    color: #fff;
+  }
+
+  .addButton {
+    background-color: #2a2a2a;
+    border-color: #424242;
+    color: rgba(255, 255, 255, 0.78);
+
+    &:hover {
+      background-color: #3a3a3a;
+    }
+  }
+
+  .mobileFilters {
+    background: #2d2d2d;
+    border-bottom-color: #333;
+  }
+}

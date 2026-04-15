@@ -6,12 +6,12 @@ import { useLocation } from 'react-router-dom';
 import AddIcon from '@mui/icons-material/Add';
 import { IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 
+import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
 import { useTableHeaderMobileTrailing } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
-import { ThemeToggleControl } from '@shared/theme/colorMode';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
@@ -19,6 +19,7 @@ import { EmailTemplate } from '../templates/types';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import { EmailTemplateForm } from './EmailTemplateForm';
 import { EmailTemplateView } from './EmailTemplateView';
+import mobileStyles from './EmailTemplatesMobileLayout.module.scss';
 import { TemplatesDesktopTable } from './TemplatesDesktopTable';
 import { TemplatesMobileTable } from './TemplatesMobileTable';
 
@@ -47,11 +48,11 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const location = useLocation();
   const addCircleSx = useMemo(() => getToolbarCircleIconButtonSx(theme), [theme]);
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
   const hasInlineToolbarRoute = pathHasInlineTableToolbar(location.pathname);
   const relocateAddToEndToolbar = hasInlineToolbarRoute && !isMobile;
   const setTrailing = useTableHeaderMobileTrailing()?.setTrailing;
@@ -67,6 +68,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
+  const mobileTitle = i18n.language?.startsWith('ru') ? 'Шаблоны' : t('nav.messageTemplates');
 
   const shouldBlockNavigation = isEditing || isAdding || isDeleting;
 
@@ -257,46 +259,13 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '16px',
-            background: theme.palette.background.paper,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-          }}>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: '20px',
-              fontWeight: 600,
-              color: theme.palette.text.primary,
-            }}>
-            {t('nav.messageTemplates')}
-          </h2>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ThemeToggleControl variant="toolbarCircle" />
-            <Tooltip title={t('common.addTemplate')}>
-              <IconButton
-                aria-label={t('common.addTemplate')}
-                onClick={handleAddClick}
-                sx={addCircleSx}>
-                <AddIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </div>
-        </div>
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            padding: '16px',
-            background: theme.palette.background.default,
-            borderBottom: `1px solid ${theme.palette.divider}`,
-          }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <MobilePageHeader
+          title={mobileTitle}
+          onAddClick={handleAddClick}
+          addAriaLabel={t('common.addTemplate')}
+        />
+        <div className={mobileStyles.mobileFilters}>
           <SearchInput
             value={searchQuery}
             setState={(value) => {

@@ -42,7 +42,7 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
   searchQuery,
   onSearchChange,
 }) => {
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   const handleRowsPerPageChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -52,7 +52,13 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '96vh' }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: isMobile ? '100%' : '100vh',
+        minHeight: 0,
+      }}>
       <EmailTemplatesTable
         templates={templates}
         sortField={sortField}
@@ -68,10 +74,11 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
 
       <Box
         sx={{
-          position: 'sticky',
-          bottom: 0,
-          left: 0,
-          right: 0,
+          position: isMobile ? 'relative' : 'sticky',
+          bottom: isMobile ? 'auto' : 0,
+          left: isMobile ? 'auto' : 0,
+          right: isMobile ? 'auto' : 0,
+          flexShrink: 0,
           bgcolor: 'background.paper',
           color: 'text.primary',
           borderTop: 1,

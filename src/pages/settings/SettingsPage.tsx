@@ -6,19 +6,19 @@ import { useTranslation } from 'react-i18next';
 
 import { Alert, Box, Snackbar } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 
 import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
+import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { ThemeToggleControl } from '@shared/theme/colorMode';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { EditSettingDialog } from './EditSettingDialog';
 import ResetConfirmationDialog from './ResetConfirmationDialog';
+import mobileStyles from './SettingsMobileLayout.module.scss';
 import { SettingsMobilePagination } from './SettingsMobilePagination';
 import { SettingsTable } from './SettingsTable';
 
@@ -53,7 +53,6 @@ const getUnitForm = (count: number) => {
 
 export const SettingsPage = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
@@ -82,7 +81,7 @@ export const SettingsPage = () => {
   // Пагинация
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   const selectedBranchId = appStore((state) => state.selectedBranchState?.id);
 
@@ -313,39 +312,21 @@ export const SettingsPage = () => {
   );
 
   return (
-    <Box sx={{ p: 0, bgcolor: 'background.default', color: 'text.primary', minHeight: 1 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+    <Box
+      sx={{
+        p: 0,
+        bgcolor: 'background.default',
+        color: 'text.primary',
+        minHeight: 1,
+        height: '100%',
+        overflow: 'hidden',
+      }}>
+      <div
+        style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100%' : '100vh' }}>
         {isMobile ? (
           <>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '16px',
-                background: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-              }}>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: '20px',
-                  fontWeight: 600,
-                  color: theme.palette.text.primary,
-                }}>
-                {t('nav.settings')}
-              </h2>
-              <ThemeToggleControl variant="toolbarCircle" />
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 12,
-                padding: '16px',
-                background: theme.palette.background.default,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-              }}>
+            <MobilePageHeader title={t('nav.settings')} />
+            <div className={mobileStyles.mobileFilters}>
               <SearchInput
                 value={searchQuery}
                 setState={(value) => {
@@ -397,10 +378,11 @@ export const SettingsPage = () => {
 
         <Box
           sx={{
-            position: 'sticky',
-            bottom: 0,
-            left: 0,
-            right: 0,
+            position: isMobile ? 'relative' : 'sticky',
+            bottom: isMobile ? 'auto' : 0,
+            left: isMobile ? 'auto' : 0,
+            right: isMobile ? 'auto' : 0,
+            flexShrink: 0,
             bgcolor: 'background.paper',
             color: 'text.primary',
             borderTop: 1,

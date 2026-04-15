@@ -108,6 +108,10 @@ export const EventTypeWithIntervals: React.FC<EventTypeWithIntervalsProps> = ({
         borderRadius: 1,
         mb: 2,
         position: 'relative',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
       }}>
       {showRemoveButton && (
         <IconButton
@@ -145,7 +149,7 @@ export const EventTypeWithIntervals: React.FC<EventTypeWithIntervalsProps> = ({
           />
         )}
         fullWidth
-        sx={{ mb: 2 }}
+        sx={{ mb: 2, width: '100%', maxWidth: '100%', minWidth: 0 }}
         disabled={availableEventTypes.length === 0 && eventTypeData.eventType !== ''}
         freeSolo={false}
         autoSelect

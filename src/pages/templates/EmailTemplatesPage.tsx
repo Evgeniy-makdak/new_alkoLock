@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import { Box } from '@mui/material';
+import { useMediaQuery } from '@mui/material';
 
 import { TemplatesApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
@@ -40,6 +41,7 @@ interface EmailTemplatesResponse {
 }
 
 const EmailTemplatesPage: React.FC = () => {
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [totalCount, setTotalCount] = useState<number>();
   const [page, setPage] = useState(() => {
@@ -210,10 +212,12 @@ const EmailTemplatesPage: React.FC = () => {
       sx={{
         px: 0,
         pt: 0,
-        pb: 3,
+        pb: isMobile ? 0 : 3,
         bgcolor: 'background.default',
         color: 'text.primary',
         minHeight: 1,
+        height: '100%',
+        overflow: 'hidden',
       }}>
       <EmailTemplatesGrid
         templates={templates}

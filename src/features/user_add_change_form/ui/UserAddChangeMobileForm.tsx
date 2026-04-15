@@ -3,16 +3,18 @@ import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { CalendarToday } from '@mui/icons-material';
-import { Button, Checkbox, TextField, Typography } from '@mui/material';
+import { Checkbox, TextField, Typography } from '@mui/material';
 
 import { AppConstants } from '@app/index';
 import { RolesSelect } from '@entities/roles_select';
 import { UploadImg } from '@entities/upload_img';
+import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { InputPassword } from '@shared/ui/InputPassword/Input';
 import { AppAlert } from '@shared/ui/alert';
+import { Button } from '@shared/ui/button';
 import { FieldSelect } from '@shared/ui/field_select';
 import { Loader } from '@shared/ui/loader';
 import { PhoneInput } from '@shared/ui/phone_input';
@@ -866,21 +868,17 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
 
             {!alert ? (
               <div className={style.mobileFormActions}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  fullWidth
-                  className={style.submitButton}
-                  disabled={!hasFormChanges}>
-                  {id ? t('common.save') : t('common.add')}
-                </Button>
-                <Button
-                  onClick={closeModal}
-                  variant="outlined"
-                  fullWidth
-                  className={style.cancelButton}>
-                  {t('common.cancel')}
-                </Button>
+                <ButtonFormWrapper>
+                  <Button
+                    testid={testids.POPUP_ACTION_BUTTON}
+                    type="submit"
+                    disabled={!hasFormChanges}>
+                    {id ? t('common.save') : t('common.add')}
+                  </Button>
+                  <Button testid={testids.POPUP_CANCEL_BUTTON} onClick={closeModal}>
+                    {t('common.cancel')}
+                  </Button>
+                </ButtonFormWrapper>
               </div>
             ) : (
               <div className={style.mobileFormActions}>

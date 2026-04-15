@@ -57,7 +57,15 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
   const displayedRows = settingsRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   return (
-    <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+    <Box
+      sx={{
+        p: 2,
+        flexGrow: 1,
+        minHeight: 0,
+        overflowY: 'scroll',
+        overflowX: 'hidden',
+        scrollbarGutter: 'stable',
+      }}>
       {displayedRows.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="textSecondary">
@@ -70,39 +78,47 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
             key={row.id}
             sx={{
               p: 2,
-              mb: 2,
+              mb: 1.5,
               borderRadius: 2,
               bgcolor: 'background.paper',
               border: 1,
               borderColor: 'divider',
               boxShadow:
                 theme.palette.mode === 'dark'
-                  ? '0 2px 12px rgba(0,0,0,0.45)'
-                  : '0 2px 8px rgba(0,0,0,0.1)',
+                  ? '0 1px 8px rgba(0,0,0,0.45)'
+                  : '0 1px 4px rgba(0,0,0,0.1)',
             }}>
             {/* Изменяемый параметр */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                sx={{ mb: 0.5, fontSize: '0.75rem' }}>
                 {t('tables.changeableParam')}:
               </Typography>
-              <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
+              <Typography
+                variant="body2"
+                sx={{ wordBreak: 'break-word', fontWeight: 'medium', fontSize: '0.875rem' }}>
                 {row.label}
               </Typography>
             </Box>
 
             {/* Текущее значение */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle2" color="textSecondary" sx={{ mb: 0.5 }}>
+            <Box sx={{ mb: 1.5 }}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                sx={{ mb: 0.25, fontSize: '0.7rem' }}>
                 {t('tables.currentValue')}:
               </Typography>
-              <Typography variant="body1" fontWeight="medium">
+              <Typography variant="body2" sx={{ fontSize: '0.8rem' }}>
                 {row.value} {getUnitDisplay(row.unit, row.value)}
               </Typography>
             </Box>
 
             {/* Действия */}
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="subtitle2" color="textSecondary">
+              <Typography variant="subtitle2" color="textSecondary" sx={{ fontSize: '0.7rem' }}>
                 {t('tables.actions')}:
               </Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -111,8 +127,10 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     onClick={() => handleEditClick(row)}
                     size="small"
                     sx={{
+                      padding: 0.5,
                       color: 'text.secondary',
                       '&:hover': { color: 'text.primary' },
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
                     }}>
                     <ModeEditIcon fontSize="small" />
                   </IconButton>
@@ -122,8 +140,10 @@ export const SettingsMobileTable: React.FC<SettingsMobileTableProps> = ({
                     onClick={() => handleResetToDefault(row)}
                     size="small"
                     sx={{
+                      padding: 0.5,
                       color: 'text.secondary',
                       '&:hover': { color: 'text.primary' },
+                      '& .MuiSvgIcon-root': { fontSize: '1rem' },
                     }}>
                     <AutorenewIcon fontSize="small" />
                   </IconButton>

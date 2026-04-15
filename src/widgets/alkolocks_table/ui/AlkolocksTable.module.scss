@@ -116,10 +116,12 @@
 }
 
 .mobileHeader {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 16px;
+  padding-right: 56px;
   background: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
@@ -134,7 +136,10 @@
 .addButton {
   width: 40px;
   height: 40px;
-  padding: 0;
+  padding: 4px;
+  position: absolute;
+  top: 10px;
+  right: 56px;
   border-radius: 50%;
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
@@ -143,6 +148,10 @@
 
   &:hover {
     background-color: #e0e0e0;
+  }
+
+  :global(.MuiSvgIcon-root) {
+    font-size: 1.125rem;
   }
 }
 
@@ -244,6 +253,15 @@
   
   :global(.MuiInputBase-root) {
     font-size: 14px;
+  }
+
+  :global(.MuiInputBase-input) {
+    font-size: 14px;
+  }
+
+  :global(.MuiInputBase-input::placeholder) {
+    font-size: 14px;
+    opacity: 1;
   }
 }
 
@@ -703,6 +721,12 @@
   
   .toggleButton {
     width: 100%;
+    padding: 8px 10px;
+    font-size: 11px;
+
+    span {
+      max-width: 100px;
+    }
   }
   
   .customDateInputs .dateFieldContainer .narrowDateField :global(.MuiInputBase-root) {
@@ -711,6 +735,21 @@
   
   .calendarButton {
     right: 8px;
+  }
+}
+
+@media (max-width: 360px) {
+  .toggleButton {
+    font-size: 10px;
+    padding: 8px 8px;
+
+    span {
+      max-width: 80px;
+    }
+  }
+
+  .dateFiltersRow {
+    gap: 8px;
   }
 }
 

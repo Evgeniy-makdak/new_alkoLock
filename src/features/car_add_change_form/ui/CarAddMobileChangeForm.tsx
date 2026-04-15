@@ -6,6 +6,7 @@ import { Box, Button as MuiButton, Popover, TextField, Typography } from '@mui/m
 
 import { CarColorSelect } from '@entities/car_color_select';
 import { TransportTypeSelect } from '@entities/transport_type_select';
+import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { Button } from '@shared/ui/button';
@@ -254,42 +255,12 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
             </div>
 
             <div className={style.mobileFormActions}>
-              <Button
-                type="submit"
-                disabled={submitDisabled}
-                sx={{
-                  padding: '12px !important',
-                  fontSize: '16px !important',
-                  fontWeight: '600 !important',
-                  backgroundColor: '#1976d2 !important',
-                  color: '#fff !important',
-                  '&:hover': {
-                    backgroundColor: '#1565c0 !important',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#c2c5c9 !important',
-                    color: '#fff !important',
-                  },
-                }}
-                fullWidth>
-                {id ? t('common.save') : t('common.add')}
-              </Button>
-              <Button
-                onClick={closeModal}
-                sx={{
-                  padding: '12px !important',
-                  fontSize: '16px !important',
-                  border: '1px solid #c2c5c9 !important',
-                  color: '#333 !important',
-                  background: 'transparent !important',
-                  '&:hover': {
-                    borderColor: '#a7adb3 !important',
-                    backgroundColor: '#f5f5f5 !important',
-                  },
-                }}
-                fullWidth>
-                {t('common.cancel')}
-              </Button>
+              <ButtonFormWrapper>
+                <Button type="submit" disabled={submitDisabled}>
+                  {id ? t('common.save') : t('common.add')}
+                </Button>
+                <Button onClick={closeModal}>{t('common.cancel')}</Button>
+              </ButtonFormWrapper>
             </div>
           </form>
         )}

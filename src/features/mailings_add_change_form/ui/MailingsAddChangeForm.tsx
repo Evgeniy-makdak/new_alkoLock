@@ -37,7 +37,13 @@ export const MailingsAddChangeForm: FC<MailingsAddChangeFormProps> = ({ closeMod
 
   return (
     <Loader isLoading={isLoading}>
-      <Box sx={{ width: '600px', maxWidth: '600px', overflow: 'hidden' }}>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: { xs: '100%', sm: '600px' },
+          overflowX: 'hidden',
+          minWidth: 0,
+        }}>
         <form onSubmit={handleSubmit}>
           <Typography fontWeight={600} marginBottom={2} variant="h6">
             {id ? t('modals.editMailing') : t('modals.addMailing')}
@@ -66,9 +72,13 @@ export const MailingsAddChangeForm: FC<MailingsAddChangeFormProps> = ({ closeMod
                     readOnly: isEditMode,
                   }}
                   fullWidth
+                  sx={{
+                    width: '100%',
+                    maxWidth: '100%',
+                  }}
                 />
 
-                <Box>
+                <Box sx={{ width: '100%', maxWidth: '100%', minWidth: 0 }}>
                   <Typography variant="subtitle1" gutterBottom>
                     {t('form.eventTypesAndIntervals')}
                   </Typography>
