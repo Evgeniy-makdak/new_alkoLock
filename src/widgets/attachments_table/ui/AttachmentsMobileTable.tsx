@@ -344,6 +344,10 @@ export const AttachmentsMobileTable = ({
   };
 
   const handleApplyFilters = () => {
+    if (!hasActiveFilters) {
+      handleCloseFilterModal();
+      return;
+    }
     handleFilterChange();
     handleCloseFilterModal();
   };
@@ -490,14 +494,15 @@ export const AttachmentsMobileTable = ({
               <Button
                 variant="outlined"
                 onClick={handleClearAllFilters}
+                disabled={!hasActiveFilters}
                 className={styles.clearButton}>
                 Очистить фильтры
               </Button>
               <Button
-                variant="contained"
+                variant="outlined"
                 onClick={handleApplyFilters}
                 className={styles.applyButton}>
-                Применить
+                {hasActiveFilters ? 'Применить' : 'Отмена'}
               </Button>
             </div>
           </div>

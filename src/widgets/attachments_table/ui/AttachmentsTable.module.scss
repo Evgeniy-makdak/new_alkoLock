@@ -302,28 +302,45 @@
 
   .clearButton {
     flex: 1;
-    padding: 10px;
-    border: 1px solid #d32f2f;
-    color: #d32f2f;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid #8f8f8f;
+    color: #2f2f2f;
+    background: #fff;
     text-transform: none;
     font-weight: 500;
+    font-size: 14px;
+    line-height: 1.2;
+    border-radius: 4px;
 
     &:hover {
-      background: #ffebee;
-      border-color: #c62828;
+      background: #f5f5f5;
+      border-color: #7d7d7d;
+    }
+
+    &:disabled {
+      color: #b6b6b6;
+      border-color: #d0d0d0;
+      background: #fff;
     }
   }
 
   .applyButton {
     flex: 1;
-    padding: 10px;
-    background: #c2c5c9;
-    color: white;
+    min-height: 32px;
+    padding: 6px 10px;
+    border: 1px solid #8f8f8f;
+    background: #fff;
+    color: #1f1f1f;
     text-transform: none;
     font-weight: 500;
+    font-size: 14px;
+    line-height: 1.2;
+    border-radius: 4px;
 
     &:hover {
-      background: #1565c0;
+      background: #f5f5f5;
+      border-color: #7d7d7d;
     }
   }
 }
@@ -553,8 +570,9 @@
     
     .clearButton,
     .applyButton {
-      padding: 12px;
-      font-size: 16px;
+      min-height: 32px;
+      padding: 6px 10px;
+      font-size: 14px;
     }
   }
 
@@ -582,12 +600,12 @@
   }
 
   .filterModalFooter {
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
     
     .clearButton,
     .applyButton {
-      flex: none;
+      flex: 1;
     }
   }
 

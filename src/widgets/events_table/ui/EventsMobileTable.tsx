@@ -6,6 +6,7 @@ import { Button, Chip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { EventsFilterPanel } from '@features/events_filter_panel';
+import { eventsFilterPanelStore } from '@features/events_filter_panel/model/eventsFilterPanelStore';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
@@ -32,6 +33,7 @@ export const EventsMobileTable = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { filtersData, tableData } = useEventsTable();
+  const hasActiveFilters = eventsFilterPanelStore((state) => state.hasActiveFilters);
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
@@ -480,6 +482,10 @@ export const EventsMobileTable = ({
   };
 
   const handleApplyFilters = () => {
+    if (!hasActiveFilters) {
+      handleCloseFilterModal();
+      return;
+    }
     handleFilterChange();
     handleCloseFilterModal();
   };
@@ -601,6 +607,7 @@ export const EventsMobileTable = ({
               <Button
                 variant="outlined"
                 onClick={handleClearAllFilters}
+                disabled={!hasActiveFilters}
                 className={styles.clearButton}>
                 {t('common.clearFilters')}
               </Button>
@@ -608,7 +615,7 @@ export const EventsMobileTable = ({
                 variant="outlined"
                 onClick={handleApplyFilters}
                 className={styles.applyButton}>
-                {t('modals.apply')}
+                {hasActiveFilters ? t('modals.apply') : t('common.cancel')}
               </Button>
             </div>
           </div>
