@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export type NativeDateHiddenInputProps = {
   inputRef: React.RefObject<HTMLInputElement | null>;
@@ -24,6 +24,8 @@ export function NativeDateHiddenInput({
   'data-testid': dataTestId,
 }: NativeDateHiddenInputProps) {
   const iso = syncedIso ?? '';
+  const pendingValueRef = useRef('');
+  const lastCommittedRef = useRef('');
 
   useEffect(() => {
     const el = inputRef.current;
@@ -31,16 +33,25 @@ export function NativeDateHiddenInput({
     if (el.value !== iso) {
       el.value = iso;
     }
+    pendingValueRef.current = el.value;
+    lastCommittedRef.current = iso;
   }, [iso, inputRef]);
 
   return (
     <input
       ref={inputRef}
       type="date"
-      onChange={(e) => onCommit(e.target.value)}
+      onChange={(e) => {
+        pendingValueRef.current = e.target.value;
+      }}
       onInput={(e) => {
-        if ((e.target as HTMLInputElement).value === '') {
-          onCommit('');
+        pendingValueRef.current = (e.target as HTMLInputElement).value;
+      }}
+      onBlur={(e) => {
+        const next = pendingValueRef.current ?? e.target.value ?? '';
+        if (next !== lastCommittedRef.current) {
+          lastCommittedRef.current = next;
+          onCommit(next);
         }
       }}
       className={className}

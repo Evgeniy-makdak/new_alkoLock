@@ -58,6 +58,7 @@ export function openNativeDatePickerFromHiddenInput(input: HTMLInputElement | nu
   const teardown = () => {
     input.removeEventListener('change', onChange);
     input.removeEventListener('cancel', onCancel);
+    input.removeEventListener('blur', onBlur);
     clearPickerStyles();
   };
 
@@ -68,18 +69,21 @@ export function openNativeDatePickerFromHiddenInput(input: HTMLInputElement | nu
       input.value = valueBeforeOpen;
       return;
     }
-    activeTeardown = null;
-    input.removeEventListener('change', onChange);
-    input.removeEventListener('cancel', onCancel);
-    setTimeout(clearPickerStyles, 0);
+    // Do not close the picker session on intermediate change events.
+    // Commit/close is handled on blur or cancel to allow explicit confirmation.
   };
 
   const onCancel = () => {
     closeNativeDatePickerSession();
   };
 
+  const onBlur = () => {
+    closeNativeDatePickerSession();
+  };
+
   input.addEventListener('change', onChange);
   input.addEventListener('cancel', onCancel);
+  input.addEventListener('blur', onBlur);
 
   activeTeardown = () => {
     teardown();
