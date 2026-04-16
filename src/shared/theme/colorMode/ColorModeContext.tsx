@@ -3,6 +3,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useState,
@@ -12,31 +13,54 @@ import { StorageKeys } from '@shared/const/storageKeys';
 
 export type ColorMode = 'light' | 'dark';
 
+export type ColorModePreference = ColorMode | 'auto';
+
 type ColorModeContextValue = {
   mode: ColorMode;
-  setMode: (m: ColorMode) => void;
+  preference: ColorModePreference;
+  setMode: (m: ColorModePreference) => void;
   toggleColorMode: () => void;
 };
 
 const ColorModeContext = createContext<ColorModeContextValue | null>(null);
 
-function readStoredMode(): ColorMode {
+function readStoredPreference(): ColorModePreference {
   try {
     const v = localStorage.getItem(StorageKeys.COLOR_MODE);
-    if (v === 'dark' || v === 'light') {
+    if (v === 'dark' || v === 'light' || v === 'auto') {
       return v;
     }
   } catch {
     /* ignore */
   }
-  return 'light';
+  return 'auto';
 }
 
 export function ColorModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ColorMode>(readStoredMode);
+  const [preference, setPreferenceState] = useState<ColorModePreference>(readStoredPreference);
+  const [systemPrefersDark, setSystemPrefersDark] = useState<boolean>(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
-  const setMode = useCallback((m: ColorMode) => {
-    setModeState(m);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    const mql = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => setSystemPrefersDark(mql.matches);
+
+    // Safari (и некоторые старые браузеры) могут не поддерживать addEventListener на MediaQueryList
+    try {
+      mql.addEventListener('change', onChange);
+      return () => mql.removeEventListener('change', onChange);
+    } catch {
+      mql.addListener(onChange);
+      return () => mql.removeListener(onChange);
+    }
+  }, []);
+
+  const setMode = useCallback((m: ColorModePreference) => {
+    setPreferenceState(m);
     try {
       localStorage.setItem(StorageKeys.COLOR_MODE, m);
     } catch {
@@ -44,13 +68,25 @@ export function ColorModeProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const mode: ColorMode =
+    preference === 'auto' ? (systemPrefersDark ? 'dark' : 'light') : preference;
+
   const toggleColorMode = useCallback(() => {
-    setMode(mode === 'light' ? 'dark' : 'light');
-  }, [mode, setMode]);
+    setPreferenceState((prev) => {
+      const next: ColorModePreference =
+        prev === 'light' ? 'dark' : prev === 'dark' ? 'auto' : 'light';
+      try {
+        localStorage.setItem(StorageKeys.COLOR_MODE, next);
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }, []);
 
   const value = useMemo(
-    () => ({ mode, setMode, toggleColorMode }),
-    [mode, setMode, toggleColorMode],
+    () => ({ mode, preference, setMode, toggleColorMode }),
+    [mode, preference, setMode, toggleColorMode],
   );
 
   useLayoutEffect(() => {

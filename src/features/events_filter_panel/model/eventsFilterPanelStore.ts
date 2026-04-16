@@ -33,6 +33,7 @@ export const eventsFilterPanelStore = create<EventsFilterPanelStore>()((set, get
       newState.driverId,
       newState.carId,
       newState.alcolocks,
+      newState.typeEvent,
       newState.level,
       // newState.eventClasses,
     ]);

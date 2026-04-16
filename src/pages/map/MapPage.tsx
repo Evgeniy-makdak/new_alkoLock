@@ -1148,6 +1148,27 @@ export const MapPage = () => {
       pathname: RoutePaths.map,
       search: `?lat=${lat}&lng=${lng}&vehicle=${encodeURIComponent(vehicle)}`,
     });
+
+    // На мобильном боковая панель перекрывает карту: закрываем панели,
+    // чтобы номерной маркер был виден сразу после перехода по координатам.
+    if (isMobile) {
+      setPanelStack([]);
+      setActiveTab('info');
+      setExpandedRowId(null);
+      // `selectedVehicleId` в MapPage управляет видимостью полного aside на mobile,
+      // поэтому чтобы пользователь увидел карту — не оставляем aside открытым.
+      setOpenedPopupVehicleId(vehicle);
+      setSelectedVehicleId(null);
+
+      // Центрируем карту на координатах клика, чтобы пользователь видел маркер.
+      if (mapRef.current) {
+        mapRef.current.flyTo([lat, lng], 15, { duration: 0.35 });
+      }
+
+      loadVehicleEvents(vehicle);
+      return;
+    }
+
     setSelectedVehicleId(vehicle);
     loadVehicleEvents(vehicle);
   };

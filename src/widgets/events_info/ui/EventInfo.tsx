@@ -34,17 +34,7 @@ export const EventInfo = ({
     <Loader isLoading={isLoading}>
       <Stack overflow={'auto'} padding={2}>
         {!isAdditionalDataTab && data?.summary?.photoFileName && (
-          <Stack
-            alignItems={'center'}
-            justifyContent={'center'}
-            minHeight={410}
-            sx={{
-              // Адаптивное смещение фотографии от 700px до 480px
-              '@media (max-width: 700px)': {
-                marginLeft: `calc(-${(700 - window.innerWidth) * 0.5}px)`,
-                transition: 'margin-left 0.2s ease',
-              },
-            }}>
+          <Stack alignItems={'center'} justifyContent={'center'} width="100%" minHeight={410}>
             <Image url={data.summary.photoFileName} />
           </Stack>
         )}

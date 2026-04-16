@@ -25,6 +25,7 @@
     "mainBranch": "Asosiy filial",
     "mapShortcut": "Xarita (Ctrl+Shift+M)",
     "toggleColorMode": "Yorug' yoki qorong'u mavzuni almashtirish",
+    "themeAutoBySystem": "Avto (tizim bo'yicha)",
     "changePassword": "Parolni o'zgartirish",
     "logout": "Chiqish",
     "branch": "Filial"
