@@ -40,6 +40,9 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
   const hasTestingEvent = data?.events?.some((event: any) => event.eventType === 'Тестирование');
   const latitude = data?.summary?.lat || data?.events?.[0]?.latitude;
   const longitude = data?.summary?.lon || data?.events?.[0]?.longitude;
+  const firstEvent = data?.events?.[0] as any;
+  const registrationNumber =
+    data?.vehicleRecord?.registrationNumber ?? firstEvent?.vehicleRecord?.registrationNumber;
   const longitudeExists = !!latitude && !!longitude;
 
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
@@ -266,6 +269,7 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
             testid={testids.page_events.events_widget_info.EVENTS_WIDGET_INFO_MAPLINK}
             latitude={latitude}
             longitude={longitude}
+            vehicle={registrationNumber}
           />
         ) : (
           '-'
