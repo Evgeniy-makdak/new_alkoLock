@@ -25,6 +25,12 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { isLoading, fields, car } = useVehiclesInfo(selectedCarId, closeTab);
+  const isPlaceholderValue = (value: unknown) => {
+    const normalized = String(value ?? '')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+    return !normalized || normalized === '-' || normalized === '—';
+  };
 
   const handleNavigateToAlcolock = useCallback(
     async (alcolockId: ID) => {
@@ -74,7 +80,9 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
     const alcolock = car?.monitoringDevice;
     const alcolockId = alcolock?.id;
     const serial = alcolock?.serialNumber;
-    if (!alcolockId || !serial) return fields;
+    const serialText = serial != null ? String(serial).trim() : '';
+    const canNavigateAlcolock = Boolean(alcolockId && !isPlaceholderValue(serialText));
+    if (!canNavigateAlcolock) return fields;
 
     return fields.map((field) => {
       const value = field?.value;
@@ -95,9 +103,11 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
           element: (
             <div
               style={{
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                width: '100%',
+                minWidth: 0,
                 maxWidth: '100%',
               }}>
               <Tooltip title={t('tooltips.copy')}>
@@ -120,7 +130,9 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
                   void handleNavigateToAlcolock(alcolockId);
                 }}
                 sx={{
-                  maxWidth: '100%',
+                  flex: '1 1 auto',
+                  minWidth: 0,
+                  maxWidth: 'calc(100% - 28px)',
                   height: '28px',
                   borderRadius: '16px',
                   backgroundColor: '#eef5ff',

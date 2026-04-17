@@ -56,11 +56,21 @@
     line-height: 1.35;
   }
 
+  .row {
+    gap: 14px;
+  }
+
+  .label {
+    padding-right: 8px;
+  }
+
   .value {
     align-items: flex-start;
     justify-content: flex-start;
     text-align: left;
     word-break: break-word;
+    padding-left: 10px;
+    box-sizing: border-box;
   }
 }
 

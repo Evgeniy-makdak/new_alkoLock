@@ -8,7 +8,7 @@ import { Chip, IconButton, Tooltip } from '@mui/material';
 import { Info } from '@entities/info';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
-import { CarsApi } from '@shared/api/baseQuerys';
+import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { copyContent } from '@shared/lib/copyText';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -36,6 +36,12 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
 
   // 👇 получаем autoServiceType из useAlkozamkiInfoApi
   const { autoServiceType } = useAlkozamkiInfoApi(selectedAlcolockId);
+  const isPlaceholderValue = (value: unknown) => {
+    const normalized = String(value ?? '')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+    return !normalized || normalized === '-' || normalized === '—';
+  };
 
   const handleNavigateToVehicle = useCallback(
     async (vehicleId: ID) => {
@@ -75,78 +81,200 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
     [navigate],
   );
 
+  const handleNavigateToUser = useCallback(
+    async (userId: ID) => {
+      const selectedBranchId = appStore.getState().selectedBranchState?.id;
+      const pageSize = 25;
+      if (!userId) return;
+
+      try {
+        const baseOptions = {
+          limit: pageSize,
+          filterOptions: { branchId: selectedBranchId },
+        };
+        const first = await UsersApi.getList({ ...baseOptions, page: 0 });
+        const firstData = first?.data as any;
+        const firstContent: Array<{ id: ID }> = firstData?.content ?? [];
+        if (firstContent.some((item) => String(item?.id) === String(userId))) {
+          navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: 0 } });
+          return;
+        }
+
+        const totalPages = Number(firstData?.totalPages);
+        const totalElements = Number(firstData?.totalElements);
+        const maxPages =
+          Number.isFinite(totalPages) && totalPages > 0
+            ? totalPages
+            : Number.isFinite(totalElements) && totalElements > 0
+              ? Math.ceil(totalElements / pageSize)
+              : 1;
+
+        for (let page = 1; page < maxPages; page++) {
+          const response = await UsersApi.getList({ ...baseOptions, page });
+          const content: Array<{ id: ID }> = (response?.data as any)?.content ?? [];
+          if (content.some((item) => String(item?.id) === String(userId))) {
+            navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: page } });
+            return;
+          }
+        }
+      } catch {
+        // fallback
+      }
+
+      navigate(RoutePaths.users, { state: { selectedId: userId } });
+    },
+    [navigate],
+  );
+
   const preparedFields = useMemo(() => {
     const vehicle = alkolock?.vehicleBind?.vehicle;
     const vehicleId = vehicle?.id;
-    if (!vehicleId) return fields;
 
     const car = Formatters.carNameFormatter(vehicle);
     const carForCopy = Formatters.carNameFormatter(vehicle, false, false);
-    if (!car || car === '-') return fields;
+    const linkedByUserId = alkolock?.vehicleBind?.createdBy?.id;
+    const linkedByName = Formatters.nameFormatter(alkolock?.vehicleBind?.createdBy);
+    const canNavigateVehicle = Boolean(vehicleId && !isPlaceholderValue(car));
+    const canNavigateUser = Boolean(linkedByUserId && !isPlaceholderValue(linkedByName));
 
     return fields.map((field) => {
       const value = field?.value;
-      if (
-        field?.type !== TypeOfRows.CAR ||
-        !value ||
-        Array.isArray(value) ||
-        field?.label !== t('tables.installedOnVehicle')
-      ) {
+      if (!value || Array.isArray(value)) {
         return field;
       }
 
-      return {
-        ...field,
-        value: {
-          ...value,
-          copyble: false,
-          element: (
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                maxWidth: '100%',
-              }}>
-              <Tooltip title={t('tooltips.copy')}>
-                <IconButton
-                  size="small"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    copyContent(carForCopy || car, () => {});
-                  }}
-                  sx={{ p: '2px' }}>
-                  <ContentCopyOutlinedIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-              <Chip
-                clickable
-                variant="outlined"
-                size="small"
-                label={car}
-                onClick={() => {
-                  void handleNavigateToVehicle(vehicleId);
-                }}
-                sx={{
+      if (
+        field?.type === TypeOfRows.CAR &&
+        field?.label === t('tables.installedOnVehicle') &&
+        canNavigateVehicle
+      ) {
+        return {
+          ...field,
+          value: {
+            ...value,
+            copyble: false,
+            element: (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  width: '100%',
+                  minWidth: 0,
                   maxWidth: '100%',
-                  height: '28px',
-                  borderRadius: '16px',
-                  backgroundColor: '#eef5ff',
-                  borderColor: '#b8d3ff',
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    px: 1.25,
-                  },
-                }}
-              />
-            </div>
-          ),
-        },
-      };
+                }}>
+                <Tooltip title={t('tooltips.copy')}>
+                  <IconButton
+                    size="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copyContent(carForCopy || car, () => {});
+                    }}
+                    sx={{ p: '2px' }}>
+                    <ContentCopyOutlinedIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+                <Chip
+                  clickable
+                  variant="outlined"
+                  size="small"
+                  label={car}
+                  onClick={() => {
+                    void handleNavigateToVehicle(vehicleId);
+                  }}
+                  sx={{
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    maxWidth: 'calc(100% - 28px)',
+                    height: '28px',
+                    borderRadius: '16px',
+                    backgroundColor: '#eef5ff',
+                    borderColor: '#b8d3ff',
+                    '& .MuiChip-label': {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      px: 1.25,
+                    },
+                  }}
+                />
+              </div>
+            ),
+          },
+        };
+      }
+
+      if (
+        field?.type === TypeOfRows.USER &&
+        field?.label === t('tables.whoLinked') &&
+        canNavigateUser
+      ) {
+        return {
+          ...field,
+          value: {
+            ...value,
+            copyble: false,
+            element: (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  width: '100%',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                }}>
+                <Tooltip title={t('tooltips.copy')}>
+                  <IconButton
+                    size="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copyContent(String(linkedByName).trim(), () => {});
+                    }}
+                    sx={{ p: '2px' }}>
+                    <ContentCopyOutlinedIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+                <Chip
+                  clickable
+                  variant="outlined"
+                  size="small"
+                  label={linkedByName}
+                  onClick={() => {
+                    void handleNavigateToUser(linkedByUserId);
+                  }}
+                  sx={{
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    maxWidth: 'calc(100% - 28px)',
+                    height: '28px',
+                    borderRadius: '16px',
+                    backgroundColor: '#eef5ff',
+                    borderColor: '#b8d3ff',
+                    '& .MuiChip-label': {
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      px: 1.25,
+                    },
+                  }}
+                />
+              </div>
+            ),
+          },
+        };
+      }
+
+      return field;
     });
-  }, [alkolock?.vehicleBind?.vehicle, fields, handleNavigateToVehicle, t]);
+  }, [
+    alkolock?.vehicleBind?.createdBy,
+    alkolock?.vehicleBind?.vehicle,
+    fields,
+    handleNavigateToUser,
+    handleNavigateToVehicle,
+    t,
+  ]);
 
   return (
     <Loader isLoading={isLoading}>

@@ -36,6 +36,12 @@ export const EventInfo = ({
   const navigate = useNavigate();
   const { data, isLoading, fields, hasTemperatureSensor } = useEventInfo(selectedEventId);
   const hasDeviceError = data?.events[0]?.eventType?.startsWith('Ошибка') || false;
+  const isPlaceholderValue = (value: unknown) => {
+    const normalized = String(value ?? '')
+      .replace(/\u00A0/g, ' ')
+      .trim();
+    return !normalized || normalized === '-' || normalized === '—';
+  };
 
   const handleNavigateToUser = useCallback(
     async (userId: string | number) => {
@@ -181,6 +187,13 @@ export const EventInfo = ({
     const alcolockSerialNumber = data?.device?.serialNumber;
     const alcolockSerialNumberText =
       alcolockSerialNumber != null ? String(alcolockSerialNumber) : '';
+    const canNavigateUser = Boolean(userId && !isPlaceholderValue(userName));
+    const canNavigateVehicle = Boolean(
+      !isPlaceholderValue(regNumber) && !isPlaceholderValue(carString),
+    );
+    const canNavigateAlcolock = Boolean(
+      alcolockId && !isPlaceholderValue(alcolockSerialNumberText),
+    );
 
     const renderClickableChipValue = (
       label: string,
@@ -189,9 +202,11 @@ export const EventInfo = ({
     ) => (
       <div
         style={{
-          display: 'inline-flex',
+          display: 'flex',
           alignItems: 'center',
           gap: '6px',
+          width: '100%',
+          minWidth: 0,
           maxWidth: '100%',
         }}>
         <Tooltip title={t('tooltips.copy')}>
@@ -212,7 +227,9 @@ export const EventInfo = ({
           label={label}
           onClick={onNavigate}
           sx={{
-            maxWidth: '100%',
+            flex: '1 1 auto',
+            minWidth: 0,
+            maxWidth: 'calc(100% - 28px)',
             height: '28px',
             borderRadius: '16px',
             backgroundColor: '#eef5ff',
@@ -232,12 +249,7 @@ export const EventInfo = ({
       const value = field?.value;
       if (!value || Array.isArray(value)) return field;
 
-      if (
-        field?.type === TypeOfRows.USER &&
-        field?.label === t('info.user') &&
-        userId &&
-        userName
-      ) {
+      if (field?.type === TypeOfRows.USER && field?.label === t('info.user') && canNavigateUser) {
         return {
           ...field,
           value: {
@@ -257,9 +269,7 @@ export const EventInfo = ({
       if (
         field?.type === TypeOfRows.CAR &&
         field?.label === t('info.vehicle') &&
-        carString &&
-        carString !== '-' &&
-        regNumber
+        canNavigateVehicle
       ) {
         return {
           ...field,
@@ -280,8 +290,7 @@ export const EventInfo = ({
       if (
         field?.type === TypeOfRows.SERIAL_NUMBER &&
         field?.label === t('info.alcolockSerialNumber') &&
-        alcolockId &&
-        alcolockSerialNumberText
+        canNavigateAlcolock
       ) {
         return {
           ...field,
