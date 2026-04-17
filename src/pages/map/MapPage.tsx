@@ -267,8 +267,8 @@ export const MapPage = () => {
   const [locationSelectorOpen, setLocationSelectorOpen] = useState(false);
   const [locationSelectorResults, setLocationSelectorResults] = useState<NominatimResult[]>([]);
   const [locationSelectorQuery, setLocationSelectorQuery] = useState('');
+  const [isMapInitialized, setIsMapInitialized] = useState(false);
   // const mainMarkerRef = useRef<L.Marker | null>(null);
-  const urlMarkerInitialized = useRef(false);
   const [baseMarkerCoords, setBaseMarkerCoords] = useState<{ lat: number; lng: number } | null>(
     null,
   );
@@ -354,7 +354,6 @@ export const MapPage = () => {
       setUrlMarker(null);
       setUrlMarkerEvent(null);
     }
-    urlMarkerInitialized.current = false;
     navigate({ pathname: RoutePaths.map, search: '' });
 
     // При смене филиала — в точку пользователя (геолокация) или Санкт-Петербург; иначе — на маркер выбранного ТС
@@ -446,7 +445,13 @@ export const MapPage = () => {
     ],
   });
 
+  const prevBranchIdRef = useRef<typeof branchId>(branchId);
   useEffect(() => {
+    // На первом рендере не сбрасываем URL-параметры (lat/lng/vehicle),
+    // иначе переход по координатам с других вкладок теряет контекст.
+    if (prevBranchIdRef.current === branchId) return;
+
+    prevBranchIdRef.current = branchId;
     if (branchId !== undefined) {
       setBaseMarkerCoords(null);
       handleCloseAside(true); // смена филиала — сброс карты в Санкт-Петербург
@@ -457,15 +462,12 @@ export const MapPage = () => {
   }, [branchId]);
 
   useEffect(() => {
-    if (!mapRef.current || !urlLat || !urlLng || !urlVehicle || urlMarkerInitialized.current)
-      return;
+    if (!isMapInitialized || !mapRef.current || !urlLat || !urlLng || !urlVehicle) return;
 
     const lat = parseFloat(urlLat);
     const lng = parseFloat(urlLng);
 
     if (isNaN(lat) || isNaN(lng)) return;
-
-    urlMarkerInitialized.current = true;
 
     if (urlMarker) {
       urlMarker.remove();
@@ -552,26 +554,21 @@ export const MapPage = () => {
     });
 
     setUrlMarker(newMarker);
+    // Переход по координатам должен вести себя как клик в Истории на Карте:
+    // закрепляем маркеры, чтобы режим был явно активирован.
+    setFreezeMarkers(true);
+    // Для переходов с вкладок Пользователи/Транспорт/Алкозамки нужен такой же поток,
+    // как при клике по координатам внутри Карты: подгружаем события по госномеру.
+    loadVehicleEvents(urlVehicle);
+    setSelectedVehicleId(urlVehicle);
     mapRef.current.setView([lat, lng], 15);
 
     return () => {
-      if (urlMarker) {
-        urlMarker.remove();
-        setUrlMarker(null);
-      }
-      urlMarkerInitialized.current = false;
+      newMarker.remove();
+      setUrlMarker((prev) => (prev === newMarker ? null : prev));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlLat, urlLng, urlVehicle]);
-
-  useEffect(() => {
-    if (!expandedRowId && urlMarker) {
-      urlMarker.remove();
-      setUrlMarker(null);
-      setUrlMarkerEvent(null);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandedRowId]);
+  }, [isMapInitialized, urlLat, urlLng, urlVehicle]);
 
   useEffect(() => {
     if (!urlMarker || !urlMarkerEvent) return;
@@ -986,6 +983,7 @@ export const MapPage = () => {
       minZoom: 2,
       maxZoom: 18,
     }).setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+    setIsMapInitialized(true);
 
     requestAnimationFrame(() => {
       mapRef.current?.invalidateSize();

@@ -83,7 +83,7 @@ export const EventData: FC<EventData> = ({
     } else {
       navigate({
         pathname: RoutePaths.map,
-        search: `?lat=${latitude}&lng=${longitude}&vehicle=${registrationNumber}`,
+        search: `?lat=${latitude}&lng=${longitude}&vehicle=${encodeURIComponent(registrationNumber)}`,
       });
     }
     onExpandRow?.(event.id);
