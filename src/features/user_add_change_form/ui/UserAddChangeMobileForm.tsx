@@ -518,6 +518,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                 helperText={state.errors.errorsurname}
                 label={t('form.surname')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 {...state.register('surname')}
                 onChange={handleChangeWithTrim('surname')}
                 onBlur={handleBlurWithTrim('surname')}
@@ -528,6 +529,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                 helperText={state.errors.errorFirstName}
                 label={t('form.firstName')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 {...state.register('firstName')}
                 onChange={handleChangeWithTrim('firstName')}
                 onBlur={handleBlurWithTrim('firstName')}
@@ -538,6 +540,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                 helperText={state.errors.errormiddleName}
                 label={t('form.middleName')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 {...state.register('middleName')}
                 onChange={handleChangeWithTrim('middleName')}
                 onBlur={handleBlurWithTrim('middleName')}
@@ -611,6 +614,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                 error={Boolean(state.errors.errorEmail)}
                 label={t('form.email')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 {...state.register('email')}
                 onChange={handleChangeWithTrim('email')}
                 onBlur={handleBlurWithTrim('email')}
@@ -708,6 +712,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                     onChange={(e) => state.handlers.setLicenseCode(e?.target?.value)}
                     onBlur={handleBlurWithTrim('licenseCode')}
                     fullWidth
+                    InputLabelProps={{ shrink: true }}
                   />
                   <div className={style.dateFieldContainer}>
                     <TextField

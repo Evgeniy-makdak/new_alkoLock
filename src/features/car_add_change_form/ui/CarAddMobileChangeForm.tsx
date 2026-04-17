@@ -125,6 +125,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                 {...register('mark')}
                 label={t('form.make')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('mark')}
               />
               <TextField
@@ -133,6 +134,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                 {...register('model')}
                 label={t('form.model')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('model')}
               />
               <TransportTypeSelect
@@ -176,6 +178,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                 {...register('vin')}
                 label={'VIN'}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('vin')}
               />
               <CarColorSelect
@@ -219,6 +222,7 @@ export const CarAddMobileChangeForm: FC<CarAddMobileChangeFormProps> = ({ closeM
                 {...register('registrationNumber')}
                 label={t('form.stateNumber')}
                 fullWidth
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('registrationNumber')}
               />
 

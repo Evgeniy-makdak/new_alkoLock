@@ -76,6 +76,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 error={!!errorName}
                 {...register('name')}
                 label={t('tables.naming')}
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('name')}
               />
               <TextField
@@ -84,6 +85,7 @@ export const AlkozamkiForm: FC<AlkozamkiFormProps> = ({ closeModal, id }) => {
                 error={!!errorSerialNumber}
                 {...register('serialNumber')}
                 label={t('tables.serialNumber')}
+                InputLabelProps={{ shrink: true }}
                 onBlur={handleBlurWithTrim('serialNumber')}
               />
               {/* <TextField
