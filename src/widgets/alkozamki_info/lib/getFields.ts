@@ -1,5 +1,7 @@
 import type { TFunction } from 'i18next';
 
+import type { ChipProps } from '@mui/material';
+
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IAlcolock } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
@@ -15,6 +17,16 @@ export const getFields = (itemData: IAlcolock, t?: TFunction) => {
   const name = Formatters.nameFormatter(itemData?.vehicleBind?.createdBy);
   const date = Formatters.formatISODate(itemData?.vehicleBind?.createdAt);
   const mode = itemData?.mode ?? '-';
+  const modeLabel = mode.split(' ')[0];
+  const normalizedMode = modeLabel.toLowerCase();
+  const modeColor: ChipProps['color'] =
+    normalizedMode === 'аварийный'
+      ? 'error'
+      : normalizedMode === 'сервисный'
+        ? 'warning'
+        : normalizedMode === 'рабочий'
+          ? 'success'
+          : 'default';
 
   return [
     {
@@ -29,7 +41,8 @@ export const getFields = (itemData: IAlcolock, t?: TFunction) => {
       label: tr('tables.operatingMode'),
       type: TypeOfRows.MODE,
       value: {
-        label: mode.split(' ')[0],
+        label: modeLabel,
+        color: modeColor,
       },
     },
     {
