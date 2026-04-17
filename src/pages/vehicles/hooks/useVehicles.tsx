@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import { Dayjs } from 'dayjs';
 
@@ -8,12 +9,28 @@ import { useCloseTab } from '@entities/row_table_info';
 import { EventsHistory } from '@features/events_history';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { testids } from '@shared/const/testid';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { Values } from '@shared/ui/search_multiple_select';
 import { VehiclesInfo } from '@widgets/vehicles_info';
 
 export const useVehicles = () => {
   const { t } = useTranslation();
-  const [selectedCarId, setSelectedCarId] = useState(null);
+  const location = useLocation() as { state?: { selectedId?: ID; targetPage?: number } };
+  const selectedIdFromRoute = location.state?.selectedId;
+  const targetPageFromRoute = location.state?.targetPage;
+  const [selectedCarId, setSelectedCarId] = useState<ID | null>(selectedIdFromRoute ?? null);
+  const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
+    typeof targetPageFromRoute === 'number' ? targetPageFromRoute : null,
+  );
+
+  useEffect(() => {
+    if (selectedIdFromRoute != null) {
+      setSelectedCarId(selectedIdFromRoute);
+    }
+    if (typeof targetPageFromRoute === 'number') {
+      setTargetPageFromNavigation(targetPageFromRoute);
+    }
+  }, [selectedIdFromRoute, targetPageFromRoute]);
 
   // Состояние фильтров для вкладки истории - поднимаем на уровень выше
   const [historyFilters, setHistoryFilters] = useState<{
@@ -26,9 +43,16 @@ export const useVehicles = () => {
     endDate: null,
   });
 
-  const onClickRow = (id: string) => setSelectedCarId(id);
+  const onClickRow = (id: ID) => {
+    setSelectedCarId(id);
+    setTargetPageFromNavigation(null);
+  };
+  const onTargetPageApplied = () => {
+    setTargetPageFromNavigation(null);
+  };
   const handleCloseAside = () => {
     setSelectedCarId(null);
+    setTargetPageFromNavigation(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -77,6 +101,8 @@ export const useVehicles = () => {
     onClickRow,
     tabs,
     selectedCarId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
     handleCloseAside,
   };
 };

@@ -25,6 +25,8 @@ type VehiclesDesktopTableProps = {
   handleCloseAside: () => void;
   onBranchChange: () => void;
   selectedCarId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   prevBranch?: ID;
 };
 
@@ -32,6 +34,8 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
   onClickRow,
   handleCloseAside,
   selectedCarId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   prevBranch,
 }) => {
   const {
@@ -41,12 +45,13 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
     deleteCarModalData,
     recoverCarModalData,
     deleteTrueCarModalData,
-  } = useVehiclesTable(handleCloseAside, selectedCarId);
+  } = useVehiclesTable(handleCloseAside, selectedCarId, targetPageFromNavigation ?? null);
 
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const isInputFocused = useRef(false);
+  const skipNextAutoResetRef = useRef(false);
 
   // Проверка на открытые модальные окна
   const isAnyModalOpen =
@@ -74,16 +79,63 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
   }, [isAnyModalOpen]);
 
   useEffect(() => {
+    if (skipNextAutoResetRef.current) {
+      skipNextAutoResetRef.current = false;
+      return;
+    }
     if (statusFilter && tableData.apiRef.current) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [statusFilter, prevBranch]);
+  }, [statusFilter, prevBranch, tableData.apiRef]);
 
   useEffect(() => {
+    if (selectedCarId == null) {
+      setSelectedRowIndex(null);
+      return;
+    }
+
+    const rowIndex = tableData.rows.findIndex((row) => String(row?.id) === String(selectedCarId));
+    setSelectedRowIndex(rowIndex >= 0 ? rowIndex : null);
+
+    if (rowIndex >= 0 && tableData.apiRef.current) {
+      const rowId = tableData.rows[rowIndex]?.id;
+      if (rowId != null) {
+        tableData.apiRef.current.setRowSelectionModel([rowId]);
+      }
+    }
+  }, [selectedCarId, tableData.rows, tableData.apiRef]);
+
+  useEffect(() => {
+    if (skipNextAutoResetRef.current) {
+      skipNextAutoResetRef.current = false;
+      return;
+    }
     if (tableData.sortModel) {
       tableData.apiRef.current.setPage(0);
     }
-  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
+  }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field, tableData.apiRef]);
+
+  useEffect(() => {
+    if (targetPageFromNavigation == null) return;
+    const nextPage = Number(targetPageFromNavigation);
+    if (!Number.isFinite(nextPage) || nextPage < 0) {
+      onTargetPageApplied?.();
+      return;
+    }
+    if (tableData.page !== nextPage) {
+      tableData.changeTableState({ page: nextPage, pageSize: tableData.pageSize });
+      tableData.apiRef.current?.setPage?.(nextPage);
+    }
+    skipNextAutoResetRef.current = true;
+    onTargetPageApplied?.();
+  }, [
+    targetPageFromNavigation,
+    tableData.page,
+    tableData.pageSize,
+    tableData.changeTableState,
+    tableData.apiRef,
+    onTargetPageApplied,
+  ]);
 
   // Обработчик клавиатуры
   useEffect(() => {

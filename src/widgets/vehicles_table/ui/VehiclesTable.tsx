@@ -10,6 +10,8 @@ interface VehiclesTableProps {
   onClickRow: (id: ID) => void;
   handleCloseAside: () => void;
   selectedCarId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onBranchChange?: () => void;
   prevBranch?: ID;
 }
@@ -18,6 +20,8 @@ export const VehiclesTable = ({
   onClickRow,
   handleCloseAside,
   selectedCarId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   onBranchChange,
   prevBranch,
 }: VehiclesTableProps) => {
@@ -30,6 +34,8 @@ export const VehiclesTable = ({
         onClickRow={onClickRow}
         handleCloseAside={handleCloseAside}
         selectedCarId={selectedCarId}
+        targetPageFromNavigation={targetPageFromNavigation}
+        onTargetPageApplied={onTargetPageApplied}
         onBranchChange={onBranchChange}
         prevBranch={prevBranch}
       />
@@ -41,6 +47,8 @@ export const VehiclesTable = ({
       onClickRow={onClickRow}
       handleCloseAside={handleCloseAside}
       selectedCarId={selectedCarId}
+      targetPageFromNavigation={targetPageFromNavigation}
+      onTargetPageApplied={onTargetPageApplied}
       onBranchChange={onBranchChange}
       prevBranch={prevBranch}
     />

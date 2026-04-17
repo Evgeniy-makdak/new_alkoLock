@@ -10,7 +10,14 @@ import { useVehicles } from '../hooks/useVehicles';
 
 const Vehicles = () => {
   const prevBranch = useRef(null);
-  const { handleCloseAside, onClickRow, tabs, selectedCarId } = useVehicles();
+  const {
+    handleCloseAside,
+    onClickRow,
+    tabs,
+    selectedCarId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
+  } = useVehicles();
   const { selectedBranchState } = appStore((state) => state);
 
   const handleBranchChange = () => {
@@ -18,7 +25,11 @@ const Vehicles = () => {
     window.dispatchEvent(event);
   };
 
-  if (prevBranch.current !== selectedBranchState?.id) {
+  if (prevBranch.current === null) {
+    // Первый рендер: фиксируем филиал без сброса состояния,
+    // чтобы не потерять selectedId при переходе из Алкозамков.
+    prevBranch.current = selectedBranchState?.id;
+  } else if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
     handleCloseAside();
     handleBranchChange();
@@ -32,6 +43,8 @@ const Vehicles = () => {
           onBranchChange={handleBranchChange}
           handleCloseAside={handleCloseAside}
           selectedCarId={selectedCarId}
+          targetPageFromNavigation={targetPageFromNavigation}
+          onTargetPageApplied={onTargetPageApplied}
           prevBranch={prevBranch.current}
         />
       </PageWrapper>

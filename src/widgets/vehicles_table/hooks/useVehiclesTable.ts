@@ -14,7 +14,11 @@ import { useGetColumns } from '../lib/getColumns';
 import { useGetRows } from '../lib/getRows';
 import { useVehiclesTableStore } from '../model/vehiclesTableStore';
 
-export const useVehiclesTable = (handleCloseAside: () => void, selectedCarId: ID | null) => {
+export const useVehiclesTable = (
+  handleCloseAside: () => void,
+  selectedCarId: ID | null,
+  targetPageFromNavigation: number | null = null,
+) => {
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.VEHICLES_PAGE_TABLE_SORTS,
   );
@@ -48,10 +52,17 @@ export const useVehiclesTable = (handleCloseAside: () => void, selectedCarId: ID
   });
 
   useEffect(() => {
-    if (selectedCarId && !cars?.content?.some((cars: { id: ID }) => cars.id === selectedCarId)) {
-      handleCloseAside();
-    }
-  }, [cars, selectedCarId, handleCloseAside]);
+    if (!selectedCarId) return;
+    if (!Array.isArray(cars?.content)) return;
+    // Во время навигационного перехода сначала переключаем страницу,
+    // затем проверяем наличие строки — иначе aside может закрыться на промежуточной странице.
+    if (targetPageFromNavigation != null) return;
+    const isCurrentRowVisible = cars?.content?.some(
+      (car: { id: ID }) => String(car.id) === String(selectedCarId),
+    );
+    if (isCurrentRowVisible) return;
+    handleCloseAside();
+  }, [cars, selectedCarId, targetPageFromNavigation, handleCloseAside]);
 
   const newRefetch = async () => {
     refetch();

@@ -27,6 +27,8 @@ interface VehiclesMobileTableProps {
   onClickRow: (id: ID) => void;
   handleCloseAside: () => void;
   selectedCarId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onBranchChange?: () => void;
   prevBranch?: ID;
 }
@@ -35,6 +37,8 @@ export const VehiclesMobileTable = ({
   onClickRow,
   handleCloseAside,
   selectedCarId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
 }: VehiclesMobileTableProps) => {
   const { t } = useTranslation();
   const {
@@ -44,13 +48,14 @@ export const VehiclesMobileTable = ({
     deleteCarModalData,
     recoverCarModalData,
     deleteTrueCarModalData,
-  } = useVehiclesTable(handleCloseAside, selectedCarId);
+  } = useVehiclesTable(handleCloseAside, selectedCarId, targetPageFromNavigation ?? null);
 
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const skipNextAutoResetRef = useRef(false);
 
   const [startDateInput, setStartDateInput] = useState('');
   const [endDateInput, setEndDateInput] = useState('');
@@ -100,16 +105,54 @@ export const VehiclesMobileTable = ({
   }, [filtersData]);
 
   useEffect(() => {
+    if (skipNextAutoResetRef.current) {
+      skipNextAutoResetRef.current = false;
+      return;
+    }
     if (tableData.changeTableState) {
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
-  }, [statusFilter]);
+  }, [statusFilter, tableData.changeTableState, tableData.pageSize]);
 
   useEffect(() => {
+    if (skipNextAutoResetRef.current) {
+      skipNextAutoResetRef.current = false;
+      return;
+    }
     if (tableData.sortModel && tableData.changeTableState) {
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
-  }, [tableData.sortModel]);
+  }, [tableData.sortModel, tableData.changeTableState, tableData.pageSize]);
+
+  useEffect(() => {
+    if (selectedCarId == null) {
+      setSelectedRowIndex(null);
+      return;
+    }
+
+    const rowIndex = tableData.rows.findIndex((row) => String(row?.id) === String(selectedCarId));
+    setSelectedRowIndex(rowIndex >= 0 ? rowIndex : null);
+  }, [selectedCarId, tableData.rows]);
+
+  useEffect(() => {
+    if (targetPageFromNavigation == null) return;
+    const nextPage = Number(targetPageFromNavigation);
+    if (!Number.isFinite(nextPage) || nextPage < 0) {
+      onTargetPageApplied?.();
+      return;
+    }
+    if (tableData.page !== nextPage && tableData.changeTableState) {
+      tableData.changeTableState({ page: nextPage, pageSize: tableData.pageSize });
+    }
+    skipNextAutoResetRef.current = true;
+    onTargetPageApplied?.();
+  }, [
+    targetPageFromNavigation,
+    tableData.page,
+    tableData.pageSize,
+    tableData.changeTableState,
+    onTargetPageApplied,
+  ]);
 
   useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
