@@ -26,6 +26,8 @@ type UsersDesktopTableProps = {
   handleCloseAside: () => void;
   onBranchChange?: () => void;
   selectedUserId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onAddUser?: () => void; // Добавляем опциональные пропсы для совместимости
   onEditUser?: (id: ID) => void;
   onDeleteUser?: (id: ID) => void;
@@ -36,6 +38,8 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
   handleCloseAside,
   onBranchChange,
   selectedUserId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   onAddUser,
   onEditUser,
   onDeleteUser,
@@ -47,13 +51,39 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
     deleteUserModalData,
     recoverUserModalData,
     trueDeleteUserModalData,
-  } = useUsersTable(handleCloseAside, selectedUserId);
+  } = useUsersTable(handleCloseAside, selectedUserId, targetPageFromNavigation);
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const isInputFocused = useRef(false);
+  const skipNextAutoResetRef = useRef(false);
+
+  useEffect(() => {
+    if (targetPageFromNavigation == null || !tableData.changeTableState) return;
+    skipNextAutoResetRef.current = true;
+    tableData.changeTableState({ page: targetPageFromNavigation, pageSize: tableData.pageSize });
+    tableData.apiRef.current?.setPage(targetPageFromNavigation);
+  }, [tableData.changeTableState, tableData.pageSize, targetPageFromNavigation]);
+
+  useEffect(() => {
+    if (!selectedUserId) return;
+    const rowIndex = tableData.rows.findIndex((row) => row.id === selectedUserId);
+    if (rowIndex !== -1) {
+      setSelectedRowIndex(rowIndex);
+      tableData.apiRef.current?.setRowSelectionModel([selectedUserId]);
+      if (targetPageFromNavigation != null) {
+        onTargetPageApplied?.();
+      }
+    }
+  }, [
+    onTargetPageApplied,
+    selectedUserId,
+    tableData.apiRef,
+    tableData.rows,
+    targetPageFromNavigation,
+  ]);
 
   // Для отслеживания закрытия модальных окон
   const [prevRecoverModalOpen, setPrevRecoverModalOpen] = useState(false);
@@ -80,6 +110,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
 
   // Проверяем видимость пользователя
   useEffect(() => {
+    if (targetPageFromNavigation != null) return;
     if (selectedUserId && !isUserInCurrentRows()) {
       handleCloseAside();
       if (tableData.apiRef.current) {
@@ -87,12 +118,13 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
       }
       setSelectedRowIndex(null);
     }
-  }, [tableData.rows, selectedUserId, handleCloseAside]);
+  }, [tableData.rows, selectedUserId, handleCloseAside, targetPageFromNavigation]);
 
   // Отслеживаем закрытие модального окна восстановления
   useEffect(() => {
     // Если модальное окно восстановления только что закрылось
     if (prevRecoverModalOpen && !recoverUserModalData.isOpen && selectedUserId) {
+      if (targetPageFromNavigation != null) return;
       // Даем время на обновление данных
       const timer = setTimeout(() => {
         if (selectedUserId && !isUserInCurrentRows()) {
@@ -109,11 +141,18 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
 
     // Обновляем предыдущее состояние
     setPrevRecoverModalOpen(recoverUserModalData.isOpen);
-  }, [recoverUserModalData.isOpen, selectedUserId, handleCloseAside, tableData.rows]);
+  }, [
+    recoverUserModalData.isOpen,
+    selectedUserId,
+    handleCloseAside,
+    tableData.rows,
+    targetPageFromNavigation,
+  ]);
 
   // Отслеживаем закрытие модального окна удаления
   useEffect(() => {
     if (deleteUserModalData.isOpen === false && selectedUserId) {
+      if (targetPageFromNavigation != null) return;
       // Даем время на обновление данных
       const timer = setTimeout(() => {
         if (selectedUserId && !isUserInCurrentRows()) {
@@ -127,10 +166,20 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [deleteUserModalData.isOpen, selectedUserId, handleCloseAside, tableData.rows]);
+  }, [
+    deleteUserModalData.isOpen,
+    selectedUserId,
+    handleCloseAside,
+    tableData.rows,
+    targetPageFromNavigation,
+  ]);
 
   useEffect(() => {
     if (statusFilter && tableData.apiRef.current) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.apiRef.current.setPage(0);
     }
   }, [statusFilter]);
@@ -148,6 +197,10 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
 
   useEffect(() => {
     if (tableData.sortModel) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.apiRef.current.setPage(0);
     }
   }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);

@@ -131,7 +131,8 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                   maxWidth: '100%',
                   height: '28px',
                   borderRadius: '16px',
-                  backgroundColor: '#f5f5f5',
+                  backgroundColor: '#eef5ff',
+                  borderColor: '#b8d3ff',
                   '& .MuiChip-label': {
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',

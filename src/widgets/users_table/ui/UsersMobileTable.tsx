@@ -29,6 +29,8 @@ interface UsersMobileTableProps {
   onRowClick: (id: ID, isActive: boolean) => void;
   handleCloseAside: () => void;
   selectedUserId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onAddUser: () => void;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -59,6 +61,8 @@ export const UsersMobileTable = ({
   onRowClick,
   handleCloseAside,
   selectedUserId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
 }: UsersMobileTableProps) => {
   const { t } = useTranslation();
   const {
@@ -68,13 +72,14 @@ export const UsersMobileTable = ({
     deleteUserModalData,
     recoverUserModalData,
     trueDeleteUserModalData,
-  } = useUsersTable(handleCloseAside, selectedUserId);
+  } = useUsersTable(handleCloseAside, selectedUserId, targetPageFromNavigation);
 
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const skipNextAutoResetRef = useRef(false);
 
   const [startDateInput, setStartDateInput] = useState('');
   const [endDateInput, setEndDateInput] = useState('');
@@ -133,15 +138,29 @@ export const UsersMobileTable = ({
 
   useEffect(() => {
     if (tableData.changeTableState) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
   }, [statusFilter]);
 
   useEffect(() => {
     if (tableData.sortModel && tableData.changeTableState) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
   }, [tableData.sortModel]);
+
+  useEffect(() => {
+    if (targetPageFromNavigation == null || !tableData.changeTableState) return;
+    skipNextAutoResetRef.current = true;
+    tableData.changeTableState({ page: targetPageFromNavigation, pageSize: tableData.pageSize });
+  }, [tableData.changeTableState, tableData.pageSize, targetPageFromNavigation]);
 
   useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
@@ -164,6 +183,20 @@ export const UsersMobileTable = ({
       setSelectedRowIndex(rowIndex);
     }
   };
+
+  useEffect(() => {
+    if (!selectedUserId) {
+      setSelectedRowIndex(null);
+      return;
+    }
+    const rowIndex = tableData.rows.findIndex((row) => row.id === selectedUserId);
+    if (rowIndex !== -1) {
+      setSelectedRowIndex(rowIndex);
+      if (targetPageFromNavigation != null) {
+        onTargetPageApplied?.();
+      }
+    }
+  }, [onTargetPageApplied, selectedUserId, tableData.rows, targetPageFromNavigation]);
 
   const handlePageChange = (newPage: number) => {
     if (tableData.changeTableState) {

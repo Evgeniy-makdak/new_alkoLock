@@ -14,6 +14,8 @@ const Users = () => {
     tabs,
     onClickRow,
     selectedUserId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
     activeTab,
     handleTabChange,
     handleCloseAside,
@@ -68,6 +70,8 @@ const Users = () => {
           handleCloseAside={handleCloseAside}
           onBranchChange={handleResetFilters}
           selectedUserId={selectedUserId}
+          targetPageFromNavigation={targetPageFromNavigation}
+          onTargetPageApplied={onTargetPageApplied}
           onAddUser={handleAddUser}
           onEditUser={handleEditUser}
           onDeleteUser={handleDeleteUser}

@@ -9,6 +9,8 @@ interface UsersTableProps {
   handleCloseAside: () => void;
   onBranchChange: () => void;
   selectedUserId: string | number | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onAddUser: () => void;
   onEditUser: (id: string | number) => void;
   onDeleteUser: (id: string | number, isActive: boolean) => void; // Добавляем isActive
@@ -19,6 +21,8 @@ export const UsersTable = ({
   handleCloseAside,
   onBranchChange,
   selectedUserId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   onAddUser,
   onEditUser,
   onDeleteUser,
@@ -31,6 +35,8 @@ export const UsersTable = ({
         onRowClick={onRowClick}
         handleCloseAside={handleCloseAside}
         selectedUserId={selectedUserId}
+        targetPageFromNavigation={targetPageFromNavigation}
+        onTargetPageApplied={onTargetPageApplied}
         onAddUser={onAddUser}
         onEditUser={onEditUser}
         onDeleteUser={onDeleteUser}
@@ -44,6 +50,8 @@ export const UsersTable = ({
       handleCloseAside={handleCloseAside}
       onBranchChange={onBranchChange}
       selectedUserId={selectedUserId}
+      targetPageFromNavigation={targetPageFromNavigation}
+      onTargetPageApplied={onTargetPageApplied}
     />
   );
 };

@@ -170,18 +170,16 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
         sx={{
           maxWidth: '100%',
           whiteSpace: 'nowrap',
-          height: '32px',
-          fontSize: '16px',
+          height: '28px',
+          borderRadius: '16px',
+          backgroundColor: '#f5f5f5',
           '& .MuiChip-label': {
             display: 'block',
             whiteSpace: 'nowrap',
-            padding: '6px 12px',
+            padding: '0 10px',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-          },
-          backgroundColor: 'rgba(0, 0, 0, 0.08)',
-          '&:hover': {
-            backgroundColor: 'rgba(0, 0, 0, 0.12)',
+            fontSize: '16px',
           },
         }}
       />

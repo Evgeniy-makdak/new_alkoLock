@@ -16,7 +16,12 @@ import { useGetRows } from '../lib/getRows';
 import { getUsersTableDisplayTotal } from '../lib/usersTableSystemUsers';
 import { useUsersTableStore } from '../model/usersTableStore';
 
-export const useUsersTable = (handleCloseAside: () => void, selectedUserId: ID | null) => {
+export const useUsersTable = (
+  handleCloseAside: () => void,
+  selectedUserId: ID | null,
+  targetPageFromNavigation?: number | null,
+  enableAutoClose = true,
+) => {
   const [statusFilter, setStatusFilter] = useState<'Все' | 'Активные' | 'Неактивные'>('Все');
   const [state, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.USERS_TABLE,
@@ -61,8 +66,20 @@ export const useUsersTable = (handleCloseAside: () => void, selectedUserId: ID |
 
   // Основная логика проверки существования пользователя
   useEffect(() => {
+    if (!enableAutoClose) {
+      prevSelectedUserIdRef.current = selectedUserId;
+      return;
+    }
+
     // Если нет выбранного пользователя или нет данных - выходим
     if (!selectedUserId || !users?.content) {
+      prevSelectedUserIdRef.current = selectedUserId;
+      return;
+    }
+
+    // Во время перехода по ссылке на конкретную страницу не закрываем aside
+    // на промежуточных данных старой страницы.
+    if (targetPageFromNavigation != null) {
       prevSelectedUserIdRef.current = selectedUserId;
       return;
     }
@@ -93,7 +110,7 @@ export const useUsersTable = (handleCloseAside: () => void, selectedUserId: ID |
 
       return () => clearTimeout(timer);
     }
-  }, [users, selectedUserId, handleCloseAside]);
+  }, [users, selectedUserId, handleCloseAside, targetPageFromNavigation, enableAutoClose]);
 
   // Сбрасываем флаг при размонтировании
   useEffect(() => {

@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import { Dayjs } from 'dayjs';
 
@@ -17,9 +18,24 @@ import { useUsersTable } from '@widgets/users_table/hooks/useUsersTable';
 
 export const useUsers = () => {
   const { t } = useTranslation();
-  const [selectedUserId, setSelectedUserId] = useState<ID | null>(null);
+  const { state } = useLocation() as {
+    state?: { selectedId?: ID; targetPage?: number };
+  };
+  const [selectedUserId, setSelectedUserId] = useState<ID | null>(state?.selectedId ?? null);
+  const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
+    state?.targetPage ?? null,
+  );
   const [selectedUserActive, setSelectedUserActive] = useState(false);
   const [activeTab, setActiveTab] = useState<number>(0);
+
+  useEffect(() => {
+    if (state?.selectedId != null) {
+      setSelectedUserId(state.selectedId);
+    }
+    if (state?.targetPage != null) {
+      setTargetPageFromNavigation(state.targetPage);
+    }
+  }, [state?.selectedId, state?.targetPage]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -35,11 +51,13 @@ export const useUsers = () => {
   const onClickRow = (id: ID, isActive: boolean) => {
     setSelectedUserId(id);
     setSelectedUserActive(isActive);
+    setTargetPageFromNavigation(null);
   };
 
   const handleCloseAside = () => {
     setSelectedUserId(null);
     setSelectedUserActive(false);
+    setTargetPageFromNavigation(null);
     setActiveTab(0); // Сбрасываем активную вкладку при закрытии
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
@@ -61,7 +79,11 @@ export const useUsers = () => {
     recoverUserModalData,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     trueDeleteUserModalData,
-  } = useUsersTable(handleCloseAside, selectedUserId);
+  } = useUsersTable(handleCloseAside, selectedUserId, targetPageFromNavigation, false);
+
+  const onTargetPageApplied = () => {
+    setTargetPageFromNavigation(null);
+  };
 
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.USER_LIST_TABLE]);
   const hasCreatePermission = appStore().permissions?.includes('PERMISSION_USER_CREATE');
@@ -109,6 +131,8 @@ export const useUsers = () => {
     tabs,
     onClickRow,
     selectedUserId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
     activeTab,
     handleTabChange,
     handleCloseAside,

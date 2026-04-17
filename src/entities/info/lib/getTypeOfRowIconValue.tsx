@@ -149,6 +149,7 @@ export const getTypeOfRowIconValue = ({
 }: GetTypeOfRowIconValueProps) => {
   if (element) return element;
   const label = { ...rest }?.label || '';
+  const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
   const count =
     typeof label === 'string' || typeof label === 'number' ? label?.toString().length : 33;
 
@@ -156,7 +157,17 @@ export const getTypeOfRowIconValue = ({
   const isMobile = window.innerWidth <= 768;
 
   const commonChipStyles = {
-    fontSize: '16px',
+    maxWidth: '100%',
+    height: '28px',
+    borderRadius: '16px',
+    ...(hasSemanticColor ? {} : { backgroundColor: '#f5f5f5' }),
+    '& .MuiChip-label': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      px: 1.25,
+      fontSize: '16px',
+    },
   };
 
   const tooltipTitle = copyText ?? ({ ...rest }.label || '');
@@ -188,7 +199,7 @@ export const getTypeOfRowIconValue = ({
   const chip = copyble ? (
     <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} />
   ) : (
-    <Chip {...rest} className={style.labelText} />
+    <Chip {...rest} className={style.labelText} sx={commonChipStyles} />
   );
 
   const shouldApplyCustomChip = [
@@ -199,21 +210,9 @@ export const getTypeOfRowIconValue = ({
 
   const castomChip =
     customStyled && shouldApplyCustomChip ? (
-      <ChipCopyTextIcon
-        copyText={copyText}
-        variant="outlined"
-        sx={{
-          backgroundColor: 'transparent',
-          boxSizing: 'border-box',
-          border: 'none',
-          borderRadius: 0,
-          padding: '2px',
-          fontSize: '16px',
-        }}
-        {...rest}
-      />
+      <ChipCopyTextIcon copyText={copyText} variant="outlined" sx={commonChipStyles} {...rest} />
     ) : (
-      <Chip {...rest} style={commonChipStyles} />
+      <Chip {...rest} sx={commonChipStyles} />
     );
 
   return tooltip || count >= 33 ? (
