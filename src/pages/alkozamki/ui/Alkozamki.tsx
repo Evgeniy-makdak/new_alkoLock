@@ -11,7 +11,14 @@ import { useAlkozamki } from '../hooks/useAlkozamki';
 
 const Alkozamki = () => {
   const prevBranch = useRef<ID | null>(null);
-  const { tabs, selectedAlcolockId, onClickRow, handleCloseAside } = useAlkozamki();
+  const {
+    tabs,
+    selectedAlcolockId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
+    onClickRow,
+    handleCloseAside,
+  } = useAlkozamki();
   const { selectedBranchState } = appStore((state) => state);
 
   useEffect(() => {
@@ -28,6 +35,8 @@ const Alkozamki = () => {
           handleClickRow={onClickRow}
           handleCloseAside={handleCloseAside}
           selectedAlcolockId={selectedAlcolockId}
+          targetPageFromNavigation={targetPageFromNavigation}
+          onTargetPageApplied={onTargetPageApplied}
           prevBranch={prevBranch.current}
         />
       </PageWrapper>

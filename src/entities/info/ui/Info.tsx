@@ -1,10 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 import { Card, CardContent, Divider } from '@mui/material';
-
-import { useAlkoContext } from '@widgets/vehicles_info/lib/AlkoContext';
 
 import {
   type Field,
@@ -26,12 +23,7 @@ type InfoProps = {
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
   const { t } = useTranslation();
-  const { alkoId } = useAlkoContext();
-  const navigate = useNavigate();
   const summaryExhaleResult = getSummaryExhaleResult(t);
-  const onClick = (id: string) => {
-    navigate('/alkozamki', { state: { selectedId: id } });
-  };
 
   return (
     <Card className={style.card}>
@@ -45,28 +37,7 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           return (
             <React.Fragment key={i}>
               <div className={style.row}>
-                <span
-                  onClick={() => {
-                    if (
-                      field.label === 'Установленный алкозамок' &&
-                      field.type === 'SERIAL_NUMBER' &&
-                      field.value &&
-                      !Array.isArray(field.value) &&
-                      field.value.label !== '-'
-                    ) {
-                      onClick(alkoId);
-                    }
-                  }}
-                  className={style.label}
-                  style={
-                    field.label === 'Установленный алкозамок' &&
-                    field.type === 'SERIAL_NUMBER' &&
-                    field.value &&
-                    !Array.isArray(field.value) &&
-                    field.value.label !== '-'
-                      ? { cursor: 'pointer' }
-                      : undefined
-                  }>
+                <span className={style.label}>
                   {field?.type ? getTypeOfRowIconLabel(field?.type, field?.label) : field?.label}
                 </span>
                 <span className={style.value} style={field?.style}>

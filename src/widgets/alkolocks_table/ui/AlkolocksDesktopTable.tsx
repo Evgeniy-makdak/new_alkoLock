@@ -27,6 +27,8 @@ interface AlkolocksDesktopTableProps {
   handleClickRow: (id: ID) => void;
   handleCloseAside: () => void;
   selectedAlcolockId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   prevBranch: ID;
 }
 
@@ -34,6 +36,8 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
   handleClickRow,
   handleCloseAside,
   selectedAlcolockId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   prevBranch,
 }) => {
   const {
@@ -49,6 +53,8 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
   const tableWrapperRef = useRef<HTMLDivElement>(null);
   const isInputFocused = useRef(false);
+  const skipNextAutoResetRef = useRef(false);
+  const suppressCloseOnNextPaginationRef = useRef(false);
   // Хранит предыдущее значение prevBranch для корректного определения смены филиала.
   // prevBranch при первом рендере = null (из Alkozamki.tsx), а реальный id бранча
   // появляется позже (после useEffect в Alkozamki.tsx). Без этого ref-а эффект
@@ -64,6 +70,21 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
     recoverAlcolockModalData.isOpen ||
     !!trueDeleteAlcolockModalData.trueDeleteAlcolock;
 
+  // Применяем целевую страницу только один раз при переходе по ссылке.
+  useEffect(() => {
+    if (targetPageFromNavigation == null) return;
+    skipNextAutoResetRef.current = true;
+    suppressCloseOnNextPaginationRef.current = true;
+    tableData.changeTableState?.({ page: targetPageFromNavigation, pageSize: tableData.pageSize });
+    tableData.apiRef?.current?.setPage(targetPageFromNavigation);
+    onTargetPageApplied?.();
+  }, [
+    onTargetPageApplied,
+    tableData.changeTableState,
+    tableData.pageSize,
+    targetPageFromNavigation,
+  ]);
+
   // Эффект для обработки выбранного алкозамка
   useEffect(() => {
     if (!selectedAlcolockId || !tableData.apiRef?.current) return;
@@ -73,10 +94,9 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
 
       const rowIndex = tableData.rows.findIndex((row) => row.id === selectedAlcolockId);
       if (rowIndex !== -1) {
+        setSelectedRowIndex(rowIndex);
         tableData.apiRef.current.scrollToIndexes({ rowIndex });
         tableData.apiRef.current.setRowSelectionModel([selectedAlcolockId]);
-      } else {
-        tableData.apiRef.current.setPage(0);
       }
     };
 
@@ -105,6 +125,10 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
   // Сброс страницы при смене фильтров/сортировки — идентично Events/Users
   useEffect(() => {
     if (statusFilter && tableData.apiRef?.current) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.apiRef.current.setPage(0);
     }
   }, [statusFilter]);
@@ -125,6 +149,10 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
   // Именно так сделано в Events/Users: смена ссылки объекта не вызывает лишний сброс страницы.
   useEffect(() => {
     if (tableData.sortModel && tableData.apiRef?.current) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.apiRef.current.setPage(0);
     }
   }, [tableData.sortModel[0]?.sort, tableData.sortModel[0]?.field]);
@@ -247,6 +275,10 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
 
   const handlePaginationModelChange = (paginationModel: any) => {
     tableData.changeTableState(paginationModel);
+    if (suppressCloseOnNextPaginationRef.current) {
+      suppressCloseOnNextPaginationRef.current = false;
+      return;
+    }
     // Закрываем боковую панель при изменении пагинации
     handleCloseAside();
     setSelectedRowIndex(null);

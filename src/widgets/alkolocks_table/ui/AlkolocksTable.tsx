@@ -10,6 +10,8 @@ interface AlkolocksTableProps {
   handleClickRow: (id: ID) => void;
   handleCloseAside: () => void;
   selectedAlcolockId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onBranchChange?: () => void;
   prevBranch?: ID;
 }
@@ -18,6 +20,8 @@ export const AlkolocksTable = ({
   handleClickRow,
   handleCloseAside,
   selectedAlcolockId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
   onBranchChange,
   prevBranch,
 }: AlkolocksTableProps) => {
@@ -30,6 +34,8 @@ export const AlkolocksTable = ({
         onClickRow={handleClickRow}
         handleCloseAside={handleCloseAside}
         selectedAlcolockId={selectedAlcolockId}
+        targetPageFromNavigation={targetPageFromNavigation}
+        onTargetPageApplied={onTargetPageApplied}
         onBranchChange={onBranchChange}
         prevBranch={prevBranch}
       />
@@ -41,6 +47,8 @@ export const AlkolocksTable = ({
       handleClickRow={handleClickRow}
       handleCloseAside={handleCloseAside}
       selectedAlcolockId={selectedAlcolockId}
+      targetPageFromNavigation={targetPageFromNavigation}
+      onTargetPageApplied={onTargetPageApplied}
       prevBranch={prevBranch}
     />
   );

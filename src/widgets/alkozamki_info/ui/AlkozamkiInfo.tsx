@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { IconButton, Tooltip } from '@mui/material';
+import { Chip, IconButton, Tooltip } from '@mui/material';
 
 import { Info } from '@entities/info';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
@@ -108,35 +108,38 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                 gap: '6px',
                 maxWidth: '100%',
               }}>
-              <button
-                type="button"
-                onClick={() => {
-                  void handleNavigateToVehicle(vehicleId);
-                }}
-                style={{
-                  border: 'none',
-                  background: 'transparent',
-                  padding: 0,
-                  margin: 0,
-                  cursor: 'pointer',
-                  color: 'inherit',
-                  textDecoration: 'underline',
-                  textAlign: 'left',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '100%',
-                }}>
-                {car}
-              </button>
               <Tooltip title={t('tooltips.copy')}>
                 <IconButton
                   size="small"
-                  onClick={() => copyContent(carForCopy || car, () => {})}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    copyContent(carForCopy || car, () => {});
+                  }}
                   sx={{ p: '2px' }}>
                   <ContentCopyOutlinedIcon fontSize="inherit" />
                 </IconButton>
               </Tooltip>
+              <Chip
+                clickable
+                variant="outlined"
+                size="small"
+                label={car}
+                onClick={() => {
+                  void handleNavigateToVehicle(vehicleId);
+                }}
+                sx={{
+                  maxWidth: '100%',
+                  height: '28px',
+                  borderRadius: '16px',
+                  backgroundColor: '#f5f5f5',
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    px: 1.25,
+                  },
+                }}
+              />
             </div>
           ),
         },

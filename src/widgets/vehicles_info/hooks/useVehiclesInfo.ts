@@ -8,12 +8,10 @@ import { CarsApi } from '@shared/api/baseQuerys';
 import { ID } from '@shared/types/BaseQueryTypes';
 
 import { useVehiclesInfoApi } from '../api/useVehiclesInfoApi';
-import { useAlkoContext } from '../lib/AlkoContext';
 import { getFields } from '../lib/getFields';
 
 export const useVehiclesInfo = (id: ID, closeTab: () => void) => {
   const { t } = useTranslation();
-  const { setAlkoId } = useAlkoContext();
   const { car, isLoading, notFoundCar } = useVehiclesInfoApi(id);
   const [colorMap, setColorMap] = useState<{ [key: string]: string }>({});
   const [loadingColors, setLoadingColors] = useState(true);
@@ -55,10 +53,6 @@ export const useVehiclesInfo = (id: ID, closeTab: () => void) => {
     if (notFoundCar) closeTab();
   }, [notFoundCar, closeTab]);
 
-  useEffect(() => {
-    setAlkoId(car?.monitoringDevice?.id ?? null);
-  }, [car?.monitoringDevice?.id, setAlkoId]);
-
   const fields = useMemo(() => {
     if (!car) return [];
     return getFields(
@@ -74,5 +68,6 @@ export const useVehiclesInfo = (id: ID, closeTab: () => void) => {
   return {
     isLoading: isLoading || loadingColors || loadingTypes,
     fields,
+    car,
   };
 };

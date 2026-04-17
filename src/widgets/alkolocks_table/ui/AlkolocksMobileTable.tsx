@@ -27,6 +27,8 @@ interface AlkolocksMobileTableProps {
   onClickRow: (id: ID) => void;
   handleCloseAside: () => void;
   selectedAlcolockId: ID | null;
+  targetPageFromNavigation?: number | null;
+  onTargetPageApplied?: () => void;
   onBranchChange?: () => void;
   prevBranch?: ID;
 }
@@ -53,6 +55,8 @@ export const AlkolocksMobileTable = ({
   onClickRow,
   handleCloseAside,
   selectedAlcolockId,
+  targetPageFromNavigation,
+  onTargetPageApplied,
 }: AlkolocksMobileTableProps) => {
   const { t } = useTranslation();
   const {
@@ -69,6 +73,7 @@ export const AlkolocksMobileTable = ({
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
   const { statusFilter, resetStatusFilter } = useStatusFilter();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const skipNextAutoResetRef = useRef(false);
 
   const [startDateInput, setStartDateInput] = useState('');
   const [endDateInput, setEndDateInput] = useState('');
@@ -123,15 +128,35 @@ export const AlkolocksMobileTable = ({
 
   useEffect(() => {
     if (tableData.changeTableState) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
   }, [statusFilter]);
 
   useEffect(() => {
     if (tableData.sortModel && tableData.changeTableState) {
+      if (skipNextAutoResetRef.current) {
+        skipNextAutoResetRef.current = false;
+        return;
+      }
       tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
     }
   }, [tableData.sortModel]);
+
+  useEffect(() => {
+    if (targetPageFromNavigation == null || !tableData.changeTableState) return;
+    skipNextAutoResetRef.current = true;
+    tableData.changeTableState({ page: targetPageFromNavigation, pageSize: tableData.pageSize });
+    onTargetPageApplied?.();
+  }, [
+    onTargetPageApplied,
+    tableData.changeTableState,
+    tableData.pageSize,
+    targetPageFromNavigation,
+  ]);
 
   useEffect(() => {
     if (isFiltersChanged && prevRowCountRef.current !== tableData.totalCount) {
@@ -154,6 +179,17 @@ export const AlkolocksMobileTable = ({
       setSelectedRowIndex(rowIndex);
     }
   };
+
+  useEffect(() => {
+    if (!selectedAlcolockId) {
+      setSelectedRowIndex(null);
+      return;
+    }
+    const rowIndex = tableData.rows.findIndex((row) => row.id === selectedAlcolockId);
+    if (rowIndex !== -1) {
+      setSelectedRowIndex(rowIndex);
+    }
+  }, [selectedAlcolockId, tableData.rows]);
 
   const handlePageChange = (newPage: number) => {
     if (tableData.changeTableState) {

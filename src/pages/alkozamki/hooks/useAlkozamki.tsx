@@ -9,13 +9,28 @@ import { useCloseTab } from '@entities/row_table_info';
 import { EventsHistory } from '@features/events_history';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { testids } from '@shared/const/testid';
+import { ID } from '@shared/types/BaseQueryTypes';
 import { Values } from '@shared/ui/search_multiple_select';
 import { AlkozamkiInfo } from '@widgets/alkozamki_info';
 
 export const useAlkozamki = () => {
   const { t } = useTranslation();
-  const { state } = useLocation();
-  const [selectedAlcolockId, setSelectedAlcolockId] = useState(state?.selectedId || null);
+  const { state } = useLocation() as {
+    state?: { selectedId?: ID; targetPage?: number };
+  };
+  const [selectedAlcolockId, setSelectedAlockId] = useState<ID | null>(state?.selectedId ?? null);
+  const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
+    state?.targetPage ?? null,
+  );
+
+  useEffect(() => {
+    if (state?.selectedId != null) {
+      setSelectedAlockId(state.selectedId);
+    }
+    if (state?.targetPage != null) {
+      setTargetPageFromNavigation(state.targetPage);
+    }
+  }, [state?.selectedId, state?.targetPage]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -28,9 +43,13 @@ export const useAlkozamki = () => {
     endDate: null,
   });
 
-  const onClickRow = (id: string) => setSelectedAlcolockId(id);
+  const onClickRow = (id: ID) => {
+    setSelectedAlockId(id);
+    setTargetPageFromNavigation(null);
+  };
   const handleCloseAside = () => {
-    setSelectedAlcolockId(null);
+    setSelectedAlockId(null);
+    setTargetPageFromNavigation(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -39,6 +58,10 @@ export const useAlkozamki = () => {
     });
   };
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.ALKOLOCK_LIST_TABLE]);
+
+  const onTargetPageApplied = () => {
+    setTargetPageFromNavigation(null);
+  };
 
   // Эффект для скролла к выбранному элементу (если он в DOM)
   useEffect(() => {
@@ -85,6 +108,8 @@ export const useAlkozamki = () => {
   return {
     tabs,
     selectedAlcolockId,
+    targetPageFromNavigation,
+    onTargetPageApplied,
     onClickRow,
     handleCloseAside,
   };
