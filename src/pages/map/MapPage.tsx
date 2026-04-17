@@ -22,6 +22,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import { useColorMode } from '@shared/theme/colorMode';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { Aside } from '@shared/ui/aside';
+import { Button, ButtonsType } from '@shared/ui/button/Button';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 import { useQueries } from '@tanstack/react-query';
@@ -260,6 +261,7 @@ export const MapPage = () => {
   const popupRef = useRef<L.Popup | null>(null);
   const isMobile = useMediaQuery(breakpoints.mobile);
   const [mobileParamsExpanded, setMobileParamsExpanded] = useState(false);
+  const [mobileHistoryVehicleId, setMobileHistoryVehicleId] = useState<string | null>(null);
   const [frozenMarkersData] = useState<VehicleEventsGroup[]>([]);
   const [urlMarker, setUrlMarker] = useState<L.Marker | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<ID | null>(null);
@@ -560,7 +562,17 @@ export const MapPage = () => {
     // Для переходов с вкладок Пользователи/Транспорт/Алкозамки нужен такой же поток,
     // как при клике по координатам внутри Карты: подгружаем события по госномеру.
     loadVehicleEvents(urlVehicle);
-    setSelectedVehicleId(urlVehicle);
+    setMobileHistoryVehicleId(urlVehicle);
+    if (isMobile) {
+      // На мобильном карта должна оставаться видимой после перехода по координатам.
+      setOpenedPopupVehicleId(urlVehicle);
+      setSelectedVehicleId(null);
+      setPanelStack([]);
+      setActiveTab('info');
+      setExpandedRowId(null);
+    } else {
+      setSelectedVehicleId(urlVehicle);
+    }
     mapRef.current.setView([lat, lng], 15);
 
     return () => {
@@ -568,7 +580,7 @@ export const MapPage = () => {
       setUrlMarker((prev) => (prev === newMarker ? null : prev));
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isMapInitialized, urlLat, urlLng, urlVehicle]);
+  }, [isMapInitialized, isMobile, urlLat, urlLng, urlVehicle]);
 
   useEffect(() => {
     if (!urlMarker || !urlMarkerEvent) return;
@@ -727,6 +739,26 @@ export const MapPage = () => {
 
   const handleFreezeToggle = (checked: boolean) => {
     setFreezeMarkers(checked);
+  };
+
+  const handleResetMapStateFromFilters = () => {
+    // Полный сброс контекста перехода по координатам: убираем URL-маркер, очищаем URL и мобильную кнопку истории.
+    if (urlMarker) {
+      urlMarker.remove();
+      setUrlMarker(null);
+    }
+    setUrlMarkerEvent(null);
+    setMobileHistoryVehicleId(null);
+    setOpenedPopupVehicleId(null);
+    setSelectedVehicleId(null);
+    setExpandedRowId(null);
+    setPanelStack([]);
+    setFreezeMarkers(false);
+    setShowRoutes(false);
+    setBaseMarkerCoords(null);
+    selectedVehicleCoordsRef.current = null;
+    sidebarReturnCoordsRef.current = null;
+    navigate({ pathname: RoutePaths.map, search: '' });
   };
 
   const {
@@ -1157,6 +1189,7 @@ export const MapPage = () => {
       // поэтому чтобы пользователь увидел карту — не оставляем aside открытым.
       setOpenedPopupVehicleId(vehicle);
       setSelectedVehicleId(null);
+      setMobileHistoryVehicleId(vehicle);
 
       // Центрируем карту на координатах клика, чтобы пользователь видел маркер.
       if (mapRef.current) {
@@ -1263,6 +1296,7 @@ export const MapPage = () => {
         {!isMobile ? (
           <MapControls
             variant="toolbar"
+            onResetFilters={handleResetMapStateFromFilters}
             onResetMapCenter={handleResetMapCenter}
             onLocationSearch={handleLocationSearch}
             desktopToggles={{
@@ -1301,6 +1335,7 @@ export const MapPage = () => {
             isMobile
             compact
             onExpandedChange={setMobileParamsExpanded}
+            onResetFilters={handleResetMapStateFromFilters}
             onResetMapCenter={handleResetMapCenter}
             onLocationSearch={handleLocationSearch}
             mobileToggles={{
@@ -1313,6 +1348,23 @@ export const MapPage = () => {
             }}
           />
         </div>
+      ) : null}
+
+      {isMobile && mobileHistoryVehicleId && !selectedVehicleId ? (
+        <Button
+          typeButton={ButtonsType.action}
+          onClick={() => setSelectedVehicleId(mobileHistoryVehicleId)}
+          sx={{
+            position: 'absolute',
+            left: '12px',
+            top: mobileParamsExpanded ? '162px' : '82px',
+            zIndex: 1001,
+            minWidth: '100px',
+            height: '38px',
+            backgroundColor: '#fff',
+          }}>
+          {t('info.historyTab')}
+        </Button>
       ) : null}
 
       {numberedMarkersMode && latestEvents.length > 0 && !(isMobile && mobileParamsExpanded) && (

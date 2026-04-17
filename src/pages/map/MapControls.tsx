@@ -37,6 +37,7 @@ const Switch = ({ checked, onChange, label }: SwitchProps) => (
 
 type MapControlsProps = {
   onFilterChange?: () => void;
+  onResetFilters?: () => void;
   onResetMapCenter?: () => void;
   onLocationSearch?: (query: string) => void | Promise<void>;
   isMobile?: boolean;
@@ -64,6 +65,7 @@ type MapControlsProps = {
 
 export const MapControls = ({
   onFilterChange,
+  onResetFilters,
   onResetMapCenter,
   onLocationSearch,
   isMobile,
@@ -125,6 +127,7 @@ export const MapControls = ({
     setLocationQuery('');
     onResetMapCenter?.();
     onFilterChange?.();
+    onResetFilters?.();
   };
 
   const filterFields = (
