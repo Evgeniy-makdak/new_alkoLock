@@ -52,7 +52,7 @@ export const EventsFilterPanel = ({
         <div
           className={
             useStackedLayout
-              ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}`
+              ? styles.mobileFilterPanelForced
               : undefined
           }>
           <FilterPanel>

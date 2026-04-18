@@ -59,7 +59,9 @@ function ChatPanel({
   const theme = useTheme();
   const { dialogsUnreadCounts, updateDialogUnreadCount } = useSocket();
   const {
+    sessions,
     closeSession,
+    setIsChatOpen,
     toggleSessionMinimize,
     updateSession,
     getSession,
@@ -496,6 +498,13 @@ function ChatPanel({
     closeSession,
   ]);
 
+  const handleCloseAllChats = useCallback(() => {
+    sessions.forEach((s) => {
+      closeSession(s.id);
+    });
+    setIsChatOpen(false);
+  }, [sessions, closeSession, setIsChatOpen]);
+
   const updateUsersCache = useCallback(
     (users: any[]) => {
       const current = getSessionLiveRef.current(sessionId);
@@ -920,7 +929,7 @@ function ChatPanel({
           </IconButton>
           <IconButton
             size="small"
-            onClick={() => closeSession(sessionId)}
+            onClick={handleCloseAllChats}
             title={t('chat.closeDialog')}>
             <Close fontSize="small" />
           </IconButton>

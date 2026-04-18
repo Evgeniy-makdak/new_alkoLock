@@ -1,6 +1,18 @@
-declare module '*.png';
-declare module '*.jpg';
+declare module '*.png' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpg' {
+  const src: string;
+  export default src;
+}
+
+declare module '*.svg' {
+  const src: string;
+  export default src;
+}
+
 declare module '*.css';
-declare module '*.scss';
-declare module '*.sass';
-declare module '*.svg';
+
+declare module 'maplibre-gl/dist/maplibre-gl.css';

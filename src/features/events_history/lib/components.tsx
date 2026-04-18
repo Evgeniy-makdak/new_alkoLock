@@ -456,7 +456,6 @@ export const TableHeader = ({
                   </div>
                   {/* Десктопная версия - кнопка справа от полей дат */}
                   <div
-                    className={style.desktopResetButton}
                     style={{ marginLeft: '50px', marginRight: '20px' }}>
                     <ResetFilters reset={resetAllFilters} />
                   </div>

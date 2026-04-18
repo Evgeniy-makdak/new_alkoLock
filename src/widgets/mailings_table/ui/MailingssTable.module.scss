@@ -345,6 +345,18 @@
   gap: 8px;
 }
 
+.eventItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eventSeparator {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 8px 0;
+}
+
 .detailItem {
   display: flex;
   align-items: flex-start;

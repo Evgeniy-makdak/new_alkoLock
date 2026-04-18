@@ -64,7 +64,7 @@
     "precommit": "yarn format && yarn lint && yarn lint:fix",
     "watch": "yarn typed-scss-modules src --watch",
     "start": "set SASS_WARN_DEPRECATION=0 && craco start --silent",
-    "build": "set SASS_WARN_DEPRECATION=0 && craco build --silent"
+    "build": "ESLINT_NO_CACHE=1 set SASS_WARN_DEPRECATION=0 && craco build --silent"
   },
   "husky": {
     "hooks": {

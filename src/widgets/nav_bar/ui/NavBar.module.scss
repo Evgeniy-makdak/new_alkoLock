@@ -46,6 +46,12 @@
   overflow: visible;
 }
 
+.active {
+  background: #667a8a;
+  color: white;
+  font-weight: 600;
+}
+
 .links {
   display: flex;
   flex-direction: column;
@@ -534,7 +540,8 @@
     background: rgba(255, 107, 0, 0.3) !important;
   }
 
-  &:global(.active) {
+  &:global(.active),
+  &.active {
     background: rgba(255, 107, 0, 0.5) !important;
     border: 2px solid #ff6b00;
   }
@@ -624,6 +631,17 @@
 .rootDark {
   .navBar {
     background: #1e1e1e !important;
+  }
+
+  .active {
+    background: #667a8a;
+    color: #fff;
+    font-weight: 600;
+
+    svg,
+    .MuiSvgIcon-root {
+      color: #fff;
+    }
   }
 
   .logoText {

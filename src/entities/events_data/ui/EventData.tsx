@@ -162,8 +162,8 @@ export const EventData: FC<EventData> = ({
       </div>
 
       {showDetailsLink && (
-        <div className={style['details-row']}>
-          <button className={style['details-button']} onClick={handleDetailsClick}>
+        <div className={style.detailsRow}>
+          <button className={style.detailsButton} onClick={handleDetailsClick}>
             {t('map.eventDetails.more')}
           </button>
         </div>

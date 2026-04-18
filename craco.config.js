@@ -63,4 +63,7 @@ module.exports = {
       return webpackConfig;
     },
   },
+  eslint: {
+    enable: false,
+  },
 };

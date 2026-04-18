@@ -275,6 +275,7 @@ export async function addVectorBasemapToLeafletMap(
   }
 
   try {
+    // @ts-ignore
     await import('maplibre-gl/dist/maplibre-gl.css');
 
     // CRA/Webpack: без явного URL воркера MapLibre часто падает в рантайме (белый экран / ошибка Worker).

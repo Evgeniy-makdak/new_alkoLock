@@ -42,7 +42,7 @@ export function ReportsFilterPanel({ layout = 'default' }: ReportsFilterPanelPro
   return (
     <div
       className={
-        useStackedLayout ? `${styles.mobileFilterPanelForced} ${styles.mobileChipFix}` : undefined
+        useStackedLayout ? styles.mobileFilterPanelForced : undefined
       }>
       <FilterPanel>
         <UsersSelect

@@ -60,13 +60,13 @@ export const SearchInput = ({
 
   return (
     <ThemeProvider theme={fieldTheme}>
-      <div className={style.SearchInput}>
+      <div className={style.searchInputRoot}>
         <TextField
           data-testid={testId}
           placeholder={t('common.search')}
           onChange={(e) => setState(e.target.value)}
           {...rest}
-          className={style.searchInput}
+          className={style.searchInputField}
           variant="outlined"
           size="medium"
           focused={false}
@@ -83,7 +83,7 @@ export const SearchInput = ({
           }}
         />
         {showStatusFilter && isAdmin && (
-          <div className={style.StatusFilter}>
+          <div className={style.statusFilter}>
             <StatusFilter statusFilter={statusFilter} onStatusChange={handleStatusChange} />
           </div>
         )}

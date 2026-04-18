@@ -97,6 +97,19 @@
   min-height: 124px;
 }
 
+.mobileDateFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.filterActions {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .dateFiltersRow {
   display: flex;
   align-items: center;
@@ -291,6 +304,12 @@
   font-size: 16px;
   color: #333;
   margin-bottom: 4px;
+}
+
+.status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
 }
 
 .userDetails {

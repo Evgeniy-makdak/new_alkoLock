@@ -107,7 +107,7 @@ export const Authorization = () => {
             </button>
             <button
               data-testid={testids.page_auth.AUTH_BUTTON_ENTER}
-              className={style.button_forget}
+              className={style.buttonForget}
               disabled={isLoading}
               type="button"
               onClick={handleResetPassword}>

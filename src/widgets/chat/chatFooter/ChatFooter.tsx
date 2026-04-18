@@ -37,6 +37,8 @@ const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
 const CHAT_FOOTER_RIGHT = 80;
 const CHAT_FOOTER_WIDTH = 520;
 const MINIMIZED_PREVIEW_RIGHT = CHAT_FOOTER_RIGHT + CHAT_FOOTER_WIDTH + 72;
+/** Когда все диалоги свёрнуты — превью у правого края (как панель чата), а не «в середине» экрана. */
+const MINIMIZED_PREVIEW_RIGHT_STACKED = CHAT_FOOTER_RIGHT;
 
 function normalizeSessionDialogId(raw: unknown): number | null {
   if (raw === undefined || raw === null || raw === 'assigned') return null;
@@ -599,6 +601,8 @@ const ChatContainer = () => {
 
   const expandedSessions = sessions.filter((session) => !session.isMinimized);
   const minimizedSessions = sessions.filter((session) => session.isMinimized);
+  const minimizedPreviewRightPx =
+    expandedSessions.length > 0 ? MINIMIZED_PREVIEW_RIGHT : MINIMIZED_PREVIEW_RIGHT_STACKED;
 
   const hasUnreadInCompactList = compactMinimizedEntries.some((e) => e.unread > 0);
   const compactListUnreadSum = compactMinimizedEntries.reduce((s, e) => s + e.unread, 0);
@@ -709,7 +713,7 @@ const ChatContainer = () => {
               className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
               style={{
                 bottom: `${120 + index * 60}px`,
-                right: `${MINIMIZED_PREVIEW_RIGHT}px`,
+                right: `${minimizedPreviewRightPx}px`,
                 zIndex: 1000 - index,
               }}
               onClick={() => handleExpandSession(session.id)}>
@@ -751,7 +755,7 @@ const ChatContainer = () => {
               }`}
               style={{
                 bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
-                right: `${MINIMIZED_PREVIEW_RIGHT}px`,
+                right: `${minimizedPreviewRightPx}px`,
                 zIndex: 1000 - (minimizedSessions.length + index),
               }}
               onClick={async () => {
