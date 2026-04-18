@@ -25,29 +25,44 @@ export const FilterButton = ({
   iconOnly,
 }: FilterButtonProps) => {
   const { t } = useTranslation();
-  return (
+  const expandTip = open ? t('nav.collapse') : t('nav.expand');
+
+  const button = (
     <MuiButton
       data-testid={testid}
       onClick={toggle}
       disabled={disabled}
       aria-label={iconOnly ? t('common.filter') : undefined}
+      aria-expanded={iconOnly ? Boolean(open) : undefined}
       className={`${style.filterButton} ${iconOnly ? style.iconOnly : ''} ${
         active ? style.active : style.close
       }`}>
       {iconOnly ? (
-        <FilterListIcon fontSize="small" sx={{ mr: 0.25 }} />
+        <FilterListIcon fontSize="small" />
       ) : (
-        <span>{t('common.filter')}</span>
-      )}
+        <>
+          <span>{t('common.filter')}</span>
 
-      <Tooltip title={open ? t('nav.collapse') : t('nav.expand')}>
-        <ArrowDropDownIcon
-          sx={{
-            transform: `rotate(${open ? 180 : 0}deg)`,
-            transition: 'all .15s ease',
-          }}
-        />
-      </Tooltip>
+          <Tooltip title={expandTip}>
+            <ArrowDropDownIcon
+              sx={{
+                transform: `rotate(${open ? 180 : 0}deg)`,
+                transition: 'all .15s ease',
+              }}
+            />
+          </Tooltip>
+        </>
+      )}
     </MuiButton>
   );
+
+  if (iconOnly) {
+    return (
+      <Tooltip title={expandTip}>
+        <span className={style.iconOnlyTooltipAnchor}>{button}</span>
+      </Tooltip>
+    );
+  }
+
+  return button;
 };

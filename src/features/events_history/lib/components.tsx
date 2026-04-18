@@ -389,28 +389,22 @@ export const TableHeader = ({
                     </Tooltip>
                   </span>
                 </div>
-
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: 0,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                  }}>
-                  <FilterButton
-                    open={showFilters}
-                    //@ts-expect-error: "Временное решение"
-                    toggle={toggleFilters}
-                    active={showFilters}
-                    testid="filter-button"
-                    disabled={disableFilters}
-                    iconOnly={useSidePanelMobileUx}
-                  />
-                </div>
               </div>
             </StyledTable.HeaderCell>
 
-            <StyledTable.HeaderCell className={style.headerCell} />
+            <StyledTable.HeaderCell className={style.headerCell}>
+              <div className={style.headerFilterCellInner}>
+                <FilterButton
+                  open={showFilters}
+                  //@ts-expect-error: "Временное решение"
+                  toggle={toggleFilters}
+                  active={showFilters}
+                  testid="filter-button"
+                  disabled={disableFilters}
+                  iconOnly={useSidePanelMobileUx}
+                />
+              </div>
+            </StyledTable.HeaderCell>
           </StyledTable.HeaderRow>
 
           {showFilters && !disableFilters && (

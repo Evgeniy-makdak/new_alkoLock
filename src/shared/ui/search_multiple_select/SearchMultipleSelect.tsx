@@ -147,8 +147,10 @@ function SearchMultipleSelectMobileModal<T>({
   };
 
   const applyDraft = () => {
+    window.clearTimeout(modalSearchDebounceRef.current);
+    setFilterText('');
+    onInputChange?.('');
     setValueStore?.(name, draft);
-    debouncedFunc?.('');
     setOpen(false);
   };
 

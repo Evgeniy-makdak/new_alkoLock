@@ -57,7 +57,7 @@
 .expandedWithSlot {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   width: 100%;
   max-width: 100%;
@@ -70,6 +70,8 @@
   min-width: 0;
   width: 100%;
   max-width: 100%;
+  min-height: min-content;
+  overflow: visible;
 }
 
 .fieldsEndSlot {
@@ -77,8 +79,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  align-self: stretch;
+  align-self: flex-start;
   padding-left: 2px;
+  margin-top: 6px;
 }
 
 .fields {

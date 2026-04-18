@@ -17,9 +17,15 @@
 }
 
 .iconOnly {
-  min-width: 44px;
-  padding-left: 8px;
-  padding-right: 8px;
+  min-width: 36px;
+  padding: 6px 8px;
+  /* Чуть внутрь от правого края ячейки шапки */
+  margin-right: 10px;
+}
+
+.iconOnlyTooltipAnchor {
+  display: inline-flex;
+  line-height: 0;
 }
 
 .close {
