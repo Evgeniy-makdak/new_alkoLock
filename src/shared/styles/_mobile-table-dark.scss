@@ -150,6 +150,34 @@
       border-top-color: rgba(255, 255, 255, 0.12);
     }
 
+    /* Модалка фильтров: кнопки как в светлой теме (читаемый текст, явный disabled) — только мобильная ширина */
+    @media (max-width: 1024px) {
+      .filterModalFooter {
+        .clearButton,
+        .applyButton {
+          background: rgba(255, 255, 255, 0.06) !important;
+          border: 1px solid rgba(255, 255, 255, 0.22) !important;
+          color: rgba(255, 255, 255, 0.87) !important;
+          opacity: 1 !important;
+          -webkit-text-fill-color: rgba(255, 255, 255, 0.87);
+
+          &:hover:not(:global(.Mui-disabled)):not(:disabled) {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.32) !important;
+          }
+        }
+
+        .clearButton:global(.Mui-disabled),
+        .applyButton:global(.Mui-disabled) {
+          color: rgba(255, 255, 255, 0.38) !important;
+          -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+          border-color: rgba(255, 255, 255, 0.12) !important;
+          background: rgba(255, 255, 255, 0.04) !important;
+          opacity: 1 !important;
+        }
+      }
+    }
+
     .calendarButton,
     .clearDateButton {
       color: rgba(255, 255, 255, 0.65);

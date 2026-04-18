@@ -6,6 +6,7 @@ import type { TFunction } from 'i18next';
 import { Chip, Tooltip } from '@mui/material';
 
 import type { Field, TypeSummaryExhaleResult } from '@entities/info';
+import { getEventTypeChipColor } from '@shared/lib/eventTypeChipColor';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { testids } from '@shared/const/testid';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
@@ -163,16 +164,18 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
 
   const hasAdditionalInfo = additionalFields.length > 0;
 
+  const eventTypeChipColor = getEventTypeChipColor(eventType);
+
   const eventTypeElement = (
     <Tooltip title={eventType || ''} arrow>
       <Chip
         label={eventType}
-        sx={{
+        color={eventTypeChipColor}
+        sx={(theme) => ({
           maxWidth: '100%',
           whiteSpace: 'nowrap',
           height: '28px',
           borderRadius: '16px',
-          backgroundColor: '#f5f5f5',
           '& .MuiChip-label': {
             display: 'block',
             whiteSpace: 'nowrap',
@@ -181,7 +184,15 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
             textOverflow: 'ellipsis',
             fontSize: '16px',
           },
-        }}
+          ...(eventTypeChipColor === 'default' && {
+            backgroundColor:
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : '#f5f5f5',
+            color:
+              theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.87)',
+            border:
+              theme.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.2)' : 'none',
+          }),
+        })}
       />
     </Tooltip>
   );

@@ -14,6 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import type { Theme } from '@mui/material/styles';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
 
@@ -139,14 +140,43 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
   );
 };
 
-export const getTypeOfRowIconValue = ({
-  copyble = false,
-  tooltip = false,
-  element = null,
-  copyText,
-  customStyled = false,
-  ...rest
-}: GetTypeOfRowIconValueProps) => {
+const buildCommonChipStyles = (hasSemanticColor: boolean, theme?: Theme) => {
+  const isDark = theme?.palette.mode === 'dark';
+  return {
+    maxWidth: '100%',
+    height: '28px',
+    borderRadius: '16px',
+    ...(hasSemanticColor
+      ? {}
+      : isDark
+        ? {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            color: 'rgba(255, 255, 255, 0.92)',
+          }
+        : { backgroundColor: '#f5f5f5' }),
+    '& .MuiChip-label': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      px: 1.25,
+      fontSize: '16px',
+      ...(!hasSemanticColor && isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
+    },
+  };
+};
+
+export const getTypeOfRowIconValue = (
+  {
+    copyble = false,
+    tooltip = false,
+    element = null,
+    copyText,
+    customStyled = false,
+    ...rest
+  }: GetTypeOfRowIconValueProps,
+  theme?: Theme,
+) => {
   if (element) return element;
   const label = { ...rest }?.label || '';
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
@@ -156,19 +186,7 @@ export const getTypeOfRowIconValue = ({
   // Определяем, является ли устройство мобильным
   const isMobile = window.innerWidth <= 768;
 
-  const commonChipStyles = {
-    maxWidth: '100%',
-    height: '28px',
-    borderRadius: '16px',
-    ...(hasSemanticColor ? {} : { backgroundColor: '#f5f5f5' }),
-    '& .MuiChip-label': {
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-      px: 1.25,
-      fontSize: '16px',
-    },
-  };
+  const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme);
 
   const tooltipTitle = copyText ?? ({ ...rest }.label || '');
 

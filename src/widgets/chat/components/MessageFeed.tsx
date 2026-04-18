@@ -1481,13 +1481,7 @@ function MessageFeed({
                                 if (attachment.url) window.open(attachment.url, '_blank');
                               }}
                             />
-                            <div
-                              style={{
-                                fontSize: '0.8em',
-                                color: '#777',
-                                marginTop: '2px',
-                                wordBreak: 'break-all',
-                              }}>
+                            <div className={styles.attachmentCaption}>
                               {attachment.name || attachment.fileName || 'Image'}
                               {attachment.size && ` (${Math.round(attachment.size / 1024)} KB)`}
                             </div>
@@ -1495,13 +1489,7 @@ function MessageFeed({
                         ) : (
                           <div
                             className={styles.attachmentPlaceholder}
-                            style={{
-                              padding: '8px',
-                              border: '1px solid #ddd',
-                              borderRadius: '4px',
-                              backgroundColor: '#f5f5f5',
-                              cursor: 'pointer',
-                            }}
+                            style={{ cursor: 'pointer' }}
                             onClick={() => {
                               if (attachment.url) window.open(attachment.url, '_blank');
                               else if (attachment.blob) {
@@ -1516,7 +1504,7 @@ function MessageFeed({
                             <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
                               {attachment.name || attachment.fileName || 'File'}
                             </p>
-                            <p style={{ margin: '0', fontSize: '0.9em', color: '#777' }}>
+                            <p className={styles.attachmentCaption} style={{ margin: '0', fontSize: '0.9em' }}>
                               {attachment.extension &&
                                 `Type: ${attachment.extension.toUpperCase()} `}
                               {attachment.size && `(${Math.round(attachment.size / 1024)} KB)`}
@@ -1551,16 +1539,11 @@ function MessageFeed({
               )}
 
               <div
+                className={`${styles.messageFooter} ${isDeleted ? styles.messageFooterDeleted : ''}`}
                 style={{
-                  fontSize: '0.8rem',
                   opacity: isDeleted ? 0.5 : 0.6,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  color: isDeleted ? '#999' : 'inherit',
-                  flexWrap: 'wrap',
                 }}>
-                <span style={{ fontWeight: 'bold', color: '#777' }}>
+                <span className={styles.messageTime}>
                   {dayjs(msg.edited_at || msg.created_at).format('DD.MM.YYYY HH:mm')}
                 </span>
                 {msg.edited_at && (

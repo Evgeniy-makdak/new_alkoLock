@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import CalendarToday from '@mui/icons-material/CalendarToday';
@@ -79,18 +80,151 @@ export const HiddenFiltersOfDates = ({
   forceExpanded = false,
   fieldsEndSlot,
 }: HiddenFiltersOfDatesProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const expanded = forceExpanded || isOpen;
+  const toggleButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [toggleColumnWidth, setToggleColumnWidth] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    if (hideToggleRow) {
+      setToggleColumnWidth(null);
+      return;
+    }
+    const btn = toggleButtonRef.current;
+    if (!btn) return;
+
+    const measure = () => {
+      setToggleColumnWidth(Math.round(btn.getBoundingClientRect().width));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(btn);
+    return () => ro.disconnect();
+  }, [hideToggleRow, i18n.language, isOpen]);
+
+  const fieldsInner = (
+    <div className={styles.fields}>
+      <div className={styles.fieldRow}>
+        <TextField
+          label={startLabel}
+          type="text"
+          placeholder={startPlaceholder}
+          value={startValue}
+          onChange={onStartChange}
+          onBlur={onStartBlur}
+          size="small"
+          margin="none"
+          className={styles.field}
+          error={Boolean(startError)}
+          helperText={startError}
+          InputLabelProps={{ shrink: true }}
+          inputProps={{
+            'data-testid': startDateTestId,
+            inputMode: 'numeric',
+            pattern: '[0-9.]*',
+            maxLength: 10,
+          }}
+        />
+        <button
+          type="button"
+          className={styles.calendarButton}
+          onClick={onOpenStartCalendar}
+          aria-label="Открыть календарь для выбора начальной даты">
+          <CalendarToday fontSize="small" />
+        </button>
+        {startValue && (
+          <button
+            type="button"
+            className={styles.clearButton}
+            onClick={onClearStart}
+            aria-label="Очистить начальную дату">
+            ×
+          </button>
+        )}
+        <NativeDateHiddenInput
+          inputRef={startDateInputRef}
+          syncedIso={startDateIso}
+          onCommit={onStartNativeCommit}
+          className={styles.hiddenDateInput}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      <div className={styles.fieldRow}>
+        <TextField
+          label={endLabel}
+          type="text"
+          placeholder={endPlaceholder}
+          value={endValue}
+          onChange={onEndChange}
+          onBlur={onEndBlur}
+          size="small"
+          margin="none"
+          className={styles.field}
+          error={Boolean(endError)}
+          helperText={endError}
+          InputLabelProps={{ shrink: true }}
+          inputProps={{
+            'data-testid': endDateTestId,
+            inputMode: 'numeric',
+            pattern: '[0-9.]*',
+            maxLength: 10,
+          }}
+        />
+        <button
+          type="button"
+          className={styles.calendarButton}
+          onClick={onOpenEndCalendar}
+          aria-label="Открыть календарь для выбора конечной даты">
+          <CalendarToday fontSize="small" />
+        </button>
+        {endValue && (
+          <button
+            type="button"
+            className={styles.clearButton}
+            onClick={onClearEnd}
+            aria-label="Очистить конечную дату">
+            ×
+          </button>
+        )}
+        <NativeDateHiddenInput
+          inputRef={endDateInputRef}
+          syncedIso={endDateIso}
+          onCommit={onEndNativeCommit}
+          className={styles.hiddenDateInput}
+          style={{ display: 'none' }}
+        />
+      </div>
+    </div>
+  );
 
   return (
     <div className={styles.container}>
       {!hideToggleRow && (
         <div className={styles.row}>
-          <div className={styles.toggleWrap}>
-            <button type="button" className={styles.toggleButton} onClick={onToggle}>
-              <span>{t('filtersByDate')}</span>
-              {isOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
-            </button>
+          <div
+            className={styles.toggleStack}
+            style={
+              !hideToggleRow
+                ? toggleColumnWidth != null
+                  ? { width: toggleColumnWidth }
+                  : { maxWidth: 240 }
+                : undefined
+            }>
+            <div className={styles.toggleWrap}>
+              <button
+                ref={toggleButtonRef}
+                type="button"
+                className={[styles.toggleButton, toggleColumnWidth != null ? styles.toggleButtonFill : '']
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={onToggle}>
+                <span>{t('filtersByDate')}</span>
+                {isOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
+              </button>
+            </div>
+            {expanded && <div className={styles.expandedInStack}>{fieldsInner}</div>}
           </div>
 
           {!hideResetButton && (
@@ -101,105 +235,16 @@ export const HiddenFiltersOfDates = ({
         </div>
       )}
 
-      {expanded && (
-        <div
-          className={fieldsEndSlot ? styles.expandedWithSlot : styles.expanded}>
-          <div className={fieldsEndSlot ? styles.expandedGrow : undefined}>
-            <div className={styles.fields}>
-            <div className={styles.fieldRow}>
-              <TextField
-                label={startLabel}
-                type="text"
-                placeholder={startPlaceholder}
-                value={startValue}
-                onChange={onStartChange}
-                onBlur={onStartBlur}
-                size="small"
-                className={styles.field}
-                error={Boolean(startError)}
-                helperText={startError}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{
-                  'data-testid': startDateTestId,
-                  inputMode: 'numeric',
-                  pattern: '[0-9.]*',
-                  maxLength: 10,
-                }}
-              />
-              <button
-                type="button"
-                className={styles.calendarButton}
-                onClick={onOpenStartCalendar}
-                aria-label="Открыть календарь для выбора начальной даты">
-                <CalendarToday fontSize="small" />
-              </button>
-              {startValue && (
-                <button
-                  type="button"
-                  className={styles.clearButton}
-                  onClick={onClearStart}
-                  aria-label="Очистить начальную дату">
-                  ×
-                </button>
-              )}
-              <NativeDateHiddenInput
-                inputRef={startDateInputRef}
-                syncedIso={startDateIso}
-                onCommit={onStartNativeCommit}
-                className={styles.hiddenDateInput}
-                style={{ display: 'none' }}
-              />
-            </div>
-
-            <div className={styles.fieldRow}>
-              <TextField
-                label={endLabel}
-                type="text"
-                placeholder={endPlaceholder}
-                value={endValue}
-                onChange={onEndChange}
-                onBlur={onEndBlur}
-                size="small"
-                className={styles.field}
-                error={Boolean(endError)}
-                helperText={endError}
-                InputLabelProps={{ shrink: true }}
-                inputProps={{
-                  'data-testid': endDateTestId,
-                  inputMode: 'numeric',
-                  pattern: '[0-9.]*',
-                  maxLength: 10,
-                }}
-              />
-              <button
-                type="button"
-                className={styles.calendarButton}
-                onClick={onOpenEndCalendar}
-                aria-label="Открыть календарь для выбора конечной даты">
-                <CalendarToday fontSize="small" />
-              </button>
-              {endValue && (
-                <button
-                  type="button"
-                  className={styles.clearButton}
-                  onClick={onClearEnd}
-                  aria-label="Очистить конечную дату">
-                  ×
-                </button>
-              )}
-              <NativeDateHiddenInput
-                inputRef={endDateInputRef}
-                syncedIso={endDateIso}
-                onCommit={onEndNativeCommit}
-                className={styles.hiddenDateInput}
-                style={{ display: 'none' }}
-              />
-            </div>
-          </div>
-          </div>
+      {hideToggleRow && expanded && (
+        <div className={fieldsEndSlot ? styles.expandedWithSlot : styles.expandedPanelOnly}>
           {fieldsEndSlot ? (
-            <div className={styles.fieldsEndSlot}>{fieldsEndSlot}</div>
-          ) : null}
+            <>
+              <div className={styles.expandedGrow}>{fieldsInner}</div>
+              <div className={styles.fieldsEndSlot}>{fieldsEndSlot}</div>
+            </>
+          ) : (
+            fieldsInner
+          )}
         </div>
       )}
     </div>

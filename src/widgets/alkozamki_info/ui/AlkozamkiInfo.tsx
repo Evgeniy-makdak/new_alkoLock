@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Chip, IconButton, Tooltip } from '@mui/material';
+import { Chip, IconButton, Tooltip, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
+import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
 import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
@@ -28,6 +30,8 @@ type AlkozamkiInfoProps = {
 
 export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, closeTab }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const { alkolock, fields, isLoading, activeDeviceIds } = useAlkozamkiInfo(
     selectedAlcolockId,
@@ -182,21 +186,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                   onClick={() => {
                     void handleNavigateToVehicle(vehicleId);
                   }}
-                  sx={{
-                    flex: '1 1 auto',
-                    minWidth: 0,
-                    maxWidth: 'calc(100% - 28px)',
-                    height: '28px',
-                    borderRadius: '16px',
-                    backgroundColor: '#eef5ff',
-                    borderColor: '#b8d3ff',
-                    '& .MuiChip-label': {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      px: 1.25,
-                    },
-                  }}
+                  sx={getInfoLinkChipSx(theme, isMobileLayout)}
                 />
               </div>
             ),
@@ -243,21 +233,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                   onClick={() => {
                     void handleNavigateToUser(linkedByUserId);
                   }}
-                  sx={{
-                    flex: '1 1 auto',
-                    minWidth: 0,
-                    maxWidth: 'calc(100% - 28px)',
-                    height: '28px',
-                    borderRadius: '16px',
-                    backgroundColor: '#eef5ff',
-                    borderColor: '#b8d3ff',
-                    '& .MuiChip-label': {
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      px: 1.25,
-                    },
-                  }}
+                  sx={getInfoLinkChipSx(theme, isMobileLayout)}
                 />
               </div>
             ),
@@ -273,7 +249,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
     fields,
     handleNavigateToUser,
     handleNavigateToVehicle,
+    isMobileLayout,
     t,
+    theme,
   ]);
 
   return (

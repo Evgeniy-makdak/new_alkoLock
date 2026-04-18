@@ -2,6 +2,7 @@ import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Card, CardContent, Divider } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import {
   type Field,
@@ -23,6 +24,7 @@ type InfoProps = {
 
 export const Info = ({ fields, headerCard }: InfoProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const summaryExhaleResult = getSummaryExhaleResult(t);
 
   return (
@@ -42,11 +44,15 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
                 </span>
                 <span className={style.value} style={field?.style}>
                   {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
-                  {!summaryExhaleResultText && !valueIsArray && getTypeOfRowIconValue(value)}
+                  {!summaryExhaleResultText &&
+                    !valueIsArray &&
+                    getTypeOfRowIconValue(value, theme)}
                   {valueIsArray && (
                     <div className={style.labelWrapper}>
                       {value.map((val, i) => (
-                        <React.Fragment key={i}>{getTypeOfRowIconValue(val)}</React.Fragment>
+                        <React.Fragment key={i}>
+                          {getTypeOfRowIconValue(val, theme)}
+                        </React.Fragment>
                       ))}
                     </div>
                   )}

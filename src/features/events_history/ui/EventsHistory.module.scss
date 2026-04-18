@@ -101,7 +101,8 @@
   align-items: center;
   width: 100%;
   width: 660px;
-  padding: 8px;
+  padding: 8px 20px 8px 8px;
+  box-sizing: border-box;
 }
 
 .filterRow {
@@ -117,6 +118,28 @@
   width: 100%;
   width: 660px;
   padding: 0 8px;
+  box-sizing: border-box;
+}
+
+/* Только шапка с заголовками и кнопкой «Фильтр», и строка раскрытых фильтров — отступ справа */
+.tr.filterRow {
+  padding: 0 20px 0 8px;
+}
+
+/* Десктоп: «Дата» ближе к «Тип события», «Фильтр» — с большим зазором от правого края (мобильные @media max-width:768 не затрагиваются) */
+@media (min-width: 769px) {
+  .headerTitleRow {
+    padding-right: 28px;
+  }
+
+  .tr.filterRow {
+    padding-right: 28px;
+  }
+
+  .dateTitleContent {
+    justify-content: flex-start;
+    padding-left: 50px;
+  }
 }
 
 .td {

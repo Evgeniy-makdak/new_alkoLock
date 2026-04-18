@@ -48,4 +48,36 @@
       background-color: rgba(255, 255, 255, 0.06);
     }
   }
+
+  /* Неактивные кнопки на мобильных: как в светлой теме — явный «серый» disabled, без «белой» плашки */
+  @media (max-width: 1024px) {
+    .action:global(.Mui-disabled) {
+      opacity: 1 !important;
+      color: rgba(255, 255, 255, 0.38) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      background-color: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .edit:global(.Mui-disabled) {
+      opacity: 1 !important;
+      color: rgba(255, 255, 255, 0.38) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+      background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .new-style:global(.Mui-disabled) {
+      opacity: 1 !important;
+      color: rgba(255, 255, 255, 0.38) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+      background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .delete-style:global(.Mui-disabled) {
+      opacity: 1 !important;
+      color: rgba(255, 255, 255, 0.38) !important;
+      -webkit-text-fill-color: rgba(255, 255, 255, 0.38);
+      background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+  }
 }

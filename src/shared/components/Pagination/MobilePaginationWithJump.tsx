@@ -2,15 +2,10 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import {
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  TextField,
-} from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+
+import { Button, ButtonsType } from '@shared/ui/button';
 
 export interface MobilePaginationWithJumpProps {
   page: number;
@@ -194,33 +189,26 @@ function MobilePaginationWithJumpComponent({
         </DialogContent>
         <DialogActions sx={{ px: 2, pb: 1.25, pt: 0, gap: 1 }}>
           <Button
+            typeButton={ButtonsType.action}
             size="small"
-            variant="contained"
+            variant="text"
             onClick={applyDialog}
             sx={{
               minWidth: 96,
               textTransform: 'uppercase',
               fontWeight: 600,
-              backgroundColor: '#667a8a',
-              color: '#fff',
-              '&:hover': { backgroundColor: '#5b6e7d' },
             }}>
             {t('pagination.go')}
           </Button>
           <Button
+            typeButton={ButtonsType.action}
             size="small"
-            variant="outlined"
+            variant="text"
             onClick={() => setOpen(false)}
             sx={{
               minWidth: 96,
               textTransform: 'uppercase',
-              borderColor: '#667a8a',
-              color: '#667a8a',
-              '&:hover': {
-                borderColor: '#5b6e7d',
-                color: '#5b6e7d',
-                backgroundColor: 'rgba(102,122,138,0.08)',
-              },
+              fontWeight: 600,
             }}>
             {t('common.cancel')}
           </Button>

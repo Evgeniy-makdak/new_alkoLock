@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Chip, IconButton, Stack, Tooltip } from '@mui/material';
+import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
+import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlcolocksApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -23,6 +25,8 @@ type VehiclesInfoProps = {
 
 export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const { isLoading, fields, car } = useVehiclesInfo(selectedCarId, closeTab);
   const isPlaceholderValue = (value: unknown) => {
@@ -129,28 +133,14 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
                 onClick={() => {
                   void handleNavigateToAlcolock(alcolockId);
                 }}
-                sx={{
-                  flex: '1 1 auto',
-                  minWidth: 0,
-                  maxWidth: 'calc(100% - 28px)',
-                  height: '28px',
-                  borderRadius: '16px',
-                  backgroundColor: '#eef5ff',
-                  borderColor: '#b8d3ff',
-                  '& .MuiChip-label': {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    px: 1.25,
-                  },
-                }}
+                sx={getInfoLinkChipSx(theme, isMobileLayout)}
               />
             </div>
           ),
         },
       };
     });
-  }, [car?.monitoringDevice, fields, handleNavigateToAlcolock, t]);
+  }, [car?.monitoringDevice, fields, handleNavigateToAlcolock, isMobileLayout, t, theme]);
 
   return (
     <Loader isLoading={isLoading}>

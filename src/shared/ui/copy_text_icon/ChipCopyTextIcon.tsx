@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { Box, Chip, type ChipOwnProps, IconButton, Tooltip } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { copyContent } from '@shared/lib/copyText';
 
@@ -15,9 +16,11 @@ interface ChipCopyTextIconProps extends ChipOwnProps {
 
 export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { copyText, click, style, ...rest } = props;
   const [state, setState] = useState(false);
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
+  const isDark = theme.palette.mode === 'dark';
 
   useEffect(() => {
     if (!state) return;
@@ -56,12 +59,21 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
           maxWidth: '100%',
           height: '28px',
           borderRadius: '16px',
-          ...(hasSemanticColor ? {} : { backgroundColor: '#f5f5f5' }),
+          ...(hasSemanticColor
+            ? {}
+            : isDark
+              ? {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.14)',
+                  color: 'rgba(255, 255, 255, 0.92)',
+                }
+              : { backgroundColor: '#f5f5f5' }),
           '& .MuiChip-label': {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             px: 1.25,
+            ...(!hasSemanticColor && isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
           },
           ...(rest.sx as object),
         }}

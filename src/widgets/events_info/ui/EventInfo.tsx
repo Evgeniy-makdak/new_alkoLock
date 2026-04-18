@@ -4,11 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Stack } from '@mui/material';
-import { Chip, IconButton, Tooltip } from '@mui/material';
+import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { Image } from '@entities/image';
 import { Info } from '@entities/info';
+import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlcolocksApi, CarsApi, UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -33,6 +34,9 @@ export const EventInfo = ({
   onHasTemperatureSensor,
 }: EventInfoProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  /** Как в EventsMobileTable / мобильных таблицах — только здесь подстраиваем чипы под тёмную тему */
+  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const { data, isLoading, fields, hasTemperatureSensor } = useEventInfo(selectedEventId);
   const hasDeviceError = data?.events[0]?.eventType?.startsWith('Ошибка') || false;
@@ -226,21 +230,7 @@ export const EventInfo = ({
           size="small"
           label={label}
           onClick={onNavigate}
-          sx={{
-            flex: '1 1 auto',
-            minWidth: 0,
-            maxWidth: 'calc(100% - 28px)',
-            height: '28px',
-            borderRadius: '16px',
-            backgroundColor: '#eef5ff',
-            borderColor: '#b8d3ff',
-            '& .MuiChip-label': {
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              px: 1.25,
-            },
-          }}
+          sx={getInfoLinkChipSx(theme, isMobileLayout)}
         />
       </div>
     );
@@ -310,7 +300,16 @@ export const EventInfo = ({
 
       return field;
     });
-  }, [data, fields, handleNavigateToAlcolock, handleNavigateToUser, handleNavigateToVehicle, t]);
+  }, [
+    data,
+    fields,
+    handleNavigateToAlcolock,
+    handleNavigateToUser,
+    handleNavigateToVehicle,
+    isMobileLayout,
+    t,
+    theme.palette.mode,
+  ]);
 
   useEffect(() => {
     onHasDeviceErrorChange?.(hasDeviceError);

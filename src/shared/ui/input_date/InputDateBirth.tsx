@@ -41,6 +41,7 @@ const createTooltipButton = (tooltipTitle: string, ariaLabel: string) =>
 
 const ClearActionMenuItem = (props: PickersActionBarProps) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { onClear } = props;
   const id = useId();
   return (
@@ -49,11 +50,21 @@ const ClearActionMenuItem = (props: PickersActionBarProps) => {
       onClick={() => {
         onClear();
       }}
-      style={{
+      sx={{
         alignSelf: 'center',
-        backgroundColor: '#e6e6e6',
-        color: '#1976d2',
         borderRadius: '3px',
+        ...(theme.palette.mode === 'dark'
+          ? {
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: theme.palette.primary.light,
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.16)',
+              },
+            }
+          : {
+              backgroundColor: '#e6e6e6',
+              color: '#1976d2',
+            }),
       }}
       key={id}>
       {t('datePicker.clear')}

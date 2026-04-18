@@ -30,8 +30,9 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  width: 42%;
+  width: 100%;
   font-weight: 500;
+  box-sizing: border-box;
 
   & svg {
     margin-left: 5px;
@@ -43,35 +44,11 @@
   align-items: center;
   justify-content: flex-start;
   flex-wrap: wrap;
-  width: 58%;
+  width: 100%;
   min-width: 0;
   text-align: left;
   overflow-wrap: anywhere;
-}
-
-@media (max-width: 768px) {
-  .label,
-  .value {
-    font-size: 17px;
-    line-height: 1.35;
-  }
-
-  .row {
-    gap: 14px;
-  }
-
-  .label {
-    padding-right: 8px;
-  }
-
-  .value {
-    align-items: flex-start;
-    justify-content: flex-start;
-    text-align: left;
-    word-break: break-word;
-    padding-left: 10px;
-    box-sizing: border-box;
-  }
+  box-sizing: border-box;
 }
 
 @media (max-width: 640px) {
@@ -81,10 +58,44 @@
 }
 
 .row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  column-gap: 16px;
+  row-gap: 6px;
+  align-items: start;
+}
+
+/* Мобильная карточка «Инфо»: заметный зазор между подписью и значением (идёт после .row — перекрывает сетку) */
+@media (max-width: 768px) {
+  .info {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 10px;
+    align-items: start;
+  }
+
+  .label,
+  .value {
+    font-size: 17px;
+    line-height: 1.35;
+  }
+
+  .label {
+    padding-right: 12px;
+    align-items: flex-start;
+  }
+
+  .value {
+    padding-left: 12px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    word-break: break-word;
+  }
 }
 
 .title {
@@ -223,4 +234,59 @@
   padding: 0 12px;
   font-size: 14px;
   font-weight: 500;
+}
+
+:global(html[data-theme='dark']) {
+  /* Чипы-подписи полей (иконка + текст) в карточке «Инфо» */
+  .title:global(.MuiChip-outlined) {
+    border-color: rgba(255, 255, 255, 0.28);
+    color: rgba(255, 255, 255, 0.92);
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+
+  .title :global(.MuiChip-icon) {
+    color: rgba(144, 202, 249, 0.88);
+  }
+
+  .mobileValueDialog {
+    :global(.MuiDialog-paper) {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.87);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .mobileValueDialogTitle {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .mobileValueDialogText {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .mobileValueDialogButton {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+
+    &:hover:not(:global(.Mui-disabled)) {
+      background: rgba(255, 255, 255, 0.12) !important;
+      border-color: rgba(255, 255, 255, 0.4) !important;
+    }
+
+    :global(.MuiButton-startIcon) {
+      color: inherit !important;
+    }
+  }
+
+  .mobileValueDialogButtonSecondary,
+  .mobileValueDialogButtonPrimary {
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+
+  .mobileCopiedToast {
+    background: #2a2a2a;
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.87);
+  }
 }

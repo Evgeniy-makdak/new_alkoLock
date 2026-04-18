@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ClearIcon from '@mui/icons-material/Clear';
@@ -28,6 +28,7 @@ import {
   Typography,
   createFilterOptions,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { debounce } from '@shared/lib/debounce';
 import { Button, ButtonsType } from '@shared/ui/button';
@@ -98,6 +99,7 @@ function SearchMultipleSelectMobileModal<T>({
   | 'placeholder'
 > & { sx?: SearchMultipleSelectProps<T>['sx'] }) {
   const { t } = useTranslation();
+  const theme = useTheme();
   const modalSearchDebounceRef = useRef<number | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Values>([]);
@@ -109,20 +111,41 @@ function SearchMultipleSelectMobileModal<T>({
   /** Список из API: поиск в модалке обновляет `values` через onInputChange → searchQuery. */
   const listOptions = !isLoading ? values : [];
 
-  const chipSx = {
-    height: '28px',
-    maxWidth: '100%',
-    borderRadius: '16px',
-    backgroundColor: '#eef5ff',
-    borderColor: '#b8d3ff',
-    '& .MuiChip-label': {
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap',
-      px: 1.25,
-      fontSize: '14px',
-    },
-  } as const;
+  const chipSx = useMemo(
+    () =>
+      theme.palette.mode === 'dark'
+        ? {
+            height: '28px',
+            maxWidth: '100%',
+            borderRadius: '16px',
+            backgroundColor: 'rgba(144, 202, 249, 0.14)',
+            borderColor: 'rgba(144, 202, 249, 0.45)',
+            color: 'rgba(255, 255, 255, 0.92)',
+            '& .MuiChip-label': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              px: 1.25,
+              fontSize: '14px',
+              color: 'rgba(255, 255, 255, 0.92)',
+            },
+          }
+        : {
+            height: '28px',
+            maxWidth: '100%',
+            borderRadius: '16px',
+            backgroundColor: '#eef5ff',
+            borderColor: '#b8d3ff',
+            '& .MuiChip-label': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              px: 1.25,
+              fontSize: '14px',
+            },
+          },
+    [theme.palette.mode],
+  );
 
   const openModal = () => {
     if (disabled) return;
@@ -275,6 +298,7 @@ function SearchMultipleSelectMobileModal<T>({
                 top: 4,
                 right: 2,
                 zIndex: 1,
+                color: 'text.secondary',
               }}>
               <ClearIcon fontSize="small" />
             </IconButton>
