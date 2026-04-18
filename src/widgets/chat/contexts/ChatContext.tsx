@@ -10,7 +10,7 @@ import {
   resolveSessionDialogIdForUnread,
 } from '../lib/resolveSessionDialogIdForUnread';
 import { useSocket } from './SocketContext';
-import { chatSessionTrace, chatUnreadTrace } from './chatUnreadTrace';
+import { chatUnreadTrace } from './chatUnreadTrace';
 import { useChatAttachments } from './hooks/useChatAttachments';
 import { useChatDialogHandlers } from './hooks/useChatDialogHandlers';
 import { useChatDialogs } from './hooks/useChatDialogs';
@@ -1311,24 +1311,36 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       const hasUsers = (s?.selectedUsers?.length ?? 0) > 0;
       const hasOtherDialogOpen = Boolean(s && incomingId && cur && cur !== incomingId && hasUsers);
 
-      let targetSessionId = sessionId;
+      const targetSessionId = sessionId;
 
       if (hasOtherDialogOpen) {
-        const list = s!.unreadDialogs ?? [];
-        chatSessionTrace('openUnreadDialog.splitNewSession', {
-          fromSessionId: sessionId,
-          currentDialogId: cur,
-          incomingDialogId: incomingId,
+        const oldDialog = s.selectedDialog;
+        const oldSessionData = { ...s };
+        delete (oldSessionData as any).id;
+        const minimizedSessionId = createNewSession({ asMinimized: true });
+        updateSession(minimizedSessionId, {
+          ...oldSessionData,
+          selectedDialog: oldDialog,
+          isMinimized: true,
+          selectedUsers: s.selectedUsers || [],
+          selectedUserName: s.selectedUserName || '',
+          assignedDialogId: s.assignedDialogId ?? null,
+          messages: s.messages || [],
+          unreadCount: s.unreadCount ?? 0,
+          unreadDialogs: s.unreadDialogs || [],
+          hasLoadedDialogs: s.hasLoadedDialogs,
+          usersCache: s.usersCache || new Map(),
+          transferRecipientFullName: s.transferRecipientFullName || null,
+          lastSendError: s.lastSendError,
         });
         updateSession(sessionId, {
-          isMinimized: true,
-          unreadDialogs: list.filter((d: { id: number }) => d.id !== dialog.id),
+          selectedDialog: dialog,
+          unreadDialogs: (s.unreadDialogs || []).filter((d: any) => d.id !== dialog.id),
         });
-        /* Не enhancedCreateNewSession: у него setTimeout(50) сбрасывает сессию и сотрёт диалог. */
-        targetSessionId = createNewSession();
-        refs.sessionCreationTimeRef.current.set(targetSessionId, Date.now());
-        updateSession(targetSessionId, {
-          unreadDialogs: [...list],
+      } else {
+        updateSession(sessionId, {
+          selectedDialog: dialog,
+          unreadDialogs: (s?.unreadDialogs || []).filter((d: any) => d.id !== dialog.id),
         });
       }
 
@@ -1347,7 +1359,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       dialogHandlers.openUnreadDialogWithStatus,
       openUnreadDialog,
       recalculateSessionUnreadCount,
-      refs.sessionCreationTimeRef,
     ],
   );
 

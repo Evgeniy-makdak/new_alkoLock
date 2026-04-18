@@ -1,6 +1,5 @@
 {
   "compileOnSave": true,
-  "files": ["declarations.d.ts"],
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
@@ -28,7 +27,8 @@
     },
     "lib": ["es6", "ES2021.String", "dom"],
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "build/**/*"]

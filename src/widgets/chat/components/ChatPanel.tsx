@@ -477,13 +477,24 @@ function ChatPanel({
   );
 
   const handleMinimize = useCallback(() => {
-    if (onMinimize) {
-      onMinimize();
+    if (session?.selectedDialog?.id) {
+      if (onMinimize) {
+        onMinimize();
+      } else {
+        toggleSessionMinimize(sessionId);
+        setActiveSessionId(null);
+      }
     } else {
-      toggleSessionMinimize(sessionId);
-      setActiveSessionId(null);
+      closeSession(sessionId);
     }
-  }, [sessionId, toggleSessionMinimize, onMinimize, setActiveSessionId]);
+  }, [
+    session?.selectedDialog?.id,
+    sessionId,
+    toggleSessionMinimize,
+    onMinimize,
+    setActiveSessionId,
+    closeSession,
+  ]);
 
   const updateUsersCache = useCallback(
     (users: any[]) => {
