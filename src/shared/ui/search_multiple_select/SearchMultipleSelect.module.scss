@@ -1,5 +1,13 @@
 .searchSelect {
   width: 100%;
+
+  &.mobileModalWrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
   &.input {
     align-items: flex-start;
     margin-bottom: 0;

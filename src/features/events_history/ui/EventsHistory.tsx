@@ -35,6 +35,11 @@ type EventsHistoryProps = {
     startDate?: Dayjs | null;
     endDate?: Dayjs | null;
   }) => void;
+  /**
+   * Мобильная шапка фильтров для боковой панели (пользователь / ТС / алкозамок):
+   * иконка вместо слова «Фильтр», модалка с чекбоксами для типов событий.
+   */
+  sidePanelMobileFilterUx?: boolean;
 } & EventsOptions;
 
 export const EventsHistory = (props: EventsHistoryProps) => {
@@ -51,6 +56,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
     // Новые пропсы для сохранения состояния фильтров
     savedFilters,
     onFiltersChange,
+    sidePanelMobileFilterUx = false,
     ...rest
   } = props;
   const [sortField, setSortField] = useState<'id' | 'timestamp' | null>(null);
@@ -182,6 +188,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
           initialTypeEventFilters={savedFilters?.typeEventFilters || []}
           initialStartDate={savedFilters?.startDate || null}
           initialEndDate={savedFilters?.endDate || null}
+          sidePanelMobileFilterUx={sidePanelMobileFilterUx}
         />
       </div>
 

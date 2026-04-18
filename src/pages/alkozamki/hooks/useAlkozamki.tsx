@@ -100,6 +100,7 @@ export const useAlkozamki = () => {
           alcolockId={selectedAlcolockId}
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          sidePanelMobileFilterUx
         />
       ),
     },

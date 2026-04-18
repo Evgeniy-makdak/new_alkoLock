@@ -13,7 +13,7 @@ import 'dayjs/locale/ru';
 import 'dayjs/locale/uz-latn';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
-import { Tooltip, Typography } from '@mui/material';
+import { Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -43,6 +43,8 @@ interface EventsFilterPanelProps {
   initialTypeEventFilters?: Values;
   initialStartDate?: Dayjs | null;
   initialEndDate?: Dayjs | null;
+  /** См. EventsHistory `sidePanelMobileFilterUx`. */
+  sidePanelMobileFilterUx?: boolean;
 }
 
 export const Text = (text: string) => (
@@ -71,6 +73,7 @@ export const TableHeader = ({
   initialTypeEventFilters = [],
   initialStartDate = null,
   initialEndDate = null,
+  sidePanelMobileFilterUx = false,
 }: EventsFilterPanelProps & {
   setStartDate: (date: Dayjs | null) => void;
   setEndDate: (date: Dayjs | null) => void;
@@ -79,6 +82,9 @@ export const TableHeader = ({
 }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
+  /** Синхронно с `EventsHistory.module.scss` (@media max-width: 768px). */
+  const isMobileHistoryFilters = useMediaQuery('(max-width:768px)');
+  const useSidePanelMobileUx = isMobileHistoryFilters && sidePanelMobileFilterUx;
   const lang = (i18n.language || 'ru').split('-')[0].toLowerCase();
 
   const pickersLocalePack: Record<string, typeof ruRU | typeof enUS | typeof kzKZ | typeof beBY> = {
@@ -398,6 +404,7 @@ export const TableHeader = ({
                     active={showFilters}
                     testid="filter-button"
                     disabled={disableFilters}
+                    iconOnly={useSidePanelMobileUx}
                   />
                 </div>
               </div>
@@ -474,81 +481,65 @@ export const TableHeader = ({
               <StyledTable.HeaderCell
                 className={style.typeOfEvent}
                 style={{ paddingRight: '5px', width: '100%' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: '12px',
-                    width: '100%',
-                    flexWrap: 'wrap',
-                  }}>
-                  <div
-                    style={{
-                      flex: '1',
-                      minWidth: '200px',
-                      maxWidth: '280px',
-                    }}>
-                    <TypeEventSelect
-                      key={`type-event-select-mobile-${typeEventSelectKey}`}
-                      multiple={true}
-                      name="typeEvent"
-                      setValueStore={(_, value) => handleEventFilterChange(value)}
-                      value={typeEventFilters}
-                      label={t('filters.eventType')}
-                      getTooltipTitle={(label) => `${label}`}
-                      sx={{ width: '100%' }}
-                    />
-                  </div>
-                  <div
-                    style={{
-                      flexShrink: 0,
-                      minWidth: '140px',
-                    }}>
-                    <ResetFilters reset={resetAllFilters} />
-                  </div>
+                <div className={style.mobileFilterTypeBlock}>
+                  <TypeEventSelect
+                    key={`type-event-select-mobile-${typeEventSelectKey}`}
+                    multiple={true}
+                    name="typeEvent"
+                    setValueStore={(_, value) => handleEventFilterChange(value)}
+                    value={typeEventFilters}
+                    label={t('filters.eventType')}
+                    getTooltipTitle={(label) => `${label}`}
+                    mobileModalPicker={useSidePanelMobileUx}
+                    sx={{ width: '100%' }}
+                  />
                 </div>
               </StyledTable.HeaderCell>
 
               <StyledTable.HeaderCell
                 className={style.headerCellDate}
                 style={{ paddingLeft: '5px', position: 'relative', width: '100%' }}>
-                <HiddenFiltersOfDates
-                  isOpen={true}
-                  forceExpanded={true}
-                  hideToggleRow={true}
-                  hideResetButton={true}
-                  onToggle={() => undefined}
-                  onReset={resetAllFilters}
-                  startPlaceholder={t('datePlaceholder')}
-                  endPlaceholder={t('datePlaceholder')}
-                  startValue={startDateInput}
-                  endValue={endDateInput}
-                  startError={startDateError}
-                  endError={endDateError}
-                  onStartChange={handleStartDateInputChange}
-                  onEndChange={handleEndDateInputChange}
-                  onStartBlur={handleStartDateInputBlur}
-                  onEndBlur={handleEndDateInputBlur}
-                  onOpenStartCalendar={handleOpenStartCalendar}
-                  onOpenEndCalendar={handleOpenEndCalendar}
-                  onClearStart={() => {
-                    setStartDateInput('');
-                    setStartDateError('');
-                    handleStartDateChange(null);
-                  }}
-                  onClearEnd={() => {
-                    setEndDateInput('');
-                    setEndDateError('');
-                    handleEndDateChange(null);
-                  }}
-                  startDateInputRef={startDateNativeRef}
-                  endDateInputRef={endDateNativeRef}
-                  startDateIso={localStartDate ? localStartDate.format('YYYY-MM-DD') : ''}
-                  endDateIso={localEndDate ? localEndDate.format('YYYY-MM-DD') : ''}
-                  onStartNativeCommit={handleStartNativeCommit}
-                  onEndNativeCommit={handleEndNativeCommit}
-                />
+                <div className={style.mobileFilterDateBlock}>
+                  <HiddenFiltersOfDates
+                    isOpen={true}
+                    forceExpanded={true}
+                    hideToggleRow={true}
+                    hideResetButton={true}
+                    onToggle={() => undefined}
+                    onReset={resetAllFilters}
+                    startPlaceholder={t('datePlaceholder')}
+                    endPlaceholder={t('datePlaceholder')}
+                    startValue={startDateInput}
+                    endValue={endDateInput}
+                    startError={startDateError}
+                    endError={endDateError}
+                    onStartChange={handleStartDateInputChange}
+                    onEndChange={handleEndDateInputChange}
+                    onStartBlur={handleStartDateInputBlur}
+                    onEndBlur={handleEndDateInputBlur}
+                    onOpenStartCalendar={handleOpenStartCalendar}
+                    onOpenEndCalendar={handleOpenEndCalendar}
+                    onClearStart={() => {
+                      setStartDateInput('');
+                      setStartDateError('');
+                      handleStartDateChange(null);
+                    }}
+                    onClearEnd={() => {
+                      setEndDateInput('');
+                      setEndDateError('');
+                      handleEndDateChange(null);
+                    }}
+                    startDateInputRef={startDateNativeRef}
+                    endDateInputRef={endDateNativeRef}
+                    startDateIso={localStartDate ? localStartDate.format('YYYY-MM-DD') : ''}
+                    endDateIso={localEndDate ? localEndDate.format('YYYY-MM-DD') : ''}
+                    onStartNativeCommit={handleStartNativeCommit}
+                    onEndNativeCommit={handleEndNativeCommit}
+                    fieldsEndSlot={
+                      useSidePanelMobileUx ? <ResetFilters reset={resetAllFilters} /> : undefined
+                    }
+                  />
+                </div>
               </StyledTable.HeaderCell>
 
               <StyledTable.HeaderCell className={style.headerCell} />

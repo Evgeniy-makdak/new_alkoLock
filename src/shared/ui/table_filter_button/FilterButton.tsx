@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { Button as MuiButton, Tooltip } from '@mui/material';
 
 import style from './FilterButton.module.scss';
@@ -10,16 +11,34 @@ interface FilterButtonProps {
   toggle: () => void;
   active?: boolean;
   testid: string;
+  disabled?: boolean;
+  /** Только иконка фильтра (узкая кнопка), без текста «Фильтр». */
+  iconOnly?: boolean;
 }
 
-export const FilterButton = ({ open, toggle, active, testid }: FilterButtonProps) => {
+export const FilterButton = ({
+  open,
+  toggle,
+  active,
+  testid,
+  disabled,
+  iconOnly,
+}: FilterButtonProps) => {
   const { t } = useTranslation();
   return (
     <MuiButton
       data-testid={testid}
       onClick={toggle}
-      className={`${style.filterButton} ${active ? style.active : style.close}`}>
-      <span>{t('common.filter')}</span>
+      disabled={disabled}
+      aria-label={iconOnly ? t('common.filter') : undefined}
+      className={`${style.filterButton} ${iconOnly ? style.iconOnly : ''} ${
+        active ? style.active : style.close
+      }`}>
+      {iconOnly ? (
+        <FilterListIcon fontSize="small" sx={{ mr: 0.25 }} />
+      ) : (
+        <span>{t('common.filter')}</span>
+      )}
 
       <Tooltip title={open ? t('nav.collapse') : t('nav.expand')}>
         <ArrowDropDownIcon

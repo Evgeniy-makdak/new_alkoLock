@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import CalendarToday from '@mui/icons-material/CalendarToday';
@@ -14,6 +15,8 @@ type HiddenFiltersOfDatesProps = {
   isOpen: boolean;
   onToggle: () => void;
   onReset: () => void;
+  /** Содержимое справа от полей дат (например «сбросить все фильтры»). Растягивает блок дат на доступную ширину. */
+  fieldsEndSlot?: ReactNode;
   startLabel?: string;
   endLabel?: string;
   startPlaceholder: string;
@@ -74,6 +77,7 @@ export const HiddenFiltersOfDates = ({
   hideToggleRow = false,
   hideResetButton = false,
   forceExpanded = false,
+  fieldsEndSlot,
 }: HiddenFiltersOfDatesProps) => {
   const { t } = useTranslation();
   const expanded = forceExpanded || isOpen;
@@ -98,8 +102,10 @@ export const HiddenFiltersOfDates = ({
       )}
 
       {expanded && (
-        <div className={styles.expanded}>
-          <div className={styles.fields}>
+        <div
+          className={fieldsEndSlot ? styles.expandedWithSlot : styles.expanded}>
+          <div className={fieldsEndSlot ? styles.expandedGrow : undefined}>
+            <div className={styles.fields}>
             <div className={styles.fieldRow}>
               <TextField
                 label={startLabel}
@@ -190,6 +196,10 @@ export const HiddenFiltersOfDates = ({
               />
             </div>
           </div>
+          </div>
+          {fieldsEndSlot ? (
+            <div className={styles.fieldsEndSlot}>{fieldsEndSlot}</div>
+          ) : null}
         </div>
       )}
     </div>

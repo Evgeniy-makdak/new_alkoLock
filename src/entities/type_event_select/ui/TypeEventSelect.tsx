@@ -14,6 +14,7 @@ type TypeEventSelectProps<T> = Omit<SearchMultipleSelectProps<T>, 'values'> & {
   setValueStore?: (name: string, value: any) => void;
   value?: Values;
   getTooltipTitle?: (value: string) => string;
+  mobileModalPicker?: boolean;
 };
 
 export const TypeEventSelect = <T,>({
@@ -24,6 +25,7 @@ export const TypeEventSelect = <T,>({
   setValueStore,
   value = [], // Значение по умолчанию
   getTooltipTitle,
+  mobileModalPicker,
   ...props
 }: TypeEventSelectProps<T>) => {
   const { marksCarList, isLoading, onReset, onChange } = useTypeEventSelect(
@@ -42,6 +44,7 @@ export const TypeEventSelect = <T,>({
       onInputChange={onChange}
       setValueStore={setValueStore}
       getTooltipTitle={getTooltipTitle}
+      mobileModalPicker={mobileModalPicker}
       {...props}
     />
   );

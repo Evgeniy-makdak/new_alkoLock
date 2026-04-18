@@ -116,6 +116,7 @@ export const useUsers = () => {
           userId={selectedUserId}
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          sidePanelMobileFilterUx
         />
       ),
     },

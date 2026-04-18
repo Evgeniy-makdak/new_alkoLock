@@ -92,6 +92,7 @@ export const useVehicles = () => {
           // Передаем сохраненные фильтры и функцию для их обновления
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          sidePanelMobileFilterUx
         />
       ),
     },
