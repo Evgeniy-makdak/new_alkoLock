@@ -17,21 +17,15 @@ interface PhotoResponseItem {
   default: boolean;
 }
 
-let apiUrl = 'https://alcolock-test.lsystems.ru/';
-
-const initializeApiUrl = async (): Promise<string> => {
+const getChatApiBaseUrl = async (): Promise<string> => {
   try {
     const config = await configLoader.loadConfig();
-    return config.apiUrl;
+    return config.apiUrl?.trim() || 'https://alcolock-test.lsystems.ru/';
   } catch (error) {
     console.error('Ошибка инициализации API URL:', error);
     return 'https://alcolock-test.lsystems.ru/';
   }
 };
-
-initializeApiUrl().then((url) => {
-  apiUrl = url;
-});
 
 const getToken = (): string | null => {
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
@@ -51,7 +45,7 @@ const joinApiUrl = (base: string, path: string) => {
 };
 
 const createRequest = async (url: string, options: RequestInit = {}, useCredentials = true) => {
-  const currentApiUrl = apiUrl || (await initializeApiUrl());
+  const currentApiUrl = await getChatApiBaseUrl();
   const token = getToken();
 
   const headers: Record<string, string> = {
@@ -193,7 +187,7 @@ const uploadAttachments = async (files: File[]): Promise<{ attachmentIds: string
 const uploadFile = async (
   file: File,
 ): Promise<{ id: string; type: string; name: string; size: number; url?: string }> => {
-  const currentApiUrl = apiUrl || (await initializeApiUrl());
+  const currentApiUrl = await getChatApiBaseUrl();
   const token = getToken();
   const formData = new FormData();
   formData.append('file', file);
