@@ -183,6 +183,12 @@ function SearchMultipleSelectMobileModal<T>({
     debouncedFunc?.('');
   };
 
+  const removeSingleValue = (e: React.MouseEvent, optionValue: Value['value']) => {
+    e.stopPropagation();
+    const next = (value || []).filter((v) => String(v.value) !== String(optionValue));
+    setValueStore?.(name, next);
+  };
+
   const handleModalSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setFilterText(v);
@@ -261,9 +267,9 @@ function SearchMultipleSelectMobileModal<T>({
           <Box
             sx={{
               display: 'flex',
-              flexWrap: 'wrap',
+              flexDirection: 'column',
               gap: 0.75,
-              alignItems: 'center',
+              alignItems: 'stretch',
               alignContent: 'flex-start',
               width: '100%',
               minWidth: 0,
@@ -283,7 +289,18 @@ function SearchMultipleSelectMobileModal<T>({
                   title={v.label}
                   arrow
                   disableTouchListener={!v.label || v.label.length < 40}>
-                  <Chip size="small" variant="outlined" label={v.label} sx={chipSx} />
+                  <Chip
+                    size="small"
+                    variant="outlined"
+                    label={v.label}
+                    onDelete={(e) => removeSingleValue(e as unknown as React.MouseEvent, v.value)}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    sx={{
+                      ...chipSx,
+                      width: 'fit-content',
+                      maxWidth: '100%',
+                    }}
+                  />
                 </Tooltip>
               ))
             )}
