@@ -40,10 +40,7 @@ export function ReportsFilterPanel({ layout = 'default' }: ReportsFilterPanelPro
   const useStackedLayout = layout === 'stacked' || isMobile;
 
   return (
-    <div
-      className={
-        useStackedLayout ? styles.mobileFilterPanelForced : undefined
-      }>
+    <div className={useStackedLayout ? styles.mobileFilterPanelForced : undefined}>
       <FilterPanel>
         <UsersSelect
           multiple={true}

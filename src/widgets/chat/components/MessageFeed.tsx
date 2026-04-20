@@ -1504,7 +1504,9 @@ function MessageFeed({
                             <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
                               {attachment.name || attachment.fileName || 'File'}
                             </p>
-                            <p className={styles.attachmentCaption} style={{ margin: '0', fontSize: '0.9em' }}>
+                            <p
+                              className={styles.attachmentCaption}
+                              style={{ margin: '0', fontSize: '0.9em' }}>
                               {attachment.extension &&
                                 `Type: ${attachment.extension.toUpperCase()} `}
                               {attachment.size && `(${Math.round(attachment.size / 1024)} KB)`}

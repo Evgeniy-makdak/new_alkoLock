@@ -216,7 +216,10 @@ export const HiddenFiltersOfDates = ({
               <button
                 ref={toggleButtonRef}
                 type="button"
-                className={[styles.toggleButton, toggleColumnWidth != null ? styles.toggleButtonFill : '']
+                className={[
+                  styles.toggleButton,
+                  toggleColumnWidth != null ? styles.toggleButtonFill : '',
+                ]
                   .filter(Boolean)
                   .join(' ')}
                 onClick={onToggle}>

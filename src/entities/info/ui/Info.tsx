@@ -44,15 +44,11 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
                 </span>
                 <span className={style.value} style={field?.style}>
                   {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
-                  {!summaryExhaleResultText &&
-                    !valueIsArray &&
-                    getTypeOfRowIconValue(value, theme)}
+                  {!summaryExhaleResultText && !valueIsArray && getTypeOfRowIconValue(value, theme)}
                   {valueIsArray && (
                     <div className={style.labelWrapper}>
                       {value.map((val, i) => (
-                        <React.Fragment key={i}>
-                          {getTypeOfRowIconValue(val, theme)}
-                        </React.Fragment>
+                        <React.Fragment key={i}>{getTypeOfRowIconValue(val, theme)}</React.Fragment>
                       ))}
                     </div>
                   )}

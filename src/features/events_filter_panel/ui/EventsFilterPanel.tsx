@@ -49,12 +49,7 @@ export const EventsFilterPanel = ({
   return (
     <>
       {open && (
-        <div
-          className={
-            useStackedLayout
-              ? styles.mobileFilterPanelForced
-              : undefined
-          }>
+        <div className={useStackedLayout ? styles.mobileFilterPanelForced : undefined}>
           <FilterPanel>
             <UsersSelect
               multiple={true}

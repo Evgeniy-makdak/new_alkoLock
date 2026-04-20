@@ -29,6 +29,6 @@
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "declarations.d.ts"],
   "exclude": ["node_modules", "build/**/*"]
 }

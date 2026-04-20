@@ -927,10 +927,7 @@ function ChatPanel({
           <IconButton size="small" onClick={handleMinimize} title={t('chat.minimizeDialog')}>
             <Minimize fontSize="small" />
           </IconButton>
-          <IconButton
-            size="small"
-            onClick={handleCloseAllChats}
-            title={t('chat.closeDialog')}>
+          <IconButton size="small" onClick={handleCloseAllChats} title={t('chat.closeDialog')}>
             <Close fontSize="small" />
           </IconButton>
         </div>
