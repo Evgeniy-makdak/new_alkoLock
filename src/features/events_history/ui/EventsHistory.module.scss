@@ -343,6 +343,42 @@
         gap: 8px;
       }
 
+      .mobileFilterTypeRow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      .mobileFilterTypeGrow {
+        position: relative;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .mobileTypeHintIcon {
+        position: absolute;
+        right: 8px;
+        top: calc(50% + 12px);
+        transform: translateY(-50%);
+        color: #7a7a7a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+      }
+
+      .mobileFilterResetSlot {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        align-self: flex-start;
+        margin-top: 30px;
+      }
+
       :global {
         .MuiFormControl-root {
           width: 100% !important;
@@ -352,6 +388,7 @@
           max-width: 100% !important;
           width: 100% !important;
           font-size: 14px !important;
+          padding-right: 28px;
         }
       }
     }

@@ -13,6 +13,7 @@ import 'dayjs/locale/ru';
 import 'dayjs/locale/uz-latn';
 
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
 import { Tooltip, Typography, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -475,17 +476,31 @@ export const TableHeader = ({
                 className={style.typeOfEvent}
                 style={{ paddingRight: '5px', width: '100%' }}>
                 <div className={style.mobileFilterTypeBlock}>
-                  <TypeEventSelect
-                    key={`type-event-select-mobile-${typeEventSelectKey}`}
-                    multiple={true}
-                    name="typeEvent"
-                    setValueStore={(_, value) => handleEventFilterChange(value)}
-                    value={typeEventFilters}
-                    label={t('filters.eventType')}
-                    getTooltipTitle={(label) => `${label}`}
-                    mobileModalPicker={useSidePanelMobileUx}
-                    sx={{ width: '100%' }}
-                  />
+                  <div className={style.mobileFilterTypeRow}>
+                    <div className={style.mobileFilterTypeGrow}>
+                      <TypeEventSelect
+                        key={`type-event-select-mobile-${typeEventSelectKey}`}
+                        multiple={true}
+                        name="typeEvent"
+                        setValueStore={(_, value) => handleEventFilterChange(value)}
+                        value={typeEventFilters}
+                        label={t('filters.eventType')}
+                        getTooltipTitle={(label) => `${label}`}
+                        mobileModalPicker={useSidePanelMobileUx}
+                        sx={{ width: '100%' }}
+                      />
+                      {useSidePanelMobileUx && (
+                        <span className={style.mobileTypeHintIcon} aria-hidden="true">
+                          <KeyboardArrowDown fontSize="small" />
+                        </span>
+                      )}
+                    </div>
+                    {useSidePanelMobileUx && (
+                      <div className={style.mobileFilterResetSlot}>
+                        <ResetFilters reset={resetAllFilters} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </StyledTable.HeaderCell>
 
@@ -528,9 +543,6 @@ export const TableHeader = ({
                     endDateIso={localEndDate ? localEndDate.format('YYYY-MM-DD') : ''}
                     onStartNativeCommit={handleStartNativeCommit}
                     onEndNativeCommit={handleEndNativeCommit}
-                    fieldsEndSlot={
-                      useSidePanelMobileUx ? <ResetFilters reset={resetAllFilters} /> : undefined
-                    }
                   />
                 </div>
               </StyledTable.HeaderCell>

@@ -200,7 +200,10 @@ export const HiddenFiltersOfDates = ({
   );
 
   return (
-    <div className={[styles.container, hideToggleRow ? styles.containerNoToggle : ''].join(' ').trim()}>
+    <div
+      className={[styles.container, hideToggleRow ? styles.containerNoToggle : '']
+        .join(' ')
+        .trim()}>
       {!hideToggleRow && (
         <div className={styles.row}>
           <div
@@ -227,7 +230,6 @@ export const HiddenFiltersOfDates = ({
                 {isOpen ? <KeyboardArrowUp /> : <KeyboardArrowDown />}
               </button>
             </div>
-            {expanded && <div className={styles.expandedInStack}>{fieldsInner}</div>}
           </div>
 
           {!hideResetButton && (
@@ -237,6 +239,8 @@ export const HiddenFiltersOfDates = ({
           )}
         </div>
       )}
+
+      {!hideToggleRow && expanded && <div className={styles.expandedUnderRow}>{fieldsInner}</div>}
 
       {hideToggleRow && expanded && (
         <div className={fieldsEndSlot ? styles.expandedWithSlot : styles.expandedPanelOnly}>
