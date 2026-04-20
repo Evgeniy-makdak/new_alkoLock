@@ -7,11 +7,17 @@ import { EventsMobileTable } from './EventsMobileTable';
 interface EventsTableProps {
   handleClickRow: (id: string | number) => void;
   handleCloseInfo: () => void;
+  selectedEventId?: string | number | null;
   prevBranch?: any;
   openDetailsPanel?: (params: { id: string | number; content: React.ReactNode }) => void;
 }
 
-export const EventsTable = ({ handleClickRow, handleCloseInfo, prevBranch }: EventsTableProps) => {
+export const EventsTable = ({
+  handleClickRow,
+  handleCloseInfo,
+  selectedEventId,
+  prevBranch,
+}: EventsTableProps) => {
   const isMobile = useMediaQuery('(max-width:1024px)');
 
   if (isMobile) {
@@ -19,6 +25,7 @@ export const EventsTable = ({ handleClickRow, handleCloseInfo, prevBranch }: Eve
       <EventsMobileTable
         handleClickRow={handleClickRow}
         handleCloseInfo={handleCloseInfo}
+        selectedEventId={selectedEventId}
         // prevBranch={prevBranch}
       />
     );
@@ -28,6 +35,7 @@ export const EventsTable = ({ handleClickRow, handleCloseInfo, prevBranch }: Eve
     <EventsDesktopTable
       handleClickRow={handleClickRow}
       handleCloseInfo={handleCloseInfo}
+      selectedEventId={selectedEventId}
       prevBranch={prevBranch}
     />
   );

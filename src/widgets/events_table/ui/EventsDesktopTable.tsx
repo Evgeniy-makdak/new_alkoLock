@@ -18,6 +18,7 @@ import styles from './EventsTable.module.scss';
 interface EventsDesktopTableProps {
   handleClickRow: (id: string | number) => void;
   handleCloseInfo: () => void;
+  selectedEventId?: string | number | null;
   prevBranch?: ID;
   openDetailsPanel?: (params: { id: string | number; content: React.ReactNode }) => void;
 }
@@ -25,6 +26,7 @@ interface EventsDesktopTableProps {
 export const EventsDesktopTable = ({
   handleClickRow,
   handleCloseInfo,
+  selectedEventId,
   prevBranch,
 }: EventsDesktopTableProps) => {
   const { filtersData, tableData } = useEventsTable();
@@ -163,6 +165,20 @@ export const EventsDesktopTable = ({
     handleCloseInfo();
     setSelectedRowIndex(null);
   };
+
+  useEffect(() => {
+    if (selectedEventId == null || tableData.rows.length === 0) return;
+    const rowIndex = tableData.rows.findIndex(
+      (row) => String(row?.actionId) === String(selectedEventId),
+    );
+    if (rowIndex < 0) return;
+    setSelectedRowIndex(rowIndex);
+    const rowId = tableData.rows[rowIndex]?.id;
+    if (tableData.apiRef.current && rowId != null) {
+      tableData.apiRef.current.setRowSelectionModel([rowId]);
+      tableData.apiRef.current.scrollToIndexes({ rowIndex });
+    }
+  }, [selectedEventId, tableData.rows, tableData.apiRef]);
 
   return (
     <div className={styles.tableWrapper}>

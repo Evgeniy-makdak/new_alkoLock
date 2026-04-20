@@ -22,12 +22,14 @@ import styles from './EventsTable.module.scss';
 interface EventsMobileTableProps {
   handleClickRow: (id: string | number) => void;
   handleCloseInfo: () => void;
+  selectedEventId?: string | number | null;
   prevBranch?: ID;
 }
 
 export const EventsMobileTable = ({
   handleClickRow,
   handleCloseInfo,
+  selectedEventId,
   prevBranch,
 }: EventsMobileTableProps) => {
   const { t } = useTranslation();
@@ -130,6 +132,14 @@ export const EventsMobileTable = ({
     handleCloseInfo();
     setSelectedRowIndex(null);
   };
+
+  useEffect(() => {
+    if (selectedEventId == null || tableData.rows.length === 0) return;
+    const rowIndex = tableData.rows.findIndex(
+      (row) => String(row?.actionId) === String(selectedEventId),
+    );
+    if (rowIndex >= 0) setSelectedRowIndex(rowIndex);
+  }, [selectedEventId, tableData.rows]);
 
   const formatDateForDisplay = (date: any): string => {
     if (!date) return '';

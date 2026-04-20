@@ -53,6 +53,7 @@ const Events: React.FC = () => {
         <EventsTable
           handleClickRow={handleOpenInfo}
           handleCloseInfo={handleCloseInfo}
+          selectedEventId={selectedEventId}
           prevBranch={prevBranch.current}
         />
       </PageWrapper>
