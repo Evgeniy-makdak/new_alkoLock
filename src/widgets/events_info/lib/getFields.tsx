@@ -82,9 +82,10 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
           type: TypeOfRows.HEADER,
           value: {
             copyble: true,
+            tooltip: true,
             customStyled: true,
             copyText: data?.summary?.description?.request,
-            label: <span style={multiLineTextStyle}>{data?.summary?.description?.request}</span>,
+            label: data?.summary?.description?.request,
           },
         }
       : null,
@@ -94,11 +95,10 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
           type: TypeOfRows.HEADER,
           value: {
             copyble: true,
+            tooltip: true,
             customStyled: true,
             copyText: data?.summary?.description?.responseATString,
-            label: (
-              <span style={multiLineTextStyle}>{data?.summary?.description?.responseATString}</span>
-            ),
+            label: data?.summary?.description?.responseATString,
           },
         }
       : null,
@@ -108,13 +108,10 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
           type: TypeOfRows.HEADER,
           value: {
             copyble: true,
+            tooltip: true,
             customStyled: true,
             copyText: data?.summary?.description?.responseToRequest,
-            label: (
-              <span style={multiLineTextStyle}>
-                {data?.summary?.description?.responseToRequest}
-              </span>
-            ),
+            label: data?.summary?.description?.responseToRequest,
           },
         }
       : null,

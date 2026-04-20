@@ -91,7 +91,7 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
         type="button"
         className={style.mobileValueButton}
         onClick={() => {
-          if (isTruncated) setIsOpen(true);
+          setIsOpen(true);
         }}>
         <span
           ref={textRef}

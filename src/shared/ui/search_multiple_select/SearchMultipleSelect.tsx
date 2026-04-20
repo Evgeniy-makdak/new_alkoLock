@@ -177,6 +177,15 @@ function SearchMultipleSelectMobileModal<T>({
     setOpen(false);
   };
 
+  const isSameSelectionAsInitial = useMemo(() => {
+    const initial = value || [];
+    if (draft.length !== initial.length) return false;
+    const draftSet = new Set(draft.map((v) => String(v.value)));
+    return initial.every((v) => draftSet.has(String(v.value)));
+  }, [draft, value]);
+
+  const isApplyDisabled = draft.length === 0 || isSameSelectionAsInitial;
+
   const clearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();
     setValueStore?.(name, []);
@@ -394,8 +403,11 @@ function SearchMultipleSelectMobileModal<T>({
           </List>
         </DialogContent>
         <DialogActions sx={{ px: 2, py: 2, justifyContent: 'flex-start' }}>
-          <Button typeButton={ButtonsType.action} onClick={applyDraft}>
+          <Button typeButton={ButtonsType.action} onClick={applyDraft} disabled={isApplyDisabled}>
             {t('modals.apply')}
+          </Button>
+          <Button typeButton={ButtonsType.action} onClick={closeModal}>
+            {t('common.cancel')}
           </Button>
         </DialogActions>
       </Dialog>
