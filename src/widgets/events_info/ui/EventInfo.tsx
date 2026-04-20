@@ -52,9 +52,12 @@ export const EventInfo = ({
       pathname: location.pathname,
       search: location.search,
       hash: location.hash,
-      state: location.state,
+      state: {
+        ...(typeof location.state === 'object' && location.state ? (location.state as object) : {}),
+        selectedEventId,
+      },
     }),
-    [location.hash, location.pathname, location.search, location.state],
+    [location.hash, location.pathname, location.search, location.state, selectedEventId],
   );
 
   const handleNavigateToUser = useCallback(

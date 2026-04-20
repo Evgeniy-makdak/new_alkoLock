@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 import { useMediaQuery } from '@mui/material';
 
@@ -13,12 +13,11 @@ import { breakpoints } from '@widgets/nav_bar/breakpoints';
 import { useEventsPage } from '../hooks/useEventsPage';
 
 const Events: React.FC = () => {
-  const { handleClickRow, handleCloseAside, selectedEventId, tabs, activeTab, setActiveTab } =
+  const { handleClickRow, handleCloseAside, selectedEventId, tabs, activeTab, setActiveTab, isAsideOpen } =
     useEventsPage();
   const prevBranch = useRef(null);
   const { selectedBranchState } = appStore((state) => state);
   const { resetFilters } = eventsFilterPanelStore();
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
 
@@ -31,12 +30,10 @@ const Events: React.FC = () => {
   }, [selectedBranchState?.id, handleCloseAside, resetFilters]);
 
   const handleOpenInfo = (id: string | number) => {
-    setIsInfoOpen(true);
     handleClickRow(id);
   };
 
   const handleCloseInfo = () => {
-    setIsInfoOpen(false);
     handleCloseAside();
   };
 
@@ -56,7 +53,7 @@ const Events: React.FC = () => {
         />
       </PageWrapper>
 
-      {isInfoOpen && selectedEventId && (
+      {isAsideOpen && selectedEventId && (
         <Aside
           onClose={handleCloseInfo}
           fullScreenOnMobile

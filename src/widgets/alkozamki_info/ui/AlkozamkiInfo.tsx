@@ -52,9 +52,12 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       pathname: location.pathname,
       search: location.search,
       hash: location.hash,
-      state: location.state,
+      state: {
+        ...(typeof location.state === 'object' && location.state ? (location.state as object) : {}),
+        selectedId: selectedAlcolockId,
+      },
     }),
-    [location.hash, location.pathname, location.search, location.state],
+    [location.hash, location.pathname, location.search, location.state, selectedAlcolockId],
   );
 
   const handleNavigateToVehicle = useCallback(
