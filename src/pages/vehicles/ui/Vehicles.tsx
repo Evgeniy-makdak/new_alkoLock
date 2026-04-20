@@ -16,6 +16,8 @@ const Vehicles = () => {
     tabs,
     selectedCarId,
     targetPageFromNavigation,
+    returnNavigation,
+    handleReturnToOrigin,
     onTargetPageApplied,
   } = useVehicles();
   const { selectedBranchState } = appStore((state) => state);
@@ -50,7 +52,10 @@ const Vehicles = () => {
       </PageWrapper>
 
       {selectedCarId && (
-        <Aside onClose={handleCloseAside} fullScreenOnMobile>
+        <Aside
+          onClose={handleCloseAside}
+          onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
+          fullScreenOnMobile>
           <RowTableInfo tabs={tabs} />
         </Aside>
       )}

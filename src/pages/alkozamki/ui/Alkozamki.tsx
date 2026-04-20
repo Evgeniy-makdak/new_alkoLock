@@ -15,6 +15,8 @@ const Alkozamki = () => {
     tabs,
     selectedAlcolockId,
     targetPageFromNavigation,
+    returnNavigation,
+    handleReturnToOrigin,
     onTargetPageApplied,
     onClickRow,
     handleCloseAside,
@@ -43,7 +45,10 @@ const Alkozamki = () => {
 
       {/* Убрана проверка на наличие в текущей странице таблицы */}
       {selectedAlcolockId && (
-        <Aside onClose={handleCloseAside} fullScreenOnMobile>
+        <Aside
+          onClose={handleCloseAside}
+          onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
+          fullScreenOnMobile>
           <RowTableInfo tabs={tabs} />
         </Aside>
       )}

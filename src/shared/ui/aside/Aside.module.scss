@@ -25,11 +25,30 @@
   cursor: pointer;
 }
 
+.return {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  cursor: pointer;
+}
+
+.returnDesktop {
+  bottom: 8px;
+  right: 8px;
+}
+
 .closeFullscreenMobile {
   top: auto;
   bottom: 12px;
   right: auto;
   left: 12px;
+}
+
+.returnFullscreenMobile {
+  top: auto;
+  bottom: 12px;
+  left: auto;
+  right: 12px;
 }
 
 :global(html[data-theme='dark']) {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Dayjs } from 'dayjs';
 
@@ -15,13 +15,24 @@ import { AlkozamkiInfo } from '@widgets/alkozamki_info';
 
 export const useAlkozamki = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { state } = useLocation() as {
-    state?: { selectedId?: ID; targetPage?: number };
+    state?: {
+      selectedId?: ID;
+      targetPage?: number;
+      returnNavigation?: {
+        pathname: string;
+        search?: string;
+        hash?: string;
+        state?: unknown;
+      };
+    };
   };
   const [selectedAlcolockId, setSelectedAlockId] = useState<ID | null>(state?.selectedId ?? null);
   const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
     state?.targetPage ?? null,
   );
+  const [returnNavigation, setReturnNavigation] = useState(state?.returnNavigation ?? null);
 
   useEffect(() => {
     if (state?.selectedId != null) {
@@ -30,7 +41,10 @@ export const useAlkozamki = () => {
     if (state?.targetPage != null) {
       setTargetPageFromNavigation(state.targetPage);
     }
-  }, [state?.selectedId, state?.targetPage]);
+    if (state?.returnNavigation) {
+      setReturnNavigation(state.returnNavigation);
+    }
+  }, [state?.selectedId, state?.targetPage, state?.returnNavigation]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -46,10 +60,12 @@ export const useAlkozamki = () => {
   const onClickRow = (id: ID) => {
     setSelectedAlockId(id);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
   };
   const handleCloseAside = () => {
     setSelectedAlockId(null);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -61,6 +77,13 @@ export const useAlkozamki = () => {
 
   const onTargetPageApplied = () => {
     setTargetPageFromNavigation(null);
+  };
+
+  const handleReturnToOrigin = () => {
+    if (!returnNavigation) return;
+    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
+      state: returnNavigation.state,
+    });
   };
 
   // Эффект для скролла к выбранному элементу (если он в DOM)
@@ -110,6 +133,8 @@ export const useAlkozamki = () => {
     tabs,
     selectedAlcolockId,
     targetPageFromNavigation,
+    returnNavigation,
+    handleReturnToOrigin,
     onTargetPageApplied,
     onClickRow,
     handleCloseAside,

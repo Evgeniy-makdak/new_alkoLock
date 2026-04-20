@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Dayjs } from 'dayjs';
 
@@ -18,13 +18,24 @@ import { useUsersTable } from '@widgets/users_table/hooks/useUsersTable';
 
 export const useUsers = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { state } = useLocation() as {
-    state?: { selectedId?: ID; targetPage?: number };
+    state?: {
+      selectedId?: ID;
+      targetPage?: number;
+      returnNavigation?: {
+        pathname: string;
+        search?: string;
+        hash?: string;
+        state?: unknown;
+      };
+    };
   };
   const [selectedUserId, setSelectedUserId] = useState<ID | null>(state?.selectedId ?? null);
   const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
     state?.targetPage ?? null,
   );
+  const [returnNavigation, setReturnNavigation] = useState(state?.returnNavigation ?? null);
   const [selectedUserActive, setSelectedUserActive] = useState(false);
   const [activeTab, setActiveTab] = useState<number>(0);
 
@@ -35,7 +46,10 @@ export const useUsers = () => {
     if (state?.targetPage != null) {
       setTargetPageFromNavigation(state.targetPage);
     }
-  }, [state?.selectedId, state?.targetPage]);
+    if (state?.returnNavigation) {
+      setReturnNavigation(state.returnNavigation);
+    }
+  }, [state?.selectedId, state?.targetPage, state?.returnNavigation]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -52,12 +66,14 @@ export const useUsers = () => {
     setSelectedUserId(id);
     setSelectedUserActive(isActive);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
   };
 
   const handleCloseAside = () => {
     setSelectedUserId(null);
     setSelectedUserActive(false);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
     setActiveTab(0); // Сбрасываем активную вкладку при закрытии
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
@@ -83,6 +99,13 @@ export const useUsers = () => {
 
   const onTargetPageApplied = () => {
     setTargetPageFromNavigation(null);
+  };
+
+  const handleReturnToOrigin = () => {
+    if (!returnNavigation) return;
+    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
+      state: returnNavigation.state,
+    });
   };
 
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.USER_LIST_TABLE]);
@@ -134,6 +157,8 @@ export const useUsers = () => {
     selectedUserId,
     targetPageFromNavigation,
     onTargetPageApplied,
+    returnNavigation,
+    handleReturnToOrigin,
     activeTab,
     handleTabChange,
     handleCloseAside,

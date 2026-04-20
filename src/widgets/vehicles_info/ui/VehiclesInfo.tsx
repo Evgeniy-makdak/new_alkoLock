@@ -1,6 +1,6 @@
 import { type FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
@@ -28,6 +28,7 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
   const theme = useTheme();
   const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoading, fields, car } = useVehiclesInfo(selectedCarId, closeTab);
   const isPlaceholderValue = (value: unknown) => {
     const normalized = String(value ?? '')
@@ -35,6 +36,15 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
       .trim();
     return !normalized || normalized === '-' || normalized === '—';
   };
+  const returnNavigation = useMemo(
+    () => ({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: location.state,
+    }),
+    [location.hash, location.pathname, location.search, location.state],
+  );
 
   const handleNavigateToAlcolock = useCallback(
     async (alcolockId: ID) => {
@@ -52,7 +62,9 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
         const firstData = first?.data as any;
         const firstContent: Array<{ id: ID }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(alcolockId))) {
-          navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, targetPage: 0 } });
+          navigate(RoutePaths.alkozamki, {
+            state: { selectedId: alcolockId, targetPage: 0, returnNavigation },
+          });
           return;
         }
 
@@ -68,16 +80,18 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
           const response = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page });
           const content: Array<{ id: ID }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(alcolockId))) {
-            navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, targetPage: page } });
+            navigate(RoutePaths.alkozamki, {
+              state: { selectedId: alcolockId, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
       } catch {
         // fallback
       }
-      navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId } });
+      navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, returnNavigation } });
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const preparedFields = useMemo(() => {

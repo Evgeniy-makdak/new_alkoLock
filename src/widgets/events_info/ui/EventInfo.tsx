@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
@@ -38,6 +38,7 @@ export const EventInfo = ({
   /** Как в EventsMobileTable / мобильных таблицах — только здесь подстраиваем чипы под тёмную тему */
   const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, isLoading, fields, hasTemperatureSensor } = useEventInfo(selectedEventId);
   const hasDeviceError = data?.events[0]?.eventType?.startsWith('Ошибка') || false;
   const isPlaceholderValue = (value: unknown) => {
@@ -46,6 +47,15 @@ export const EventInfo = ({
       .trim();
     return !normalized || normalized === '-' || normalized === '—';
   };
+  const returnNavigation = useMemo(
+    () => ({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: location.state,
+    }),
+    [location.hash, location.pathname, location.search, location.state],
+  );
 
   const handleNavigateToUser = useCallback(
     async (userId: string | number) => {
@@ -61,7 +71,9 @@ export const EventInfo = ({
         const firstData = first?.data as any;
         const firstContent: Array<{ id: string | number }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(userId))) {
-          navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: 0 } });
+          navigate(RoutePaths.users, {
+            state: { selectedId: userId, targetPage: 0, returnNavigation },
+          });
           return;
         }
         const totalPages = Number(firstData?.totalPages);
@@ -76,16 +88,18 @@ export const EventInfo = ({
           const response = await UsersApi.getList({ ...baseOptions, page });
           const content: Array<{ id: string | number }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(userId))) {
-            navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: page } });
+            navigate(RoutePaths.users, {
+              state: { selectedId: userId, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
       } catch {
         // fallback
       }
-      navigate(RoutePaths.users, { state: { selectedId: userId } });
+      navigate(RoutePaths.users, { state: { selectedId: userId, returnNavigation } });
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const handleNavigateToVehicle = useCallback(
@@ -108,7 +122,9 @@ export const EventInfo = ({
           (item) => String(item?.registrationNumber || '').trim() === normalizedRegNumber,
         );
         if (firstMatch?.id != null) {
-          navigate(RoutePaths.tc, { state: { selectedId: firstMatch.id, targetPage: 0 } });
+          navigate(RoutePaths.tc, {
+            state: { selectedId: firstMatch.id, targetPage: 0, returnNavigation },
+          });
           return;
         }
         const totalPages = Number(firstData?.totalPages);
@@ -127,7 +143,9 @@ export const EventInfo = ({
             (item) => String(item?.registrationNumber || '').trim() === normalizedRegNumber,
           );
           if (match?.id != null) {
-            navigate(RoutePaths.tc, { state: { selectedId: match.id, targetPage: page } });
+            navigate(RoutePaths.tc, {
+              state: { selectedId: match.id, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
@@ -135,7 +153,7 @@ export const EventInfo = ({
         // fallback
       }
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const handleNavigateToAlcolock = useCallback(
@@ -152,7 +170,9 @@ export const EventInfo = ({
         const firstData = first?.data as any;
         const firstContent: Array<{ id: string | number }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(alcolockId))) {
-          navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, targetPage: 0 } });
+          navigate(RoutePaths.alkozamki, {
+            state: { selectedId: alcolockId, targetPage: 0, returnNavigation },
+          });
           return;
         }
         const totalPages = Number(firstData?.totalPages);
@@ -167,16 +187,18 @@ export const EventInfo = ({
           const response = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page });
           const content: Array<{ id: string | number }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(alcolockId))) {
-            navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, targetPage: page } });
+            navigate(RoutePaths.alkozamki, {
+              state: { selectedId: alcolockId, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
       } catch {
         // fallback
       }
-      navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId } });
+      navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, returnNavigation } });
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const preparedFields = useMemo(() => {

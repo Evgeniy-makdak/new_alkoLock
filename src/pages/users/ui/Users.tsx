@@ -16,6 +16,8 @@ const Users = () => {
     selectedUserId,
     targetPageFromNavigation,
     onTargetPageApplied,
+    returnNavigation,
+    handleReturnToOrigin,
     activeTab,
     handleTabChange,
     handleCloseAside,
@@ -79,7 +81,10 @@ const Users = () => {
       </PageWrapper>
 
       {selectedUserId && (
-        <Aside onClose={handleCloseAside} fullScreenOnMobile>
+        <Aside
+          onClose={handleCloseAside}
+          onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
+          fullScreenOnMobile>
           <RowTableInfo tabs={tabs} activeTab={activeTab} onTabChange={handleTabChange} />
         </Aside>
       )}

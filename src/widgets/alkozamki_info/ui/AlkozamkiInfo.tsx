@@ -1,6 +1,6 @@
 import { type FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Tooltip, useMediaQuery } from '@mui/material';
@@ -33,6 +33,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
   const theme = useTheme();
   const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
+  const location = useLocation();
   const { alkolock, fields, isLoading, activeDeviceIds } = useAlkozamkiInfo(
     selectedAlcolockId,
     closeTab,
@@ -46,6 +47,15 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       .trim();
     return !normalized || normalized === '-' || normalized === '—';
   };
+  const returnNavigation = useMemo(
+    () => ({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: location.state,
+    }),
+    [location.hash, location.pathname, location.search, location.state],
+  );
 
   const handleNavigateToVehicle = useCallback(
     async (vehicleId: ID) => {
@@ -61,7 +71,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
         const firstData = first?.data as any;
         const firstContent: Array<{ id: ID }> = firstData?.content ?? [];
         if (firstContent.some((car) => String(car?.id) === String(vehicleId))) {
-          navigate(RoutePaths.tc, { state: { selectedId: vehicleId, targetPage: 0 } });
+          navigate(RoutePaths.tc, {
+            state: { selectedId: vehicleId, targetPage: 0, returnNavigation },
+          });
           return;
         }
 
@@ -72,7 +84,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           const response = await CarsApi.getCarsList({ ...baseOptions, page });
           const content: Array<{ id: ID }> = (response?.data as any)?.content ?? [];
           if (content.some((car) => String(car?.id) === String(vehicleId))) {
-            navigate(RoutePaths.tc, { state: { selectedId: vehicleId, targetPage: page } });
+            navigate(RoutePaths.tc, {
+              state: { selectedId: vehicleId, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
@@ -80,9 +94,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
         // fallback to original behavior
       }
 
-      navigate(RoutePaths.tc, { state: { selectedId: vehicleId } });
+      navigate(RoutePaths.tc, { state: { selectedId: vehicleId, returnNavigation } });
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const handleNavigateToUser = useCallback(
@@ -100,7 +114,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
         const firstData = first?.data as any;
         const firstContent: Array<{ id: ID }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(userId))) {
-          navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: 0 } });
+          navigate(RoutePaths.users, {
+            state: { selectedId: userId, targetPage: 0, returnNavigation },
+          });
           return;
         }
 
@@ -117,7 +133,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           const response = await UsersApi.getList({ ...baseOptions, page });
           const content: Array<{ id: ID }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(userId))) {
-            navigate(RoutePaths.users, { state: { selectedId: userId, targetPage: page } });
+            navigate(RoutePaths.users, {
+              state: { selectedId: userId, targetPage: page, returnNavigation },
+            });
             return;
           }
         }
@@ -125,9 +143,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
         // fallback
       }
 
-      navigate(RoutePaths.users, { state: { selectedId: userId } });
+      navigate(RoutePaths.users, { state: { selectedId: userId, returnNavigation } });
     },
-    [navigate],
+    [navigate, returnNavigation],
   );
 
   const preparedFields = useMemo(() => {

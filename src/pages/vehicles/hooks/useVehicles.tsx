@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Dayjs } from 'dayjs';
 
@@ -15,13 +15,26 @@ import { VehiclesInfo } from '@widgets/vehicles_info';
 
 export const useVehicles = () => {
   const { t } = useTranslation();
-  const location = useLocation() as { state?: { selectedId?: ID; targetPage?: number } };
+  const navigate = useNavigate();
+  const location = useLocation() as {
+    state?: {
+      selectedId?: ID;
+      targetPage?: number;
+      returnNavigation?: {
+        pathname: string;
+        search?: string;
+        hash?: string;
+        state?: unknown;
+      };
+    };
+  };
   const selectedIdFromRoute = location.state?.selectedId;
   const targetPageFromRoute = location.state?.targetPage;
   const [selectedCarId, setSelectedCarId] = useState<ID | null>(selectedIdFromRoute ?? null);
   const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
     typeof targetPageFromRoute === 'number' ? targetPageFromRoute : null,
   );
+  const [returnNavigation, setReturnNavigation] = useState(location.state?.returnNavigation ?? null);
 
   useEffect(() => {
     if (selectedIdFromRoute != null) {
@@ -30,7 +43,10 @@ export const useVehicles = () => {
     if (typeof targetPageFromRoute === 'number') {
       setTargetPageFromNavigation(targetPageFromRoute);
     }
-  }, [selectedIdFromRoute, targetPageFromRoute]);
+    if (location.state?.returnNavigation) {
+      setReturnNavigation(location.state.returnNavigation);
+    }
+  }, [selectedIdFromRoute, targetPageFromRoute, location.state?.returnNavigation]);
 
   // Состояние фильтров для вкладки истории - поднимаем на уровень выше
   const [historyFilters, setHistoryFilters] = useState<{
@@ -46,6 +62,7 @@ export const useVehicles = () => {
   const onClickRow = (id: ID) => {
     setSelectedCarId(id);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
   };
   const onTargetPageApplied = () => {
     setTargetPageFromNavigation(null);
@@ -53,11 +70,19 @@ export const useVehicles = () => {
   const handleCloseAside = () => {
     setSelectedCarId(null);
     setTargetPageFromNavigation(null);
+    setReturnNavigation(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
       startDate: null,
       endDate: null,
+    });
+  };
+
+  const handleReturnToOrigin = () => {
+    if (!returnNavigation) return;
+    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
+      state: returnNavigation.state,
     });
   };
 
@@ -103,6 +128,8 @@ export const useVehicles = () => {
     tabs,
     selectedCarId,
     targetPageFromNavigation,
+    returnNavigation,
+    handleReturnToOrigin,
     onTargetPageApplied,
     handleCloseAside,
   };
