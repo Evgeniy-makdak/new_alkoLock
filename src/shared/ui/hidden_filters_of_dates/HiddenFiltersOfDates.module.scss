@@ -1,8 +1,27 @@
 /* Макс. ширина колонки; фактическая ширина полей = ширина кнопки (задаётся из JS по измерению) */
 $controlMaxWidth: 240px;
+$compactPanelWidth: 160px;
 
 .container {
   width: 100%;
+}
+
+.containerNoToggle {
+  .expandedWithSlot {
+    width: auto;
+    max-width: max-content;
+  }
+
+  .expandedGrow {
+    width: $compactPanelWidth;
+    max-width: $compactPanelWidth;
+    flex: 0 0 $compactPanelWidth;
+  }
+
+  .expandedPanelOnly {
+    width: $compactPanelWidth;
+    max-width: $compactPanelWidth;
+  }
 }
 
 .row {

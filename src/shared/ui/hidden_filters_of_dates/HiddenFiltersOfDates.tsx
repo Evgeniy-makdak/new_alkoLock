@@ -200,7 +200,7 @@ export const HiddenFiltersOfDates = ({
   );
 
   return (
-    <div className={styles.container}>
+    <div className={[styles.container, hideToggleRow ? styles.containerNoToggle : ''].join(' ').trim()}>
       {!hideToggleRow && (
         <div className={styles.row}>
           <div
