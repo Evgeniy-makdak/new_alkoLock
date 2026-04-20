@@ -59,7 +59,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "format": "prettier --write \"**/*.+(ts|tsx|css|md)\"",
-    "postinstall": "patch-package",
+    "postinstall": "node scripts/postinstall.js",
     "prepare": "husky install",
     "precommit": "yarn format && yarn lint && yarn lint:fix",
     "watch": "yarn typed-scss-modules src --watch",
