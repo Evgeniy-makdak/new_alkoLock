@@ -22,6 +22,10 @@ const Events: React.FC = () => {
   const isTablet = useMediaQuery(breakpoints.tablet);
 
   useEffect(() => {
+    if (prevBranch.current === null) {
+      prevBranch.current = selectedBranchState?.id;
+      return;
+    }
     if (prevBranch.current !== selectedBranchState?.id) {
       prevBranch.current = selectedBranchState?.id;
       handleCloseAside();
