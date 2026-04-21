@@ -247,6 +247,7 @@ export const MapPage = () => {
   const urlLat = queryParams.get('lat');
   const urlLng = queryParams.get('lng');
   const urlVehicle = queryParams.get('vehicle');
+  const isCoordinateTransitionMode = Boolean(urlLat && urlLng && urlVehicle);
   const isMapPage = location.pathname === RoutePaths.map;
   // const [startDate, setStartDate] = useState<Dayjs | null>(null);
   // const [endDate, setEndDate] = useState<Dayjs | null>(null);
@@ -358,6 +359,7 @@ export const MapPage = () => {
     setSelectedVehicleId(null);
     setSelectedVehicleActive(false);
     setOpenedPopupVehicleId(null);
+    setFreezeMarkers(false);
     setActiveTab('info');
     setPanelStack([]);
     setShowRoutes(false);
@@ -1314,7 +1316,7 @@ export const MapPage = () => {
           flexDirection: 'column',
           minHeight: 0,
         }}>
-        {!isMobile ? (
+        {!isMobile && !isCoordinateTransitionMode ? (
           <MapControls
             variant="toolbar"
             onResetFilters={handleResetMapStateFromFilters}
@@ -1341,7 +1343,7 @@ export const MapPage = () => {
         />
       </div>
 
-      {isMobile ? (
+      {isMobile && !isCoordinateTransitionMode ? (
         <div
           style={{
             position: 'absolute',
