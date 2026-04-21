@@ -39,9 +39,12 @@ const setTestIdsToHeaderColumnsAdapter = (
 export const useGetColumns = (
   refetch: RefetchType<IAttachmentItems[]>,
   newRefetch: () => Promise<void>,
-  serviceModeTimeoutMinutes: number,
+  serviceModeTimeoutMinutes?: number,
 ): GridColDef[] => {
   const { t } = useTranslation();
+  const safeTimeoutMinutes = Number.isFinite(Number(serviceModeTimeoutMinutes))
+    ? Number(serviceModeTimeoutMinutes)
+    : null;
   return useMemo(
     () => [
       {
@@ -101,12 +104,53 @@ export const useGetColumns = (
           ) {
             return null;
           }
-          const dateString = params?.row.DATE_CREATE;
-          const [datePart, timePart] = dateString.split(' ');
-          const [day, month, year] = datePart.split('.');
-          const [hour, minute, second] = timePart.split(':');
-          const date = new Date(year, month - 1, day, hour, minute, second);
-          date.setMinutes(date.getMinutes() + serviceModeTimeoutMinutes);
+          const createdAtRaw = params?.row?.createdAtRaw;
+          const finishedAtRaw = params?.row?.finishedAtRaw;
+          let createdDate: Date | null = null;
+          let finishedDate: Date | null = null;
+          let date: Date | null = null;
+          if (createdAtRaw) {
+            const parsed = new Date(createdAtRaw);
+            if (!isNaN(parsed.getTime())) {
+              createdDate = parsed;
+              date = parsed;
+            }
+          }
+          if (finishedAtRaw) {
+            const parsed = new Date(finishedAtRaw);
+            if (!isNaN(parsed.getTime())) {
+              finishedDate = parsed;
+            }
+          }
+
+          if (!date) {
+            const dateString = params?.row?.DATE_CREATE;
+            if (typeof dateString === 'string' && dateString.includes(' ')) {
+              const [datePart, timePart] = dateString.split(' ');
+              const [day, month, year] = (datePart || '').split('.');
+              const [hour, minute, second] = (timePart || '').split(':');
+              const parsed = new Date(
+                Number(year),
+                Number(month) - 1,
+                Number(day),
+                Number(hour),
+                Number(minute),
+                Number(second),
+              );
+              if (!isNaN(parsed.getTime())) {
+                date = parsed;
+                createdDate = parsed;
+              }
+            }
+          }
+
+          if (finishedDate && (!createdDate || finishedDate.getTime() >= createdDate.getTime())) {
+            date = finishedDate;
+          } else if (date && safeTimeoutMinutes != null) {
+            date.setMinutes(date.getMinutes() + safeTimeoutMinutes);
+          } else {
+            return '-';
+          }
           return (
             <TimeCell
               refetch={refetch}
@@ -136,6 +180,6 @@ export const useGetColumns = (
         align: 'center',
       },
     ],
-    [refetch, newRefetch, serviceModeTimeoutMinutes, t],
+    [newRefetch, refetch, safeTimeoutMinutes, t],
   );
 };

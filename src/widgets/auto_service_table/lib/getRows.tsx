@@ -17,6 +17,8 @@ export interface Row {
   idDevice: number;
   lastEvent: { eventType?: string };
   finishedAt: string;
+  finishedAtRaw?: string | null;
+  createdAtRaw?: string | null;
   status: string;
   DATE: string;
   SERIAL_NUMBER: string | number;
@@ -164,6 +166,11 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
   }, [filteredData, autoHideTimeout]);
 
   const rows = useMemo(() => {
+    const isValidDate = (value: unknown) => {
+      if (!value) return false;
+      const d = new Date(value as string | number | Date);
+      return !isNaN(d.getTime());
+    };
     return filteredData.map((item) => {
       const { lastEvent, status } = getStatus(item);
       let process: string;
@@ -208,9 +215,11 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
         idDevice: item?.device?.id,
         lastEvent: lastEvent,
         finishedAt: item.occurredAt,
+        finishedAtRaw: isValidDate(item.finishedAt) ? String(item.finishedAt) : null,
+        createdAtRaw: isValidDate(item.createdAt) ? String(item.createdAt) : null,
         state: statusLabel,
         stateKey: status,
-        [ValuesHeader.DATE]: Formatters.formatISODate(item.createdAt) ?? '-',
+        [ValuesHeader.DATE]: isValidDate(item.createdAt) ? Formatters.formatISODate(item.createdAt) : '-',
         [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord)

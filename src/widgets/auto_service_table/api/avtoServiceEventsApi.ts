@@ -18,7 +18,13 @@ export const useAvtoServiceEventsApi = (options: QueryOptions) => {
     { options: { enabled: true } },
   );
 
-  const serviceModeTimeoutMinutes = settingsData?.currentValue ?? settingsData?.defaultValue;
+  const parsedCurrent = Number(settingsData?.currentValue);
+  const parsedDefault = Number(settingsData?.defaultValue);
+  const serviceModeTimeoutMinutes = Number.isFinite(parsedCurrent)
+    ? parsedCurrent
+    : Number.isFinite(parsedDefault)
+      ? parsedDefault
+      : undefined;
 
   return { data, isLoading, refetch, serviceModeTimeoutMinutes };
 };
