@@ -103,9 +103,12 @@ export const useUsers = () => {
 
   const handleReturnToOrigin = () => {
     if (!returnNavigation) return;
-    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
-      state: returnNavigation.state,
-    });
+    navigate(
+      `${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`,
+      {
+        state: returnNavigation.state,
+      },
+    );
   };
 
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.USER_LIST_TABLE]);

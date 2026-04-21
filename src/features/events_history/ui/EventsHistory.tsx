@@ -40,6 +40,10 @@ type EventsHistoryProps = {
    * иконка вместо слова «Фильтр», модалка с чекбоксами для типов событий.
    */
   sidePanelMobileFilterUx?: boolean;
+  /**
+   * Тот же UX фильтров на любой ширине (для боковой панели на странице «Карта»).
+   */
+  sidePanelFilterUxAlways?: boolean;
 } & EventsOptions;
 
 export const EventsHistory = (props: EventsHistoryProps) => {
@@ -57,6 +61,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
     savedFilters,
     onFiltersChange,
     sidePanelMobileFilterUx = false,
+    sidePanelFilterUxAlways = false,
     ...rest
   } = props;
   const [sortField, setSortField] = useState<'id' | 'timestamp' | null>(null);
@@ -189,6 +194,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
           initialStartDate={savedFilters?.startDate || null}
           initialEndDate={savedFilters?.endDate || null}
           sidePanelMobileFilterUx={sidePanelMobileFilterUx}
+          sidePanelFilterUxAlways={sidePanelFilterUxAlways}
         />
       </div>
 

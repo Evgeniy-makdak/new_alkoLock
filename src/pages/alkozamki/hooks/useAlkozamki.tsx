@@ -81,9 +81,12 @@ export const useAlkozamki = () => {
 
   const handleReturnToOrigin = () => {
     if (!returnNavigation) return;
-    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
-      state: returnNavigation.state,
-    });
+    navigate(
+      `${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`,
+      {
+        state: returnNavigation.state,
+      },
+    );
   };
 
   // Эффект для скролла к выбранному элементу (если он в DOM)

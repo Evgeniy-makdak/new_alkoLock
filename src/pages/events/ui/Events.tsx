@@ -13,8 +13,15 @@ import { breakpoints } from '@widgets/nav_bar/breakpoints';
 import { useEventsPage } from '../hooks/useEventsPage';
 
 const Events: React.FC = () => {
-  const { handleClickRow, handleCloseAside, selectedEventId, tabs, activeTab, setActiveTab, isAsideOpen } =
-    useEventsPage();
+  const {
+    handleClickRow,
+    handleCloseAside,
+    selectedEventId,
+    tabs,
+    activeTab,
+    setActiveTab,
+    isAsideOpen,
+  } = useEventsPage();
   const prevBranch = useRef(null);
   const { selectedBranchState } = appStore((state) => state);
   const { resetFilters } = eventsFilterPanelStore();

@@ -46,6 +46,8 @@ interface EventsFilterPanelProps {
   initialEndDate?: Dayjs | null;
   /** См. EventsHistory `sidePanelMobileFilterUx`. */
   sidePanelMobileFilterUx?: boolean;
+  /** См. EventsHistory `sidePanelFilterUxAlways`. */
+  sidePanelFilterUxAlways?: boolean;
 }
 
 export const Text = (text: string) => (
@@ -75,6 +77,7 @@ export const TableHeader = ({
   initialStartDate = null,
   initialEndDate = null,
   sidePanelMobileFilterUx = false,
+  sidePanelFilterUxAlways = false,
 }: EventsFilterPanelProps & {
   setStartDate: (date: Dayjs | null) => void;
   setEndDate: (date: Dayjs | null) => void;
@@ -85,7 +88,8 @@ export const TableHeader = ({
   const theme = useTheme();
   /** Синхронно с `EventsHistory.module.scss` (@media max-width: 768px). */
   const isMobileHistoryFilters = useMediaQuery('(max-width:768px)');
-  const useSidePanelMobileUx = isMobileHistoryFilters && sidePanelMobileFilterUx;
+  const useSidePanelMobileUx =
+    (isMobileHistoryFilters && sidePanelMobileFilterUx) || sidePanelFilterUxAlways;
   const lang = (i18n.language || 'ru').split('-')[0].toLowerCase();
 
   const pickersLocalePack: Record<string, typeof ruRU | typeof enUS | typeof kzKZ | typeof beBY> = {
@@ -422,6 +426,7 @@ export const TableHeader = ({
                   value={typeEventFilters}
                   label={t('filters.eventType')}
                   getTooltipTitle={(label) => `${label}`}
+                  mobileModalPicker={useSidePanelMobileUx}
                   sx={{ width: 150 }}
                 />
               </StyledTable.HeaderCell>

@@ -34,7 +34,9 @@ export const useVehicles = () => {
   const [targetPageFromNavigation, setTargetPageFromNavigation] = useState<number | null>(
     typeof targetPageFromRoute === 'number' ? targetPageFromRoute : null,
   );
-  const [returnNavigation, setReturnNavigation] = useState(location.state?.returnNavigation ?? null);
+  const [returnNavigation, setReturnNavigation] = useState(
+    location.state?.returnNavigation ?? null,
+  );
 
   useEffect(() => {
     if (selectedIdFromRoute != null) {
@@ -81,9 +83,12 @@ export const useVehicles = () => {
 
   const handleReturnToOrigin = () => {
     if (!returnNavigation) return;
-    navigate(`${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`, {
-      state: returnNavigation.state,
-    });
+    navigate(
+      `${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`,
+      {
+        state: returnNavigation.state,
+      },
+    );
   };
 
   const closeTabWidthUpdate = useCloseTab(handleCloseAside, [QueryKeys.VEHICLES_PAGE_TABLE]);

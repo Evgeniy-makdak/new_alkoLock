@@ -1226,6 +1226,8 @@ export const MapPage = () => {
           freezeMarkers={freezeMarkers}
           onToggleFreezeMarkers={(checked) => setFreezeMarkers(checked)}
           onCoordinateClick={handleCoordinateClick}
+          sidePanelMobileFilterUx
+          sidePanelFilterUxAlways
         />
       ),
     },
