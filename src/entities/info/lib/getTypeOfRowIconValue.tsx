@@ -143,7 +143,6 @@ const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: s
 const buildCommonChipStyles = (hasSemanticColor: boolean, theme?: Theme) => {
   const isDark = theme?.palette.mode === 'dark';
   return {
-    width: '100%',
     maxWidth: '100%',
     minWidth: 0,
     height: '28px',
