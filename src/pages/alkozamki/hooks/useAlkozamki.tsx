@@ -26,6 +26,10 @@ export const useAlkozamki = () => {
         hash?: string;
         state?: unknown;
       };
+      mapReturnContext?: {
+        sourceTab?: 'info' | 'history';
+        expandedEventId?: ID | null;
+      };
     };
   };
   const [selectedAlcolockId, setSelectedAlockId] = useState<ID | null>(state?.selectedId ?? null);
@@ -33,6 +37,12 @@ export const useAlkozamki = () => {
     state?.targetPage ?? null,
   );
   const [returnNavigation, setReturnNavigation] = useState(state?.returnNavigation ?? null);
+  const [activeTab, setActiveTab] = useState<'info' | 'history'>(
+    state?.mapReturnContext?.sourceTab === 'history' ? 'history' : 'info',
+  );
+  const [initialExpandedHistoryEventId, setInitialExpandedHistoryEventId] = useState<ID | null>(
+    state?.mapReturnContext?.expandedEventId ?? null,
+  );
 
   useEffect(() => {
     if (state?.selectedId != null) {
@@ -44,7 +54,19 @@ export const useAlkozamki = () => {
     if (state?.returnNavigation) {
       setReturnNavigation(state.returnNavigation);
     }
-  }, [state?.selectedId, state?.targetPage, state?.returnNavigation]);
+    if (state?.mapReturnContext?.sourceTab === 'history') {
+      setActiveTab('history');
+    }
+    if (state?.mapReturnContext?.expandedEventId != null) {
+      setInitialExpandedHistoryEventId(state.mapReturnContext.expandedEventId);
+    }
+  }, [
+    state?.selectedId,
+    state?.targetPage,
+    state?.returnNavigation,
+    state?.mapReturnContext?.expandedEventId,
+    state?.mapReturnContext?.sourceTab,
+  ]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -61,11 +83,15 @@ export const useAlkozamki = () => {
     setSelectedAlockId(id);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
+    setActiveTab('info');
+    setInitialExpandedHistoryEventId(null);
   };
   const handleCloseAside = () => {
     setSelectedAlockId(null);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
+    setActiveTab('info');
+    setInitialExpandedHistoryEventId(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -126,6 +152,7 @@ export const useAlkozamki = () => {
           alcolockId={selectedAlcolockId}
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          initialExpandedRowId={initialExpandedHistoryEventId}
           sidePanelMobileFilterUx
         />
       ),
@@ -137,6 +164,8 @@ export const useAlkozamki = () => {
     selectedAlcolockId,
     targetPageFromNavigation,
     returnNavigation,
+    activeTab,
+    setActiveTab,
     handleReturnToOrigin,
     onTargetPageApplied,
     onClickRow,

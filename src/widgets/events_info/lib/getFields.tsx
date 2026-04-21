@@ -15,7 +15,11 @@ import { Formatters } from '@shared/utils/formatters';
 
 import { AdaptiveTitle } from './AdaptiveTitle';
 
-export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction): Field[] => {
+export const getFields = (
+  data?: IDeviceAction | null | undefined,
+  t?: TFunction,
+  selectedEventId?: string | number,
+): Field[] => {
   if (!data) return [];
   const tr = (key: string) => (t ? t(key) : key);
   const car = data?.vehicleRecord;
@@ -274,6 +278,7 @@ export const getFields = (data?: IDeviceAction | null | undefined, t?: TFunction
             latitude={latitude}
             longitude={longitude}
             vehicle={registrationNumber}
+            returnState={selectedEventId != null ? { selectedEventId } : undefined}
           />
         ) : (
           '-'

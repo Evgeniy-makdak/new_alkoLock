@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { RoutePaths } from '@shared/config/routePathsEnum';
 
@@ -9,10 +9,12 @@ interface MapLinkProps {
   longitude: string | number;
   vehicle?: string;
   testid?: string;
+  returnState?: Record<string, unknown>;
 }
 
-export const MapLink = ({ latitude, longitude, vehicle, testid }: MapLinkProps) => {
+export const MapLink = ({ latitude, longitude, vehicle, testid, returnState }: MapLinkProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleClick = () => {
     const lat = Number(latitude);
@@ -20,9 +22,20 @@ export const MapLink = ({ latitude, longitude, vehicle, testid }: MapLinkProps) 
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
     const vehicleParam = vehicle ? `&vehicle=${encodeURIComponent(vehicle)}` : '';
+    const returnNavigation = {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      state: {
+        ...(typeof location.state === 'object' && location.state ? (location.state as object) : {}),
+        ...(returnState || {}),
+      },
+    };
     navigate({
       pathname: RoutePaths.map,
       search: `?lat=${lat}&lng=${lng}${vehicleParam}`,
+    }, {
+      state: { returnNavigation },
     });
   };
 

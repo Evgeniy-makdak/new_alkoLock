@@ -27,6 +27,7 @@ export const useEventsHistory = (
     freezeMarkers?: boolean;
     onToggleFreezeMarkers?: (checked: boolean) => void;
     onCoordinateClick?: (lat: number, lng: number, vehicle: string) => void;
+    initialExpandedRowId?: ID | null;
   },
   type: HistoryTypes,
   customEvents?: IDeviceAction[],
@@ -140,6 +141,22 @@ export const useEventsHistory = (
   const onClickExpand = (id: ID) => {
     setExpandRowId(expandRowId === id ? null : id);
   };
+  useEffect(() => {
+    if (!options.initialExpandedRowId) return;
+    const exists = eventsAcc.some(
+      (event) =>
+        String(event?.id) === String(options.initialExpandedRowId) ||
+        String((event as any)?.actionId) === String(options.initialExpandedRowId),
+    );
+    if (exists) {
+      const matched = eventsAcc.find(
+        (event) =>
+          String(event?.id) === String(options.initialExpandedRowId) ||
+          String((event as any)?.actionId) === String(options.initialExpandedRowId),
+      );
+      setExpandRowId((matched?.id as ID) ?? options.initialExpandedRowId);
+    }
+  }, [eventsAcc, options.initialExpandedRowId]);
 
   const getEventTypeChip = (eventType: string | { label: string }) => {
     const label = typeof eventType === 'string' ? eventType : (eventType?.label ?? 'Неизвестно');
@@ -233,6 +250,15 @@ export const useEventsHistory = (
                 testid={testids.EVENT_HISTORY_TABLE_MAP_LINK}
                 type={type}
                 event={event}
+                sourceSelectedId={
+                  type === 'byCar'
+                    ? (options.carId ?? null)
+                    : type === 'byAlcolock'
+                      ? (options.alcolockId ?? null)
+                      : type === 'byUser'
+                        ? (options.userId ?? null)
+                        : null
+                }
                 showDetailsLink={options.showDetailsLink}
                 openDetailsPanel={openDetailsPanel}
                 freezeMarkers={freezeMarkers}

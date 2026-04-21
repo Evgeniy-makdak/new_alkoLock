@@ -62,6 +62,12 @@ const DEFAULT_MAP_CENTER: [number, number] = [59.9343, 30.3351]; // Санкт-�
 const DEFAULT_MAP_ZOOM = 12;
 
 type MapDetailsTabKey = 'info' | 'additional';
+type ReturnNavigation = {
+  pathname: string;
+  search?: string;
+  hash?: string;
+  state?: unknown;
+};
 
 const formatPlateParts = (
   reg: string,
@@ -235,6 +241,8 @@ export const MapPage = () => {
   const [debugInfo, setDebugInfo] = useState<string>('Инициализация...');
   const location = useLocation();
   const navigate = useNavigate();
+  const returnNavigation = (location.state as { returnNavigation?: ReturnNavigation } | null)
+    ?.returnNavigation;
   const queryParams = useQueryParams();
   const urlLat = queryParams.get('lat');
   const urlLng = queryParams.get('lng');
@@ -290,6 +298,15 @@ export const MapPage = () => {
   const handleCloseAllPanels = () => {
     setPanelStack([]);
   };
+  const handleReturnToOrigin = useCallback(() => {
+    if (!returnNavigation) return;
+    navigate(
+      `${returnNavigation.pathname}${returnNavigation.search || ''}${returnNavigation.hash || ''}`,
+      {
+        state: returnNavigation.state,
+      },
+    );
+  }, [navigate, returnNavigation]);
 
   const handleResetMapCenter = () => {
     if (mapRef.current) {
@@ -1177,6 +1194,8 @@ export const MapPage = () => {
     navigate({
       pathname: RoutePaths.map,
       search: `?lat=${lat}&lng=${lng}&vehicle=${encodeURIComponent(vehicle)}`,
+    }, {
+      state: location.state,
     });
 
     // На мобильном боковая панель перекрывает карту: закрываем панели,
@@ -1516,6 +1535,7 @@ export const MapPage = () => {
           }}>
           <Aside
             onClose={handleCloseAside}
+            onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
             style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <RowTableInfo tabs={tabs} style={{ flex: 1 }} />
           </Aside>
@@ -1536,6 +1556,7 @@ export const MapPage = () => {
           }}>
           <Aside
             onClose={handleCloseAllPanels}
+            onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
             style={{
               height: '100%',
               display: 'flex',

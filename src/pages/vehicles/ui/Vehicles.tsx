@@ -17,6 +17,8 @@ const Vehicles = () => {
     selectedCarId,
     targetPageFromNavigation,
     returnNavigation,
+    activeTab,
+    setActiveTab,
     handleReturnToOrigin,
     onTargetPageApplied,
   } = useVehicles();
@@ -56,7 +58,11 @@ const Vehicles = () => {
           onClose={handleCloseAside}
           onReturnToOrigin={returnNavigation ? handleReturnToOrigin : undefined}
           fullScreenOnMobile>
-          <RowTableInfo tabs={tabs} />
+          <RowTableInfo
+            tabs={tabs}
+            activeTab={activeTab === 'history' ? 1 : 0}
+            onTabChange={(index) => setActiveTab(index === 1 ? 'history' : 'info')}
+          />
         </Aside>
       )}
     </>

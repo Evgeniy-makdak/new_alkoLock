@@ -26,6 +26,10 @@ export const useVehicles = () => {
         hash?: string;
         state?: unknown;
       };
+      mapReturnContext?: {
+        sourceTab?: 'info' | 'history';
+        expandedEventId?: ID | null;
+      };
     };
   };
   const selectedIdFromRoute = location.state?.selectedId;
@@ -36,6 +40,12 @@ export const useVehicles = () => {
   );
   const [returnNavigation, setReturnNavigation] = useState(
     location.state?.returnNavigation ?? null,
+  );
+  const [activeTab, setActiveTab] = useState<'info' | 'history'>(
+    location.state?.mapReturnContext?.sourceTab === 'history' ? 'history' : 'info',
+  );
+  const [initialExpandedHistoryEventId, setInitialExpandedHistoryEventId] = useState<ID | null>(
+    location.state?.mapReturnContext?.expandedEventId ?? null,
   );
 
   useEffect(() => {
@@ -48,7 +58,19 @@ export const useVehicles = () => {
     if (location.state?.returnNavigation) {
       setReturnNavigation(location.state.returnNavigation);
     }
-  }, [selectedIdFromRoute, targetPageFromRoute, location.state?.returnNavigation]);
+    if (location.state?.mapReturnContext?.sourceTab === 'history') {
+      setActiveTab('history');
+    }
+    if (location.state?.mapReturnContext?.expandedEventId != null) {
+      setInitialExpandedHistoryEventId(location.state.mapReturnContext.expandedEventId);
+    }
+  }, [
+    selectedIdFromRoute,
+    targetPageFromRoute,
+    location.state?.returnNavigation,
+    location.state?.mapReturnContext?.expandedEventId,
+    location.state?.mapReturnContext?.sourceTab,
+  ]);
 
   // Состояние фильтров для вкладки истории - поднимаем на уровень выше
   const [historyFilters, setHistoryFilters] = useState<{
@@ -65,6 +87,8 @@ export const useVehicles = () => {
     setSelectedCarId(id);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
+    setActiveTab('info');
+    setInitialExpandedHistoryEventId(null);
   };
   const onTargetPageApplied = () => {
     setTargetPageFromNavigation(null);
@@ -73,6 +97,8 @@ export const useVehicles = () => {
     setSelectedCarId(null);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
+    setActiveTab('info');
+    setInitialExpandedHistoryEventId(null);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -122,6 +148,7 @@ export const useVehicles = () => {
           // Передаем сохраненные фильтры и функцию для их обновления
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          initialExpandedRowId={initialExpandedHistoryEventId}
           sidePanelMobileFilterUx
         />
       ),
@@ -134,6 +161,8 @@ export const useVehicles = () => {
     selectedCarId,
     targetPageFromNavigation,
     returnNavigation,
+    activeTab,
+    setActiveTab,
     handleReturnToOrigin,
     onTargetPageApplied,
     handleCloseAside,

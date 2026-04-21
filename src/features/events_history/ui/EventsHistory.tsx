@@ -6,7 +6,7 @@ import { Dayjs } from 'dayjs';
 import { TableContainer } from '@mui/material';
 
 import type { HistoryTypes } from '@entities/events_data';
-import type { EventsOptions, IDeviceAction } from '@shared/types/BaseQueryTypes';
+import type { EventsOptions, ID, IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Values } from '@shared/ui/search_multiple_select';
 
 import { useEventsHistory } from '../hooks/useEventsHistory';
@@ -44,6 +44,7 @@ type EventsHistoryProps = {
    * Тот же UX фильтров на любой ширине (для боковой панели на странице «Карта»).
    */
   sidePanelFilterUxAlways?: boolean;
+  initialExpandedRowId?: ID | null;
 } & EventsOptions;
 
 export const EventsHistory = (props: EventsHistoryProps) => {
@@ -62,6 +63,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
     onFiltersChange,
     sidePanelMobileFilterUx = false,
     sidePanelFilterUxAlways = false,
+    initialExpandedRowId = null,
     ...rest
   } = props;
   const [sortField, setSortField] = useState<'id' | 'timestamp' | null>(null);
@@ -94,6 +96,7 @@ export const EventsHistory = (props: EventsHistoryProps) => {
       freezeMarkers,
       onToggleFreezeMarkers,
       onCoordinateClick,
+      initialExpandedRowId,
     },
     type,
     shouldUseCustomEvents ? customEvents : undefined,

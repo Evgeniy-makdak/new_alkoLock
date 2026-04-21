@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { EventsApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -21,6 +21,7 @@ type EventData = {
   type: HistoryTypes;
   testid: string;
   event: IDeviceAction;
+  sourceSelectedId?: ID | null;
   showDetailsLink?: boolean;
   openDetailsPanel?: (params: { id: string | number; content: React.ReactNode }) => void;
   expandedRowId?: ID | null;
@@ -35,6 +36,7 @@ export const EventData: FC<EventData> = ({
   event,
   type,
   testid,
+  sourceSelectedId,
   showDetailsLink,
   openDetailsPanel,
   onExpandRow,
@@ -44,6 +46,7 @@ export const EventData: FC<EventData> = ({
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   // Координаты могут быть в summary, events[0] или на верхнем уровне (разная структура API)
   const latitude = event?.summary?.lat ?? event?.events?.[0]?.latitude ?? (event as any)?.latitude;
   const longitude =
@@ -81,9 +84,26 @@ export const EventData: FC<EventData> = ({
     if (onCoordinateClick) {
       onCoordinateClick(Number(latitude), Number(longitude), registrationNumber);
     } else {
+      const baseState =
+        typeof location.state === 'object' && location.state ? (location.state as any) : {};
+      const returnNavigation = {
+        pathname: location.pathname,
+        search: location.search,
+        hash: location.hash,
+        state: {
+          ...baseState,
+          ...(sourceSelectedId != null ? { selectedId: sourceSelectedId } : {}),
+          mapReturnContext: {
+            sourceTab: 'history',
+            expandedEventId: (event?.id ?? event?.actionId) || null,
+          },
+        },
+      };
       navigate({
         pathname: RoutePaths.map,
         search: `?lat=${latitude}&lng=${longitude}&vehicle=${encodeURIComponent(registrationNumber)}`,
+      }, {
+        state: { returnNavigation },
       });
     }
     onExpandRow?.(event.id);
