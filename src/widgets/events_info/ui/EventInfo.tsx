@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { enqueueSnackbar } from 'notistack';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
@@ -47,6 +48,55 @@ export const EventInfo = ({
       .trim();
     return !normalized || normalized === '-' || normalized === '—';
   };
+  const showNavigateError = (error: unknown) => {
+    const detail =
+      (error as any)?.detail ||
+      (error as any)?.message ||
+      (error as any)?.data?.detail ||
+      (error as any)?.data?.message ||
+      (error as any)?.response?.data?.detail ||
+      (error as any)?.response?.data?.message ||
+      (error as Error)?.message ||
+      t('errors.accessDenied');
+    enqueueSnackbar(` ${detail}`, { variant: 'error' });
+  };
+  const isErrorResponse = (response: unknown) => {
+    const status = (response as any)?.status;
+    return Boolean((response as any)?.isError || (typeof status === 'number' && status >= 400));
+  };
+  const ensureUserAccess = useCallback(
+    async (userId: string | number) => {
+      const response = await UsersApi.getUser(userId);
+      if (isErrorResponse(response)) {
+        showNavigateError(response);
+        return false;
+      }
+      return true;
+    },
+    [t],
+  );
+  const ensureVehicleAccess = useCallback(
+    async (vehicleId: string | number) => {
+      const response = await CarsApi.getCar(vehicleId);
+      if (isErrorResponse(response)) {
+        showNavigateError(response);
+        return false;
+      }
+      return true;
+    },
+    [t],
+  );
+  const ensureAlcolockAccess = useCallback(
+    async (alcolockId: string | number) => {
+      const response = await AlcolocksApi.getAlkolock(alcolockId);
+      if (isErrorResponse(response)) {
+        showNavigateError(response);
+        return false;
+      }
+      return true;
+    },
+    [t],
+  );
   const returnNavigation = useMemo(
     () => ({
       pathname: location.pathname,
@@ -71,9 +121,14 @@ export const EventInfo = ({
           filterOptions: { branchId: selectedBranchId },
         };
         const first = await UsersApi.getList({ ...baseOptions, page: 0 });
+        if (isErrorResponse(first)) {
+          return showNavigateError(first);
+        }
         const firstData = first?.data as any;
         const firstContent: Array<{ id: string | number }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(userId))) {
+          const hasAccess = await ensureUserAccess(userId);
+          if (!hasAccess) return;
           navigate(RoutePaths.users, {
             state: { selectedId: userId, targetPage: 0, returnNavigation },
           });
@@ -89,20 +144,27 @@ export const EventInfo = ({
               : 1;
         for (let page = 1; page < maxPages; page++) {
           const response = await UsersApi.getList({ ...baseOptions, page });
+          if (isErrorResponse(response)) {
+            return showNavigateError(response);
+          }
           const content: Array<{ id: string | number }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(userId))) {
+            const hasAccess = await ensureUserAccess(userId);
+            if (!hasAccess) return;
             navigate(RoutePaths.users, {
               state: { selectedId: userId, targetPage: page, returnNavigation },
             });
             return;
           }
         }
-      } catch {
-        // fallback
+      } catch (error) {
+        return showNavigateError(error);
       }
+      const hasAccess = await ensureUserAccess(userId);
+      if (!hasAccess) return;
       navigate(RoutePaths.users, { state: { selectedId: userId, returnNavigation } });
     },
-    [navigate, returnNavigation],
+    [ensureUserAccess, navigate, returnNavigation],
   );
 
   const handleNavigateToVehicle = useCallback(
@@ -118,6 +180,9 @@ export const EventInfo = ({
           query: '&all.isActive.in=true',
         };
         const first = await CarsApi.getCarsList({ ...baseOptions, page: 0 });
+        if (isErrorResponse(first)) {
+          return showNavigateError(first);
+        }
         const firstData = first?.data as any;
         const firstContent: Array<{ id: string | number; registrationNumber?: string }> =
           firstData?.content ?? [];
@@ -125,6 +190,8 @@ export const EventInfo = ({
           (item) => String(item?.registrationNumber || '').trim() === normalizedRegNumber,
         );
         if (firstMatch?.id != null) {
+          const hasAccess = await ensureVehicleAccess(firstMatch.id);
+          if (!hasAccess) return;
           navigate(RoutePaths.tc, {
             state: { selectedId: firstMatch.id, targetPage: 0, returnNavigation },
           });
@@ -140,23 +207,28 @@ export const EventInfo = ({
               : 1;
         for (let page = 1; page < maxPages; page++) {
           const response = await CarsApi.getCarsList({ ...baseOptions, page });
+          if (isErrorResponse(response)) {
+            return showNavigateError(response);
+          }
           const content: Array<{ id: string | number; registrationNumber?: string }> =
             (response?.data as any)?.content ?? [];
           const match = content.find(
             (item) => String(item?.registrationNumber || '').trim() === normalizedRegNumber,
           );
           if (match?.id != null) {
+            const hasAccess = await ensureVehicleAccess(match.id);
+            if (!hasAccess) return;
             navigate(RoutePaths.tc, {
               state: { selectedId: match.id, targetPage: page, returnNavigation },
             });
             return;
           }
         }
-      } catch {
-        // fallback
+      } catch (error) {
+        return showNavigateError(error);
       }
     },
-    [navigate, returnNavigation],
+    [ensureVehicleAccess, navigate, returnNavigation],
   );
 
   const handleNavigateToAlcolock = useCallback(
@@ -170,9 +242,14 @@ export const EventInfo = ({
           filterOptions: { branchId: selectedBranchId },
         };
         const first = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page: 0 });
+        if (isErrorResponse(first)) {
+          return showNavigateError(first);
+        }
         const firstData = first?.data as any;
         const firstContent: Array<{ id: string | number }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(alcolockId))) {
+          const hasAccess = await ensureAlcolockAccess(alcolockId);
+          if (!hasAccess) return;
           navigate(RoutePaths.alkozamki, {
             state: { selectedId: alcolockId, targetPage: 0, returnNavigation },
           });
@@ -188,20 +265,27 @@ export const EventInfo = ({
               : 1;
         for (let page = 1; page < maxPages; page++) {
           const response = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page });
+          if (isErrorResponse(response)) {
+            return showNavigateError(response);
+          }
           const content: Array<{ id: string | number }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(alcolockId))) {
+            const hasAccess = await ensureAlcolockAccess(alcolockId);
+            if (!hasAccess) return;
             navigate(RoutePaths.alkozamki, {
               state: { selectedId: alcolockId, targetPage: page, returnNavigation },
             });
             return;
           }
         }
-      } catch {
-        // fallback
+      } catch (error) {
+        return showNavigateError(error);
       }
+      const hasAccess = await ensureAlcolockAccess(alcolockId);
+      if (!hasAccess) return;
       navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, returnNavigation } });
     },
-    [navigate, returnNavigation],
+    [ensureAlcolockAccess, navigate, returnNavigation],
   );
 
   const preparedFields = useMemo(() => {

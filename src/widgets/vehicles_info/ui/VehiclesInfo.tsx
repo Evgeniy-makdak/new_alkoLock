@@ -1,6 +1,7 @@
 import { type FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { enqueueSnackbar } from 'notistack';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
@@ -36,6 +37,33 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
       .trim();
     return !normalized || normalized === '-' || normalized === '—';
   };
+  const showNavigateError = (error: unknown) => {
+    const detail =
+      (error as any)?.detail ||
+      (error as any)?.message ||
+      (error as any)?.data?.detail ||
+      (error as any)?.data?.message ||
+      (error as any)?.response?.data?.detail ||
+      (error as any)?.response?.data?.message ||
+      (error as Error)?.message ||
+      t('errors.accessDenied');
+    enqueueSnackbar(` ${detail}`, { variant: 'error' });
+  };
+  const isErrorResponse = (response: unknown) => {
+    const status = (response as any)?.status;
+    return Boolean((response as any)?.isError || (typeof status === 'number' && status >= 400));
+  };
+  const ensureAlcolockAccess = useCallback(
+    async (alcolockId: ID) => {
+      const response = await AlcolocksApi.getAlkolock(alcolockId);
+      if (isErrorResponse(response)) {
+        showNavigateError(response);
+        return false;
+      }
+      return true;
+    },
+    [t],
+  );
   const returnNavigation = useMemo(
     () => ({
       pathname: location.pathname,
@@ -62,9 +90,14 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
           filterOptions: { branchId: selectedBranchId },
         };
         const first = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page: 0 });
+        if (isErrorResponse(first)) {
+          return showNavigateError(first);
+        }
         const firstData = first?.data as any;
         const firstContent: Array<{ id: ID }> = firstData?.content ?? [];
         if (firstContent.some((item) => String(item?.id) === String(alcolockId))) {
+          const hasAccess = await ensureAlcolockAccess(alcolockId);
+          if (!hasAccess) return;
           navigate(RoutePaths.alkozamki, {
             state: { selectedId: alcolockId, targetPage: 0, returnNavigation },
           });
@@ -81,20 +114,27 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
               : 1;
         for (let page = 1; page < maxPages; page++) {
           const response = await AlcolocksApi.getListAlcolocks({ ...baseOptions, page });
+          if (isErrorResponse(response)) {
+            return showNavigateError(response);
+          }
           const content: Array<{ id: ID }> = (response?.data as any)?.content ?? [];
           if (content.some((item) => String(item?.id) === String(alcolockId))) {
+            const hasAccess = await ensureAlcolockAccess(alcolockId);
+            if (!hasAccess) return;
             navigate(RoutePaths.alkozamki, {
               state: { selectedId: alcolockId, targetPage: page, returnNavigation },
             });
             return;
           }
         }
-      } catch {
-        // fallback
+      } catch (error) {
+        return showNavigateError(error);
       }
+      const hasAccess = await ensureAlcolockAccess(alcolockId);
+      if (!hasAccess) return;
       navigate(RoutePaths.alkozamki, { state: { selectedId: alcolockId, returnNavigation } });
     },
-    [navigate, returnNavigation],
+    [ensureAlcolockAccess, navigate, returnNavigation],
   );
 
   const preparedFields = useMemo(() => {
