@@ -1,6 +1,7 @@
 import { type FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
+
 import { enqueueSnackbar } from 'notistack';
 
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';

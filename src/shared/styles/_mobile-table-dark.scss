@@ -48,6 +48,22 @@
         border-color: rgba(144, 202, 249, 0.45);
         border-left-color: #90caf9;
       }
+
+      &.processingRow {
+        opacity: 0.72;
+        cursor: not-allowed;
+        pointer-events: none;
+        padding-bottom: 14px;
+
+        &:hover {
+          background: #1e1e1e;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+        }
+
+        &.selectedRow:hover {
+          background-color: rgba(25, 118, 210, 0.18);
+        }
+      }
     }
 
     .date,

@@ -282,6 +282,13 @@
     background-color: #e3f2fd;
     border-left: 4px solid #2196f3;
   }
+
+  &.processingRow {
+    opacity: 0.72;
+    cursor: not-allowed;
+    pointer-events: none;
+    padding-bottom: 14px;
+  }
 }
 
 .rowMain {

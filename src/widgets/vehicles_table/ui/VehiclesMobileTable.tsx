@@ -16,6 +16,7 @@ import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
+import { MobileListRowProcessing } from '@shared/ui/mobile_list_row_processing/MobileListRowProcessing';
 import { MobileModals } from '@shared/ui/popup/MobileModals';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
@@ -169,6 +170,7 @@ export const VehiclesMobileTable = ({
   }, [tableData.pageSize]);
 
   const handleRowClick = (row: any) => {
+    if (row?.isProcessing) return;
     if (row?.id) {
       onClickRow(row.id);
       const rowIndex = tableData.rows.findIndex((r) => r.id === row.id);
@@ -616,7 +618,8 @@ export const VehiclesMobileTable = ({
               key={row.id}
               className={`${styles.mobileRow} ${
                 index === selectedRowIndex ? styles.selectedRow : ''
-              }`}
+              } ${row.isProcessing ? styles.processingRow : ''}`}
+              aria-busy={row.isProcessing ? true : undefined}
               onClick={() => handleRowClick(row)}>
               <div className={styles.rowMainInfo}>
                 <div className={styles.carInfo}>
@@ -659,6 +662,7 @@ export const VehiclesMobileTable = ({
                   </div>
                 )}
               </div>
+              {row.isProcessing ? <MobileListRowProcessing /> : null}
             </div>
           ))
         )}
