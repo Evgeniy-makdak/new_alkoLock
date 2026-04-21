@@ -359,6 +359,7 @@ export const MapPage = () => {
     setSelectedVehicleId(null);
     setSelectedVehicleActive(false);
     setOpenedPopupVehicleId(null);
+    setMobileHistoryVehicleId(null);
     setFreezeMarkers(false);
     setActiveTab('info');
     setPanelStack([]);
