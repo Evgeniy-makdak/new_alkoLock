@@ -31,12 +31,15 @@ export const MapLink = ({ latitude, longitude, vehicle, testid, returnState }: M
         ...(returnState || {}),
       },
     };
-    navigate({
-      pathname: RoutePaths.map,
-      search: `?lat=${lat}&lng=${lng}${vehicleParam}`,
-    }, {
-      state: { returnNavigation },
-    });
+    navigate(
+      {
+        pathname: RoutePaths.map,
+        search: `?lat=${lat}&lng=${lng}${vehicleParam}`,
+      },
+      {
+        state: { returnNavigation },
+      },
+    );
   };
 
   return (

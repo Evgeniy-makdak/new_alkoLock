@@ -99,12 +99,15 @@ export const EventData: FC<EventData> = ({
           },
         },
       };
-      navigate({
-        pathname: RoutePaths.map,
-        search: `?lat=${latitude}&lng=${longitude}&vehicle=${encodeURIComponent(registrationNumber)}`,
-      }, {
-        state: { returnNavigation },
-      });
+      navigate(
+        {
+          pathname: RoutePaths.map,
+          search: `?lat=${latitude}&lng=${longitude}&vehicle=${encodeURIComponent(registrationNumber)}`,
+        },
+        {
+          state: { returnNavigation },
+        },
+      );
     }
     onExpandRow?.(event.id);
   };

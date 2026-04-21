@@ -219,7 +219,9 @@ export const useGetRows = (data: IDeviceAction[]): GridRowsProp => {
         createdAtRaw: isValidDate(item.createdAt) ? String(item.createdAt) : null,
         state: statusLabel,
         stateKey: status,
-        [ValuesHeader.DATE]: isValidDate(item.createdAt) ? Formatters.formatISODate(item.createdAt) : '-',
+        [ValuesHeader.DATE]: isValidDate(item.createdAt)
+          ? Formatters.formatISODate(item.createdAt)
+          : '-',
         [ValuesHeader.SERIAL_NUMBER]: item.device?.serialNumber ?? '-',
         [ValuesHeader.TC]: item.vehicleRecord
           ? Formatters.carNameFormatter(item.vehicleRecord)

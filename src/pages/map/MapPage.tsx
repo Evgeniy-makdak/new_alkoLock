@@ -1194,12 +1194,15 @@ export const MapPage = () => {
   };
 
   const handleCoordinateClick = (lat: number, lng: number, vehicle: string) => {
-    navigate({
-      pathname: RoutePaths.map,
-      search: `?lat=${lat}&lng=${lng}&vehicle=${encodeURIComponent(vehicle)}`,
-    }, {
-      state: location.state,
-    });
+    navigate(
+      {
+        pathname: RoutePaths.map,
+        search: `?lat=${lat}&lng=${lng}&vehicle=${encodeURIComponent(vehicle)}`,
+      },
+      {
+        state: location.state,
+      },
+    );
 
     // На мобильном боковая панель перекрывает карту: закрываем панели,
     // чтобы номерной маркер был виден сразу после перехода по координатам.
