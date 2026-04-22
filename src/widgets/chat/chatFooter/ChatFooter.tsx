@@ -36,7 +36,7 @@ const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
 /** Геометрия `.chatFooter` (десктоп): отступ справа + ширина; превью ставим левее развёрнутого окна с зазором. */
 const CHAT_FOOTER_RIGHT = 80;
 const CHAT_FOOTER_WIDTH = 520;
-const MINIMIZED_PREVIEW_RIGHT = CHAT_FOOTER_RIGHT + CHAT_FOOTER_WIDTH + 72;
+const MINIMIZED_PREVIEW_RIGHT = CHAT_FOOTER_RIGHT + CHAT_FOOTER_WIDTH + 28;
 /** Когда все диалоги свёрнуты — превью у правого края (как панель чата), а не «в середине» экрана. */
 const MINIMIZED_PREVIEW_RIGHT_STACKED = CHAT_FOOTER_RIGHT;
 
@@ -44,6 +44,31 @@ function normalizeSessionDialogId(raw: unknown): number | null {
   if (raw === undefined || raw === null || raw === 'assigned') return null;
   const n = Number(raw);
   return Number.isFinite(n) ? n : null;
+}
+
+function hasRenderableMinimizedContent(session: {
+  selectedUsers?: unknown[];
+  selectedDialog?: { id?: unknown } | null;
+  assignedDialogId?: unknown;
+  messages?: unknown[];
+}): boolean {
+  const hasSelectedUser = (session.selectedUsers?.length ?? 0) > 0;
+  const selectedDialogId = session.selectedDialog?.id;
+  const hasSelectedDialogId = Boolean(
+    selectedDialogId != null &&
+      String(selectedDialogId) !== '' &&
+      String(selectedDialogId) !== '0' &&
+      String(selectedDialogId) !== 'assigned',
+  );
+  const assignedDialogId = session.assignedDialogId;
+  const hasAssignedDialogId = Boolean(
+    assignedDialogId != null &&
+      String(assignedDialogId) !== '' &&
+      String(assignedDialogId) !== '0' &&
+      String(assignedDialogId) !== 'assigned',
+  );
+  const hasMessages = (session.messages?.length ?? 0) > 0;
+  return hasSelectedUser || hasSelectedDialogId || hasAssignedDialogId || hasMessages;
 }
 
 /** Диалог уже открыт/привязан к какой‑либо сессии — не показывать его второй раз в превью «непрочитанных». */
@@ -500,7 +525,7 @@ const ChatContainer = () => {
   const attachmentLabel = t('chat.previewAttachment');
 
   const compactMinimizedEntries = useMemo((): CompactMinimizedEntry[] => {
-    const minimized = sessions.filter((s) => s.isMinimized);
+    const minimized = sessions.filter((s) => s.isMinimized && hasRenderableMinimizedContent(s));
     const items: CompactMinimizedEntry[] = [];
 
     minimized.forEach((session) => {
@@ -600,7 +625,9 @@ const ChatContainer = () => {
   }
 
   const expandedSessions = sessions.filter((session) => !session.isMinimized);
-  const minimizedSessions = sessions.filter((session) => session.isMinimized);
+  const minimizedSessions = sessions.filter(
+    (session) => session.isMinimized && hasRenderableMinimizedContent(session),
+  );
   const minimizedPreviewRightPx =
     expandedSessions.length > 0 ? MINIMIZED_PREVIEW_RIGHT : MINIMIZED_PREVIEW_RIGHT_STACKED;
 

@@ -479,13 +479,11 @@ function ChatPanel({
   );
 
   const handleMinimize = useCallback(() => {
-    if (session?.selectedDialog?.id) {
-      if (onMinimize) {
-        onMinimize();
-      } else {
-        toggleSessionMinimize(sessionId);
-        setActiveSessionId(null);
-      }
+    if (onMinimize) {
+      onMinimize();
+    } else if (session?.selectedDialog?.id) {
+      toggleSessionMinimize(sessionId);
+      setActiveSessionId(null);
     } else {
       closeSession(sessionId);
     }

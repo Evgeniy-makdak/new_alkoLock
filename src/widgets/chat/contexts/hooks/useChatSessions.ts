@@ -351,7 +351,11 @@ export const useChatSessions = () => {
             return true;
           }
 
-          const isEmpty = session.selectedUsers.length === 0 && session.messages.length === 0;
+          const hasUnreadPreviewDialogs = (session.unreadDialogs?.length ?? 0) > 0;
+          const isEmpty =
+            session.selectedUsers.length === 0 &&
+            session.messages.length === 0 &&
+            !hasUnreadPreviewDialogs;
           return !isEmpty;
         });
 
