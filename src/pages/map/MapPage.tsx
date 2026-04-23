@@ -279,6 +279,8 @@ export const MapPage = () => {
   const [locationSelectorResults, setLocationSelectorResults] = useState<NominatimResult[]>([]);
   const [locationSelectorQuery, setLocationSelectorQuery] = useState('');
   const [isMapInitialized, setIsMapInitialized] = useState(false);
+  /** При переходе на карту по координатам события не перецентровываем на геопозицию пользователя. */
+  const skipGeoAutoCenterRef = useRef(isCoordinateTransitionMode);
   // const mainMarkerRef = useRef<L.Marker | null>(null);
   const [baseMarkerCoords, setBaseMarkerCoords] = useState<{ lat: number; lng: number } | null>(
     null,
@@ -287,6 +289,10 @@ export const MapPage = () => {
   /** Координаты маркера при открытии боковой панели — не перезаписываются при клике по координатам события */
   const sidebarReturnCoordsRef = useRef<{ lat: number; lng: number } | null>(null);
   const userLocationRef = useRef<[number, number] | null>(null);
+
+  useEffect(() => {
+    skipGeoAutoCenterRef.current = isCoordinateTransitionMode;
+  }, [isCoordinateTransitionMode]);
 
   // Стек для управления вложенными панелями
   const [panelStack, setPanelStack] = useState<Array<{ id: ID; content: React.ReactNode }>>([]);
@@ -1087,7 +1093,7 @@ export const MapPage = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           userLocationRef.current = [latitude, longitude];
-          if (mapRef.current) {
+          if (mapRef.current && !skipGeoAutoCenterRef.current) {
             mapRef.current.setView([latitude, longitude], DEFAULT_MAP_ZOOM);
             updateBounds();
           }
