@@ -9,6 +9,7 @@ interface AlcolockSelectProps<T> {
   testid?: string;
   multiple?: boolean;
   label?: string;
+  disabled?: boolean;
   error?: boolean;
   name: keyof T;
   vieBranch?: boolean;

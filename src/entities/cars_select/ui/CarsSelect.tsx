@@ -12,6 +12,7 @@ interface CarsSelectProps<T> {
   testid?: string;
   multiple?: boolean;
   label?: string;
+  disabled?: boolean;
   error?: boolean;
   setValueStore?: (type: keyof T, value: string | Value | (string | Value)[]) => void;
   name: keyof T;

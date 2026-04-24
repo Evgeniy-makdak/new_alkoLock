@@ -23,10 +23,17 @@ type SwitchProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   label?: string;
+  disabled?: boolean;
 };
 
-const Switch = ({ checked, onChange, label }: SwitchProps) => (
-  <div className={styles.mapSwitch} onClick={() => onChange(!checked)}>
+const Switch = ({ checked, onChange, label, disabled = false }: SwitchProps) => (
+  <div
+    className={styles.mapSwitch}
+    onClick={() => {
+      if (disabled) return;
+      onChange(!checked);
+    }}
+    style={{ cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 }}>
     <div
       className={`${styles.mapSwitchTrack} ${checked ? styles.mapSwitchTrackOn : styles.mapSwitchTrackOff}`}>
       <div className={`${styles.mapSwitchThumb} ${checked ? styles.mapSwitchThumbChecked : ''}`} />
@@ -106,6 +113,9 @@ export const MapControls = ({
 
   const isCompact = isMobile || compact;
   const isToolbar = Boolean(variant === 'toolbar' && !isCompact);
+  const isFreezeMarkersEnabled = Boolean(
+    mobileToggles?.freezeMarkers || desktopToggles?.freezeMarkers,
+  );
 
   const fieldWrapClass = isCompact
     ? `${styles.mapControlsField} ${styles.mapControlsFieldCompact}`
@@ -147,6 +157,7 @@ export const MapControls = ({
           value={(filters.driverId || []) as Values}
           testid={testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FILTER_INPUT_DRIVER}
           label={t('map.searchByUser')}
+          disabled={isFreezeMarkersEnabled}
         />
       </div>
       <div style={fieldWrapStyle} className={fieldWrapClass}>
@@ -162,6 +173,7 @@ export const MapControls = ({
           setValueStore={handleFilterChange}
           value={(filters.carId || []) as Values}
           label={t('map.searchByVehicle')}
+          disabled={isFreezeMarkersEnabled}
         />
       </div>
       <div style={fieldWrapStyle} className={fieldWrapClass}>
@@ -176,6 +188,7 @@ export const MapControls = ({
               .ATTACHMENTS_WIDGET_HEADER_FILTER_INPUT_ALCOLOKS
           }
           name="alcolocks"
+          disabled={isFreezeMarkersEnabled}
         />
       </div>
       {onLocationSearch && (
@@ -194,7 +207,7 @@ export const MapControls = ({
                 handleLocationSearch();
               }
             }}
-            disabled={locationSearching}
+            disabled={locationSearching || isFreezeMarkersEnabled}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
@@ -206,7 +219,7 @@ export const MapControls = ({
                           setLocationQuery('');
                           onResetMapCenter?.();
                         }}
-                        disabled={locationSearching}
+                        disabled={locationSearching || isFreezeMarkersEnabled}
                         aria-label={t('map.clear')}>
                         <ClearIcon fontSize="small" />
                       </IconButton>
@@ -217,7 +230,9 @@ export const MapControls = ({
                       <IconButton
                         size="small"
                         onClick={handleLocationSearch}
-                        disabled={locationSearching || !locationQuery.trim()}
+                        disabled={
+                          locationSearching || isFreezeMarkersEnabled || !locationQuery.trim()
+                        }
                         aria-label={t('map.findOnMap')}>
                         <SearchIcon fontSize="small" />
                       </IconButton>
@@ -323,11 +338,13 @@ export const MapControls = ({
                   checked={mobileToggles.showOnlyWithAlcolock}
                   onChange={mobileToggles.onShowOnlyWithAlcolock}
                   label={t('map.onlyWithAlcolock')}
+                  disabled={isFreezeMarkersEnabled}
                 />
                 <Switch
                   checked={mobileToggles.numberedMarkersMode}
                   onChange={mobileToggles.onNumberedMarkersMode}
                   label={t('map.showAsList')}
+                  disabled={isFreezeMarkersEnabled}
                 />
                 {onResetMapCenter && (
                   <Tooltip title={t('map.resetMapCenter')}>
@@ -375,11 +392,13 @@ export const MapControls = ({
             checked={desktopToggles.showOnlyWithAlcolock}
             onChange={desktopToggles.onShowOnlyWithAlcolock}
             label={t('map.onlyWithAlcolock')}
+            disabled={isFreezeMarkersEnabled}
           />
           <Switch
             checked={desktopToggles.numberedMarkersMode}
             onChange={desktopToggles.onNumberedMarkersMode}
             label={t('map.showAsList')}
+            disabled={isFreezeMarkersEnabled}
           />
           {onResetMapCenter && (
             <Tooltip title={t('map.resetMapCenter')}>
