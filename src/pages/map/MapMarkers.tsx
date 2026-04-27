@@ -920,15 +920,28 @@ export const MapMarkers = ({
     // Не создавать попап из маркера, если ждём данные по клику списка (маркерные данные неполные)
     if (pendingPopupRef.current) return;
 
-    // При открытом попапе НЕ вызываем createDetachedPopup при изменении events —
-    // он удаляет попап и может не пересоздать (event без eventType). Позиция обновляется в handleMapMove.
-    // Контент обновляется через refreshOpenPopup при изменении vehicleModes.
+    // При открытом попапе обновляем только его контент, если действительно изменились события
+    // выбранного ТС (без пересоздания попапа и без лишней визуальной перерисовки).
+    if (openedPopupVehicleId && popupRef.current && popupDataRef.current) {
+      const fullEventData = clickedVehicleEvents.find(
+        (ev) => ev.vehicle?.registrationNumber === openedPopupVehicleId,
+      );
+      if (!fullEventData) return;
+
+      const currentIds = (popupDataRef.current.events || []).map((ev) => String(ev.id)).join('|');
+      const nextIds = (fullEventData.events || []).map((ev) => String(ev.id)).join('|');
+      if (currentIds !== nextIds) {
+        popupDataRef.current = fullEventData;
+        refreshOpenPopup();
+      }
+    }
   }, [
     clickedVehicleEvents,
     createDetachedPopup,
     map,
     openedPopupVehicleId,
     onListItemClickedProcessed,
+    refreshOpenPopup,
   ]);
 
   useEffect(() => {

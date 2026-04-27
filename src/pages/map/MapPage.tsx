@@ -254,6 +254,7 @@ export const MapPage = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [, setSelectedVehicleActive] = useState(false);
   const [openedPopupVehicleId, setOpenedPopupVehicleId] = useState<string | null>(null);
+  const [markerDateBoundVehicleId, setMarkerDateBoundVehicleId] = useState<string | null>(null);
   const [mapBounds, setMapBounds] = useState<{
     northEast: { lat: number; lng: number };
     southWest: { lat: number; lng: number };
@@ -363,6 +364,7 @@ export const MapPage = () => {
   const handleCloseAside = (resetToDefault = false) => {
     const vehicleIdToFocus = selectedVehicleId;
     setSelectedVehicleId(null);
+    setMarkerDateBoundVehicleId(null);
     setSelectedVehicleActive(false);
     setOpenedPopupVehicleId(null);
     setMobileHistoryVehicleId(null);
@@ -577,6 +579,7 @@ export const MapPage = () => {
     }).addTo(mapRef.current);
 
     newMarker.on('click', () => {
+      setMarkerDateBoundVehicleId(urlVehicle);
       loadVehicleEvents(urlVehicle, false, true);
       setSelectedVehicleId(urlVehicle);
     });
@@ -674,6 +677,26 @@ export const MapPage = () => {
     [t],
   );
 
+  const areEventsEqual = useCallback((a: EventData[], b: EventData[]) => {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const left = a[i];
+      const right = b[i];
+      if (
+        left?.id !== right?.id ||
+        left?.timestamp !== right?.timestamp ||
+        left?.latitude !== right?.latitude ||
+        left?.longitude !== right?.longitude ||
+        left?.eventType !== right?.eventType ||
+        left?.action?.vehicleRecord?.registrationNumber !==
+          right?.action?.vehicleRecord?.registrationNumber
+      ) {
+        return false;
+      }
+    }
+    return true;
+  }, []);
+
   const loadVehicleEvents = async (
     vehicleId: string,
     allEvents = false,
@@ -687,7 +710,7 @@ export const MapPage = () => {
       endOfToday.setHours(23, 59, 59, 999);
       const response = await EventsApi.getListForMap({
         page: 0,
-        limit: allEvents ? 100 : 50,
+        limit: allEvents ? 100 : applyMarkerDateUpperBound ? 3 : 50,
         sortBy: 'DATE_OCCURRENT',
         order: 'desc',
         endDate: applyMarkerDateUpperBound ? endOfToday.toISOString() : undefined,
@@ -709,7 +732,7 @@ export const MapPage = () => {
               .slice(0, 3)
               .map((ev: any) => transformEvent(ev));
 
-      setClickedVehicleEvents(finalEvents);
+      setClickedVehicleEvents((prev) => (areEventsEqual(prev, finalEvents) ? prev : finalEvents));
 
       if (finalEvents.length > 0) {
         setBaseMarkerCoords({
@@ -743,6 +766,7 @@ export const MapPage = () => {
       selectedVehicleCoordsRef.current = null;
       sidebarReturnCoordsRef.current = null;
     }
+    setMarkerDateBoundVehicleId(applyMarkerDateUpperBound ? vehicleId : null);
     loadVehicleEvents(vehicleId, false, applyMarkerDateUpperBound);
     if (freezeMarkers) {
       setShowRoutes(true);
@@ -781,6 +805,7 @@ export const MapPage = () => {
     setMobileHistoryVehicleId(null);
     setOpenedPopupVehicleId(null);
     setSelectedVehicleId(null);
+    setMarkerDateBoundVehicleId(null);
     setExpandedRowId(null);
     setPanelStack([]);
     setFreezeMarkers(false);
@@ -820,6 +845,26 @@ export const MapPage = () => {
       startPolling();
     }
   }, [freezeMarkers, stopPolling, startPolling]);
+
+  useEffect(() => {
+    if (!markerDateBoundVehicleId) return;
+    const activeVehicleId = selectedVehicleId ?? openedPopupVehicleId;
+    if (!activeVehicleId || activeVehicleId !== markerDateBoundVehicleId) return;
+
+    const intervalId = window.setInterval(() => {
+      void loadVehicleEvents(markerDateBoundVehicleId, false, true);
+    }, 10000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [markerDateBoundVehicleId, selectedVehicleId, openedPopupVehicleId]);
+
+  useEffect(() => {
+    if (!selectedVehicleId && !openedPopupVehicleId && markerDateBoundVehicleId) {
+      setMarkerDateBoundVehicleId(null);
+    }
+  }, [selectedVehicleId, openedPopupVehicleId, markerDateBoundVehicleId]);
 
   /** Скорость по смене координат между опросами api/vehicles с учётом дорожной сети. */
   const vehicleTrackersRef = useRef<Record<string, VehicleSpeedTracker>>({});
@@ -1540,11 +1585,11 @@ export const MapPage = () => {
         <div
           style={{
             ...(isMobile
-              ? { ...mobileAsideShellStyle, zIndex: 1001 }
+              ? { ...mobileAsideShellStyle, zIndex: 900 }
               : {
                   position: 'absolute',
                   right: 0,
-                  zIndex: 1001,
+                  zIndex: 900,
                   backgroundColor: asidePanelBackground,
                   boxShadow: asidePanelShadow,
                 }),
@@ -1563,10 +1608,10 @@ export const MapPage = () => {
           key={`panel-${panel.id}`}
           style={{
             ...(isMobile
-              ? { ...mobileAsideShellStyle, zIndex: 1002 + index }
+              ? { ...mobileAsideShellStyle, zIndex: 901 + index }
               : {
                   ...desktopPanelStackShellStyle,
-                  zIndex: 1002 + index,
+                  zIndex: 901 + index,
                   backgroundColor: asidePanelBackground,
                 }),
           }}>
