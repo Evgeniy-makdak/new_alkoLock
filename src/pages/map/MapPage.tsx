@@ -1361,6 +1361,9 @@ export const MapPage = () => {
       : []),
   ];
 
+  const hasDesktopSidePanelOpen = !isMobile && (Boolean(selectedVehicleId) || panelStack.length > 0);
+  const mapControlsDesktopRightOffset = hasDesktopSidePanelOpen ? 680 : 0;
+
   return (
     <MapProvider>
       <div
@@ -1376,20 +1379,26 @@ export const MapPage = () => {
           minHeight: 0,
         }}>
         {!isMobile && !isCoordinateTransitionMode ? (
-          <MapControls
-            variant="toolbar"
-            onResetFilters={handleResetMapStateFromFilters}
-            onResetMapCenter={handleResetMapCenter}
-            onLocationSearch={handleLocationSearch}
-            desktopToggles={{
-              freezeMarkers,
-              showOnlyWithAlcolock,
-              numberedMarkersMode,
-              onFreezeToggle: handleFreezeToggle,
-              onShowOnlyWithAlcolock: setShowOnlyWithAlcolock,
-              onNumberedMarkersMode: setNumberedMarkersMode,
-            }}
-          />
+          <div
+            style={{
+              marginRight: `${mapControlsDesktopRightOffset}px`,
+              transition: 'margin-right 0.2s ease',
+            }}>
+            <MapControls
+              variant="toolbar"
+              onResetFilters={handleResetMapStateFromFilters}
+              onResetMapCenter={handleResetMapCenter}
+              onLocationSearch={handleLocationSearch}
+              desktopToggles={{
+                freezeMarkers,
+                showOnlyWithAlcolock,
+                numberedMarkersMode,
+                onFreezeToggle: handleFreezeToggle,
+                onShowOnlyWithAlcolock: setShowOnlyWithAlcolock,
+                onNumberedMarkersMode: setNumberedMarkersMode,
+              }}
+            />
+          </div>
         ) : null}
         <div
           ref={mapContainerRef}
