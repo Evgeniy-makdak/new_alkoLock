@@ -271,7 +271,7 @@ export const MapPage = () => {
   const isMobile = useMediaQuery(breakpoints.mobile);
   const [mobileParamsExpanded, setMobileParamsExpanded] = useState(false);
   const [mobileHistoryVehicleId, setMobileHistoryVehicleId] = useState<string | null>(null);
-  const [frozenMarkersData] = useState<VehicleEventsGroup[]>([]);
+  const [frozenMarkersData, setFrozenMarkersData] = useState<VehicleEventsGroup[]>([]);
   const [urlMarker, setUrlMarker] = useState<L.Marker | null>(null);
   const [expandedRowId, setExpandedRowId] = useState<ID | null>(null);
   const [urlMarkerEvent, setUrlMarkerEvent] = useState<EventData | null>(null);
@@ -577,7 +577,7 @@ export const MapPage = () => {
     }).addTo(mapRef.current);
 
     newMarker.on('click', () => {
-      loadVehicleEvents(urlVehicle);
+      loadVehicleEvents(urlVehicle, false, true);
       setSelectedVehicleId(urlVehicle);
     });
 
@@ -674,43 +674,32 @@ export const MapPage = () => {
     [t],
   );
 
-  const loadVehicleEvents = async (vehicleId: string, allEvents = false) => {
+  const loadVehicleEvents = async (
+    vehicleId: string,
+    allEvents = false,
+    applyMarkerDateUpperBound = false,
+  ) => {
     try {
       setIsLoadingEvents(true);
       const now = Date.now();
-      const targetCount = allEvents || freezeMarkers ? undefined : 3;
-      const pageSize = allEvents ? 100 : 50;
-      const validEvents: any[] = [];
-      let page = 0;
-      let hasMore = true;
-      let firstPageContent: any[] = [];
-
-      while (hasMore) {
-        const response = await EventsApi.getListForMap({
-          page,
-          limit: pageSize,
-          sortBy: 'DATE_OCCURRENT',
-          order: 'desc',
-          filterOptions: {
-            carsRegistrationNumbers: [vehicleId],
-          },
-        });
-
-        const content = response?.data?.content ?? [];
-        if (page === 0) firstPageContent = content;
-
-        const transformed = content.map((ev: any) => transformEvent(ev));
-        const fromPage = transformed.filter(
-          (ev: any) => ev.timestamp && new Date(ev.timestamp).getTime() <= now,
-        );
-
-        validEvents.push(...fromPage);
-        if (targetCount != null && validEvents.length >= targetCount) hasMore = false;
-        else if (content.length < pageSize || content.length === 0) hasMore = false;
-        else page++;
-      }
-
-      const events = targetCount != null ? validEvents.slice(0, targetCount) : validEvents;
+      const targetCount = allEvents ? 100 : 3;
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+      const response = await EventsApi.getListForMap({
+        page: 0,
+        limit: allEvents ? 100 : 50,
+        sortBy: 'DATE_OCCURRENT',
+        order: 'desc',
+        endDate: applyMarkerDateUpperBound ? endOfToday.toISOString() : undefined,
+        filterOptions: {
+          carsRegistrationNumbers: [vehicleId],
+        },
+      });
+      const firstPageContent = response?.data?.content ?? [];
+      const transformed = firstPageContent.map((ev: any) => transformEvent(ev));
+      const events = transformed
+        .filter((ev: any) => ev.timestamp && new Date(ev.timestamp).getTime() <= now)
+        .slice(0, targetCount);
 
       const finalEvents =
         events.length > 0
@@ -740,7 +729,12 @@ export const MapPage = () => {
     }
   };
 
-  const handleMarkerClick = (vehicleId: string, lat?: number, lng?: number) => {
+  const handleMarkerClick = (
+    vehicleId: string,
+    lat?: number,
+    lng?: number,
+    applyMarkerDateUpperBound = false,
+  ) => {
     if (lat != null && lng != null) {
       const coords = { lat, lng };
       selectedVehicleCoordsRef.current = coords;
@@ -749,10 +743,14 @@ export const MapPage = () => {
       selectedVehicleCoordsRef.current = null;
       sidebarReturnCoordsRef.current = null;
     }
-    loadVehicleEvents(vehicleId);
+    loadVehicleEvents(vehicleId, false, applyMarkerDateUpperBound);
     if (freezeMarkers) {
       setShowRoutes(true);
     }
+  };
+
+  const handleMapMarkerClick = (vehicleId: string, lat?: number, lng?: number) => {
+    handleMarkerClick(vehicleId, lat, lng, true);
   };
 
   const handleViewAllEventsWithCoords = (
@@ -764,6 +762,12 @@ export const MapPage = () => {
   };
 
   const handleFreezeToggle = (checked: boolean) => {
+    if (checked) {
+      // Фиксируем текущий набор маркеров/списка, чтобы он не пропадал при перемещении карты.
+      setFrozenMarkersData(latestEvents);
+    } else {
+      setFrozenMarkersData([]);
+    }
     setFreezeMarkers(checked);
   };
 
@@ -780,6 +784,7 @@ export const MapPage = () => {
     setExpandedRowId(null);
     setPanelStack([]);
     setFreezeMarkers(false);
+    setFrozenMarkersData([]);
     setShowRoutes(false);
     setBaseMarkerCoords(null);
     selectedVehicleCoordsRef.current = null;
@@ -1448,7 +1453,7 @@ export const MapPage = () => {
                       setListItemClickedVehicleId(vehicleId);
                       setOpenedPopupVehicleId(vehicleId);
                       setSelectedVehicleId(null); // Свернуть боковую панель при клике на другой элемент списка
-                      handleMarkerClick(vehicleId, event?.latitude, event?.longitude);
+                      handleMarkerClick(vehicleId, event?.latitude, event?.longitude, true);
                       handleCloseAllPanels?.();
                     }
                   }}
@@ -1460,7 +1465,7 @@ export const MapPage = () => {
                       setListItemClickedVehicleId(vehicleId);
                       setOpenedPopupVehicleId(vehicleId);
                       setSelectedVehicleId(null); // Свернуть боковую панель при клике на другой элемент списка
-                      handleMarkerClick(vehicleId, event?.latitude, event?.longitude);
+                      handleMarkerClick(vehicleId, event?.latitude, event?.longitude, true);
                       handleCloseAllPanels?.();
                     }
                   }}
@@ -1594,7 +1599,7 @@ export const MapPage = () => {
             openedPopupVehicleId={openedPopupVehicleId}
             setOpenedPopupVehicleId={setOpenedPopupVehicleId}
             setSelectedVehicleId={setSelectedVehicleId}
-            onMarkerClick={handleMarkerClick}
+            onMarkerClick={handleMapMarkerClick}
             onViewAllEventsWithCoords={handleViewAllEventsWithCoords}
             clickedVehicleEvents={clickedVehicleEvents.map((ev) => {
               const regNum = ev.action?.vehicleRecord?.registrationNumber;
