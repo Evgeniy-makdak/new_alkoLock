@@ -888,7 +888,31 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
         if (messagesResponse?.content?.length > 0) {
           const firstMessage = messagesResponse.content[0];
           if (firstMessage.dialog?.id) {
-            updateSession(sessionId, { selectedDialog: firstMessage.dialog });
+            const liveSession = getSession(sessionId);
+            const currentDialog = liveSession?.selectedDialog;
+            const incomingDialog = firstMessage.dialog;
+            const isSameDialog =
+              currentDialog?.id != null &&
+              incomingDialog?.id != null &&
+              String(currentDialog.id) === String(incomingDialog.id);
+            const currentLo = currentDialog?.lastOperator ?? currentDialog?.last_operator;
+            const incomingLo = incomingDialog?.lastOperator ?? incomingDialog?.last_operator;
+
+            // Анти-race после assign: если текущий диалог уже CLOSED и имеет lastOperator,
+            // не затираем его потенциально устаревшим dialog из getUserMessages(owner.id).
+            const selectedDialogForStore =
+              isSameDialog &&
+              String(currentDialog?.status ?? '').toUpperCase() === 'CLOSED' &&
+              currentLo != null &&
+              incomingLo == null
+                ? currentDialog
+                : {
+                    ...(currentDialog || {}),
+                    ...incomingDialog,
+                    ...(currentLo != null && incomingLo == null ? { lastOperator: currentLo } : {}),
+                  };
+
+            updateSession(sessionId, { selectedDialog: selectedDialogForStore });
             await loadDialogHistory(sessionId, firstMessage.dialog.id);
           } else {
             const limitedResponse = await api.getUserMessages(userId, 0, 50);
