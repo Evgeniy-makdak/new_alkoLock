@@ -63,6 +63,7 @@ function ChatPanel({
     closeSession,
     setIsChatOpen,
     toggleSessionMinimize,
+    expandSession,
     updateSession,
     getSession,
     setActiveSessionId,
@@ -108,8 +109,8 @@ function ChatPanel({
   const getDisplayUserName = useCallback(() => {
     if (session?.selectedUserName) return session.selectedUserName;
     if (session?.selectedUsers?.length > 0) {
-      const userId = session.selectedUsers[0];
-      const cachedUser = session.usersCache?.get(userId);
+      const userId = session?.selectedUsers[0];
+      const cachedUser = session?.usersCache?.get(userId);
       if (cachedUser?.fullName) return cachedUser.fullName;
     }
     return '';
@@ -432,10 +433,21 @@ function ChatPanel({
       const existingSession = findSessionByUserId(userId);
 
       if (existingSession && existingSession.id !== sessionId) {
-        setActiveSessionId(existingSession.id);
         isSessionSwitchingRef.current = true;
 
-        if (!existingSession.isMinimized) {
+        console.log('[handleCheckExistingSession] found existing session:', {
+          existingSessionId: existingSession.id,
+          existingSessionMinimized: existingSession.isMinimized,
+          currentSessionId: sessionId,
+          userId,
+        });
+
+        if (existingSession.isMinimized) {
+          console.log('[handleCheckExistingSession] calling expandSession for:', existingSession.id);
+          expandSession(existingSession.id);
+        } else {
+          console.log('[handleCheckExistingSession] calling setActiveSessionId + toggleSessionMinimize');
+          setActiveSessionId(existingSession.id);
           toggleSessionMinimize(sessionId);
         }
 
@@ -451,6 +463,7 @@ function ChatPanel({
       sessionId,
       findSessionByUserId,
       toggleSessionMinimize,
+      expandSession,
       setActiveSessionId,
       removeEmptySessions,
     ],
