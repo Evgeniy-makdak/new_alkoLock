@@ -35,6 +35,13 @@ function normalizeOpenPanelInboundSentToDelivered(
   });
 }
 
+function pickDialogMetaFromMessages(messages: any[], dialogId: string): any | null {
+  if (!Array.isArray(messages) || messages.length === 0) return null;
+  const dId = String(dialogId);
+  const candidate = messages.find((msg: any) => String(msg?.dialog?.id ?? '') === dId);
+  return candidate?.dialog ?? null;
+}
+
 export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) => {
   const { getSession, updateSession, assignDialog } = deps;
   const {
@@ -268,6 +275,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
         const response = await api.getFirstPageMessages(dialogId, pageSize, 'createdAt,desc');
 
         if (response?.content && Array.isArray(response.content)) {
+          const dialogMeta = pickDialogMetaFromMessages(response.content, dialogId);
           const reversedContent = [...response.content].reverse();
           const serverMessagesPromises = reversedContent.map(processMessageWithAttachments);
           const processedMessages = await Promise.all(serverMessagesPromises);
@@ -311,6 +319,17 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
           updateSession(sessionId, {
             messages: normalizedFirst,
             pagination: paginationUpdate,
+            ...(dialogMeta
+              ? {
+                  selectedDialog: {
+                    ...(getSession(sessionId)?.selectedDialog || {}),
+                    ...(dialogMeta.status != null ? { status: dialogMeta.status } : {}),
+                    ...((dialogMeta.lastOperator ?? dialogMeta.last_operator) != null
+                      ? { lastOperator: dialogMeta.lastOperator ?? dialogMeta.last_operator }
+                      : {}),
+                  },
+                }
+              : {}),
           });
 
           const loadedPagesKey = `${sessionId}_${dialogId}`;
@@ -407,6 +426,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
         }
 
         if (historyResult.content) {
+          const dialogMeta = pickDialogMetaFromMessages(historyResult.content, dialogId);
           const existingMessages = session.messages || [];
           const currentPage = session.pagination?.currentPage || 0;
           const loadedPagesKey = `${sessionId}_${dialogId}`;
@@ -503,6 +523,17 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
             messages: messagesForStore,
             hasHistoryLoaded: true,
             pagination: paginationUpdate,
+            ...(dialogMeta
+              ? {
+                  selectedDialog: {
+                    ...(getSession(sessionId)?.selectedDialog || {}),
+                    ...(dialogMeta.status != null ? { status: dialogMeta.status } : {}),
+                    ...((dialogMeta.lastOperator ?? dialogMeta.last_operator) != null
+                      ? { lastOperator: dialogMeta.lastOperator ?? dialogMeta.last_operator }
+                      : {}),
+                  },
+                }
+              : {}),
           });
 
           messagesPaginationStateRef.current.set(sessionId, paginationUpdate);

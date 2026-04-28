@@ -321,9 +321,10 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
   const shouldShowBlockedByOther =
     showBlockedButton &&
-    currentUserId &&
-    lastOperatorId &&
-    lastOperatorId !== currentUserId &&
+    currentUserId != null &&
+    lastOperatorId != null &&
+    Number(lastOperatorId) !== Number(currentUserId) &&
+    !isDialogOwner &&
     !justAssignedRef.current;
 
   useEffect(() => {

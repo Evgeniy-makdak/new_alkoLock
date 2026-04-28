@@ -467,12 +467,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       if (!dialogId || !dialogStatus) return;
 
       sessions.forEach((session: any) => {
-        const sessionDialogId = session.selectedDialog?.id || session.assignedDialogId;
+        const liveSession = getSession(session.id);
+        if (!liveSession) return;
+        const sessionDialogId = liveSession.selectedDialog?.id || liveSession.assignedDialogId;
 
         if (sessionDialogId && sessionDialogId.toString() === dialogId.toString()) {
           updateSession(session.id, {
             selectedDialog: {
-              ...session.selectedDialog,
+              ...liveSession.selectedDialog,
               status: dialogStatus,
             },
             ...(dialogStatus !== 'CLOSED' && { assignedDialogId: null }),

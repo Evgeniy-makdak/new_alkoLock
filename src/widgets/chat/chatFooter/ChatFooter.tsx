@@ -343,6 +343,7 @@ const ChatContainer = () => {
     setActiveSessionId,
     closeSession,
     expandSession,
+    forceRefreshSessionMessages,
     toggleSessionMinimize,
     setIsChatOpen,
     openUnreadDialog,
@@ -431,8 +432,13 @@ const ChatContainer = () => {
       );
       setJustExpandedSessionId(sessionId);
       expandSession(sessionId);
+      // После раскрытия из превью синхронизируем сессию с актуальными данными диалога
+      // (в т.ч. status/lastOperator), чтобы избежать отображения устаревшего блокирующего оператора.
+      setTimeout(() => {
+        void forceRefreshSessionMessages(sessionId);
+      }, 0);
     },
-    [expandSession, sessions],
+    [expandSession, forceRefreshSessionMessages, sessions],
   );
 
   const handleScrollToBottomDone = useCallback(() => {

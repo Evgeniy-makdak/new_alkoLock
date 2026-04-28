@@ -101,6 +101,7 @@ function ChatPanel({
   const lastStableUnreadCountRef = useRef<number>(0);
   const unreadCountDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const headerUnreadLogRef = useRef<number | null>(null);
+  const prevIsMinimizedRef = useRef<boolean>(false);
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
   const isSessionSwitchingRef = useRef(false);
@@ -218,8 +219,40 @@ function ChatPanel({
       initialLoadDoneRef.current = false;
       historyLoadAttemptedRef.current = false;
       isSessionSwitchingRef.current = false;
+      prevIsMinimizedRef.current = false;
     }
   }, [sessionId]);
+
+  useEffect(() => {
+    const wasMinimized = prevIsMinimizedRef.current;
+    const isNowMinimized = !!session?.isMinimized;
+    prevIsMinimizedRef.current = isNowMinimized;
+
+    // После разворота из превью принудительно подтягиваем актуальные метаданные диалога
+    // (lastOperator/status), чтобы не жить на потенциально устаревшем selectedDialog.
+    if (!wasMinimized || isNowMinimized) return;
+
+    const dialogId = session?.selectedDialog?.id;
+    if (!dialogId || String(dialogId) === '0') return;
+
+    api
+      .getDialogById(String(dialogId))
+      .then((dialogDetails: any) => {
+        if (!dialogDetails || typeof dialogDetails !== 'object') return;
+        const incomingLo = dialogDetails.lastOperator ?? dialogDetails.last_operator;
+        const live = getSessionLiveRef.current(sessionId);
+        if (!live?.selectedDialog) return;
+
+        updateSession(sessionId, {
+          selectedDialog: {
+            ...live.selectedDialog,
+            ...dialogDetails,
+            ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
+          },
+        });
+      })
+      .catch(console.error);
+  }, [session?.isMinimized, session?.selectedDialog?.id, sessionId, updateSession]);
 
   useEffect(() => {
     return () => {
@@ -435,7 +468,10 @@ function ChatPanel({
         setActiveSessionId(existingSession.id);
         isSessionSwitchingRef.current = true;
 
-        if (!existingSession.isMinimized) {
+        if (existingSession.isMinimized) {
+          // Разворачиваем найденную свёрнутую сессию выбранного пользователя.
+          toggleSessionMinimize(existingSession.id);
+        } else {
           toggleSessionMinimize(sessionId);
         }
 
@@ -596,17 +632,18 @@ function ChatPanel({
   const updateDialogStatus = useCallback(
     (status: string) => {
       setDialogStatus(status);
-      if (session?.selectedDialog) {
+      const liveSession = getSessionLiveRef.current(sessionId);
+      if (liveSession?.selectedDialog) {
         updateSession(sessionId, {
           ...(status === 'OPEN' ? { transferRecipientFullName: null } : {}),
           selectedDialog: {
-            ...session.selectedDialog,
+            ...liveSession.selectedDialog,
             status: status,
           },
         });
       }
     },
-    [sessionId, updateSession, session?.selectedDialog],
+    [sessionId, updateSession],
   );
 
   const handleTransferToOperator = useCallback(
@@ -901,6 +938,7 @@ function ChatPanel({
     selectedUsers.length > 0 &&
     resolvedDialogIdForActions !== '0' &&
     dialogStatusEffective === 'CLOSED';
+  const effectiveBlockedByOtherOperator = isDialogReallyBlocked && !canTransferDialog;
 
   const blockingOperatorLo =
     selectedDialog?.lastOperator ??
@@ -911,6 +949,12 @@ function ChatPanel({
     (blockingOperatorLo.fullName ||
       [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
+
+  useEffect(() => {
+    if (dialogStatusEffective !== 'CLOSED') {
+      setIsDialogReallyBlocked(false);
+    }
+  }, [dialogStatusEffective]);
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
@@ -1018,7 +1062,7 @@ function ChatPanel({
           scrollToBottomOnExpand={shouldScrollToFirstUnreadOnExpand}
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}
-          isDialogBlockedByOtherOperator={isDialogReallyBlocked}
+          isDialogBlockedByOtherOperator={effectiveBlockedByOtherOperator}
           isDialogEnded={isDialogEnded}
         />
       </div>
@@ -1043,9 +1087,9 @@ function ChatPanel({
           isSendingMessage={isSendingMessage}
           lastSendError={lastSendError}
           dialogStatus={dialogStatus}
-          isDialogBlockedByOtherOperator={isDialogReallyBlocked}
+          isDialogBlockedByOtherOperator={effectiveBlockedByOtherOperator}
           blockingOperatorLabel={
-            isDialogReallyBlocked ? blockingOperatorDisplay || undefined : undefined
+            effectiveBlockedByOtherOperator ? blockingOperatorDisplay || undefined : undefined
           }
         />
       </div>
