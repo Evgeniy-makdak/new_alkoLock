@@ -330,15 +330,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     }
   };
 
-  const showAssignButton =
-    // Либо есть существующий диалог с подходящим статусом
-    (hasExistingDialog &&
-      (dialogStatus === 'OPEN' ||
-        dialogStatus === 'ACTIVE' ||
-        !dialogStatus ||
-        dialogStatus === '')) ||
-    // Либо диалога ещё нет (нужно создать новый)
-    !hasExistingDialog;
   const showClosedDialogButtons = dialogStatus === 'CLOSED';
   const dialogDataLoId =
     dialogData?.lastOperator?.id ??
@@ -353,7 +344,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const effectiveIsDialogOwner = isDialogOwner || isOwnerByDialogData;
   const showManagementButtons =
     showClosedDialogButtons &&
-    hasExistingDialog &&
     (effectiveIsDialogOwner || forceShowCompleteButton);
   const showBlockedButton = showClosedDialogButtons;
 
@@ -365,6 +355,18 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     !effectiveIsDialogOwner &&
     !forceShowCompleteButton &&
     !justAssignedRef.current;
+
+  const showAssignButton =
+    // Либо есть существующий диалог с подходящим статусом
+    (hasExistingDialog &&
+      (dialogStatus === 'OPEN' ||
+        dialogStatus === 'ACTIVE' ||
+        !dialogStatus ||
+        dialogStatus === '')) ||
+    // Либо диалога ещё нет (нужно создать новый)
+    !hasExistingDialog ||
+    // CLOSED без владельца/блокера: разрешаем "Забрать", чтобы не терять кнопку.
+    (showClosedDialogButtons && !showManagementButtons && !shouldShowBlockedByOther);
 
   useEffect(() => {
     if (onBlockedStateChange) {
@@ -382,7 +384,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
   return (
     <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-      {showAssignButton && (
+      {showAssignButton && !shouldShowBlockedByOther && !showManagementButtons && (
         <Tooltip title={t('chat.lockDialog')}>
           <span>
             <Button
