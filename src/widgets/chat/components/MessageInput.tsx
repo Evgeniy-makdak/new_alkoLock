@@ -66,6 +66,7 @@ function MessageInput({
   const { sendMessage } = useChat();
   const [text, setText] = useState(initialText);
   const [compressionInProgress, setCompressionInProgress] = useState(false);
+  const [showBlockedSendTooltip, setShowBlockedSendTooltip] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -83,6 +84,19 @@ function MessageInput({
   }, [clearInput, onClearComplete]);
 
   const showBlockedWarning = isDialogBlockedByOtherOperator && dialogStatus === 'CLOSED';
+
+  useEffect(() => {
+    if (!showBlockedWarning) {
+      setShowBlockedSendTooltip(false);
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setShowBlockedSendTooltip(true);
+    }, 2000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [showBlockedWarning, blockingOperatorLabel]);
 
   const canSendMessage = useCallback(() => {
     if (isDialogBlockedByOtherOperator) {
@@ -364,6 +378,7 @@ function MessageInput({
 
   const getSendButtonTooltip = () => {
     if (isDialogBlockedByOtherOperator) {
+      if (!showBlockedSendTooltip) return '';
       return blockingOperatorLabel
         ? t('chat.sendBlockedByOtherNamed', { fullName: blockingOperatorLabel })
         : t('chat.sendBlockedByOther');

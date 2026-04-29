@@ -297,11 +297,24 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     const currentUserGroups: any[] = Array.isArray(getValues()?.userGroups)
       ? (getValues().userGroups as any[])
       : [];
-    // НЕ фильтруем по groups из селекта:
-    // список в селекте может быть постраничным (например, size=25), и роль пользователя
-    // может отсутствовать на текущей странице, хотя реально существует на бэке.
-    // Здесь делаем только дедупликацию сохранённых ролей пользователя.
-    const sanitized = uniqById(currentUserGroups);
+    // Доступные роли как сущности.
+    // Для формы пользователей мы запрашиваем расширенный size в API,
+    // поэтому здесь можно безопасно удалять реально отсутствующие (удалённые) роли.
+    const available = Array.isArray(groups) ? (groups as any[]) : [];
+    const availableIds = new Set<string>(
+      available.map((g) => String(g?.id ?? g?.value ?? g?.groupId ?? g?.group?.id ?? '')),
+    );
+
+    // Если список ролей ещё не загружен — не трогаем форму.
+    if (availableIds.size === 0) return;
+
+    // Оставляем только существующие роли + убираем дубликаты.
+    const sanitized = uniqById(
+      currentUserGroups.filter((it) => {
+        const idStr = getUserGroupItemId(it);
+        return idStr && availableIds.has(idStr);
+      }),
+    );
 
     const prevIds = currentUserGroups.map((it) => getUserGroupItemId(it));
     const nextIds = sanitized.map((it) => getUserGroupItemId(it));
@@ -311,6 +324,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     console.debug('[useUserAddChangeForm] reconcile roles', {
       userId: String(id ?? 'new'),
       fromServer_groupMembership: user?.groupMembership?.map((gm: any) => gm?.group?.id),
+      availableRoleIds: Array.from(availableIds),
       beforeFormIds: prevIds,
       afterFormIds: nextIds,
     });

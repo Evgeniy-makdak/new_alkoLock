@@ -70,14 +70,38 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   const user = data?.data;
 
-  const { data: userGroups, isLoading: isLoadingUserGroups } = useRolesSelectApi({
+  const {
+    totalElements: userGroupsTotalElements,
+    isLoading: isLoadingRolesMeta,
+    isFetching: isFetchingRolesMeta,
+  } = useRolesSelectApi({
     page: 0,
-    size: 25,
+    limit: 1,
     sort: 'name',
     filters: {
       systemGenerated: true,
     },
   });
+
+  const shouldLoadAllRoles = !isLoadingRolesMeta && !isFetchingRolesMeta;
+  const {
+    data: userGroups,
+    isLoading: isLoadingUserGroups,
+    isFetching: isFetchingUserGroups,
+  } = useRolesSelectApi(
+    {
+      page: 0,
+      // Запрашиваем полный набор ролей по totalElements, а не хардкодным size.
+      limit: Math.max(userGroupsTotalElements, 1),
+      sort: 'name',
+      filters: {
+        systemGenerated: true,
+      },
+    },
+    {
+      enabled: shouldLoadAllRoles,
+    },
+  );
 
   const { data: foto, isLoading: isLoadingFoto } = useUserAvatarQuery(id, user);
 
@@ -160,7 +184,13 @@ export const useUserAddChangeFormApi = (id: ID) => {
     avatar: hasBlob && hash ? { img: blob, hash } : null,
     groups: userGroups,
     user,
-    isLoading: isLoading || isLoadingUserGroups || isLoadingFoto,
+    isLoading:
+      isLoading ||
+      isLoadingRolesMeta ||
+      isFetchingRolesMeta ||
+      isLoadingUserGroups ||
+      isFetchingUserGroups ||
+      isLoadingFoto,
     changeItem,
     addGalleryPhoto,
     createItem,
