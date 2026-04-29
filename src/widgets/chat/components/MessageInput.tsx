@@ -67,6 +67,7 @@ function MessageInput({
   const [text, setText] = useState(initialText);
   const [compressionInProgress, setCompressionInProgress] = useState(false);
   const [showBlockedSendTooltip, setShowBlockedSendTooltip] = useState(false);
+  const [showBlockedWarningDelayed, setShowBlockedWarningDelayed] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,11 +89,13 @@ function MessageInput({
   useEffect(() => {
     if (!showBlockedWarning) {
       setShowBlockedSendTooltip(false);
+      setShowBlockedWarningDelayed(false);
       return;
     }
     const timer = window.setTimeout(() => {
       setShowBlockedSendTooltip(true);
-    }, 2000);
+      setShowBlockedWarningDelayed(true);
+    }, 500);
     return () => {
       window.clearTimeout(timer);
     };
@@ -550,7 +553,7 @@ function MessageInput({
         </div>
       )}
 
-      {showBlockedWarning && (
+      {showBlockedWarningDelayed && (
         <div
           style={{
             color: '#d32f2f',

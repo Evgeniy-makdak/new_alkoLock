@@ -165,7 +165,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     baselineUserGroupIdsRef.current = normalizeUserGroupIds(
       initUser.defaultValues.userGroups as any,
     );
-  }, [isLoading, id, userPhotoSyncKey]);
+  }, [isLoading, id, userPhotoSyncKey, user?.groupMembership]);
 
   useEffect(() => {
     if (!id || isLoading) return;
@@ -305,16 +305,18 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
       available.map((g) => String(g?.id ?? g?.value ?? g?.groupId ?? g?.group?.id ?? '')),
     );
 
-    // Если список ролей ещё не загружен — не трогаем форму.
-    if (availableIds.size === 0) return;
-
-    // Оставляем только существующие роли + убираем дубликаты.
-    const sanitized = uniqById(
-      currentUserGroups.filter((it) => {
-        const idStr = getUserGroupItemId(it);
-        return idStr && availableIds.has(idStr);
-      }),
-    );
+    // Если список ролей сущностями не загружен (groups=null),
+    // чипы должны браться ТОЛЬКО из groupMembership (api/users/{id}),
+    // а не из текущих значений формы (там могут остаться устаревшие label'ы).
+    const sanitized =
+      availableIds.size === 0
+        ? uniqById(values as any)
+        : uniqById(
+            currentUserGroups.filter((it) => {
+              const idStr = getUserGroupItemId(it);
+              return idStr && availableIds.has(idStr);
+            }),
+          );
 
     const prevIds = currentUserGroups.map((it) => getUserGroupItemId(it));
     const nextIds = sanitized.map((it) => getUserGroupItemId(it));
@@ -330,9 +332,35 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     });
 
     // Если что-то изменилось (удалили отсутствующие роли/дедуплицировали) — записываем в форму
-    const needUpdateForm =
+    let needUpdateForm =
       prevIds.length !== nextIds.length ||
       !arraysShallowEqual([...prevIds].sort(), [...nextIds].sort());
+
+    // Если groups не загружены (fallback по user.groupMembership),
+    // то важно обновлять и label, а не только id (иначе "залипает" старый label).
+    if (!needUpdateForm && availableIds.size === 0) {
+      const prevLabelById = new Map<string, string>();
+      for (const it of currentUserGroups) {
+        const idStr = getUserGroupItemId(it);
+        if (!idStr) continue;
+        if (!prevLabelById.has(idStr)) prevLabelById.set(idStr, String((it as any)?.label ?? ''));
+      }
+      const nextLabelById = new Map<string, string>();
+      for (const it of sanitized) {
+        const idStr = getUserGroupItemId(it);
+        if (!idStr) continue;
+        if (!nextLabelById.has(idStr)) nextLabelById.set(idStr, String((it as any)?.label ?? ''));
+      }
+
+      const idKeys = Array.from(prevLabelById.keys());
+      for (let i = 0; i < idKeys.length; i++) {
+        const idStr = idKeys[i];
+        if ((prevLabelById.get(idStr) ?? '') !== (nextLabelById.get(idStr) ?? '')) {
+          needUpdateForm = true;
+          break;
+        }
+      }
+    }
 
     if (needUpdateForm) {
       setValue('userGroups', sanitized, { shouldDirty: false });
@@ -342,7 +370,7 @@ export const useUserAddChangeForm = (id?: ID, closeModal?: () => void) => {
     // В любом случае синхронизируем zustand-стор под актуальные id
     const storeIds = nextIds;
     setSelectedRoleIds(storeIds);
-  }, [isLoading, user?.id, groups]);
+  }, [isLoading, user?.id, groups, user?.groupMembership]);
 
   const onSubmit = async (data: Form) => {
     // 🔧 FIX: Убираем обрезку данных здесь - она должна происходить в валидации

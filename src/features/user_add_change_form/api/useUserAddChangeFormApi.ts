@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useRolesSelectApi } from '@entities/roles_select/api/useRolesSelectApi';
 import { userFotoStore } from '@features/user_add_foto/model/userFotoStore';
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { UsersApi } from '@shared/api/baseQuerys';
@@ -7,7 +6,7 @@ import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
 import { useUserAvatarQuery } from '@shared/hooks/useUserAvatarQuery';
-import type { AddPhotoResponse, ID, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
+import type { AddPhotoResponse, ID, IRole, IUser, IUserPhotoDTO } from '@shared/types/BaseQueryTypes';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 function getUserPhotoMeta(user: IUser | undefined): IUserPhotoDTO | undefined {
@@ -69,39 +68,6 @@ export const useUserAddChangeFormApi = (id: ID) => {
   });
 
   const user = data?.data;
-
-  const {
-    totalElements: userGroupsTotalElements,
-    isLoading: isLoadingRolesMeta,
-    isFetching: isFetchingRolesMeta,
-  } = useRolesSelectApi({
-    page: 0,
-    limit: 1,
-    sort: 'name',
-    filters: {
-      systemGenerated: true,
-    },
-  });
-
-  const shouldLoadAllRoles = !isLoadingRolesMeta && !isFetchingRolesMeta;
-  const {
-    data: userGroups,
-    isLoading: isLoadingUserGroups,
-    isFetching: isFetchingUserGroups,
-  } = useRolesSelectApi(
-    {
-      page: 0,
-      // Запрашиваем полный набор ролей по totalElements, а не хардкодным size.
-      limit: Math.max(userGroupsTotalElements, 1),
-      sort: 'name',
-      filters: {
-        systemGenerated: true,
-      },
-    },
-    {
-      enabled: shouldLoadAllRoles,
-    },
-  );
 
   const { data: foto, isLoading: isLoadingFoto } = useUserAvatarQuery(id, user);
 
@@ -182,14 +148,11 @@ export const useUserAddChangeFormApi = (id: ID) => {
 
   return {
     avatar: hasBlob && hash ? { img: blob, hash } : null,
-    groups: userGroups,
+    // Чипы и флаги прав берём из ответа api/users/{id}. Доп. запросы api/user-groups не нужны.
+    groups: null as IRole[] | null,
     user,
     isLoading:
       isLoading ||
-      isLoadingRolesMeta ||
-      isFetchingRolesMeta ||
-      isLoadingUserGroups ||
-      isFetchingUserGroups ||
       isLoadingFoto,
     changeItem,
     addGalleryPhoto,
