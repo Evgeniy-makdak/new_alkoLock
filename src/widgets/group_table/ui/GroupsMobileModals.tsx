@@ -37,6 +37,8 @@ export const GroupsMobileModals: FC<GroupsMobileModalsProps> = ({
         onCloseModal={addModalData.closeAddBranchModal}
         isOpen={addModalData.openAddBranchModal}
         toggleModal={addModalData.closeAddBranchModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
       <Popup
         isOpen={deleteModalData.isOpen}
@@ -48,6 +50,8 @@ export const GroupsMobileModals: FC<GroupsMobileModalsProps> = ({
             setState={setState}
           />
         }
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
     </>
   );

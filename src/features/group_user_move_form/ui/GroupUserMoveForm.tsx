@@ -56,7 +56,9 @@ const GroupUserMoveFormInner: FC<{
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>{t('common.move')}</Button>
+            <Button disabled={branchSelect.length === 0} onClick={handleOpenAlert}>
+              {t('common.move')}
+            </Button>
             <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}

@@ -23,6 +23,7 @@ interface PopupProps {
   toggleModal: () => void;
   buttons?: ReactNode[];
   closeonClickSpace?: boolean;
+  closeOnEscapeKey?: boolean;
   onCloseModal?: () => void;
   styles?: { size: string; substr: string } | null;
 }
@@ -34,6 +35,7 @@ export const Popup = ({
   toggleModal,
   buttons = [],
   closeonClickSpace = true,
+  closeOnEscapeKey = true,
   onCloseModal,
   styles = null,
 }: PopupProps) => {
@@ -52,9 +54,11 @@ export const Popup = ({
     <Dialog
       data-testid={testids.POPUP}
       disableEnforceFocus
+      disableEscapeKeyDown={!closeOnEscapeKey}
       open={isOpen}
       onClose={(_, reason) => {
         if (reason === 'backdropClick' && !closeonClickSpace) return;
+        if (reason === 'escapeKeyDown' && !closeOnEscapeKey) return;
         handleClose();
       }}
       maxWidth={false}

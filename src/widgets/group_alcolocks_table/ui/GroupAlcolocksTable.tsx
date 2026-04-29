@@ -115,6 +115,8 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
           onCloseModal={addModalData.closeAddAlcolockModal}
           isOpen={addModalData.openAddAlcolockModal}
           toggleModal={addModalData.toggleAddAlcolockModal}
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
         />
         <Popup
           isOpen={editModalData.open}
@@ -126,6 +128,8 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
               alcolock={editModalData.changeAlcolock}
             />
           }
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
         />
       </>
     );
@@ -172,6 +176,8 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
         onCloseModal={addModalData.closeAddAlcolockModal}
         isOpen={addModalData.openAddAlcolockModal}
         toggleModal={addModalData.toggleAddAlcolockModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
       <Popup
         isOpen={editModalData.open}
@@ -183,6 +189,8 @@ export const GroupAlcolocksTable: FC<GroupAlcolocksTable> = ({ groupInfo }) => {
             alcolock={editModalData.changeAlcolock}
           />
         }
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
     </>
   );

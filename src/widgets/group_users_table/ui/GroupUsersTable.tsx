@@ -12,6 +12,7 @@ import { GroupUserMoveForm } from '@features/group_user_move_form';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { TableHeaderMobileTrailingProvider } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
 import type { IBranch } from '@shared/types/BaseQueryTypes';
@@ -31,7 +32,11 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
   const { filtersData, tableData, addModalData, editModalData, refetch } =
     useGroupUsersTable(groupInfo);
   const isMobile = useMediaQuery(breakpoints.mobile);
-  const filteredRows = tableData.rows.filter((row) => row.id !== 2);
+  // В этой вкладке нужно скрыть конкретного пользователя id=1 ("Администратор").
+  // Фильтр применяется ТОЛЬКО здесь (виджет группы/вкладка "Пользователи").
+  const filteredRows = tableData.rows.filter(
+    (row) => String(row.id) !== '2' && String(row.id) !== '1',
+  );
 
   useEffect(() => {
     if (tableData.sortModel) {
@@ -45,7 +50,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
 
   if (isMobile) {
     return (
-      <>
+      <TableHeaderMobileTrailingProvider>
         <div className={style.mobilePanel}>
           <div className={style.mobileToolbar}>
             <SearchInput
@@ -92,9 +97,7 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
                 <div className={style.mobileCardActions}>
                   <IconButton
                     size="small"
-                    onClick={() =>
-                      editModalData.openEditModal({ id: row.id, text: row.USER || '-' })
-                    }>
+                    onClick={() => editModalData.openEditModal({ id: row.id, text: row.USER || '-' })}>
                     <EastIcon />
                   </IconButton>
                 </div>
@@ -117,11 +120,15 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
         <Popup
           isOpen={addModalData.openAddCarModal}
           toggleModal={addModalData.closeAddCarModal}
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
           body={<GroupUserAddForm close={addModalData.closeAddCarModal} branchId={groupInfo?.id} />}
         />
         <Popup
           isOpen={editModalData.open}
           toggleModal={editModalData.closeEditModal}
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
           body={
             <GroupUserMoveForm
               targetBranch={groupInfo?.id}
@@ -130,12 +137,12 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
             />
           }
         />
-      </>
+      </TableHeaderMobileTrailingProvider>
     );
   }
 
   return (
-    <>
+    <TableHeaderMobileTrailingProvider>
       <TableHeaderWrapper>
         <SearchInput
           testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_TABLE}
@@ -169,11 +176,15 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
       <Popup
         isOpen={addModalData.openAddCarModal}
         toggleModal={addModalData.closeAddCarModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
         body={<GroupUserAddForm close={addModalData.closeAddCarModal} branchId={groupInfo?.id} />}
       />
       <Popup
         isOpen={editModalData.open}
         toggleModal={editModalData.closeEditModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
         body={
           <GroupUserMoveForm
             targetBranch={groupInfo?.id}
@@ -182,6 +193,6 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
           />
         }
       />
-    </>
+    </TableHeaderMobileTrailingProvider>
   );
 };

@@ -254,6 +254,8 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
         onCloseModal={addModalData.closeAddBranchModal}
         isOpen={addModalData.openAddBranchModal}
         toggleModal={addModalData.closeAddBranchModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
       <Popup
         isOpen={deleteModalData.isOpen}
@@ -265,6 +267,8 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
             setState={setState}
           />
         }
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
     </>
   );

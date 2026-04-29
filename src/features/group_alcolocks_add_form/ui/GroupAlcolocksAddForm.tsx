@@ -49,7 +49,9 @@ export const GroupAlcolocksAddForm: FC<GroupAlcolockAddFormProps> = ({ branchId,
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button disabled={alcolocks.length === 0} onClick={handleOpenAlert}>
+              {t('common.add')}
+            </Button>
             <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}

@@ -56,7 +56,9 @@ export const GroupUserAddForm: FC<GroupUserAddFormProps> = ({ close, branchId })
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button disabled={users.length === 0} onClick={handleOpenAlert}>
+              {t('common.add')}
+            </Button>
             <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}

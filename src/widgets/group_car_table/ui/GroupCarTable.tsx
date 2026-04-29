@@ -120,6 +120,8 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
           onCloseModal={addModalData.closeAddCarModal}
           isOpen={addModalData.openAddCarModal}
           toggleModal={addModalData.toggleAddCarModal}
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
         />
         <Popup
           isOpen={editModalData.open}
@@ -131,6 +133,8 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
               car={editModalData.changeCar}
             />
           }
+          closeonClickSpace={false}
+          closeOnEscapeKey={false}
         />
       </>
     );
@@ -172,6 +176,8 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
         onCloseModal={addModalData.closeAddCarModal}
         isOpen={addModalData.openAddCarModal}
         toggleModal={addModalData.toggleAddCarModal}
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
       <Popup
         isOpen={editModalData.open}
@@ -183,6 +189,8 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
             car={editModalData.changeCar}
           />
         }
+        closeonClickSpace={false}
+        closeOnEscapeKey={false}
       />
     </>
   );

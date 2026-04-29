@@ -50,7 +50,9 @@ export const GroupCarAddForm: FC<GroupCarAddFormProps> = ({ close, branchId }) =
 
         {!showAlert && (
           <ButtonFormWrapper>
-            <Button onClick={handleOpenAlert}>{t('common.add')}</Button>
+            <Button disabled={cars.length === 0} onClick={handleOpenAlert}>
+              {t('common.add')}
+            </Button>
             <Button onClick={close}>{t('common.cancel')}</Button>
           </ButtonFormWrapper>
         )}
