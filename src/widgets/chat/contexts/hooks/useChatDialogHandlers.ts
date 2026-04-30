@@ -929,6 +929,34 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
                 ? { assignedDialogId: normalizedIncomingDialogId }
                 : {}),
             });
+
+            // Редкий кейс первого открытия в сессии: getUserMessages(owner.id) может дать dialog
+            // без status/lastOperator. Точечно добираем метаданные, чтобы UI сразу показывал
+            // стабильные индикаторы "передан/заблокирован" без повторного открытия окна.
+            if (
+              normalizedIncomingDialogId &&
+              normalizedIncomingDialogId !== '0' &&
+              (normalizedIncomingStatus == null || (incomingLo ?? currentLo) == null)
+            ) {
+              try {
+                const freshDialog = await api.getDialogById(normalizedIncomingDialogId);
+                if (freshDialog && typeof freshDialog === 'object') {
+                  const freshLo =
+                    (freshDialog as any).lastOperator ?? (freshDialog as any).last_operator;
+                  const live = getSession(sessionId);
+                  updateSession(sessionId, {
+                    selectedDialog: {
+                      ...(live?.selectedDialog || {}),
+                      ...(freshDialog as any),
+                      ...(freshLo != null ? { lastOperator: freshLo } : {}),
+                    },
+                    assignedDialogId: normalizedIncomingDialogId,
+                  });
+                }
+              } catch {
+                // no-op: оставляем уже записанные данные из getUserMessages.
+              }
+            }
             await loadDialogHistory(sessionId, firstMessage.dialog.id);
           } else {
             const limitedResponse = await api.getUserMessages(userId, 0, 50);
