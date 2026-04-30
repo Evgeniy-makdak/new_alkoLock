@@ -92,6 +92,11 @@ function ChatPanel({
   const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isDialogReallyBlocked, setIsDialogReallyBlocked] = useState(false);
   const [isTransferLoading, setIsTransferLoading] = useState(false);
+  const [isCompleteButtonActive, setIsCompleteButtonActive] = useState(false);
+  const [pendingTransferOperator, setPendingTransferOperator] = useState<{
+    id: number;
+    label: string;
+  } | null>(null);
 
   const authId = appStore((state) => state.authId);
 
@@ -670,17 +675,16 @@ function ChatPanel({
         effectiveDialogId === '0' ||
         targetOperatorId === uid ||
         !Number.isFinite(uid) ||
-        !sel ||
-        sel.id === '0'
+        targetOperatorId <= 0
       ) {
         return;
       }
 
-      const effectiveStatus = String(sel.status || '').trim();
+      const effectiveStatus = String(sel?.status || dialogStatus || '').trim();
       if (effectiveStatus !== 'CLOSED') return;
 
       const lastOpId = getLastOperatorIdFromDialog(sel);
-      if (lastOpId == null || Number(lastOpId) !== uid) return;
+      if (!(lastOpId == null && isCompleteButtonActive) && Number(lastOpId) !== uid) return;
 
       setIsTransferLoading(true);
       try {
@@ -698,11 +702,14 @@ function ChatPanel({
             ? {
                 ...baseDialog,
                 ...updated,
+                // После передачи диалог остаётся закрытым, но уже с новым владельцем.
+                status: 'CLOSED',
                 lastOperator: (updated as any).lastOperator ??
                   (updated as any).dialog?.lastOperator ?? { id: targetOperatorId },
               }
             : {
                 ...baseDialog,
+                status: 'CLOSED',
                 lastOperator: { id: targetOperatorId },
               };
 
@@ -719,13 +726,17 @@ function ChatPanel({
           lastSendError: null,
           transferRecipientFullName: recipientName || null,
         });
+        // Сразу фиксируем локальный статус, чтобы UI не "откатывался" в режим "Забрать".
+        setDialogStatus('CLOSED');
+        setIsDialogReallyBlocked(true);
+        setPendingTransferOperator(null);
       } catch (error) {
         console.error('Ошибка передачи диалога:', error);
       } finally {
         setIsTransferLoading(false);
       }
     },
-    [isTransferLoading, authId, sessionId, getSession, updateSession],
+    [isTransferLoading, authId, sessionId, getSession, updateSession, dialogStatus, isCompleteButtonActive],
   );
 
   const handleMarkMessagesAsRead = useCallback(
@@ -927,17 +938,24 @@ function ChatPanel({
   const lastOpIdForTransfer = getLastOperatorIdFromDialog(selectedDialog);
   const uidNum = authId != null ? Number(authId) : NaN;
   const canTransferDialog =
-    selectedUsers.length > 0 &&
-    !!hasExistingDialog &&
-    dialogStatusEffective === 'CLOSED' &&
-    lastOpIdForTransfer != null &&
-    Number.isFinite(uidNum) &&
-    Number(lastOpIdForTransfer) === uidNum;
+    isCompleteButtonActive ||
+    (selectedUsers.length > 0 &&
+      !!hasExistingDialog &&
+      dialogStatusEffective === 'CLOSED' &&
+      lastOpIdForTransfer != null &&
+      Number.isFinite(uidNum) &&
+      Number(lastOpIdForTransfer) === uidNum);
+
+  useEffect(() => {
+    if (!canTransferDialog) {
+      setPendingTransferOperator(null);
+    }
+  }, [canTransferDialog, resolvedDialogIdForActions, selectedUsers]);
 
   const showTransferSection =
     selectedUsers.length > 0 &&
     resolvedDialogIdForActions !== '0' &&
-    dialogStatusEffective === 'CLOSED';
+    (dialogStatusEffective === 'CLOSED' || isCompleteButtonActive);
   const effectiveBlockedByOtherOperator = isDialogReallyBlocked && !canTransferDialog;
 
   const blockingOperatorLo =
@@ -1024,7 +1042,7 @@ function ChatPanel({
               <TransferOperatorSelect
                 disabled={isTransferLoading || !canTransferDialog}
                 selectionResetKey={`${resolvedDialogIdForActions}-${selectedUsers[0] ?? ''}`}
-                onOperatorSelected={(id, label) => void handleTransferToOperator(id, label)}
+                onOperatorSelected={(id, label) => setPendingTransferOperator({ id, label })}
               />
             )}
           </div>
@@ -1041,6 +1059,13 @@ function ChatPanel({
             onDialogStatusChange={updateDialogStatus}
             dialogData={selectedDialog}
             onBlockedStateChange={setIsDialogReallyBlocked}
+            onCompleteButtonActiveChange={setIsCompleteButtonActive}
+            showTransferButton={!!pendingTransferOperator}
+            onTransferClick={() => {
+              if (!pendingTransferOperator) return;
+              void handleTransferToOperator(pendingTransferOperator.id, pendingTransferOperator.label);
+            }}
+            isTransferLoading={isTransferLoading}
           />
         )}
       </div>

@@ -18,6 +18,10 @@ interface DialogActionsProps {
   onDialogStatusChange?: (status: string) => void;
   dialogData?: any;
   onBlockedStateChange?: (isBlocked: boolean) => void;
+  onCompleteButtonActiveChange?: (isActive: boolean) => void;
+  showTransferButton?: boolean;
+  onTransferClick?: () => void;
+  isTransferLoading?: boolean;
 }
 
 export const DialogActions: React.FC<DialogActionsProps> = ({
@@ -28,6 +32,10 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   onDialogStatusChange,
   dialogData,
   onBlockedStateChange,
+  onCompleteButtonActiveChange,
+  showTransferButton = false,
+  onTransferClick,
+  isTransferLoading = false,
 }) => {
   const { t } = useTranslation();
   const { getSession, updateSession } = useChat();
@@ -301,11 +309,22 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
       dialogDataLoId != null &&
       Number(dialogDataLoId) === Number(currentUserId);
     const canCompleteNow = isDialogOwner || isOwnerByDialogData || forceShowCompleteButton;
-    if (isLoading || !hasExistingDialog || !canCompleteNow || currentUserId == null) return;
+    const completeDialogId =
+      dialogId && String(dialogId) !== '0'
+        ? String(dialogId)
+        : session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+          ? String(session.selectedDialog.id)
+          : session?.assignedDialogId &&
+              String(session.assignedDialogId) !== '' &&
+              String(session.assignedDialogId) !== '0' &&
+              String(session.assignedDialogId) !== 'assigned'
+            ? String(session.assignedDialogId)
+            : '';
+    if (isLoading || !completeDialogId || !canCompleteNow || currentUserId == null) return;
 
     setIsLoading(true);
     try {
-      await api.completeDialog(dialogId);
+      await api.completeDialog(completeDialogId);
       setForceShowCompleteButton(false);
       updateSession(sessionId, {
         assignedDialogId: null,
@@ -346,12 +365,18 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     showClosedDialogButtons &&
     (effectiveIsDialogOwner || forceShowCompleteButton);
   const showBlockedButton = showClosedDialogButtons;
+  const immediateLastOperatorId =
+    dialogData?.lastOperator?.id ??
+    dialogData?.last_operator?.id ??
+    dialogData?.dialog?.lastOperator?.id ??
+    dialogData?.dialog?.last_operator?.id;
+  const effectiveLastOperatorId = lastOperatorId ?? immediateLastOperatorId;
 
   const shouldShowBlockedByOther =
-    showBlockedButton &&
+    hasExistingDialog &&
     currentUserId != null &&
-    lastOperatorId != null &&
-    Number(lastOperatorId) !== Number(currentUserId) &&
+    effectiveLastOperatorId != null &&
+    Number(effectiveLastOperatorId) !== Number(currentUserId) &&
     !effectiveIsDialogOwner &&
     !forceShowCompleteButton &&
     !justAssignedRef.current;
@@ -367,12 +392,18 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     !hasExistingDialog ||
     // CLOSED без владельца/блокера: разрешаем "Забрать", чтобы не терять кнопку.
     (showClosedDialogButtons && !showManagementButtons && !shouldShowBlockedByOther);
+  const showTransferredTakeDisabled =
+    !!session?.transferRecipientFullName && !showManagementButtons && !shouldShowBlockedByOther;
 
   useEffect(() => {
     if (onBlockedStateChange) {
       onBlockedStateChange(shouldShowBlockedByOther);
     }
   }, [shouldShowBlockedByOther, onBlockedStateChange]);
+
+  useEffect(() => {
+    onCompleteButtonActiveChange?.(showManagementButtons && !isLoading);
+  }, [onCompleteButtonActiveChange, showManagementButtons, isLoading]);
 
   const showUnlockedMessage = hasExistingDialog && dialogStatus !== 'CLOSED' && dialogId !== '0';
 
@@ -384,7 +415,10 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
   return (
     <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
-      {showAssignButton && !shouldShowBlockedByOther && !showManagementButtons && (
+      {showAssignButton &&
+        !shouldShowBlockedByOther &&
+        !showManagementButtons &&
+        !session?.transferRecipientFullName && (
         <Tooltip title={t('chat.lockDialog')}>
           <span>
             <Button
@@ -407,6 +441,24 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               ? t('chat.dialogLockedByOperatorNamed', { fullName: blockerNameForTooltip })
               : t('chat.dialogLockedByOperator', { id: lastOperatorId })
           }>
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<Lock />}
+              disabled
+              sx={{ fontSize: '0.75rem' }}>
+              {t('chat.take')}
+            </Button>
+          </span>
+        </Tooltip>
+      )}
+
+      {showTransferredTakeDisabled && (
+        <Tooltip
+          title={t('chat.dialogTransferredToOperator', {
+            fullName: session?.transferRecipientFullName,
+          })}>
           <span>
             <Button
               variant="outlined"
@@ -446,19 +498,35 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
       {showManagementButtons && (
         <>
-          <Tooltip title={t('chat.unlockDialog')}>
-            <span>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<LockOpen />}
-                onClick={handleCompleteDialog}
-                disabled={isLoading}
-                sx={{ fontSize: '0.75rem' }}>
-                {t('chat.completeDialog')}
-              </Button>
-            </span>
-          </Tooltip>
+          {showTransferButton ? (
+            <Tooltip title={t('chat.transferDialog')}>
+              <span>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<LockOpen />}
+                  onClick={onTransferClick}
+                  disabled={isLoading || isTransferLoading}
+                  sx={{ fontSize: '0.75rem' }}>
+                  {t('chat.transferDialog')}
+                </Button>
+              </span>
+            </Tooltip>
+          ) : (
+            <Tooltip title={t('chat.unlockDialog')}>
+              <span>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  startIcon={<LockOpen />}
+                  onClick={handleCompleteDialog}
+                  disabled={isLoading}
+                  sx={{ fontSize: '0.75rem' }}>
+                  {t('chat.completeDialog')}
+                </Button>
+              </span>
+            </Tooltip>
+          )}
         </>
       )}
     </Box>
