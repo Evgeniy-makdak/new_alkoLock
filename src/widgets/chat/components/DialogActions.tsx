@@ -39,11 +39,16 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 }) => {
   const { t } = useTranslation();
   const { getSession, updateSession } = useChat();
+  const getInitialCurrentUserId = () => {
+    const authId = appStore.getState().authId;
+    const normalizedId = Number(authId);
+    return Number.isFinite(normalizedId) ? normalizedId : null;
+  };
   const [isLoading, setIsLoading] = useState(false);
   const [isDialogOwner, setIsDialogOwner] = useState(false);
   const [lastOperatorId, setLastOperatorId] = useState<number | null>(null);
   const [forceCheckOwner, setForceCheckOwner] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(getInitialCurrentUserId);
   const [forceShowCompleteButton, setForceShowCompleteButton] = useState(false);
 
   const justAssignedRef = useRef(false);
@@ -52,6 +57,19 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
   const session = getSession(sessionId);
   const dialogStatus = session?.selectedDialog?.status || '';
+  const resolvedCompleteDialogId =
+    dialogId && String(dialogId) !== '0'
+      ? String(dialogId)
+      : dialogData?.id && String(dialogData.id) !== '0'
+        ? String(dialogData.id)
+        : session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
+          ? String(session.selectedDialog.id)
+          : session?.assignedDialogId &&
+              String(session.assignedDialogId) !== '' &&
+              String(session.assignedDialogId) !== '0' &&
+              String(session.assignedDialogId) !== 'assigned'
+            ? String(session.assignedDialogId)
+            : '';
 
   useEffect(() => {
     const updateCurrentUserId = () => {
@@ -298,33 +316,13 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   };
 
   const handleCompleteDialog = async () => {
-    const dialogDataLoId =
-      dialogData?.lastOperator?.id ??
-      dialogData?.last_operator?.id ??
-      dialogData?.dialog?.lastOperator?.id ??
-      dialogData?.dialog?.last_operator?.id;
-    const isOwnerByDialogData =
-      dialogStatus === 'CLOSED' &&
-      currentUserId != null &&
-      dialogDataLoId != null &&
-      Number(dialogDataLoId) === Number(currentUserId);
-    const canCompleteNow = isDialogOwner || isOwnerByDialogData || forceShowCompleteButton;
-    const completeDialogId =
-      dialogId && String(dialogId) !== '0'
-        ? String(dialogId)
-        : session?.selectedDialog?.id && String(session.selectedDialog.id) !== '0'
-          ? String(session.selectedDialog.id)
-          : session?.assignedDialogId &&
-              String(session.assignedDialogId) !== '' &&
-              String(session.assignedDialogId) !== '0' &&
-              String(session.assignedDialogId) !== 'assigned'
-            ? String(session.assignedDialogId)
-            : '';
-    if (isLoading || !completeDialogId || !canCompleteNow || currentUserId == null) return;
+    // Кнопка "Завершить" уже отрисована только при валидном owner-состоянии.
+    // Повторные строгие проверки здесь иногда отбрасывали клик в гонках состояния.
+    if (isLoading || !resolvedCompleteDialogId || currentUserId == null) return;
 
     setIsLoading(true);
     try {
-      await api.completeDialog(completeDialogId);
+      await api.completeDialog(resolvedCompleteDialogId);
       setForceShowCompleteButton(false);
       updateSession(sessionId, {
         assignedDialogId: null,
@@ -350,6 +348,11 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   };
 
   const showClosedDialogButtons = dialogStatus === 'CLOSED';
+  const currentUserIdEffective = (() => {
+    if (currentUserId != null) return Number(currentUserId);
+    const fallbackAuthId = Number(appStore.getState().authId);
+    return Number.isFinite(fallbackAuthId) ? fallbackAuthId : null;
+  })();
   const dialogDataLoId =
     dialogData?.lastOperator?.id ??
     dialogData?.last_operator?.id ??
@@ -357,12 +360,13 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     dialogData?.dialog?.last_operator?.id;
   const isOwnerByDialogData =
     showClosedDialogButtons &&
-    currentUserId != null &&
+    currentUserIdEffective != null &&
     dialogDataLoId != null &&
-    Number(dialogDataLoId) === Number(currentUserId);
+    Number(dialogDataLoId) === Number(currentUserIdEffective);
   const effectiveIsDialogOwner = isDialogOwner || isOwnerByDialogData;
   const showManagementButtons =
     showClosedDialogButtons &&
+    !!resolvedCompleteDialogId &&
     (effectiveIsDialogOwner || forceShowCompleteButton);
   const showBlockedButton = showClosedDialogButtons;
   const immediateLastOperatorId =
@@ -371,41 +375,47 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     dialogData?.dialog?.lastOperator?.id ??
     dialogData?.dialog?.last_operator?.id;
   const effectiveLastOperatorId = lastOperatorId ?? immediateLastOperatorId;
+  const hasForeignOwner =
+    currentUserIdEffective != null &&
+    effectiveLastOperatorId != null &&
+    Number(effectiveLastOperatorId) !== Number(currentUserIdEffective);
+  const hasKnownOwner = effectiveLastOperatorId != null;
 
   const shouldShowBlockedByOther =
-    hasExistingDialog &&
-    currentUserId != null &&
-    effectiveLastOperatorId != null &&
-    Number(effectiveLastOperatorId) !== Number(currentUserId) &&
-    !effectiveIsDialogOwner &&
+    showClosedDialogButtons &&
+    !showManagementButtons &&
     !forceShowCompleteButton &&
-    !justAssignedRef.current;
+    !justAssignedRef.current &&
+    (hasForeignOwner || !hasKnownOwner);
 
   const showAssignButton =
+    !showClosedDialogButtons &&
     // Либо есть существующий диалог с подходящим статусом
-    (hasExistingDialog &&
+    ((hasExistingDialog &&
       (dialogStatus === 'OPEN' ||
         dialogStatus === 'ACTIVE' ||
         !dialogStatus ||
         dialogStatus === '')) ||
-    // Либо диалога ещё нет (нужно создать новый)
-    !hasExistingDialog ||
-    // CLOSED без владельца/блокера: разрешаем "Забрать", чтобы не терять кнопку.
-    (showClosedDialogButtons && !showManagementButtons && !shouldShowBlockedByOther);
+      // Либо диалога ещё нет (нужно создать новый)
+      !hasExistingDialog);
   const showTransferredTakeDisabled =
     !!session?.transferRecipientFullName && !showManagementButtons && !shouldShowBlockedByOther;
 
   useEffect(() => {
     if (onBlockedStateChange) {
-      onBlockedStateChange(shouldShowBlockedByOther);
+      onBlockedStateChange(shouldShowBlockedByOther || showTransferredTakeDisabled);
     }
-  }, [shouldShowBlockedByOther, onBlockedStateChange]);
+  }, [shouldShowBlockedByOther, showTransferredTakeDisabled, onBlockedStateChange]);
 
   useEffect(() => {
     onCompleteButtonActiveChange?.(showManagementButtons && !isLoading);
   }, [onCompleteButtonActiveChange, showManagementButtons, isLoading]);
 
-  const showUnlockedMessage = hasExistingDialog && dialogStatus !== 'CLOSED' && dialogId !== '0';
+  const showUnlockedMessage =
+    hasExistingDialog &&
+    dialogStatus !== 'CLOSED' &&
+    dialogId !== '0' &&
+    !session?.transferRecipientFullName;
 
   const blockerLo = dialogData?.lastOperator ?? dialogData?.dialog?.lastOperator;
   const blockerNameForTooltip =
@@ -418,6 +428,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
       {showAssignButton &&
         !shouldShowBlockedByOther &&
         !showManagementButtons &&
+        !(hasForeignOwner && showClosedDialogButtons) &&
         !session?.transferRecipientFullName && (
         <Tooltip title={t('chat.lockDialog')}>
           <span>

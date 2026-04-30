@@ -897,6 +897,13 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
               String(currentDialog.id) === String(incomingDialog.id);
             const currentLo = currentDialog?.lastOperator ?? currentDialog?.last_operator;
             const incomingLo = incomingDialog?.lastOperator ?? incomingDialog?.last_operator;
+            const normalizedIncomingStatus = incomingDialog?.status ?? currentDialog?.status;
+            const normalizedIncomingDialogId =
+              incomingDialog?.id != null
+                ? String(incomingDialog.id)
+                : currentDialog?.id != null
+                  ? String(currentDialog.id)
+                  : '';
 
             // Анти-race после assign: если текущий диалог уже CLOSED и имеет lastOperator,
             // не затираем его потенциально устаревшим dialog из getUserMessages(owner.id).
@@ -909,10 +916,19 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
                 : {
                     ...(currentDialog || {}),
                     ...incomingDialog,
+                    ...(normalizedIncomingStatus != null ? { status: normalizedIncomingStatus } : {}),
                     ...(currentLo != null && incomingLo == null ? { lastOperator: currentLo } : {}),
+                    ...((incomingLo ?? currentLo) != null
+                      ? { lastOperator: incomingLo ?? currentLo }
+                      : {}),
                   };
 
-            updateSession(sessionId, { selectedDialog: selectedDialogForStore });
+            updateSession(sessionId, {
+              selectedDialog: selectedDialogForStore,
+              ...(normalizedIncomingDialogId && normalizedIncomingDialogId !== '0'
+                ? { assignedDialogId: normalizedIncomingDialogId }
+                : {}),
+            });
             await loadDialogHistory(sessionId, firstMessage.dialog.id);
           } else {
             const limitedResponse = await api.getUserMessages(userId, 0, 50);

@@ -470,6 +470,34 @@ function ChatPanel({
       const existingSession = findSessionByUserId(userId);
 
       if (existingSession && existingSession.id !== sessionId) {
+        const existingDialogId =
+          existingSession.selectedDialog?.id &&
+          String(existingSession.selectedDialog.id) !== '0' &&
+          String(existingSession.selectedDialog.id) !== 'assigned'
+            ? String(existingSession.selectedDialog.id)
+            : existingSession.assignedDialogId &&
+                String(existingSession.assignedDialogId) !== '0' &&
+                String(existingSession.assignedDialogId) !== 'assigned'
+              ? String(existingSession.assignedDialogId)
+              : '';
+        const hasClosedHint =
+          String(existingSession.selectedDialog?.status || '').toUpperCase() === 'CLOSED' ||
+          !!existingSession.unreadDialogs?.some(
+            (d: any) =>
+              String(d?.id) === String(existingDialogId) &&
+              String(d?.status || '').toUpperCase() === 'CLOSED',
+          );
+
+        if (existingDialogId && hasClosedHint) {
+          updateSession(existingSession.id, {
+            selectedDialog: {
+              ...(existingSession.selectedDialog || {}),
+              id: existingDialogId,
+              status: 'CLOSED',
+            },
+            assignedDialogId: existingDialogId,
+          });
+        }
         setActiveSessionId(existingSession.id);
         isSessionSwitchingRef.current = true;
 
@@ -483,6 +511,26 @@ function ChatPanel({
         setTimeout(() => {
           isSessionSwitchingRef.current = false;
         }, 100);
+
+        // При раскрытии через выпадающий список иногда остаётся устаревший статус в сессии.
+        // Точечно синхронизируем метаданные диалога, чтобы UI не рендерил неверную кнопку.
+        if (existingDialogId) {
+          void api
+            .getDialogById(existingDialogId)
+            .then((freshDialog: any) => {
+              if (!freshDialog || typeof freshDialog !== 'object') return;
+              const incomingLo = freshDialog.lastOperator ?? freshDialog.last_operator;
+              updateSession(existingSession.id, {
+                selectedDialog: {
+                  ...(existingSession.selectedDialog || {}),
+                  ...freshDialog,
+                  ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
+                },
+                assignedDialogId: existingDialogId,
+              });
+            })
+            .catch((_error: unknown): void => {});
+        }
 
         return true;
       }
@@ -683,8 +731,30 @@ function ChatPanel({
       const effectiveStatus = String(sel?.status || dialogStatus || '').trim();
       if (effectiveStatus !== 'CLOSED') return;
 
-      const lastOpId = getLastOperatorIdFromDialog(sel);
-      if (!(lastOpId == null && isCompleteButtonActive) && Number(lastOpId) !== uid) return;
+      let lastOpId = getLastOperatorIdFromDialog(sel);
+      if (lastOpId == null) {
+        try {
+          const freshDialog = await api.getDialogById(effectiveDialogId);
+          const freshLastOpId = getLastOperatorIdFromDialog(freshDialog);
+          if (freshDialog && typeof freshDialog === 'object') {
+            const incomingLo = (freshDialog as any).lastOperator ?? (freshDialog as any).last_operator;
+            updateSession(sessionId, {
+              selectedDialog: {
+                ...(live.selectedDialog || {}),
+                ...(freshDialog as any),
+                ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
+              },
+              assignedDialogId: effectiveDialogId,
+            });
+          }
+          if (freshLastOpId != null) {
+            lastOpId = freshLastOpId;
+          }
+        } catch {
+          // no-op: при первом клике допускаем fallback по isCompleteButtonActive.
+        }
+      }
+      if (lastOpId != null && Number(lastOpId) !== uid && !isCompleteButtonActive) return;
 
       setIsTransferLoading(true);
       try {
@@ -937,6 +1007,11 @@ function ChatPanel({
   const dialogStatusEffective = String(selectedDialog?.status || dialogStatus || '');
   const lastOpIdForTransfer = getLastOperatorIdFromDialog(selectedDialog);
   const uidNum = authId != null ? Number(authId) : NaN;
+  const hasForeignOwnerInClosedState =
+    dialogStatusEffective === 'CLOSED' &&
+    lastOpIdForTransfer != null &&
+    Number.isFinite(uidNum) &&
+    Number(lastOpIdForTransfer) !== uidNum;
   const canTransferDialog =
     isCompleteButtonActive ||
     (selectedUsers.length > 0 &&
@@ -954,9 +1029,15 @@ function ChatPanel({
 
   const showTransferSection =
     selectedUsers.length > 0 &&
-    resolvedDialogIdForActions !== '0' &&
-    (dialogStatusEffective === 'CLOSED' || isCompleteButtonActive);
-  const effectiveBlockedByOtherOperator = isDialogReallyBlocked && !canTransferDialog;
+    (isCompleteButtonActive ||
+      (resolvedDialogIdForActions !== '0' && dialogStatusEffective === 'CLOSED'));
+  const effectiveBlockedByOtherOperator =
+    (isDialogReallyBlocked || hasForeignOwnerInClosedState) && !canTransferDialog;
+  const shouldLockUsersSelect =
+    dialogStatusEffective === 'ACTIVE' ||
+    dialogStatusEffective === 'CLOSED' ||
+    effectiveBlockedByOtherOperator ||
+    (!!transferRecipientFullName && !canTransferDialog);
 
   const blockingOperatorLo =
     selectedDialog?.lastOperator ??
@@ -967,6 +1048,9 @@ function ChatPanel({
     (blockingOperatorLo.fullName ||
       [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
+  const transferRecipientDisplayName =
+    transferRecipientFullName ||
+    (effectiveBlockedByOtherOperator ? blockingOperatorDisplay || null : null);
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {
@@ -1000,7 +1084,7 @@ function ChatPanel({
           onUserSelect={handleUserSelect}
           isTouched={localIsUsersTouched}
           onBlur={handleUsersBlur}
-          disabled={dialogStatus === 'ACTIVE' || dialogStatus === 'CLOSED'}
+          disabled={shouldLockUsersSelect}
           usersCache={usersCache}
           onUpdateUsersCache={updateUsersCache}
           onCheckExistingSession={handleCheckExistingSession}
@@ -1008,7 +1092,7 @@ function ChatPanel({
         />
         {showTransferSection ? (
           <div className={styles.transferRow}>
-            {transferRecipientFullName && !canTransferDialog ? (
+            {transferRecipientDisplayName && !canTransferDialog ? (
               <Box
                 sx={{
                   mt: 1.5,
@@ -1034,7 +1118,7 @@ function ChatPanel({
                         : theme.palette.primary.dark,
                   }}>
                   {t('chat.dialogTransferredToOperator', {
-                    fullName: transferRecipientFullName,
+                    fullName: transferRecipientDisplayName,
                   })}
                 </Typography>
               </Box>
