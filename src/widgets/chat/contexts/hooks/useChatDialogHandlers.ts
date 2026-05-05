@@ -897,6 +897,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
               String(currentDialog.id) === String(incomingDialog.id);
             const currentLo = currentDialog?.lastOperator ?? currentDialog?.last_operator;
             const incomingLo = incomingDialog?.lastOperator ?? incomingDialog?.last_operator;
+            const hasTransferHint = !!liveSession?.transferRecipientFullName;
             const normalizedIncomingStatus = incomingDialog?.status ?? currentDialog?.status;
             const normalizedIncomingDialogId =
               incomingDialog?.id != null
@@ -911,14 +912,17 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
               isSameDialog &&
               String(currentDialog?.status ?? '').toUpperCase() === 'CLOSED' &&
               currentLo != null &&
-              incomingLo == null
+              incomingLo == null &&
+              !hasTransferHint
                 ? currentDialog
                 : {
                     ...(currentDialog || {}),
                     ...incomingDialog,
                     ...(normalizedIncomingStatus != null ? { status: normalizedIncomingStatus } : {}),
-                    ...(currentLo != null && incomingLo == null ? { lastOperator: currentLo } : {}),
-                    ...((incomingLo ?? currentLo) != null
+                    ...(currentLo != null && incomingLo == null && !hasTransferHint
+                      ? { lastOperator: currentLo }
+                      : {}),
+                    ...((incomingLo ?? (!hasTransferHint ? currentLo : undefined)) != null
                       ? { lastOperator: incomingLo ?? currentLo }
                       : {}),
                   };
@@ -959,6 +963,33 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
             }
             await loadDialogHistory(sessionId, firstMessage.dialog.id);
           } else {
+            // Редкий кейс: getUserMessages(owner.id) вернул сообщения без dialog.id на первом открытии.
+            // Тогда UI не получает статус/lastOperator до повторного открытия окна.
+            // Точечно добираем диалог пользователя и сразу синхронизируем selectedDialog.
+            try {
+              const dialogs = await api.getAllDialogs();
+              const userDialog = dialogs?.find(
+                (d: any) =>
+                  Number(d?.owner?.id) === Number(userId) || Number(d?.userId) === Number(userId),
+              );
+              if (userDialog?.id) {
+                const userDialogAny = userDialog as any;
+                const normalizedLo = userDialogAny.lastOperator ?? userDialogAny.last_operator;
+                updateSession(sessionId, {
+                  selectedDialog: {
+                    ...(getSession(sessionId)?.selectedDialog || {}),
+                    ...userDialogAny,
+                    ...(normalizedLo != null ? { lastOperator: normalizedLo } : {}),
+                  },
+                  assignedDialogId: String(userDialog.id),
+                });
+                await loadDialogHistory(sessionId, String(userDialog.id));
+                return;
+              }
+            } catch {
+              // no-op: fallback ниже оставляем как есть.
+            }
+
             const limitedResponse = await api.getUserMessages(userId, 0, 50);
             if (limitedResponse?.content) {
               const reversedContent = [...(limitedResponse.content || [])].reverse();

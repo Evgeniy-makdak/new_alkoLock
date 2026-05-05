@@ -391,6 +391,40 @@ function ChatPanel({
     return () => clearInterval(checkDialogStatusInterval);
   }, [sessionId, getSession, updateSession, dialogStatus, session?.selectedDialog?.id]);
 
+  useEffect(() => {
+    if (!session || session.isMinimized) return;
+
+    const selectedDialogId = session.selectedDialog?.id;
+    const assignedDialogId = session.assignedDialogId;
+    const dialogIdForRefresh =
+      selectedDialogId != null && String(selectedDialogId) !== '0'
+        ? String(selectedDialogId)
+        : assignedDialogId != null &&
+            String(assignedDialogId) !== '' &&
+            String(assignedDialogId) !== '0' &&
+            String(assignedDialogId) !== 'assigned'
+          ? String(assignedDialogId)
+          : '';
+    if (!dialogIdForRefresh) return;
+
+    const effectiveStatus = String(session.selectedDialog?.status || dialogStatus || '').toUpperCase();
+    if (effectiveStatus !== 'CLOSED') return;
+
+    const dialogLastOperatorId = getLastOperatorIdFromDialog(session.selectedDialog);
+    const currentOperatorId = authId != null ? Number(authId) : NaN;
+    const isObserverInClosedDialog =
+      dialogLastOperatorId != null &&
+      Number.isFinite(currentOperatorId) &&
+      Number(dialogLastOperatorId) !== currentOperatorId;
+    if (!isObserverInClosedDialog) return;
+
+    const refreshInterval = setInterval(() => {
+      loadDialogHistory(sessionId, dialogIdForRefresh).catch(console.error);
+    }, 10000);
+
+    return () => clearInterval(refreshInterval);
+  }, [session, sessionId, authId, dialogStatus, loadDialogHistory]);
+
   const handleUsersChange = useCallback(
     (users: number[]) => {
       const filteredUsers = users.filter((id) => id !== 0);
@@ -812,6 +846,29 @@ function ChatPanel({
   const handleMarkMessagesAsRead = useCallback(
     (messageIds: string[]) => {
       if (messageIds.length > 0) {
+        const liveSession = getSession(sessionId);
+        const liveDialog = liveSession?.selectedDialog;
+        const liveDialogStatus = String(liveDialog?.status || dialogStatus || '').toUpperCase();
+        const liveLastOperatorId = getLastOperatorIdFromDialog(liveDialog);
+        const currentOperatorId = authId != null ? Number(authId) : NaN;
+        const canSendReadByOwnerRule =
+          liveDialogStatus === 'CLOSED' &&
+          liveLastOperatorId != null &&
+          Number.isFinite(currentOperatorId) &&
+          Number(liveLastOperatorId) === currentOperatorId;
+
+        if (!canSendReadByOwnerRule) {
+          operatorUnreadDebug('READ skipped: current operator is not dialog owner', {
+            sessionId,
+            dialogId: liveDialog?.id ?? liveSession?.assignedDialogId ?? null,
+            dialogStatus: liveDialogStatus || null,
+            lastOperatorId: liveLastOperatorId ?? null,
+            currentOperatorId: Number.isFinite(currentOperatorId) ? currentOperatorId : null,
+            messageIds,
+          });
+          return;
+        }
+
         operatorUnreadDebug('READ на бэк + локальное обновление ленты', {
           sessionId,
           messageIds,
@@ -820,7 +877,6 @@ function ChatPanel({
           sendReadStatusForMessageId(sessionId, messageId);
         });
 
-        const liveSession = getSession(sessionId);
         const idSet = new Set(messageIds);
         const updatedMessages = (liveSession?.messages || []).map((msg: any) =>
           idSet.has(String(msg.id)) || idSet.has(String(msg.uuid))
@@ -859,6 +915,8 @@ function ChatPanel({
     },
     [
       sessionId,
+      authId,
+      dialogStatus,
       sendReadStatusForMessageId,
       getSession,
       updateSession,
@@ -901,6 +959,36 @@ function ChatPanel({
   const socketEntry = Number.isFinite(activeDialogNumericId)
     ? dialogsUnreadCounts.get(activeDialogNumericId)
     : undefined;
+
+  useEffect(() => {
+    if (!session) return;
+    if (!Number.isFinite(activeDialogNumericId)) return;
+
+    const effectiveStatus = String(session.selectedDialog?.status || dialogStatus || '').toUpperCase();
+    if (effectiveStatus !== 'CLOSED') return;
+
+    const lastOperatorId = getLastOperatorIdFromDialog(session.selectedDialog);
+    const currentOperatorId = authId != null ? Number(authId) : NaN;
+    const isClosedObserverMode =
+      lastOperatorId != null &&
+      Number.isFinite(currentOperatorId) &&
+      Number(lastOperatorId) !== currentOperatorId;
+    if (!isClosedObserverMode) return;
+
+    const nextUnreadFromFeed = feedUnreadFromMessages;
+    const currentUnreadInSocketMap = dialogsUnreadCounts.get(activeDialogNumericId);
+    if (currentUnreadInSocketMap === nextUnreadFromFeed) return;
+
+    updateDialogUnreadCount(activeDialogNumericId, nextUnreadFromFeed);
+  }, [
+    session,
+    authId,
+    dialogStatus,
+    activeDialogNumericId,
+    feedUnreadFromMessages,
+    dialogsUnreadCounts,
+    updateDialogUnreadCount,
+  ]);
 
   const displayUnreadCount = session
     ? Math.max(unreadCount, session.unreadCount ?? 0, socketEntry ?? 0, feedUnreadFromMessages)
@@ -1172,6 +1260,7 @@ function ChatPanel({
           onScrollToBottomDone={onScrollToBottomDone}
           dialogStatus={dialogStatus}
           isDialogBlockedByOtherOperator={effectiveBlockedByOtherOperator}
+          isClosedObserverMode={hasForeignOwnerInClosedState}
           isDialogEnded={isDialogEnded}
         />
       </div>

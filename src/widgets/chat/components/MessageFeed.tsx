@@ -34,6 +34,7 @@ interface MessageFeedProps {
   onScrollToBottomDone?: () => void;
   dialogStatus?: string;
   isDialogBlockedByOtherOperator?: boolean;
+  isClosedObserverMode?: boolean;
   isDialogEnded?: boolean;
 }
 
@@ -152,6 +153,7 @@ function MessageFeed({
   onScrollToBottomDone,
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
+  isClosedObserverMode = false,
   isDialogEnded = false,
 }: MessageFeedProps) {
   const { t } = useTranslation();
@@ -1270,16 +1272,59 @@ function MessageFeed({
   };
 
   const lastMessagesRef = useRef<any[]>([]);
+  const lastBottomMessageKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!session || !pagination) return;
     const currentPage = pagination.currentPage || 0;
     const prevMessages = lastMessagesRef.current;
     const currentMessages = messagesInActiveDialog;
+    const currentLastMessage = currentMessages.length > 0 ? currentMessages[currentMessages.length - 1] : null;
+    const currentLastMessageKey = currentLastMessage
+      ? String(currentLastMessage.id ?? currentLastMessage.uuid ?? '')
+      : '';
+    const hadLastMessageBefore = !!lastBottomMessageKeyRef.current;
+    const hasNewTailMessageForObserver =
+      isClosedObserverMode &&
+      currentPage === 0 &&
+      !!currentLastMessageKey &&
+      (!hadLastMessageBefore || currentLastMessageKey !== lastBottomMessageKeyRef.current);
+
+    if (hasNewTailMessageForObserver && currentMessages.length > 0) {
+      setTimeout(() => {
+        if (!scrollRef.current) return;
+        const container = scrollRef.current;
+        container.scrollTop = container.scrollHeight;
+        const lastMessage = currentMessages[currentMessages.length - 1];
+        setLastSeenMessageId(lastMessage.id);
+        setInternalUnreadCount(0);
+        setIsAtBottom(true);
+      }, 50);
+    }
+
     if (currentMessages.length > prevMessages.length) {
       const newMessages = currentMessages.slice(prevMessages.length);
       const hasNewInboundUnread = newMessages.some((msg) => isInboundUnread(msg));
       if (hasNewInboundUnread && !isAtBottom) {
+        if (isClosedObserverMode) {
+          if (currentPage > 0) {
+            handleLoadFirstPage();
+          } else {
+            setTimeout(() => {
+              if (!scrollRef.current) return;
+              const container = scrollRef.current;
+              container.scrollTop = container.scrollHeight;
+              if (currentMessages.length > 0) {
+                const lastMessage = currentMessages[currentMessages.length - 1];
+                setLastSeenMessageId(lastMessage.id);
+                setInternalUnreadCount(0);
+              }
+              setIsAtBottom(true);
+            }, 50);
+          }
+          lastMessagesRef.current = [...currentMessages];
+          return;
+        }
         // Оператор просматривает историю: не автоскроллим вниз при новых входящих.
         // Непрочитанное показывается бейджом на кнопке "вниз", переход — только по клику.
         setShowScrollButton(true);
@@ -1312,8 +1357,9 @@ function MessageFeed({
         }
       }
     }
+    lastBottomMessageKeyRef.current = currentLastMessageKey || null;
     lastMessagesRef.current = [...currentMessages];
-  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage, isAtBottom]);
+  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage, isAtBottom, isClosedObserverMode]);
 
   useEffect(() => {
     messages.forEach((msg) => {

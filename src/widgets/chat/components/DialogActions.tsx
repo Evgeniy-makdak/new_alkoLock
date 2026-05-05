@@ -364,11 +364,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     dialogDataLoId != null &&
     Number(dialogDataLoId) === Number(currentUserIdEffective);
   const effectiveIsDialogOwner = isDialogOwner || isOwnerByDialogData;
-  const showManagementButtons =
-    showClosedDialogButtons &&
-    !!resolvedCompleteDialogId &&
-    (effectiveIsDialogOwner || forceShowCompleteButton);
-  const showBlockedButton = showClosedDialogButtons;
   const immediateLastOperatorId =
     dialogData?.lastOperator?.id ??
     dialogData?.last_operator?.id ??
@@ -379,6 +374,11 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     currentUserIdEffective != null &&
     effectiveLastOperatorId != null &&
     Number(effectiveLastOperatorId) !== Number(currentUserIdEffective);
+  const showManagementButtons =
+    showClosedDialogButtons &&
+    !!resolvedCompleteDialogId &&
+    (effectiveIsDialogOwner || (forceShowCompleteButton && !hasForeignOwner));
+  const showBlockedButton = showClosedDialogButtons;
   const hasKnownOwner = effectiveLastOperatorId != null;
 
   const shouldShowBlockedByOther =
@@ -410,6 +410,12 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   useEffect(() => {
     onCompleteButtonActiveChange?.(showManagementButtons && !isLoading);
   }, [onCompleteButtonActiveChange, showManagementButtons, isLoading]);
+
+  useEffect(() => {
+    if (hasForeignOwner && forceShowCompleteButton) {
+      setForceShowCompleteButton(false);
+    }
+  }, [hasForeignOwner, forceShowCompleteButton]);
 
   const showUnlockedMessage =
     hasExistingDialog &&
