@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ArrowDropDown, Search } from '@mui/icons-material';
+import { ArrowDropDown, Close, Search } from '@mui/icons-material';
 import {
   Box,
   CircularProgress,
   FormControl,
+  IconButton,
   InputAdornment,
   MenuItem,
   Popover,
@@ -30,12 +31,14 @@ interface TransferOperatorSelectProps {
   /** Смена диалога / пользователя — сбрасывает отображаемое имя в поле. */
   selectionResetKey?: string;
   onOperatorSelected: (operatorId: number, operatorLabel: string) => void;
+  onSelectionCleared?: () => void;
 }
 
 export function TransferOperatorSelect({
   disabled = false,
   selectionResetKey = '',
   onOperatorSelected,
+  onSelectionCleared,
 }: TransferOperatorSelectProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -163,6 +166,13 @@ export function TransferOperatorSelect({
     void fetchOperators(searchQuery);
   };
 
+  const handleClearSelection = (event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setPickedDisplay(null);
+    onSelectionCleared?.();
+    handleClose();
+  };
+
   const mainLine = pickedDisplay?.label ?? t('chat.transferDialogHint');
   const isPlaceholder = !pickedDisplay?.label;
 
@@ -220,7 +230,15 @@ export function TransferOperatorSelect({
           }}>
           {mainLine}
         </Typography>
-        {!disabled && branchId ? (
+        {!disabled && branchId && pickedDisplay?.label ? (
+          <IconButton
+            size="small"
+            onClick={handleClearSelection}
+            title={t('common.cancel')}
+            sx={{ p: 0.25, flexShrink: 0 }}>
+            <Close fontSize="small" />
+          </IconButton>
+        ) : !disabled && branchId ? (
           <ArrowDropDown sx={{ color: 'action.active', flexShrink: 0 }} />
         ) : null}
       </Box>

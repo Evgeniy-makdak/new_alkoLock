@@ -97,6 +97,8 @@ function ChatPanel({
     id: number;
     label: string;
   } | null>(null);
+  const [transferSelectionResetTick, setTransferSelectionResetTick] = useState(0);
+  const [localTransferBannerName, setLocalTransferBannerName] = useState<string | null>(null);
 
   const authId = appStore((state) => state.authId);
 
@@ -419,7 +421,19 @@ function ChatPanel({
     if (!isObserverInClosedDialog) return;
 
     const refreshInterval = setInterval(() => {
-      loadDialogHistory(sessionId, dialogIdForRefresh).catch(console.error);
+      const live = getSession(sessionId);
+      if (!live) return;
+      const currentTotal = Number(live.pagination?.totalElements ?? 0);
+      api
+        .getDialogInfo(dialogIdForRefresh)
+        .then((info: { totalElements?: number } | null | undefined) => {
+          const nextTotal = Number(info?.totalElements ?? 0);
+          if (nextTotal === currentTotal) {
+            return;
+          }
+          loadDialogHistory(sessionId, dialogIdForRefresh).catch(console.error);
+        })
+        .catch(console.error);
     }, 10000);
 
     return () => clearInterval(refreshInterval);
@@ -791,6 +805,9 @@ function ChatPanel({
       if (lastOpId != null && Number(lastOpId) !== uid && !isCompleteButtonActive) return;
 
       setIsTransferLoading(true);
+      // Показываем баннер сразу по клику "Передать диалог",
+      // чтобы не зависеть от задержек/рассинхрона внешних обновлений сессии.
+      setLocalTransferBannerName(pickedLabel || null);
       try {
         const statusForTransfer = effectiveStatus || 'ACTIVE';
         const updated = await api.transferDialog(
@@ -830,11 +847,14 @@ function ChatPanel({
           lastSendError: null,
           transferRecipientFullName: recipientName || null,
         });
+        setLocalTransferBannerName(recipientName || null);
         // Сразу фиксируем локальный статус, чтобы UI не "откатывался" в режим "Забрать".
         setDialogStatus('CLOSED');
         setIsDialogReallyBlocked(true);
         setPendingTransferOperator(null);
+        setTransferSelectionResetTick((tick) => tick + 1);
       } catch (error) {
+        setLocalTransferBannerName(null);
         console.error('Ошибка передачи диалога:', error);
       } finally {
         setIsTransferLoading(false);
@@ -1111,7 +1131,12 @@ function ChatPanel({
 
   useEffect(() => {
     if (!canTransferDialog) {
-      setPendingTransferOperator(null);
+      setPendingTransferOperator((prev) => {
+        if (prev) {
+          setTransferSelectionResetTick((tick) => tick + 1);
+        }
+        return null;
+      });
     }
   }, [canTransferDialog, resolvedDialogIdForActions, selectedUsers]);
 
@@ -1137,13 +1162,19 @@ function ChatPanel({
       [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
   const transferRecipientDisplayName =
-    transferRecipientFullName || null;
+    transferRecipientFullName || localTransferBannerName || null;
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {
       setIsDialogReallyBlocked(false);
     }
   }, [dialogStatusEffective]);
+
+  useEffect(() => {
+    // Сбрасываем локальный баннер только при реальной смене контекста окна
+    // (другой пользователь/диалог), а не при промежуточных статусных гонках.
+    setLocalTransferBannerName(null);
+  }, [sessionId, resolvedDialogIdForActions, selectedUsers[0]]);
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
@@ -1177,45 +1208,49 @@ function ChatPanel({
           onCheckExistingSession={handleCheckExistingSession}
           displayUserName={getDisplayUserName()}
         />
-        {showTransferSection ? (
+        {transferRecipientDisplayName ? (
           <div className={styles.transferRow}>
-            {transferRecipientDisplayName && !canTransferDialog ? (
-              <Box
+            <Box
+              sx={{
+                mt: 1.5,
+                p: 1.25,
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor:
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(144, 202, 249, 0.45)'
+                    : theme.palette.primary.light,
+                bgcolor:
+                  theme.palette.mode === 'dark'
+                    ? 'rgba(144, 202, 249, 0.1)'
+                    : 'rgba(25, 118, 210, 0.08)',
+              }}>
+              <Typography
+                variant="body2"
                 sx={{
-                  mt: 1.5,
-                  p: 1.25,
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor:
+                  lineHeight: 1.4,
+                  color:
                     theme.palette.mode === 'dark'
-                      ? 'rgba(144, 202, 249, 0.45)'
-                      : theme.palette.primary.light,
-                  bgcolor:
-                    theme.palette.mode === 'dark'
-                      ? 'rgba(144, 202, 249, 0.1)'
-                      : 'rgba(25, 118, 210, 0.08)',
+                      ? theme.palette.primary.light
+                      : theme.palette.primary.dark,
                 }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    lineHeight: 1.4,
-                    color:
-                      theme.palette.mode === 'dark'
-                        ? theme.palette.primary.light
-                        : theme.palette.primary.dark,
-                  }}>
-                  {t('chat.dialogTransferredToOperator', {
-                    fullName: transferRecipientDisplayName,
-                  })}
-                </Typography>
-              </Box>
-            ) : (
-              <TransferOperatorSelect
-                disabled={isTransferLoading || !canTransferDialog}
-                selectionResetKey={`${resolvedDialogIdForActions}-${selectedUsers[0] ?? ''}`}
-                onOperatorSelected={(id, label) => setPendingTransferOperator({ id, label })}
-              />
-            )}
+                {t('chat.dialogTransferredToOperator', {
+                  fullName: transferRecipientDisplayName,
+                })}
+              </Typography>
+            </Box>
+          </div>
+        ) : showTransferSection ? (
+          <div className={styles.transferRow}>
+            <TransferOperatorSelect
+              disabled={isTransferLoading || !canTransferDialog}
+              selectionResetKey={`${resolvedDialogIdForActions}-${selectedUsers[0] ?? ''}-${transferSelectionResetTick}`}
+              onOperatorSelected={(id, label) => setPendingTransferOperator({ id, label })}
+              onSelectionCleared={() => {
+                setPendingTransferOperator(null);
+                setTransferSelectionResetTick((tick) => tick + 1);
+              }}
+            />
           </div>
         ) : null}
       </div>
@@ -1288,6 +1323,7 @@ function ChatPanel({
           blockingOperatorLabel={
             effectiveBlockedByOtherOperator ? blockingOperatorDisplay || undefined : undefined
           }
+          suppressBlockedWarning={!!transferRecipientDisplayName}
         />
       </div>
     </div>

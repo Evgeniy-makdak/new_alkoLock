@@ -38,6 +38,8 @@ interface MessageInputProps {
   isDialogBlockedByOtherOperator?: boolean;
   /** ФИО оператора, заблокировавшего диалог (для предупреждения и подсказок). */
   blockingOperatorLabel?: string;
+  /** При true скрываем нижнее красное предупреждение, не меняя логику блокировки ввода. */
+  suppressBlockedWarning?: boolean;
 }
 
 const MAX_ATTACHMENTS = 5;
@@ -61,6 +63,7 @@ function MessageInput({
   dialogStatus = '',
   isDialogBlockedByOtherOperator = false,
   blockingOperatorLabel,
+  suppressBlockedWarning = false,
 }: MessageInputProps) {
   const { t } = useTranslation();
   const { sendMessage } = useChat();
@@ -84,7 +87,8 @@ function MessageInput({
     }
   }, [clearInput, onClearComplete]);
 
-  const showBlockedWarning = isDialogBlockedByOtherOperator && dialogStatus === 'CLOSED';
+  const showBlockedWarning =
+    isDialogBlockedByOtherOperator && dialogStatus === 'CLOSED' && !suppressBlockedWarning;
 
   useEffect(() => {
     if (!showBlockedWarning) {
