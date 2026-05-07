@@ -1161,8 +1161,9 @@ function ChatPanel({
     (blockingOperatorLo.fullName ||
       [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
-  const transferRecipientDisplayName =
-    transferRecipientFullName || localTransferBannerName || null;
+  const transferRecipientDisplayName = transferRecipientFullName || localTransferBannerName || null;
+  const shouldShowTransferBanner =
+    !!transferRecipientDisplayName && dialogStatusEffective === 'CLOSED' && !canTransferDialog;
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {
@@ -1175,6 +1176,14 @@ function ChatPanel({
     // (другой пользователь/диалог), а не при промежуточных статусных гонках.
     setLocalTransferBannerName(null);
   }, [sessionId, resolvedDialogIdForActions, selectedUsers[0]]);
+
+  useEffect(() => {
+    // Как только диалог снова доступен текущему оператору (OPEN/ACTIVE или owner),
+    // баннер передачи должен исчезать и не перекрывать рабочие контролы.
+    if (dialogStatusEffective !== 'CLOSED' || canTransferDialog) {
+      setLocalTransferBannerName(null);
+    }
+  }, [dialogStatusEffective, canTransferDialog]);
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
@@ -1208,7 +1217,7 @@ function ChatPanel({
           onCheckExistingSession={handleCheckExistingSession}
           displayUserName={getDisplayUserName()}
         />
-        {transferRecipientDisplayName ? (
+        {shouldShowTransferBanner ? (
           <div className={styles.transferRow}>
             <Box
               sx={{
@@ -1323,7 +1332,7 @@ function ChatPanel({
           blockingOperatorLabel={
             effectiveBlockedByOtherOperator ? blockingOperatorDisplay || undefined : undefined
           }
-          suppressBlockedWarning={!!transferRecipientDisplayName}
+          suppressBlockedWarning={shouldShowTransferBanner}
         />
       </div>
     </div>
