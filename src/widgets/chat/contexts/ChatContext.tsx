@@ -472,10 +472,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const sessionDialogId = liveSession.selectedDialog?.id || liveSession.assignedDialogId;
 
         if (sessionDialogId && sessionDialogId.toString() === dialogId.toString()) {
+          const incomingLastOperator =
+            dialogStatusData?.lastOperator ??
+            dialogStatusData?.last_operator ??
+            dialogStatusData?.dialog?.lastOperator ??
+            dialogStatusData?.dialog?.last_operator;
+
           updateSession(session.id, {
             selectedDialog: {
               ...liveSession.selectedDialog,
               status: dialogStatus,
+              ...(dialogStatus === 'CLOSED' && incomingLastOperator != null
+                ? { lastOperator: incomingLastOperator }
+                : {}),
+              ...(dialogStatus !== 'CLOSED' ? { lastOperator: null } : {}),
             },
             ...(dialogStatus !== 'CLOSED' && { assignedDialogId: null }),
           });
@@ -483,12 +493,39 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           if (dialogStatus !== 'CLOSED') {
             updateSession(session.id, {
               lastSendError: null,
+              transferRecipientFullName: null,
             });
+          }
+
+          const parsedDialogId = Number(dialogId);
+          if (Number.isFinite(parsedDialogId)) {
+            loadDialogDetails(parsedDialogId)
+              .then((freshDialog: any) => {
+                if (!freshDialog || typeof freshDialog !== 'object') return;
+                const live = getSession(session.id);
+                if (!live) return;
+                const freshStatus = freshDialog.status;
+                const freshLo = freshDialog.lastOperator ?? freshDialog.last_operator;
+                updateSession(session.id, {
+                  selectedDialog: {
+                    ...(live.selectedDialog || {}),
+                    ...freshDialog,
+                    ...(freshStatus != null ? { status: freshStatus } : {}),
+                    ...(freshLo != null ? { lastOperator: freshLo } : {}),
+                    ...(freshStatus !== 'CLOSED' ? { lastOperator: null } : {}),
+                  },
+                  ...(freshStatus !== 'CLOSED' ? { assignedDialogId: null } : {}),
+                  ...(freshStatus !== 'CLOSED'
+                    ? { transferRecipientFullName: null, lastSendError: null }
+                    : {}),
+                });
+              })
+              .catch((_error: unknown): void => {});
           }
         }
       });
     },
-    [sessions, updateSession],
+    [sessions, getSession, updateSession, loadDialogDetails],
   );
 
   const handleStatusUpdate = useCallback(
@@ -1102,13 +1139,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         lastMessage.type === 'DIALOG_STATUS_UPDATE' ||
         lastMessage.type?.includes('/topic/dialog/status/')
       ) {
+        const statusEventKey = `evt:${String(lastMessage.destination || '')}:${String(
+          lastMessage.rawBody || JSON.stringify(lastMessage.data || {}),
+        )}`;
+        if (refs.processedDialogStatusesRef.current.has(statusEventKey)) return;
+        refs.processedDialogStatusesRef.current.add(statusEventKey);
+        setTimeout(() => {
+          refs.processedDialogStatusesRef.current.delete(statusEventKey);
+        }, 500);
+
         const dialogStatusData = lastMessage.data;
-        const statusKey = `${dialogStatusData.dialogId}_${dialogStatusData.dialogStatus}`;
-        if (refs.processedDialogStatusesRef.current.has(statusKey)) return;
-
-        refs.processedDialogStatusesRef.current.add(statusKey);
-        setTimeout(() => refs.processedDialogStatusesRef.current.delete(statusKey), 10000);
-
         handleDialogStatusUpdate(dialogStatusData);
         return;
       }

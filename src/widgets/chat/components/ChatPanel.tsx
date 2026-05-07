@@ -1137,8 +1137,7 @@ function ChatPanel({
       [blockingOperatorLo.firstName, blockingOperatorLo.surname].filter(Boolean).join(' ').trim() ||
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
   const transferRecipientDisplayName =
-    transferRecipientFullName ||
-    (effectiveBlockedByOtherOperator ? blockingOperatorDisplay || null : null);
+    transferRecipientFullName || null;
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {

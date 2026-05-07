@@ -234,6 +234,9 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
       const session = getSession(sessionId);
       if (session) {
+        const normalizedAssignedDialogId =
+          normalizedResponse?.id != null ? String(normalizedResponse.id) : String(dialogId);
+        assignedDialogIdRef.current = normalizedAssignedDialogId;
         updateSession(sessionId, {
           selectedDialog: normalizedResponse,
           assignedDialogId: normalizedResponse?.id || null,
@@ -241,10 +244,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
           lastSendError: null,
           transferRecipientFullName: null,
         });
-
-        if (onDialogStatusChange) {
-          onDialogStatusChange('CLOSED');
-        }
 
         lastValidDialogDataRef.current = normalizedResponse;
       }
@@ -282,10 +281,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               transferRecipientFullName: null,
             });
 
-            if (onDialogStatusChange) {
-              onDialogStatusChange('CLOSED');
-            }
-
             lastValidDialogDataRef.current = normalized409;
           } else {
             updateSession(sessionId, {
@@ -293,10 +288,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               lastSendError: null,
               transferRecipientFullName: null,
             });
-
-            if (onDialogStatusChange) {
-              onDialogStatusChange('CLOSED');
-            }
           }
         } catch (dialogError) {
           updateSession(sessionId, {
@@ -304,10 +295,6 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
             lastSendError: null,
             transferRecipientFullName: null,
           });
-
-          if (onDialogStatusChange) {
-            onDialogStatusChange('CLOSED');
-          }
         }
       }
     } finally {
@@ -377,7 +364,8 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const showManagementButtons =
     showClosedDialogButtons &&
     !!resolvedCompleteDialogId &&
-    (effectiveIsDialogOwner || (forceShowCompleteButton && !hasForeignOwner));
+    (effectiveIsDialogOwner ||
+      (forceShowCompleteButton && (justAssignedRef.current || !hasForeignOwner)));
   const showBlockedButton = showClosedDialogButtons;
   const hasKnownOwner = effectiveLastOperatorId != null;
 
@@ -412,7 +400,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   }, [onCompleteButtonActiveChange, showManagementButtons, isLoading]);
 
   useEffect(() => {
-    if (hasForeignOwner && forceShowCompleteButton) {
+    if (hasForeignOwner && forceShowCompleteButton && !justAssignedRef.current) {
       setForceShowCompleteButton(false);
     }
   }, [hasForeignOwner, forceShowCompleteButton]);

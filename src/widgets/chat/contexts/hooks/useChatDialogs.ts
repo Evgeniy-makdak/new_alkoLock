@@ -133,7 +133,7 @@ export const useChatDialogs = (
 
   const loadDialogDetails = useCallback(async (dialogId: number): Promise<any> => {
     try {
-      return await api.getDialogDetails(dialogId.toString());
+      return await api.getDialogById(dialogId.toString());
     } catch (error) {
       console.error('Ошибка загрузки деталей диалога:', error);
       throw error;
