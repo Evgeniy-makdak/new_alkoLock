@@ -270,8 +270,18 @@ const useOperatorPermissions = () => {
 const ChatToggleButton = () => {
   const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession } = useChat();
-  const { calculateTotalUnread } = useSocket();
-  const iconUnreadTotal = calculateTotalUnread();
+  const { calculateTotalUnread, dialogsUnreadCounts, unreadCount: socketUnreadTotal } = useSocket();
+  const iconUnreadTotalBase = calculateTotalUnread();
+  // Редкий кейс сразу после жёсткой перезагрузки: общий бейдж может кратковременно быть 0,
+  // пока WS-карта/агрегат не синхронизировались, но в сессии уже есть непрочитанные по ленте.
+  // Не даём показывать 0, если хоть где-то в сессиях вычисляется unread>0.
+  const maxSessionUnreadFallback = sessions.reduce((acc: number, s: any) => {
+    return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
+  }, 0);
+  const iconUnreadTotal =
+    iconUnreadTotalBase > 0
+      ? iconUnreadTotalBase
+      : Math.max(socketUnreadTotal ?? 0, maxSessionUnreadFallback);
 
   const handleToggle = () => {
     if (isChatOpen) {

@@ -99,6 +99,7 @@ function ChatPanel({
   } | null>(null);
   const [transferSelectionResetTick, setTransferSelectionResetTick] = useState(0);
   const [localTransferBannerName, setLocalTransferBannerName] = useState<string | null>(null);
+  const [isTransferBannerPinned, setIsTransferBannerPinned] = useState(false);
 
   const authId = appStore((state) => state.authId);
 
@@ -112,6 +113,7 @@ function ChatPanel({
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
   const isSessionSwitchingRef = useRef(false);
+  const observerPollSignatureRef = useRef<string>('');
 
   const getDisplayUserName = useCallback(() => {
     if (session?.selectedUserName) return session.selectedUserName;
@@ -227,6 +229,7 @@ function ChatPanel({
       historyLoadAttemptedRef.current = false;
       isSessionSwitchingRef.current = false;
       prevIsMinimizedRef.current = false;
+      observerPollSignatureRef.current = '';
     }
   }, [sessionId]);
 
@@ -421,16 +424,41 @@ function ChatPanel({
     if (!isObserverInClosedDialog) return;
 
     const refreshInterval = setInterval(() => {
-      const live = getSession(sessionId);
-      if (!live) return;
-      const currentTotal = Number(live.pagination?.totalElements ?? 0);
       api
-        .getDialogInfo(dialogIdForRefresh)
-        .then((info: { totalElements?: number } | null | undefined) => {
-          const nextTotal = Number(info?.totalElements ?? 0);
-          if (nextTotal === currentTotal) {
+        .getDialogMessagesWithPagination(dialogIdForRefresh, 0, 50, 'createdAt,desc')
+        .then((pollResponse: any) => {
+          const totalElements = Number(pollResponse?.totalElements ?? 0);
+          const content = Array.isArray(pollResponse?.content) ? pollResponse.content : [];
+          const firstDialog = content[0]?.dialog;
+          const pollStatus = String(
+            firstDialog?.status ?? session?.selectedDialog?.status ?? dialogStatus ?? '',
+          ).toUpperCase();
+          const unreadDelivered = content.reduce((acc: number, msg: any) => {
+            const isToOperator = String(msg?.messageStatus ?? '').toUpperCase() === 'TO_OPERATOR';
+            const notRead = String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
+            const delivered = String(msg?.confirmStatus ?? '').toUpperCase() === 'DELIVERED';
+            return isToOperator && notRead && delivered ? acc + 1 : acc;
+          }, 0);
+          const unreadSent = content.reduce((acc: number, msg: any) => {
+            const isToOperator = String(msg?.messageStatus ?? '').toUpperCase() === 'TO_OPERATOR';
+            const notRead = String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
+            const sent = String(msg?.confirmStatus ?? '').toUpperCase() === 'SENT';
+            return isToOperator && notRead && sent ? acc + 1 : acc;
+          }, 0);
+          const unreadTotal = unreadDelivered + unreadSent;
+          const nextSignature = [
+            dialogIdForRefresh,
+            totalElements,
+            pollStatus,
+            unreadTotal,
+            unreadDelivered,
+            unreadSent,
+          ].join('|');
+
+          if (observerPollSignatureRef.current === nextSignature) {
             return;
           }
+          observerPollSignatureRef.current = nextSignature;
           loadDialogHistory(sessionId, dialogIdForRefresh).catch(console.error);
         })
         .catch(console.error);
@@ -808,6 +836,7 @@ function ChatPanel({
       // Показываем баннер сразу по клику "Передать диалог",
       // чтобы не зависеть от задержек/рассинхрона внешних обновлений сессии.
       setLocalTransferBannerName(pickedLabel || null);
+      setIsTransferBannerPinned(true);
       try {
         const statusForTransfer = effectiveStatus || 'ACTIVE';
         const updated = await api.transferDialog(
@@ -855,6 +884,7 @@ function ChatPanel({
         setTransferSelectionResetTick((tick) => tick + 1);
       } catch (error) {
         setLocalTransferBannerName(null);
+        setIsTransferBannerPinned(false);
         console.error('Ошибка передачи диалога:', error);
       } finally {
         setIsTransferLoading(false);
@@ -1163,7 +1193,8 @@ function ChatPanel({
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
   const transferRecipientDisplayName = transferRecipientFullName || localTransferBannerName || null;
   const shouldShowTransferBanner =
-    !!transferRecipientDisplayName && dialogStatusEffective === 'CLOSED' && !canTransferDialog;
+    dialogStatusEffective === 'CLOSED' &&
+    !!transferRecipientDisplayName;
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {
@@ -1178,12 +1209,29 @@ function ChatPanel({
   }, [sessionId, resolvedDialogIdForActions, selectedUsers[0]]);
 
   useEffect(() => {
-    // Как только диалог снова доступен текущему оператору (OPEN/ACTIVE или owner),
-    // баннер передачи должен исчезать и не перекрывать рабочие контролы.
-    if (dialogStatusEffective !== 'CLOSED' || canTransferDialog) {
+    // После успешного transfer держим pin, пока не подтвердится "чужой" CLOSED
+    // (или не придёт transferRecipientFullName), чтобы не было мигания баннера.
+    if (
+      isTransferBannerPinned &&
+      dialogStatusEffective === 'CLOSED' &&
+      (hasForeignOwnerInClosedState || !!transferRecipientFullName)
+    ) {
+      setIsTransferBannerPinned(false);
+    }
+  }, [
+    isTransferBannerPinned,
+    dialogStatusEffective,
+    hasForeignOwnerInClosedState,
+    transferRecipientFullName,
+  ]);
+
+  useEffect(() => {
+    // Баннер живёт только в состоянии "передан другому оператору".
+    // Сбрасываем его только когда диалог выходит из CLOSED.
+    if (!isTransferBannerPinned && dialogStatusEffective !== 'CLOSED') {
       setLocalTransferBannerName(null);
     }
-  }, [dialogStatusEffective, canTransferDialog]);
+  }, [dialogStatusEffective, isTransferBannerPinned]);
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
