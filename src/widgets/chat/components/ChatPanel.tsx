@@ -362,36 +362,38 @@ function ChatPanel({
     if (!session?.selectedDialog?.id || session.selectedDialog.id === '0') return;
 
     const checkDialogStatusInterval = setInterval(() => {
-      const session = getSession(sessionId);
-      if (!session?.selectedDialog?.id || session.selectedDialog.id === '0') return;
+      const liveSession = getSession(sessionId);
+      if (!liveSession?.selectedDialog?.id || liveSession.selectedDialog.id === '0') return;
+      const dialogId = String(liveSession.selectedDialog.id);
 
       api
-        .getDialogDetails(session.selectedDialog.id)
-        .then((dialogDetails) => {
-          if (dialogDetails?.status && dialogDetails.status !== dialogStatus) {
-            setDialogStatus(dialogDetails.status);
+        .getDialogById(dialogId)
+        .then((dialogDetails: any) => {
+          if (!dialogDetails || typeof dialogDetails !== 'object') return;
+          const nextStatus = String(dialogDetails.status || '').toUpperCase();
+          if (!nextStatus) return;
+          const currentStatus = String(liveSession.selectedDialog?.status || dialogStatus || '').toUpperCase();
+          if (nextStatus === currentStatus) return;
 
-            if (dialogStatus === 'CLOSED' && dialogDetails.status !== 'CLOSED') {
-              updateSession(sessionId, {
-                assignedDialogId: null,
-                lastSendError: null,
-              });
-            }
-
-            const incomingLo = dialogDetails.lastOperator ?? dialogDetails.last_operator;
-            updateSession(sessionId, {
-              selectedDialog: {
-                ...session.selectedDialog,
-                status: dialogDetails.status,
-                ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
-              },
-            });
-          }
+          setDialogStatus(nextStatus);
+          const incomingLo = dialogDetails.lastOperator ?? dialogDetails.last_operator;
+          updateSession(sessionId, {
+            selectedDialog: {
+              ...liveSession.selectedDialog,
+              ...dialogDetails,
+              status: nextStatus,
+              ...(incomingLo != null ? { lastOperator: incomingLo } : {}),
+              ...(nextStatus !== 'CLOSED' ? { lastOperator: null } : {}),
+            },
+            ...(nextStatus !== 'CLOSED'
+              ? { assignedDialogId: null, lastSendError: null, transferRecipientFullName: null }
+              : {}),
+          });
         })
         .catch((error) => {
           console.error('Ошибка проверки статуса диалога:', error);
         });
-    }, 60000);
+    }, 10000);
 
     return () => clearInterval(checkDialogStatusInterval);
   }, [sessionId, getSession, updateSession, dialogStatus, session?.selectedDialog?.id]);
@@ -424,15 +426,40 @@ function ChatPanel({
     if (!isObserverInClosedDialog) return;
 
     const refreshInterval = setInterval(() => {
-      api
-        .getDialogMessagesWithPagination(dialogIdForRefresh, 0, 50, 'createdAt,desc')
-        .then((pollResponse: any) => {
+      Promise.all([
+        api.getDialogMessagesWithPagination(dialogIdForRefresh, 0, 50, 'createdAt,desc'),
+        api.getDialogById(dialogIdForRefresh),
+      ])
+        .then(([pollResponse, dialogMeta]: [any, any]) => {
+          const live = getSession(sessionId);
+          const currentStatus = String(
+            live?.selectedDialog?.status ?? session?.selectedDialog?.status ?? dialogStatus ?? '',
+          ).toUpperCase();
+          const nextStatus = String(
+            dialogMeta?.status ?? pollResponse?.content?.[0]?.dialog?.status ?? currentStatus,
+          ).toUpperCase();
+          const nextLastOperator = dialogMeta?.lastOperator ?? dialogMeta?.last_operator;
+
+          if (nextStatus !== '' && nextStatus !== currentStatus) {
+            setDialogStatus(nextStatus);
+            updateSession(sessionId, {
+              selectedDialog: {
+                ...(live?.selectedDialog || {}),
+                ...(dialogMeta && typeof dialogMeta === 'object' ? dialogMeta : {}),
+                status: nextStatus,
+                ...(nextStatus !== 'CLOSED' ? { lastOperator: null } : {}),
+                ...(nextStatus === 'CLOSED' && nextLastOperator != null
+                  ? { lastOperator: nextLastOperator }
+                  : {}),
+              },
+              ...(nextStatus !== 'CLOSED'
+                ? { assignedDialogId: null, transferRecipientFullName: null, lastSendError: null }
+                : {}),
+            });
+          }
+
           const totalElements = Number(pollResponse?.totalElements ?? 0);
           const content = Array.isArray(pollResponse?.content) ? pollResponse.content : [];
-          const firstDialog = content[0]?.dialog;
-          const pollStatus = String(
-            firstDialog?.status ?? session?.selectedDialog?.status ?? dialogStatus ?? '',
-          ).toUpperCase();
           const unreadDelivered = content.reduce((acc: number, msg: any) => {
             const isToOperator = String(msg?.messageStatus ?? '').toUpperCase() === 'TO_OPERATOR';
             const notRead = String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
@@ -449,10 +476,11 @@ function ChatPanel({
           const nextSignature = [
             dialogIdForRefresh,
             totalElements,
-            pollStatus,
+            nextStatus,
             unreadTotal,
             unreadDelivered,
             unreadSent,
+            nextLastOperator?.id ?? 'no-lo',
           ].join('|');
 
           if (observerPollSignatureRef.current === nextSignature) {
@@ -465,7 +493,7 @@ function ChatPanel({
     }, 10000);
 
     return () => clearInterval(refreshInterval);
-  }, [session, sessionId, authId, dialogStatus, loadDialogHistory]);
+  }, [session, sessionId, authId, dialogStatus, loadDialogHistory, getSession, updateSession]);
 
   const handleUsersChange = useCallback(
     (users: number[]) => {
