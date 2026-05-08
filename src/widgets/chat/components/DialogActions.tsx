@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Lock, LockOpen } from '@mui/icons-material';
 import { Box, Button, Tooltip } from '@mui/material';
 
+import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../api';
@@ -50,6 +51,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const [forceCheckOwner, setForceCheckOwner] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<number | null>(getInitialCurrentUserId);
   const [forceShowCompleteButton, setForceShowCompleteButton] = useState(false);
+  const [hasDispatcherRole, setHasDispatcherRole] = useState(false);
 
   const justAssignedRef = useRef(false);
   const assignedDialogIdRef = useRef<string | null>(null);
@@ -84,6 +86,29 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (currentUserId == null) {
+      setHasDispatcherRole(false);
+      return;
+    }
+    let cancelled = false;
+    UsersApi.getUser(currentUserId)
+      .then((response: any) => {
+        if (cancelled) return;
+        const groups = response?.data?.groupMembership ?? response?.groupMembership ?? [];
+        const isDispatcher = Array.isArray(groups)
+          ? groups.some((m: any) => Number(m?.group?.id) === 500)
+          : false;
+        setHasDispatcherRole(isDispatcher);
+      })
+      .catch(() => {
+        if (!cancelled) setHasDispatcherRole(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [currentUserId]);
 
   const checkDialogOwner = useCallback(() => {
     if (currentUserId == null) {
@@ -364,8 +389,12 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const showManagementButtons =
     showClosedDialogButtons &&
     !!resolvedCompleteDialogId &&
-    (effectiveIsDialogOwner ||
-      (forceShowCompleteButton && (justAssignedRef.current || !hasForeignOwner)));
+    (effectiveIsDialogOwner || (forceShowCompleteButton && (justAssignedRef.current || !hasForeignOwner)));
+  const showDispatcherCompleteButton =
+    showClosedDialogButtons &&
+    !!resolvedCompleteDialogId &&
+    hasDispatcherRole &&
+    !showManagementButtons;
   const showBlockedButton = showClosedDialogButtons;
   const hasKnownOwner = effectiveLastOperatorId != null;
 
@@ -533,6 +562,22 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
             </Tooltip>
           )}
         </>
+      )}
+
+      {showDispatcherCompleteButton && (
+        <Tooltip title={t('chat.unlockDialog')}>
+          <span>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<LockOpen />}
+              onClick={handleCompleteDialog}
+              disabled={isLoading}
+              sx={{ fontSize: '0.75rem' }}>
+              {t('chat.unlockDialog')}
+            </Button>
+          </span>
+        </Tooltip>
       )}
     </Box>
   );
