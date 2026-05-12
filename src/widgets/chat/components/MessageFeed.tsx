@@ -1029,7 +1029,6 @@ function MessageFeed({
     );
 
     const now = Date.now();
-    const readSendTtlMs = 3500;
     const idsToMark: string[] = [];
     const seenIds = new Set<string>();
 
@@ -1052,11 +1051,10 @@ function MessageFeed({
       if (!callbackId || seenIds.has(callbackId)) return;
 
       const trackKeys = readSentTrackingKeys(msg);
-      const alreadySent = trackKeys.some((k) => {
-        const ts = sentReadStatusesRef.current.get(k);
-        return ts != null && now - ts < readSendTtlMs;
-      });
-      if (alreadySent) return;
+      // Не опираемся на sentReadStatusesRef/alreadySent: пока диалог ACTIVE, READ по видимости
+      // только ставит ref и вызывает onMarkMessagesAsRead, а ChatPanel молча пропускает отправку;
+      // после «Забрать» (CLOSED) markAllUnreadAsReadByJumpToLast иначе навсегда пропускает верхнее
+      // сообщение в окне TTL — остаётся единственное «непрочитанное».
 
       seenIds.add(callbackId);
       idsToMark.push(callbackId);

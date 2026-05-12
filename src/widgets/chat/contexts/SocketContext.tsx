@@ -296,7 +296,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         const cap = unreadAggregateRef.current;
         const positiveIds: number[] = [];
         prev.forEach((c, id) => {
-          if (id > 0 && c > 0) positiveIds.push(id);
+          if (id > 0 && c > 0) positiveIds.push(id); 
         });
         const onlyThisDialog = positiveIds.length === 1 && positiveIds[0] === dialogId;
         const nextVal = onlyThisDialog ? Math.min(prevCount, cap) : prevCount;
