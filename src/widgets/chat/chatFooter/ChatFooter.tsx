@@ -278,10 +278,15 @@ const ChatToggleButton = () => {
   const maxSessionUnreadFallback = sessions.reduce((acc: number, s: any) => {
     return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
   }, 0);
+  // Если и карта/агрегат через calculateTotalUnread, и сессии дают 0, не поднимаем бейдж
+  // устаревшим socketUnreadTotal (/user/queue/unread): он нередко отстаёт после READ/STATUS_UPDATE
+  // при уже нулевой per-dialog карте (см. calculateTotalUnread в SocketContext).
   const iconUnreadTotal =
     iconUnreadTotalBase > 0
       ? iconUnreadTotalBase
-      : Math.max(socketUnreadTotal ?? 0, maxSessionUnreadFallback);
+      : maxSessionUnreadFallback > 0
+        ? Math.max(socketUnreadTotal ?? 0, maxSessionUnreadFallback)
+        : 0;
 
   const handleToggle = () => {
     if (isChatOpen) {
