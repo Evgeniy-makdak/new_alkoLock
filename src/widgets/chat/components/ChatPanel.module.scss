@@ -1,3 +1,7 @@
+@function chat-s($px) {
+  @return calc(#{$px} * var(--chat-ui-scale, 1));
+}
+
 .emptyPanel {
   padding: 20px;
   text-align: center;
@@ -24,11 +28,11 @@
 .divider {
   height: 1px;
   background-color: #e0e0e0;
-  margin: 8px 0;
+  margin: chat-s(8px) 0;
 }
 
 .chatHeader {
-  padding: 12px 16px;
+  padding: chat-s(12px) chat-s(16px);
   background-color: #f5f5f5;
   border-bottom: 1px solid #e0e0e0;
   display: flex;
@@ -37,7 +41,7 @@
   
   h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: chat-s(16px);
     font-weight: 500;
     color: #333;
     flex: 1;
@@ -50,12 +54,12 @@
 
 .headerActions {
   display: flex;
-  gap: 4px;
-  margin-left: 8px;
+  gap: chat-s(4px);
+  margin-left: chat-s(8px);
 }
 
 .headerButton {
-  padding: 4px;
+  padding: chat-s(4px);
   cursor: pointer;
   border: none;
   background: none;
@@ -63,7 +67,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: chat-s(4px);
   transition: all 0.2s ease;
   
   &:hover {
@@ -77,7 +81,7 @@
 }
 
 .usersSelectContainer {
-  padding: 8px 16px;
+  padding: chat-s(8px) chat-s(16px);
   border-bottom: 1px solid #e0e0e0;
   background-color: #fafafa;
 }
@@ -90,7 +94,7 @@
 }
 
 .messageInputContainer {
-  padding: 8px;
+  padding: chat-s(8px);
   border-top: 1px solid #e0e0e0;
   background-color: #fafafa;
 }
@@ -133,13 +137,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: chat-s(12px) chat-s(16px);
   border-bottom: 1px solid #e0e0e0;
   background-color: #f5f5f5;
   
   h3 {
     margin: 0;
-    font-size: 16px;
+    font-size: chat-s(16px);
     font-weight: 500;
   }
 }
@@ -147,12 +151,12 @@
 .unreadBadge {
   background: #d32f2f;
   color: white !important;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 12px;
+  padding: chat-s(2px) chat-s(8px);
+  border-radius: chat-s(12px);
+  font-size: chat-s(12px);
   font-weight: 500;
   flex-shrink: 0;
-  min-width: 22px;
+  min-width: chat-s(22px);
   text-align: center;
   line-height: 1.2;
 }
@@ -160,29 +164,29 @@
 .unreadBadgeMinimized {
   background: #d32f2f;
   color: white !important;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 11px;
+  padding: chat-s(2px) chat-s(6px);
+  border-radius: chat-s(10px);
+  font-size: chat-s(11px);
   font-weight: 500;
   flex-shrink: 0;
-  min-width: 20px;
+  min-width: chat-s(20px);
   text-align: center;
   line-height: 1.2;
 }
 
 .headerActions {
   display: flex;
-  gap: 4px;
+  gap: chat-s(4px);
 }
 
 .usersSelectContainer {
-  padding: 16px;
+  padding: chat-s(16px);
   border-bottom: 1px solid #e0e0e0;
 }
 
 .transferRow {
   width: 100%;
-  margin-top: 4px;
+  margin-top: chat-s(4px);
 }
 
 .messageFeedContainer {
@@ -191,12 +195,12 @@
 }
 
 .messageInputContainer {
-  padding: 16px;
+  padding: chat-s(16px);
   border-top: 1px solid #e0e0e0;
 }
 
 .dialogActionsContainer {
-  padding: 8px 16px;
+  padding: chat-s(8px) chat-s(16px);
   border-bottom: 1px solid #e0e0e0;
   background-color: #f8f9fa;
 }

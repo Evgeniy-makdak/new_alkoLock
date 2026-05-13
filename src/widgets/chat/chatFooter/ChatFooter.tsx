@@ -29,16 +29,48 @@ import { SocketProvider, useSocket } from '../contexts/SocketContext';
 import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDebugLog';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
+import { type ChatFooterPanelSize, ChatFooterResizableFrame } from './ChatFooterResizableFrame';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
 const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
 
-/** Геометрия `.chatFooter` (десктоп): отступ справа + ширина; превью ставим левее развёрнутого окна с зазором. */
+/** Геометрия `.chatFooter` / `ChatFooterResizableRoot`: превью левее развёрнутого окна с зазором. */
 const CHAT_FOOTER_RIGHT = 80;
-const CHAT_FOOTER_WIDTH = 520;
-const MINIMIZED_PREVIEW_RIGHT = CHAT_FOOTER_RIGHT + CHAT_FOOTER_WIDTH + 28;
-/** Когда все диалоги свёрнуты — превью у правого края (как панель чата), а не «в середине» экрана. */
-const MINIMIZED_PREVIEW_RIGHT_STACKED = CHAT_FOOTER_RIGHT;
+const CHAT_FOOTER_BOTTOM = 80;
+const MINIMIZED_PREVIEW_GAP_PX = 28;
+const DEFAULT_CHAT_PANEL: ChatFooterPanelSize = { w: 520, h: 660 };
+const MIN_CHAT_PANEL: ChatFooterPanelSize = { w: 360, h: 320 };
+const PANEL_VIEW_MARGIN_PX = 40;
+const CHAT_PANEL_W_STORAGE_KEY = 'alcolock_chat_panel_w_v1';
+const CHAT_PANEL_H_STORAGE_KEY = 'alcolock_chat_panel_h_v1';
+
+function readSavedPanelSize(): ChatFooterPanelSize | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const w = parseInt(localStorage.getItem(CHAT_PANEL_W_STORAGE_KEY) || '', 10);
+    const h = parseInt(localStorage.getItem(CHAT_PANEL_H_STORAGE_KEY) || '', 10);
+    if (!Number.isFinite(w) || !Number.isFinite(h)) return null;
+    return { w, h };
+  } catch {
+    return null;
+  }
+}
+
+function clampPanelSize(size: ChatFooterPanelSize): ChatFooterPanelSize {
+  if (typeof window === 'undefined') return size;
+  const maxW = Math.max(
+    MIN_CHAT_PANEL.w,
+    window.innerWidth - CHAT_FOOTER_RIGHT - PANEL_VIEW_MARGIN_PX,
+  );
+  const maxH = Math.max(
+    MIN_CHAT_PANEL.h,
+    window.innerHeight - CHAT_FOOTER_BOTTOM - PANEL_VIEW_MARGIN_PX,
+  );
+  return {
+    w: Math.min(maxW, Math.max(MIN_CHAT_PANEL.w, size.w)),
+    h: Math.min(maxH, Math.max(MIN_CHAT_PANEL.h, size.h)),
+  };
+}
 
 function normalizeSessionDialogId(raw: unknown): number | null {
   if (raw === undefined || raw === null || raw === 'assigned') return null;
@@ -463,6 +495,63 @@ const ChatContainer = () => {
   const isCompactMinimizedUi = useMediaQuery(CHAT_COMPACT_MINIMIZED_QUERY);
   const [minimizedListOpen, setMinimizedListOpen] = useState(false);
 
+  const expandedSessionCount = useMemo(
+    () => sessions.filter((s) => !s.isMinimized).length,
+    [sessions],
+  );
+  const allowDesktopPanelResize = !isCompactMinimizedUi && expandedSessionCount > 0;
+
+  const [panelSize, setPanelSize] = useState<ChatFooterPanelSize>(() => {
+    if (typeof window === 'undefined') {
+      return { ...DEFAULT_CHAT_PANEL };
+    }
+    const saved = readSavedPanelSize();
+    if (saved) {
+      return clampPanelSize(saved);
+    }
+    return { ...DEFAULT_CHAT_PANEL };
+  });
+
+  const getMaxPanelSize = useCallback((): ChatFooterPanelSize => {
+    const maxW = Math.max(
+      MIN_CHAT_PANEL.w,
+      window.innerWidth - CHAT_FOOTER_RIGHT - PANEL_VIEW_MARGIN_PX,
+    );
+    const maxH = Math.max(
+      MIN_CHAT_PANEL.h,
+      window.innerHeight - CHAT_FOOTER_BOTTOM - PANEL_VIEW_MARGIN_PX,
+    );
+    return { w: maxW, h: maxH };
+  }, []);
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    const onWinResize = () => {
+      setPanelSize((prev) => clampPanelSize(prev));
+    };
+    window.addEventListener('resize', onWinResize);
+    return () => window.removeEventListener('resize', onWinResize);
+  }, [allowDesktopPanelResize]);
+
+  const handlePanelSizeCommit = useCallback((next: ChatFooterPanelSize) => {
+    const clamped = clampPanelSize(next);
+    setPanelSize(clamped);
+    try {
+      localStorage.setItem(CHAT_PANEL_W_STORAGE_KEY, String(clamped.w));
+      localStorage.setItem(CHAT_PANEL_H_STORAGE_KEY, String(clamped.h));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const chatUiScale = useMemo(() => {
+    if (!allowDesktopPanelResize) return 1;
+    const sw = panelSize.w / DEFAULT_CHAT_PANEL.w;
+    const sh = panelSize.h / DEFAULT_CHAT_PANEL.h;
+    const raw = Math.min(sw, sh);
+    return Math.min(Math.max(raw, 0.78), 1.38);
+  }, [allowDesktopPanelResize, panelSize.h, panelSize.w]);
+
   type CompactMinimizedEntry =
     | {
         kind: 'session';
@@ -650,7 +739,11 @@ const ChatContainer = () => {
     (session) => session.isMinimized && hasRenderableMinimizedContent(session),
   );
   const minimizedPreviewRightPx =
-    expandedSessions.length > 0 ? MINIMIZED_PREVIEW_RIGHT : MINIMIZED_PREVIEW_RIGHT_STACKED;
+    expandedSessions.length > 0
+      ? CHAT_FOOTER_RIGHT +
+        (allowDesktopPanelResize ? panelSize.w : DEFAULT_CHAT_PANEL.w) +
+        MINIMIZED_PREVIEW_GAP_PX
+      : CHAT_FOOTER_RIGHT;
 
   const hasUnreadInCompactList = compactMinimizedEntries.some((e) => e.unread > 0);
   const compactListUnreadSum = compactMinimizedEntries.reduce((s, e) => s + e.unread, 0);
@@ -820,16 +913,44 @@ const ChatContainer = () => {
         })}
       </div>
 
-      {expandedSessions.map((session) => (
-        <Card key={`expanded-${session.id}`} className={`${styles.chatFooter} ${styles.expanded}`}>
-          <ChatPanel
-            sessionId={session.id}
-            onMinimize={() => handleToggleSessionMinimize(session.id)}
-            scrollToBottomOnExpand={justExpandedSessionId === session.id}
-            onScrollToBottomDone={handleScrollToBottomDone}
-          />
-        </Card>
-      ))}
+      {expandedSessions.map((session) =>
+        allowDesktopPanelResize ? (
+          <ChatFooterResizableFrame
+            key={`expanded-${session.id}`}
+            size={panelSize}
+            onSizeLiveChange={(s) => setPanelSize(clampPanelSize(s))}
+            onSizeCommit={handlePanelSizeCommit}
+            minSize={MIN_CHAT_PANEL}
+            getMaxSize={getMaxPanelSize}>
+            <Card
+              className={`${styles.chatFooter} ${styles.expanded} ${styles.chatFooterFluid}`}
+              sx={{
+                '--chat-ui-scale': chatUiScale,
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: 0,
+              }}>
+              <ChatPanel
+                sessionId={session.id}
+                onMinimize={() => handleToggleSessionMinimize(session.id)}
+                scrollToBottomOnExpand={justExpandedSessionId === session.id}
+                onScrollToBottomDone={handleScrollToBottomDone}
+              />
+            </Card>
+          </ChatFooterResizableFrame>
+        ) : (
+          <Card
+            key={`expanded-${session.id}`}
+            className={`${styles.chatFooter} ${styles.expanded}`}>
+            <ChatPanel
+              sessionId={session.id}
+              onMinimize={() => handleToggleSessionMinimize(session.id)}
+              scrollToBottomOnExpand={justExpandedSessionId === session.id}
+              onScrollToBottomDone={handleScrollToBottomDone}
+            />
+          </Card>
+        ),
+      )}
     </div>
   );
 };

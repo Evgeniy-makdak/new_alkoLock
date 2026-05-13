@@ -1,16 +1,20 @@
+@function chat-s($px) {
+  @return calc(#{$px} * var(--chat-ui-scale, 1));
+}
+
 .inputContainer {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: chat-s(8px);
 }
 
 .replyHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px;
+  padding: chat-s(8px);
   background-color: #f0f0f0;
-  border-radius: 4px;
+  border-radius: chat-s(4px);
   font-size: 0.9em;
   
   .replyInfo {
@@ -18,7 +22,7 @@
     
     .replyAuthor {
       font-weight: bold;
-      margin-bottom: 2px;
+      margin-bottom: chat-s(2px);
     }
     
     .replyText {
@@ -33,8 +37,8 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 2px;
+    padding: chat-s(4px);
+    border-radius: chat-s(2px);
     
     &:hover:not(:disabled) {
       background-color: #e0e0e0;
@@ -48,10 +52,10 @@
 }
 
 .errorMessage {
-  padding: 8px;
+  padding: chat-s(8px);
   background-color: #ffebee;
   color: #c62828;
-  border-radius: 4px;
+  border-radius: chat-s(4px);
   font-size: 0.9em;
   border: 1px solid #ffcdd2;
   
@@ -64,17 +68,19 @@
 .inputRow {
   display: flex;
   align-items: center;
-  padding: 8px;
-  gap: 8px;
+  padding: chat-s(8px);
+  gap: chat-s(8px);
 }
 
 .textarea {
   flex: 1;
   resize: none;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: chat-s(4px);
+  padding: chat-s(8px);
   font-family: inherit;
+  font-size: chat-s(14px);
+  line-height: 1.4;
   
   &:focus {
     outline: none;
@@ -96,14 +102,14 @@
 .fileOnlyHint {
   font-size: 0.8em;
   color: #777;
-  margin-top: 4px;
+  margin-top: chat-s(4px);
 }
 
 .fileButton {
-  padding: 8px;
+  padding: chat-s(8px);
   cursor: pointer;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: chat-s(4px);
   background-color: #f5f5f5;
   display: flex;
   align-items: center;
@@ -122,22 +128,22 @@
 
 .fileCounter {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: chat-s(-8px);
+  right: chat-s(-8px);
   background-color: #1976d2;
   color: white;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: chat-s(20px);
+  height: chat-s(20px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: chat-s(12px);
   font-weight: bold;
 }
 
 .submitBtn {
-  padding: 8px;
+  padding: chat-s(8px);
   min-width: auto;
   display: flex;
   align-items: center;

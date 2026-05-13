@@ -214,9 +214,7 @@
   position: fixed;
   bottom: 80px;
   right: 80px;
-  width: 520px;
-  height: 660px;
-  transition: all 0.3s ease;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
@@ -237,6 +235,78 @@
     transform: translateY(0) scale(1);
     display: flex;
   }
+}
+
+/* Десктоп: размер задаётся внешним ChatFooterResizableFrame; панель заполняет оболочку */
+.chatFooter.chatFooterFluid {
+  position: relative;
+  inset: auto;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 auto;
+  transition: none !important;
+}
+
+.chatFooterResizeRoot {
+  position: fixed;
+  bottom: 80px;
+  right: 80px;
+  z-index: 1000;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+.chatFooterResizeRootDragging {
+  transition: none !important;
+}
+
+.chatFooterResizeInner {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.resizeHandle {
+  position: absolute;
+  z-index: 20;
+  touch-action: none;
+  box-sizing: border-box;
+}
+
+.resizeN {
+  top: 0;
+  left: 14px;
+  right: 14px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resizeW {
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resizeNw {
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
 }
 
 // Общая геометрия кружков над стеком FAB чата (красный непрочитанные + синий список свёрнутых)

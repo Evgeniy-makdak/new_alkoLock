@@ -226,7 +226,7 @@ const completeDialog = async (dialogId: string) => {
   const response = await DialogsApi.completeDialog(dialogId);
   return response?.data;
 };
-
+// TODO: transferDialog не используется
 const transferDialog = async (
   dialogId: string | number,
   operatorId: number,

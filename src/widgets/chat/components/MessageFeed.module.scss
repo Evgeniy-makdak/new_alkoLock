@@ -1,24 +1,32 @@
+/// Scales with resizable chat panel (`--chat-ui-scale` on `.chatFooterFluid`; default 1)
+@function chat-s($px) {
+  @return calc(#{$px} * var(--chat-ui-scale, 1));
+}
+
 .feed {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  overflow-anchor: none;
+  padding: chat-s(8px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: chat-s(8px);
   position: relative;
 }
 
 .message {
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 12px;
+  margin-bottom: chat-s(8px);
+  padding: chat-s(8px) chat-s(12px);
+  border-radius: chat-s(12px);
   max-width: 80%;
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-size: chat-s(14px);
+  line-height: 1.45;
 
   p {
-    margin: 0 0 4px 0;
+    margin: 0 0 chat-s(4px) 0;
     word-wrap: break-word;
   }
 
@@ -33,14 +41,14 @@
   align-self: flex-start;
   background-color: #f5f5f5;
   color: #333;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: chat-s(4px);
 }
 
 .supportMessage {
   align-self: flex-end;
   background-color: #1976d2;
   color: white;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: chat-s(4px);
 }
 
 // Стили для удаленных сообщений
@@ -73,36 +81,36 @@
 .deletedContent {
   font-style: italic;
   color: #999;
-  margin: 0 0 4px 0;
+  margin: 0 0 chat-s(4px) 0;
 }
 
 .dateGroup {
-  margin-bottom: 16px;
+  margin-bottom: chat-s(16px);
 }
 
 .dateDivider {
   text-align: center;
-  margin: 8px 0;
+  margin: chat-s(8px) 0;
 
   span {
     background-color: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: chat-s(4px) chat-s(8px);
+    border-radius: chat-s(12px);
+    font-size: chat-s(12px);
     color: #777;
   }
 }
 
 .messageActions {
   position: absolute;
-  top: -20px;
-  right: 8px;
+  top: chat-s(-20px);
+  right: chat-s(8px);
   background-color: white;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px;
+  border-radius: chat-s(4px);
+  padding: chat-s(4px);
   display: flex;
-  gap: 4px;
+  gap: chat-s(4px);
   opacity: 0;
   transition: opacity 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -111,8 +119,8 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 2px;
+    padding: chat-s(4px);
+    border-radius: chat-s(2px);
     color: #333 !important;
 
     &:hover {
@@ -123,16 +131,16 @@
 
 .replyIndicator {
   background-color: #f0f0f0;
-  border-left: 3px solid #1976d2;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 4px;
+  border-left: chat-s(3px) solid #1976d2;
+  padding: chat-s(8px);
+  margin-bottom: chat-s(8px);
+  border-radius: chat-s(4px);
   font-size: 0.9em;
   color: #777;
 
   .replyAuthor {
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: chat-s(4px);
   }
 
   .replyText {
@@ -149,10 +157,10 @@
 
 .scrollToBottomBtn {
   position: fixed;
-  bottom: 120px;
-  right: 30px;
-  width: 40px;
-  height: 40px;
+  bottom: chat-s(120px);
+  right: chat-s(30px);
+  width: chat-s(40px);
+  height: chat-s(40px);
   border-radius: 50%;
   background-color: #1976d2;
   color: white;
@@ -173,22 +181,22 @@
   }
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: chat-s(20px);
+    height: chat-s(20px);
   }
 }
 
 .attachmentPreview {
   position: relative;
   display: inline-block;
-  margin: 4px 0;
+  margin: chat-s(4px) 0;
 
   .removeAttachment {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
+    top: chat-s(-8px);
+    right: chat-s(-8px);
+    width: chat-s(24px);
+    height: chat-s(24px);
     border-radius: 50%;
     background-color: #ff4444;
     color: white;
@@ -197,7 +205,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: chat-s(14px);
     opacity: 0;
     transition: opacity 0.2s ease;
 
@@ -211,18 +219,18 @@
   }
 
   img {
-    max-width: 200px;
-    border-radius: 4px;
+    max-width: chat-s(200px);
+    border-radius: chat-s(4px);
     border: 1px solid #ddd;
   }
 }
 
 .attachmentPlaceholder {
-  padding: 8px;
+  padding: chat-s(8px);
   background-color: #f5f5f5;
   border: 1px dashed #ddd;
-  border-radius: 4px;
-  margin: 4px 0;
+  border-radius: chat-s(4px);
+  margin: chat-s(4px) 0;
 
   p {
     margin: 0;
@@ -246,17 +254,17 @@
 .loadMoreContainer {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: chat-s(16px);
 }
 
 .loadMoreButton {
-  padding: 8px 16px;
+  padding: chat-s(8px) chat-s(16px);
   background-color: #1976d2;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: chat-s(4px);
   cursor: pointer;
-  font-size: 14px;
+  font-size: chat-s(14px);
 
   &:hover:not(:disabled) {
     background-color: #1565c0;
@@ -271,14 +279,14 @@
 .loadingIndicator {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #777;
 }
 
 .noMoreMessages {
   display: flex;
   justify-content: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #999;
   font-style: italic;
 }
@@ -286,24 +294,27 @@
 .feed {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  overflow-anchor: none;
+  padding: chat-s(8px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: chat-s(8px);
   position: relative;
 }
 
 .message {
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 12px;
+  margin-bottom: chat-s(8px);
+  padding: chat-s(8px) chat-s(12px);
+  border-radius: chat-s(12px);
   max-width: 80%;
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-size: chat-s(14px);
+  line-height: 1.45;
 
   p {
-    margin: 0 0 4px 0;
+    margin: 0 0 chat-s(4px) 0;
     word-wrap: break-word;
   }
 
@@ -318,14 +329,14 @@
   align-self: flex-start;
   background-color: #f5f5f5;
   color: #333;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: chat-s(4px);
 }
 
 .supportMessage {
   align-self: flex-end;
   background-color: #1976d2;
   color: white;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: chat-s(4px);
 }
 
 // Стили для удаленных сообщений
@@ -358,36 +369,36 @@
 .deletedContent {
   font-style: italic;
   color: #999;
-  margin: 0 0 4px 0;
+  margin: 0 0 chat-s(4px) 0;
 }
 
 .dateGroup {
-  margin-bottom: 16px;
+  margin-bottom: chat-s(16px);
 }
 
 .dateDivider {
   text-align: center;
-  margin: 8px 0;
+  margin: chat-s(8px) 0;
 
   span {
     background-color: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: chat-s(4px) chat-s(8px);
+    border-radius: chat-s(12px);
+    font-size: chat-s(12px);
     color: #777;
   }
 }
 
 .messageActions {
   position: absolute;
-  top: -20px;
-  right: 8px;
+  top: chat-s(-20px);
+  right: chat-s(8px);
   background-color: white;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px;
+  border-radius: chat-s(4px);
+  padding: chat-s(4px);
   display: flex;
-  gap: 4px;
+  gap: chat-s(4px);
   opacity: 0;
   transition: opacity 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -396,8 +407,8 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 2px;
+    padding: chat-s(4px);
+    border-radius: chat-s(2px);
     color: #333 !important;
 
     &:hover {
@@ -408,16 +419,16 @@
 
 .replyIndicator {
   background-color: #f0f0f0;
-  border-left: 3px solid #1976d2;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 4px;
+  border-left: chat-s(3px) solid #1976d2;
+  padding: chat-s(8px);
+  margin-bottom: chat-s(8px);
+  border-radius: chat-s(4px);
   font-size: 0.9em;
   color: #777;
 
   .replyAuthor {
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: chat-s(4px);
   }
 
   .replyText {
@@ -434,10 +445,10 @@
 
 .scrollToBottomBtn {
   position: fixed;
-  bottom: 120px;
-  right: 30px;
-  width: 40px;
-  height: 40px;
+  bottom: chat-s(120px);
+  right: chat-s(30px);
+  width: chat-s(40px);
+  height: chat-s(40px);
   border-radius: 50%;
   background-color: #1976d2;
   color: white;
@@ -458,22 +469,22 @@
   }
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: chat-s(20px);
+    height: chat-s(20px);
   }
 }
 
 .attachmentPreview {
   position: relative;
   display: inline-block;
-  margin: 4px 0;
+  margin: chat-s(4px) 0;
 
   .removeAttachment {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
+    top: chat-s(-8px);
+    right: chat-s(-8px);
+    width: chat-s(24px);
+    height: chat-s(24px);
     border-radius: 50%;
     background-color: #ff4444;
     color: white;
@@ -482,7 +493,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: chat-s(14px);
     opacity: 0;
     transition: opacity 0.2s ease;
 
@@ -496,18 +507,18 @@
   }
 
   img {
-    max-width: 200px;
-    border-radius: 4px;
+    max-width: chat-s(200px);
+    border-radius: chat-s(4px);
     border: 1px solid #ddd;
   }
 }
 
 .attachmentPlaceholder {
-  padding: 8px;
+  padding: chat-s(8px);
   background-color: #f5f5f5;
   border: 1px dashed #ddd;
-  border-radius: 4px;
-  margin: 4px 0;
+  border-radius: chat-s(4px);
+  margin: chat-s(4px) 0;
 
   p {
     margin: 0;
@@ -528,9 +539,9 @@
 }
 
 .senderName {
-  font-size: 0.75rem;
+  font-size: chat-s(12px);
   font-weight: 600;
-  margin-bottom: 4px;
+  margin-bottom: chat-s(4px);
   opacity: 0.8;
 }
 
@@ -546,7 +557,7 @@
 
 .loadingIndicator {
   text-align: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #504c4c;
 
   p {
@@ -563,24 +574,27 @@
 .feed {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  overflow-anchor: none;
+  padding: chat-s(8px);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: chat-s(8px);
   position: relative;
 }
 
 .message {
-  margin-bottom: 8px;
-  padding: 8px 12px;
-  border-radius: 12px;
+  margin-bottom: chat-s(8px);
+  padding: chat-s(8px) chat-s(12px);
+  border-radius: chat-s(12px);
   max-width: 80%;
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s ease;
+  font-size: chat-s(14px);
+  line-height: 1.45;
 
   p {
-    margin: 0 0 4px 0;
+    margin: 0 0 chat-s(4px) 0;
     word-wrap: break-word;
   }
 
@@ -595,14 +609,14 @@
   align-self: flex-start;
   background-color: #f5f5f5;
   color: #333;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: chat-s(4px);
 }
 
 .supportMessage {
   align-self: flex-end;
   background-color: #cfd0d1;
   color: #333;
-  border-bottom-left-radius: 4px;
+  border-bottom-left-radius: chat-s(4px);
 }
 
 // Стили для удаленных сообщений
@@ -635,36 +649,36 @@
 .deletedContent {
   font-style: italic;
   color: #999;
-  margin: 0 0 4px 0;
+  margin: 0 0 chat-s(4px) 0;
 }
 
 .dateGroup {
-  margin-bottom: 16px;
+  margin-bottom: chat-s(16px);
 }
 
 .dateDivider {
   text-align: center;
-  margin: 8px 0;
+  margin: chat-s(8px) 0;
 
   span {
     background-color: #f0f0f0;
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: chat-s(4px) chat-s(8px);
+    border-radius: chat-s(12px);
+    font-size: chat-s(12px);
     color: #777;
   }
 }
 
 .messageActions {
   position: absolute;
-  top: -20px;
-  right: 8px;
+  top: chat-s(-20px);
+  right: chat-s(8px);
   background-color: white;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px;
+  border-radius: chat-s(4px);
+  padding: chat-s(4px);
   display: flex;
-  gap: 4px;
+  gap: chat-s(4px);
   opacity: 0;
   transition: opacity 0.2s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -673,8 +687,8 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 2px;
+    padding: chat-s(4px);
+    border-radius: chat-s(2px);
     color: #333 !important;
 
     &:hover {
@@ -685,16 +699,16 @@
 
 .replyIndicator {
   background-color: #f0f0f0;
-  border-left: 3px solid #1976d2;
-  padding: 8px;
-  margin-bottom: 8px;
-  border-radius: 4px;
+  border-left: chat-s(3px) solid #1976d2;
+  padding: chat-s(8px);
+  margin-bottom: chat-s(8px);
+  border-radius: chat-s(4px);
   font-size: 0.9em;
   color: #777;
 
   .replyAuthor {
     font-weight: bold;
-    margin-bottom: 4px;
+    margin-bottom: chat-s(4px);
   }
 
   .replyText {
@@ -711,10 +725,10 @@
 
 .scrollToBottomBtn {
   position: fixed;
-  bottom: 120px;
-  right: 30px;
-  width: 40px;
-  height: 40px;
+  bottom: chat-s(120px);
+  right: chat-s(30px);
+  width: chat-s(40px);
+  height: chat-s(40px);
   border-radius: 50%;
   background-color: #1976d2;
   color: white;
@@ -735,22 +749,22 @@
   }
 
   svg {
-    width: 20px;
-    height: 20px;
+    width: chat-s(20px);
+    height: chat-s(20px);
   }
 }
 
 .attachmentPreview {
   position: relative;
   display: inline-block;
-  margin: 4px 0;
+  margin: chat-s(4px) 0;
 
   .removeAttachment {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    width: 24px;
-    height: 24px;
+    top: chat-s(-8px);
+    right: chat-s(-8px);
+    width: chat-s(24px);
+    height: chat-s(24px);
     border-radius: 50%;
     background-color: #ff4444;
     color: white;
@@ -759,7 +773,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: chat-s(14px);
     opacity: 0;
     transition: opacity 0.2s ease;
 
@@ -773,18 +787,18 @@
   }
 
   img {
-    max-width: 200px;
-    border-radius: 4px;
+    max-width: chat-s(200px);
+    border-radius: chat-s(4px);
     border: 1px solid #ddd;
   }
 }
 
 .attachmentPlaceholder {
-  padding: 8px;
+  padding: chat-s(8px);
   background-color: #f5f5f5;
   border: 1px dashed #ddd;
-  border-radius: 4px;
-  margin: 4px 0;
+  border-radius: chat-s(4px);
+  margin: chat-s(4px) 0;
 
   p {
     margin: 0;
@@ -809,24 +823,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #777;
   font-size: 0.9em;
 
   .loadingSpinner {
-    width: 16px;
-    height: 16px;
+    width: chat-s(16px);
+    height: chat-s(16px);
     border: 2px solid #f3f3f3;
     border-top: 2px solid #1976d2;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    margin-right: 8px;
+    margin-right: chat-s(8px);
   }
 }
 
 .loadMoreIndicator {
   text-align: center;
-  padding: 8px;
+  padding: chat-s(8px);
   color: #999;
   font-size: 0.8em;
   font-style: italic;
@@ -851,17 +865,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #777;
 
   .loadingSpinner {
     border: 2px solid #f3f3f3;
     border-top: 2px solid #1976d2;
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: chat-s(20px);
+    height: chat-s(20px);
     animation: spin 1s linear infinite;
-    margin-bottom: 8px;
+    margin-bottom: chat-s(8px);
   }
 
   p {
@@ -882,11 +896,11 @@
 
 .noMoreMessages {
   text-align: center;
-  padding: 16px;
+  padding: chat-s(16px);
   color: #999;
   font-style: italic;
   border-top: 1px solid #eee;
-  margin-top: 16px;
+  margin-top: chat-s(16px);
 
   p {
     margin: 0;
@@ -899,8 +913,8 @@
   align-items: center;
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: chat-s(16px);
+    height: chat-s(16px);
   }
 
   .delivered {
@@ -918,16 +932,16 @@
 
 .unreadMessage {
   background-color: rgba(25, 118, 210, 0.05) !important;
-  border-left: 3px solid #667A8A;
+  border-left: chat-s(3px) solid #667A8A;
 }
 
 .scrollToBottomBtn {
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
+  bottom: chat-s(20px);
+  right: chat-s(20px);
+  width: chat-s(50px);
+  height: chat-s(50px);
+  border-radius: 50%;
   background-color: #667A8A;
   color: white;
   border: none;
@@ -935,7 +949,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: chat-s(20px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   z-index: 1000;
@@ -953,19 +967,19 @@
 
 .unreadCountBadge {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: chat-s(-5px);
+  right: chat-s(-5px);
   background-color: #f44336;
   color: white;
-  border-radius: 12px;
-  min-width: 24px;
-  height: 24px;
+  border-radius: chat-s(12px);
+  min-width: chat-s(24px);
+  height: chat-s(24px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: chat-s(12px);
   font-weight: bold;
-  padding: 0 6px;
+  padding: 0 chat-s(6px);
   border: 2px solid white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
@@ -973,16 +987,16 @@
 
 .unreadMessage {
   background-color: rgba(25, 118, 210, 0.05) !important;
-  border-left: 3px solid #667A8A;
+  border-left: chat-s(3px) solid #667A8A;
 }
 
 .scrollToBottomBtn {
   position: absolute;
-  bottom: 70px;
-  right: 50px;
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
+  bottom: chat-s(70px);
+  right: chat-s(50px);
+  width: chat-s(50px);
+  height: chat-s(50px);
+  border-radius: 50%;
   background-color: #667A8A;
   color: white;
   border: none;
@@ -990,7 +1004,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: chat-s(20px);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   z-index: 1000;
@@ -1008,39 +1022,39 @@
 
 .unreadCountBadge {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: chat-s(-5px);
+  right: chat-s(-5px);
   background-color: #f44336;
   color: white;
-  border-radius: 12px;
-  min-width: 24px;
-  height: 24px;
+  border-radius: chat-s(12px);
+  min-width: chat-s(24px);
+  height: chat-s(24px);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: chat-s(12px);
   font-weight: bold;
-  padding: 0 6px;
+  padding: 0 chat-s(6px);
   border: 2px solid white;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
 .firstUnreadMessage {
-  border-left: 3px solid #ff9800 !important;
+  border-left: chat-s(3px) solid #ff9800 !important;
   background-color: rgba(255, 152, 0, 0.05) !important;
   animation: pulseUnread 2s ease-in-out;
   
   &::before {
     content: 'Новое';
     position: absolute;
-    left: -60px;
+    left: chat-s(-60px);
     top: 50%;
     transform: translateY(-50%);
     background: #ff9800;
     color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
+    padding: chat-s(2px) chat-s(8px);
+    border-radius: chat-s(12px);
+    font-size: chat-s(11px);
     font-weight: bold;
     animation: fadeIn 0.5s ease-in-out;
   }
@@ -1068,10 +1082,10 @@
 
 /* Мета строка под текстом сообщения (время, статус) */
 .messageFooter {
-  font-size: 0.8rem;
+  font-size: chat-s(12.8px);
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: chat-s(4px);
   flex-wrap: wrap;
 }
 
@@ -1093,8 +1107,8 @@
 }
 
 .attachmentCaption {
-  font-size: 0.8em;
-  margin-top: 2px;
+  font-size: chat-s(12.8px);
+  margin-top: chat-s(2px);
   word-break: break-all;
   color: rgba(0, 0, 0, 0.54);
 }

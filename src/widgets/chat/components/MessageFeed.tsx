@@ -198,6 +198,14 @@ function MessageFeed({
     down: false,
   });
 
+  /** Снимок ленты для восстановления scrollTop при ресайзе окна чата (без debounce). */
+  const lastFeedGeomForResizeRef = useRef<{
+    st: number;
+    sh: number;
+    ch: number;
+    cw: number;
+  } | null>(null);
+
   const {
     getSession,
     loadPreviousMessages,
@@ -653,6 +661,15 @@ function MessageFeed({
   }, [messages, restoreScrollPosition]);
 
   const handleScroll = useCallback(() => {
+    if (scrollRef.current) {
+      const el = scrollRef.current;
+      lastFeedGeomForResizeRef.current = {
+        st: el.scrollTop,
+        sh: el.scrollHeight,
+        ch: el.clientHeight,
+        cw: el.clientWidth,
+      };
+    }
     if (scrollDebounceRef.current) clearTimeout(scrollDebounceRef.current);
     scrollDebounceRef.current = setTimeout(() => {
       if (!scrollRef.current) return;
@@ -745,6 +762,83 @@ function MessageFeed({
     }
   }, [handleScroll, updateVisibleMessages]);
 
+  const FEED_RESIZE_BOTTOM_EPS_PX = 100;
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      const node = scrollRef.current;
+      if (!node) return;
+
+      if (
+        programmaticScrollLockRef.current ||
+        needsScrollToFirstUnreadRef.current ||
+        expandScrollPendingRef.current
+      ) {
+        return;
+      }
+
+      const cw = node.clientWidth;
+      const ch = node.clientHeight;
+      const g = lastFeedGeomForResizeRef.current;
+
+      if (!g) {
+        lastFeedGeomForResizeRef.current = {
+          st: node.scrollTop,
+          sh: node.scrollHeight,
+          ch,
+          cw,
+        };
+        return;
+      }
+
+      if (Math.abs(g.cw - cw) < 0.5 && Math.abs(g.ch - ch) < 0.5) {
+        return;
+      }
+
+      const maxOld = Math.max(0, g.sh - g.ch);
+      const pinBottom = maxOld <= 0 || g.sh - g.st - g.ch < FEED_RESIZE_BOTTOM_EPS_PX;
+      const ratio = maxOld > 0 ? g.st / maxOld : 0;
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const n = scrollRef.current;
+          if (!n) return;
+          if (
+            programmaticScrollLockRef.current ||
+            needsScrollToFirstUnreadRef.current ||
+            expandScrollPendingRef.current
+          ) {
+            return;
+          }
+          const sh2 = n.scrollHeight;
+          const ch2 = n.clientHeight;
+          const cw2 = n.clientWidth;
+          const max2 = Math.max(0, sh2 - ch2);
+          if (pinBottom) {
+            n.scrollTop = max2;
+            setIsAtBottom(true);
+          } else {
+            const nextTop = Math.min(max2, Math.max(0, ratio * max2));
+            n.scrollTop = nextTop;
+            setIsAtBottom(max2 > 0 && sh2 - n.scrollTop - ch2 < FEED_RESIZE_BOTTOM_EPS_PX);
+          }
+          lastFeedGeomForResizeRef.current = {
+            st: n.scrollTop,
+            sh: sh2,
+            ch: ch2,
+            cw: cw2,
+          };
+        });
+      });
+    });
+
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [sessionId]);
+
   useEffect(() => {
     sendReadStatusForVisibleMessages();
   }, [sendReadStatusForVisibleMessages]);
@@ -802,6 +896,7 @@ function MessageFeed({
     scrollAttemptsRef.current = 0;
     prevScrollToBottomOnExpandRef.current = false;
     prevFeedDialogIdForScrollRef.current = null;
+    lastFeedGeomForResizeRef.current = null;
   }, [sessionId]);
 
   // Прокрутка к первому непрочитанному: useLayoutEffect + rAF, ключ DOM = id ?? uuid (как в разметке)
@@ -1277,7 +1372,8 @@ function MessageFeed({
     const currentPage = pagination.currentPage || 0;
     const prevMessages = lastMessagesRef.current;
     const currentMessages = messagesInActiveDialog;
-    const currentLastMessage = currentMessages.length > 0 ? currentMessages[currentMessages.length - 1] : null;
+    const currentLastMessage =
+      currentMessages.length > 0 ? currentMessages[currentMessages.length - 1] : null;
     const currentLastMessageKey = currentLastMessage
       ? String(currentLastMessage.id ?? currentLastMessage.uuid ?? '')
       : '';
@@ -1357,7 +1453,14 @@ function MessageFeed({
     }
     lastBottomMessageKeyRef.current = currentLastMessageKey || null;
     lastMessagesRef.current = [...currentMessages];
-  }, [messagesInActiveDialog, session, pagination, handleLoadFirstPage, isAtBottom, isClosedObserverMode]);
+  }, [
+    messagesInActiveDialog,
+    session,
+    pagination,
+    handleLoadFirstPage,
+    isAtBottom,
+    isClosedObserverMode,
+  ]);
 
   useEffect(() => {
     messages.forEach((msg) => {
