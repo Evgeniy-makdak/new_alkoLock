@@ -14,6 +14,7 @@ import { Groups } from '@pages/groups';
 import { History } from '@pages/history';
 import { Mailings } from '@pages/mailings';
 import { MapPage } from '@pages/map/MapPage';
+import OperatorChatPopupPage from '@pages/operator_chat_popup/OperatorChatPopupPage';
 import { NotFound } from '@pages/not_found';
 import { ReportsPage } from '@pages/reports/ui/ReportsPage';
 import { Roles_new } from '@pages/roles_new';
@@ -86,6 +87,10 @@ export const routers = createBrowserRouter([
       {
         path: RoutePaths.map,
         element: <MapPage />,
+      },
+      {
+        path: RoutePaths.operatorChatPopup,
+        element: <OperatorChatPopupPage />,
       },
     ].map((element) => ({
       ...element,

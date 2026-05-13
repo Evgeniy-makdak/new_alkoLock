@@ -82,7 +82,9 @@ function UsersSelect({
   onUpdateUsersCacheRef.current = onUpdateUsersCache;
 
   const open = Boolean(anchorEl);
-  const branchId = appStore((state) => state.selectedBranchState?.id);
+  const branchId = appStore(
+    (state) => state.selectedBranchState?.id ?? state.assignmentBranch?.id,
+  );
   const currentUsedId = appStore((state) => state.authId);
 
   useEffect(() => {

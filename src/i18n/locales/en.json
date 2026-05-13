@@ -636,6 +636,8 @@
   "chat": {
     "toggleTooltip": "Unread messages: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Open new chat",
+    "openInSeparateWindow": "Open chat in a separate window (e.g. second monitor)",
+    "returnToSingleWindow": "Single-window mode: return chat to the main tab",
     "minimizedListTooltip": "Minimized dialogs and notifications",
     "minimizedListTitle": "Minimized dialogs",
     "newChatFallback": "New chat",

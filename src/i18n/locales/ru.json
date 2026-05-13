@@ -636,6 +636,8 @@
   "chat": {
     "toggleTooltip": "Непрочитанных сообщений: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Открыть новый чат",
+    "openInSeparateWindow": "Открыть чат в отдельном окне (второй монитор)",
+    "returnToSingleWindow": "Режим одного окна: вернуть чат в основную вкладку",
     "minimizedListTooltip": "Свёрнутые диалоги и уведомления",
     "minimizedListTitle": "Свёрнутые диалоги",
     "newChatFallback": "Новый чат",

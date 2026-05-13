@@ -633,6 +633,8 @@
   "chat": {
     "toggleTooltip": "O'qilmagan xabarlar: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Yangi chat ochish",
+    "openInSeparateWindow": "Chatni alohida oynada ochish (ikkinchi monitor)",
+    "returnToSingleWindow": "Bitta oyna rejimi: chatni asosiy varaqqa qaytarish",
     "minimizedListTooltip": "Yig'ilgan dialoglar va bildirishnomalar",
     "minimizedListTitle": "Yig'ilgan dialoglar",
     "newChatFallback": "Yangi chat",

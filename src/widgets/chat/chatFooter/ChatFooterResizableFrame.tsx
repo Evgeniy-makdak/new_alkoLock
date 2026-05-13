@@ -13,6 +13,8 @@ type Props = {
   minSize: ChatFooterPanelSize;
   getMaxSize: () => ChatFooterPanelSize;
   children: ReactNode;
+  /** Внутри `.chatFloatingDock`: без position:fixed у корня */
+  docked?: boolean;
 };
 
 function clampSize(n: number, lo: number, hi: number): number {
@@ -33,6 +35,7 @@ export function ChatFooterResizableFrame({
   minSize,
   getMaxSize,
   children,
+  docked = false,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{
@@ -135,7 +138,7 @@ export function ChatFooterResizableFrame({
 
   return (
     <div
-      className={`${styles.chatFooterResizeRoot} ${isDragging ? styles.chatFooterResizeRootDragging : ''}`}
+      className={`${styles.chatFooterResizeRoot} ${docked ? styles.chatFooterResizeDocked : ''} ${isDragging ? styles.chatFooterResizeRootDragging : ''}`}
       style={{ width: size.w, height: size.h }}>
       <div className={styles.chatFooterResizeInner}>{children}</div>
       <div

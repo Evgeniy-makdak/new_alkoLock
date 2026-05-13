@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import {
   Add as AddIcon,
   Chat as ChatIcon,
   Close as CloseIcon,
+  OpenInBrowser as OpenInBrowserIcon,
+  OpenInNew as OpenInNewIcon,
   ViewList as ViewListIcon,
 } from '@mui/icons-material';
 import {
@@ -20,6 +23,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 
+import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
@@ -30,6 +34,11 @@ import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDeb
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 import { type ChatFooterPanelSize, ChatFooterResizableFrame } from './ChatFooterResizableFrame';
+import {
+  closeOperatorChatPopupAndRestoreMain,
+  openOperatorChatPopup,
+} from '../chatPopup/openOperatorChatPopup';
+import { chatPanelDockStorageKeys } from '../chatPopup/popupLayoutStorage';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
 const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
@@ -41,16 +50,34 @@ const MINIMIZED_PREVIEW_GAP_PX = 28;
 const DEFAULT_CHAT_PANEL: ChatFooterPanelSize = { w: 520, h: 660 };
 const MIN_CHAT_PANEL: ChatFooterPanelSize = { w: 360, h: 320 };
 const PANEL_VIEW_MARGIN_PX = 40;
-const CHAT_PANEL_W_STORAGE_KEY = 'alcolock_chat_panel_w_v1';
-const CHAT_PANEL_H_STORAGE_KEY = 'alcolock_chat_panel_h_v1';
+/** Минимальная полоска dock остаётся в окне при перетаскивании (в т.ч. к краю второго монитора в широком окне). */
+const DOCK_VISIBILITY_STRIP_PX = 48;
+const DOCK_PREVIEW_ROW_APPROX_PX = 68;
+/** Колонка FAB (+ и переключатель чата) справа от панели внутри dock */
+const DOCK_FAB_COLUMN_W_PX = 56;
+const DOCK_FAB_STACK_H_PX = 196;
 
-function readSavedPanelSize(): ChatFooterPanelSize | null {
+function readSavedPanelSize(isOperatorChatPopup: boolean): ChatFooterPanelSize | null {
   if (typeof window === 'undefined') return null;
+  const k = chatPanelDockStorageKeys(isOperatorChatPopup);
   try {
-    const w = parseInt(localStorage.getItem(CHAT_PANEL_W_STORAGE_KEY) || '', 10);
-    const h = parseInt(localStorage.getItem(CHAT_PANEL_H_STORAGE_KEY) || '', 10);
+    const w = parseInt(localStorage.getItem(k.panelW) || '', 10);
+    const h = parseInt(localStorage.getItem(k.panelH) || '', 10);
     if (!Number.isFinite(w) || !Number.isFinite(h)) return null;
     return { w, h };
+  } catch {
+    return null;
+  }
+}
+
+function readSavedDockMargins(isOperatorChatPopup: boolean): { r: number; b: number } | null {
+  if (typeof window === 'undefined') return null;
+  const k = chatPanelDockStorageKeys(isOperatorChatPopup);
+  try {
+    const r = parseInt(localStorage.getItem(k.dockR) || '', 10);
+    const b = parseInt(localStorage.getItem(k.dockB) || '', 10);
+    if (!Number.isFinite(r) || !Number.isFinite(b)) return null;
+    return { r, b };
   } catch {
     return null;
   }
@@ -69,6 +96,83 @@ function clampPanelSize(size: ChatFooterPanelSize): ChatFooterPanelSize {
   return {
     w: Math.min(maxW, Math.max(MIN_CHAT_PANEL.w, size.w)),
     h: Math.min(maxH, Math.max(MIN_CHAT_PANEL.h, size.h)),
+  };
+}
+
+/** Ширина `.chatFloatingDock` без колонки развёрнутых панелей: FAB + 2×gap + опционально колонка превью. */
+function dockNonPanelWidthPx(previewCount: number): number {
+  const previewColW = previewCount > 0 ? 260 : 0;
+  return DOCK_FAB_COLUMN_W_PX + 2 * MINIMIZED_PREVIEW_GAP_PX + previewColW;
+}
+
+function clampPanelSizeForFloatingDock(
+  size: ChatFooterPanelSize,
+  args: {
+    previewCount: number;
+    expandedCount: number;
+    dockRightPx: number;
+    dockBottomPx: number;
+  },
+): ChatFooterPanelSize {
+  if (typeof window === 'undefined') return size;
+  const { previewCount, expandedCount, dockRightPx, dockBottomPx } = args;
+  const nonPanelW = dockNonPanelWidthPx(previewCount);
+  const maxW = Math.max(
+    MIN_CHAT_PANEL.w,
+    window.innerWidth - dockRightPx - PANEL_VIEW_MARGIN_PX - nonPanelW,
+  );
+
+  const maxDockH = Math.max(
+    MIN_CHAT_PANEL.h,
+    window.innerHeight - dockBottomPx - PANEL_VIEW_MARGIN_PX,
+  );
+  const previewStackH =
+    previewCount > 0
+      ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8
+      : 0;
+
+  let maxH = maxDockH;
+  if (expandedCount > 0) {
+    const sideColumnsH = Math.max(DOCK_FAB_STACK_H_PX, previewStackH);
+    if (sideColumnsH <= maxDockH) {
+      const maxFromPanels = (maxDockH - (expandedCount - 1) * 8) / expandedCount;
+      maxH = Math.max(MIN_CHAT_PANEL.h, Math.floor(maxFromPanels));
+    }
+  }
+
+  return {
+    w: Math.min(maxW, Math.max(MIN_CHAT_PANEL.w, size.w)),
+    h: Math.min(maxH, Math.max(MIN_CHAT_PANEL.h, size.h)),
+  };
+}
+
+function getMaxPanelSizeForFloatingDock(args: {
+  previewCount: number;
+  expandedCount: number;
+  dockRightPx: number;
+  dockBottomPx: number;
+}): ChatFooterPanelSize {
+  if (typeof window === 'undefined') return { ...DEFAULT_CHAT_PANEL };
+  return clampPanelSizeForFloatingDock({ w: 100000, h: 100000 }, args);
+}
+
+function clampDockMargins(
+  r: number,
+  b: number,
+  dockW: number,
+  dockH: number,
+): { r: number; b: number } {
+  if (typeof window === 'undefined') return { r, b };
+  // Координаты относительно viewport окна браузера: блок не может оказаться «на другом мониторе»,
+  // пока само окно браузера там не находится (перетащите окно — чат уедет вместе с ним).
+  const strip = DOCK_VISIBILITY_STRIP_PX;
+  const maxR = window.innerWidth - strip;
+  const maxB = window.innerHeight - strip;
+  const minR = -dockW + strip;
+  const minB = -dockH + strip;
+  return {
+    r: Math.min(maxR, Math.max(minR, r)),
+    b: Math.min(maxB, Math.max(minB, b)),
   };
 }
 
@@ -384,6 +488,8 @@ const NewChatButton = () => {
 
 const ChatContainer = () => {
   const { t } = useTranslation();
+  const location = useLocation();
+  const isOperatorChatPopupWindow = location.pathname === RoutePaths.operatorChatPopup;
   const {
     isChatOpen,
     sessions,
@@ -492,6 +598,18 @@ const ChatContainer = () => {
     setJustExpandedSessionId(null);
   }, []);
 
+  const handleOperatorChatWindowButtonClick = useCallback(() => {
+    if (isOperatorChatPopupWindow) {
+      closeOperatorChatPopupAndRestoreMain();
+    } else {
+      openOperatorChatPopup();
+    }
+  }, [isOperatorChatPopupWindow]);
+
+  const operatorChatWindowButtonLabel = t(
+    isOperatorChatPopupWindow ? 'chat.returnToSingleWindow' : 'chat.openInSeparateWindow',
+  );
+
   const isCompactMinimizedUi = useMediaQuery(CHAT_COMPACT_MINIMIZED_QUERY);
   const [minimizedListOpen, setMinimizedListOpen] = useState(false);
 
@@ -499,50 +617,21 @@ const ChatContainer = () => {
     () => sessions.filter((s) => !s.isMinimized).length,
     [sessions],
   );
-  const allowDesktopPanelResize = !isCompactMinimizedUi && expandedSessionCount > 0;
+  // В попапе после shrink-to-fit окно часто <1024px — без исключения dock пропадал бы из‑за compact.
+  // Пустой dock при 0 развёрнутых сессиях нельзя: useOperatorChatPopupWindowFrame схлопывает окно под колонку FAB.
+  const allowDesktopPanelResize =
+    expandedSessionCount > 0 && (!isCompactMinimizedUi || isOperatorChatPopupWindow);
 
   const [panelSize, setPanelSize] = useState<ChatFooterPanelSize>(() => {
     if (typeof window === 'undefined') {
       return { ...DEFAULT_CHAT_PANEL };
     }
-    const saved = readSavedPanelSize();
+    const saved = readSavedPanelSize(isOperatorChatPopupWindow);
     if (saved) {
       return clampPanelSize(saved);
     }
     return { ...DEFAULT_CHAT_PANEL };
   });
-
-  const getMaxPanelSize = useCallback((): ChatFooterPanelSize => {
-    const maxW = Math.max(
-      MIN_CHAT_PANEL.w,
-      window.innerWidth - CHAT_FOOTER_RIGHT - PANEL_VIEW_MARGIN_PX,
-    );
-    const maxH = Math.max(
-      MIN_CHAT_PANEL.h,
-      window.innerHeight - CHAT_FOOTER_BOTTOM - PANEL_VIEW_MARGIN_PX,
-    );
-    return { w: maxW, h: maxH };
-  }, []);
-
-  useEffect(() => {
-    if (!allowDesktopPanelResize) return;
-    const onWinResize = () => {
-      setPanelSize((prev) => clampPanelSize(prev));
-    };
-    window.addEventListener('resize', onWinResize);
-    return () => window.removeEventListener('resize', onWinResize);
-  }, [allowDesktopPanelResize]);
-
-  const handlePanelSizeCommit = useCallback((next: ChatFooterPanelSize) => {
-    const clamped = clampPanelSize(next);
-    setPanelSize(clamped);
-    try {
-      localStorage.setItem(CHAT_PANEL_W_STORAGE_KEY, String(clamped.w));
-      localStorage.setItem(CHAT_PANEL_H_STORAGE_KEY, String(clamped.h));
-    } catch {
-      /* ignore */
-    }
-  }, []);
 
   const chatUiScale = useMemo(() => {
     if (!allowDesktopPanelResize) return 1;
@@ -580,6 +669,245 @@ const ChatContainer = () => {
     if (dedupedUnreadPreviewRows.length !== 1) return 0;
     return calculateTotalUnread();
   }, [dedupedUnreadPreviewRows, calculateTotalUnread]);
+
+  const expandedSessions = useMemo(() => sessions.filter((s) => !s.isMinimized), [sessions]);
+
+  const minimizedSessions = useMemo(
+    () =>
+      sessions.filter(
+        (session) => session.isMinimized && hasRenderableMinimizedContent(session),
+      ),
+    [sessions],
+  );
+
+  const [dockRightPx, setDockRightPx] = useState(
+    () => readSavedDockMargins(isOperatorChatPopupWindow)?.r ?? CHAT_FOOTER_RIGHT,
+  );
+  const [dockBottomPx, setDockBottomPx] = useState(
+    () => readSavedDockMargins(isOperatorChatPopupWindow)?.b ?? CHAT_FOOTER_BOTTOM,
+  );
+  const [isDockDragging, setIsDockDragging] = useState(false);
+
+  const dockPosRef = useRef({ r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM });
+  /** Чтобы при первом mount с 0 сессий не сбрасывать dock; сброс только при переходе N>0 → 0 (закрыли весь чат). */
+  const prevSessionsLenForDockRef = useRef<number | null>(null);
+  /** Только основная вкладка: свернули последнюю панель — сброс размеров/позиции dock в LS. В попапе не трогаем. */
+  const prevAllowDesktopPanelResizeRef = useRef<boolean | null>(null);
+  const dockDimensionsRef = useRef({ dockW: DEFAULT_CHAT_PANEL.w, dockH: DEFAULT_CHAT_PANEL.h });
+
+  /** Сброс геометрии чата только в основном окне (не в operator-chat-popup). */
+  const resetMainWindowChatLayoutToDefaults = useCallback(() => {
+    setPanelSize({ ...DEFAULT_CHAT_PANEL });
+    setDockRightPx(CHAT_FOOTER_RIGHT);
+    setDockBottomPx(CHAT_FOOTER_BOTTOM);
+    dockPosRef.current = { r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM };
+    try {
+      const k = chatPanelDockStorageKeys(false);
+      localStorage.removeItem(k.panelW);
+      localStorage.removeItem(k.panelH);
+      localStorage.removeItem(k.dockR);
+      localStorage.removeItem(k.dockB);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const dockDimensions = useMemo(() => {
+    if (!allowDesktopPanelResize) {
+      return { dockW: DEFAULT_CHAT_PANEL.w, dockH: DEFAULT_CHAT_PANEL.h };
+    }
+    const previewCount = minimizedSessions.length + dedupedUnreadPreviewRows.length;
+    const pw = panelSize.w;
+    const ph = panelSize.h;
+    const nExp = expandedSessions.length;
+    const previewColW = previewCount > 0 ? 260 : 0;
+    const previewStackH =
+      previewCount > 0
+        ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8
+        : 0;
+    const panelsStackH = nExp * ph + Math.max(0, nExp - 1) * 8;
+    const dockH = Math.max(previewStackH, panelsStackH, DOCK_FAB_STACK_H_PX);
+    const dockW =
+      DOCK_FAB_COLUMN_W_PX + 2 * MINIMIZED_PREVIEW_GAP_PX + pw + (previewCount > 0 ? previewColW : 0);
+    return { dockW, dockH };
+  }, [
+    allowDesktopPanelResize,
+    dedupedUnreadPreviewRows.length,
+    expandedSessions.length,
+    minimizedSessions.length,
+    panelSize.h,
+    panelSize.w,
+  ]);
+
+  dockDimensionsRef.current = dockDimensions;
+
+  dockPosRef.current = { r: dockRightPx, b: dockBottomPx };
+
+  useEffect(() => {
+    const prev = prevSessionsLenForDockRef.current;
+    prevSessionsLenForDockRef.current = sessions.length;
+    if (prev === null) {
+      return;
+    }
+    if (prev > 0 && sessions.length === 0) {
+      if (isOperatorChatPopupWindow) {
+        setDockRightPx(CHAT_FOOTER_RIGHT);
+        setDockBottomPx(CHAT_FOOTER_BOTTOM);
+        dockPosRef.current = { r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM };
+        try {
+          const k = chatPanelDockStorageKeys(true);
+          localStorage.removeItem(k.dockR);
+          localStorage.removeItem(k.dockB);
+        } catch {
+          /* ignore */
+        }
+      } else {
+        resetMainWindowChatLayoutToDefaults();
+      }
+    }
+  }, [sessions.length, isOperatorChatPopupWindow, resetMainWindowChatLayoutToDefaults]);
+
+  useEffect(() => {
+    const prev = prevAllowDesktopPanelResizeRef.current;
+    const cur = allowDesktopPanelResize;
+    prevAllowDesktopPanelResizeRef.current = cur;
+    if (prev !== true || cur !== false) return;
+    if (isOperatorChatPopupWindow) return;
+    resetMainWindowChatLayoutToDefaults();
+  }, [allowDesktopPanelResize, isOperatorChatPopupWindow, resetMainWindowChatLayoutToDefaults]);
+
+  const handleDockDragPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!allowDesktopPanelResize) return;
+      if (e.button !== 0) return;
+      e.preventDefault();
+      const pointerId = e.pointerId;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const startR = dockPosRef.current.r;
+      const startB = dockPosRef.current.b;
+      setIsDockDragging(true);
+
+      const onMove = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        ev.preventDefault();
+        const { dockW, dockH } = dockDimensionsRef.current;
+        const dx = ev.clientX - startX;
+        const dy = ev.clientY - startY;
+        const { r, b } = clampDockMargins(startR - dx, startB - dy, dockW, dockH);
+        dockPosRef.current = { r, b };
+        setDockRightPx(r);
+        setDockBottomPx(b);
+      };
+
+      const onUp = (ev: PointerEvent) => {
+        if (ev.pointerId !== pointerId) return;
+        ev.preventDefault();
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
+        setIsDockDragging(false);
+        try {
+          const { r, b } = dockPosRef.current;
+          const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+          localStorage.setItem(k.dockR, String(r));
+          localStorage.setItem(k.dockB, String(b));
+        } catch {
+          /* ignore */
+        }
+      };
+
+      window.addEventListener('pointermove', onMove, { passive: false });
+      window.addEventListener('pointerup', onUp, { passive: false });
+      window.addEventListener('pointercancel', onUp, { passive: false });
+    },
+    [allowDesktopPanelResize, isOperatorChatPopupWindow],
+  );
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    const onWin = () => {
+      const { dockW, dockH } = dockDimensionsRef.current;
+      const c = clampDockMargins(dockPosRef.current.r, dockPosRef.current.b, dockW, dockH);
+      setDockRightPx(c.r);
+      setDockBottomPx(c.b);
+    };
+    window.addEventListener('resize', onWin);
+    return () => window.removeEventListener('resize', onWin);
+  }, [allowDesktopPanelResize]);
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    const { dockW, dockH } = dockDimensions;
+    const curR = dockPosRef.current.r;
+    const curB = dockPosRef.current.b;
+    const c = clampDockMargins(curR, curB, dockW, dockH);
+    if (c.r !== curR || c.b !== curB) {
+      setDockRightPx(c.r);
+      setDockBottomPx(c.b);
+    }
+  }, [allowDesktopPanelResize, dockDimensions.dockH, dockDimensions.dockW]);
+
+  const dockPreviewCount = minimizedSessions.length + dedupedUnreadPreviewRows.length;
+
+  const resolvePanelSize = useCallback(
+    (s: ChatFooterPanelSize) => {
+      if (!allowDesktopPanelResize) return clampPanelSize(s);
+      return clampPanelSizeForFloatingDock(s, {
+        previewCount: dockPreviewCount,
+        expandedCount: expandedSessions.length,
+        dockRightPx,
+        dockBottomPx,
+      });
+    },
+    [
+      allowDesktopPanelResize,
+      dockPreviewCount,
+      expandedSessions.length,
+      dockRightPx,
+      dockBottomPx,
+    ],
+  );
+
+  const getMaxPanelSize = useCallback(
+    () =>
+      getMaxPanelSizeForFloatingDock({
+        previewCount: dockPreviewCount,
+        expandedCount: expandedSessions.length,
+        dockRightPx,
+        dockBottomPx,
+      }),
+    [dockPreviewCount, expandedSessions.length, dockRightPx, dockBottomPx],
+  );
+
+  const handlePanelSizeCommit = useCallback(
+    (next: ChatFooterPanelSize) => {
+      const clamped = resolvePanelSize(next);
+      setPanelSize(clamped);
+      try {
+        const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+        localStorage.setItem(k.panelW, String(clamped.w));
+        localStorage.setItem(k.panelH, String(clamped.h));
+      } catch {
+        /* ignore */
+      }
+    },
+    [resolvePanelSize, isOperatorChatPopupWindow],
+  );
+
+  useLayoutEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    setPanelSize((prev) => resolvePanelSize(prev));
+  }, [allowDesktopPanelResize, resolvePanelSize]);
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    const onWinResize = () => {
+      setPanelSize((prev) => resolvePanelSize(prev));
+    };
+    window.addEventListener('resize', onWinResize);
+    return () => window.removeEventListener('resize', onWinResize);
+  }, [allowDesktopPanelResize, resolvePanelSize]);
 
   const dialogIdsToFetch = useMemo(() => {
     const ids = new Set<number>();
@@ -734,10 +1062,6 @@ const ChatContainer = () => {
     return null;
   }
 
-  const expandedSessions = sessions.filter((session) => !session.isMinimized);
-  const minimizedSessions = sessions.filter(
-    (session) => session.isMinimized && hasRenderableMinimizedContent(session),
-  );
   const minimizedPreviewRightPx =
     expandedSessions.length > 0
       ? CHAT_FOOTER_RIGHT +
@@ -752,8 +1076,22 @@ const ChatContainer = () => {
 
   return (
     <div className={styles.chatContainer}>
-      <NewChatButton />
-      {isCompactMinimizedUi && compactMinimizedEntries.length > 0 && (
+      {!allowDesktopPanelResize && <NewChatButton />}
+      {isOperatorChatPopupWindow && !allowDesktopPanelResize && (
+        <Tooltip title={operatorChatWindowButtonLabel} placement="left">
+          <div className={styles.operatorPopupReturnFab}>
+            <IconButton
+              className={styles.dockOpenWindowButton}
+              size="large"
+              color="primary"
+              onClick={handleOperatorChatWindowButtonClick}
+              aria-label={operatorChatWindowButtonLabel}>
+              <OpenInBrowserIcon />
+            </IconButton>
+          </div>
+        </Tooltip>
+      )}
+      {isCompactMinimizedUi && !isOperatorChatPopupWindow && compactMinimizedEntries.length > 0 && (
         <>
           <Tooltip title={t('chat.minimizedListTooltip')} placement="left">
             <div className={styles.showMinimizedButtonWrapper}>
@@ -839,97 +1177,199 @@ const ChatContainer = () => {
           </Drawer>
         </>
       )}
-      <ChatToggleButton />
+      {!allowDesktopPanelResize && <ChatToggleButton />}
 
-      <div className={styles.minimizedChats}>
-        {minimizedSessions.map((session, index) => {
-          const previewLine = truncatePreviewLine(
-            minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
-            30,
-          );
-          const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
-          return (
-            <div
-              key={`minimized-${session.id}`}
-              className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
-              style={{
-                bottom: `${120 + index * 60}px`,
-                right: `${minimizedPreviewRightPx}px`,
-                zIndex: 1000 - index,
-              }}
-              onClick={() => handleExpandSession(session.id)}>
-              <div className={styles.minimizedHeader}>
-                <span>
-                  {session.selectedUserName ||
-                    session.selectedDialog?.client_name ||
-                    t('chat.newChatFallback')}
-                </span>
-                <span className={styles.unreadBadge}>
-                  {minimizedUnread > 99 ? '99+' : minimizedUnread}
-                </span>
-              </div>
-              {previewLine ? <div className={styles.lastMessage}>{previewLine}</div> : null}
-            </div>
-          );
-        })}
+      {allowDesktopPanelResize ? (
+        <div
+          className={`${styles.chatFloatingDock} ${isDockDragging ? styles.chatFloatingDockDragging : ''}`}
+          style={{ right: dockRightPx, bottom: dockBottomPx }}
+          {...(isOperatorChatPopupWindow ? { 'data-operator-chat-dock': '1' } : {})}>
+          <div className={styles.dockFabColumn}>
+            <Tooltip title={operatorChatWindowButtonLabel} placement="left">
+              <IconButton
+                className={styles.dockOpenWindowButton}
+                size="large"
+                color="primary"
+                onClick={handleOperatorChatWindowButtonClick}
+                aria-label={operatorChatWindowButtonLabel}>
+                {isOperatorChatPopupWindow ? <OpenInBrowserIcon /> : <OpenInNewIcon />}
+              </IconButton>
+            </Tooltip>
+            <NewChatButton />
+            <ChatToggleButton />
+          </div>
+          <div className={styles.dockPanelsColumn}>
+            {expandedSessions.map((session) => (
+              <ChatFooterResizableFrame
+                key={`expanded-${session.id}`}
+                docked
+                size={panelSize}
+                onSizeLiveChange={(s) => setPanelSize(resolvePanelSize(s))}
+                onSizeCommit={handlePanelSizeCommit}
+                minSize={MIN_CHAT_PANEL}
+                getMaxSize={getMaxPanelSize}>
+                <Card
+                  className={`${styles.chatFooter} ${styles.expanded} ${styles.chatFooterFluid}`}
+                  sx={{
+                    '--chat-ui-scale': chatUiScale,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    minHeight: 0,
+                  }}>
+                  <ChatPanel
+                    sessionId={session.id}
+                    onMinimize={() => handleToggleSessionMinimize(session.id)}
+                    scrollToBottomOnExpand={justExpandedSessionId === session.id}
+                    onScrollToBottomDone={handleScrollToBottomDone}
+                    dockDragEnabled
+                    onDockDragPointerDown={handleDockDragPointerDown}
+                  />
+                </Card>
+              </ChatFooterResizableFrame>
+            ))}
+          </div>
+          <div className={`${styles.minimizedChats} ${styles.minimizedChatsDocked}`}>
+            {minimizedSessions.map((session, index) => {
+              const previewLine = truncatePreviewLine(
+                minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
+                30,
+              );
+              const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
+              return (
+                <div
+                  key={`minimized-${session.id}`}
+                  className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
+                  style={{ zIndex: 1000 - index }}
+                  onClick={() => handleExpandSession(session.id)}>
+                  <div className={styles.minimizedHeader}>
+                    <span>
+                      {session.selectedUserName ||
+                        session.selectedDialog?.client_name ||
+                        t('chat.newChatFallback')}
+                    </span>
+                    <span className={styles.unreadBadge}>
+                      {minimizedUnread > 99 ? '99+' : minimizedUnread}
+                    </span>
+                  </div>
+                  {previewLine ? <div className={styles.lastMessage}>{previewLine}</div> : null}
+                </div>
+              );
+            })}
 
-        {dedupedUnreadPreviewRows.map(({ dialog, sessionId }, index) => {
-          const sessionForDialog = sessions.find((s) => s.id === sessionId);
-          const unreadFromSessionMessages = unreadInSessionMessagesByDialog(
-            sessionForDialog,
-            dialog.id,
-          );
-          const unreadCountBase = unreadCountForPreviewEntry(
-            dialog,
-            dialogsUnreadCounts,
-            solePreviewSocketUnreadHint,
-          );
-          const unreadCount = Math.max(unreadCountBase, unreadFromSessionMessages);
-          const raw = (dialogPreviewLines[dialog.id] || '').trim();
-          const line = truncatePreviewLine(raw, 30);
+            {dedupedUnreadPreviewRows.map(({ dialog, sessionId }, index) => {
+              const sessionForDialog = sessions.find((s) => s.id === sessionId);
+              const unreadFromSessionMessages = unreadInSessionMessagesByDialog(
+                sessionForDialog,
+                dialog.id,
+              );
+              const unreadCountBase = unreadCountForPreviewEntry(
+                dialog,
+                dialogsUnreadCounts,
+                solePreviewSocketUnreadHint,
+              );
+              const unreadCount = Math.max(unreadCountBase, unreadFromSessionMessages);
+              const raw = (dialogPreviewLines[dialog.id] || '').trim();
+              const line = truncatePreviewLine(raw, 30);
 
-          return (
-            <div
-              key={`unread-${dialog.id}`}
-              className={`${styles.minimizedChat} ${styles.unreadDialog} ${
-                unreadCount > 0 ? styles.hasUnread : ''
-              }`}
-              style={{
-                bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
-                right: `${minimizedPreviewRightPx}px`,
-                zIndex: 1000 - (minimizedSessions.length + index),
-              }}
-              onClick={async () => {
-                setJustExpandedSessionId(sessionId);
-                await openUnreadDialog(sessionId, dialog);
-              }}>
-              <div className={styles.minimizedHeader}>
-                <span>{dialog.owner.fullName}</span>
-                <span className={styles.unreadBadge}>{unreadCount}</span>
-              </div>
-              {line ? <div className={styles.lastMessage}>{line}</div> : null}
-            </div>
-          );
-        })}
-      </div>
+              return (
+                <div
+                  key={`unread-${dialog.id}`}
+                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
+                    unreadCount > 0 ? styles.hasUnread : ''
+                  }`}
+                  style={{ zIndex: 1000 - (minimizedSessions.length + index) }}
+                  onClick={async () => {
+                    setJustExpandedSessionId(sessionId);
+                    await openUnreadDialog(sessionId, dialog);
+                  }}>
+                  <div className={styles.minimizedHeader}>
+                    <span>{dialog.owner.fullName}</span>
+                    <span className={styles.unreadBadge}>{unreadCount}</span>
+                  </div>
+                  {line ? <div className={styles.lastMessage}>{line}</div> : null}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className={styles.minimizedChats}>
+            {minimizedSessions.map((session, index) => {
+              const previewLine = truncatePreviewLine(
+                minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
+                30,
+              );
+              const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
+              return (
+                <div
+                  key={`minimized-${session.id}`}
+                  className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
+                  style={{
+                    bottom: `${120 + index * 60}px`,
+                    right: `${minimizedPreviewRightPx}px`,
+                    zIndex: 1000 - index,
+                  }}
+                  onClick={() => handleExpandSession(session.id)}>
+                  <div className={styles.minimizedHeader}>
+                    <span>
+                      {session.selectedUserName ||
+                        session.selectedDialog?.client_name ||
+                        t('chat.newChatFallback')}
+                    </span>
+                    <span className={styles.unreadBadge}>
+                      {minimizedUnread > 99 ? '99+' : minimizedUnread}
+                    </span>
+                  </div>
+                  {previewLine ? <div className={styles.lastMessage}>{previewLine}</div> : null}
+                </div>
+              );
+            })}
 
-      {expandedSessions.map((session) =>
-        allowDesktopPanelResize ? (
-          <ChatFooterResizableFrame
-            key={`expanded-${session.id}`}
-            size={panelSize}
-            onSizeLiveChange={(s) => setPanelSize(clampPanelSize(s))}
-            onSizeCommit={handlePanelSizeCommit}
-            minSize={MIN_CHAT_PANEL}
-            getMaxSize={getMaxPanelSize}>
+            {dedupedUnreadPreviewRows.map(({ dialog, sessionId }, index) => {
+              const sessionForDialog = sessions.find((s) => s.id === sessionId);
+              const unreadFromSessionMessages = unreadInSessionMessagesByDialog(
+                sessionForDialog,
+                dialog.id,
+              );
+              const unreadCountBase = unreadCountForPreviewEntry(
+                dialog,
+                dialogsUnreadCounts,
+                solePreviewSocketUnreadHint,
+              );
+              const unreadCount = Math.max(unreadCountBase, unreadFromSessionMessages);
+              const raw = (dialogPreviewLines[dialog.id] || '').trim();
+              const line = truncatePreviewLine(raw, 30);
+
+              return (
+                <div
+                  key={`unread-${dialog.id}`}
+                  className={`${styles.minimizedChat} ${styles.unreadDialog} ${
+                    unreadCount > 0 ? styles.hasUnread : ''
+                  }`}
+                  style={{
+                    bottom: `${120 + (minimizedSessions.length + index) * 60}px`,
+                    right: `${minimizedPreviewRightPx}px`,
+                    zIndex: 1000 - (minimizedSessions.length + index),
+                  }}
+                  onClick={async () => {
+                    setJustExpandedSessionId(sessionId);
+                    await openUnreadDialog(sessionId, dialog);
+                  }}>
+                  <div className={styles.minimizedHeader}>
+                    <span>{dialog.owner.fullName}</span>
+                    <span className={styles.unreadBadge}>{unreadCount}</span>
+                  </div>
+                  {line ? <div className={styles.lastMessage}>{line}</div> : null}
+                </div>
+              );
+            })}
+          </div>
+
+          {expandedSessions.map((session) => (
             <Card
-              className={`${styles.chatFooter} ${styles.expanded} ${styles.chatFooterFluid}`}
-              sx={{
-                '--chat-ui-scale': chatUiScale,
-                display: 'flex',
-                flexDirection: 'column',
-                minHeight: 0,
-              }}>
+              key={`expanded-${session.id}`}
+              className={`${styles.chatFooter} ${styles.expanded}`}>
               <ChatPanel
                 sessionId={session.id}
                 onMinimize={() => handleToggleSessionMinimize(session.id)}
@@ -937,19 +1377,8 @@ const ChatContainer = () => {
                 onScrollToBottomDone={handleScrollToBottomDone}
               />
             </Card>
-          </ChatFooterResizableFrame>
-        ) : (
-          <Card
-            key={`expanded-${session.id}`}
-            className={`${styles.chatFooter} ${styles.expanded}`}>
-            <ChatPanel
-              sessionId={session.id}
-              onMinimize={() => handleToggleSessionMinimize(session.id)}
-              scrollToBottomOnExpand={justExpandedSessionId === session.id}
-              onScrollToBottomDone={handleScrollToBottomDone}
-            />
-          </Card>
-        ),
+          ))}
+        </>
       )}
     </div>
   );

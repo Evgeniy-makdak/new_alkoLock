@@ -1,6 +1,6 @@
 .chatContainer {
   position: fixed;
-  bottom: 20px;
+  bottom: 72px;
   right: 20px;
   z-index: 1000;
 }
@@ -129,7 +129,7 @@
 
 .chatContainer {
   position: fixed;
-  bottom: 20px;
+  bottom: 72px;
   right: 20px;
   z-index: 1000;
 }
@@ -140,6 +140,16 @@
   bottom: 0;
   right: 0;
   z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Иначе .toggleButton { position: absolute } выносит кнопку из потока — обёртка 0×0, бейдж «улетает» */
+  .toggleButton {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
 }
 
 .newChatButtonWrapper {
@@ -147,6 +157,15 @@
   bottom: 60px;
   right: 0;
   z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .newChatButton {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
 }
 
 .showMinimizedButtonWrapper {
@@ -154,6 +173,32 @@
   bottom: 120px;
   right: 0;
   z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .showMinimizedButton {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
+}
+
+/* Отдельное окно чата без dock: «вернуться в вкладку» — слот как у showMinimized (120px), в попапе список ViewList скрыт */
+.operatorPopupReturnFab {
+  position: absolute;
+  bottom: 120px;
+  right: 0;
+  z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .dockOpenWindowButton {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
 }
 
 // Стили кнопок
@@ -264,6 +309,107 @@
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
 }
 
+.chatFooterResizeRoot.chatFooterResizeDocked {
+  position: relative;
+  bottom: auto;
+  right: auto;
+  z-index: 1000;
+  transition: none;
+}
+
+.chatFloatingDock {
+  position: fixed;
+  z-index: 1000;
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-end;
+  gap: 28px;
+  box-sizing: border-box;
+}
+
+.chatFloatingDockDragging {
+  user-select: none;
+
+  * {
+    user-select: none;
+  }
+}
+
+.dockFabColumn {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  min-width: 48px;
+
+  /* Кнопка «назад в одно окно» сверху; ниже — новый чат. Бейдж у нижней кнопки вылезает вверх — без порядка слоёв его перекрывает + из соседнего FAB. */
+  > *:first-child {
+    position: relative;
+    z-index: 1;
+  }
+
+  .newChatButtonWrapper {
+    z-index: 2;
+  }
+
+  .toggleButtonWrapper {
+    z-index: 3;
+  }
+
+  .toggleButtonWrapper,
+  .newChatButtonWrapper {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
+
+  .toggleButton,
+  .newChatButton {
+    position: static !important;
+    bottom: auto !important;
+    right: auto !important;
+  }
+}
+
+.dockOpenWindowButton {
+  background-color: #667a8a !important;
+  color: white !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    background-color: #5c6e7d !important;
+  }
+}
+
+.dockPanelsColumn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.minimizedChatsDocked {
+  position: relative !important;
+  bottom: auto !important;
+  right: auto !important;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+
+  .minimizedChat {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    transition: transform 0.18s ease-out, box-shadow 0.18s ease-out, background-color 0.18s ease-out,
+      border-color 0.18s ease-out;
+  }
+}
+
 .chatFooterResizeRootDragging {
   transition: none !important;
 }
@@ -309,11 +455,13 @@
   cursor: nwse-resize;
 }
 
-// Общая геометрия кружков над стеком FAB чата (красный непрочитанные + синий список свёрнутых)
+// Общая геометрия бейджей на круглых FAB (красный счётчик + синий список свёрнутых) — врезка в верхний правый угол кнопки
 %chatFabStackBadge {
   position: absolute;
-  top: -100px;
-  right: -8px;
+  top: -4px;
+  right: -4px;
+  bottom: auto;
+  left: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -550,7 +698,7 @@
   }
 
   .chatContainer {
-    bottom: 15px;
+    bottom: 56px;
     right: 15px;
   }
 
@@ -605,7 +753,7 @@
   }
 
   .chatContainer {
-    bottom: 10px;
+    bottom: 48px;
     right: 10px;
     left: 10px;
     width: auto;

@@ -20,4 +20,6 @@ export enum RoutePaths {
   messages = '/messages',
   settings = '/settings',
   map = '/map',
+  /** Отдельное окно чата оператора (window.open); см. OperatorChatPopupPage */
+  operatorChatPopup = '/operator-chat-popup',
 }

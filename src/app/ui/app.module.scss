@@ -30,6 +30,13 @@
   display: flex;
 }
 
+.mainOperatorChatPopup {
+  .content {
+    overflow: hidden;
+  }
+}
+
+
 .content {
   position: relative;
   height: 100vh;

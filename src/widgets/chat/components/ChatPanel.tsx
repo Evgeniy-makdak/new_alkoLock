@@ -23,6 +23,9 @@ interface ChatPanelProps {
   onMinimize?: () => void;
   scrollToBottomOnExpand?: boolean;
   onScrollToBottomDone?: () => void;
+  /** Десктоп: перетаскивание общего dock за область шапки (не кнопки). */
+  dockDragEnabled?: boolean;
+  onDockDragPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
 }
 
 function getLastOperatorIdFromDialog(d: any): number | string | undefined {
@@ -54,6 +57,8 @@ function ChatPanel({
   onMinimize,
   scrollToBottomOnExpand,
   onScrollToBottomDone,
+  dockDragEnabled = false,
+  onDockDragPointerDown,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -696,6 +701,16 @@ function ChatPanel({
     setIsChatOpen(false);
   }, [sessions, closeSession, setIsChatOpen]);
 
+  const handleDockHeaderPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!dockDragEnabled || !onDockDragPointerDown) return;
+      const el = e.target as HTMLElement;
+      if (el.closest('button')) return;
+      onDockDragPointerDown(e);
+    },
+    [dockDragEnabled, onDockDragPointerDown],
+  );
+
   const updateUsersCache = useCallback(
     (users: any[]) => {
       const current = getSessionLiveRef.current(sessionId);
@@ -1263,7 +1278,9 @@ function ChatPanel({
 
   return (
     <div className={styles.panel} data-session-id={sessionId}>
-      <div className={styles.chatHeader}>
+      <div
+        className={`${styles.chatHeader} ${dockDragEnabled ? styles.chatHeaderDraggable : ''}`}
+        onPointerDown={handleDockHeaderPointerDown}>
         <h3>{selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}</h3>
         {displayUnreadCount > 0 && (
           <span className={styles.unreadBadge}>

@@ -62,7 +62,9 @@ export function TransferOperatorSelect({
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const open = Boolean(anchorEl);
-  const branchId = appStore((state) => state.selectedBranchState?.id);
+  const branchId = appStore(
+    (state) => state.selectedBranchState?.id ?? state.assignmentBranch?.id,
+  );
   const currentUserId = appStore((state) => state.authId);
 
   const getOperatorName = (user: IUser) =>

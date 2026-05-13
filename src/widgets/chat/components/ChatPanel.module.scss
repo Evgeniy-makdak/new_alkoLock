@@ -52,10 +52,19 @@
   }
 }
 
+.chatHeaderDraggable {
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
 .headerActions {
   display: flex;
-  gap: chat-s(4px);
-  margin-left: chat-s(8px);
+  gap: chat-s(12px);
+  margin-left: chat-s(12px);
 }
 
 .headerButton {

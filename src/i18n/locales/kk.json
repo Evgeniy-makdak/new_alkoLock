@@ -633,6 +633,8 @@
   "chat": {
     "toggleTooltip": "Оқылмаған хабарламалар: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Жаңа чат ашу",
+    "openInSeparateWindow": "Чатты жеке терезеде ашу (екінші монитор)",
+    "returnToSingleWindow": "Бір терезе режимі: чатты негізгі қойындыға қайтару",
     "minimizedListTooltip": "Жинақталған диалогтар және хабарламалар",
     "minimizedListTitle": "Жинақталған диалогтар",
     "newChatFallback": "Жаңа чат",

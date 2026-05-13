@@ -10,6 +10,7 @@ import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableTool
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
 import ChatFooter from '@widgets/chat/chatFooter/ChatFooter';
+import { useSuppressMainChatFooterForPopup } from '@widgets/chat/chatPopup/useSuppressMainChatFooterForPopup';
 import { NavBar } from '@widgets/nav_bar';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 import { RoleChipStyles } from '@widgets/users_table/ui/RoleChipStyles';
@@ -31,6 +32,9 @@ export function App() {
   const isSettingsRoute =
     location.pathname === RoutePaths.settings ||
     location.pathname.startsWith(`${RoutePaths.settings}/`);
+  const isOperatorChatPopupRoute = location.pathname === RoutePaths.operatorChatPopup;
+  const suppressMainChatFooter = useSuppressMainChatFooterForPopup(isOperatorChatPopupRoute);
+  const showChatFooter = isOperatorChatPopupRoute || !suppressMainChatFooter;
   const hideLanguageOnMap = location.pathname === RoutePaths.map;
   const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
   /** На широкой карте переключатель темы в MapControls, не в плавающем слоте */
@@ -41,7 +45,8 @@ export function App() {
   const themeSlotPhoneInlineWithAdd = false;
 
   const showFloatingThemeSlot =
-    (!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme;
+    !isOperatorChatPopupRoute &&
+    ((!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme);
 
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
@@ -51,8 +56,8 @@ export function App() {
           <CircularProgress />
         </div>
       ) : (
-        <div className={style.main}>
-          <NavBar />
+        <div className={`${style.main} ${isOperatorChatPopupRoute ? style.mainOperatorChatPopup : ''}`}>
+          {!isOperatorChatPopupRoute ? <NavBar /> : null}
           <div className={style.content}>
             {showFloatingThemeSlot ? (
               <div
@@ -67,7 +72,7 @@ export function App() {
                 {isGhostPrankGloballyDisabled() ? null : <EventsGhostPrank />}
               </div>
             </TableHeaderMobileTrailingProvider>
-            <ChatFooter />
+            {showChatFooter ? <ChatFooter /> : null}
           </div>
         </div>
       )}

@@ -68,6 +68,7 @@ const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
     Permissions.PERMISSION_EVENTS_READ,
     Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE,
   ],
+  [RoutePaths.operatorChatPopup]: [Permissions.PERMISSION_OPERATOR_CHATS_READ],
   [RoutePaths.historyAutoService]: [Permissions.PERMISSION_HISTORY_READ],
   [RoutePaths.all]: [],
   [RoutePaths.root]: [],
