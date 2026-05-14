@@ -31,7 +31,10 @@ import {
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
 } from '../chatPopup/constants';
-import { persistMainRestoreFromPopupState } from '../chatPopup/mainChatOpenRestoreFromPopup';
+import {
+  persistMainRestoreFromPopupState,
+  persistMainToOperatorPopupHandoff,
+} from '../chatPopup/mainChatOpenRestoreFromPopup';
 import {
   closeOperatorChatPopupAndRestoreMain,
   openOperatorChatPopup,
@@ -229,6 +232,7 @@ function sessionListAlreadyCoversDialog(
 function collectDedupedUnreadDialogsForPreview(
   sessions: Array<{
     id: string;
+    isMinimized?: boolean;
     unreadDialogs?: UnreadDialog[];
     selectedDialog?: { id?: unknown };
     assignedDialogId?: unknown;
@@ -238,7 +242,14 @@ function collectDedupedUnreadDialogsForPreview(
   const seenDialogIds = new Set<number>();
   const rows: { dialog: UnreadDialog; sessionId: string }[] = [];
 
-  for (const session of sessions) {
+  const orderedSessions = [...sessions].sort((a, b) => {
+    const ma = !!a.isMinimized;
+    const mb = !!b.isMinimized;
+    if (ma === mb) return 0;
+    return ma ? 1 : -1;
+  });
+
+  for (const session of orderedSessions) {
     const unreadList =
       session.unreadDialogs?.filter((dialog) => {
         const dialogUserId = dialog.owner?.id;
@@ -249,6 +260,13 @@ function collectDedupedUnreadDialogsForPreview(
 
     for (const dialog of unreadList) {
       if (seenDialogIds.has(dialog.id)) continue;
+      const coveredByExpanded = sessions.some(
+        (s) =>
+          !s.isMinimized &&
+          (normalizeSessionDialogId(s.selectedDialog?.id) === dialog.id ||
+            normalizeSessionDialogId(s.assignedDialogId) === dialog.id),
+      );
+      if (coveredByExpanded) continue;
       seenDialogIds.add(dialog.id);
       rows.push({ dialog, sessionId: session.id });
     }
@@ -270,6 +288,12 @@ function truncatePreviewLine(text: string, maxLen: number): string {
   const s = text.trim();
   if (!s) return '';
   return s.length <= maxLen ? s : `${s.slice(0, maxLen)}…`;
+}
+
+/** Сравнение id филиала из zustand (number | string) без ложных «смен» при 5 vs "5". */
+function normalizeBranchIdForChatClear(raw: unknown): string | null {
+  if (raw === undefined || raw === null || raw === '') return null;
+  return String(raw);
 }
 
 function unreadCountForPreviewEntry(
@@ -508,6 +532,12 @@ const ChatContainer = () => {
     hasSessionWithUser,
     forceLoadUnreadDialogs,
   } = useChat();
+
+  const sessionsForBranchClearRef = useRef(sessions);
+  const closeSessionForBranchClearRef = useRef(closeSession);
+  sessionsForBranchClearRef.current = sessions;
+  closeSessionForBranchClearRef.current = closeSession;
+
   const {
     lastMessage,
     dialogsUnreadCounts,
@@ -625,19 +655,34 @@ const ChatContainer = () => {
     });
   }, [isOperatorChatPopupWindow, sessions, forceLoadUnreadDialogs]);
 
+  /** Только при смене филиала. Подписка монтируется один раз: иначе [sessions, closeSession] пересоздаёт
+   * closeSession на каждом обновлении сессий → бесконечный resubscribe и гонки с «дёрганьем» после handoff. */
+  const branchChatSubInitializedRef = useRef(false);
+  const lastBranchIdForChatClearRef = useRef<string | null>(null);
+
   useEffect(() => {
     const unsubscribe = appStore.subscribe(() => {
-      const currentBranchId = appStore.getState().selectedBranchState?.id;
-
-      if (currentBranchId !== undefined) {
-        sessions.forEach((session) => {
-          closeSession(session.id);
-        });
+      const nextId = normalizeBranchIdForChatClear(appStore.getState().selectedBranchState?.id);
+      if (!branchChatSubInitializedRef.current) {
+        branchChatSubInitializedRef.current = true;
+        lastBranchIdForChatClearRef.current = nextId;
+        return;
       }
+      if (lastBranchIdForChatClearRef.current === nextId) return;
+      const prev = lastBranchIdForChatClearRef.current;
+      lastBranchIdForChatClearRef.current = nextId;
+      /* Первое появление филиала в сторе после null — не считаем сменой (иначе сразу после
+       * handoff второй колбэк zustand обнуляет сессии). Реальная смена: оба prev и next не null. */
+      if (prev === null && nextId !== null) {
+        return;
+      }
+      sessionsForBranchClearRef.current.forEach((session) => {
+        closeSessionForBranchClearRef.current(session.id);
+      });
     });
 
     return () => unsubscribe();
-  }, [sessions, closeSession]);
+  }, []);
 
   const handleToggleSessionMinimize = (sessionId: string) => {
     toggleSessionMinimize(sessionId);
@@ -687,6 +732,7 @@ const ChatContainer = () => {
       persistMainRestoreFromPopupState({ isChatOpen, sessions, activeSessionId });
       closeOperatorChatPopupAndRestoreMain();
     } else {
+      persistMainToOperatorPopupHandoff({ isChatOpen, sessions, activeSessionId });
       openOperatorChatPopup();
     }
   }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId]);

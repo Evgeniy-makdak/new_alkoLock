@@ -13,11 +13,14 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import i18n from '../../../i18n';
 import {
   clearMainRestoreHandoffMarkers,
-  getMainWindowInitialSessionsFromHandoff,
+  clearMainToOperatorPopupHandoffMarker,
+  getChatProviderInitialSessionsHydration,
   hasPendingMainRestoreHandoff,
+  hasPendingMainToOperatorPopupHandoff,
   peekMainRestoreIsChatOpenForMainWindow,
   peekMainReturnHandoffPayload,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
+import { CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY } from '../chatPopup/constants';
 import { ChatConfig } from '../contexts/chatConfig';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -109,11 +112,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const prevIsChatOpenRef = refs.prevIsChatOpenRef;
   const sessionsRef = useRef<any[]>([]);
 
-  const mainSessionsInitRef = useRef<ReturnType<
-    typeof getMainWindowInitialSessionsFromHandoff
-  > | null>(null);
+  const mainSessionsInitRef = useRef<ReturnType<typeof getChatProviderInitialSessionsHydration> | null>(
+    null,
+  );
   if (mainSessionsInitRef.current === null) {
-    mainSessionsInitRef.current = getMainWindowInitialSessionsFromHandoff();
+    mainSessionsInitRef.current = getChatProviderInitialSessionsHydration();
   }
   const mainSessionsInit = mainSessionsInitRef.current;
 
@@ -149,6 +152,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     if (!hasPendingMainRestoreHandoff()) return;
     const id = window.setTimeout(() => {
       clearMainRestoreHandoffMarkers();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  /** Handoff «основная → popup»: peek в init, ключ снимаем здесь (Strict Mode). */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.location.pathname.includes('/operator-chat-popup')) return;
+    if (!hasPendingMainToOperatorPopupHandoff()) return;
+    const id = window.setTimeout(() => {
+      clearMainToOperatorPopupHandoffMarker();
     }, 0);
     return () => window.clearTimeout(id);
   }, []);
@@ -200,6 +214,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     [socketMergeDialogUnreadFromApi, socketDialogsUnreadCounts],
   );
 
+  const hasOtherExpandedSession = useCallback(
+    (exceptId: string) => sessions.some((s: any) => !s.isMinimized && s.id !== exceptId),
+    [sessions],
+  );
+
   const {
     assignDialog,
     forceLoadUnreadDialogs,
@@ -213,6 +232,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     onUnreadDialogsLoaded,
     /* После открытия непрочитанного — только выравнивание isMinimized; WS/UI счётчики не трогаем. */
     expandSession,
+    hasOtherExpandedSession,
   );
 
   const {
@@ -346,7 +366,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     if (popupHandoffHydratedRef.current) return;
     const p = peekMainReturnHandoffPayload();
     if (!p || p.v !== 2) return;
-    if (popupHandoffHydratedRef.current) return;
     popupHandoffHydratedRef.current = true;
     if (!p.sessions?.length) return;
 
@@ -366,6 +385,45 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       void forceLoadUnreadDialogs(row.id);
     }
   }, [dialogHandlers, forceLoadUnreadDialogs]);
+
+  const popupFromMainHydratedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.location.pathname.includes('/operator-chat-popup')) return;
+    if (!mainSessionsInit.fromMainToPopup) return;
+
+    let skipFetch = false;
+    try {
+      if (sessionStorage.getItem(CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY) === '1') {
+        skipFetch = true;
+      } else {
+        sessionStorage.setItem(CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY, '1');
+      }
+    } catch {
+      if (popupFromMainHydratedRef.current) {
+        skipFetch = true;
+      } else {
+        popupFromMainHydratedRef.current = true;
+      }
+    }
+    if (skipFetch) return;
+
+    for (const s of sessions) {
+      const hasDid =
+        (s.selectedDialog?.id != null &&
+          String(s.selectedDialog.id) !== '' &&
+          String(s.selectedDialog.id) !== '0' &&
+          String(s.selectedDialog.id) !== 'assigned') ||
+        (s.assignedDialogId != null &&
+          String(s.assignedDialogId) !== '' &&
+          String(s.assignedDialogId) !== '0' &&
+          String(s.assignedDialogId) !== 'assigned');
+      if (hasDid) {
+        void dialogHandlers.forceRefreshSessionMessages(s.id);
+      }
+      void forceLoadUnreadDialogs(s.id);
+    }
+  }, [dialogHandlers, forceLoadUnreadDialogs, mainSessionsInit.fromMainToPopup, sessions]);
 
   const messageHandlers = useChatMessageHandlers(refs, {
     getSession,

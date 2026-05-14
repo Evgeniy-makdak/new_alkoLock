@@ -5,6 +5,7 @@ import {
   CHAT_MAIN_RESTORE_IS_CHAT_OPEN_FROM_POPUP_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
+  CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY,
 } from './constants';
 
 /** Снимок сессии для передачи из popup в основную вкладку (только JSON-поля). */
@@ -52,7 +53,21 @@ export function serializeSessionsForPopupHandoff(
 }
 
 function deserializeOne(row: PopupReturnSerializedSession): ChatSession {
-  const selectedDialogId = row.selectedDialogId;
+  const fromRowSelected =
+    row.selectedDialogId != null &&
+    String(row.selectedDialogId) !== '' &&
+    String(row.selectedDialogId) !== '0' &&
+    String(row.selectedDialogId) !== 'assigned'
+      ? row.selectedDialogId
+      : null;
+  const fromAssigned =
+    row.assignedDialogId != null &&
+    String(row.assignedDialogId) !== '' &&
+    String(row.assignedDialogId) !== '0' &&
+    String(row.assignedDialogId) !== 'assigned'
+      ? row.assignedDialogId
+      : null;
+  const selectedDialogId = fromRowSelected ?? fromAssigned;
   const selectedDialog =
     selectedDialogId != null &&
     String(selectedDialogId) !== '' &&
@@ -139,17 +154,120 @@ export function peekMainReturnHandoffPayload(): PopupReturnHandoffPayload | null
   return null;
 }
 
-export function getMainWindowInitialSessionsFromHandoff(): {
+export type InitialSessionsHydration = {
   sessions: ChatSession[];
   activeSessionId: string | null;
-} {
-  if (typeof window === 'undefined') return { sessions: [], activeSessionId: null };
+  /** Сессии пришли из основной вкладки при открытии popup — нужен fetch истории в popup. */
+  fromMainToPopup: boolean;
+};
+
+export function persistMainToOperatorPopupHandoff(args: {
+  isChatOpen: boolean;
+  sessions: ChatSession[];
+  activeSessionId: string | null;
+}): void {
+  if (typeof window === 'undefined') return;
+  const { isChatOpen, sessions, activeSessionId } = args;
+  const ser = serializeSessionsForPopupHandoff(sessions);
+  const payload: PopupReturnHandoffPayload = {
+    v: 2,
+    isChatOpen,
+    activeSessionId,
+    sessions: ser,
+  };
+  try {
+    localStorage.setItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+function deserializeMainToOperatorPopupHandoffRaw(raw: string | null): InitialSessionsHydration {
+  if (!raw) {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+  try {
+    const p = parseHandoffJson(raw);
+    if (!p || p.v !== 2 || !Array.isArray(p.sessions) || p.sessions.length === 0) {
+      return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+    }
+    const sessions = deserializeSessionsForMainRestore(p.sessions);
+    let active = p.activeSessionId ?? null;
+    if (active && !sessions.some((s) => s.id === active)) {
+      const firstExpanded = sessions.find((s) => !s.isMinimized);
+      active = firstExpanded?.id ?? sessions[0]?.id ?? null;
+    }
+    return { sessions, activeSessionId: active, fromMainToPopup: true };
+  } catch {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+}
+
+/**
+ * Только чтение (без удаления): для init ChatProvider в /operator-chat-popup.
+ * Иначе при React Strict Mode первый mount съедает localStorage, второй получает пустые сессии.
+ */
+export function peekMainToOperatorPopupHandoff(): InitialSessionsHydration {
+  if (typeof window === 'undefined') {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+  if (!window.location.pathname.includes('/operator-chat-popup')) {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+  try {
+    const raw = localStorage.getItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY);
+    return deserializeMainToOperatorPopupHandoffRaw(raw);
+  } catch {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+}
+
+/** Читает и удаляет handoff «основная → popup» (если понадобится императивно). */
+export function consumeMainToOperatorPopupHandoff(): InitialSessionsHydration {
+  const data = peekMainToOperatorPopupHandoff();
+  clearMainToOperatorPopupHandoffMarker();
+  return data;
+}
+
+export function hasPendingMainToOperatorPopupHandoff(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (!window.location.pathname.includes('/operator-chat-popup')) return false;
+  try {
+    return localStorage.getItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY) != null;
+  } catch {
+    return false;
+  }
+}
+
+export function clearMainToOperatorPopupHandoffMarker(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function getChatProviderInitialSessionsHydration(): InitialSessionsHydration {
+  if (typeof window === 'undefined') {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
   if (window.location.pathname.includes('/operator-chat-popup')) {
-    return { sessions: [], activeSessionId: null };
+    return peekMainToOperatorPopupHandoff();
+  }
+  return getMainWindowInitialSessionsFromHandoff();
+}
+
+export function getMainWindowInitialSessionsFromHandoff(): InitialSessionsHydration {
+  if (typeof window === 'undefined') {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
+  }
+  if (window.location.pathname.includes('/operator-chat-popup')) {
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
   }
   const p = peekMainReturnHandoffPayload();
   if (!p || p.v !== 2 || !Array.isArray(p.sessions) || p.sessions.length === 0) {
-    return { sessions: [], activeSessionId: null };
+    return { sessions: [], activeSessionId: null, fromMainToPopup: false };
   }
   const sessions = deserializeSessionsForMainRestore(p.sessions);
   let active = p.activeSessionId ?? null;
@@ -157,7 +275,7 @@ export function getMainWindowInitialSessionsFromHandoff(): {
     const firstExpanded = sessions.find((s) => !s.isMinimized);
     active = firstExpanded?.id ?? sessions[0]?.id ?? null;
   }
-  return { sessions, activeSessionId: active };
+  return { sessions, activeSessionId: active, fromMainToPopup: false };
 }
 
 export function persistMainRestoreFromPopupState(args: {

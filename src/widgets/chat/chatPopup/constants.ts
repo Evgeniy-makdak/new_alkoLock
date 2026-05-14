@@ -24,6 +24,17 @@ export const CHAT_MAIN_POPUP_RETURN_V2_LOCAL_STORAGE_KEY =
 export const CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY =
   'alcolock_chat_main_restore_skip_empty_close_local_v1';
 
+/** Одноразовый снимок сессий при открытии /operator-chat-popup из основной вкладки (localStorage). */
+export const CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY =
+  'alcolock_chat_main_to_operator_popup_handoff_v1';
+
+/**
+ * В окне popup: после первого fetch истории/unread по handoff из основной вкладки — не повторять при
+ * React Strict Mode (двойной mount в dev).
+ */
+export const CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY =
+  'alcolock_chat_popup_from_main_fetch_once_v1';
+
 export const OPERATOR_CHAT_POPUP_WINDOW_NAME = 'alcolock-operator-chat';
 
 /** Маркер на `.chatFloatingDock` в окне operator-chat-popup — подгонка размера окна под чат. */

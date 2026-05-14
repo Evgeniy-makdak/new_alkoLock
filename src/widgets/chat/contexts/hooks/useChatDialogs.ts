@@ -32,6 +32,8 @@ export const useChatDialogs = (
   onUnreadDialogsLoaded?: (dialogs: UnreadDialog[]) => void,
   /** После открытия диалога — одна развёрнутая сессия (как при клике по превью чата). */
   ensureExclusiveExpanded?: (sessionId: string) => void,
+  /** Есть ли сессия, уже развёрнутая, отличная от exceptId (для условного exclusive-expand). */
+  hasOtherExpandedSession?: (exceptId: string) => boolean,
 ) => {
   const loadingUnreadDialogsRef = useRef<Set<string>>(new Set());
   const loadDialogInProgressRef = useRef<Set<string>>(new Set());
@@ -145,6 +147,9 @@ export const useChatDialogs = (
       const session = getSession(sessionId);
       if (!session) return;
 
+      const wasMinimized = !!session.isMinimized;
+      const othersExpanded = hasOtherExpandedSession?.(sessionId) ?? false;
+
       const dialogId = dialog.id.toString();
       if (dialogLoadingRef.current.get(dialogId)) return;
 
@@ -178,14 +183,19 @@ export const useChatDialogs = (
           dialogId,
           ownerId: dialog.owner?.id,
         });
-        ensureExclusiveExpanded?.(sessionId);
+        /* expandSession сворачивает все прочие развёрнутые — вызываем только если реально
+         * переключаемся из превью или есть ещё одна развёрнутая сессия (иначе ложный вызов
+         * с «чужим» sessionId мгновенно свернёт основной диалог, см. handoff main→popup). */
+        if (wasMinimized || othersExpanded) {
+          ensureExclusiveExpanded?.(sessionId);
+        }
       } catch (error) {
         console.error('Ошибка открытия диалога:', error);
       } finally {
         setTimeout(() => dialogLoadingRef.current.delete(dialogId), 1000);
       }
     },
-    [getSession, updateSession, ensureExclusiveExpanded],
+    [getSession, updateSession, ensureExclusiveExpanded, hasOtherExpandedSession],
   );
 
   return {
