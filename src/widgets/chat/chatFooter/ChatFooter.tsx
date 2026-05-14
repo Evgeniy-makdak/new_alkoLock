@@ -27,6 +27,16 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
+import {
+  CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
+  CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
+} from '../chatPopup/constants';
+import { persistMainRestoreFromPopupState } from '../chatPopup/mainChatOpenRestoreFromPopup';
+import {
+  closeOperatorChatPopupAndRestoreMain,
+  openOperatorChatPopup,
+} from '../chatPopup/openOperatorChatPopup';
+import { chatPanelDockStorageKeys } from '../chatPopup/popupLayoutStorage';
 import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
@@ -34,11 +44,6 @@ import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDeb
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 import { type ChatFooterPanelSize, ChatFooterResizableFrame } from './ChatFooterResizableFrame';
-import {
-  closeOperatorChatPopupAndRestoreMain,
-  openOperatorChatPopup,
-} from '../chatPopup/openOperatorChatPopup';
-import { chatPanelDockStorageKeys } from '../chatPopup/popupLayoutStorage';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
 const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
@@ -127,9 +132,7 @@ function clampPanelSizeForFloatingDock(
     window.innerHeight - dockBottomPx - PANEL_VIEW_MARGIN_PX,
   );
   const previewStackH =
-    previewCount > 0
-      ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8
-      : 0;
+    previewCount > 0 ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8 : 0;
 
   let maxH = maxDockH;
   if (expandedCount > 0) {
@@ -493,6 +496,7 @@ const ChatContainer = () => {
   const {
     isChatOpen,
     sessions,
+    activeSessionId,
     setActiveSessionId,
     closeSession,
     createNewSession,
@@ -537,21 +541,77 @@ const ChatContainer = () => {
 
   useEffect(() => {
     if (sessions.length === 0 && isChatOpen) {
-      // В popup-окне чат должен оставаться открытым даже без сессий
-      // (сессия создаётся асинхронно при инициализации)
-      if (isOperatorChatPopupWindow) return;
+      if (isOperatorChatPopupWindow) {
+        const newSessionId = createNewSession();
+        if (newSessionId) {
+          void forceLoadUnreadDialogs(newSessionId);
+        }
+        return;
+      }
+      let skipEmptyClose = false;
+      try {
+        skipEmptyClose =
+          sessionStorage.getItem(CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY) === '1';
+        if (skipEmptyClose) {
+          sessionStorage.removeItem(CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY);
+        } else if (
+          localStorage.getItem(CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY) === '1'
+        ) {
+          skipEmptyClose = true;
+          localStorage.removeItem(CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY);
+        }
+      } catch {
+        /* ignore */
+      }
+      if (skipEmptyClose) {
+        const newSessionId = createNewSession();
+        if (newSessionId) {
+          void forceLoadUnreadDialogs(newSessionId);
+        }
+        return;
+      }
       setIsChatOpen(false);
-    } else if (sessions.length > 0 && !isChatOpen) {
+      return;
+    }
+    if (sessions.length > 0 && !isChatOpen) {
       setIsChatOpen(true);
     }
-  }, [sessions, isChatOpen, setIsChatOpen, isOperatorChatPopupWindow]);
+  }, [
+    sessions,
+    isChatOpen,
+    setIsChatOpen,
+    createNewSession,
+    forceLoadUnreadDialogs,
+    isOperatorChatPopupWindow,
+  ]);
 
-  // В popup-окне при открытом чате без сессий — создаём новую сессию
-  useEffect(() => {
-    if (isOperatorChatPopupWindow && isChatOpen && sessions.length === 0) {
-      createNewSession();
+  const operatorChatSessionRestoreFingerprint = useMemo(() => {
+    if (!isOperatorChatPopupWindow) return '';
+    try {
+      return JSON.stringify(
+        sessions.map((s) => ({
+          id: s.id,
+          min: s.isMinimized,
+          sd: s.selectedDialog?.id ?? null,
+          ad: s.assignedDialogId ?? null,
+          su: s.selectedUsers,
+        })),
+      );
+    } catch {
+      return '';
     }
-  }, [isOperatorChatPopupWindow, isChatOpen, sessions.length, createNewSession]);
+  }, [isOperatorChatPopupWindow, sessions]);
+
+  // Пока живёт окно popup — пишем открытость панели и снимок сессий (в т.ч. закрытие вкладки по X).
+  useEffect(() => {
+    if (!isOperatorChatPopupWindow) return;
+    persistMainRestoreFromPopupState({ isChatOpen, sessions, activeSessionId });
+  }, [
+    isOperatorChatPopupWindow,
+    isChatOpen,
+    activeSessionId,
+    operatorChatSessionRestoreFingerprint,
+  ]);
 
   // В popup-окне после появления сессии — загружаем список диалогов для превью
   useEffect(() => {
@@ -624,11 +684,12 @@ const ChatContainer = () => {
 
   const handleOperatorChatWindowButtonClick = useCallback(() => {
     if (isOperatorChatPopupWindow) {
+      persistMainRestoreFromPopupState({ isChatOpen, sessions, activeSessionId });
       closeOperatorChatPopupAndRestoreMain();
     } else {
       openOperatorChatPopup();
     }
-  }, [isOperatorChatPopupWindow]);
+  }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId]);
 
   const operatorChatWindowButtonLabel = t(
     isOperatorChatPopupWindow ? 'chat.returnToSingleWindow' : 'chat.openInSeparateWindow',
@@ -698,9 +759,7 @@ const ChatContainer = () => {
 
   const minimizedSessions = useMemo(
     () =>
-      sessions.filter(
-        (session) => session.isMinimized && hasRenderableMinimizedContent(session),
-      ),
+      sessions.filter((session) => session.isMinimized && hasRenderableMinimizedContent(session)),
     [sessions],
   );
 
@@ -746,13 +805,14 @@ const ChatContainer = () => {
     const nExp = expandedSessions.length;
     const previewColW = previewCount > 0 ? 260 : 0;
     const previewStackH =
-      previewCount > 0
-        ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8
-        : 0;
+      previewCount > 0 ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8 : 0;
     const panelsStackH = nExp * ph + Math.max(0, nExp - 1) * 8;
     const dockH = Math.max(previewStackH, panelsStackH, DOCK_FAB_STACK_H_PX);
     const dockW =
-      DOCK_FAB_COLUMN_W_PX + 2 * MINIMIZED_PREVIEW_GAP_PX + pw + (previewCount > 0 ? previewColW : 0);
+      DOCK_FAB_COLUMN_W_PX +
+      2 * MINIMIZED_PREVIEW_GAP_PX +
+      pw +
+      (previewCount > 0 ? previewColW : 0);
     return { dockW, dockH };
   }, [
     allowDesktopPanelResize,
@@ -884,13 +944,7 @@ const ChatContainer = () => {
         dockBottomPx,
       });
     },
-    [
-      allowDesktopPanelResize,
-      dockPreviewCount,
-      expandedSessions.length,
-      dockRightPx,
-      dockBottomPx,
-    ],
+    [allowDesktopPanelResize, dockPreviewCount, expandedSessions.length, dockRightPx, dockBottomPx],
   );
 
   const getMaxPanelSize = useCallback(

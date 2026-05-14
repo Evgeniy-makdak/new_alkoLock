@@ -66,6 +66,12 @@ export const useChatRefs = () => {
   const dialogTotalElementsCacheRef = useRef<Map<string, number>>(new Map());
   const lastDialogHistoryUpdateRef = useRef<Map<string, number>>(new Map());
 
+  /**
+   * Анти-гонка loadDialogHistory: при смене dialogId в сессии инкрементируется epoch.
+   * Ответ «от предыдущего» диалога не пишет messages; первый выбор пользователя (мета ещё не в стейте) не отбрасывается.
+   */
+  const dialogHistoryLoadEpochRef = useRef<Map<string, { epoch: number; dialogId: string }>>(new Map());
+
   // Локальные сообщения
   const recentLocalMessagesRef = useRef<Map<string, Set<string>>>(new Map());
 
@@ -111,6 +117,7 @@ export const useChatRefs = () => {
     loadHistoryInProgressRef,
     dialogTotalElementsCacheRef,
     lastDialogHistoryUpdateRef,
+    dialogHistoryLoadEpochRef,
     recentLocalMessagesRef,
     loadedPagesRef,
     pageLoadingInProgressRef,

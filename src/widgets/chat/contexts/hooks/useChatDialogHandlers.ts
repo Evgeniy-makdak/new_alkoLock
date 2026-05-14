@@ -42,6 +42,17 @@ function pickDialogMetaFromMessages(messages: any[], dialogId: string): any | nu
   return candidate?.dialog ?? null;
 }
 
+/** После await: ответ loadDialogHistory ещё актуален для этой сессии (смена диалога → новый epoch). */
+function isDialogHistoryLoadStillCurrent(
+  epochMap: Map<string, { epoch: number; dialogId: string }>,
+  sessionId: string,
+  myEpoch: number,
+  loadedDialogId: string,
+): boolean {
+  const cur = epochMap.get(sessionId);
+  return !!cur && cur.epoch === myEpoch && cur.dialogId === String(loadedDialogId);
+}
+
 export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) => {
   const { getSession, updateSession, assignDialog } = deps;
   const {
@@ -51,6 +62,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
     dialogTotalElementsCacheRef,
     lastDialogHistoryUpdateRef,
     loadedDialogsHistoryRef,
+    dialogHistoryLoadEpochRef,
     historyRefreshInProgressRef,
     messagesPaginationStateRef,
     loadingMoreMessagesRef,
@@ -376,6 +388,14 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
 
       if (loadHistoryInProgressRef.current.get(dialogId) && !force) return;
 
+      const dKey = String(dialogId);
+      let epochEntry = dialogHistoryLoadEpochRef.current.get(sessionId);
+      if (!epochEntry || epochEntry.dialogId !== dKey) {
+        epochEntry = { epoch: (epochEntry?.epoch ?? 0) + 1, dialogId: dKey };
+        dialogHistoryLoadEpochRef.current.set(sessionId, epochEntry);
+      }
+      const myEpoch = epochEntry.epoch;
+
       loadHistoryInProgressRef.current.set(dialogId, true);
       historyRefreshInProgressRef.current.add(dialogId);
 
@@ -497,6 +517,16 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
           };
 
           const sessAtSave = getSession(sessionId);
+          if (
+            !isDialogHistoryLoadStillCurrent(
+              dialogHistoryLoadEpochRef.current,
+              sessionId,
+              myEpoch,
+              String(dialogId),
+            )
+          ) {
+            return;
+          }
           const messagesForStore = normalizeOpenPanelInboundSentToDelivered(
             finalMessages,
             dialogId,
@@ -918,7 +948,9 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
                 : {
                     ...(currentDialog || {}),
                     ...incomingDialog,
-                    ...(normalizedIncomingStatus != null ? { status: normalizedIncomingStatus } : {}),
+                    ...(normalizedIncomingStatus != null
+                      ? { status: normalizedIncomingStatus }
+                      : {}),
                     ...(currentLo != null && incomingLo == null && !hasTransferHint
                       ? { lastOperator: currentLo }
                       : {}),

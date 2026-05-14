@@ -1,8 +1,23 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import i18n from '../../../i18n';
+import {
+  clearMainRestoreHandoffMarkers,
+  getMainWindowInitialSessionsFromHandoff,
+  hasPendingMainRestoreHandoff,
+  peekMainRestoreIsChatOpenForMainWindow,
+  peekMainReturnHandoffPayload,
+} from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { ChatConfig } from '../contexts/chatConfig';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -81,6 +96,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       if (url.pathname.includes('/operator-chat-popup')) {
         return true;
       }
+      const restoredFromPopup = peekMainRestoreIsChatOpenForMainWindow();
+      if (restoredFromPopup !== null) {
+        return restoredFromPopup;
+      }
     }
     return false;
   });
@@ -89,6 +108,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const refs = useChatRefs();
   const prevIsChatOpenRef = refs.prevIsChatOpenRef;
   const sessionsRef = useRef<any[]>([]);
+
+  const mainSessionsInitRef = useRef<ReturnType<
+    typeof getMainWindowInitialSessionsFromHandoff
+  > | null>(null);
+  if (mainSessionsInitRef.current === null) {
+    mainSessionsInitRef.current = getMainWindowInitialSessionsFromHandoff();
+  }
+  const mainSessionsInit = mainSessionsInitRef.current;
 
   const {
     sessions,
@@ -106,11 +133,25 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     getSessionByUserId,
     removeDuplicateSessions,
     removeEmptySessions,
-  } = useChatSessions();
+  } = useChatSessions(
+    mainSessionsInit.sessions.length > 0 ? mainSessionsInit.sessions : null,
+    mainSessionsInit.sessions.length > 0 ? mainSessionsInit.activeSessionId : null,
+  );
 
   useEffect(() => {
     sessionsRef.current = sessions;
   }, [sessions]);
+
+  /** После peek в useState init — убираем handoff из storage (не в init: иначе Strict Mode съедает значение). */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname.includes('/operator-chat-popup')) return;
+    if (!hasPendingMainRestoreHandoff()) return;
+    const id = window.setTimeout(() => {
+      clearMainRestoreHandoffMarkers();
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const {
     sendMessage,
@@ -297,6 +338,34 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     updateSession,
     assignDialog,
   });
+
+  const popupHandoffHydratedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.pathname.includes('/operator-chat-popup')) return;
+    if (popupHandoffHydratedRef.current) return;
+    const p = peekMainReturnHandoffPayload();
+    if (!p || p.v !== 2) return;
+    if (popupHandoffHydratedRef.current) return;
+    popupHandoffHydratedRef.current = true;
+    if (!p.sessions?.length) return;
+
+    for (const row of p.sessions) {
+      const hasDid =
+        (row.selectedDialogId != null &&
+          String(row.selectedDialogId) !== '' &&
+          String(row.selectedDialogId) !== '0' &&
+          String(row.selectedDialogId) !== 'assigned') ||
+        (row.assignedDialogId != null &&
+          String(row.assignedDialogId) !== '' &&
+          String(row.assignedDialogId) !== '0' &&
+          String(row.assignedDialogId) !== 'assigned');
+      if (hasDid) {
+        void dialogHandlers.forceRefreshSessionMessages(row.id);
+      }
+      void forceLoadUnreadDialogs(row.id);
+    }
+  }, [dialogHandlers, forceLoadUnreadDialogs]);
 
   const messageHandlers = useChatMessageHandlers(refs, {
     getSession,
@@ -529,7 +598,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     : {}),
                 });
               })
-              .catch((_error: unknown): void => {});
+              .catch((): void => {});
           }
         }
       });

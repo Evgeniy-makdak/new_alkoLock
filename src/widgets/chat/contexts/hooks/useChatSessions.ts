@@ -42,9 +42,20 @@ function normalizeExpandedSessionInboundStatus(s: ChatSession): ChatSession {
   return { ...expanded, messages };
 }
 
-export const useChatSessions = () => {
-  const [sessions, setSessions] = useState<ChatSession[]>([]);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+export const useChatSessions = (
+  initialSessions?: ChatSession[] | null,
+  initialActiveSessionId?: string | null,
+) => {
+  const [sessions, setSessions] = useState<ChatSession[]>(() => initialSessions ?? []);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
+    const list = initialSessions ?? [];
+    if (list.length === 0) return null;
+    if (initialActiveSessionId != null && list.some((s) => s.id === initialActiveSessionId)) {
+      return initialActiveSessionId;
+    }
+    const firstExpanded = list.find((s) => !s.isMinimized);
+    return firstExpanded?.id ?? list[0]?.id ?? null;
+  });
 
   const updateSession = useCallback((sessionId: string, updates: Partial<ChatSession>) => {
     setSessions((prev) =>

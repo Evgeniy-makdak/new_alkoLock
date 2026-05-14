@@ -2,6 +2,7 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
 import { estimateOperatorChatPopupInnerSize } from './estimateOperatorChatPopupWindowSize';
+import { clearMainRestoreIsChatOpenFromPopup } from './mainChatOpenRestoreFromPopup';
 import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
 
 /**
@@ -11,6 +12,7 @@ import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
  */
 export function openOperatorChatPopup(): void {
   clearOperatorChatPopupLayoutStorage();
+  clearMainRestoreIsChatOpenFromPopup();
   const url = `${window.location.origin}${RoutePaths.operatorChatPopup}`;
   const { innerW, innerH } = estimateOperatorChatPopupInnerSize();
   const chromePadW = 24;
