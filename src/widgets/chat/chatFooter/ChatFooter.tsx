@@ -495,12 +495,14 @@ const ChatContainer = () => {
     sessions,
     setActiveSessionId,
     closeSession,
+    createNewSession,
     expandSession,
     forceRefreshSessionMessages,
     toggleSessionMinimize,
     setIsChatOpen,
     openUnreadDialog,
     hasSessionWithUser,
+    forceLoadUnreadDialogs,
   } = useChat();
   const {
     lastMessage,
@@ -535,11 +537,33 @@ const ChatContainer = () => {
 
   useEffect(() => {
     if (sessions.length === 0 && isChatOpen) {
+      // В popup-окне чат должен оставаться открытым даже без сессий
+      // (сессия создаётся асинхронно при инициализации)
+      if (isOperatorChatPopupWindow) return;
       setIsChatOpen(false);
     } else if (sessions.length > 0 && !isChatOpen) {
       setIsChatOpen(true);
     }
-  }, [sessions, isChatOpen, setIsChatOpen]);
+  }, [sessions, isChatOpen, setIsChatOpen, isOperatorChatPopupWindow]);
+
+  // В popup-окне при открытом чате без сессий — создаём новую сессию
+  useEffect(() => {
+    if (isOperatorChatPopupWindow && isChatOpen && sessions.length === 0) {
+      createNewSession();
+    }
+  }, [isOperatorChatPopupWindow, isChatOpen, sessions.length, createNewSession]);
+
+  // В popup-окне после появления сессии — загружаем список диалогов для превью
+  useEffect(() => {
+    if (!isOperatorChatPopupWindow) return;
+    if (sessions.length === 0) return;
+
+    sessions.forEach((session) => {
+      if (session.unreadDialogs.length === 0 && !session.isLoadingUnreadDialogs) {
+        forceLoadUnreadDialogs(session.id);
+      }
+    });
+  }, [isOperatorChatPopupWindow, sessions, forceLoadUnreadDialogs]);
 
   useEffect(() => {
     const unsubscribe = appStore.subscribe(() => {

@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 
 import { OPERATOR_CHAT_POPUP_DOCK_SELECTOR } from './constants';
 
-const MIN_INNER_W = 360;
-const MIN_INNER_H = 320;
 const PAD_PX = 10;
 const MAX_RAF_ATTEMPTS = 180;
+/** В течение этого времени после монтирования не уменьшаем окно — даём React отрендерить полный dock. */
+const INITIAL_RENDER_DELAY_MS = 800;
 
 function outerChromeDelta(): { dx: number; dy: number } {
   const dx = window.outerWidth - window.innerWidth;
@@ -17,14 +17,19 @@ function outerChromeDelta(): { dx: number; dy: number } {
 }
 
 /**
- * Подгоняет внешние размеры окна под блок dock чата (без лишнего пустого viewport).
- * Срабатывает после появления разметки и при изменении dock (превью, ресайз панели).
+ * Подгоняет внешние размеры окна под блок dock чата.
+ * При инициализации сохраняет стартовый размер окна (из window.open) и не даёт
+ * уменьшить его, пока React не отрендерит полный контент dock.
  */
 export function useOperatorChatPopupWindowFrame(): void {
   useEffect(() => {
     let cancelled = false;
     let ro: ResizeObserver | null = null;
     let attempts = 0;
+    const startTime = Date.now();
+    // Запоминаем стартовый размер окна — не даём уменьшить ниже этого.
+    const minOuterW = window.outerWidth;
+    const minOuterH = window.outerHeight;
 
     const apply = () => {
       if (cancelled) return;
@@ -36,11 +41,22 @@ export function useOperatorChatPopupWindowFrame(): void {
       const innerH = Math.ceil(r.bottom + PAD_PX);
       const maxW = window.screen.availWidth;
       const maxH = window.screen.availHeight;
-      const innerWClamped = Math.max(MIN_INNER_W, Math.min(maxW, innerW));
-      const innerHClamped = Math.max(MIN_INNER_H, Math.min(maxH, innerH));
       const { dx, dy } = outerChromeDelta();
+
+      let targetOuterW = innerW + dx;
+      let targetOuterH = innerH + dy;
+
+      // В течение INITIAL_RENDER_DELAY_MS не уменьшаем окно ниже стартового размера.
+      if (Date.now() - startTime < INITIAL_RENDER_DELAY_MS) {
+        targetOuterW = Math.max(targetOuterW, minOuterW);
+        targetOuterH = Math.max(targetOuterH, minOuterH);
+      }
+
+      targetOuterW = Math.min(maxW, targetOuterW);
+      targetOuterH = Math.min(maxH, targetOuterH);
+
       try {
-        window.resizeTo(innerWClamped + dx, innerHClamped + dy);
+        window.resizeTo(targetOuterW, targetOuterH);
       } catch {
         /* ignore — политика браузера */
       }

@@ -74,7 +74,16 @@ function parseWsChatStatusReceipt(payload: any): {
 }
 
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
-  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(() => {
+    // При загрузке в popup-окне чата — сразу открываем диалоговое окно
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (url.pathname.includes('/operator-chat-popup')) {
+        return true;
+      }
+    }
+    return false;
+  });
   const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
 
   const refs = useChatRefs();
