@@ -809,7 +809,11 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
       const dialogId = session.selectedDialog?.id || session.assignedDialogId;
       if (!dialogId || dialogId === '0') return;
 
-      if (session.pagination?.currentPage != null && session.pagination.currentPage !== 0) {
+      if (
+        !force &&
+        session.pagination?.currentPage != null &&
+        session.pagination.currentPage !== 0
+      ) {
         return;
       }
 
@@ -821,7 +825,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
             sessionId,
             dialogId,
             force,
-            session.pagination.currentPage,
+            force ? 0 : session.pagination.currentPage,
             false,
           );
         } else {

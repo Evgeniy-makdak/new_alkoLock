@@ -94,7 +94,13 @@ export interface ChatContextType {
   removeDuplicateSessions: () => void;
   forceRefreshSessionMessages: (sessionId: string, retryCount?: number) => Promise<void>;
   addMessageFromWebSocket: (sessionId: string, messageData: any) => void;
-  loadDialogHistory: (sessionId: string, dialogId: string) => Promise<void>;
+  loadDialogHistory: (
+    sessionId: string,
+    dialogId: string,
+    force?: boolean,
+    targetPage?: number,
+    isMerge?: boolean,
+  ) => Promise<void>;
   sendReadStatusForMessageId: (sessionId: string, messageId: string) => void;
   loadMessagesByUserId: (sessionId: string, userId: number) => Promise<void>;
   autoRefreshOpenSessionMessages?: (sessionId: string) => Promise<void>;

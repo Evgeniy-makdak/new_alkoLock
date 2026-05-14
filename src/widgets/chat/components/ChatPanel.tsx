@@ -84,6 +84,18 @@ function ChatPanel({
   const session = getSession(sessionId);
   const resolvedFeedDialogIdStr = useMemo(() => resolveActiveFeedDialogIdStr(session), [session]);
 
+  /** Без ссылки на массив messages в deps эффекта истории — иначе лишние прогоны при любом updateSession. */
+  const messageBulkDialogKey = useMemo(() => {
+    const msgs = session?.messages;
+    if (!msgs?.length) return 'empty';
+    const ids = new Set<string>();
+    for (const m of msgs) {
+      const id = String((m as any).dialogId ?? (m as any).dialog?.id ?? '');
+      if (id) ids.add(id);
+    }
+    return `${msgs.length}:${Array.from(ids).sort().join(',')}`;
+  }, [session?.messages]);
+
   /** Актуальный getSession без подписки useCallback на usersCache — иначе цикл запросов в UsersSelect. */
   const getSessionLiveRef = useRef(getSession);
   getSessionLiveRef.current = getSession;
@@ -117,6 +129,8 @@ function ChatPanel({
   const prevIsMinimizedRef = useRef<boolean>(false);
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
+  /** Смена выбранного диалога в той же сессии: сбрасываем guard, иначе лента «залипает» на старых сообщениях. */
+  const prevSelectedDialogIdForHistoryRef = useRef<string | null>(null);
   const isSessionSwitchingRef = useRef(false);
   const observerPollSignatureRef = useRef<string>('');
 
@@ -232,11 +246,22 @@ function ChatPanel({
       lastStableUnreadCountRef.current = 0;
       initialLoadDoneRef.current = false;
       historyLoadAttemptedRef.current = false;
+      prevSelectedDialogIdForHistoryRef.current = null;
       isSessionSwitchingRef.current = false;
       prevIsMinimizedRef.current = false;
       observerPollSignatureRef.current = '';
     }
   }, [sessionId]);
+
+  useEffect(() => {
+    const raw = session?.selectedDialog?.id;
+    const sid =
+      raw != null && String(raw).trim() !== '' && String(raw) !== '0' ? String(raw) : null;
+    if (prevSelectedDialogIdForHistoryRef.current !== sid) {
+      prevSelectedDialogIdForHistoryRef.current = sid;
+      historyLoadAttemptedRef.current = false;
+    }
+  }, [session?.selectedDialog?.id]);
 
   useEffect(() => {
     const wasMinimized = prevIsMinimizedRef.current;
@@ -324,16 +349,32 @@ function ChatPanel({
   }, [localClearMessageInput, sessionId, updateSession]);
 
   useEffect(() => {
-    if (
-      session?.selectedDialog?.id &&
-      session.selectedDialog.id !== '0' &&
-      !historyLoadAttemptedRef.current &&
-      (!session.messages || session.messages.length === 0)
-    ) {
-      historyLoadAttemptedRef.current = true;
-      loadDialogHistory(sessionId, session.selectedDialog.id).catch(console.error);
+    if (!session?.selectedDialog?.id || session.selectedDialog.id === '0' || session.isMinimized) {
+      return;
     }
-  }, [session?.selectedDialog?.id, session?.messages, sessionId, loadDialogHistory]);
+    const dialogId = String(session.selectedDialog.id);
+    const msgs = session.messages || [];
+    const hasMessageForDialog = msgs.some(
+      (msg: any) => String(msg.dialogId ?? msg.dialog?.id ?? '') === dialogId,
+    );
+
+    /* В стейте осталась лента от другого диалога (смена сессии/диалога без очистки) — перезагружаем. */
+    if (msgs.length > 0 && !hasMessageForDialog) {
+      void loadDialogHistory(sessionId, dialogId, true).catch(console.error);
+      return;
+    }
+
+    if (!historyLoadAttemptedRef.current && msgs.length === 0) {
+      historyLoadAttemptedRef.current = true;
+      void loadDialogHistory(sessionId, dialogId).catch(console.error);
+    }
+  }, [
+    session?.selectedDialog?.id,
+    messageBulkDialogKey,
+    session?.isMinimized,
+    sessionId,
+    loadDialogHistory,
+  ]);
 
   useEffect(() => {
     if (session?.selectedUsers && session.selectedUsers.length > 0 && !initialLoadDoneRef.current) {
