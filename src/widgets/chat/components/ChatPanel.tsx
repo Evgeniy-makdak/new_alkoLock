@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Close, Minimize } from '@mui/icons-material';
+import { Close, Minimize, PushPin, PushPinOutlined } from '@mui/icons-material';
 import { Box, IconButton, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
@@ -26,6 +26,9 @@ interface ChatPanelProps {
   /** Десктоп: перетаскивание общего dock за область шапки (не кнопки). */
   dockDragEnabled?: boolean;
   onDockDragPointerDown?: (e: React.PointerEvent<HTMLDivElement>) => void;
+  /** Закрепить положение и размер окна чата (только режим floating dock). */
+  chatLayoutPinned?: boolean;
+  onToggleChatLayoutPin?: () => void;
 }
 
 function getLastOperatorIdFromDialog(d: any): number | string | undefined {
@@ -59,6 +62,8 @@ function ChatPanel({
   onScrollToBottomDone,
   dockDragEnabled = false,
   onDockDragPointerDown,
+  chatLayoutPinned = false,
+  onToggleChatLayoutPin,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -418,7 +423,9 @@ function ChatPanel({
           if (!dialogDetails || typeof dialogDetails !== 'object') return;
           const nextStatus = String(dialogDetails.status || '').toUpperCase();
           if (!nextStatus) return;
-          const currentStatus = String(liveSession.selectedDialog?.status || dialogStatus || '').toUpperCase();
+          const currentStatus = String(
+            liveSession.selectedDialog?.status || dialogStatus || '',
+          ).toUpperCase();
           if (nextStatus === currentStatus) return;
 
           setDialogStatus(nextStatus);
@@ -460,7 +467,9 @@ function ChatPanel({
           : '';
     if (!dialogIdForRefresh) return;
 
-    const effectiveStatus = String(session.selectedDialog?.status || dialogStatus || '').toUpperCase();
+    const effectiveStatus = String(
+      session.selectedDialog?.status || dialogStatus || '',
+    ).toUpperCase();
     if (effectiveStatus !== 'CLOSED') return;
 
     const dialogLastOperatorId = getLastOperatorIdFromDialog(session.selectedDialog);
@@ -508,13 +517,15 @@ function ChatPanel({
           const content = Array.isArray(pollResponse?.content) ? pollResponse.content : [];
           const unreadDelivered = content.reduce((acc: number, msg: any) => {
             const isToOperator = String(msg?.messageStatus ?? '').toUpperCase() === 'TO_OPERATOR';
-            const notRead = String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
+            const notRead =
+              String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
             const delivered = String(msg?.confirmStatus ?? '').toUpperCase() === 'DELIVERED';
             return isToOperator && notRead && delivered ? acc + 1 : acc;
           }, 0);
           const unreadSent = content.reduce((acc: number, msg: any) => {
             const isToOperator = String(msg?.messageStatus ?? '').toUpperCase() === 'TO_OPERATOR';
-            const notRead = String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
+            const notRead =
+              String(msg?.confirmStatus ?? '').toUpperCase() !== 'READ' && !msg?.is_read;
             const sent = String(msg?.confirmStatus ?? '').toUpperCase() === 'SENT';
             return isToOperator && notRead && sent ? acc + 1 : acc;
           }, 0);
@@ -897,7 +908,8 @@ function ChatPanel({
           const freshDialog = await api.getDialogById(effectiveDialogId);
           const freshLastOpId = getLastOperatorIdFromDialog(freshDialog);
           if (freshDialog && typeof freshDialog === 'object') {
-            const incomingLo = (freshDialog as any).lastOperator ?? (freshDialog as any).last_operator;
+            const incomingLo =
+              (freshDialog as any).lastOperator ?? (freshDialog as any).last_operator;
             updateSession(sessionId, {
               selectedDialog: {
                 ...(live.selectedDialog || {}),
@@ -974,7 +986,15 @@ function ChatPanel({
         setIsTransferLoading(false);
       }
     },
-    [isTransferLoading, authId, sessionId, getSession, updateSession, dialogStatus, isCompleteButtonActive],
+    [
+      isTransferLoading,
+      authId,
+      sessionId,
+      getSession,
+      updateSession,
+      dialogStatus,
+      isCompleteButtonActive,
+    ],
   );
 
   const handleMarkMessagesAsRead = useCallback(
@@ -1098,7 +1118,9 @@ function ChatPanel({
     if (!session) return;
     if (!Number.isFinite(activeDialogNumericId)) return;
 
-    const effectiveStatus = String(session.selectedDialog?.status || dialogStatus || '').toUpperCase();
+    const effectiveStatus = String(
+      session.selectedDialog?.status || dialogStatus || '',
+    ).toUpperCase();
     if (effectiveStatus !== 'CLOSED') return;
 
     const lastOperatorId = getLastOperatorIdFromDialog(session.selectedDialog);
@@ -1277,8 +1299,7 @@ function ChatPanel({
       (blockingOperatorLo.id != null ? t('chat.userWithId', { id: blockingOperatorLo.id }) : ''));
   const transferRecipientDisplayName = transferRecipientFullName || localTransferBannerName || null;
   const shouldShowTransferBanner =
-    dialogStatusEffective === 'CLOSED' &&
-    !!transferRecipientDisplayName;
+    dialogStatusEffective === 'CLOSED' && !!transferRecipientDisplayName;
 
   useEffect(() => {
     if (dialogStatusEffective !== 'CLOSED') {
@@ -1298,7 +1319,7 @@ function ChatPanel({
     if (
       isTransferBannerPinned &&
       dialogStatusEffective === 'CLOSED' &&
-      (hasForeignOwnerInClosedState || !!transferRecipientFullName)
+      (hasForeignOwnerInClosedState || transferRecipientFullName)
     ) {
       setIsTransferBannerPinned(false);
     }
@@ -1329,6 +1350,18 @@ function ChatPanel({
           </span>
         )}
         <div className={styles.headerActions}>
+          {onToggleChatLayoutPin ? (
+            <IconButton
+              size="small"
+              onClick={onToggleChatLayoutPin}
+              title={chatLayoutPinned ? t('chat.unpinChatLayout') : t('chat.pinChatLayout')}>
+              {chatLayoutPinned ? (
+                <PushPin fontSize="small" />
+              ) : (
+                <PushPinOutlined fontSize="small" />
+              )}
+            </IconButton>
+          ) : null}
           <IconButton size="small" onClick={handleMinimize} title={t('chat.minimizeDialog')}>
             <Minimize fontSize="small" />
           </IconButton>
@@ -1412,7 +1445,10 @@ function ChatPanel({
             showTransferButton={!!pendingTransferOperator}
             onTransferClick={() => {
               if (!pendingTransferOperator) return;
-              void handleTransferToOperator(pendingTransferOperator.id, pendingTransferOperator.label);
+              void handleTransferToOperator(
+                pendingTransferOperator.id,
+                pendingTransferOperator.label,
+              );
             }}
             isTransferLoading={isTransferLoading}
           />

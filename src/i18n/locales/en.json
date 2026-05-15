@@ -647,6 +647,8 @@
     "dialogTitleFallback": "Dialog with user",
     "minimizeDialog": "Minimize dialog",
     "closeDialog": "Close dialog",
+    "pinChatLayout": "Pin chat window position and size",
+    "unpinChatLayout": "Unpin chat window (move and resize again)",
     "usersLabel": "Users",
     "searchUsersPlaceholder": "Search users...",
     "usersNotFound": "No users found",

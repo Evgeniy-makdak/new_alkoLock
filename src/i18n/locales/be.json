@@ -645,6 +645,8 @@
     "dialogTitleFallback": "Дыялог з карыстальнікам",
     "minimizeDialog": "Згарнуць дыялог",
     "closeDialog": "Зачыніць дыялог",
+    "pinChatLayout": "Замацаваць становішча і памер акна чата",
+    "unpinChatLayout": "Адмацаваць акно чата (зноў можна перамяшчаць і змяняць памер)",
     "usersLabel": "Карыстальнікі",
     "searchUsersPlaceholder": "Пошук карыстальнікаў...",
     "usersNotFound": "Карыстальнікі не знойдзены",

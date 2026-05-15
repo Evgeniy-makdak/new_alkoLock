@@ -644,6 +644,8 @@
     "dialogTitleFallback": "Foydalanuvchi bilan dialog",
     "minimizeDialog": "Dialogni yig'ish",
     "closeDialog": "Dialogni yopish",
+    "pinChatLayout": "Chat oynasi joylashuvi va o'lchamini mahkamlash",
+    "unpinChatLayout": "Chat oynasini ajratish (qayta ko'chirish va o'lchamni o'zgartirish)",
     "usersLabel": "Foydalanuvchilar",
     "searchUsersPlaceholder": "Foydalanuvchilarni qidirish...",
     "usersNotFound": "Foydalanuvchilar topilmadi",

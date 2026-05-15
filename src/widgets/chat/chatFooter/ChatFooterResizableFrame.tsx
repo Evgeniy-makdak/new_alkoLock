@@ -15,6 +15,8 @@ type Props = {
   children: ReactNode;
   /** Внутри `.chatFloatingDock`: без position:fixed у корня */
   docked?: boolean;
+  /** Закреплённая геометрия: без ручек ресайза */
+  resizeDisabled?: boolean;
 };
 
 function clampSize(n: number, lo: number, hi: number): number {
@@ -36,6 +38,7 @@ export function ChatFooterResizableFrame({
   getMaxSize,
   children,
   docked = false,
+  resizeDisabled = false,
 }: Props) {
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{
@@ -108,6 +111,7 @@ export function ChatFooterResizableFrame({
 
   const onHandlePointerDown = useCallback(
     (ev: React.PointerEvent<HTMLDivElement>) => {
+      if (resizeDisabled) return;
       const edge = parseEdge(ev.currentTarget.dataset.resizeEdge);
       if (!edge || ev.button !== 0) return;
       ev.preventDefault();
@@ -133,7 +137,7 @@ export function ChatFooterResizableFrame({
       window.addEventListener('pointerup', onPointerUp, { passive: false });
       window.addEventListener('pointercancel', onPointerUp, { passive: false });
     },
-    [onPointerMove, onPointerUp, size.h, size.w],
+    [onPointerMove, onPointerUp, resizeDisabled, size.h, size.w],
   );
 
   return (
@@ -141,24 +145,28 @@ export function ChatFooterResizableFrame({
       className={`${styles.chatFooterResizeRoot} ${docked ? styles.chatFooterResizeDocked : ''} ${isDragging ? styles.chatFooterResizeRootDragging : ''}`}
       style={{ width: size.w, height: size.h }}>
       <div className={styles.chatFooterResizeInner}>{children}</div>
-      <div
-        className={`${styles.resizeHandle} ${styles.resizeN}`}
-        data-resize-edge="n"
-        onPointerDown={onHandlePointerDown}
-        aria-hidden
-      />
-      <div
-        className={`${styles.resizeHandle} ${styles.resizeW}`}
-        data-resize-edge="w"
-        onPointerDown={onHandlePointerDown}
-        aria-hidden
-      />
-      <div
-        className={`${styles.resizeHandle} ${styles.resizeNw}`}
-        data-resize-edge="nw"
-        onPointerDown={onHandlePointerDown}
-        aria-hidden
-      />
+      {!resizeDisabled ? (
+        <>
+          <div
+            className={`${styles.resizeHandle} ${styles.resizeN}`}
+            data-resize-edge="n"
+            onPointerDown={onHandlePointerDown}
+            aria-hidden
+          />
+          <div
+            className={`${styles.resizeHandle} ${styles.resizeW}`}
+            data-resize-edge="w"
+            onPointerDown={onHandlePointerDown}
+            aria-hidden
+          />
+          <div
+            className={`${styles.resizeHandle} ${styles.resizeNw}`}
+            data-resize-edge="nw"
+            onPointerDown={onHandlePointerDown}
+            aria-hidden
+          />
+        </>
+      ) : null}
     </div>
   );
 }

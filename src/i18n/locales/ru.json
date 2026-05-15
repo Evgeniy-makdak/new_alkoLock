@@ -647,6 +647,8 @@
     "dialogTitleFallback": "Диалог с пользователем",
     "minimizeDialog": "Свернуть диалог",
     "closeDialog": "Закрыть диалог",
+    "pinChatLayout": "Закрепить положение и размер окна чата",
+    "unpinChatLayout": "Открепить окно чата (можно снова перемещать и менять размер)",
     "usersLabel": "Пользователи",
     "searchUsersPlaceholder": "Поиск пользователей...",
     "usersNotFound": "Пользователи не найдены",

@@ -644,6 +644,8 @@
     "dialogTitleFallback": "Колдонуучу менен диалог",
     "minimizeDialog": "Диалогту жыйноо",
     "closeDialog": "Диалогту жабуу",
+    "pinChatLayout": "Чат терезесинин ордун жана өлчөмүн бекитүү",
+    "unpinChatLayout": "Чат терезесин бошотуу (кайра жылдыруу жана өлчөмдү өзгөртүү)",
     "usersLabel": "Колдонуучулар",
     "searchUsersPlaceholder": "Колдонуучуларды издөө...",
     "usersNotFound": "Колдонуучулар табылган жок",
