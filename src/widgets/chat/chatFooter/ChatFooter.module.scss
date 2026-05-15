@@ -648,15 +648,6 @@
 // АДАПТИВНЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ
 // ====================================================
 
-// Для мобильных: бейджи FAB не должны перекрывать диалог чата
-@media (max-width: 1023px) {
-  .notifications,
-  .minimizedListCountBadge,
-  .minimizedListCountBadgeUnread {
-    z-index: 10;
-  }
-}
-
 // Для планшетов (от 768px до 1024px)
 @media (max-width: 1024px) {
   .chatFooter {
