@@ -1,20 +1,14 @@
+import {
+  POPUP_DOCK_PANEL_H_PX,
+  POPUP_DOCK_PANEL_W_PX,
+  getOperatorChatPopupMinInnerSize,
+  getOperatorChatPopupMinOuterSize,
+} from './operatorChatPopupLayout';
 import { chatPanelDockStorageKeys } from './popupLayoutStorage';
-
-/**
- * Ключи `chatPanelDockStorageKeys(true)` — отдельно от основной вкладки; перед открытием очищаются в openOperatorChatPopup.
- * Оценка стартового окна до монтирования React; точная подгонка — useOperatorChatPopupWindowFrame.
- */
-const DEFAULT_PANEL_W = 520;
-const DEFAULT_PANEL_H = 660;
-const DOCK_FAB_COLUMN_W_PX = 56;
-const MINIMIZED_PREVIEW_GAP_PX = 28;
-const PREVIEW_COL_W_PX = 260;
-const DOCK_FAB_STACK_H_PX = 196;
-const INITIAL_PAD_PX = 16;
 
 function readSavedPopupPanel(): { w: number; h: number } {
   if (typeof window === 'undefined') {
-    return { w: DEFAULT_PANEL_W, h: DEFAULT_PANEL_H };
+    return { w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX };
   }
   const k = chatPanelDockStorageKeys(true);
   try {
@@ -26,14 +20,21 @@ function readSavedPopupPanel(): { w: number; h: number } {
   } catch {
     /* ignore */
   }
-  return { w: DEFAULT_PANEL_W, h: DEFAULT_PANEL_H };
+  return { w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX };
 }
 
-/** Внутренние размеры контента (innerWidth/innerHeight окна) для первого открытия. */
+/** Внутренние размеры для window.open (с колонкой превью). */
 export function estimateOperatorChatPopupInnerSize(): { innerW: number; innerH: number } {
   const { w: pw, h: ph } = readSavedPopupPanel();
-  const innerW =
-    pw + DOCK_FAB_COLUMN_W_PX + 2 * MINIMIZED_PREVIEW_GAP_PX + PREVIEW_COL_W_PX + INITIAL_PAD_PX;
-  const innerH = Math.max(ph, DOCK_FAB_STACK_H_PX) + INITIAL_PAD_PX;
-  return { innerW, innerH };
+  const min = getOperatorChatPopupMinInnerSize(pw);
+  return {
+    innerW: min.innerW,
+    innerH: Math.max(ph, min.innerH),
+  };
+}
+
+/** Внешние размеры окна при открытии. */
+export function estimateOperatorChatPopupOuterSize(): { outerW: number; outerH: number } {
+  const { w: pw } = readSavedPopupPanel();
+  return getOperatorChatPopupMinOuterSize(pw);
 }

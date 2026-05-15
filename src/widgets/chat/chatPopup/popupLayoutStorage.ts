@@ -9,7 +9,7 @@ const MAIN_PANEL_H = 'alcolock_chat_panel_h_v1';
 const MAIN_DOCK_R = 'alcolock_chat_dock_r_v1';
 const MAIN_DOCK_B = 'alcolock_chat_dock_b_v1';
 const MAIN_LAYOUT_PINNED = 'alcolock_chat_layout_pinned_v1';
-const CHAT_POPUP_LAYOUT_PINNED = 'alcolock_operator_chat_popup_layout_pinned_v1';
+export const CHAT_POPUP_LAYOUT_PINNED = 'alcolock_operator_chat_popup_layout_pinned_v1';
 
 export type ChatPanelDockStorageKeys = {
   panelW: string;
@@ -62,9 +62,15 @@ export function writeChatLayoutPinned(isOperatorChatPopup: boolean, pinned: bool
   }
 }
 
-/** Вызывать перед window.open: новое окно чата всегда с дефолтными размерами/отступами dock. */
+/**
+ * Перед window.open: сброс геометрии dock в popup.
+ * Если layout закреплён — сохраняем pin и сохранённые размеры/позицию между открытиями popup.
+ */
 export function clearOperatorChatPopupLayoutStorage(): void {
   try {
+    if (readChatLayoutPinned(true)) {
+      return;
+    }
     localStorage.removeItem(CHAT_POPUP_PANEL_W_STORAGE_KEY);
     localStorage.removeItem(CHAT_POPUP_PANEL_H_STORAGE_KEY);
     localStorage.removeItem(CHAT_POPUP_DOCK_R_STORAGE_KEY);

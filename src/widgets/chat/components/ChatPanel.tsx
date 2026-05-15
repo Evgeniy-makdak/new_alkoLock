@@ -1353,7 +1353,10 @@ function ChatPanel({
           {onToggleChatLayoutPin ? (
             <IconButton
               size="small"
-              onClick={onToggleChatLayoutPin}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleChatLayoutPin();
+              }}
               title={chatLayoutPinned ? t('chat.unpinChatLayout') : t('chat.pinChatLayout')}>
               {chatLayoutPinned ? (
                 <PushPin fontSize="small" />

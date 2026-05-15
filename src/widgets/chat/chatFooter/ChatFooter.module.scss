@@ -327,6 +327,27 @@
   box-sizing: border-box;
 }
 
+/* Отдельное окно чата: бейджи FAB и превью не обрезаются (Firefox/Edge). */
+.chatFloatingDock[data-operator-chat-dock='1'] {
+  overflow: visible;
+
+  .dockFabColumn {
+    overflow: visible;
+  }
+
+  .toggleButtonWrapper {
+    overflow: visible;
+
+    .notifications {
+      z-index: 1002;
+    }
+  }
+
+  .minimizedChatsDocked {
+    overflow: visible;
+  }
+}
+
 .chatFloatingDockDragging {
   user-select: none;
 

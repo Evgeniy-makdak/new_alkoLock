@@ -31,8 +31,9 @@
 }
 
 .mainOperatorChatPopup {
-  .content {
-    overflow: hidden;
+  .content,
+  .contentWrapper {
+    overflow: visible;
   }
 }
 

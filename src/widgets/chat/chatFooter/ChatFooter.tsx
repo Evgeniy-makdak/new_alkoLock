@@ -39,7 +39,10 @@ import {
   closeOperatorChatPopupAndRestoreMain,
   openOperatorChatPopup,
 } from '../chatPopup/openOperatorChatPopup';
+import { OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX } from '../chatPopup/operatorChatPopupLayout';
+import { writeOperatorChatPopupFrameLock } from '../chatPopup/operatorChatPopupFrameLock';
 import {
+  CHAT_POPUP_LAYOUT_PINNED,
   chatPanelDockStorageKeys,
   readChatLayoutPinned,
   writeChatLayoutPinned,
@@ -58,6 +61,16 @@ const CHAT_COMPACT_MINIMIZED_QUERY = '(max-width: 1024px)';
 /** Геометрия `.chatFooter` / `ChatFooterResizableRoot`: превью левее развёрнутого окна с зазором. */
 const CHAT_FOOTER_RIGHT = 80;
 const CHAT_FOOTER_BOTTOM = 80;
+
+function defaultDockMargins(isOperatorChatPopup: boolean): { r: number; b: number } {
+  if (isOperatorChatPopup) {
+    return {
+      r: OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
+      b: OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
+    };
+  }
+  return { r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM };
+}
 const MINIMIZED_PREVIEW_GAP_PX = 28;
 const DEFAULT_CHAT_PANEL: ChatFooterPanelSize = { w: 520, h: 660 };
 const MIN_CHAT_PANEL: ChatFooterPanelSize = { w: 360, h: 320 };
@@ -823,15 +836,16 @@ const ChatContainer = () => {
   const [isChatLayoutPinned, setIsChatLayoutPinned] = useState(() =>
     readChatLayoutPinned(isOperatorChatPopupWindow),
   );
+  const popupDockDefaults = defaultDockMargins(isOperatorChatPopupWindow);
   const [dockRightPx, setDockRightPx] = useState(
-    () => readSavedDockMargins(isOperatorChatPopupWindow)?.r ?? CHAT_FOOTER_RIGHT,
+    () => readSavedDockMargins(isOperatorChatPopupWindow)?.r ?? popupDockDefaults.r,
   );
   const [dockBottomPx, setDockBottomPx] = useState(
-    () => readSavedDockMargins(isOperatorChatPopupWindow)?.b ?? CHAT_FOOTER_BOTTOM,
+    () => readSavedDockMargins(isOperatorChatPopupWindow)?.b ?? popupDockDefaults.b,
   );
   const [isDockDragging, setIsDockDragging] = useState(false);
 
-  const dockPosRef = useRef({ r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM });
+  const dockPosRef = useRef({ r: popupDockDefaults.r, b: popupDockDefaults.b });
   /** Чтобы при первом mount с 0 сессий не сбрасывать dock; сброс только при переходе N>0 → 0 (закрыли весь чат). */
   const prevSessionsLenForDockRef = useRef<number | null>(null);
   /** Только основная вкладка: свернули последнюю панель — сброс размеров/позиции dock в LS. В попапе не трогаем. */
@@ -851,16 +865,66 @@ const ChatContainer = () => {
     }
   }, [isOperatorChatPopupWindow, panelSize.h, panelSize.w]);
 
+  const applyPinnedLayoutFromStorage = useCallback(() => {
+    if (!readChatLayoutPinned(isOperatorChatPopupWindow)) return;
+    const saved = readSavedPanelSize(isOperatorChatPopupWindow);
+    const dock = readSavedDockMargins(isOperatorChatPopupWindow);
+    if (saved) {
+      setPanelSize({
+        w: Math.max(MIN_CHAT_PANEL.w, saved.w),
+        h: Math.max(MIN_CHAT_PANEL.h, saved.h),
+      });
+    }
+    if (dock) {
+      setDockRightPx(dock.r);
+      setDockBottomPx(dock.b);
+      dockPosRef.current = { r: dock.r, b: dock.b };
+    }
+  }, [isOperatorChatPopupWindow]);
+
   const handleToggleChatLayoutPin = useCallback(() => {
     setIsChatLayoutPinned((prev) => {
       const next = !prev;
       if (next) {
         persistChatLayoutGeometry();
+        if (isOperatorChatPopupWindow) {
+          try {
+            writeOperatorChatPopupFrameLock({
+              outerW: window.outerWidth,
+              outerH: window.outerHeight,
+              left: window.screenX,
+              top: window.screenY,
+            });
+          } catch {
+            /* ignore */
+          }
+        }
       }
       writeChatLayoutPinned(isOperatorChatPopupWindow, next);
       return next;
     });
   }, [isOperatorChatPopupWindow, persistChatLayoutGeometry]);
+
+  useLayoutEffect(() => {
+    if (!isChatLayoutPinned || !allowDesktopPanelResize) return;
+    applyPinnedLayoutFromStorage();
+  }, [isChatLayoutPinned, allowDesktopPanelResize, applyPinnedLayoutFromStorage]);
+
+  useEffect(() => {
+    if (!isOperatorChatPopupWindow) return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== CHAT_POPUP_LAYOUT_PINNED && !e.key?.startsWith('alcolock_operator_chat_popup_')) {
+        return;
+      }
+      const pinned = readChatLayoutPinned(true);
+      setIsChatLayoutPinned(pinned);
+      if (pinned) {
+        applyPinnedLayoutFromStorage();
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [isOperatorChatPopupWindow, applyPinnedLayoutFromStorage]);
 
   /** Сброс геометрии чата только в основном окне (не в operator-chat-popup). */
   const resetMainWindowChatLayoutToDefaults = useCallback(() => {
@@ -920,9 +984,10 @@ const ChatContainer = () => {
     }
     if (prev > 0 && sessions.length === 0 && !isChatLayoutPinned) {
       if (isOperatorChatPopupWindow) {
-        setDockRightPx(CHAT_FOOTER_RIGHT);
-        setDockBottomPx(CHAT_FOOTER_BOTTOM);
-        dockPosRef.current = { r: CHAT_FOOTER_RIGHT, b: CHAT_FOOTER_BOTTOM };
+        const d = defaultDockMargins(true);
+        setDockRightPx(d.r);
+        setDockBottomPx(d.b);
+        dockPosRef.current = { r: d.r, b: d.b };
         try {
           const k = chatPanelDockStorageKeys(true);
           localStorage.removeItem(k.dockR);
@@ -1007,7 +1072,7 @@ const ChatContainer = () => {
   );
 
   useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned) return;
+    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
     const onWin = () => {
       const { dockW, dockH } = dockDimensionsRef.current;
       const c = clampDockMargins(dockPosRef.current.r, dockPosRef.current.b, dockW, dockH);
@@ -1016,10 +1081,10 @@ const ChatContainer = () => {
     };
     window.addEventListener('resize', onWin);
     return () => window.removeEventListener('resize', onWin);
-  }, [allowDesktopPanelResize, isChatLayoutPinned]);
+  }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow]);
 
   useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned) return;
+    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
     const { dockW, dockH } = dockDimensions;
     const curR = dockPosRef.current.r;
     const curB = dockPosRef.current.b;
@@ -1028,13 +1093,25 @@ const ChatContainer = () => {
       setDockRightPx(c.r);
       setDockBottomPx(c.b);
     }
-  }, [allowDesktopPanelResize, isChatLayoutPinned, dockDimensions.dockH, dockDimensions.dockW]);
+  }, [
+    allowDesktopPanelResize,
+    isChatLayoutPinned,
+    isOperatorChatPopupWindow,
+    dockDimensions.dockH,
+    dockDimensions.dockW,
+  ]);
 
   const dockPreviewCount = minimizedSessions.length + dedupedUnreadPreviewRows.length;
 
   const resolvePanelSize = useCallback(
     (s: ChatFooterPanelSize) => {
       if (!allowDesktopPanelResize) return clampPanelSize(s);
+      if (isOperatorChatPopupWindow) {
+        return {
+          w: Math.max(MIN_CHAT_PANEL.w, s.w),
+          h: Math.max(MIN_CHAT_PANEL.h, s.h),
+        };
+      }
       return clampPanelSizeForFloatingDock(s, {
         previewCount: dockPreviewCount,
         expandedCount: expandedSessions.length,
@@ -1042,19 +1119,38 @@ const ChatContainer = () => {
         dockBottomPx,
       });
     },
-    [allowDesktopPanelResize, dockPreviewCount, expandedSessions.length, dockRightPx, dockBottomPx],
+    [
+      allowDesktopPanelResize,
+      isOperatorChatPopupWindow,
+      dockPreviewCount,
+      expandedSessions.length,
+      dockRightPx,
+      dockBottomPx,
+    ],
   );
 
-  const getMaxPanelSize = useCallback(
-    () =>
-      getMaxPanelSizeForFloatingDock({
-        previewCount: dockPreviewCount,
-        expandedCount: expandedSessions.length,
-        dockRightPx,
-        dockBottomPx,
-      }),
-    [dockPreviewCount, expandedSessions.length, dockRightPx, dockBottomPx],
-  );
+  const getMaxPanelSize = useCallback(() => {
+    if (isOperatorChatPopupWindow) {
+      return {
+        w: Math.max(panelSize.w, DEFAULT_CHAT_PANEL.w),
+        h: Math.max(panelSize.h, DEFAULT_CHAT_PANEL.h),
+      };
+    }
+    return getMaxPanelSizeForFloatingDock({
+      previewCount: dockPreviewCount,
+      expandedCount: expandedSessions.length,
+      dockRightPx,
+      dockBottomPx,
+    });
+  }, [
+    isOperatorChatPopupWindow,
+    panelSize.w,
+    panelSize.h,
+    dockPreviewCount,
+    expandedSessions.length,
+    dockRightPx,
+    dockBottomPx,
+  ]);
 
   const handlePanelSizeCommit = useCallback(
     (next: ChatFooterPanelSize) => {
@@ -1073,18 +1169,18 @@ const ChatContainer = () => {
   );
 
   useLayoutEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned) return;
+    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
     setPanelSize((prev) => resolvePanelSize(prev));
-  }, [allowDesktopPanelResize, isChatLayoutPinned, resolvePanelSize]);
+  }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow, resolvePanelSize]);
 
   useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned) return;
+    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
     const onWinResize = () => {
       setPanelSize((prev) => resolvePanelSize(prev));
     };
     window.addEventListener('resize', onWinResize);
     return () => window.removeEventListener('resize', onWinResize);
-  }, [allowDesktopPanelResize, isChatLayoutPinned, resolvePanelSize]);
+  }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow, resolvePanelSize]);
 
   const dialogIdsToFetch = useMemo(() => {
     const ids = new Set<number>();
@@ -1254,7 +1350,7 @@ const ChatContainer = () => {
   return (
     <div className={styles.chatContainer}>
       {!allowDesktopPanelResize && <NewChatButton />}
-      {isOperatorChatPopupWindow && !allowDesktopPanelResize && (
+      {isOperatorChatPopupWindow && !allowDesktopPanelResize && !isChatLayoutPinned && (
         <Tooltip title={operatorChatWindowButtonLabel} placement="left">
           <div className={styles.operatorPopupReturnFab}>
             <IconButton

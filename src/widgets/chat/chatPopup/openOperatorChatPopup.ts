@@ -1,26 +1,25 @@
 import { RoutePaths } from '@shared/config/routePathsEnum';
 
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
-import { estimateOperatorChatPopupInnerSize } from './estimateOperatorChatPopupWindowSize';
+import { estimateOperatorChatPopupOuterSize } from './estimateOperatorChatPopupWindowSize';
 import { clearMainRestoreIsChatOpenFromPopup } from './mainChatOpenRestoreFromPopup';
+import { writeOperatorChatPopupFrameLock } from './operatorChatPopupFrameLock';
 import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
 
 /**
  * Отдельное окно с тем же origin (сессия из storage).
  * `popup=yes` — в Chromium открывается не вкладка, а всплывающее окно с урезанным UI (см. window.open features).
- * Точная подгонка под dock — в useOperatorChatPopupWindowFrame после монтирования.
+ * Размер задаётся здесь; в popup только восстановление lock при сбое ОС (без подгонки по dock).
  */
 export function openOperatorChatPopup(): void {
   clearOperatorChatPopupLayoutStorage();
   clearMainRestoreIsChatOpenFromPopup();
   const url = `${window.location.origin}${RoutePaths.operatorChatPopup}`;
-  const { innerW, innerH } = estimateOperatorChatPopupInnerSize();
-  const chromePadW = 24;
-  const chromePadH = 64;
-  let outerW = Math.min(window.screen.availWidth, innerW + chromePadW);
-  let outerH = Math.min(window.screen.availHeight, innerH + chromePadH);
-  outerW = Math.max(360, outerW);
-  outerH = Math.max(320, outerH);
+  const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize();
+  let outerW = Math.min(window.screen.availWidth, estOuterW);
+  let outerH = Math.min(window.screen.availHeight, estOuterH);
+  outerW = Math.max(estOuterW, outerW);
+  outerH = Math.max(estOuterH, outerH);
 
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const availLeft = scr.availLeft ?? 0;
@@ -39,8 +38,16 @@ export function openOperatorChatPopup(): void {
     'location=no',
     'status=no',
     'scrollbars=no',
-    'resizable=yes',
+    /* Без ручного ресайза краёв; maximize у ОС перехватываем в useOperatorChatPopupWindowFrame. */
+    'resizable=no',
   ].join(',');
+
+  writeOperatorChatPopupFrameLock({
+    outerW: Math.round(outerW),
+    outerH: Math.round(outerH),
+    left: Math.round(left),
+    top: Math.round(top),
+  });
 
   const win = window.open(url, OPERATOR_CHAT_POPUP_WINDOW_NAME, features);
   win?.focus();
