@@ -32,6 +32,7 @@ export const AdaptiveTitle: React.FC<AdaptiveTitleProps> = ({ title }) => {
           fontWeight: 'bold',
           padding: '4px 8px',
           display: 'block',
+          whiteSpace: 'nowrap',
           transition: 'font-size 0.3s ease, margin-left 0.3s ease',
         }}>
         {title}

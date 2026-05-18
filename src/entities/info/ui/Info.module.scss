@@ -65,6 +65,36 @@
   align-items: start;
 }
 
+.sectionTitleRow {
+  grid-template-columns: minmax(0, 1fr);
+
+  .label {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+  }
+}
+
+.sectionTitle {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 4px 0;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+/* Десктоп: заголовок секции «Дополнительные сведения» в одну строку */
+@media (min-width: 769px) {
+  .sectionTitle {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+}
+
 /* Мобильная карточка «Инфо»: заметный зазор между подписью и значением (идёт после .row — перекрывает сетку) */
 @media (max-width: 768px) {
   .info {
@@ -122,6 +152,12 @@
 
 .wrapperText {
   max-width: 100%;
+
+  @media (min-width: 769px) {
+    &.wrapperTextCopyble {
+      width: 100%;
+    }
+  }
 
   @media (max-width: 768px) {
     max-width: 100%;

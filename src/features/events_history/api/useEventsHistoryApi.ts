@@ -3,7 +3,7 @@ import type React from 'react';
 import { Dayjs } from 'dayjs';
 
 import { EventsApi } from '@shared/api/baseQuerys';
-import { SortTypes, SortsTypes } from '@shared/config/queryParamsEnums';
+import { SortTypes } from '@shared/config/queryParamsEnums';
 import type { EventsOptions, IDeviceAction } from '@shared/types/BaseQueryTypes';
 
 // @ts-expect-error: временное решение
@@ -31,16 +31,19 @@ export const fetchNewList = (
       endDate: options?.endDate ? options.endDate.toISOString() : undefined,
     };
 
-    // Явно указываем параметры сортировки
-    const sortBy = options?.sortField === 'id' ? SortTypes.ID : SortTypes.DATE_OCCURRENT;
-    const order = options?.sortOrder?.toLowerCase() ?? SortsTypes.desc;
+    const hasExplicitSort = options?.sortField != null && options?.sortOrder != null;
+    const sortBy = hasExplicitSort
+      ? options.sortField === 'id'
+        ? SortTypes.ID
+        : SortTypes.DATE_OCCURRENT
+      : undefined;
+    const order = hasExplicitSort ? options.sortOrder!.toLowerCase() : undefined;
 
     const queryParams = {
       ...options,
       page: pageNum,
       limit: options?.pageSize,
-      order,
-      sortBy,
+      ...(hasExplicitSort ? { order, sortBy } : {}),
       eventType: options?.eventTypes?.join(','),
       filterOptions,
     };

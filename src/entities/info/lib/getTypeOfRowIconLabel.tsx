@@ -189,6 +189,8 @@ export interface Field {
   type?: TypeOfRows;
   tooltip?: string;
   summaryExhaleResult?: keyof typeof summaryExhaleResult;
+  /** Заголовок секции на всю ширину карточки (без колонки значения). */
+  rowLayout?: 'sectionTitle';
 }
 
 type TypeOfRowIconsType = {

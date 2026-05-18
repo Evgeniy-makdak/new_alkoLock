@@ -4,12 +4,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
+import { Stack, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
-import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
+import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlcolocksApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -162,38 +161,16 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
         value: {
           ...value,
           copyble: false,
-          element: (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                width: '100%',
-                minWidth: 0,
-                maxWidth: '100%',
-              }}>
-              <Tooltip title={t('tooltips.copy')}>
-                <IconButton
-                  size="small"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    copyContent(String(serial).trim(), () => {});
-                  }}
-                  sx={{ p: '2px' }}>
-                  <ContentCopyOutlinedIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-              <Chip
-                clickable
-                variant="outlined"
-                size="small"
-                label={serial}
-                onClick={() => {
-                  void handleNavigateToAlcolock(alcolockId);
-                }}
-                sx={getInfoLinkChipSx(theme, isMobileLayout)}
-              />
-            </div>
+                    element: (
+            <InfoClickableChipValue
+              label={serial}
+              onNavigate={() => {
+                void handleNavigateToAlcolock(alcolockId);
+              }}
+              onCopy={() => copyContent(String(serial).trim(), () => {})}
+              theme={theme}
+              isMobileLayout={isMobileLayout}
+            />
           ),
         },
       };

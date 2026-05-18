@@ -4,12 +4,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Chip, IconButton, Tooltip, useMediaQuery } from '@mui/material';
+import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
-import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
+import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
 import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
@@ -240,38 +239,16 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           value: {
             ...value,
             copyble: false,
-            element: (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  width: '100%',
-                  minWidth: 0,
-                  maxWidth: '100%',
-                }}>
-                <Tooltip title={t('tooltips.copy')}>
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      copyContent(carForCopy || car, () => {});
-                    }}
-                    sx={{ p: '2px' }}>
-                    <ContentCopyOutlinedIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                <Chip
-                  clickable
-                  variant="outlined"
-                  size="small"
-                  label={car}
-                  onClick={() => {
-                    void handleNavigateToVehicle(vehicleId);
-                  }}
-                  sx={getInfoLinkChipSx(theme, isMobileLayout)}
-                />
-              </div>
+                        element: (
+              <InfoClickableChipValue
+                label={car}
+                onNavigate={() => {
+                  void handleNavigateToVehicle(vehicleId);
+                }}
+                onCopy={() => copyContent(carForCopy || car, () => {})}
+                theme={theme}
+                isMobileLayout={isMobileLayout}
+              />
             ),
           },
         };
@@ -287,38 +264,16 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           value: {
             ...value,
             copyble: false,
-            element: (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  width: '100%',
-                  minWidth: 0,
-                  maxWidth: '100%',
-                }}>
-                <Tooltip title={t('tooltips.copy')}>
-                  <IconButton
-                    size="small"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      copyContent(String(linkedByName).trim(), () => {});
-                    }}
-                    sx={{ p: '2px' }}>
-                    <ContentCopyOutlinedIcon fontSize="inherit" />
-                  </IconButton>
-                </Tooltip>
-                <Chip
-                  clickable
-                  variant="outlined"
-                  size="small"
-                  label={linkedByName}
-                  onClick={() => {
-                    void handleNavigateToUser(linkedByUserId);
-                  }}
-                  sx={getInfoLinkChipSx(theme, isMobileLayout)}
-                />
-              </div>
+                        element: (
+              <InfoClickableChipValue
+                label={linkedByName}
+                onNavigate={() => {
+                  void handleNavigateToUser(linkedByUserId);
+                }}
+                onCopy={() => copyContent(String(linkedByName).trim(), () => {})}
+                theme={theme}
+                isMobileLayout={isMobileLayout}
+              />
             ),
           },
         };

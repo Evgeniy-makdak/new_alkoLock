@@ -216,7 +216,7 @@ export const getTypeOfRowIconValue = (
 
   // На десктопе показываем чипы
   const chip = copyble ? (
-    <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} />
+    <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} sx={commonChipStyles} />
   ) : (
     <Chip {...rest} className={style.labelText} sx={commonChipStyles} />
   );
@@ -234,12 +234,14 @@ export const getTypeOfRowIconValue = (
       <Chip {...rest} sx={commonChipStyles} />
     );
 
+  const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}`;
+
   return tooltip || count >= 33 ? (
     <Tooltip title={tooltipTitle}>
-      <div className={style.wrapperText}>{castomChip}</div>
+      <div className={wrapperClass}>{castomChip}</div>
     </Tooltip>
   ) : (
-    <div className={style.wrapperText}>{chip}</div>
+    <div className={wrapperClass}>{chip}</div>
   );
 };
 

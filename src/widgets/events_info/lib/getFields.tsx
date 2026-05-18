@@ -13,8 +13,6 @@ import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { MapLink } from '@shared/ui/map_link';
 import { Formatters } from '@shared/utils/formatters';
 
-import { AdaptiveTitle } from './AdaptiveTitle';
-
 export const getFields = (
   data?: IDeviceAction | null | undefined,
   t?: TFunction,
@@ -287,11 +285,9 @@ export const getFields = (
     },
     hasAdditionalInfo
       ? ({
-          label: <AdaptiveTitle title={tr('info.additionalInfo')} />,
-          value: {
-            style: { visibility: 'hidden' },
-          },
-        } as any)
+          label: tr('info.additionalInfo'),
+          rowLayout: 'sectionTitle',
+        } as Field)
       : null,
     ...additionalFields,
   ];

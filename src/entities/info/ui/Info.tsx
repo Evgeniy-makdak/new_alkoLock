@@ -35,24 +35,33 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const summaryExhaleResultText = field?.summaryExhaleResult;
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
+          const isSectionTitle = field.rowLayout === 'sectionTitle';
 
           return (
             <React.Fragment key={i}>
-              <div className={style.row}>
+              <div className={`${style.row} ${isSectionTitle ? style.sectionTitleRow : ''}`}>
                 <span className={style.label}>
-                  {field?.type ? getTypeOfRowIconLabel(field?.type, field?.label) : field?.label}
-                </span>
-                <span className={style.value} style={field?.style}>
-                  {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
-                  {!summaryExhaleResultText && !valueIsArray && getTypeOfRowIconValue(value, theme)}
-                  {valueIsArray && (
-                    <div className={style.labelWrapper}>
-                      {value.map((val, i) => (
-                        <React.Fragment key={i}>{getTypeOfRowIconValue(val, theme)}</React.Fragment>
-                      ))}
-                    </div>
+                  {isSectionTitle ? (
+                    <span className={style.sectionTitle}>{field.label}</span>
+                  ) : field?.type ? (
+                    getTypeOfRowIconLabel(field?.type, field?.label)
+                  ) : (
+                    field?.label
                   )}
                 </span>
+                {!isSectionTitle ? (
+                  <span className={style.value} style={field?.style}>
+                    {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
+                    {!summaryExhaleResultText && !valueIsArray && getTypeOfRowIconValue(value, theme)}
+                    {valueIsArray && (
+                      <div className={style.labelWrapper}>
+                        {value.map((val, j) => (
+                          <React.Fragment key={j}>{getTypeOfRowIconValue(val, theme)}</React.Fragment>
+                        ))}
+                      </div>
+                    )}
+                  </span>
+                ) : null}
               </div>
               <Divider />
             </React.Fragment>

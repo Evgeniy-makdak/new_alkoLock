@@ -999,6 +999,7 @@ export function getEventsHistoryURL({
       queryParts.push(`sort=eventsForFront.label,${order}`);
     } else {
       queryParts.push(`sort=timestamp,${order}`);
+      queryParts.push(`sort=id,${order}`);
     }
   } else {
     queryParts.push(`sort=timestamp,DESC`);

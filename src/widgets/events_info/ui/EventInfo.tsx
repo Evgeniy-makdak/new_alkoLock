@@ -5,13 +5,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import { Chip, IconButton, Stack, Tooltip, useMediaQuery } from '@mui/material';
+import { Stack, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Image } from '@entities/image';
 import { Info } from '@entities/info';
-import { getInfoLinkChipSx } from '@entities/info/lib/getInfoLinkChipSx';
+import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { AlcolocksApi, CarsApi, UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -314,37 +313,14 @@ export const EventInfo = ({
       onNavigate: () => void,
       onCopy: () => void,
     ) => (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          width: '100%',
-          minWidth: 0,
-          maxWidth: '100%',
-        }}>
-        <Tooltip title={t('tooltips.copy')}>
-          <IconButton
-            size="small"
-            onClick={(event) => {
-              event.stopPropagation();
-              onCopy();
-            }}
-            sx={{ p: '2px' }}>
-            <ContentCopyOutlinedIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-        <Chip
-          clickable
-          variant="outlined"
-          size="small"
-          label={label}
-          onClick={onNavigate}
-          sx={getInfoLinkChipSx(theme, isMobileLayout)}
-        />
-      </div>
+      <InfoClickableChipValue
+        label={label}
+        onNavigate={onNavigate}
+        onCopy={onCopy}
+        theme={theme}
+        isMobileLayout={isMobileLayout}
+      />
     );
-
     return fields.map((field) => {
       const value = field?.value;
       if (!value || Array.isArray(value)) return field;

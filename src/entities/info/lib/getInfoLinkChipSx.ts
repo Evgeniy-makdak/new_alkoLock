@@ -7,6 +7,39 @@ const chipLabelBase = {
   px: 1.25,
 } as const;
 
+/** Десктоп: обычные значения в «Инфо» (серый чип 16px, на всю ширину колонки). */
+export function getInfoPlainValueChipSx(theme: Theme): SxProps<Theme> {
+  const isDark = theme.palette.mode === 'dark';
+  return {
+    flex: 1,
+    minWidth: 0,
+    maxWidth: '100%',
+    width: '100%',
+    height: '28px',
+    borderRadius: '16px',
+    justifyContent: 'flex-start',
+    ...(isDark
+      ? {
+          backgroundColor: 'rgba(255, 255, 255, 0.08)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          color: 'rgba(255, 255, 255, 0.92)',
+        }
+      : { backgroundColor: '#f5f5f5', border: 'none' }),
+    '& .MuiChip-label': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      px: 1.25,
+      fontSize: '16px',
+      fontWeight: 500,
+      textAlign: 'left',
+      display: 'block',
+      width: '100%',
+      ...(isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
+    },
+  };
+}
+
 /** Чипы-ссылки в карточках «Инфо» (событие, ТС, алкозамок): светлая палитра; в тёмной теме — без «белых» плашек */
 export function getInfoLinkChipSx(theme: Theme, _isMobileLayout: boolean): SxProps<Theme> {
   const baseSize = {

@@ -33,8 +33,39 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
 
   const onCopy = () => copyContent(`${copyText || props.label}`, setState);
 
+  const baseChipSx = {
+    flex: 1,
+    minWidth: 0,
+    width: '100%',
+    maxWidth: '100%',
+    height: '28px',
+    borderRadius: '16px',
+    justifyContent: 'flex-start',
+    ...(hasSemanticColor
+      ? {}
+      : isDark
+        ? {
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            border: '1px solid rgba(255, 255, 255, 0.14)',
+            color: 'rgba(255, 255, 255, 0.92)',
+          }
+        : { backgroundColor: '#f5f5f5' }),
+    '& .MuiChip-label': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      px: 1.25,
+      fontSize: '16px',
+      fontWeight: 500,
+      textAlign: 'left',
+      display: 'block',
+      width: '100%',
+      ...(!hasSemanticColor && isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
+    },
+  };
+
   return (
-    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: '6px', maxWidth: '100%' }}>
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', maxWidth: '100%' }}>
       <Tooltip title={t('tooltips.copy')}>
         <IconButton
           size="small"
@@ -42,7 +73,7 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
             event.stopPropagation();
             onCopy();
           }}
-          sx={{ p: '2px' }}>
+          sx={{ p: '2px', flexShrink: 0 }}>
           {!state ? (
             <ContentCopyIcon fontSize="inherit" color="inherit" />
           ) : (
@@ -56,25 +87,7 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
         onClick={click}
         clickable={Boolean(click)}
         sx={{
-          maxWidth: '100%',
-          height: '28px',
-          borderRadius: '16px',
-          ...(hasSemanticColor
-            ? {}
-            : isDark
-              ? {
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.14)',
-                  color: 'rgba(255, 255, 255, 0.92)',
-                }
-              : { backgroundColor: '#f5f5f5' }),
-          '& .MuiChip-label': {
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            px: 1.25,
-            ...(!hasSemanticColor && isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
-          },
+          ...baseChipSx,
           ...(rest.sx as object),
         }}
       />
