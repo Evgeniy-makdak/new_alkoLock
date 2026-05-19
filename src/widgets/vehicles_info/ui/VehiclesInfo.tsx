@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import { Stack, useMediaQuery } from '@mui/material';
+import { Stack } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
@@ -27,7 +27,6 @@ type VehiclesInfoProps = {
 export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const location = useLocation();
   const { isLoading, fields, car } = useVehiclesInfo(selectedCarId, closeTab);
@@ -169,13 +168,12 @@ export const VehiclesInfo: FC<VehiclesInfoProps> = ({ selectedCarId, closeTab })
               }}
               onCopy={() => copyContent(String(serial).trim(), () => {})}
               theme={theme}
-              isMobileLayout={isMobileLayout}
             />
           ),
         },
       };
     });
-  }, [car?.monitoringDevice, fields, handleNavigateToAlcolock, isMobileLayout, t, theme]);
+  }, [car?.monitoringDevice, fields, handleNavigateToAlcolock, t, theme]);
 
   return (
     <Loader isLoading={isLoading}>

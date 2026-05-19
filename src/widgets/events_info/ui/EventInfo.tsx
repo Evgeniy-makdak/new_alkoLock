@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import { Stack, useMediaQuery } from '@mui/material';
+import { Stack } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Image } from '@entities/image';
@@ -36,8 +36,6 @@ export const EventInfo = ({
 }: EventInfoProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  /** Как в EventsMobileTable / мобильных таблицах — только здесь подстраиваем чипы под тёмную тему */
-  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const location = useLocation();
   const { data, isLoading, fields, hasTemperatureSensor } = useEventInfo(selectedEventId);
@@ -318,7 +316,6 @@ export const EventInfo = ({
         onNavigate={onNavigate}
         onCopy={onCopy}
         theme={theme}
-        isMobileLayout={isMobileLayout}
       />
     );
     return fields.map((field) => {
@@ -392,7 +389,6 @@ export const EventInfo = ({
     handleNavigateToAlcolock,
     handleNavigateToUser,
     handleNavigateToVehicle,
-    isMobileLayout,
     t,
     theme.palette.mode,
   ]);

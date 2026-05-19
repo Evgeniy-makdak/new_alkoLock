@@ -125,7 +125,19 @@
     align-items: flex-start;
     justify-content: flex-start;
     word-break: break-word;
+
+    > div {
+      width: 100%;
+      max-width: 100%;
+    }
   }
+
+  .wrapperText,
+  .wrapperTextCopyble {
+    width: 100%;
+    max-width: 100%;
+  }
+
 }
 
 .title {
@@ -152,6 +164,15 @@
 
 .wrapperText {
   max-width: 100%;
+
+  &.wrapperTextCopyble {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
 
   @media (min-width: 769px) {
     &.wrapperTextCopyble {

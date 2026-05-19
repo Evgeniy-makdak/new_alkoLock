@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { type JSX, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type JSX, type ReactNode } from 'react';
 
 import PropTypes from 'prop-types';
 
@@ -28,125 +28,16 @@ export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
   customStyled?: boolean;
 }
 
-const MobileExpandableValue = ({ text, copyValue }: { text: string; copyValue: string }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isTruncated, setIsTruncated] = useState(false);
-  const [copiedOpen, setCopiedOpen] = useState(false);
-  const textRef = useRef<HTMLSpanElement | null>(null);
-
-  useEffect(() => {
-    const measureOverflow = () => {
-      const node = textRef.current;
-      if (!node) return;
-      setIsTruncated(node.scrollWidth > node.clientWidth + 1);
-    };
-
-    measureOverflow();
-    window.addEventListener('resize', measureOverflow);
-    return () => window.removeEventListener('resize', measureOverflow);
-  }, [text]);
-
-  const fallbackCopy = (value: string) => {
-    const textArea = document.createElement('textarea');
-    textArea.value = value;
-    textArea.setAttribute('readonly', '');
-    textArea.style.position = 'fixed';
-    textArea.style.opacity = '0';
-    textArea.style.left = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textArea);
-  };
-
-  const handleCopy = async () => {
-    let copied = false;
-
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(copyValue);
-        copied = true;
-      } else {
-        fallbackCopy(copyValue);
-        copied = true;
-      }
-    } catch {
-      try {
-        fallbackCopy(copyValue);
-        copied = true;
-      } catch {
-        copied = false;
-      }
-    }
-
-    setIsOpen(false);
-    setCopiedOpen(true);
-
-    return copied;
-  };
-
-  return (
-    <>
-      <button
-        type="button"
-        className={style.mobileValueButton}
-        onClick={() => {
-          setIsOpen(true);
-        }}>
-        <span
-          ref={textRef}
-          className={`${style.labelText} ${style.mobileValueText} ${isTruncated ? style.mobileValueTextTruncated : ''}`}>
-          {text}
-        </span>
-      </button>
-      <Dialog
-        open={isOpen}
-        onClose={() => setIsOpen(false)}
-        fullWidth
-        maxWidth="sm"
-        className={style.mobileValueDialog}>
-        <Box className={style.mobileValueDialogContent}>
-          <Typography className={style.mobileValueDialogTitle}>Полное значение</Typography>
-          <Typography className={style.mobileValueDialogText}>{text}</Typography>
-          <Box className={style.mobileValueDialogActions}>
-            <Button
-              variant="outlined"
-              startIcon={<ContentCopyOutlinedIcon />}
-              onClick={() => {
-                void handleCopy();
-              }}
-              className={`${style.mobileValueDialogButton} ${style.mobileValueDialogButtonSecondary}`}>
-              Копировать
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => setIsOpen(false)}
-              className={`${style.mobileValueDialogButton} ${style.mobileValueDialogButtonPrimary}`}>
-              Закрыть
-            </Button>
-          </Box>
-        </Box>
-      </Dialog>
-      <Snackbar
-        open={copiedOpen}
-        autoHideDuration={1500}
-        onClose={() => setCopiedOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Box className={style.mobileCopiedToast} onClick={() => setCopiedOpen(false)}>
-          Скопировано
-        </Box>
-      </Snackbar>
-    </>
-  );
-};
-
 const buildCommonChipStyles = (hasSemanticColor: boolean, theme?: Theme) => {
   const isDark = theme?.palette.mode === 'dark';
   return {
+    flex: 1,
+    width: '100%',
     maxWidth: '100%',
     minWidth: 0,
     height: '28px',
     borderRadius: '16px',
+    justifyContent: 'flex-start',
     ...(hasSemanticColor
       ? {}
       : isDark
@@ -184,37 +75,10 @@ export const getTypeOfRowIconValue = (
   const count =
     typeof label === 'string' || typeof label === 'number' ? label?.toString().length : 33;
 
-  // Определяем, является ли устройство мобильным
-  const isMobile = window.innerWidth <= 768;
-
   const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme);
 
   const tooltipTitle = copyText ?? ({ ...rest }.label || '');
 
-  // На мобильных устройствах показываем просто текст
-  if (isMobile) {
-    const labelAsText =
-      typeof label === 'string' || typeof label === 'number' ? label.toString() : null;
-    const copyValue = copyText != null ? String(copyText) : labelAsText || '';
-
-    if (labelAsText) {
-      return (
-        <div className={style.wrapperText}>
-          <MobileExpandableValue text={labelAsText} copyValue={copyValue} />
-        </div>
-      );
-    }
-
-    const textElement = (
-      <span className={style.labelText} style={{ display: 'inline-block' }}>
-        {label}
-      </span>
-    );
-
-    return <div className={style.wrapperText}>{textElement}</div>;
-  }
-
-  // На десктопе показываем чипы
   const chip = copyble ? (
     <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} sx={commonChipStyles} />
   ) : (

@@ -4,7 +4,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
-import { useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
@@ -32,7 +31,6 @@ type AlkozamkiInfoProps = {
 export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, closeTab }) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const isMobileLayout = useMediaQuery('(max-width:1024px)');
   const navigate = useNavigate();
   const location = useLocation();
   const { alkolock, fields, isLoading, activeDeviceIds } = useAlkozamkiInfo(
@@ -247,7 +245,6 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                 }}
                 onCopy={() => copyContent(carForCopy || car, () => {})}
                 theme={theme}
-                isMobileLayout={isMobileLayout}
               />
             ),
           },
@@ -272,7 +269,6 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
                 }}
                 onCopy={() => copyContent(String(linkedByName).trim(), () => {})}
                 theme={theme}
-                isMobileLayout={isMobileLayout}
               />
             ),
           },
@@ -287,7 +283,6 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
     fields,
     handleNavigateToUser,
     handleNavigateToVehicle,
-    isMobileLayout,
     t,
     theme,
   ]);
