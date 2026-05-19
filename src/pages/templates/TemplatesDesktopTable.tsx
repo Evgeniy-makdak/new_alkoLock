@@ -88,6 +88,8 @@ export const TemplatesDesktopTable: React.FC<TemplatesDesktopTableProps> = ({
         outline: 'none',
         border: 'none',
         boxShadow: 'none',
+        boxSizing: 'border-box',
+        paddingInline: 'var(--table-page-content-inset-inline, 16px)',
       }}>
       <Table
         size="small"

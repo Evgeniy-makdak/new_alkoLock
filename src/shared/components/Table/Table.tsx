@@ -225,6 +225,8 @@ export const Table = memo(
         className={styles ? styles : style.table}
         sx={{
           height: '100%',
+          boxSizing: 'border-box',
+          paddingInline: 'var(--table-page-content-inset-inline, 16px)',
           '& .MuiDataGrid-root': {
             '--DataGrid-rowHeight': '52px !important',
           },

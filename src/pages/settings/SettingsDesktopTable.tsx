@@ -62,6 +62,8 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
         outline: 'none',
         border: 'none',
         boxShadow: 'none',
+        boxSizing: 'border-box',
+        paddingInline: 'var(--table-page-content-inset-inline, 16px)',
       }}>
       <Table
         size="small"

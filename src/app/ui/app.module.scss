@@ -208,4 +208,6 @@
   overflow: hidden;
   display: flex;
   min-width: 0;
+  /* Общий горизонтальный отступ: поиск в TableHeaderWrapper и шапка DataGrid */
+  --table-page-content-inset-inline: 16px;
 }

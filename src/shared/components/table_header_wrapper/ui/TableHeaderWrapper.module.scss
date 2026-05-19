@@ -1,7 +1,8 @@
 .wrapper {
   box-sizing: border-box;
   width: 100%;
-  padding: 10px;
+  padding-block: 10px;
+  padding-inline: var(--table-page-content-inset-inline, 16px);
   gap: 8px;
   display: flex;
   flex-wrap: wrap;
