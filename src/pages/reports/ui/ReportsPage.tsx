@@ -1,57 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import BarChartIcon from '@mui/icons-material/BarChart';
-import CloseIcon from '@mui/icons-material/Close';
-import {
-  Alert,
-  Button,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  IconButton,
-  Tooltip,
-  Typography,
-  useMediaQuery,
-} from '@mui/material';
-import { type Theme, alpha, useTheme } from '@mui/material/styles';
+import { Button, Typography, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { PageWrapper } from '@layout/page_wrapper';
-import { UsersApi } from '@shared/api/baseQuerys';
+import { executeReportQuery } from '@pages/reports/api/reportsApi';
+import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
+import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
+import { reportsStore } from '@pages/reports/model/reportsStore';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
-import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
-import { testids } from '@shared/const/testid';
-import { appStore } from '@shared/model/app_store/AppStore';
-import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
-import { aggregateReportData } from '../lib/aggregateReportData';
-import { buildReportsEventsQuery } from '../lib/buildReportsEventsQuery';
-import {
-  fetchAllDeviceEventsForReport,
-  fetchReportEventsTotalCount,
-  isReportFetchAbortError,
-} from '../lib/fetchAllDeviceEventsForReport';
-import { REPORT_OVERSIZE_THRESHOLD, reportGenerationStore } from '../model/reportGenerationStore';
-import { reportsFiltersStore } from '../model/reportsFiltersStore';
 import styles from './Reports.module.scss';
-import { ReportsCharts } from './ReportsCharts';
-import { ReportsFilterPanel } from './ReportsFilterPanel';
+import { ReportsDynamicFilters } from './ReportsDynamicFilters';
 import { ReportsMobileToolbar } from './ReportsMobileToolbar';
-
-const outlineModalButtonSx = (theme: Theme) => ({
-  textTransform: 'uppercase' as const,
-  borderRadius: 1,
-  py: 1,
-  px: 2,
-  color: theme.palette.text.primary,
-  borderColor: theme.palette.text.primary,
-  '&:hover': {
-    borderColor: theme.palette.text.primary,
-    backgroundColor: alpha(theme.palette.text.primary, 0.04),
-  },
-});
+import { ReportsResultsView } from './ReportsResultsView';
 
 export function ReportsPage() {
   const { t } = useTranslation();
@@ -59,75 +25,53 @@ export function ReportsPage() {
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
 
-  const branchId = appStore((s) => s.selectedBranchState?.id);
-  const userEmail = appStore((s) => s.email);
-
-  const startDate = reportsFiltersStore((s) => s.startDate);
-  const endDate = reportsFiltersStore((s) => s.endDate);
-  const resetAll = reportsFiltersStore((s) => s.resetAll);
-  const setStartDate = reportsFiltersStore((s) => s.setStartDate);
-  const setEndDate = reportsFiltersStore((s) => s.setEndDate);
-  const clearDates = reportsFiltersStore((s) => s.clearDates);
+  const loadEntities = reportsStore((s) => s.loadEntities);
+  const selectedEntityName = reportsStore((s) => s.selectedEntityName);
+  const metadata = reportsStore((s) => s.metadata);
+  const selectedOutputFields = reportsStore((s) => s.selectedOutputFields);
+  const filterSelections = reportsStore((s) => s.filterSelections);
+  const nestedEntityFilterByField = reportsStore((s) => s.nestedEntityFilterByField);
+  const resetFilters = reportsStore((s) => s.resetFilters);
+  const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
-  const lastAggregates = reportGenerationStore((s) => s.lastAggregates);
-  const lastError = reportGenerationStore((s) => s.lastError);
-
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
-  const [permission, setPermission] = useState<string[]>([]);
-  const [role, setRole] = useState<number[]>([]);
-
-  const [oversizeOpen, setOversizeOpen] = useState(false);
-  const [oversizeCount, setOversizeCount] = useState(0);
 
   useEffect(() => {
-    void (async () => {
-      try {
-        const response = await UsersApi.getInfo();
-        const roles =
-          response.data?.groupMembership?.map((m) => Number(m?.group?.id)).filter(Boolean) || [];
-        setPermission(response.data?.permissions || []);
-        setCurrentUserId(Number(response.data?.id) || null);
-        setRole(roles);
-      } catch {
-        setPermission([]);
-        setCurrentUserId(null);
-        setRole([]);
-      }
-    })();
-  }, []);
-
-  const buildQuery = useCallback(
-    (page: number, limit: number) => {
-      const st = reportsFiltersStore.getState();
-      return buildReportsEventsQuery({
-        page,
-        limit,
-        searchQuery: '',
-        startDate: st.startDate,
-        endDate: st.endDate,
-        filters: st.filters,
-        currentUserId,
-        permission,
-        role,
-        branchId,
-      });
-    },
-    [branchId, currentUserId, permission, role],
-  );
+    void loadEntities();
+  }, [loadEntities]);
 
   const executeReportLoad = useCallback(async () => {
+    if (!selectedEntityName || !metadata) {
+      reportGenerationStore.getState().completeError(t('reports.selectEntityFirst'));
+      return;
+    }
+    if (!selectedOutputFields.length) {
+      reportGenerationStore.getState().completeError(t('reports.selectOutputFieldsFirst'));
+      return;
+    }
+
+    const { pagination, sort, setQueryContext, setPagination } = reportGenerationStore.getState();
     reportGenerationStore.getState().start();
-    const signal = reportGenerationStore.getState().getAbortSignal();
+    setPagination({ page: 0 });
+
     try {
-      const raw = await fetchAllDeviceEventsForReport(
-        (page) => buildQuery(page, 200),
-        (loaded, total) => reportGenerationStore.getState().setProgress(loaded, total),
-        signal,
-      );
-      reportGenerationStore.getState().completeSuccess(aggregateReportData(raw));
+      const body = buildReportQueryRequest({
+        metadata,
+        selectedFieldKeys: selectedOutputFields,
+        filterSelections,
+        nestedEntityFilterByField,
+      });
+
+      setQueryContext({ entityName: selectedEntityName, body });
+
+      const result = await executeReportQuery(selectedEntityName, body, {
+        page: 0,
+        size: pagination.pageSize,
+        sort,
+      });
+      reportGenerationStore.getState().completeSuccess(result);
     } catch (e) {
-      if (isReportFetchAbortError(e) || (e instanceof DOMException && e.name === 'AbortError')) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
         reportGenerationStore.getState().finishCancelled();
         return;
       }
@@ -135,39 +79,35 @@ export function ReportsPage() {
         .getState()
         .completeError(e instanceof Error ? e.message : t('reports.loadError'));
     }
-  }, [buildQuery, t]);
+  }, [
+    selectedEntityName,
+    metadata,
+    selectedOutputFields,
+    filterSelections,
+    nestedEntityFilterByField,
+    t,
+  ]);
 
   const beginReportGeneration = useCallback(async () => {
-    if (reportGenerationStore.getState().isGenerating) {
+    if (reportGenerationStore.getState().isGenerating) return;
+    if (!selectedEntityName || !metadata) {
+      reportGenerationStore.getState().completeError(t('reports.selectEntityFirst'));
       return;
     }
-    reportGenerationStore.getState().prepareNewReportView();
-    try {
-      const total = await fetchReportEventsTotalCount((page) => buildQuery(page, 1));
-      if (total >= REPORT_OVERSIZE_THRESHOLD) {
-        setOversizeCount(total);
-        setOversizeOpen(true);
-        return;
-      }
-      await executeReportLoad();
-    } catch (e) {
-      reportGenerationStore
-        .getState()
-        .completeError(e instanceof Error ? e.message : t('reports.loadError'));
+    if (!selectedOutputFields.length) {
+      reportGenerationStore.getState().completeError(t('reports.selectOutputFieldsFirst'));
+      return;
     }
-  }, [buildQuery, executeReportLoad, t]);
 
-  const handleConfirmOversize = useCallback(() => {
-    setOversizeOpen(false);
-    void executeReportLoad();
-  }, [executeReportLoad]);
+    reportGenerationStore.getState().prepareNewReportView();
+    await executeReportLoad();
+  }, [selectedEntityName, metadata, selectedOutputFields, executeReportLoad, t]);
 
   const handleResetFilters = () => {
-    resetAll();
+    resetFilters();
+    setSelectedEntityName(null);
     reportGenerationStore.getState().clearResults();
   };
-
-  const emailLabel = userEmail?.trim() || t('reports.emailUnknown');
 
   const isCompactHeader = isMobile || isTablet;
 
@@ -176,40 +116,23 @@ export function ReportsPage() {
       {isMobile || isTablet ? <div style={{ height: '50px' }} /> : null}
       <PageWrapper>
         <div className={styles.wrapper}>
-          <div className={styles.titleBlock}>
+          <div
+            className={styles.pageHeader}
+            style={{
+              backgroundColor:
+                theme.palette.mode === 'dark' ? theme.palette.background.default : '#f5f5f5',
+            }}>
             <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
               {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
             </Typography>
-          </div>
-
-          {isCompactHeader ? (
-            <ReportsMobileToolbar
-              onCreateReport={() => void beginReportGeneration()}
-              onResetFilters={handleResetFilters}
-              isGenerating={isGenerating}
-            />
-          ) : (
-            <>
-              <TableHeaderWrapper>
-                <InputsDates
-                  onClear={clearDates}
-                  inputStartTestId={
-                    testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_FROM_DATE
-                  }
-                  inputEndTestId={
-                    testids.page_events.events_widget_header.EVENTS_WIDGET_HEADER_TO_DATE
-                  }
-                  onChangeStartDate={setStartDate}
-                  onChangeEndDate={setEndDate}
-                  valueStartDatePicker={startDate}
-                  valueEndDatePicker={endDate}
-                />
+            {!isCompactHeader ? (
+              <div className={styles.headerActions}>
                 <TableHeaderEndToolbar>
                   <Button
                     variant="outlined"
                     size="small"
                     startIcon={<BarChartIcon />}
-                    disabled={isGenerating}
+                    disabled={isGenerating || !metadata}
                     onClick={() => void beginReportGeneration()}
                     sx={{
                       textTransform: 'capitalize',
@@ -223,145 +146,32 @@ export function ReportsPage() {
                       borderColor:
                         theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.16)' : '#e0e0e0',
                       color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.87)' : '#333333',
-                      '& .MuiButton-startIcon svg': {
-                        fill: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.87)' : '#333333',
-                      },
-                      '&:hover': {
-                        bgcolor:
-                          theme.palette.mode === 'dark'
-                            ? 'rgba(255,255,255,0.10)'
-                            : 'rgba(0,0,0,0.04)',
-                        borderColor:
-                          theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.22)' : '#bdbdbd',
-                      },
-                      '&.Mui-disabled': {
-                        borderColor:
-                          theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.12)' : '#e0e0e0',
-                        color:
-                          theme.palette.mode === 'dark'
-                            ? 'rgba(255,255,255,0.30)'
-                            : 'rgba(0,0,0,0.26)',
-                      },
                     }}>
                     {t('reports.createReport')}
                   </Button>
                   <ResetFilters reset={handleResetFilters} />
                 </TableHeaderEndToolbar>
-              </TableHeaderWrapper>
+              </div>
+            ) : null}
+          </div>
 
-              <ReportsFilterPanel />
-            </>
+          {isCompactHeader ? (
+            <ReportsMobileToolbar
+              onCreateReport={() => void beginReportGeneration()}
+              onResetFilters={handleResetFilters}
+              isGenerating={isGenerating}
+            />
+          ) : (
+            <div className={styles.filtersBar}>
+              <ReportsDynamicFilters />
+            </div>
           )}
 
-          <div className={styles.scrollArea}>
-            {lastError ? (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {lastError}
-              </Alert>
-            ) : null}
-            {isGenerating && !lastAggregates ? (
-              <Typography color="text.secondary">{t('common.loading')}</Typography>
-            ) : (
-              <ReportsCharts data={lastAggregates} />
-            )}
+          <div className={styles.tableArea}>
+            <ReportsResultsView />
           </div>
         </div>
       </PageWrapper>
-
-      <Dialog
-        open={oversizeOpen}
-        disableEnforceFocus
-        onClose={(_, reason) => {
-          if (reason === 'backdropClick') return;
-          setOversizeOpen(false);
-        }}
-        maxWidth={false}
-        slotProps={{
-          backdrop: {
-            sx: {
-              backgroundColor: alpha(
-                theme.palette.common.black,
-                theme.palette.mode === 'dark' ? 0.65 : 0.5,
-              ),
-            },
-          },
-        }}
-        PaperProps={{
-          sx: {
-            minWidth: { xs: 'min(100%, 520px)', sm: 550 },
-            maxWidth: 560,
-            borderRadius: '16px',
-            backgroundImage: 'none',
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            position: 'relative',
-            p: 0,
-          },
-        }}>
-        <Tooltip title={t('common.closeWindow')}>
-          <IconButton
-            aria-label={t('common.closeWindow')}
-            onClick={() => setOversizeOpen(false)}
-            sx={{
-              position: 'absolute',
-              right: 8,
-              top: 8,
-              zIndex: 1,
-              color: 'text.secondary',
-            }}>
-            <CloseIcon />
-          </IconButton>
-        </Tooltip>
-
-        <Typography
-          component="div"
-          sx={{
-            px: 3.5,
-            pt: 2.5,
-            pr: 6,
-            pb: 0,
-            fontSize: 18,
-            fontWeight: 'bold',
-          }}>
-          {t('reports.oversizeDialogTitle')}
-        </Typography>
-
-        <DialogContent
-          sx={{
-            px: 3.5,
-            pt: 2,
-            pb: 1,
-            color: 'text.primary',
-            typography: 'body1',
-          }}>
-          {t('reports.oversizeDialogBody', {
-            count: oversizeCount,
-            email: emailLabel,
-          })}
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            px: 3.5,
-            pb: 2.5,
-            pt: 1,
-            justifyContent: 'flex-end',
-            gap: 2,
-          }}>
-          <Button
-            variant="outlined"
-            onClick={handleConfirmOversize}
-            sx={outlineModalButtonSx(theme)}>
-            {t('reports.oversizeContinue')}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() => setOversizeOpen(false)}
-            sx={outlineModalButtonSx(theme)}>
-            {t('common.cancel')}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }
