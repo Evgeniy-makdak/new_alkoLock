@@ -280,9 +280,8 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   },
 
   setOutputRowNestedEntityFilter(rowId, fieldName, patch) {
-    let terminalReset = false;
-    set((state) => {
-      const outputRows = state.outputRows.map((row) => {
+    set((state) => ({
+      outputRows: state.outputRows.map((row) => {
         if (row.id !== rowId) return row;
         const prev = row.nestedEntityFilterByField[fieldName] ?? defaultNestedFilterState();
         const attributeChanged =
@@ -296,7 +295,6 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
               : prev.values;
         const rowTerminalReset =
           attributeChanged || (patch.values !== undefined && nextValues.length === 0);
-        if (rowTerminalReset) terminalReset = true;
         return {
           ...row,
           reportTableFields: rowTerminalReset ? [] : row.reportTableFields,
@@ -309,19 +307,8 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
             },
           },
         };
-      });
-      return terminalReset
-        ? {
-            outputRows,
-            ...omitRowReportTableMetadataCache(
-              state.reportTableFieldsMetadataByRowId,
-              state.reportTableFieldsMetadataLoadingByRowId,
-              state.reportTableFieldsMetadataKeyByRowId,
-              rowId,
-            ),
-          }
-        : { outputRows };
-    });
+      }),
+    }));
   },
 
   async loadReportTableFieldsMetadata(rowId, referenceEntity) {

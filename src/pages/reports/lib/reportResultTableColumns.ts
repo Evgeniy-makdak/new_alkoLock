@@ -61,10 +61,12 @@ export const REPORT_RESULT_COLUMNS_BY_REFERENCE: Record<string, ReportResultColu
     { field: 'isActive', labelKey: 'reports.nestedProp.activity', format: 'booleanActive' },
   ],
   DeviceAction: [
-    { field: 'timestamp', labelKey: 'reports.nestedProp.timestamp', isDateTime: true },
+    { field: 'occurredAt', labelKey: 'reports.nestedProp.timestamp', isDateTime: true },
+    { field: 'startedAt', labelKey: 'reports.nestedProp.timestamp', isDateTime: true },
     { field: 'id', labelKey: 'reports.nestedProp.id', minWidth: 100 },
     { field: 'type', labelKey: 'reports.nestedProp.type' },
     { field: 'status', labelKey: 'reports.nestedProp.status' },
+    { field: 'label', labelKey: 'reports.nestedProp.eventTypeLabel' },
   ],
   EventsForFront: [
     { field: 'id', labelKey: 'reports.nestedProp.id', minWidth: 100 },

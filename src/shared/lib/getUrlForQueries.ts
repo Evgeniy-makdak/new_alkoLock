@@ -676,11 +676,13 @@ export function getAlcolocksURL({
   isAttachment,
   includeActiveOnly,
   filterOptions,
+  query,
 }: QueryOptions & {
   excludeAlcolockId?: number;
   excludeType?: 'any' | 'all';
   includeAlcolockId?: number;
   isAttachment?: boolean;
+  query?: string;
 }) {
   const branchId = filterOptions?.branchId;
   const notBranchId = filterOptions?.notBranchId;
@@ -728,6 +730,10 @@ export function getAlcolocksURL({
 
   if (queryTrimmed.length) {
     queries += `&all.match.contains=${queryTrimmed}`;
+  }
+
+  if (query) {
+    queries += query.startsWith('&') ? query : `&${query}`;
   }
 
   return `${baseUrl}?page=${page || 0}&size=${limit || 20}${queries}&sort=name`;
@@ -873,7 +879,7 @@ function getSortQueryByService(orderType: SortTypes | string, order: GridSortDir
     case SortTypes.DATE_CREATE:
       return `&sort=createdAt${orderStr}`;
     case SortTypes.DATE_OCCURRENT:
-      return `&sort=timestamp${orderStr}`;
+      return `&sort=occurredAt${orderStr}`;
     case SortTypes.CREATED_BY:
       return `&sort=createdBy.surname,createdBy.firstName,createdBy.middleName${orderStr}`;
     default:
@@ -1374,7 +1380,7 @@ export function getEventListCountForAutoServiceURL({
     const orderDefault = 'asc';
     const sortByFinal = sortBy || sortByDefault;
     const orderFinal = order || orderDefault;
-    queries += getSortQueryEvents(sortByFinal, orderFinal);
+    queries += getSortQueryByService(sortByFinal, orderFinal);
   }
 
   if (queryTrimmed.length) {

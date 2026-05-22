@@ -1,11 +1,14 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import {
-  buildDateTimeBetweenRange,
   formatFilterValueForField,
   toReportDateTimeFilterIso,
 } from './formatReportDateTimeFilterValue';
 import { isReportDateTimeField } from './reportFieldFilterKind';
+import {
+  isReportDateTimeBetweenOperation,
+  mapReportQueryOperator,
+} from './mapReportQueryOperator';
 import {
   reportOutputFunctionKey,
   reportOutputOperationKey,
@@ -16,6 +19,7 @@ import {
   findReportTableFieldDefinition,
   resolveReportTableSelectedPayloadFieldName,
 } from './buildReportTableFieldOptions';
+import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
 import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
 
 import {
@@ -38,7 +42,6 @@ import type {
   ReportUiFilterSelections,
 } from '../types/reportApiTypes';
 
-/** Код оператора из metadata как есть (контракт FilterOperator на бэке). */
 function findOperationCode(field: ReportFieldDefinition, ...preferred: string[]): string | null {
   const ops = field.availableOperations ?? [];
   const lowerPreferred = preferred.map((p) => p.toLowerCase());
@@ -81,38 +84,58 @@ function resolveUiOperationCode(
   return pickOperator(field, multi);
 }
 
-function buildDateTimeFilterWithOp(
+function resolveDateTimeOperatorForApi(
+  field: ReportFieldDefinition,
+  uiOperatorCode: string,
+): string {
+  const mapped = mapReportQueryOperator(uiOperatorCode, field);
+  const ops = field.availableOperations ?? [];
+  const byMapped = ops.find((o) => o.code.toLowerCase() === mapped.toLowerCase());
+  if (byMapped) {
+    return byMapped.code;
+  }
+  const byUi = ops.find((o) => o.code.toLowerCase() === uiOperatorCode.toLowerCase());
+  if (byUi && mapped.toLowerCase() === uiOperatorCode.toLowerCase()) {
+    return byUi.code;
+  }
+  return mapped;
+}
+
+/**
+ * Диапазон дат: два фильтра gte/lte с ISO (оператор between на бэке не принимает Long[]/Instant).
+ */
+function buildDateTimeFiltersWithOp(
   field: ReportFieldDefinition,
   selected: Values,
   operatorCode: string,
-): ReportQueryFilter | null {
-  const iso = toReportDateTimeFilterIso(selected.length === 1 ? selected[0].value : selected);
-  if (!iso) {
-    return null;
-  }
-
-  const opLower = operatorCode.toLowerCase();
-
-  if (opLower === 'between') {
-    const betweenCode = findOperationCode(field, 'between');
-    if (betweenCode) {
-      const range = buildDateTimeBetweenRange(iso);
-      if (range) {
-        return {
-          fieldName: field.fieldName,
-          operator: betweenCode,
-          value: range,
-        };
-      }
+): ReportQueryFilter[] {
+  if (isReportDateTimeBetweenOperation(operatorCode)) {
+    const startIso = toReportDateTimeFilterIso(selected[0]?.value);
+    const endIso = toReportDateTimeFilterIso(selected[1]?.value);
+    if (!startIso || !endIso) {
+      return [];
     }
+    const gteOp =
+      findOperationCode(field, 'greaterThanOrEqual', 'gte') ?? 'greaterThanOrEqual';
+    const lteOp = findOperationCode(field, 'lessThanOrEqual', 'lte') ?? 'lessThanOrEqual';
+    return [
+      { fieldName: field.fieldName, operator: gteOp, value: startIso },
+      { fieldName: field.fieldName, operator: lteOp, value: endIso },
+    ];
   }
 
-  const resolvedOp = findOperationCode(field, opLower) ?? operatorCode;
-  return {
-    fieldName: field.fieldName,
-    operator: resolvedOp,
-    value: formatFilterValueForField(field, iso),
-  };
+  const iso = toReportDateTimeFilterIso(selected[0]?.value);
+  if (!iso) {
+    return [];
+  }
+
+  return [
+    {
+      fieldName: field.fieldName,
+      operator: resolveDateTimeOperatorForApi(field, operatorCode),
+      value: iso,
+    },
+  ];
 }
 
 function resolveFilterValue(field: ReportFieldDefinition | undefined, selected: Values): unknown {
@@ -257,10 +280,8 @@ export function buildReportQueryRequestForRow(
     if (!selected.length) return;
 
     if (field && isReportDateTimeField(field)) {
-      const multi = selected.length > 1;
-      const opCode = resolveUiOperationCode(field, row.filterSelections, operationKey, multi);
-      const dtFilter = buildDateTimeFilterWithOp(field, selected, opCode);
-      if (dtFilter) {
+      const opCode = resolveUiOperationCode(field, row.filterSelections, operationKey, false);
+      for (const dtFilter of buildDateTimeFiltersWithOp(field, selected, opCode)) {
         filters.push(withFilterGroup(dtFilter, options.groupNumber));
       }
       return;
@@ -290,10 +311,15 @@ export function buildReportQueryRequestForRow(
     if (ref) {
       const nested = row.nestedEntityFilterByField[primary.fieldName];
       if (nested?.attribute && nested.values.length) {
+        const attributeField =
+          findReferenceEntityFieldByAttribute(
+            tableFieldsContext.tableMetadataByRowId[row.id],
+            nested.attribute,
+          ) ?? primary;
         pushFilter(
           resolveNestedEntityFilterFieldName(primary, nested.attribute),
           nested.values,
-          primary,
+          attributeField,
         );
       }
     } else {

@@ -736,6 +736,8 @@
     "selectOutputFieldsFirst": "Абярыце хаця б адно поле выніку",
     "timePlaceholder": "ГГ:ХХ",
     "timeFormatError": "Увядзіце час у фармаце ГГ:ХХ (00:00–23:59)",
+    "yearPlaceholder": "ГГГГ",
+    "yearFormatError": "Увядзіце год з 4 лічбаў (напрыклад, 2020)",
     "totalRows": "Усяго радкоў",
     "viewTable": "Табліца",
     "viewBar": "Слупкі",

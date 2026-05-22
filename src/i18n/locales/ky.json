@@ -735,6 +735,8 @@
     "selectOutputFieldsFirst": "Жок дегенде бир натыйжа талаасын тандаңыз",
     "timePlaceholder": "СС:ММ",
     "timeFormatError": "Убакытты СС:ММ форматында киргизиңиз (00:00–23:59)",
+    "yearPlaceholder": "ЖЖЖЖ",
+    "yearFormatError": "4 орундуу жыл киргизиңиз (мисалы, 2020)",
     "totalRows": "Жалпы саптар",
     "viewTable": "Таблица",
     "viewBar": "Тик тиктер",

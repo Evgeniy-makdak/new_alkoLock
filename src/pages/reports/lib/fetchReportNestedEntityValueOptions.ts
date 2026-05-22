@@ -5,12 +5,28 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
 import {
+  branchOfficeValuesForAttribute,
+  fetchBranchOfficesForReport,
+} from './branchOfficeReportOptions';
+import {
+  buildDeviceActionAttributeOptions,
+  buildDeviceActionDevicePickerOptions,
+  buildDeviceActionUserPickerOptions,
+  fetchDeviceActionsForReport,
+  isDeviceActionDeviceAttribute,
+  isDeviceActionUserAttribute,
+} from './deviceActionReportOptions';
+import {
   buildNestedEntityAttributeOptions,
   recordsToEntityListValues,
 } from './buildNestedEntityAttributeOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
+import {
+  isNestedEntityListPickerField,
+  resolveNestedEntityValueLoadKind,
+} from './reportNestedEntityValueOptions';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
-import { isReportReferenceEntityServerSearch } from './reportReferenceEntityServerSearch';
+import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 function unwrapList<T>(res: {
   data?: T[] | { content?: T[] } | null;
@@ -26,25 +42,30 @@ function unwrapList<T>(res: {
   return data.content ?? [];
 }
 
-/** Опции «Значения» для вложенной сущности: первая страница (20) и поиск по подстроке на API. */
-export async function fetchReportNestedEntitySearchOptions(
+/**
+ * Опции «Значение (параметр)» — page=0&size=20, при вводе &all.match.contains=… (как алкозамки).
+ */
+export async function fetchReportNestedEntityValueOptions(
   referenceEntity: string,
-  attribute: string,
+  field: ReportFieldDefinition,
   searchQuery: string,
   labelMaps?: ReportVehicleLabelMaps,
 ): Promise<Values> {
   const ref = (referenceEntity ?? '').trim();
-  const attr = (attribute ?? '').trim();
-  if (!ref || !attr || !isReportReferenceEntityServerSearch(ref)) {
+  const attr = (field.fieldName ?? '').trim();
+  if (!ref || !attr) return [];
+
+  const kind = resolveNestedEntityValueLoadKind(field, ref, attr);
+  if (kind === 'static' || kind === 'dateTime') {
     return [];
   }
-
-  if (ref === 'Vehicle' && (attr === 'type' || attr === 'color')) {
+  if (kind === 'frontDataEnum') {
     return buildNestedEntityAttributeOptions([], ref, attr, labelMaps);
   }
 
-  const branchId = appStore.getState().selectedBranchState?.id;
   const match = Formatters.removeExtraSpaces(searchQuery ?? '');
+  const listPicker = isNestedEntityListPickerField(field, attr);
+  const branchId = appStore.getState().selectedBranchState?.id;
   const pageOpts = {
     page: 0,
     limit: REPORT_REFERENCE_LIST_PAGE_SIZE,
@@ -53,10 +74,27 @@ export async function fetchReportNestedEntitySearchOptions(
   };
 
   switch (ref) {
+    case 'BranchOffice': {
+      const offices = await fetchBranchOfficesForReport(match);
+      return branchOfficeValuesForAttribute(offices, attr, listPicker);
+    }
+    case 'DeviceAction': {
+      const actions = await fetchDeviceActionsForReport(match);
+      if (listPicker && isDeviceActionDeviceAttribute(attr)) {
+        return buildDeviceActionDevicePickerOptions(actions);
+      }
+      if (listPicker && isDeviceActionUserAttribute(attr)) {
+        return buildDeviceActionUserPickerOptions(actions);
+      }
+      if (listPicker) {
+        return recordsToEntityListValues(ref, actions);
+      }
+      return buildDeviceActionAttributeOptions(actions, attr);
+    }
     case 'Vehicle': {
       const res = await CarsApi.getCarsList({ ...pageOpts, isActive: true });
       const cars = unwrapList<ICar>(res);
-      if (attr === 'id') {
+      if (listPicker) {
         return recordsToEntityListValues(ref, cars);
       }
       return buildNestedEntityAttributeOptions(cars, ref, attr, labelMaps);
@@ -67,7 +105,7 @@ export async function fetchReportNestedEntitySearchOptions(
         query: '&all.id.notIn=3&all.isActive.in=true',
       });
       const devices = unwrapList<IAlcolock>(res);
-      if (attr === 'id') {
+      if (listPicker) {
         return recordsToEntityListValues(ref, devices);
       }
       return buildNestedEntityAttributeOptions(devices, ref, attr, labelMaps);
@@ -78,10 +116,10 @@ export async function fetchReportNestedEntitySearchOptions(
         false,
       );
       const users = unwrapList<IUser>(res);
-      if (attr === 'id' || attr === 'fullName') {
-        if (attr === 'id') {
-          return recordsToEntityListValues(ref, users);
-        }
+      if (listPicker) {
+        return recordsToEntityListValues(ref, users);
+      }
+      if (attr === 'fullName') {
         return users
           .map((u) => {
             const label =
@@ -102,19 +140,22 @@ export async function fetchReportNestedEntitySearchOptions(
         false,
       );
       const types = unwrapList<{ id?: number | string; label?: string }>(res);
-      if (attr === 'label') {
+      if (field.fieldName === 'label') {
         return types
-          .filter((t) => t.label != null && t.label !== '')
-          .map((t) => ({ value: String(t.label), label: String(t.label) }));
+          .filter((item) => item.label != null && item.label !== '')
+          .map((item) => ({ value: String(item.label), label: String(item.label) }));
       }
       return types
-        .filter((t) => t.id != null)
-        .map((t) => ({
-          value: t.id as number | string,
-          label: t.label ?? String(t.id),
+        .filter((item) => item.id != null)
+        .map((item) => ({
+          value: item.id as number | string,
+          label: item.label ?? String(item.id),
         }));
     }
     default:
       return [];
   }
 }
+
+/** @deprecated Используйте fetchReportNestedEntityValueOptions */
+export const fetchReportNestedEntitySearchOptions = fetchReportNestedEntityValueOptions;

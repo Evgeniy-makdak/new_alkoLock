@@ -1,9 +1,18 @@
+import type { TFunction } from 'i18next';
+
+import type { Values } from '@shared/ui/search_multiple_select';
+
+import type { ReportEntityMetadata } from '../types/reportApiTypes';
+
 export type ReportReferenceEntityProperty = {
   key: string;
   labelKey: string;
 };
 
-/** Свойства вложенной сущности для второго выпадающего списка (ключи из API). */
+/**
+ * Устаревший статический список — только fallback, пока не загрузилась metadata.
+ * @see buildReferenceEntityPropertyOptions
+ */
 export const REPORT_REFERENCE_ENTITY_PROPERTIES: Record<string, ReportReferenceEntityProperty[]> = {
   MonitoringDevice: [
     { key: 'id', labelKey: 'reports.nestedProp.id' },
@@ -46,7 +55,15 @@ export const REPORT_REFERENCE_ENTITY_PROPERTIES: Record<string, ReportReferenceE
     { key: 'id', labelKey: 'reports.nestedProp.id' },
     { key: 'type', labelKey: 'reports.nestedProp.type' },
     { key: 'status', labelKey: 'reports.nestedProp.status' },
-    { key: 'timestamp', labelKey: 'reports.nestedProp.timestamp' },
+    { key: 'occurredAt', labelKey: 'reports.nestedProp.timestamp' },
+    { key: 'startedAt', labelKey: 'reports.nestedProp.timestamp' },
+    { key: 'finishedAt', labelKey: 'reports.nestedProp.timestamp' },
+    { key: 'label', labelKey: 'reports.nestedProp.eventTypeLabel' },
+    { key: 'eventsForFront', labelKey: 'reports.nestedProp.eventTypeLabel' },
+    { key: 'device.name', labelKey: 'reports.nestedProp.name' },
+    { key: 'device.serialNumber', labelKey: 'reports.nestedProp.serialNumber' },
+    { key: 'vehicleRecord.registrationNumber', labelKey: 'form.stateNumber' },
+    { key: 'isActive', labelKey: 'reports.nestedProp.activity' },
   ],
   EventsForFront: [
     { key: 'id', labelKey: 'reports.nestedProp.id' },
@@ -60,4 +77,25 @@ export const REPORT_REFERENCE_ENTITY_PROPERTIES: Record<string, ReportReferenceE
 
 export function getReferenceEntityProperties(referenceEntity: string): ReportReferenceEntityProperty[] {
   return REPORT_REFERENCE_ENTITY_PROPERTIES[referenceEntity] ?? [{ key: 'id', labelKey: 'reports.nestedProp.id' }];
+}
+
+/** «Параметр сущности» — из GET …/reports/{entity}/metadata; fallback — статический список до загрузки. */
+export function buildReferenceEntityPropertyOptions(
+  referenceEntity: string,
+  tableMetadata: ReportEntityMetadata | null | undefined,
+  t: TFunction,
+): Values {
+  const fromApi = (tableMetadata?.fields ?? []).filter((f) => f.filterable);
+  if (fromApi.length > 0) {
+    return fromApi
+      .map((f) => ({
+        value: f.fieldName,
+        label: (f.label ?? '').trim() || f.fieldName,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  }
+  return getReferenceEntityProperties(referenceEntity).map((prop) => ({
+    value: prop.key,
+    label: t(prop.labelKey),
+  }));
 }

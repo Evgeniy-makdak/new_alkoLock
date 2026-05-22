@@ -221,7 +221,8 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
 
         {outputRows.map((row, index) => {
           const isLastRow = index === outputRows.length - 1;
-          const rowComplete = isReportOutputRowComplete(row, fieldMap, undefined, metadata);
+          const rowTableMetadata = reportsStore.getState().reportTableFieldsMetadataByRowId[row.id] ?? null;
+          const rowComplete = isReportOutputRowComplete(row, fieldMap, rowTableMetadata, metadata);
 
           if (isLastRow) {
             return (

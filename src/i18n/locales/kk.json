@@ -735,6 +735,8 @@
     "selectOutputFieldsFirst": "Кем дегенде бір нәтиже өрісін таңдаңыз",
     "timePlaceholder": "СС:ММ",
     "timeFormatError": "Уақытты СС:ММ форматында енгізіңіз (00:00–23:59)",
+    "yearPlaceholder": "ЖЖЖЖ",
+    "yearFormatError": "4 таңбалы жыл енгізіңіз (мысалы, 2020)",
     "totalRows": "Барлық жолдар",
     "viewTable": "Кесте",
     "viewBar": "Бағандар",

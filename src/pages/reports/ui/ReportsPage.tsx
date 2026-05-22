@@ -85,7 +85,7 @@ export function ReportsPage() {
     const fieldMap = new Map(entityMetadata.fields.map((f) => [f.fieldName, f]));
     const primaryRow = getPrimaryReportOutputRow();
     const readyRow = currentOutputRows.find((row) =>
-      isReportOutputRowComplete(row, fieldMap, undefined, entityMetadata),
+      isReportOutputRowComplete(row, fieldMap, tableMetadataByRowId[row.id] ?? null, entityMetadata),
     );
     if (!readyRow) {
       reportGenerationStore.getState().completeError(t('reports.selectReportTableFieldsFirst'));
@@ -144,8 +144,9 @@ export function ReportsPage() {
     }
 
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+    const tableMetadataByRowId = reportsStore.getState().reportTableFieldsMetadataByRowId;
     const canForm = outputRows.some((row) =>
-      isReportOutputRowComplete(row, fieldMap, undefined, metadata),
+      isReportOutputRowComplete(row, fieldMap, tableMetadataByRowId[row.id] ?? null, metadata),
     );
     if (!canForm) {
       reportGenerationStore.getState().completeError(t('reports.selectReportTableFieldsFirst'));
@@ -200,7 +201,7 @@ export function ReportsPage() {
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
     const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
     const hasReadyRow = activeRows.some((row) =>
-      isReportOutputRowComplete(row, fieldMap, undefined, metadata),
+      isReportOutputRowComplete(row, fieldMap, reportTableFieldsMetadataByRowId[row.id] ?? null, metadata),
     );
     if (!hasReadyRow || !activeRows.length) return false;
 

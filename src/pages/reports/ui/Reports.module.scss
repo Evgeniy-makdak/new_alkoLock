@@ -74,12 +74,12 @@
 
     [class*='FilterPanel_wrapper'] [class*='searchSelect'] {
       width: auto !important;
-      max-width: 410px;
+      max-width: 380px;
     }
 
     [class*='FilterPanel_wrapper'] .MuiAutocomplete-root {
       width: auto !important;
-      max-width: 410px;
+      max-width: 380px;
     }
 
     .MuiAutocomplete-popper {
@@ -89,13 +89,111 @@
     .MuiAutocomplete-listbox {
       min-width: 260px;
     }
+  }
+}
 
-    .reportFilterDateTime {
-      flex: 0 1 400px !important;
-      min-width: 360px !important;
-      max-width: 480px !important;
-      width: auto !important;
-    }
+// Вложенные поля «параметр + значение» — один блок в общей строке
+.reportFilterNestedEntity {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  align-content: flex-start;
+  gap: 12px 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+    flex: 0 1 240px;
+    min-width: 220px;
+    max-width: 280px;
+    width: auto;
+    box-sizing: border-box;
+  }
+
+  > .reportFilterDateTimeRoot,
+  > .reportFilterDateTimeRootRange {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+.reportFilterDateTimePairFields {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.reportFilterDateField {
+  flex: 0 0 182px;
+  width: 182px;
+  min-width: 182px;
+  max-width: 182px;
+
+  :global(.MuiFormControl-root) {
+    width: 182px !important;
+    max-width: 182px !important;
+  }
+}
+
+.reportFilterTimeField {
+  flex: 0 0 84px !important;
+  width: 84px !important;
+  min-width: 84px !important;
+  max-width: 84px !important;
+}
+
+.reportFilterDateTimeRoot,
+.reportFilterDateTimeRootRange {
+  flex: 0 0 auto;
+  width: auto;
+  box-sizing: border-box;
+}
+
+.reportFilterDateTimeRootRange {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.reportFilterDateTimeRangeSep {
+  flex: 0 0 auto;
+  line-height: 40px;
+  margin-bottom: 2px;
+  user-select: none;
+}
+
+// Все контролы строки «поле результата» (кроме сущности отчёта)
+.reportFilterOutputRowInner {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  align-content: flex-start;
+  gap: 12px 16px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterNestedEntity):not(
+      .reportFilterDateTimeRoot
+    ):not(.reportFilterDateTimeRootRange) {
+    flex: 0 1 240px;
+    min-width: 220px;
+    max-width: 280px;
+    width: auto;
+    box-sizing: border-box;
   }
 }
 
@@ -105,25 +203,27 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   align-content: flex-start;
   gap: 12px 16px;
   width: 100%;
   box-sizing: border-box;
 
-  > *:not(.MuiIconButton-root):not(.reportFilterRowActions) {
-    flex: 0 1 270px;
-    min-width: 250px;
-    max-width: 310px;
+  > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterOutputRowInner):not(
+      .reportFilterNestedEntity
+    ):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+    flex: 0 1 240px;
+    min-width: 220px;
+    max-width: 280px;
     width: auto;
     box-sizing: border-box;
   }
 }
 
 .reportFilterRowEntitySpacer {
-  flex: 0 1 270px;
-  min-width: 250px;
-  max-width: 310px;
+  flex: 0 1 240px;
+  min-width: 220px;
+  max-width: 280px;
   height: 0;
   visibility: hidden;
   pointer-events: none;
@@ -167,8 +267,11 @@
   }
 
   .reportFilterOutputRow,
-  .reportFilterRowPrimary {
+  .reportFilterRowPrimary,
+  .reportFilterOutputRowInner,
+  .reportFilterNestedEntity {
     flex-direction: column;
+    align-items: stretch;
 
     > *:not(.MuiIconButton-root):not(.reportFilterRowEntitySpacer):not(.reportFilterRowActions) {
       flex: 1 1 100% !important;
@@ -176,6 +279,16 @@
       max-width: 100% !important;
       width: 100% !important;
     }
+  }
+
+  .reportFilterDateTimeRootRange {
+    flex-wrap: wrap;
+    width: 100% !important;
+  }
+
+  .reportFilterDateTimeRootRange .reportFilterDateTimePairFields {
+    flex: 1 1 100%;
+    max-width: 100%;
   }
 
   .reportFilterRowEntitySpacer {

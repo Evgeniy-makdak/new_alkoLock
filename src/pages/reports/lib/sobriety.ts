@@ -1,16 +1,35 @@
-import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
-
 export type SobrietyOutcomeKey = 'passed' | 'failed' | 'interrupted';
 
-export function getEventTypeLabel(ev: IDeviceAction): string {
-  const ef = ev?.eventsForFront;
-  if (ef && typeof ef === 'object' && ef !== null && 'label' in ef) {
-    return String((ef as { label?: string }).label ?? '');
+/** Подпись типа события из DeviceAction / device-events (корень или events[0]). */
+export function getEventTypeLabel(ev: unknown): string {
+  if (ev == null || typeof ev !== 'object') return '';
+  const record = ev as Record<string, unknown>;
+
+  const fromEventsForFront = (raw: unknown): string => {
+    if (raw == null || typeof raw !== 'object') return '';
+    if ('label' in raw && typeof (raw as { label?: unknown }).label === 'string') {
+      return String((raw as { label: string }).label);
+    }
+    return '';
+  };
+
+  const fromEventType = (raw: unknown): string => {
+    if (typeof raw === 'string') return raw;
+    if (raw != null && typeof raw === 'object' && 'label' in raw) {
+      return String((raw as { label: string }).label);
+    }
+    return '';
+  };
+
+  const root = fromEventsForFront(record.eventsForFront) || fromEventType(record.eventType);
+  if (root) return root;
+
+  const events = record.events;
+  if (Array.isArray(events) && events.length > 0 && events[0] != null && typeof events[0] === 'object') {
+    const first = events[0] as Record<string, unknown>;
+    return fromEventsForFront(first.eventsForFront) || fromEventType(first.eventType);
   }
-  if (typeof ev?.eventType === 'string') return ev.eventType;
-  if (ev?.eventType && typeof ev.eventType === 'object' && 'label' in ev.eventType) {
-    return String((ev.eventType as { label: string }).label);
-  }
+
   return '';
 }
 

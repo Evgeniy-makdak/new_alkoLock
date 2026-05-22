@@ -1,3 +1,9 @@
+import {
+  buildDeviceActionAttributeOptions,
+  formatDeviceActionEntityListLabel,
+  formatDeviceActionOptionLabel,
+  readDeviceActionAttributeValues,
+} from './deviceActionReportOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 
 import type { IAlcolock, ICar, IUser } from '@shared/types/BaseQueryTypes';
@@ -63,11 +69,24 @@ function readRecordAttribute(record: unknown, attribute: string): string | numbe
   if (value == null || value === '') return null;
   if (typeof value === 'boolean') return value ? 'true' : 'false';
   if (typeof value === 'string' || typeof value === 'number') return value;
-  return String(value);
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    const o = value as Record<string, unknown>;
+    if (typeof o.label === 'string' && o.label.trim()) return o.label.trim();
+    if (typeof o.name === 'string' && o.name.trim()) return o.name.trim();
+    if (o.id != null && o.id !== '') return o.id as string | number;
+  }
+  return null;
 }
 
 /** Одно или несколько значений свойства (роли пользователя — по одной на группу). */
-function readRecordAttributeValues(record: unknown, attribute: string): (string | number)[] {
+function readRecordAttributeValues(
+  record: unknown,
+  attribute: string,
+  referenceEntity?: string,
+): (string | number)[] {
+  if (referenceEntity === 'DeviceAction') {
+    return readDeviceActionAttributeValues(record, attribute);
+  }
   if (attribute === USER_GROUP_NAME_ATTR) {
     return extractUserGroupNames(record);
   }
@@ -91,8 +110,10 @@ function resolveOptionLabel(
   }
   if (referenceEntity === 'MonitoringDevice' && attribute === 'id' && record && typeof record === 'object') {
     const d = record as IAlcolock;
-    const parts = [d.name, d.serialNumber != null ? String(d.serialNumber) : ''].filter(Boolean);
-    return parts.join(' · ') || value;
+    const name = (d.name ?? '').trim();
+    const serial = d.serialNumber != null ? String(d.serialNumber).trim() : '';
+    if (name && serial) return `${name} (${serial})`;
+    return name || serial || value;
   }
   if (referenceEntity === 'User' && attribute === 'id' && record && typeof record === 'object') {
     return Formatters.nameFormatter(record as IUser, false) || value;
@@ -104,6 +125,9 @@ function resolveOptionLabel(
     const fullName = (record as Record<string, unknown>).fullName;
     if (typeof fullName === 'string' && fullName.trim()) return fullName;
     return Formatters.nameFormatter(record as IUser, false) || value;
+  }
+  if (referenceEntity === 'DeviceAction') {
+    return formatDeviceActionOptionLabel(record, attribute, value);
   }
   if (referenceEntity === 'MonitoringDevice' && attribute === 'vehicleBind' && record && typeof record === 'object') {
     const bind = (record as Record<string, unknown>).vehicleBind;
@@ -137,11 +161,14 @@ export function buildNestedEntityAttributeOptions(
   if (referenceEntity === 'Vehicle' && attribute === 'type' && labelMaps?.types) {
     return dictionaryToValues(labelMaps.types);
   }
+  if (referenceEntity === 'DeviceAction') {
+    return buildDeviceActionAttributeOptions(records, attribute);
+  }
 
   const seen = new Map<string, Values[number]>();
 
   for (const record of records) {
-    for (const raw of readRecordAttributeValues(record, attribute)) {
+    for (const raw of readRecordAttributeValues(record, attribute, referenceEntity)) {
       const value = String(raw);
       if (seen.has(value)) continue;
       seen.set(value, {
@@ -167,7 +194,7 @@ export function enrichNestedEntityFilterValues(
   if (!attribute || !values.length) return values;
   const byValue = new Map<string, unknown>();
   for (const r of records) {
-    for (const raw of readRecordAttributeValues(r, attribute)) {
+    for (const raw of readRecordAttributeValues(r, attribute, referenceEntity)) {
       byValue.set(String(raw), r);
     }
   }
@@ -190,16 +217,28 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
     }));
   }
   if (referenceEntity === 'MonitoringDevice') {
-    return (records as IAlcolock[]).map((d) => ({
-      value: d.id,
-      label: [d.name, d.serialNumber != null ? String(d.serialNumber) : ''].filter(Boolean).join(' · ') || String(d.id),
-    }));
+    return (records as IAlcolock[]).map((d) => {
+      const name = (d.name ?? '').trim();
+      const serial = d.serialNumber != null ? String(d.serialNumber).trim() : '';
+      const label =
+        name && serial ? `${name} (${serial})` : name || serial || String(d.id);
+      return { value: d.id, label };
+    });
   }
   if (referenceEntity === 'User') {
     return (records as IUser[]).map((u) => ({
       value: u.id,
       label: Formatters.nameFormatter(u, false) || String(u.id),
     }));
+  }
+  if (referenceEntity === 'DeviceAction') {
+    return records
+      .map((r) => {
+        const id = readDeviceActionAttributeValues(r, 'id')[0];
+        if (id == null) return null;
+        return { value: id, label: formatDeviceActionEntityListLabel(r) };
+      })
+      .filter((x): x is Values[number] => x != null);
   }
   return records
     .map((r) => {

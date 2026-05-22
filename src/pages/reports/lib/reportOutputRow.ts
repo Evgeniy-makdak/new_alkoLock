@@ -1,3 +1,4 @@
+import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
 import { reportOutputOperationKey } from './reportOutputFilterKeys';
 
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -80,7 +81,13 @@ export function isReportOutputRowComplete(
   );
   if (!outputControlsReady) return false;
 
-  const needsOperation = (primaryField.availableOperations ?? []).length > 0;
+  const attributeField =
+    refEntity && nestedState?.attribute
+      ? findReferenceEntityFieldByAttribute(tableFieldsMetadata, nestedState.attribute)
+      : undefined;
+  const operationSource = attributeField ?? primaryField;
+
+  const needsOperation = (operationSource.availableOperations ?? []).length > 0;
   const operationSelected =
     (row.filterSelections[reportOutputOperationKey(row.id)] ?? []).length > 0;
 

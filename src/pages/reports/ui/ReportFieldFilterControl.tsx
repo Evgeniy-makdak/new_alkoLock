@@ -34,6 +34,7 @@ type ReportFieldFilterControlProps = {
   referenceOptionsCache: Record<string, Values>;
   onChange: (values: Values) => void;
   onReferenceOptionsLoaded: (cacheKey: string, options: Values) => void;
+  filterOperationCode?: string | null;
 };
 
 export function ReportFieldFilterControl({
@@ -43,12 +44,19 @@ export function ReportFieldFilterControl({
   referenceOptionsCache,
   onChange,
   onReferenceOptionsLoaded,
+  filterOperationCode,
 }: ReportFieldFilterControlProps) {
   const { t } = useTranslation();
   const label = field.label || field.fieldName;
 
   if (isReportDateTimeField(field)) {
-    return <ReportDateTimeFilterField value={value} onChange={onChange} />;
+    return (
+      <ReportDateTimeFilterField
+        value={value}
+        operationCode={filterOperationCode}
+        onChange={onChange}
+      />
+    );
   }
 
   if (isReportTimeOnlyField(field)) {

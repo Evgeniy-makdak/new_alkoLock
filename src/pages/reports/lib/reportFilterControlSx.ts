@@ -1,9 +1,9 @@
 import type { SxProps, Theme } from '@mui/material';
 
 export const reportFilterControlSx: SxProps<Theme> = {
-  flex: '0 1 270px',
-  minWidth: 250,
-  maxWidth: 310,
+  flex: '0 1 240px',
+  minWidth: 220,
+  maxWidth: 280,
   width: 'auto',
   boxSizing: 'border-box',
 };

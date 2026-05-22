@@ -735,6 +735,8 @@
     "selectOutputFieldsFirst": "Kamida bitta natija maydonini tanlang",
     "timePlaceholder": "SS:DD",
     "timeFormatError": "Vaqtni SS:DD formatida kiriting (00:00–23:59)",
+    "yearPlaceholder": "YYYY",
+    "yearFormatError": "4 raqamli yil kiriting (masalan, 2020)",
     "totalRows": "Jami qatorlar",
     "viewTable": "Jadval",
     "viewBar": "Ustunlar",

@@ -6,8 +6,9 @@ import CloseIcon from '@mui/icons-material/Close';
 import { IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
+import { findReferenceEntityFieldByAttribute } from '@pages/reports/lib/findReferenceEntityFieldByAttribute';
+import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
 import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import {
   reportFilterAutocompleteSlotProps,
@@ -84,6 +85,12 @@ export function ReportOutputFilterRow({
   const refRecords = refEntity ? (referenceRecordsCache[refEntity] ?? []) : [];
   const selectedBranchId = appStore((s) => s.selectedBranchState?.id);
   const loadReportTableFieldsMetadata = reportsStore((s) => s.loadReportTableFieldsMetadata);
+  const tableFieldsMetadata = reportsStore((s) => s.reportTableFieldsMetadataByRowId[row.id] ?? null);
+  const tableFieldsMetadataLoading = reportsStore(
+    (s) => s.reportTableFieldsMetadataLoadingByRowId[row.id] ?? false,
+  );
+
+  const nestedState = primaryField ? row.nestedEntityFilterByField[primaryField.fieldName] : undefined;
 
   useEffect(() => {
     if (!refEntity) return;
@@ -93,19 +100,47 @@ export function ReportOutputFilterRow({
     }
   }, [refEntity, selectedBranchId]);
 
+  useEffect(() => {
+    if (!refEntity) return;
+    void loadReportTableFieldsMetadata(row.id, refEntity);
+  }, [refEntity, row.id, loadReportTableFieldsMetadata]);
+
   const operationKey = reportOutputOperationKey(row.id);
   const functionKey = reportOutputFunctionKey(row.id);
+  const filterOperationCode = useMemo(() => {
+    const picked = row.filterSelections[operationKey]?.[0];
+    return picked?.value != null && picked.value !== '' ? String(picked.value) : null;
+  }, [row.filterSelections, operationKey]);
+
+  const operationFunctionSource = useMemo(() => {
+    if (!primaryField) return null;
+    if (refEntity && nestedState?.attribute) {
+      const attributeField = findReferenceEntityFieldByAttribute(
+        tableFieldsMetadata,
+        nestedState.attribute,
+      );
+      if (attributeField) return attributeField;
+      // Не подставлять device/vehicle (eq, in), пока нет metadata MonitoringDevice и т.д.
+      if (tableFieldsMetadataLoading || !tableFieldsMetadata) return null;
+      return primaryField;
+    }
+    return primaryField;
+  }, [
+    primaryField,
+    refEntity,
+    nestedState?.attribute,
+    tableFieldsMetadata,
+    tableFieldsMetadataLoading,
+  ]);
 
   const operationOptions = useMemo(
-    () => operationsToValues(primaryField?.availableOperations),
-    [primaryField],
+    () => operationsToValues(operationFunctionSource?.availableOperations),
+    [operationFunctionSource],
   );
   const functionOptions = useMemo(
-    () => operationsToValues(primaryField?.availableFunctions),
-    [primaryField],
+    () => operationsToValues(operationFunctionSource?.availableFunctions),
+    [operationFunctionSource],
   );
-
-  const nestedState = primaryField ? row.nestedEntityFilterByField[primaryField.fieldName] : undefined;
 
   const nestedTerminalReady = Boolean(
     refEntity && nestedState?.attribute && (nestedState.values?.length ?? 0) > 0,
@@ -125,16 +160,11 @@ export function ReportOutputFilterRow({
 
   const selectedOutputSingle = row.selectedOutputFields.slice(0, 1);
 
-  useEffect(() => {
-    if (!outputControlsReady || !refEntity) return;
-    void loadReportTableFieldsMetadata(row.id, refEntity);
-  }, [outputControlsReady, refEntity, row.id, loadReportTableFieldsMetadata]);
-
-  const rowComplete = isReportOutputRowComplete(row, fieldMap, undefined, metadata);
+  const rowComplete = isReportOutputRowComplete(row, fieldMap, tableFieldsMetadata, metadata);
   const canShowAddButton = showAddButton && rowComplete;
 
   return (
-    <>
+    <div className={pageStyles.reportFilterOutputRowInner}>
       <ReportSearchMultipleSelect
         multiple={false}
         name={`selectedField_${row.id}`}
@@ -153,6 +183,8 @@ export function ReportOutputFilterRow({
             <ReportNestedEntityFilterControl
               field={primaryField}
               referenceEntity={refEntity}
+              tableFieldsMetadata={tableFieldsMetadata}
+              tableFieldsMetadataLoading={tableFieldsMetadataLoading}
               records={refRecords}
               recordsLoading={referenceRecordsLoading}
               labelMaps={vehicleLabelMaps}
@@ -163,6 +195,7 @@ export function ReportOutputFilterRow({
                 }
               }
               onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
+              filterOperationCode={filterOperationCode}
             />
           ) : primaryField.filterable ? (
             <ReportFieldFilterControl
@@ -170,6 +203,7 @@ export function ReportOutputFilterRow({
               metadata={metadata}
               value={row.filterSelections[primaryField.fieldName] ?? []}
               referenceOptionsCache={{}}
+              filterOperationCode={filterOperationCode}
               onChange={(values) => onFilterChange(primaryField.fieldName, values)}
               onReferenceOptionsLoaded={onReferenceOptionsLoaded}
             />
@@ -184,6 +218,7 @@ export function ReportOutputFilterRow({
                 values={operationOptions}
                 value={row.filterSelections[operationKey] ?? []}
                 serverFilter={false}
+                isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
                 sx={reportFilterControlSx}
                 slotProps={reportFilterAutocompleteSlotProps}
                 setValueStore={(_, value) =>
@@ -197,6 +232,7 @@ export function ReportOutputFilterRow({
                 values={functionOptions}
                 value={row.filterSelections[functionKey] ?? []}
                 serverFilter={false}
+                isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
                 sx={reportFilterControlSx}
                 slotProps={reportFilterAutocompleteSlotProps}
                 setValueStore={(_, value) =>
@@ -256,6 +292,6 @@ export function ReportOutputFilterRow({
           ) : null}
         </div>
       ) : null}
-    </>
+    </div>
   );
 }

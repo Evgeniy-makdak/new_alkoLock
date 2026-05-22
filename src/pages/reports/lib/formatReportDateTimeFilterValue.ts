@@ -3,7 +3,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 import { isCompleteReportTime } from './formatReportTimeInput';
-import { isReportDateTimeField } from './reportFieldFilterKind';
+import { isReportDateTimeField, isReportYearOnlyField } from './reportFieldFilterKind';
 
 /** Метка времени для UI. */
 export function formatDateTimeDisplay(date: Dayjs): string {
@@ -57,26 +57,40 @@ export function toReportDateTimeFilterIso(value: unknown): string | null {
   return parsed.isValid() ? parsed.toISOString() : null;
 }
 
-/**
- * Диапазон для operator=between: от выбранного момента до конца суток (UTC).
- * Значения — ISO-строки; бэкенд должен парсить их в java.time.Instant (сейчас часто падает с 500).
- */
-export function buildDateTimeBetweenRange(isoStart: string): [string, string] | null {
-  const start = dayjs(isoStart);
-  if (!start.isValid()) {
-    return null;
-  }
-  const end = start.endOf('day');
-  return [start.toISOString(), end.toISOString()];
+/** Значение момента для POST …/query — ISO UTC (java.time.Instant на бэке). */
+export function toReportDateTimeQueryValue(value: unknown): string | null {
+  return toReportDateTimeFilterIso(value);
 }
 
-/** Значение фильтра DATETIME — ISO-строка или пара для between. */
+/** Значение фильтра DATETIME — ISO-строка. */
 export function formatFilterValueForField(
   field: ReportFieldDefinition | undefined,
   value: unknown,
 ): unknown {
-  if (!field || !isReportDateTimeField(field)) {
+  if (!field) {
     return value;
   }
-  return toReportDateTimeFilterIso(value) ?? value;
+  const type = (field.type ?? '').toUpperCase();
+  if (type === 'BOOLEAN') {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+  }
+  if (isReportYearOnlyField(field)) {
+    const year = parseInt(String(value).trim(), 10);
+    return Number.isFinite(year) ? year : value;
+  }
+  // ENUM на бэке часто String; coerceFilterScalar превращает «4310» в number → 500.
+  if (type === 'ENUM' || type === 'TEXT') {
+    return value == null || value === '' ? value : String(value);
+  }
+  if (!isReportDateTimeField(field)) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const range = value
+      .map((v) => toReportDateTimeQueryValue(v))
+      .filter((v): v is string => v != null);
+    return range.length === value.length ? range : value;
+  }
+  return toReportDateTimeQueryValue(value) ?? value;
 }
