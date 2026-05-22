@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { Box, TextField, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import {
@@ -18,6 +18,8 @@ import {
 import { isReportDateTimeBetweenOperation } from '@pages/reports/lib/mapReportQueryOperator';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import type { Values } from '@shared/ui/search_multiple_select';
+
+import { ReportTimeTextField } from './ReportTimeTextField';
 
 import pageStyles from './Reports.module.scss';
 
@@ -100,18 +102,16 @@ function DateTimePair({ dateLabel, storedRaw, onCommit }: DateTimePairProps) {
           theme={theme}
         />
       </Box>
-      <TextField
+      <ReportTimeTextField
         className={pageStyles.reportFilterTimeField}
         label={t('reports.timeOfDayLabel')}
         value={timePart}
         placeholder={t('reports.timePlaceholder')}
-        error={timeInvalid}
-        helperText={timeInvalid ? t('reports.timeFormatError') : undefined}
-        inputProps={{ maxLength: 5, inputMode: 'numeric' }}
-        size="small"
+        invalid={timeInvalid}
+        errorMessage={t('reports.timeFormatError')}
         sx={timeFieldSx}
-        onChange={(e) => {
-          const formatted = formatReportTimeInput(e.target.value);
+        onChange={(raw) => {
+          const formatted = formatReportTimeInput(raw);
           setTimePart(formatted);
           commit(datePart, formatted);
         }}

@@ -149,6 +149,16 @@
   width: 84px !important;
   min-width: 84px !important;
   max-width: 84px !important;
+
+  /* Tooltip-обёртка не расширяет строку */
+  :global(.MuiFormControl-root) {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+
+  :global(.MuiFormHelperText-root) {
+    display: none;
+  }
 }
 
 .reportFilterDateTimeRoot,

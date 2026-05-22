@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
 
-import { TextField } from '@mui/material';
-
 import { reportFilterControlSx } from '@pages/reports/lib/reportFilterControlSx';
 import type { Values } from '@shared/ui/search_multiple_select';
+
+import { ReportYearTextField } from './ReportYearTextField';
 
 type ReportYearFilterFieldProps = {
   label?: string;
@@ -18,19 +18,17 @@ export function ReportYearFilterField({ label, value, onChange }: ReportYearFilt
   const invalid = yearStr.length > 0 && yearStr.length < 4;
 
   return (
-    <TextField
+    <ReportYearTextField
       label={label ?? t('form.yearOfManufacture')}
       value={yearStr}
       placeholder={t('reports.yearPlaceholder')}
-      error={invalid}
-      helperText={invalid ? t('reports.yearFormatError') : undefined}
-      inputProps={{ maxLength: 4, inputMode: 'numeric' }}
-      onChange={(e) => {
-        const digits = e.target.value.replace(/\D/g, '').slice(0, 4);
+      invalid={invalid}
+      errorMessage={t('reports.yearFormatError')}
+      sx={reportFilterControlSx}
+      onChange={(raw) => {
+        const digits = raw.replace(/\D/g, '').slice(0, 4);
         onChange(digits ? [{ value: digits, label: digits }] : []);
       }}
-      size="small"
-      sx={reportFilterControlSx}
     />
   );
 }

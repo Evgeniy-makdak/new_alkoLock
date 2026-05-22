@@ -26,6 +26,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
+import { ReportTimeTextField } from './ReportTimeTextField';
 
 type ReportFieldFilterControlProps = {
   field: ReportFieldDefinition;
@@ -64,19 +65,17 @@ export function ReportFieldFilterControl({
     const invalid = timeValue.length > 0 && !isCompleteReportTime(timeValue);
 
     return (
-      <TextField
+      <ReportTimeTextField
         label={label}
         value={timeValue}
         placeholder={t('reports.timePlaceholder')}
-        error={invalid}
-        helperText={invalid ? t('reports.timeFormatError') : undefined}
-        inputProps={{ maxLength: 5, inputMode: 'numeric' }}
-        onChange={(e) => {
-          const formatted = formatReportTimeInput(e.target.value);
+        invalid={invalid}
+        errorMessage={t('reports.timeFormatError')}
+        sx={reportFilterControlSx}
+        onChange={(raw) => {
+          const formatted = formatReportTimeInput(raw);
           onChange(formatted ? [{ value: formatted, label: formatted }] : []);
         }}
-        size="small"
-        sx={reportFilterControlSx}
       />
     );
   }
