@@ -15,9 +15,11 @@ import {
   formatReportTimeInput,
   isCompleteReportTime,
 } from '@pages/reports/lib/formatReportTimeInput';
-import { reportFilterControlSx } from '@pages/reports/lib/reportFilterControlSx';
+import { reportFilterDateTimeControlSx } from '@pages/reports/lib/reportFilterControlSx';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import type { Values } from '@shared/ui/search_multiple_select';
+
+import pageStyles from './Reports.module.scss';
 
 type ReportDateTimeFilterFieldProps = {
   value: Values;
@@ -68,14 +70,15 @@ export function ReportDateTimeFilterField({ value, onChange }: ReportDateTimeFil
 
   return (
     <Box
+      className={pageStyles.reportFilterDateTime}
       sx={{
-        ...reportFilterControlSx,
+        ...reportFilterDateTimeControlSx,
         display: 'flex',
         flexDirection: 'row',
         flexWrap: 'nowrap',
         gap: 1,
         alignItems: 'flex-start',
-        '& > *': { flex: '1 1 0', minWidth: 120 },
+        '& > *': { flex: '1 1 0', minWidth: 100 },
       }}>
       <InputDate
         label={t('tables.date')}

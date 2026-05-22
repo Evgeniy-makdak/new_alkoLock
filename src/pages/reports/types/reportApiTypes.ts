@@ -20,6 +20,8 @@ export type ReportFieldDefinition = {
   filterable: boolean;
   sortable: boolean;
   groupable: boolean;
+  /** false — поле не показывается в «Поля в отчёте» и не попадает в selectedFields по умолчанию. */
+  selectable?: boolean;
   aggregation: string | null;
   availableOperations: ReportFieldOperation[];
   availableFunctions: ReportFieldOperation[];
@@ -58,18 +60,43 @@ export type ReportSelectedFieldPayload = {
   aggregation?: string;
 };
 
+export type ReportLogicOperator = 'or' | 'and';
+
 /** Элемент filters в POST …/query. */
 export type ReportQueryFilter = {
   fieldName: string;
   operator: string;
   value: unknown;
+  group?: number;
 };
 
-/** Тело POST api/v1/reports/{entity}/query. */
+export type ReportLogicConnect = {
+  groupNumber: number;
+  logicOperator: ReportLogicOperator;
+};
+
+/** Собранные поля и фильтры одной строки «поле результата». */
+export type ReportQueryRowPayload = {
+  selectedFields: ReportSelectedFieldPayload[];
+  filters: ReportQueryFilter[];
+};
+
+/** Тело query в POST api/v1/reports/{entity}/query. */
 export type ReportQueryRequest = {
   selectedFields: ReportSelectedFieldPayload[];
   filters: ReportQueryFilter[];
   groupBy?: string[];
+  logicConnects?: ReportLogicConnect[];
+};
+
+/** Одна строка фильтров «поле результата» и зависимых контролов в UI. */
+export type ReportOutputRow = {
+  id: string;
+  selectedOutputFields: Values;
+  /** Поля для POST selectedFields (колонки отчёта). */
+  reportTableFields: Values;
+  filterSelections: ReportUiFilterSelections;
+  nestedEntityFilterByField: ReportNestedEntityFilterByField;
 };
 
 export type ReportQueryPageable = {

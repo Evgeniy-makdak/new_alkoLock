@@ -1,22 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import {
+  buildReportSortFieldMap,
   buildReportSortParams,
-  getDefaultReportSortModel,
   reportSortParamsEqual,
 } from '@pages/reports/lib/buildReportSortParam';
 import {
   getReportGridRowId,
   mapReportContentToResultGrid,
 } from '@pages/reports/lib/mapReportContentToResultGrid';
-import {
-  DEVICE_EVENT_REPORT_ROW_COLUMNS,
-  getReportResultColumnMeta,
-} from '@pages/reports/lib/reportResultTableColumns';
-import { SortsTypes } from '@shared/config/queryParamsEnums';
+import { buildReportColumnAliasMap } from '@pages/reports/lib/reportSelectedFieldAliases';
+import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { Table } from '@shared/components/Table/Table';
@@ -28,8 +25,9 @@ import styles from './Reports.module.scss';
 export function ReportsResultsView() {
   const { t } = useTranslation();
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
+  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
   const metadata = reportsStore((s) => s.metadata);
-  const selectedOutputFields = reportsStore((s) => s.selectedOutputFields);
+  const outputRows = reportsStore((s) => s.outputRows);
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const isLoadingPage = reportGenerationStore((s) => s.isLoadingPage);
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
@@ -41,13 +39,15 @@ export function ReportsResultsView() {
 
   const [tableState, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.REPORTS_TABLE_SORTS,
-    [{ field: '__reportRowCreatedAt', sort: SortsTypes.desc }],
+    [],
   );
 
   const pageSizeRef = useRef(tableState.pageSize);
   pageSizeRef.current = tableState.pageSize;
 
   const lastSyncedReportKeyRef = useRef<string | null>(null);
+  /** Блокирует sort-effect на кадре сброса (stale sortModel до setState). */
+  const suppressSortFetchRef = useRef(false);
 
   const reportTableKey = useMemo(
     () =>
@@ -58,22 +58,33 @@ export function ReportsResultsView() {
   );
 
   const primaryField = useMemo(() => {
-    const key = selectedOutputFields[0] ? String(selectedOutputFields[0].value) : '';
+    const primaryRow = getPrimaryReportOutputRow();
+    const key = primaryRow.selectedOutputFields[0] ? String(primaryRow.selectedOutputFields[0].value) : '';
     if (!key || !metadata?.fields) return null;
     return metadata.fields.find((f) => f.fieldName === key) ?? null;
-  }, [selectedOutputFields, metadata]);
+  }, [outputRows, metadata]);
 
-  const reportEntityName = queryContext?.entityName ?? null;
+  const reportTableFieldsMetadataByRowId = reportsStore(
+    (s) => s.reportTableFieldsMetadataByRowId,
+  );
+  const activeOutputRows = useMemo(
+    () => outputRows.filter((row) => row.selectedOutputFields.length > 0),
+    [outputRows],
+  );
+  const fieldMap = useMemo(
+    () => new Map((metadata?.fields ?? []).map((f) => [f.fieldName, f])),
+    [metadata],
+  );
 
-  const reportColumnMeta = useMemo(() => {
-    const refColumns = getReportResultColumnMeta(primaryField) ?? [];
-    if (reportEntityName === 'DeviceEvent' && primaryField?.referenceEntity) {
-      return [...DEVICE_EVENT_REPORT_ROW_COLUMNS, ...refColumns];
+  useEffect(() => {
+    const hasVehicleVariant = activeOutputRows.some((row) => {
+      const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
+      return fieldMap.get(key)?.referenceEntity?.trim() === 'Vehicle';
+    });
+    if (hasVehicleVariant) {
+      void loadVehicleLabelMaps();
     }
-    return refColumns;
-  }, [primaryField, reportEntityName]);
-
-  const nestedFieldName = primaryField?.fieldName ?? null;
+  }, [activeOutputRows, fieldMap, loadVehicleLabelMaps]);
 
   // Сброс страницы и сортировки только при новом запросе отчёта. changeTable* нестабильны — не в deps.
   useEffect(() => {
@@ -83,19 +94,32 @@ export function ReportsResultsView() {
     }
     if (lastSyncedReportKeyRef.current === reportTableKey) return;
     lastSyncedReportKeyRef.current = reportTableKey;
+    suppressSortFetchRef.current = true;
 
     const pageSize = pageSizeRef.current;
-    const defaultSortModel = getDefaultReportSortModel(reportColumnMeta);
-    const defaultSortParams = buildReportSortParams(defaultSortModel, nestedFieldName);
 
     changeTableState({ page: 0, pageSize });
-    changeTableSorts(defaultSortModel);
+    changeTableSorts([]);
+    apiRef.current?.setSortModel?.([]);
+    apiRef.current?.setPage?.(0);
     setPagination({ page: 0, pageSize });
-    setSort(defaultSortParams);
+    setSort([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
 
   const rowIdOffset = storePagination.page * storePagination.pageSize;
+
+  const columnAliases = useMemo(
+    () => buildReportColumnAliasMap(queryContext?.body.selectedFields),
+    [queryContext?.body.selectedFields],
+  );
+
+  const sortFieldByColumn = useMemo(() => {
+    if (!queryContext?.body.selectedFields || !metadata?.entityName) {
+      return new Map<string, string>();
+    }
+    return buildReportSortFieldMap(queryContext.body.selectedFields);
+  }, [queryContext?.body.selectedFields]);
 
   const { columns, rows } = useMemo(() => {
     if (!lastResult?.content?.length) {
@@ -107,9 +131,24 @@ export function ReportsResultsView() {
       rowIdOffset,
       t,
       vehicleLabelMaps,
-      reportEntityName,
+      metadata,
+      activeOutputRows,
+      fieldMap,
+      reportTableFieldsMetadataByRowId,
+      columnAliases,
     );
-  }, [lastResult, primaryField, rowIdOffset, vehicleLabelMaps, t, reportEntityName]);
+  }, [
+    lastResult,
+    primaryField,
+    rowIdOffset,
+    vehicleLabelMaps,
+    t,
+    metadata,
+    activeOutputRows,
+    fieldMap,
+    reportTableFieldsMetadataByRowId,
+    columnAliases,
+  ]);
 
   const handlePaginationModelChange = useCallback(
     (model: GridPaginationModel) => {
@@ -135,24 +174,36 @@ export function ReportsResultsView() {
     [changeTableState, loadReportPage],
   );
 
-  const handleSortModelChange = useCallback(
-    (model: GridSortModel) => {
-      changeTableSorts(model);
+  // Как на вкладке «События»: onSortModelChange только сохраняет модель, запрос — по изменению sortModel.
+  useEffect(() => {
+    if (!queryContext) return;
+    if (suppressSortFetchRef.current) {
+      suppressSortFetchRef.current = false;
+      return;
+    }
+    const { isGenerating, sort, pagination } = reportGenerationStore.getState();
+    if (isGenerating) return;
 
-      const { queryContext: ctx, isLoadingPage, isGenerating, pagination, sort } =
-        reportGenerationStore.getState();
-      if (!ctx || isLoadingPage || isGenerating) return;
+    const nextSort = buildReportSortParams(tableState.sortModel, sortFieldByColumn);
+    if (reportSortParamsEqual(sort, nextSort)) return;
 
-      const nextSort = buildReportSortParams(model, nestedFieldName);
-      if (reportSortParamsEqual(sort, nextSort)) return;
-
-      setSort(nextSort);
-      changeTableState({ page: 0, pageSize: pagination.pageSize });
-      setPagination({ page: 0 });
-      void loadReportPage(0, pagination.pageSize);
-    },
-    [changeTableSorts, changeTableState, loadReportPage, nestedFieldName, setPagination, setSort],
-  );
+    setSort(nextSort);
+    changeTableState({ page: 0, pageSize: pagination.pageSize });
+    setPagination({ page: 0 });
+    apiRef.current?.setPage?.(0);
+    void loadReportPage(0, pagination.pageSize);
+  }, [
+    queryContext,
+    tableState.sortModel,
+    tableState.sortModel[0]?.field,
+    tableState.sortModel[0]?.sort,
+    sortFieldByColumn,
+    changeTableState,
+    loadReportPage,
+    setPagination,
+    setSort,
+    apiRef,
+  ]);
 
   const totalElements = lastResult?.totalElements ?? 0;
 
@@ -166,12 +217,11 @@ export function ReportsResultsView() {
           rowCount={totalElements}
           paginationMode="server"
           sortingMode="server"
-          sortModel={tableState.sortModel}
-          onSortModelChange={handleSortModelChange}
+          onSortModelChange={changeTableSorts}
           apiRef={apiRef}
           pageNumber={storePagination.page}
           pageSize={storePagination.pageSize}
-          loading={isGenerating || isLoadingPage}
+          loading={isLoadingPage}
           onPaginationModelChange={handlePaginationModelChange}
           getRowId={getReportGridRowId}
           pointer={false}

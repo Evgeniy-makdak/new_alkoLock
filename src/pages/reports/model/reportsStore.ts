@@ -3,13 +3,25 @@ import { create } from 'zustand';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportVehicleLabelMaps } from '../lib/fetchVehicleFrontDataMaps';
+import {
+  reportOutputFunctionKey,
+  reportOutputOperationKey,
+} from '../lib/reportOutputFilterKeys';
+import {
+  createAdditionalReportOutputRow,
+  createDefaultReportOutputRow,
+  getPrimaryOutputRowFromList,
+  PRIMARY_REPORT_OUTPUT_ROW_ID,
+} from '../lib/reportOutputRow';
 
 import type {
   ReportEntityListItem,
   ReportEntityMetadata,
   ReportFilterControlDef,
+  ReportLogicOperator,
   ReportNestedEntityFilterByField,
   ReportNestedEntityFilterState,
+  ReportOutputRow,
   ReportUiFilterSelections,
   ReportViewMode,
 } from '../types/reportApiTypes';
@@ -23,21 +35,32 @@ type ReportsStore = {
   metadataLoading: boolean;
   metadataError: string | null;
   filterControls: ReportFilterControlDef[];
-  selectedOutputFields: Values;
-  filterSelections: ReportUiFilterSelections;
+  outputRows: ReportOutputRow[];
+  logicOperator: ReportLogicOperator;
   referenceRecordsCache: Record<string, unknown[]>;
   referenceRecordsLoading: boolean;
-  nestedEntityFilterByField: ReportNestedEntityFilterByField;
   vehicleLabelMaps: ReportVehicleLabelMaps;
   vehicleLabelMapsLoading: boolean;
   viewMode: ReportViewMode;
   loadEntities: () => Promise<void>;
   setSelectedEntityName: (name: string | null) => void;
   loadMetadataForEntity: (entityName: string) => Promise<void>;
-  setSelectedOutputFields: (values: Values) => void;
-  setFilterSelection: (controlId: string, values: Values) => void;
+  addOutputRow: (logicOperator: ReportLogicOperator) => void;
+  removeOutputRow: (rowId: string) => void;
+  setOutputRowSelectedFields: (rowId: string, values: Values) => void;
+  setOutputRowFilterSelection: (rowId: string, controlId: string, values: Values) => void;
+  setOutputRowNestedEntityFilter: (
+    rowId: string,
+    fieldName: string,
+    patch: Partial<ReportNestedEntityFilterState>,
+  ) => void;
+  setOutputRowReportTableFields: (rowId: string, values: Values) => void;
+  /** GET api/v1/reports/{referenceEntity}/metadata — referenceEntity из «Поле результата». */
+  loadReportTableFieldsMetadata: (rowId: string, referenceEntity: string) => Promise<void>;
+  reportTableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null>;
+  reportTableFieldsMetadataLoadingByRowId: Record<string, boolean>;
+  reportTableFieldsMetadataKeyByRowId: Record<string, string>;
   loadReferenceEntityRecords: (referenceEntity: string) => Promise<void>;
-  setNestedEntityFilter: (fieldName: string, patch: Partial<ReportNestedEntityFilterState>) => void;
   loadVehicleLabelMaps: () => Promise<void>;
   setViewMode: (mode: ReportViewMode) => void;
   resetFilters: () => void;
@@ -54,6 +77,34 @@ const defaultNestedFilterState = (): ReportNestedEntityFilterState => ({
 
 const emptyLabelMaps = (): ReportVehicleLabelMaps => ({ types: {}, colors: {} });
 
+const defaultOutputRows = (): ReportOutputRow[] => [createDefaultReportOutputRow()];
+
+function resetRowFilterState(row: ReportOutputRow): ReportOutputRow {
+  return {
+    ...row,
+    selectedOutputFields: [],
+    reportTableFields: [],
+    filterSelections: emptySelections(),
+    nestedEntityFilterByField: emptyNestedFilters(),
+  };
+}
+
+function omitRowReportTableMetadataCache(
+  byRowId: Record<string, ReportEntityMetadata | null>,
+  loadingByRowId: Record<string, boolean>,
+  keyByRowId: Record<string, string>,
+  rowId: string,
+) {
+  const { [rowId]: _meta, ...restMeta } = byRowId;
+  const { [rowId]: _loading, ...restLoading } = loadingByRowId;
+  const { [rowId]: _key, ...restKey } = keyByRowId;
+  return {
+    reportTableFieldsMetadataByRowId: restMeta,
+    reportTableFieldsMetadataLoadingByRowId: restLoading,
+    reportTableFieldsMetadataKeyByRowId: restKey,
+  };
+}
+
 export const reportsStore = create<ReportsStore>()((set, get) => ({
   entities: [],
   entitiesLoading: false,
@@ -63,13 +114,15 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   metadataLoading: false,
   metadataError: null,
   filterControls: [],
-  selectedOutputFields: [],
-  filterSelections: emptySelections(),
+  outputRows: defaultOutputRows(),
+  logicOperator: 'or',
   referenceRecordsCache: {},
   referenceRecordsLoading: false,
-  nestedEntityFilterByField: emptyNestedFilters(),
   vehicleLabelMaps: emptyLabelMaps(),
   vehicleLabelMapsLoading: false,
+  reportTableFieldsMetadataByRowId: {},
+  reportTableFieldsMetadataLoadingByRowId: {},
+  reportTableFieldsMetadataKeyByRowId: {},
   viewMode: 'table',
 
   async loadEntities() {
@@ -92,13 +145,15 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       metadata: null,
       metadataError: null,
       filterControls: [],
-      selectedOutputFields: [],
-      filterSelections: emptySelections(),
+      outputRows: defaultOutputRows(),
+      logicOperator: 'or',
       referenceRecordsCache: {},
       referenceRecordsLoading: false,
-      nestedEntityFilterByField: emptyNestedFilters(),
       vehicleLabelMaps: emptyLabelMaps(),
       vehicleLabelMapsLoading: false,
+      reportTableFieldsMetadataByRowId: {},
+      reportTableFieldsMetadataLoadingByRowId: {},
+      reportTableFieldsMetadataKeyByRowId: {},
     });
   },
 
@@ -121,13 +176,15 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         metadata,
         metadataLoading: false,
         filterControls,
-        selectedOutputFields: [],
-        filterSelections: emptySelections(),
+        outputRows: defaultOutputRows(),
+        logicOperator: 'or',
         referenceRecordsCache: {},
         referenceRecordsLoading: false,
-        nestedEntityFilterByField: emptyNestedFilters(),
         vehicleLabelMaps: emptyLabelMaps(),
         vehicleLabelMapsLoading: false,
+        reportTableFieldsMetadataByRowId: {},
+        reportTableFieldsMetadataLoadingByRowId: {},
+        reportTableFieldsMetadataKeyByRowId: {},
       });
     } catch (e) {
       set({
@@ -135,32 +192,216 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         metadataError: e instanceof Error ? e.message : 'load metadata failed',
         metadata: null,
         filterControls: [],
+        reportTableFieldsMetadataByRowId: {},
+        reportTableFieldsMetadataLoadingByRowId: {},
+        reportTableFieldsMetadataKeyByRowId: {},
       });
     }
   },
 
-  setSelectedOutputFields(values) {
-    const single = values.slice(0, 1);
+  addOutputRow(logicOperator) {
+    const current = get().outputRows;
+    const primary = getPrimaryOutputRowFromList(current);
+    const additional = current.filter((row) => row.id !== primary.id);
     set({
-      selectedOutputFields: single,
-      filterSelections: emptySelections(),
-      referenceRecordsCache: {},
-      referenceRecordsLoading: false,
-      nestedEntityFilterByField: emptyNestedFilters(),
-      vehicleLabelMaps: emptyLabelMaps(),
-      vehicleLabelMapsLoading: false,
+      logicOperator,
+      outputRows: [createAdditionalReportOutputRow(), ...additional, primary],
     });
   },
 
-  setFilterSelection(controlId, values) {
+  removeOutputRow(rowId) {
+    const current = get().outputRows;
+    if (current.length > 1) {
+      set({
+        outputRows: current.filter((row) => row.id !== rowId),
+        ...omitRowReportTableMetadataCache(
+          get().reportTableFieldsMetadataByRowId,
+          get().reportTableFieldsMetadataLoadingByRowId,
+          get().reportTableFieldsMetadataKeyByRowId,
+          rowId,
+        ),
+      });
+      return;
+    }
+    const primary = getPrimaryOutputRowFromList(current);
+    if (primary.id !== rowId) return;
     set({
-      filterSelections: { ...get().filterSelections, [controlId]: values },
+      outputRows: [resetRowFilterState(primary)],
+      ...omitRowReportTableMetadataCache(
+        get().reportTableFieldsMetadataByRowId,
+        get().reportTableFieldsMetadataLoadingByRowId,
+        get().reportTableFieldsMetadataKeyByRowId,
+        rowId,
+      ),
+    });
+  },
+
+  setOutputRowSelectedFields(rowId, values) {
+    const single = values.slice(0, 1);
+    set({
+      outputRows: get().outputRows.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              selectedOutputFields: single,
+              reportTableFields: [],
+              filterSelections: emptySelections(),
+              nestedEntityFilterByField: emptyNestedFilters(),
+            }
+          : row,
+      ),
+      ...omitRowReportTableMetadataCache(
+        get().reportTableFieldsMetadataByRowId,
+        get().reportTableFieldsMetadataLoadingByRowId,
+        get().reportTableFieldsMetadataKeyByRowId,
+        rowId,
+      ),
+    });
+
+    const fieldKey = single[0] ? String(single[0].value) : '';
+    if (!fieldKey) return;
+    const field = get().metadata?.fields?.find((f) => f.fieldName === fieldKey);
+    const refEntity = field?.referenceEntity?.trim();
+    if (!refEntity) return;
+    void get().loadReferenceEntityRecords(refEntity);
+    if (refEntity === 'Vehicle') {
+      void get().loadVehicleLabelMaps();
+    }
+  },
+
+  setOutputRowFilterSelection(rowId, controlId, values) {
+    set({
+      outputRows: get().outputRows.map((row) =>
+        row.id === rowId
+          ? { ...row, filterSelections: { ...row.filterSelections, [controlId]: values } }
+          : row,
+      ),
+    });
+  },
+
+  setOutputRowNestedEntityFilter(rowId, fieldName, patch) {
+    let terminalReset = false;
+    set((state) => {
+      const outputRows = state.outputRows.map((row) => {
+        if (row.id !== rowId) return row;
+        const prev = row.nestedEntityFilterByField[fieldName] ?? defaultNestedFilterState();
+        const attributeChanged =
+          patch.attribute !== undefined && patch.attribute !== prev.attribute;
+        const nextAttribute = attributeChanged ? patch.attribute : prev.attribute;
+        const nextValues =
+          attributeChanged
+            ? (patch.values ?? [])
+            : patch.values !== undefined
+              ? patch.values
+              : prev.values;
+        const rowTerminalReset =
+          attributeChanged || (patch.values !== undefined && nextValues.length === 0);
+        if (rowTerminalReset) terminalReset = true;
+        return {
+          ...row,
+          reportTableFields: rowTerminalReset ? [] : row.reportTableFields,
+          filterSelections: rowTerminalReset ? emptySelections() : row.filterSelections,
+          nestedEntityFilterByField: {
+            ...row.nestedEntityFilterByField,
+            [fieldName]: {
+              attribute: nextAttribute,
+              values: nextValues,
+            },
+          },
+        };
+      });
+      return terminalReset
+        ? {
+            outputRows,
+            ...omitRowReportTableMetadataCache(
+              state.reportTableFieldsMetadataByRowId,
+              state.reportTableFieldsMetadataLoadingByRowId,
+              state.reportTableFieldsMetadataKeyByRowId,
+              rowId,
+            ),
+          }
+        : { outputRows };
+    });
+  },
+
+  async loadReportTableFieldsMetadata(rowId, referenceEntity) {
+    const key = referenceEntity.trim();
+    if (!key) return;
+
+    const state = get();
+    if (
+      state.reportTableFieldsMetadataKeyByRowId[rowId] === key &&
+      state.reportTableFieldsMetadataByRowId[rowId]
+    ) {
+      return;
+    }
+
+    set({
+      reportTableFieldsMetadataLoadingByRowId: {
+        ...state.reportTableFieldsMetadataLoadingByRowId,
+        [rowId]: true,
+      },
+    });
+
+    try {
+      const { fetchReportEntityMetadata } = await import('../api/reportsApi');
+      const tableMetadata = await fetchReportEntityMetadata(key);
+      set((current) => ({
+        reportTableFieldsMetadataByRowId: {
+          ...current.reportTableFieldsMetadataByRowId,
+          [rowId]: tableMetadata,
+        },
+        reportTableFieldsMetadataKeyByRowId: {
+          ...current.reportTableFieldsMetadataKeyByRowId,
+          [rowId]: key,
+        },
+        reportTableFieldsMetadataLoadingByRowId: {
+          ...current.reportTableFieldsMetadataLoadingByRowId,
+          [rowId]: false,
+        },
+      }));
+    } catch {
+      set((current) => ({
+        reportTableFieldsMetadataByRowId: {
+          ...current.reportTableFieldsMetadataByRowId,
+          [rowId]: null,
+        },
+        reportTableFieldsMetadataKeyByRowId: {
+          ...current.reportTableFieldsMetadataKeyByRowId,
+          [rowId]: key,
+        },
+        reportTableFieldsMetadataLoadingByRowId: {
+          ...current.reportTableFieldsMetadataLoadingByRowId,
+          [rowId]: false,
+        },
+      }));
+    }
+  },
+
+  setOutputRowReportTableFields(rowId, values) {
+    set({
+      outputRows: get().outputRows.map((row) => {
+        if (row.id !== rowId) return row;
+        if (values.length > 0) {
+          return { ...row, reportTableFields: values };
+        }
+        const opKey = reportOutputOperationKey(rowId);
+        const fnKey = reportOutputFunctionKey(rowId);
+        const { [opKey]: _op, [fnKey]: _fn, ...rest } = row.filterSelections;
+        return { ...row, reportTableFields: [], filterSelections: rest };
+      }),
     });
   },
 
   async loadReferenceEntityRecords(referenceEntity) {
     const cacheKey = referenceEntity.trim();
     if (!cacheKey) return;
+    const { isReportReferenceEntityServerSearch } = await import(
+      '../lib/reportReferenceEntityServerSearch'
+    );
+    if (isReportReferenceEntityServerSearch(cacheKey)) {
+      return;
+    }
     const cached = get().referenceRecordsCache[cacheKey];
     if (cached?.length && !get().referenceRecordsLoading) {
       return;
@@ -180,24 +421,6 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         referenceRecordsLoading: false,
       });
     }
-  },
-
-  setNestedEntityFilter(fieldName, patch) {
-    const prev = get().nestedEntityFilterByField[fieldName] ?? defaultNestedFilterState();
-    set({
-      nestedEntityFilterByField: {
-        ...get().nestedEntityFilterByField,
-        [fieldName]: {
-          attribute: patch.attribute !== undefined ? patch.attribute : prev.attribute,
-          values:
-            patch.attribute !== undefined && patch.attribute !== prev.attribute
-              ? (patch.values ?? [])
-              : patch.values !== undefined
-                ? patch.values
-                : prev.values,
-        },
-      },
-    });
   },
 
   async loadVehicleLabelMaps() {
@@ -225,12 +448,18 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
   resetFilters() {
     set({
-      filterSelections: emptySelections(),
-      selectedOutputFields: [],
+      outputRows: get().outputRows.map(resetRowFilterState),
       referenceRecordsCache: {},
-      nestedEntityFilterByField: emptyNestedFilters(),
       vehicleLabelMaps: emptyLabelMaps(),
       vehicleLabelMapsLoading: false,
+      reportTableFieldsMetadataByRowId: {},
+      reportTableFieldsMetadataLoadingByRowId: {},
+      reportTableFieldsMetadataKeyByRowId: {},
     });
   },
 }));
+
+/** Первая строка фильтров (поле результата и зависимые контролы). */
+export function getPrimaryReportOutputRow(store = reportsStore.getState()): ReportOutputRow {
+  return getPrimaryOutputRowFromList(store.outputRows);
+}

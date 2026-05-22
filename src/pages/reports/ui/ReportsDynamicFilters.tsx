@@ -1,34 +1,25 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material';
 
 import { FilterPanel } from '@entities/filter_panel';
-import {
-  fieldDefinitionsToValues,
-  getStaticOptionsForControl,
-} from '@pages/reports/lib/extractMetadataFilterOptions';
-import {
-  REPORT_OUTPUT_FUNCTION_KEY,
-  REPORT_OUTPUT_OPERATION_KEY,
-} from '@pages/reports/lib/reportOutputFilterKeys';
+import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
+import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
+import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
+import { reportsStore } from '@pages/reports/model/reportsStore';
+import { appStore } from '@shared/model/app_store/AppStore';
+import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
+import type { Values } from '@shared/ui/search_multiple_select';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
-import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
-import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
-import { reportsStore } from '@pages/reports/model/reportsStore';
-import { appStore } from '@shared/model/app_store/AppStore';
-import type { ReportFieldDefinition } from '@pages/reports/types/reportApiTypes';
-import type { Values } from '@shared/ui/search_multiple_select';
-
-import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
 import pageStyles from './Reports.module.scss';
 
-import { ReportFieldFilterControl } from './ReportFieldFilterControl';
-import { ReportNestedEntityFilterControl } from './ReportNestedEntityFilterControl';
+import { ReportAddVariantDialog } from './ReportAddVariantDialog';
+import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 
 type ReportsDynamicFiltersProps = {
   layout?: 'default' | 'stacked';
@@ -37,6 +28,7 @@ type ReportsDynamicFiltersProps = {
 
 export function ReportsDynamicFilters({ layout = 'default', className }: ReportsDynamicFiltersProps) {
   const { t } = useTranslation();
+  const [addVariantDialogOpen, setAddVariantDialogOpen] = useState(false);
 
   const entities = reportsStore((s) => s.entities);
   const entitiesLoading = reportsStore((s) => s.entitiesLoading);
@@ -46,20 +38,20 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const metadataLoading = reportsStore((s) => s.metadataLoading);
   const metadataError = reportsStore((s) => s.metadataError);
   const filterControls = reportsStore((s) => s.filterControls);
-  const selectedOutputFields = reportsStore((s) => s.selectedOutputFields);
-  const filterSelections = reportsStore((s) => s.filterSelections);
+  const outputRows = reportsStore((s) => s.outputRows);
   const referenceRecordsCache = reportsStore((s) => s.referenceRecordsCache);
   const referenceRecordsLoading = reportsStore((s) => s.referenceRecordsLoading);
-  const nestedEntityFilterByField = reportsStore((s) => s.nestedEntityFilterByField);
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
   const selectedBranchId = appStore((s) => s.selectedBranchState?.id);
 
   const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
   const loadMetadataForEntity = reportsStore((s) => s.loadMetadataForEntity);
-  const setSelectedOutputFields = reportsStore((s) => s.setSelectedOutputFields);
-  const setFilterSelection = reportsStore((s) => s.setFilterSelection);
+  const addOutputRow = reportsStore((s) => s.addOutputRow);
+  const removeOutputRow = reportsStore((s) => s.removeOutputRow);
+  const setOutputRowSelectedFields = reportsStore((s) => s.setOutputRowSelectedFields);
+  const setOutputRowFilterSelection = reportsStore((s) => s.setOutputRowFilterSelection);
+  const setOutputRowNestedEntityFilter = reportsStore((s) => s.setOutputRowNestedEntityFilter);
   const loadReferenceEntityRecords = reportsStore((s) => s.loadReferenceEntityRecords);
-  const setNestedEntityFilter = reportsStore((s) => s.setNestedEntityFilter);
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
 
   const selectedEntity = useMemo(
@@ -80,26 +72,41 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     return map;
   }, [metadata]);
 
-  const primaryField = useMemo((): ReportFieldDefinition | null => {
-    const key = selectedOutputFields[0] ? String(selectedOutputFields[0].value) : '';
-    if (!key) return null;
-    return fieldMap.get(key) ?? null;
-  }, [selectedOutputFields, fieldMap]);
-
   const groupControls = useMemo(
     () => filterControls.filter((c) => c.id.startsWith('__group_')),
     [filterControls],
   );
 
-  const refEntity = primaryField?.referenceEntity?.trim();
+  const referenceEntitiesInUse = useMemo(() => {
+    const entitiesSet = new Set<string>();
+    for (const row of outputRows) {
+      const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
+      if (!key) continue;
+      const ref = fieldMap.get(key)?.referenceEntity?.trim();
+      if (ref) entitiesSet.add(ref);
+    }
+    return Array.from(entitiesSet).sort();
+  }, [outputRows, fieldMap]);
+
+  const referenceEntitiesKey = referenceEntitiesInUse.join('|');
 
   useEffect(() => {
-    if (!refEntity) return;
-    void loadReferenceEntityRecords(refEntity);
-    if (refEntity === 'Vehicle') {
+    if (!referenceEntitiesKey) return;
+    for (const entity of referenceEntitiesInUse) {
+      if (!isReportReferenceEntityServerSearch(entity)) {
+        void loadReferenceEntityRecords(entity);
+      }
+    }
+    if (referenceEntitiesInUse.includes('Vehicle')) {
       void loadVehicleLabelMaps();
     }
-  }, [refEntity, selectedBranchId, loadReferenceEntityRecords, loadVehicleLabelMaps]);
+  }, [
+    referenceEntitiesKey,
+    referenceEntitiesInUse,
+    selectedBranchId,
+    loadReferenceEntityRecords,
+    loadVehicleLabelMaps,
+  ]);
 
   const handleEntityOpen = () => {
     if (!selectedEntityName) return;
@@ -114,6 +121,80 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     [],
   );
 
+  const handleConfirmAddVariant = useCallback(
+    (logicOperator: ReportLogicOperator) => {
+      addOutputRow(logicOperator);
+    },
+    [addOutputRow],
+  );
+
+  const showOutputControls = Boolean(metadata && !metadataLoading);
+  const showOutputRow = Boolean(selectedEntityName && showOutputControls);
+
+  const renderEntityAutocomplete = () => (
+    <Autocomplete
+      sx={reportFilterControlSx}
+      slotProps={reportFilterAutocompleteSlotProps}
+      options={entities}
+      loading={entitiesLoading}
+      value={selectedEntity}
+      getOptionLabel={(o) => o.label || o.entityName}
+      isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
+      onChange={(_, value) => {
+        setSelectedEntityName(value?.entityName ?? null);
+        if (value?.entityName) {
+          void loadMetadataForEntity(value.entityName);
+        }
+      }}
+      onOpen={handleEntityOpen}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={t('reports.entityLabel')}
+          placeholder={t('reports.entityPlaceholder')}
+          InputProps={{
+            ...params.InputProps,
+            endAdornment: (
+              <>
+                {entitiesLoading || metadataLoading ? (
+                  <CircularProgress color="inherit" size={18} />
+                ) : null}
+                {params.InputProps.endAdornment}
+              </>
+            ),
+          }}
+        />
+      )}
+    />
+  );
+
+  const renderOutputRow = (
+    row: (typeof outputRows)[number],
+    options: { isPrimaryRow: boolean; showAddButton: boolean; showRemoveButton: boolean },
+  ) => (
+    <ReportOutputFilterRow
+      key={row.id}
+      row={row}
+      isPrimaryRow={options.isPrimaryRow}
+      metadata={metadata!}
+      outputFieldOptions={outputFieldOptions}
+      fieldMap={fieldMap}
+      groupControls={groupControls}
+      referenceRecordsCache={referenceRecordsCache}
+      referenceRecordsLoading={referenceRecordsLoading}
+      vehicleLabelMaps={vehicleLabelMaps}
+      showAddButton={options.showAddButton}
+      onRequestAddRow={() => setAddVariantDialogOpen(true)}
+      onRemoveRow={options.showRemoveButton ? () => removeOutputRow(row.id) : undefined}
+      onOutputFieldChange={(values) => setOutputRowSelectedFields(row.id, values)}
+      onFilterChange={(controlId, values) => setOutputRowFilterSelection(row.id, controlId, values)}
+      onNestedFilterChange={(fieldName, patch) =>
+        setOutputRowNestedEntityFilter(row.id, fieldName, patch)
+      }
+      onReferenceOptionsLoaded={handleReferenceOptionsLoaded}
+    />
+  );
+
   const useStackedLayout = layout === 'stacked';
 
   const rootClassName = [
@@ -122,35 +203,6 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   ]
     .filter(Boolean)
     .join(' ');
-
-  const operationOptions = useMemo(
-    () => operationsToValues(primaryField?.availableOperations),
-    [primaryField],
-  );
-  const functionOptions = useMemo(
-    () => operationsToValues(primaryField?.availableFunctions),
-    [primaryField],
-  );
-
-  const selectedOutputSingle = selectedOutputFields.slice(0, 1);
-  const refRecords = refEntity ? (referenceRecordsCache[refEntity] ?? []) : [];
-
-  const nestedState = primaryField ? nestedEntityFilterByField[primaryField.fieldName] : undefined;
-
-  const nestedTerminalReady = Boolean(
-    refEntity && nestedState?.attribute && (nestedState.values?.length ?? 0) > 0,
-  );
-
-  const scalarTerminalReady = Boolean(
-    primaryField &&
-      !refEntity &&
-      primaryField.filterable &&
-      (filterSelections[primaryField.fieldName]?.length ?? 0) > 0,
-  );
-
-  const outputControlsReady = Boolean(
-    primaryField && (nestedTerminalReady || scalarTerminalReady || (!refEntity && !primaryField.filterable)),
-  );
 
   return (
     <div className={rootClassName || undefined}>
@@ -161,144 +213,53 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
       ) : null}
 
       <FilterPanel>
-        <Autocomplete
-          sx={reportFilterControlSx}
-          slotProps={reportFilterAutocompleteSlotProps}
-          options={entities}
-          loading={entitiesLoading}
-          value={selectedEntity}
-          getOptionLabel={(o) => o.label || o.entityName}
-          isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
-          onChange={(_, value) => {
-            setSelectedEntityName(value?.entityName ?? null);
-            if (value?.entityName) {
-              void loadMetadataForEntity(value.entityName);
-            }
-          }}
-          onOpen={handleEntityOpen}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label={t('reports.entityLabel')}
-              placeholder={t('reports.entityPlaceholder')}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {entitiesLoading || metadataLoading ? (
-                      <CircularProgress color="inherit" size={18} />
-                    ) : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
-        />
-
         {metadataError ? (
           <Alert severity="error" sx={{ width: '100%' }}>
             {metadataError}
           </Alert>
         ) : null}
 
-        {metadata && !metadataLoading ? (
-          <>
-            <ReportSearchMultipleSelect
-              multiple={false}
-              name="selectedField"
-              label={t('reports.outputFieldsLabel')}
-              values={outputFieldOptions}
-              value={selectedOutputSingle}
-              serverFilter={false}
-              sx={reportFilterControlSx}
-              slotProps={reportFilterAutocompleteSlotProps}
-              setValueStore={(_, value) => setSelectedOutputFields(toValuesFromSingleSelect(value))}
-            />
+        {outputRows.map((row, index) => {
+          const isLastRow = index === outputRows.length - 1;
+          const rowComplete = isReportOutputRowComplete(row, fieldMap, undefined, metadata);
 
-            {primaryField ? (
-              <>
-                {refEntity ? (
-                  <ReportNestedEntityFilterControl
-                    field={primaryField}
-                    referenceEntity={refEntity}
-                    records={refRecords}
-                    recordsLoading={referenceRecordsLoading}
-                    labelMaps={vehicleLabelMaps}
-                    state={
-                      nestedEntityFilterByField[primaryField.fieldName] ?? {
-                        attribute: null,
-                        values: [],
-                      }
-                    }
-                    onChange={(patch) => setNestedEntityFilter(primaryField.fieldName, patch)}
-                  />
-                ) : primaryField.filterable ? (
-                  <ReportFieldFilterControl
-                    field={primaryField}
-                    metadata={metadata}
-                    value={filterSelections[primaryField.fieldName] ?? []}
-                    referenceOptionsCache={{}}
-                    onChange={(values) => setFilterSelection(primaryField.fieldName, values)}
-                    onReferenceOptionsLoaded={handleReferenceOptionsLoaded}
-                  />
-                ) : null}
+          if (isLastRow) {
+            return (
+              <div key={row.id} className={pageStyles.reportFilterRowPrimary}>
+                {renderEntityAutocomplete()}
+                {showOutputRow
+                  ? renderOutputRow(row, {
+                      isPrimaryRow: true,
+                      showAddButton: true,
+                      showRemoveButton: rowComplete,
+                    })
+                  : null}
+              </div>
+            );
+          }
 
-                {outputControlsReady ? (
-                  <>
-                    <ReportSearchMultipleSelect
-                      multiple={false}
-                      name={REPORT_OUTPUT_OPERATION_KEY}
-                      label={t('reports.filterOperationLabel')}
-                      values={operationOptions}
-                      value={filterSelections[REPORT_OUTPUT_OPERATION_KEY] ?? []}
-                      serverFilter={false}
-                      sx={reportFilterControlSx}
-                      slotProps={reportFilterAutocompleteSlotProps}
-                      setValueStore={(_, value) =>
-                        setFilterSelection(REPORT_OUTPUT_OPERATION_KEY, toValuesFromSingleSelect(value))
-                      }
-                    />
-                    <ReportSearchMultipleSelect
-                      multiple={false}
-                      name={REPORT_OUTPUT_FUNCTION_KEY}
-                      label={t('reports.filterFunctionLabel')}
-                      values={functionOptions}
-                      value={filterSelections[REPORT_OUTPUT_FUNCTION_KEY] ?? []}
-                      serverFilter={false}
-                      sx={reportFilterControlSx}
-                      slotProps={reportFilterAutocompleteSlotProps}
-                      setValueStore={(_, value) =>
-                        setFilterSelection(REPORT_OUTPUT_FUNCTION_KEY, toValuesFromSingleSelect(value))
-                      }
-                    />
-                  </>
-                ) : null}
-              </>
-            ) : null}
+          if (!showOutputRow) {
+            return null;
+          }
 
-            {primaryField && groupControls.length > 0
-              ? groupControls.map((control) => {
-                  const staticOptions = getStaticOptionsForControl(control.id, metadata);
-                  return (
-                    <ReportSearchMultipleSelect
-                      key={control.id}
-                      multiple
-                      name={control.id}
-                      label={control.label}
-                      values={staticOptions}
-                      value={filterSelections[control.id] ?? []}
-                      serverFilter={false}
-                      sx={reportFilterControlSx}
-                      slotProps={reportFilterAutocompleteSlotProps}
-                      setValueStore={(_, value) => setFilterSelection(control.id, value as Values)}
-                    />
-                  );
-                })
-              : null}
-          </>
-        ) : null}
+          return (
+            <div key={row.id} className={pageStyles.reportFilterOutputRow}>
+              <div className={pageStyles.reportFilterRowEntitySpacer} aria-hidden />
+              {renderOutputRow(row, {
+                isPrimaryRow: false,
+                showAddButton: false,
+                showRemoveButton: rowComplete,
+              })}
+            </div>
+          );
+        })}
       </FilterPanel>
+
+      <ReportAddVariantDialog
+        open={addVariantDialogOpen}
+        onClose={() => setAddVariantDialogOpen(false)}
+        onConfirm={handleConfirmAddVariant}
+      />
     </div>
   );
 }

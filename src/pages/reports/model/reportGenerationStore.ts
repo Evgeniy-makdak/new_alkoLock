@@ -2,7 +2,6 @@ import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
 import { executeReportQuery } from '../api/reportsApi';
-import { DEFAULT_REPORT_SORT } from '../lib/buildReportSortParam';
 
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
@@ -59,7 +58,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
   lastResult: null,
   queryContext: null,
   pagination: { page: 0, pageSize: DEFAULT_REPORT_PAGE_SIZE },
-  sort: [DEFAULT_REPORT_SORT],
+  sort: [] as string[],
 
   setSort: (sort) => {
     const current = get().sort;
@@ -77,7 +76,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       lastResult: null,
       queryContext: null,
       pagination: { page: 0, pageSize: get().pagination.pageSize },
-      sort: [DEFAULT_REPORT_SORT],
+      sort: [] as string[],
     }),
 
   start: () => {
@@ -167,7 +166,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     }),
 
   async loadReportPage(page, pageSize) {
-    const { queryContext, sort } = get();
+    const { queryContext } = get();
     if (!queryContext) return;
 
     const requestSeq = ++reportPageRequestSeq;
@@ -181,6 +180,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     });
 
     try {
+      const { sort } = get();
       const result = await executeReportQuery(queryContext.entityName, queryContext.body, {
         page,
         size: pageSize,

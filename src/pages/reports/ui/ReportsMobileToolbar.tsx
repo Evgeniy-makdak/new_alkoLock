@@ -10,9 +10,10 @@ import eventTableStyles from '@widgets/events_table/ui/EventsTable.module.scss';
 import { ReportsDynamicFilters } from './ReportsDynamicFilters';
 
 type ReportsMobileToolbarProps = {
-  onCreateReport: () => void;
+  onFormReport: () => void;
   onResetFilters: () => void;
   isGenerating: boolean;
+  canFormReport: boolean;
 };
 
 const modalSecondaryButtonSx = {
@@ -24,9 +25,10 @@ const modalSecondaryButtonSx = {
 };
 
 export function ReportsMobileToolbar({
-  onCreateReport,
+  onFormReport,
   onResetFilters,
   isGenerating,
+  canFormReport,
 }: ReportsMobileToolbarProps) {
   const { t } = useTranslation();
   const styles = eventTableStyles;
@@ -45,10 +47,10 @@ export function ReportsMobileToolbar({
         <Button
           variant="contained"
           size="small"
-          disabled={isGenerating}
-          onClick={onCreateReport}
+          disabled={isGenerating || !canFormReport}
+          onClick={onFormReport}
           sx={{ ml: 'auto', textTransform: 'none' }}>
-          {t('reports.createReport')}
+          {t('reports.formReport')}
         </Button>
       </div>
 
@@ -71,15 +73,6 @@ export function ReportsMobileToolbar({
                 sx={modalSecondaryButtonSx}
                 onClick={() => setIsFilterModalOpen(false)}>
                 {t('common.close')}
-              </Button>
-              <Button
-                variant="contained"
-                disabled={isGenerating}
-                onClick={() => {
-                  setIsFilterModalOpen(false);
-                  onCreateReport();
-                }}>
-                {t('reports.createReport')}
               </Button>
             </div>
           </div>

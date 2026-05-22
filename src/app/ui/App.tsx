@@ -4,7 +4,6 @@ import { CircularProgress, useMediaQuery } from '@mui/material';
 
 import { isGhostPrankGloballyDisabled } from '@pages/events/config/eventsGhostPrankEnabled';
 import { EventsGhostPrank } from '@pages/events/ui/EventsGhostPrank';
-import { GlobalReportProgress } from '@pages/reports/ui/GlobalReportProgress';
 import { TableHeaderMobileTrailingProvider } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -50,7 +49,6 @@ export function App() {
 
   return (
     <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
-      <GlobalReportProgress />
       {isLoading ? (
         <div className={style.loadingPage}>
           <CircularProgress />

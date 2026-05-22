@@ -21,16 +21,13 @@ function buildQueryUrl(entityName: string, pageable?: ReportQueryPageable): stri
   if (!pageable) {
     return base;
   }
-  const params = new URLSearchParams({
-    page: String(pageable.page),
-    size: String(pageable.size),
-  });
+  const queryParts = [`page=${pageable.page}`, `size=${pageable.size}`];
   for (const sort of pageable.sort ?? []) {
     if (sort) {
-      params.append('sort', sort);
+      queryParts.push(`sort=${sort}`);
     }
   }
-  return `${base}?${params.toString()}`;
+  return `${base}?${queryParts.join('&')}`;
 }
 
 export async function fetchReportEntities(): Promise<ReportEntityListItem[]> {

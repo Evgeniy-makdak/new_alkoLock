@@ -3,52 +3,26 @@ import { getBranchListUrl, getSelectBranchQueryUrl } from '@shared/lib/getUrlFor
 import { getQuery } from '@shared/api/baseQueryTypes';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { IAlcolock, IBranch, IDeviceAction, IUser } from '@shared/types/BaseQueryTypes';
-import type { ID } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { fetchBranchVehiclesForReport } from './fetchBranchVehiclesForReport';
-
-import type { ICar } from '@shared/types/BaseQueryTypes';
-
-const PAGE_SIZE = 500;
+import { fetchReportNestedEntitySearchOptions } from './fetchReportNestedEntitySearchOptions';
+import { isReportReferenceEntityServerSearch } from './reportReferenceEntityServerSearch';
+import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 
 function unwrapContent<T>(res: {
   data?: { content?: T[]; totalPages?: number; totalElements?: number } | null;
   isError?: boolean;
   message?: string;
   detail?: string;
-}): { content: T[]; totalPages: number; totalElements: number } {
+}): { content: T[] } {
   if (res.isError || res.data == null) {
     throw new Error(res.message || res.detail || 'report reference list failed');
   }
-  const content = res.data.content ?? [];
   return {
-    content,
-    totalPages: Number(res.data.totalPages ?? 1),
-    totalElements: Number(res.data.totalElements ?? content.length),
+    content: res.data.content ?? [],
   };
-}
-
-async function fetchAllPages<T>(
-  fetchPage: (page: number) => Promise<{ content: T[]; totalPages: number; totalElements: number }>,
-): Promise<T[]> {
-  const first = await fetchPage(0);
-  const all = [...first.content];
-  const totalPages = Number.isFinite(first.totalPages) && first.totalPages > 0 ? first.totalPages : 1;
-  for (let page = 1; page < totalPages; page++) {
-    const next = await fetchPage(page);
-    all.push(...next.content);
-  }
-  return all;
-}
-
-function carsToValues(cars: ICar[]): Values {
-  return cars.map((car) => ({
-    value: car.id,
-    label: Formatters.carNameFormatter(car, false, true, false),
-  }));
 }
 
 function devicesToValues(devices: IAlcolock[]): Values {
@@ -68,11 +42,11 @@ function usersToValues(users: IUser[]): Values {
 function deviceEventsToValuesForEventType(events: IDeviceAction[]): Values {
   const seen = new Map<string | number, string>();
   for (const ev of events) {
-    const ef = ev.eventsForFront as { id?: ID; label?: string } | undefined;
+    const ef = ev.eventsForFront as { id?: unknown; label?: string } | undefined;
     const id = ef?.id ?? ev.id;
-    if (id == null || seen.has(id)) continue;
+    if (id == null || seen.has(id as string | number)) continue;
     const label = ef?.label ?? (ev.eventType && typeof ev.eventType === 'object' ? ev.eventType.label : undefined);
-    seen.set(id, label ?? String(id));
+    seen.set(id as string | number, label ?? String(id));
   }
   return Array.from(seen.entries()).map(([value, label]) => ({ value, label }));
 }
@@ -99,83 +73,39 @@ function actionsToValues(actions: IDeviceAction[]): Values {
  */
 export async function fetchReportReferenceEntityValues(referenceEntity: string): Promise<Values> {
   const ref = (referenceEntity ?? '').trim();
+  if (!ref) return [];
+
+  if (isReportReferenceEntityServerSearch(ref)) {
+    return fetchReportNestedEntitySearchOptions(ref, 'id', '');
+  }
+
   const branchId = appStore.getState().selectedBranchState?.id;
+  const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
 
   switch (ref) {
-    case 'Vehicle': {
-      const cars = await fetchBranchVehiclesForReport();
-      return carsToValues(cars);
-    }
-    case 'MonitoringDevice': {
-      const list = await fetchAllPages(async (page) => {
-        const branchQ =
-          branchId != null
-            ? getSelectBranchQueryUrl({ branchId, page: 'assignment', parameters: '' })
-            : '';
-        const url = `api/monitoring-devices?page=${page}&size=${PAGE_SIZE}${branchQ}&sort=name&all.id.notIn=3&all.isActive.in=true`;
-        const res = await getQuery<{ content: IAlcolock[]; totalPages?: number; totalElements?: number }>({
-          url,
-        });
-        return unwrapContent<IAlcolock>(res);
-      });
-      return devicesToValues(list);
-    }
-    case 'User': {
-      const base: QueryOptions = {
-        page: 0,
-        limit: PAGE_SIZE,
-        filterOptions: branchId != null ? { branchId } : {},
-        query: '&all.isActive.in=true',
-      };
-      const list = await fetchAllPages(async (page) => {
-        const res = await UsersApi.getList({ ...base, page, limit: PAGE_SIZE }, false);
-        return unwrapContent<IUser>(res);
-      });
-      return usersToValues(list);
-    }
-    case 'EventsForFront': {
-      const base: QueryOptions = {
-        page: 0,
-        limit: PAGE_SIZE,
-        filterOptions: branchId != null ? { branchId } : {},
-      };
-      const list = await fetchAllPages(async (page) => {
-        const res = await EventsApi.getList({ ...base, page, limit: PAGE_SIZE });
-        return unwrapContent<IDeviceAction>(res);
-      });
-      return deviceEventsToValuesForEventType(list);
-    }
     case 'BranchOffice': {
       const base: QueryOptions = {
         page: 0,
-        limit: PAGE_SIZE,
+        limit: pageSize,
         filterOptions: branchId != null ? { branchId } : {},
       };
-      const list = await fetchAllPages(async (page) => {
-        const url = getBranchListUrl({ ...base, page, limit: PAGE_SIZE });
-        const res = await getQuery<{ content: IBranch[]; totalPages?: number; totalElements?: number }>({ url });
-        return unwrapContent<IBranch>(res);
-      });
-      return branchesToValues(list);
+      const url = getBranchListUrl(base);
+      const res = await getQuery<{ content: IBranch[] }>({ url });
+      return branchesToValues(unwrapContent<IBranch>(res).content);
     }
     case 'DeviceAction': {
-      const list = await fetchAllPages(async (page) => {
-        const branchQ =
-          branchId != null
-            ? getSelectBranchQueryUrl({
-                branchId,
-                page: 'device',
-                useAssignmentPrefix: true,
-                parameters: '',
-              })
-            : '';
-        const url = `api/device-actions?page=${page}&size=${PAGE_SIZE}${branchQ}&sort=timestamp,DESC`;
-        const res = await getQuery<{ content: IDeviceAction[]; totalPages?: number; totalElements?: number }>({
-          url,
-        });
-        return unwrapContent<IDeviceAction>(res);
-      });
-      return actionsToValues(list);
+      const branchQ =
+        branchId != null
+          ? getSelectBranchQueryUrl({
+              branchId,
+              page: 'device',
+              useAssignmentPrefix: true,
+              parameters: '',
+            })
+          : '';
+      const url = `api/device-actions?page=0&size=${pageSize}${branchQ}&sort=timestamp,DESC`;
+      const res = await getQuery<{ content: IDeviceAction[] }>({ url });
+      return actionsToValues(unwrapContent<IDeviceAction>(res).content);
     }
     default:
       return [];

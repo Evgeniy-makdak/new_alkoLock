@@ -2,57 +2,30 @@ import type { TFunction } from 'i18next';
 import type { GridColDef } from '@mui/x-data-grid';
 
 import { extractUserGroupNames } from './buildNestedEntityAttributeOptions';
-import { extractReportNestedRecord } from './extractReportNestedRecord';
+import {
+  collectReportContentColumnKeys,
+  findReportFieldDefForColumnKey,
+  resolveReportColumnLabel,
+} from './buildReportTableFieldOptions';
+import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
+import { isReportDateTimeField } from './reportFieldFilterKind';
 import {
-  buildReportResultColumnDefs,
-  DEVICE_EVENT_REPORT_ROW_COLUMNS,
-  getReportResultColumnMeta,
+  findReportResultColumnMetaForKey,
   type ReportResultColumnFormat,
   type ReportResultColumnMeta,
 } from './reportResultTableColumns';
-import { mapReportContentToGrid } from './mapReportResultToGrid';
 
-import type { ReportFieldDefinition } from '../types/reportApiTypes';
+import type {
+  ReportEntityMetadata,
+  ReportFieldDefinition,
+  ReportOutputRow,
+} from '../types/reportApiTypes';
 import type { ReportGridRow } from './mapReportContentToFixedGrid';
 
 import { Formatters } from '@shared/utils/formatters';
 import type { ICar } from '@shared/types/BaseQueryTypes';
-
-const DEVICE_EVENT_TIME_KEYS = ['createdAt', 'timestamp', 'eventTime', 'occurredAt', 'dateOccurrent'];
-
-function pickReportRootValue(
-  row: Record<string, unknown>,
-  field: string,
-  nestedKey: string,
-): unknown {
-  if (field === '__reportRowCreatedAt') {
-    for (const key of DEVICE_EVENT_TIME_KEYS) {
-      const value = row[key];
-      if (value != null && value !== '') return value;
-    }
-    for (const key of DEVICE_EVENT_TIME_KEYS) {
-      const value = row[`${nestedKey}.${key}`];
-      if (value != null && value !== '') return value;
-    }
-    return null;
-  }
-  return null;
-}
-
-function pickNestedValue(source: Record<string, unknown>, field: string): unknown {
-  if (field === 'groupNames') {
-    return extractUserGroupNames(source);
-  }
-  if (field in source && source[field] != null) {
-    return source[field];
-  }
-  if (field === 'lastModifiedAt') {
-    return source.lastModifiedAt ?? source.lastModifiedA;
-  }
-  return source[field];
-}
 
 function formatVehicleBind(raw: unknown): string {
   if (raw == null) return '—';
@@ -64,28 +37,21 @@ function formatVehicleBind(raw: unknown): string {
   return '—';
 }
 
-function formatResultCellValue(
-  field: string,
+function formatFromStaticMeta(
   raw: unknown,
   meta: ReportResultColumnMeta | undefined,
-  labelMaps?: ReportVehicleLabelMaps,
-  t?: TFunction,
-): string {
-  if (raw == null || raw === '') {
-    return '—';
-  }
+  labelMaps: ReportVehicleLabelMaps | undefined,
+  t: TFunction,
+): string | null {
+  if (!meta) return null;
+  if (raw == null || raw === '') return '—';
+  if (meta.isDateTime) return formatReportTableDateTime(raw);
 
-  if (meta?.isDateTime) {
-    return formatReportTableDateTime(raw);
-  }
-
-  const format = meta?.format as ReportResultColumnFormat | undefined;
-  if (format === 'vehicleBind') {
-    return formatVehicleBind(raw);
-  }
+  const format = meta.format as ReportResultColumnFormat | undefined;
+  if (format === 'vehicleBind') return formatVehicleBind(raw);
   if (format === 'booleanActive') {
     const active = raw === true || raw === 'true';
-    return t ? (active ? t('reports.table.activeYes') : t('reports.table.activeNo')) : active ? 'Да' : 'Нет';
+    return active ? t('reports.table.activeYes') : t('reports.table.activeNo');
   }
   if (format === 'vehicleType' && typeof raw === 'string') {
     return labelMaps?.types[raw] ?? raw;
@@ -97,9 +63,36 @@ function formatResultCellValue(
     const names = Array.isArray(raw) ? raw.map(String) : extractUserGroupNames(raw);
     return names.length ? names.join(', ') : '—';
   }
+  return null;
+}
+
+function formatDynamicCellValue(
+  columnKey: string,
+  raw: unknown,
+  fieldDef: ReportFieldDefinition | undefined,
+  primaryField: ReportFieldDefinition | null,
+  outputRows: ReportOutputRow[],
+  fieldMap: Map<string, ReportFieldDefinition>,
+  labelMaps: ReportVehicleLabelMaps | undefined,
+  t: TFunction,
+): string {
+  if (raw == null || raw === '') return '—';
+
+  const staticMeta = findReportResultColumnMetaForKey(
+    columnKey,
+    outputRows,
+    fieldMap,
+    primaryField,
+  );
+  const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t);
+  if (fromStatic != null) return fromStatic;
+
+  if (fieldDef && isReportDateTimeField(fieldDef)) {
+    return formatReportTableDateTime(raw);
+  }
 
   if (typeof raw === 'boolean') {
-    return raw ? (t ? t('reports.table.activeYes') : 'Да') : t ? t('reports.table.activeNo') : 'Нет';
+    return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
   }
   if (typeof raw === 'object') {
     return JSON.stringify(raw);
@@ -107,53 +100,79 @@ function formatResultCellValue(
   return String(raw);
 }
 
+/** Колонки и строки таблицы строго по ключам из content ответа query. */
 export function mapReportContentToResultGrid(
   content: Record<string, unknown>[],
   primaryField: ReportFieldDefinition | null,
   rowIdOffset: number,
   t: TFunction,
   labelMaps?: ReportVehicleLabelMaps,
-  reportEntityName?: string | null,
+  entityMetadata?: ReportEntityMetadata | null,
+  outputRows: ReportOutputRow[] = [],
+  fieldMap: Map<string, ReportFieldDefinition> = new Map(),
+  tableMetadataByRowId: Record<string, ReportEntityMetadata | null> = {},
+  columnAliases: Map<string, string> = new Map(),
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
-  const refColumns = getReportResultColumnMeta(primaryField) ?? [];
-  const columnMeta =
-    reportEntityName === 'DeviceEvent' && primaryField?.referenceEntity
-      ? [...DEVICE_EVENT_REPORT_ROW_COLUMNS, ...refColumns]
-      : refColumns;
-
-  if (!columnMeta.length || !primaryField) {
-    if (!primaryField || !content.length) {
-      return { columns: [], rows: [] };
-    }
-    const { columns, rows } = mapReportContentToGrid(content, [primaryField], rowIdOffset);
-    const gridRows: ReportGridRow[] = rows.map((row, index) => ({
-      ...(row as Record<string, string>),
-      __rowKey: String((row as { id?: unknown }).id ?? `row-${rowIdOffset + index}`),
-    }));
-    return { columns, rows: gridRows };
+  if (!content.length) {
+    return { columns: [], rows: [] };
   }
 
-  const nestedKey = primaryField.fieldName;
-  const columns = buildReportResultColumnDefs(columnMeta, t);
-  const metaByField = new Map(columnMeta.map((m) => [m.field, m]));
+  const columnKeys = collectReportContentColumnKeys(content);
+
+  const columns: GridColDef[] = columnKeys.map((key) => {
+    const fieldDef = findReportFieldDefForColumnKey(
+      key,
+      entityMetadata,
+      outputRows,
+      fieldMap,
+      tableMetadataByRowId,
+    );
+    return {
+      field: key,
+      headerName: resolveReportColumnHeaderLabel(
+        key,
+        columnAliases,
+        resolveReportColumnLabel(
+          key,
+          entityMetadata,
+          outputRows,
+          fieldMap,
+          tableMetadataByRowId,
+        ),
+      ),
+      flex: 1,
+      minWidth: 140,
+      sortable: fieldDef?.sortable !== false,
+    };
+  });
 
   const rows: ReportGridRow[] = content.map((row, index) => {
-    const source = extractReportNestedRecord(row, nestedKey);
     const rootId = row.id;
     const __rowKey =
       rootId != null && rootId !== ''
         ? `report-row-${String(rootId)}`
         : `report-row-${rowIdOffset + index}`;
 
-    const flat = {} as ReportGridRow;
-    flat.__rowKey = __rowKey;
+    const flat = { __rowKey } as ReportGridRow;
 
-    for (const { field } of columnMeta) {
-      const raw =
-        field === '__reportRowCreatedAt'
-          ? pickReportRootValue(row, field, nestedKey)
-          : pickNestedValue(source, field);
-      flat[field] = formatResultCellValue(field, raw, metaByField.get(field), labelMaps, t);
+    for (const key of columnKeys) {
+      const fieldDef = findReportFieldDefForColumnKey(
+        key,
+        entityMetadata,
+        outputRows,
+        fieldMap,
+        tableMetadataByRowId,
+      );
+      flat[key] = formatDynamicCellValue(
+        key,
+        row[key],
+        fieldDef,
+        primaryField,
+        outputRows,
+        fieldMap,
+        labelMaps,
+        t,
+      );
     }
 
     return flat;
