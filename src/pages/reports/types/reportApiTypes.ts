@@ -66,7 +66,8 @@ export type ReportLogicOperator = 'or' | 'and';
 export type ReportQueryFilter = {
   fieldName: string;
   operator: string;
-  value: unknown;
+  /** Всегда массив: одно значение — [x], диапазон — [from, to]. */
+  values?: unknown[];
   group?: number;
 };
 

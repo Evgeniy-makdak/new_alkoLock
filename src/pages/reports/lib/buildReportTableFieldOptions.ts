@@ -21,6 +21,20 @@ export function prefixedFieldName(prefix: string, fieldName: string): string {
   return `${prefix}.${fieldName}`;
 }
 
+/**
+ * Имя поля в filters[] (POST …/DeviceEvent/query).
+ * Как в примере бэка: eventsForFront.event, user.surname — путь к связанной сущности;
+ * поля корня отчёта (timestamp, reportedAt) — без префикса deviceEvent.
+ * Префикс deviceEvent.* только в selectedFields / колонках таблицы.
+ */
+export function resolveReportFilterFieldName(entityName: string, fieldName: string): string {
+  const rootPrefix = reportEntityFieldPrefix(entityName);
+  if (rootPrefix && (fieldName === rootPrefix || fieldName.startsWith(`${rootPrefix}.`))) {
+    return fieldName === rootPrefix ? fieldName : fieldName.slice(rootPrefix.length + 1);
+  }
+  return fieldName;
+}
+
 /** Поле можно выбрать в «Поля в отчёте» (контракт metadata.selectable). */
 export function isReportTableSelectableField(field: ReportFieldDefinition): boolean {
   return field.selectable === true;

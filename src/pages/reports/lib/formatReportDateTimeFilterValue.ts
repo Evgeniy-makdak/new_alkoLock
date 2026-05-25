@@ -57,12 +57,7 @@ export function toReportDateTimeFilterIso(value: unknown): string | null {
   return parsed.isValid() ? parsed.toISOString() : null;
 }
 
-/** Значение момента для POST …/query — ISO UTC (java.time.Instant на бэке). */
-export function toReportDateTimeQueryValue(value: unknown): string | null {
-  return toReportDateTimeFilterIso(value);
-}
-
-/** Значение фильтра DATETIME — ISO-строка. */
+/** Одно значение фильтра (до обёртки в values[]). */
 export function formatFilterValueForField(
   field: ReportFieldDefinition | undefined,
   value: unknown,
@@ -79,18 +74,11 @@ export function formatFilterValueForField(
     const year = parseInt(String(value).trim(), 10);
     return Number.isFinite(year) ? year : value;
   }
-  // ENUM на бэке часто String; coerceFilterScalar превращает «4310» в number → 500.
   if (type === 'ENUM' || type === 'TEXT') {
     return value == null || value === '' ? value : String(value);
   }
   if (!isReportDateTimeField(field)) {
     return value;
   }
-  if (Array.isArray(value)) {
-    const range = value
-      .map((v) => toReportDateTimeQueryValue(v))
-      .filter((v): v is string => v != null);
-    return range.length === value.length ? range : value;
-  }
-  return toReportDateTimeQueryValue(value) ?? value;
+  return toReportDateTimeFilterIso(value) ?? value;
 }
