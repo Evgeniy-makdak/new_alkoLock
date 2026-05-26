@@ -226,6 +226,11 @@
   min-width: 132px !important;
   max-width: 188px !important;
   width: 188px !important;
+  margin-left: auto;
+  position: sticky;
+  right: 0;
+  background: var(--mui-palette-background-paper, #fff);
+  z-index: 1;
 
   :global(.MuiOutlinedInput-notchedOutline) {
     border-style: dashed;
