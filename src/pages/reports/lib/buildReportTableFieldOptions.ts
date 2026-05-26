@@ -7,7 +7,7 @@ import type {
 } from '../types/reportApiTypes';
 
 /** Черта между сущностью и полем (как Table.Column в Power BI / SQL). */
-const QUALIFIED_LABEL_SEPARATOR = ' · ';
+export const QUALIFIED_LABEL_SEPARATOR = ' · ';
 
 export type ReportTableFieldOptionDraft = {
   value: string;

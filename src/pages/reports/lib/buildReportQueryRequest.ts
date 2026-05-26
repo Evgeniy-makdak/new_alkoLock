@@ -1,39 +1,10 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import {
-  formatFilterValueForField,
-  toReportDateTimeFilterIso,
-} from './formatReportDateTimeFilterValue';
-import { isReportDateTimeField } from './reportFieldFilterKind';
-import {
-  isReportDateTimeBetweenOperation,
-  isReportFilterNullOperation,
-} from './mapReportQueryOperator';
-import {
-  findReportTableFieldDefinition,
-  resolveReportFilterFieldName,
-  resolveReportTableSelectedPayloadFieldName,
-} from './buildReportTableFieldOptions';
-import {
-  reportOutputFunctionKey,
-  reportOutputOperationKey,
-} from './reportOutputFilterKeys';
-import { isGroupFilterControlId } from './reportOutputRow';
-import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
-import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
-
-import {
-  buildReportLogicConnects,
-  reportFilterGroupNumberForRowIndex,
-} from './reportFilterGroupNumber';
-import { getPrimaryOutputRowFromList } from './reportOutputRow';
-
 import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
   ReportFieldOperation,
   ReportLogicOperator,
-  ReportNestedEntityFilterByField,
   ReportOutputRow,
   ReportQueryFilter,
   ReportQueryRequest,
@@ -41,6 +12,30 @@ import type {
   ReportSelectedFieldPayload,
   ReportUiFilterSelections,
 } from '../types/reportApiTypes';
+import {
+  QUALIFIED_LABEL_SEPARATOR,
+  findReportTableFieldDefinition,
+  resolveReportFilterFieldName,
+  resolveReportTableSelectedPayloadFieldName,
+} from './buildReportTableFieldOptions';
+import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
+import {
+  formatFilterValueForField,
+  toReportDateTimeFilterIso,
+} from './formatReportDateTimeFilterValue';
+import {
+  isReportDateTimeBetweenOperation,
+  isReportFilterNullOperation,
+} from './mapReportQueryOperator';
+import { isReportDateTimeField } from './reportFieldFilterKind';
+import {
+  buildReportLogicConnects,
+  reportFilterGroupNumberForRowIndex,
+} from './reportFilterGroupNumber';
+import { reportOutputFunctionKey, reportOutputOperationKey } from './reportOutputFilterKeys';
+import { isGroupFilterControlId } from './reportOutputRow';
+import { getPrimaryOutputRowFromList } from './reportOutputRow';
+import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
 
 function pickOperator(field: ReportFieldDefinition | undefined, multi: boolean): string {
   if (!field?.availableOperations?.length) {
@@ -67,7 +62,9 @@ function resolveFilterFieldDef(
   if (field) {
     return field;
   }
-  const leaf = fieldName.includes('.') ? fieldName.slice(fieldName.lastIndexOf('.') + 1) : fieldName;
+  const leaf = fieldName.includes('.')
+    ? fieldName.slice(fieldName.lastIndexOf('.') + 1)
+    : fieldName;
   return fieldMap.get(leaf) ?? fieldMap.get(fieldName);
 }
 
@@ -154,27 +151,62 @@ export function operationsToValues(ops: ReportFieldOperation[] | undefined): Val
   return (ops ?? []).map((o) => ({ value: o.code, label: o.label || o.code }));
 }
 
-function toSelectedFieldPayload(
-  field: ReportFieldDefinition,
-  filterSelections: ReportUiFilterSelections,
-  functionKey: string,
-): ReportSelectedFieldPayload {
-  const payload: ReportSelectedFieldPayload = { fieldName: field.fieldName };
-  if (field.alias) {
-    payload.alias = field.alias;
-  }
-  const fnPick = filterSelections[functionKey]?.[0];
-  const fnCode = fnPick?.value != null && fnPick.value !== '' ? String(fnPick.value) : null;
-  if (fnCode) {
-    const allowed = field.availableFunctions?.some((f) => f.code === fnCode);
-    if (allowed) {
-      payload.aggregation = fnCode;
-    }
-  }
-  if (!payload.aggregation && field.aggregation?.trim()) {
-    payload.aggregation = field.aggregation.trim();
-  }
-  return payload;
+/** Примитивные scalar-типы полей (не reference entity). */
+function isScalarFieldType(type: string | undefined): boolean {
+  if (!type) return false;
+  const scalarTypes = new Set([
+    'TEXT',
+    'STRING',
+    'VARCHAR',
+    'CHAR',
+    'NVARCHAR',
+    'NCHAR',
+    'CLOB',
+    'INTEGER',
+    'INT',
+    'LONG',
+    'BIGINT',
+    'SHORT',
+    'BYTE',
+    'TINYINT',
+    'DOUBLE',
+    'FLOAT',
+    'BIGDECIMAL',
+    'DECIMAL',
+    'NUMBER',
+    'NUMERIC',
+    'REAL',
+    'BOOLEAN',
+    'BOOL',
+    'DATETIME',
+    'DATE',
+    'TIME',
+    'TIMESTAMP',
+    'INSTANT',
+    'LOCALDATE',
+    'LOCALDATETIME',
+    'LOCALTIME',
+    'ZONEDDATETIME',
+    'OFFSETDATETIME',
+    'ENUM',
+    'JSON',
+    'UUID',
+    'GUID',
+    'BLOB',
+    'BINARY',
+    'VARBINARY',
+    'BYTEA',
+    'IMAGE',
+    'YEAR',
+    'COORDINATE',
+  ]);
+  const upper = type.toUpperCase();
+  return scalarTypes.has(upper) || upper.startsWith('VARCHAR') || upper.startsWith('NVARCHAR');
+}
+
+/** Значения выглядят как ID (числа или строки из цифр). */
+function valuesLookLikeId(selected: Values): boolean {
+  return selected.every((s) => typeof s.value === 'number' || /^\d+$/.test(String(s.value)));
 }
 
 type BuildRowReportTableFieldsContext = {
@@ -206,10 +238,10 @@ function buildRowReportTableFields(
     const payload: ReportSelectedFieldPayload = {
       fieldName: resolveReportTableSelectedPayloadFieldName(path),
     };
-    if (displayLabel !== defaultLabel) {
+    const isAutoQualified = displayLabel.includes(QUALIFIED_LABEL_SEPARATOR);
+    const isSafeAlias = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(displayLabel);
+    if (!isAutoQualified && displayLabel !== defaultLabel && isSafeAlias) {
       payload.alias = displayLabel;
-    } else if (fieldDef?.alias?.trim()) {
-      payload.alias = fieldDef.alias.trim();
     }
     if (fnCode) {
       payload.aggregation = fnCode;
@@ -218,7 +250,9 @@ function buildRowReportTableFields(
   });
 }
 
-function mergeSelectedFields(payloads: ReportSelectedFieldPayload[][]): ReportSelectedFieldPayload[] {
+function mergeSelectedFields(
+  payloads: ReportSelectedFieldPayload[][],
+): ReportSelectedFieldPayload[] {
   const merged: ReportSelectedFieldPayload[] = [];
   const seen = new Set<string>();
   for (const list of payloads) {
@@ -265,9 +299,16 @@ export function buildReportQueryRequestForRow(
   const pushFilter = (fieldName: string, selected: Values, field?: ReportFieldDefinition) => {
     if (!selected.length) return;
 
-    const apiFieldName = resolveReportFilterFieldName(metadata.entityName, fieldName);
+    let apiFieldName = resolveReportFilterFieldName(metadata.entityName, fieldName);
 
     const fieldDef = resolveFilterFieldDef(fieldName, field, fieldMap);
+
+    // Для reference entity полей без явного .id и со scalar-ID значениями — добавляем .id
+    if (fieldDef && !isScalarFieldType(fieldDef.type) && !apiFieldName.endsWith('.id')) {
+      if (valuesLookLikeId(selected)) {
+        apiFieldName = `${apiFieldName}.id`;
+      }
+    }
 
     if (fieldDef && isReportDateTimeField(fieldDef)) {
       const opCode = resolveUiOperationCode(fieldDef, row.filterSelections, operationKey, false);
@@ -284,12 +325,7 @@ export function buildReportQueryRequestForRow(
 
     const opField = fieldDef ?? primary;
     const multi = selected.length > 1;
-    const operator = resolveUiOperationCode(
-      opField,
-      row.filterSelections,
-      operationKey,
-      multi,
-    );
+    const operator = resolveUiOperationCode(opField, row.filterSelections, operationKey, multi);
     const values = resolveFilterValues(fieldDef, selected);
     if (!values.length) {
       return;
@@ -360,7 +396,15 @@ function buildSharedGroupFilters(
 
   const pushFilter = (fieldName: string, selected: Values, field?: ReportFieldDefinition) => {
     if (!selected.length) return;
-    const apiFieldName = resolveReportFilterFieldName(metadata.entityName, fieldName);
+    let apiFieldName = resolveReportFilterFieldName(metadata.entityName, fieldName);
+
+    // Для reference entity полей без явного .id и со scalar-ID значениями — добавляем .id
+    if (field && !isScalarFieldType(field.type) && !apiFieldName.endsWith('.id')) {
+      if (valuesLookLikeId(selected)) {
+        apiFieldName = `${apiFieldName}.id`;
+      }
+    }
+
     const multi = selected.length > 1;
     const operator = pickOperator(field, multi);
     const values = resolveFilterValues(field, selected);
@@ -398,8 +442,12 @@ export function buildReportQueryRequest(params: {
   logicOperator?: ReportLogicOperator;
   reportTableFieldsMetadataByRowId?: Record<string, ReportEntityMetadata | null>;
 }): ReportQueryRequest {
-  const { metadata, outputRows, logicOperator = 'or', reportTableFieldsMetadataByRowId = {} } =
-    params;
+  const {
+    metadata,
+    outputRows,
+    logicOperator = 'or',
+    reportTableFieldsMetadataByRowId = {},
+  } = params;
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
 
@@ -416,10 +464,15 @@ export function buildReportQueryRequest(params: {
   };
 
   if (activeRows.length === 1) {
-    const single = buildReportQueryRequestForRow(metadata, activeRows[0], {
-      includeGroupFilters: activeRows[0].id === primaryRow.id,
-      groupNumber: reportFilterGroupNumberForRowIndex(0),
-    }, tableFieldsContext);
+    const single = buildReportQueryRequestForRow(
+      metadata,
+      activeRows[0],
+      {
+        includeGroupFilters: activeRows[0].id === primaryRow.id,
+        groupNumber: reportFilterGroupNumberForRowIndex(0),
+      },
+      tableFieldsContext,
+    );
     if (!single) {
       return { selectedFields: [], filters: [] };
     }
