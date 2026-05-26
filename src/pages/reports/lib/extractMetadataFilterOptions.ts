@@ -1,4 +1,9 @@
+import type { TFunction } from 'i18next';
+
 import type { Values } from '@shared/ui/search_multiple_select';
+
+import { buildNestedEntityStaticValueOptions } from './reportNestedEntityValueOptions';
+import { isReportBooleanField } from './reportFieldFilterKind';
 
 import type {
   ReportEntityMetadata,
@@ -76,10 +81,27 @@ export function buildFilterControls(metadata: ReportEntityMetadata): ReportFilte
 export function getStaticOptionsForControl(
   controlId: string,
   metadata: ReportEntityMetadata,
+  t?: TFunction,
 ): Values {
   const { eventTypes, emails } = extractGroupFilterOptions(metadata);
   if (controlId === '__group_eventType') return eventTypes;
   if (controlId === '__group_email') return emails;
+
+  const field = metadata.fields?.find((f) => f.fieldName === controlId);
+  if (field && t) {
+    return buildNestedEntityStaticValueOptions(field, t);
+  }
+  return [];
+}
+
+/** Статические опции значения фильтра по типу поля из metadata (BOOLEAN → да/нет). */
+export function getReportFieldFilterValueOptions(
+  field: ReportFieldDefinition,
+  t: TFunction,
+): Values {
+  if (isReportBooleanField(field)) {
+    return buildNestedEntityStaticValueOptions(field, t);
+  }
   return [];
 }
 

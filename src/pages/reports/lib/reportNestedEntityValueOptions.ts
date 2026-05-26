@@ -5,6 +5,8 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 import {
+  isReportBooleanField,
+  isReportCoordinateField,
   isReportDateTimeField,
   isReportTimeOnlyField,
   isReportYearOnlyField,
@@ -16,7 +18,8 @@ export type NestedEntityValueLoadKind =
   | 'referenceList'
   | 'frontDataEnum'
   | 'dateTime'
-  | 'year';
+  | 'year'
+  | 'coordinate';
 
 /** Как подгружать опции «Значение» для выбранного поля metadata. */
 export function resolveNestedEntityValueLoadKind(
@@ -33,10 +36,13 @@ export function resolveNestedEntityValueLoadKind(
   if (isReportDateTimeField(field) || isReportTimeOnlyField(field)) {
     return 'dateTime';
   }
-  const type = (field.type ?? '').toUpperCase();
-  if (type === 'BOOLEAN') {
+  if (isReportBooleanField(field)) {
     return 'static';
   }
+  if (isReportCoordinateField(field)) {
+    return 'coordinate';
+  }
+  const type = (field.type ?? '').toUpperCase();
   if (type === 'ENUM') {
     if (referenceEntity === 'Vehicle' && (attribute === 'type' || attribute === 'color')) {
       return 'frontDataEnum';
@@ -63,8 +69,7 @@ export function buildNestedEntityStaticValueOptions(
   field: ReportFieldDefinition,
   t: TFunction,
 ): Values {
-  const type = (field.type ?? '').toUpperCase();
-  if (type === 'BOOLEAN') {
+  if (isReportBooleanField(field)) {
     return [
       { value: 'true', label: t('reports.table.activeYes') },
       { value: 'false', label: t('reports.table.activeNo') },

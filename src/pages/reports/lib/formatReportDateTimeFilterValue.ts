@@ -3,7 +3,21 @@ import dayjs, { type Dayjs } from 'dayjs';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 import { isCompleteReportTime } from './formatReportTimeInput';
-import { isReportDateTimeField, isReportYearOnlyField } from './reportFieldFilterKind';
+import { normalizeReportCoordinateFilterValue } from './formatReportCoordinateInput';
+import {
+  isReportCoordinateField,
+  isReportDateTimeField,
+  isReportNumericFilterField,
+  isReportYearOnlyField,
+} from './reportFieldFilterKind';
+
+function formatReportNumericFilterValue(value: unknown): unknown {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const num = Number(value);
+  return Number.isFinite(num) ? num : value;
+}
 
 /** Метка времени для UI. */
 export function formatDateTimeDisplay(date: Dayjs): string {
@@ -73,6 +87,13 @@ export function formatFilterValueForField(
   if (isReportYearOnlyField(field)) {
     const year = parseInt(String(value).trim(), 10);
     return Number.isFinite(year) ? year : value;
+  }
+  if (isReportCoordinateField(field)) {
+    const normalized = normalizeReportCoordinateFilterValue(value);
+    return normalized ?? value;
+  }
+  if (isReportNumericFilterField(field)) {
+    return formatReportNumericFilterValue(value);
   }
   if (type === 'ENUM' || type === 'TEXT') {
     return value == null || value === '' ? value : String(value);

@@ -14,6 +14,7 @@ import {
   buildNestedEntityStaticValueOptions,
   resolveNestedEntityValueLoadKind,
 } from '@pages/reports/lib/reportNestedEntityValueOptions';
+import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
 import { buildReferenceEntityPropertyOptions } from '@pages/reports/lib/reportReferenceEntityProperties';
 import {
   reportFilterAutocompleteSlotProps,
@@ -28,6 +29,7 @@ import type {
 } from '@pages/reports/types/reportApiTypes';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
+import { ReportCoordinateFilterField } from './ReportCoordinateFilterField';
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
 import { ReportYearFilterField } from './ReportYearFilterField';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -177,7 +179,12 @@ export function ReportNestedEntityFilterControl({
   }, [valueLoadKind, referenceEntity, fieldForRemoteSearch, state.attribute, searchQuery, labelMaps]);
 
   const legacyClientOptions = useMemo(() => {
-    if (!state.attribute || valueLoadKind === 'serverSearch' || valueLoadKind === 'dateTime') {
+    if (
+      !state.attribute ||
+      valueLoadKind === 'serverSearch' ||
+      valueLoadKind === 'dateTime' ||
+      valueLoadKind === 'coordinate'
+    ) {
       return [];
     }
     if (valueLoadKind === 'static' || valueLoadKind === 'frontDataEnum') {
@@ -207,6 +214,7 @@ export function ReportNestedEntityFilterControl({
         : recordsLoading;
 
   const useServerFilter = valueLoadKind === 'serverSearch';
+  const isBooleanValueField = Boolean(attributeField && isReportBooleanField(attributeField));
 
   const displayValueOptions = useMemo(
     () => mergeOptionsWithSelected(valueOptions, state.values),
@@ -257,14 +265,21 @@ export function ReportNestedEntityFilterControl({
           operationCode={filterOperationCode}
           onChange={(values) => onChange({ values })}
         />
+      ) : state.attribute && valueLoadKind === 'coordinate' ? (
+        <ReportCoordinateFilterField
+          label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
+          value={state.values}
+          onChange={(values) => onChange({ values })}
+          sx={controlSx}
+        />
       ) : state.attribute ? (
         <ReportSearchMultipleSelect
-          multiple
+          multiple={!isBooleanValueField}
           compact={compact}
           name={`${field.fieldName}__terminalValues`}
           label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
           values={displayValueOptions}
-          value={selectedValues}
+          value={isBooleanValueField ? selectedValues.slice(0, 1) : selectedValues}
           serverFilter={useServerFilter}
           isLoading={
             valueOptionsLoading || (useServerFilter && !attributeField && tableFieldsMetadataLoading)
@@ -272,7 +287,11 @@ export function ReportNestedEntityFilterControl({
           sx={controlSx}
           slotProps={reportFilterAutocompleteSlotProps}
           onInputChange={useServerFilter ? setSearchQuery : undefined}
-          setValueStore={(_, next) => onChange({ values: next as Values })}
+          setValueStore={(_, next) =>
+            onChange({
+              values: isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values),
+            })
+          }
         />
       ) : null}
     </Box>

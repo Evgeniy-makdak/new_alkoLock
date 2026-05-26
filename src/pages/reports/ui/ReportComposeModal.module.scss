@@ -172,6 +172,9 @@
 }
 
 .filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 16px 12px 10px;
   border: 1px solid var(--mui-palette-divider, #e8e8e8);
   border-radius: 10px;
@@ -179,12 +182,20 @@
   overflow: visible;
 }
 
+.filterGroupMain {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .filterGroupHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 6px;
+  min-width: 0;
 }
 
 .filterGroupLabel {
@@ -193,10 +204,44 @@
   color: var(--mui-palette-text-secondary, #666);
 }
 
+.filterGroupFields {
+  min-width: 0;
+}
+
+.filterGroupRemoveBtn {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
 .logicHint {
   font-size: 12px;
   color: var(--mui-palette-text-secondary, #757575);
   margin: 0 0 4px;
+}
+
+.optionalFilterControl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  min-width: 132px !important;
+  max-width: 188px !important;
+  width: 188px !important;
+
+  :global(.MuiOutlinedInput-notchedOutline) {
+    border-style: dashed;
+  }
+
+  &:hover :global(.MuiOutlinedInput-notchedOutline) {
+    border-style: dashed;
+  }
+
+  :global(.MuiFormControl-root),
+  :global(.MuiAutocomplete-root),
+  :global([class*='searchSelect']) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
 }
 
 .addGroupLink {
@@ -226,7 +271,7 @@
   align-content: center !important;
   gap: 8px;
   align-items: flex-end;
-  width: 100%;
+  flex: 1 1 auto;
   min-width: 0;
   overflow-x: auto;
   overflow-y: visible;
@@ -261,7 +306,9 @@
     width: 188px !important;
   }
 
-  > *:not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+  > *:not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange):not(
+      [class*='reportFilterNestedEntity']
+    ):not(.optionalFilterControl) {
     flex: 0 0 auto !important;
     min-width: 132px !important;
     max-width: 188px !important;
@@ -274,7 +321,16 @@
     gap: 8px;
     flex: 0 0 auto;
     min-width: 0;
+    max-width: none !important;
+    width: auto !important;
     overflow: visible;
+
+    > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+      flex: 0 0 auto !important;
+      min-width: 132px !important;
+      max-width: 188px !important;
+      width: 188px !important;
+    }
   }
 
   :global(.reportFilterDateTimeRoot),

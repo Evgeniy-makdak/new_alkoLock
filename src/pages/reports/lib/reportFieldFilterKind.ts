@@ -1,5 +1,38 @@
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
+export function isReportBooleanField(field: ReportFieldDefinition): boolean {
+  return (field.type ?? '').toUpperCase().trim() === 'BOOLEAN';
+}
+
+function coordinateFieldLeafName(fieldName: string): string {
+  const lower = fieldName.toLowerCase();
+  const leaf = lower.includes('.') ? lower.slice(lower.lastIndexOf('.') + 1) : lower;
+  return leaf;
+}
+
+/** Широта / долгота (latitude, longitude). */
+export function isReportCoordinateField(field: ReportFieldDefinition): boolean {
+  const leaf = coordinateFieldLeafName(field.fieldName);
+  return leaf === 'latitude' || leaf === 'longitude';
+}
+
+/** Числовые поля и `*.id` — в query уходит number, не строка. */
+export function isReportNumericFilterField(field: ReportFieldDefinition): boolean {
+  const type = (field.type ?? '').toUpperCase();
+  if (
+    type === 'NUMBER' ||
+    type === 'INTEGER' ||
+    type === 'INT' ||
+    type === 'LONG' ||
+    type === 'ID'
+  ) {
+    return true;
+  }
+  const name = field.fieldName.toLowerCase();
+  const leaf = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name;
+  return leaf === 'id';
+}
+
 /** Год выпуска и т.п. — только год (число), не Instant/датапикер. */
 export function isReportYearOnlyField(field: ReportFieldDefinition): boolean {
   const type = (field.type ?? '').toUpperCase();

@@ -139,18 +139,34 @@ export async function fetchReportNestedEntityValueOptions(
         false,
         false,
       );
-      const types = unwrapList<{ id?: number | string; label?: string }>(res);
+      const types = unwrapList<{
+        id?: number | string;
+        label?: string;
+        event?: string;
+      }>(res);
       if (field.fieldName === 'label') {
         return types
           .filter((item) => item.label != null && item.label !== '')
           .map((item) => ({ value: String(item.label), label: String(item.label) }));
       }
+      if (field.fieldName === 'event') {
+        return types
+          .filter((item) => typeof item.event === 'string' && item.event.trim() !== '')
+          .map((item) => ({
+            value: String(item.event).trim(),
+            label: item.label ?? String(item.event),
+          }));
+      }
       return types
         .filter((item) => item.id != null)
-        .map((item) => ({
-          value: item.id as number | string,
-          label: item.label ?? String(item.id),
-        }));
+        .map((item) => {
+          const id =
+            typeof item.id === 'number' ? item.id : parseInt(String(item.id), 10);
+          return {
+            value: Number.isFinite(id) ? id : String(item.id),
+            label: item.label ?? String(item.id),
+          };
+        });
     }
     default:
       return [];

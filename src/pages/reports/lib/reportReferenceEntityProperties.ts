@@ -67,6 +67,7 @@ export const REPORT_REFERENCE_ENTITY_PROPERTIES: Record<string, ReportReferenceE
   ],
   EventsForFront: [
     { key: 'id', labelKey: 'reports.nestedProp.id' },
+    { key: 'event', labelKey: 'reports.nestedProp.eventTypeLabel' },
     { key: 'label', labelKey: 'reports.nestedProp.eventTypeLabel' },
   ],
   BranchOffice: [

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
-import { IconButton, Tooltip } from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
@@ -165,9 +165,9 @@ export function ReportOutputFilterRow({
 
   const selectedOutputSingle = row.selectedOutputFields.slice(0, 1);
 
-  const rowComplete = isReportOutputRowComplete(row, fieldMap, tableFieldsMetadata, metadata);
-  const canShowAddButton = showAddButton && rowComplete;
   const isModalVariant = variant === 'modal';
+  const rowComplete = isReportOutputRowComplete(row, fieldMap, tableFieldsMetadata, metadata);
+  const canShowAddButton = showAddButton && rowComplete && !isModalVariant;
   const showOperationAndFunction = isModalVariant
     ? Boolean(primaryField)
     : outputControlsReady;
@@ -175,64 +175,96 @@ export function ReportOutputFilterRow({
   const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
   const selectCompact = isModalVariant;
 
-  const operationFunctionBlock =
+  const filterOperationBlock =
     primaryField && showOperationAndFunction ? (
-      <>
-        <ReportSearchMultipleSelect
-          multiple={false}
-          compact={selectCompact}
-          name={operationKey}
-          label={t('reports.filterOperationLabel')}
-          values={operationOptions}
-          value={row.filterSelections[operationKey] ?? []}
-          serverFilter={false}
-          isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
-          sx={selectSx}
-          slotProps={reportFilterAutocompleteSlotProps}
-          setValueStore={(_, value) =>
-            onFilterChange(operationKey, toValuesFromSingleSelect(value))
-          }
-        />
-        <ReportSearchMultipleSelect
-          multiple={false}
-          compact={selectCompact}
-          name={functionKey}
-          label={t('reports.filterFunctionLabel')}
-          values={functionOptions}
-          value={row.filterSelections[functionKey] ?? []}
-          serverFilter={false}
-          isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
-          sx={selectSx}
-          slotProps={reportFilterAutocompleteSlotProps}
-          setValueStore={(_, value) =>
-            onFilterChange(functionKey, toValuesFromSingleSelect(value))
-          }
-        />
-      </>
+      <ReportSearchMultipleSelect
+        multiple={false}
+        compact={selectCompact}
+        name={operationKey}
+        label={t('reports.filterOperationLabel')}
+        values={operationOptions}
+        value={row.filterSelections[operationKey] ?? []}
+        serverFilter={false}
+        isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
+        sx={selectSx}
+        slotProps={reportFilterAutocompleteSlotProps}
+        setValueStore={(_, value) =>
+          onFilterChange(operationKey, toValuesFromSingleSelect(value))
+        }
+      />
     ) : null;
+
+  const filterFunctionBlock =
+    primaryField && showOperationAndFunction ? (
+      <ReportSearchMultipleSelect
+        multiple={false}
+        compact={selectCompact}
+        name={functionKey}
+        label={
+          isModalVariant ? (
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: 0.5 }}>
+              {t('reports.filterFunctionLabel')}
+              <Box
+                component="span"
+                sx={{
+                  fontSize: '0.75rem',
+                  fontWeight: 400,
+                  color: 'text.secondary',
+                  letterSpacing: 0,
+                }}>
+                {t('reports.filterFunctionOptionalBadge')}
+              </Box>
+            </Box>
+          ) : (
+            t('reports.filterFunctionLabel')
+          )
+        }
+        values={functionOptions}
+        value={row.filterSelections[functionKey] ?? []}
+        serverFilter={false}
+        isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
+        sx={selectSx}
+        slotProps={reportFilterAutocompleteSlotProps}
+        setValueStore={(_, value) =>
+          onFilterChange(functionKey, toValuesFromSingleSelect(value))
+        }
+      />
+    ) : null;
+
+  const filterFunctionField =
+    filterFunctionBlock && isModalVariant ? (
+      <Tooltip title={t('reports.filterFunctionOptionalHint')} placement="top">
+        <Box className={composeStyles.optionalFilterControl}>{filterFunctionBlock}</Box>
+      </Tooltip>
+    ) : (
+      filterFunctionBlock
+    );
+
+  const nestedEntityFilterControl = primaryField && refEntity ? (
+    <ReportNestedEntityFilterControl
+      compact={selectCompact}
+      field={primaryField}
+      referenceEntity={refEntity}
+      tableFieldsMetadata={tableFieldsMetadata}
+      tableFieldsMetadataLoading={tableFieldsMetadataLoading}
+      records={refRecords}
+      recordsLoading={referenceRecordsLoading}
+      labelMaps={vehicleLabelMaps}
+      state={
+        row.nestedEntityFilterByField[primaryField.fieldName] ?? {
+          attribute: null,
+          values: [],
+        }
+      }
+      onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
+      filterOperationCode={filterOperationCode}
+    />
+  ) : null;
 
   const valueFilterBlock = primaryField ? (
     <>
-      {refEntity ? (
-        <ReportNestedEntityFilterControl
-          compact={selectCompact}
-          field={primaryField}
-          referenceEntity={refEntity}
-          tableFieldsMetadata={tableFieldsMetadata}
-          tableFieldsMetadataLoading={tableFieldsMetadataLoading}
-          records={refRecords}
-          recordsLoading={referenceRecordsLoading}
-          labelMaps={vehicleLabelMaps}
-          state={
-            row.nestedEntityFilterByField[primaryField.fieldName] ?? {
-              attribute: null,
-              values: [],
-            }
-          }
-          onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
-          filterOperationCode={filterOperationCode}
-        />
-      ) : primaryField.filterable ? (
+      {nestedEntityFilterControl}
+      {!refEntity && primaryField.filterable ? (
         <ReportFieldFilterControl
           compact={selectCompact}
           field={primaryField}
@@ -245,6 +277,31 @@ export function ReportOutputFilterRow({
         />
       ) : null}
     </>
+  ) : null;
+
+  const modalFilterControlsBlock = primaryField ? (
+    primaryField && refEntity ? (
+      <>
+        {filterOperationBlock}
+        {nestedEntityFilterControl}
+      </>
+    ) : (
+      <>
+        {filterOperationBlock}
+        {primaryField.filterable ? (
+          <ReportFieldFilterControl
+            compact={selectCompact}
+            field={primaryField}
+            metadata={metadata}
+            value={row.filterSelections[primaryField.fieldName] ?? []}
+            referenceOptionsCache={{}}
+            filterOperationCode={filterOperationCode}
+            onChange={(values) => onFilterChange(primaryField.fieldName, values)}
+            onReferenceOptionsLoaded={onReferenceOptionsLoaded}
+          />
+        ) : null}
+      </>
+    )
   ) : null;
 
   const rowClassName = [
@@ -270,14 +327,12 @@ export function ReportOutputFilterRow({
       />
 
       {isModalVariant ? (
-        <>
-          {operationFunctionBlock}
-          {valueFilterBlock}
-        </>
+        modalFilterControlsBlock
       ) : (
         <>
+          {filterOperationBlock}
           {valueFilterBlock}
-          {operationFunctionBlock}
+          {filterFunctionBlock}
         </>
       )}
 
@@ -305,7 +360,9 @@ export function ReportOutputFilterRow({
           })
         : null}
 
-      {canShowAddButton || onRemoveRow != null ? (
+      {isModalVariant ? filterFunctionField : null}
+
+      {canShowAddButton || (!isModalVariant && onRemoveRow != null) ? (
         <div className={pageStyles.reportFilterRowActions}>
           {canShowAddButton ? (
             <Tooltip title={t('reports.addOutputRow')}>

@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ClearIcon from '@mui/icons-material/Clear';
@@ -43,11 +43,21 @@ import {
   renderOptions,
 } from './helpers';
 
+function resolveSearchSelectDisplayLabel(label: ReactNode | undefined): ReactNode | undefined {
+  if (label == null || label === false) {
+    return undefined;
+  }
+  if (typeof label === 'string') {
+    return label.trim() !== '' ? label : undefined;
+  }
+  return label;
+}
+
 // TODO => почистить тип пропсов, очень много лишнего (не используется)
 export type SearchMultipleSelectProps<T> = {
   testid?: string;
   error?: boolean;
-  label?: string;
+  label?: React.ReactNode;
   isLoading?: boolean;
   values: Values;
   name: keyof T | string;
@@ -109,7 +119,7 @@ function SearchMultipleSelectMobileModal<T>({
   const [filterText, setFilterText] = useState('');
   const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
 
-  const displayLabel = typeof label === 'string' && label.trim() !== '' ? label : undefined;
+  const displayLabel = resolveSearchSelectDisplayLabel(label);
 
   /** Список из API: поиск в модалке обновляет `values` через onInputChange → searchQuery. */
   const listOptions = !isLoading ? values : [];
@@ -514,7 +524,7 @@ export function SearchMultipleSelect<T>({
     };
     const hasValue = (value && value.length > 0) || !!inputState;
     // Пустая строка label у OutlinedInput оставляет «вырез» в рамке — пропадает верхняя граница (иногда нестабильно из‑за legend)
-    const displayLabel = typeof label === 'string' && label.trim() !== '' ? label : undefined;
+    const displayLabel = resolveSearchSelectDisplayLabel(label);
     const inputPropsNoLabel = displayLabel === undefined ? { notched: false as const } : {};
     // Сжимаем label только при фокусе или значении — иначе длинный label вылезает за рамку узкого поля.
     const shrinkLabel =

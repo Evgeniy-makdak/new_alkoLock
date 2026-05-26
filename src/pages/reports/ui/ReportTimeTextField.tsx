@@ -12,6 +12,8 @@ type ReportTimeTextFieldProps = {
   onChange: (value: string) => void;
   className?: string;
   sx?: SxProps<Theme>;
+  maxLength?: number;
+  inputMode?: 'numeric' | 'decimal' | 'text';
 };
 
 /** Поле времени в строке фильтров: ошибка в tooltip, без helperText (не ломает flex-вёрстку). */
@@ -24,6 +26,8 @@ export function ReportTimeTextField({
   onChange,
   className,
   sx,
+  maxLength = 5,
+  inputMode = 'numeric',
 }: ReportTimeTextFieldProps) {
   return (
     <Tooltip
@@ -43,7 +47,7 @@ export function ReportTimeTextField({
         placeholder={placeholder}
         error={invalid}
         size="small"
-        inputProps={{ maxLength: 5, inputMode: 'numeric', 'aria-invalid': invalid }}
+        inputProps={{ maxLength, inputMode, 'aria-invalid': invalid }}
         sx={sx}
         onChange={(e) => onChange(e.target.value)}
       />

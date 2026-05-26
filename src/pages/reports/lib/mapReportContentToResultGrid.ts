@@ -8,9 +8,10 @@ import {
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
+import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
-import { isReportDateTimeField } from './reportFieldFilterKind';
+import { isReportCoordinateField, isReportDateTimeField } from './reportFieldFilterKind';
 import {
   findReportResultColumnMetaForKey,
   type ReportResultColumnFormat,
@@ -89,6 +90,10 @@ function formatDynamicCellValue(
 
   if (fieldDef && isReportDateTimeField(fieldDef)) {
     return formatReportTableDateTime(raw);
+  }
+
+  if (fieldDef && isReportCoordinateField(fieldDef)) {
+    return formatReportCoordinateDisplay(raw);
   }
 
   if (typeof raw === 'boolean') {

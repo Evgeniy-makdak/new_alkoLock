@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import CloseIcon from '@mui/icons-material/Close';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-import { Alert, Autocomplete, CircularProgress, TextField, Typography } from '@mui/material';
+import {
+  Alert,
+  Autocomplete,
+  CircularProgress,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 
 import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
 import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
@@ -11,12 +21,14 @@ import {
   reportFilterControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import composeStyles from './ReportComposeModal.module.scss';
+import pageStyles from './Reports.module.scss';
 
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
 import { ReportComposeSection } from './ReportComposeSection';
@@ -29,6 +41,8 @@ export type ReportComposeFormProps = {
 
 export function ReportComposeForm({ reportName, onReportNameChange }: ReportComposeFormProps) {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addVariantDialogOpen, setAddVariantDialogOpen] = useState(false);
 
   const entities = reportsStore((s) => s.entities);
@@ -192,7 +206,7 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
 
   const renderOutputRow = (
     row: (typeof outputRows)[number],
-    options: { isPrimaryRow: boolean; showAddButton: boolean; showRemoveButton: boolean },
+    options: { isPrimaryRow: boolean },
   ) => (
     <ReportOutputFilterRow
       key={row.id}
@@ -206,9 +220,8 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
       referenceRecordsCache={referenceRecordsCache}
       referenceRecordsLoading={referenceRecordsLoading}
       vehicleLabelMaps={vehicleLabelMaps}
-      showAddButton={options.showAddButton}
+      showAddButton={false}
       onRequestAddRow={() => setAddVariantDialogOpen(true)}
-      onRemoveRow={options.showRemoveButton ? () => removeOutputRow(row.id) : undefined}
       onOutputFieldChange={(values) => setOutputRowSelectedFields(row.id, values)}
       onFilterChange={(controlId, values) => setOutputRowFilterSelection(row.id, controlId, values)}
       onNestedFilterChange={(fieldName, patch) =>
@@ -267,20 +280,32 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
           <div className={composeStyles.filterGroups}>
             {outputRows.map((row, index) => {
               const isFirstRow = index === 0;
-              const isLastRow = index === outputRows.length - 1;
+              const canRemoveGroup = !isFirstRow;
 
               return (
                 <div key={row.id} className={composeStyles.filterGroup}>
-                  <div className={composeStyles.filterGroupHead}>
-                    <span className={composeStyles.filterGroupLabel}>
-                      {t('reports.composeFilterGroup', { number: index + 1 })}
-                    </span>
+                  <div className={composeStyles.filterGroupMain}>
+                    <div className={composeStyles.filterGroupHead}>
+                      <span className={composeStyles.filterGroupLabel}>
+                        {t('reports.composeFilterGroup', { number: index + 1 })}
+                      </span>
+                    </div>
+                    <div className={composeStyles.filterGroupFields}>
+                      {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
+                    </div>
                   </div>
-                  {renderOutputRow(row, {
-                    isPrimaryRow: isFirstRow,
-                    showAddButton: isLastRow,
-                    showRemoveButton: !isFirstRow,
-                  })}
+                  {canRemoveGroup ? (
+                    <Tooltip title={t('reports.composeRemoveFilter')}>
+                      <IconButton
+                        type="button"
+                        aria-label={t('reports.composeRemoveFilter')}
+                        className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
+                        onClick={() => removeOutputRow(row.id)}
+                        sx={circleIconSx}>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : null}
                 </div>
               );
             })}

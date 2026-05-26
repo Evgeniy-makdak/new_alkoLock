@@ -12,10 +12,14 @@ import {
   formatReportTimeInput,
   isCompleteReportTime,
 } from '@pages/reports/lib/formatReportTimeInput';
+import { getReportFieldFilterValueOptions } from '@pages/reports/lib/extractMetadataFilterOptions';
 import {
+  isReportBooleanField,
+  isReportCoordinateField,
   isReportDateTimeField,
   isReportTimeOnlyField,
 } from '@pages/reports/lib/reportFieldFilterKind';
+import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
@@ -26,6 +30,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
+import { ReportCoordinateFilterField } from './ReportCoordinateFilterField';
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
 import { ReportTimeTextField } from './ReportTimeTextField';
 
@@ -52,6 +57,7 @@ export function ReportFieldFilterControl({
 }: ReportFieldFilterControlProps) {
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
   const { t } = useTranslation();
+  const controlId = field.fieldName;
   const label = field.label || field.fieldName;
 
   if (isReportDateTimeField(field)) {
@@ -60,6 +66,37 @@ export function ReportFieldFilterControl({
         value={value}
         operationCode={filterOperationCode}
         onChange={onChange}
+      />
+    );
+  }
+
+  if (isReportBooleanField(field)) {
+    const boolOptions = getReportFieldFilterValueOptions(field, t);
+    const selectedSingle = value.slice(0, 1);
+
+    return (
+      <ReportSearchMultipleSelect
+        multiple={false}
+        compact={compact}
+        name={controlId}
+        label={label}
+        values={boolOptions}
+        value={selectedSingle}
+        serverFilter={false}
+        sx={controlSx}
+        slotProps={reportFilterAutocompleteSlotProps}
+        setValueStore={(_, next) => onChange(toValuesFromSingleSelect(next))}
+      />
+    );
+  }
+
+  if (isReportCoordinateField(field)) {
+    return (
+      <ReportCoordinateFilterField
+        label={label}
+        value={value}
+        onChange={onChange}
+        sx={controlSx}
       />
     );
   }
@@ -84,8 +121,7 @@ export function ReportFieldFilterControl({
     );
   }
 
-  const controlId = field.fieldName;
-  const staticOptions = getStaticOptionsForControl(controlId, metadata);
+  const staticOptions = getStaticOptionsForControl(controlId, metadata, t);
   const cacheKey = field.referenceEntity ? `ref:${field.referenceEntity}` : controlId;
   const options =
     staticOptions.length > 0 ? staticOptions : (referenceOptionsCache[cacheKey] ?? []);
@@ -98,7 +134,7 @@ export function ReportFieldFilterControl({
       const refControls = buildFilterControls(refMeta);
       const loaded: Values = [];
       for (const c of refControls) {
-        loaded.push(...getStaticOptionsForControl(c.id, refMeta));
+        loaded.push(...getStaticOptionsForControl(c.id, refMeta, t));
       }
       if (!loaded.length && refMeta.fields?.length) {
         loaded.push(...fieldDefinitionsToValues(refMeta.fields));
