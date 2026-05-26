@@ -9,12 +9,21 @@ import {
   DialogTitle,
   IconButton,
   Tooltip,
+  useMediaQuery,
 } from '@mui/material';
 import { alpha, useTheme } from '@mui/material/styles';
 
 import { testids } from '@shared/const/testid';
 
 import style from './Popup.module.scss';
+import { usePopupDragResize } from './usePopupDragResize';
+
+export type PopupDragResizeConfig = {
+  defaultWidth: number;
+  defaultHeight: number;
+  minWidth?: number;
+  minHeight?: number;
+};
 
 interface PopupProps {
   isOpen: boolean;
@@ -26,6 +35,8 @@ interface PopupProps {
   closeOnEscapeKey?: boolean;
   onCloseModal?: () => void;
   styles?: { size: string; substr: string } | null;
+  /** Перетаскивание за заголовок и ресайз за верхний/левый край (отключено на узких экранах). */
+  dragResize?: PopupDragResizeConfig;
 }
 
 export const Popup = ({
@@ -38,17 +49,47 @@ export const Popup = ({
   closeOnEscapeKey = true,
   onCloseModal,
   styles = null,
+  dragResize,
 }: PopupProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const isNarrowViewport = useMediaQuery('(max-width:900px)');
+  const dragResizeEnabled = Boolean(dragResize) && !isNarrowViewport;
+
+  const { geometry, isInteracting, onTitlePointerDown, onResizePointerDown } = usePopupDragResize({
+    enabled: dragResizeEnabled,
+    isOpen,
+    defaultWidth: dragResize?.defaultWidth ?? 900,
+    defaultHeight: dragResize?.defaultHeight ?? 720,
+    minWidth: dragResize?.minWidth ?? 560,
+    minHeight: dragResize?.minHeight ?? 360,
+  });
 
   const handleClose = () => {
     (onCloseModal ?? toggleModal)();
   };
 
-  const paperClassName = styles
-    ? `${styles.size} ${styles.substr}`
-    : `${style.size} ${style.substr}`;
+  const paperClassName = [
+    styles ? `${styles.size} ${styles.substr}` : `${style.size} ${style.substr}`,
+    dragResizeEnabled ? style.interactivePaper : '',
+    isInteracting ? style.interacting : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const paperPositionSx = dragResizeEnabled
+    ? {
+        position: 'fixed' as const,
+        top: geometry.y,
+        left: geometry.x,
+        width: geometry.w,
+        height: geometry.h,
+        minWidth: dragResize?.minWidth ?? 560,
+        maxWidth: 'none',
+        margin: 0,
+        transform: 'none',
+      }
+    : {};
 
   return (
     <Dialog
@@ -62,6 +103,16 @@ export const Popup = ({
         handleClose();
       }}
       maxWidth={false}
+      sx={
+        dragResizeEnabled
+          ? {
+              '& .MuiDialog-container': {
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start',
+              },
+            }
+          : undefined
+      }
       slotProps={{
         backdrop: {
           sx: {
@@ -75,10 +126,10 @@ export const Popup = ({
       PaperProps={{
         className: paperClassName,
         sx: {
-          minWidth: 550,
-          width: 'auto',
-          maxWidth: 'calc(100vw - 32px)',
-          maxHeight: '99vh',
+          minWidth: dragResizeEnabled ? undefined : 550,
+          width: dragResizeEnabled ? undefined : 'auto',
+          maxWidth: dragResizeEnabled ? 'none' : 'calc(100vw - 32px)',
+          maxHeight: dragResizeEnabled ? 'none' : '99vh',
           borderRadius: '16px',
           backgroundImage: 'none',
           bgcolor: 'background.paper',
@@ -87,17 +138,43 @@ export const Popup = ({
           p: 0,
           display: 'flex',
           flexDirection: 'column',
-          '@media (max-width:768px)': {
-            minWidth: 'unset',
-            width: 'calc(100vw - 12px)',
-            maxWidth: 'calc(100vw - 12px)',
-            height: 'auto',
-            maxHeight: 'calc(100dvh - 12px)',
-            borderRadius: '12px',
-            margin: '6px',
-          },
+          ...paperPositionSx,
+          '@media (max-width:768px)': dragResizeEnabled
+            ? undefined
+            : {
+                minWidth: 'unset',
+                width: 'calc(100vw - 12px)',
+                maxWidth: 'calc(100vw - 12px)',
+                height: 'auto',
+                maxHeight: 'calc(100dvh - 12px)',
+                borderRadius: '12px',
+                margin: '6px',
+              },
         },
       }}>
+      {dragResizeEnabled ? (
+        <>
+          <div
+            className={`${style.resizeHandle} ${style.resizeN}`}
+            data-resize-edge="n"
+            onPointerDown={onResizePointerDown}
+            aria-hidden
+          />
+          <div
+            className={`${style.resizeHandle} ${style.resizeW}`}
+            data-resize-edge="w"
+            onPointerDown={onResizePointerDown}
+            aria-hidden
+          />
+          <div
+            className={`${style.resizeHandle} ${style.resizeNw}`}
+            data-resize-edge="nw"
+            onPointerDown={onResizePointerDown}
+            aria-hidden
+          />
+        </>
+      ) : null}
+
       <Tooltip title={t('common.closeWindow')}>
         <IconButton
           data-testid={`${testids.POPUP_CLOSE_BUTTON}`}
@@ -116,6 +193,8 @@ export const Popup = ({
 
       {headerTitle ? (
         <DialogTitle
+          className={dragResizeEnabled ? style.dragTitle : undefined}
+          onPointerDown={dragResizeEnabled ? onTitlePointerDown : undefined}
           sx={{
             px: 3.5,
             pt: 2.5,
@@ -125,6 +204,7 @@ export const Popup = ({
             fontWeight: 'bold',
             borderBottom: 'none',
             boxShadow: 'none',
+            flexShrink: 0,
             '@media (max-width:768px)': {
               px: 2,
               pt: 1.5,
@@ -153,7 +233,7 @@ export const Popup = ({
             px: 2,
             pt: headerTitle ? 0.75 : 1.5,
             pb: 1.25,
-            overflow: 'visible',
+            overflow: dragResizeEnabled ? 'auto' : 'visible',
           },
         }}>
         {body}
@@ -167,6 +247,7 @@ export const Popup = ({
             pt: 0,
             justifyContent: 'flex-end',
             gap: 1,
+            flexShrink: 0,
             '& > button:first-of-type': { mr: 0 },
             '@media (max-width:768px)': {
               px: 2,

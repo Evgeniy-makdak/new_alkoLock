@@ -1,0 +1,375 @@
+.composeModalSize {
+  /* Размер задаётся через Popup dragResize; класс оставлен для совместимости. */
+  max-width: calc(100vw - 24px);
+
+  @media (max-width: 900px) {
+    min-width: 0;
+    width: calc(100vw - 16px);
+  }
+}
+
+.composeModalPaper {
+  max-height: calc(100vh - 24px);
+  display: flex;
+  flex-direction: column;
+}
+
+.composeModalContent {
+  overflow: visible !important;
+  flex: 0 1 auto;
+}
+
+.composeBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  overflow: visible;
+}
+
+.composeTopRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 20px;
+  overflow: visible;
+  padding-top: 4px;
+}
+
+.composeNameField {
+  flex: 1 1 280px;
+  min-width: 200px;
+  max-width: 420px;
+}
+
+.composeEntityField {
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.composeMainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px 20px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+  }
+}
+
+.composeTopSlot {
+  grid-column: 1 / -1;
+}
+
+.composeFiltersSlot {
+  grid-column: 1;
+  grid-row: 2;
+  min-width: 0;
+  overflow: visible;
+
+  @media (max-width: 900px) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.composeColumnsSlot {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+
+  @media (max-width: 900px) {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+.formRootDisplayContents {
+  display: contents;
+}
+
+.composeSection {
+  min-width: 0;
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sectionHeadMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sectionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.sectionIconRose {
+  color: #e53935;
+  background: rgba(229, 57, 53, 0.12);
+}
+
+.sectionIconViolet {
+  color: #8e24aa;
+  background: rgba(142, 36, 170, 0.12);
+}
+
+.sectionIconBlue {
+  color: #1e88e5;
+  background: rgba(30, 136, 229, 0.12);
+}
+
+.sectionIconAmber {
+  color: #f57c00;
+  background: rgba(245, 124, 0, 0.12);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--mui-palette-text-primary, #212121);
+}
+
+.sectionAction {
+  flex-shrink: 0;
+}
+
+.sectionBody {
+  min-width: 0;
+  overflow: visible;
+}
+
+.formRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.filterGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterGroup {
+  padding: 12px 12px 10px;
+  border: 1px solid var(--mui-palette-divider, #e8e8e8);
+  border-radius: 10px;
+  background: #{'var(--mui-palette-background.default, #fafafa)'};
+  overflow: visible;
+}
+
+.filterGroupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.filterGroupLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mui-palette-text-secondary, #666);
+}
+
+.logicHint {
+  font-size: 12px;
+  color: var(--mui-palette-text-secondary, #757575);
+  margin: 0 0 4px;
+}
+
+.addGroupLink {
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--mui-palette-primary-main, #1976d2);
+  border: none;
+  background: none;
+  padding: 4px 0;
+  text-align: left;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.modalFilterRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap !important;
+  align-content: center !important;
+  gap: 8px;
+  align-items: flex-end;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-top: 2px;
+
+  :global(.MuiAutocomplete-root),
+  :global([class*='searchSelect']) {
+    flex: 0 0 auto;
+    min-width: 132px !important;
+    max-width: 188px !important;
+    width: auto !important;
+    overflow: visible;
+  }
+
+  :global(.MuiFormControl-root) {
+    overflow: visible;
+  }
+
+  > *:not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+    flex: 0 0 auto !important;
+    min-width: 132px !important;
+    max-width: 188px !important;
+  }
+
+  :global([class*='reportFilterNestedEntity']) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  :global(.reportFilterDateTimeRoot),
+  :global(.reportFilterDateTimeRootRange) {
+    flex: 0 0 auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  :global(.reportFilterDateTimeRoot),
+  :global(.reportFilterDateTimeRootRange),
+  :global(.reportFilterDateTimePairFields) {
+    align-items: flex-end;
+  }
+
+  :global(.reportFilterRowActions) {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    align-self: center;
+  }
+}
+
+.transferRoot {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: stretch;
+  min-height: 168px;
+}
+
+.transferPanel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.transferPanelTitle {
+  display: block;
+  font-weight: 600;
+  color: var(--mui-palette-text-secondary, #666);
+  margin-bottom: 4px;
+  padding: 0 2px;
+}
+
+.transferListBox {
+  flex: 1;
+  min-height: 140px;
+  max-height: 140px;
+  overflow-y: auto;
+  border: 1px solid var(--mui-palette-divider, #e0e0e0);
+  border-radius: 8px;
+  background: #{'var(--mui-palette-background.paper, #fff)'};
+}
+
+.transferList {
+  padding: 2px 0;
+}
+
+.transferListItem {
+  min-height: 36px;
+  border-radius: 4px;
+}
+
+.transferListItemButton {
+  min-height: 36px !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  padding-right: 40px !important;
+}
+
+.transferListCheckbox {
+  min-width: 36px !important;
+}
+
+.transferActions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding-top: 18px;
+}
+
+.transferHint {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--mui-palette-text-secondary, #888);
+}
+
+:global(html[data-theme='dark']) {
+  .filterGroup {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .sectionIconRose {
+    background: rgba(229, 57, 53, 0.2);
+  }
+
+  .sectionIconViolet {
+    background: rgba(142, 36, 170, 0.2);
+  }
+
+  .sectionIconBlue {
+    background: rgba(30, 136, 229, 0.2);
+  }
+
+  .sectionIconAmber {
+    background: rgba(245, 124, 0, 0.2);
+  }
+}

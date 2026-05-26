@@ -72,3 +72,53 @@
     }
   }
 }
+
+.interactivePaper {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.interacting {
+  user-select: none;
+
+  * {
+    user-select: none;
+  }
+}
+
+.dragTitle {
+  cursor: move;
+  touch-action: none;
+}
+
+.resizeHandle {
+  position: absolute;
+  z-index: 30;
+  touch-action: none;
+  box-sizing: border-box;
+}
+
+.resizeN {
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 8px;
+  cursor: ns-resize;
+}
+
+.resizeW {
+  left: 0;
+  top: 16px;
+  bottom: 16px;
+  width: 8px;
+  cursor: ew-resize;
+}
+
+.resizeNw {
+  top: 0;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  cursor: nwse-resize;
+}

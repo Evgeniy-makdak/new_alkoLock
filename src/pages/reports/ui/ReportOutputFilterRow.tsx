@@ -13,6 +13,7 @@ import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
+  reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
@@ -36,10 +37,13 @@ import { ReportFieldFilterControl } from './ReportFieldFilterControl';
 import { ReportNestedEntityFilterControl } from './ReportNestedEntityFilterControl';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
+import composeStyles from './ReportComposeModal.module.scss';
 import pageStyles from './Reports.module.scss';
 
 type ReportOutputFilterRowProps = {
   row: ReportOutputRow;
+  /** modal — все контролы строки видны сразу (без пошагового раскрытия). */
+  variant?: 'inline' | 'modal';
   isPrimaryRow: boolean;
   metadata: ReportEntityMetadata;
   outputFieldOptions: Values;
@@ -59,6 +63,7 @@ type ReportOutputFilterRowProps = {
 
 export function ReportOutputFilterRow({
   row,
+  variant = 'inline',
   isPrimaryRow,
   metadata,
   outputFieldOptions,
@@ -162,101 +167,137 @@ export function ReportOutputFilterRow({
 
   const rowComplete = isReportOutputRowComplete(row, fieldMap, tableFieldsMetadata, metadata);
   const canShowAddButton = showAddButton && rowComplete;
+  const isModalVariant = variant === 'modal';
+  const showOperationAndFunction = isModalVariant
+    ? Boolean(primaryField)
+    : outputControlsReady;
+
+  const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
+  const selectCompact = isModalVariant;
+
+  const operationFunctionBlock =
+    primaryField && showOperationAndFunction ? (
+      <>
+        <ReportSearchMultipleSelect
+          multiple={false}
+          compact={selectCompact}
+          name={operationKey}
+          label={t('reports.filterOperationLabel')}
+          values={operationOptions}
+          value={row.filterSelections[operationKey] ?? []}
+          serverFilter={false}
+          isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
+          sx={selectSx}
+          slotProps={reportFilterAutocompleteSlotProps}
+          setValueStore={(_, value) =>
+            onFilterChange(operationKey, toValuesFromSingleSelect(value))
+          }
+        />
+        <ReportSearchMultipleSelect
+          multiple={false}
+          compact={selectCompact}
+          name={functionKey}
+          label={t('reports.filterFunctionLabel')}
+          values={functionOptions}
+          value={row.filterSelections[functionKey] ?? []}
+          serverFilter={false}
+          isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
+          sx={selectSx}
+          slotProps={reportFilterAutocompleteSlotProps}
+          setValueStore={(_, value) =>
+            onFilterChange(functionKey, toValuesFromSingleSelect(value))
+          }
+        />
+      </>
+    ) : null;
+
+  const valueFilterBlock = primaryField ? (
+    <>
+      {refEntity ? (
+        <ReportNestedEntityFilterControl
+          compact={selectCompact}
+          field={primaryField}
+          referenceEntity={refEntity}
+          tableFieldsMetadata={tableFieldsMetadata}
+          tableFieldsMetadataLoading={tableFieldsMetadataLoading}
+          records={refRecords}
+          recordsLoading={referenceRecordsLoading}
+          labelMaps={vehicleLabelMaps}
+          state={
+            row.nestedEntityFilterByField[primaryField.fieldName] ?? {
+              attribute: null,
+              values: [],
+            }
+          }
+          onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
+          filterOperationCode={filterOperationCode}
+        />
+      ) : primaryField.filterable ? (
+        <ReportFieldFilterControl
+          compact={selectCompact}
+          field={primaryField}
+          metadata={metadata}
+          value={row.filterSelections[primaryField.fieldName] ?? []}
+          referenceOptionsCache={{}}
+          filterOperationCode={filterOperationCode}
+          onChange={(values) => onFilterChange(primaryField.fieldName, values)}
+          onReferenceOptionsLoaded={onReferenceOptionsLoaded}
+        />
+      ) : null}
+    </>
+  ) : null;
+
+  const rowClassName = [
+    pageStyles.reportFilterOutputRowInner,
+    isModalVariant ? composeStyles.modalFilterRow : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={pageStyles.reportFilterOutputRowInner}>
+    <div className={rowClassName}>
       <ReportSearchMultipleSelect
         multiple={false}
+        compact={selectCompact}
         name={`selectedField_${row.id}`}
         label={t('reports.outputFieldsLabel')}
         values={outputFieldOptions}
         value={selectedOutputSingle}
         serverFilter={false}
-        sx={reportFilterControlSx}
+        sx={selectSx}
         slotProps={reportFilterAutocompleteSlotProps}
         setValueStore={(_, value) => onOutputFieldChange(toValuesFromSingleSelect(value))}
       />
 
-      {primaryField ? (
+      {isModalVariant ? (
         <>
-          {refEntity ? (
-            <ReportNestedEntityFilterControl
-              field={primaryField}
-              referenceEntity={refEntity}
-              tableFieldsMetadata={tableFieldsMetadata}
-              tableFieldsMetadataLoading={tableFieldsMetadataLoading}
-              records={refRecords}
-              recordsLoading={referenceRecordsLoading}
-              labelMaps={vehicleLabelMaps}
-              state={
-                row.nestedEntityFilterByField[primaryField.fieldName] ?? {
-                  attribute: null,
-                  values: [],
-                }
-              }
-              onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
-              filterOperationCode={filterOperationCode}
-            />
-          ) : primaryField.filterable ? (
-            <ReportFieldFilterControl
-              field={primaryField}
-              metadata={metadata}
-              value={row.filterSelections[primaryField.fieldName] ?? []}
-              referenceOptionsCache={{}}
-              filterOperationCode={filterOperationCode}
-              onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-              onReferenceOptionsLoaded={onReferenceOptionsLoaded}
-            />
-          ) : null}
-
-          {outputControlsReady ? (
-            <>
-              <ReportSearchMultipleSelect
-                multiple={false}
-                name={operationKey}
-                label={t('reports.filterOperationLabel')}
-                values={operationOptions}
-                value={row.filterSelections[operationKey] ?? []}
-                serverFilter={false}
-                isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
-                sx={reportFilterControlSx}
-                slotProps={reportFilterAutocompleteSlotProps}
-                setValueStore={(_, value) =>
-                  onFilterChange(operationKey, toValuesFromSingleSelect(value))
-                }
-              />
-              <ReportSearchMultipleSelect
-                multiple={false}
-                name={functionKey}
-                label={t('reports.filterFunctionLabel')}
-                values={functionOptions}
-                value={row.filterSelections[functionKey] ?? []}
-                serverFilter={false}
-                isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
-                sx={reportFilterControlSx}
-                slotProps={reportFilterAutocompleteSlotProps}
-                setValueStore={(_, value) =>
-                  onFilterChange(functionKey, toValuesFromSingleSelect(value))
-                }
-              />
-            </>
-          ) : null}
+          {operationFunctionBlock}
+          {valueFilterBlock}
         </>
-      ) : null}
+      ) : (
+        <>
+          {valueFilterBlock}
+          {operationFunctionBlock}
+        </>
+      )}
 
-      {isPrimaryRow && primaryField && outputControlsReady && groupControls.length > 0
+      {isPrimaryRow &&
+      primaryField &&
+      (isModalVariant ? true : outputControlsReady) &&
+      groupControls.length > 0
         ? groupControls.map((control) => {
             const staticOptions = getStaticOptionsForControl(control.id, metadata);
             return (
               <ReportSearchMultipleSelect
                 key={control.id}
                 multiple
+                compact={selectCompact}
                 name={control.id}
                 label={control.label}
                 values={staticOptions}
                 value={row.filterSelections[control.id] ?? []}
                 serverFilter={false}
-                sx={reportFilterControlSx}
+                sx={selectSx}
                 slotProps={reportFilterAutocompleteSlotProps}
                 setValueStore={(_, value) => onFilterChange(control.id, value as Values)}
               />
@@ -264,7 +305,7 @@ export function ReportOutputFilterRow({
           })
         : null}
 
-      {canShowAddButton || onRemoveRow ? (
+      {canShowAddButton || onRemoveRow != null ? (
         <div className={pageStyles.reportFilterRowActions}>
           {canShowAddButton ? (
             <Tooltip title={t('reports.addOutputRow')}>

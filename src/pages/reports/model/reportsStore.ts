@@ -201,11 +201,11 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
   addOutputRow(logicOperator) {
     const current = get().outputRows;
-    const primary = getPrimaryOutputRowFromList(current);
-    const additional = current.filter((row) => row.id !== primary.id);
     set({
       logicOperator,
-      outputRows: [createAdditionalReportOutputRow(), ...additional, primary],
+      outputRows: current.length
+        ? [...current, createAdditionalReportOutputRow()]
+        : [createDefaultReportOutputRow()],
     });
   },
 

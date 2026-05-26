@@ -435,6 +435,7 @@ export function SearchMultipleSelect<T>({
   placeholder,
   mobileModalPicker,
   sx,
+  size,
   ...rest
 }: SearchMultipleSelectProps<T>) {
   const { t } = useTranslation();
@@ -511,6 +512,7 @@ export function SearchMultipleSelect<T>({
       <TextField
         helperText={helperText}
         {...prop}
+        size={size}
         label={displayLabel}
         error={error}
         disabled={disabled}
@@ -622,6 +624,7 @@ export function SearchMultipleSelect<T>({
     <div className={style.searchSelect}>
       <Autocomplete
         {...rest}
+        size={size}
         sx={sx}
         disabled={disabled}
         slotProps={mergedSlotProps}

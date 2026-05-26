@@ -6,6 +6,54 @@ import type {
   ReportOutputRow,
 } from '../types/reportApiTypes';
 
+/** Черта между сущностью и полем (как Table.Column в Power BI / SQL). */
+const QUALIFIED_LABEL_SEPARATOR = ' · ';
+
+export type ReportTableFieldOptionDraft = {
+  value: string;
+  baseLabel: string;
+  sourceLabel: string;
+};
+
+function normalizeReportFieldLabelKey(label: string): string {
+  return label.trim().toLocaleLowerCase();
+}
+
+/** «Сущность · поле» — только если одно и то же имя поля встречается у разных источников. */
+export function formatQualifiedReportTableFieldLabel(
+  sourceLabel: string,
+  fieldLabel: string,
+): string {
+  const source = sourceLabel.trim();
+  const field = fieldLabel.trim();
+  if (!source) return field;
+  if (!field) return source;
+  return `${source}${QUALIFIED_LABEL_SEPARATOR}${field}`;
+}
+
+export function disambiguateReportTableFieldOptionLabels(
+  drafts: ReportTableFieldOptionDraft[],
+): Values {
+  const duplicateBaseKeys = new Set<string>();
+  const counts = new Map<string, number>();
+  for (const draft of drafts) {
+    const key = normalizeReportFieldLabelKey(draft.baseLabel);
+    const next = (counts.get(key) ?? 0) + 1;
+    counts.set(key, next);
+    if (next > 1) {
+      duplicateBaseKeys.add(key);
+    }
+  }
+
+  return drafts.map(({ value, baseLabel, sourceLabel }) => {
+    const needsQualifier = duplicateBaseKeys.has(normalizeReportFieldLabelKey(baseLabel));
+    const label = needsQualifier
+      ? formatQualifiedReportTableFieldLabel(sourceLabel, baseLabel)
+      : baseLabel;
+    return { value, label };
+  });
+}
+
 /** DeviceEvent → deviceEvent (префикс полей корневой сущности в selectedFields). */
 export function reportEntityFieldPrefix(entityName: string): string {
   const trimmed = entityName.trim();
@@ -71,8 +119,9 @@ export function mergeAllReportTableFieldOptions(
 
   const rootPrefix = reportEntityFieldPrefix(entityMetadata.entityName);
   const outputFieldNames = collectOutputResultFieldNames(outputRows);
+  const entitySourceLabel = entityMetadata.label?.trim() || entityMetadata.entityName;
   const seen = new Set<string>();
-  const options: Values = [];
+  const drafts: ReportTableFieldOptionDraft[] = [];
 
   for (const f of entityMetadata.fields) {
     if (outputFieldNames.has(f.fieldName)) continue;
@@ -80,7 +129,11 @@ export function mergeAllReportTableFieldOptions(
     const value = prefixedFieldName(rootPrefix, f.fieldName);
     if (seen.has(value)) continue;
     seen.add(value);
-    options.push({ value, label: f.label || f.fieldName });
+    drafts.push({
+      value,
+      baseLabel: f.label || f.fieldName,
+      sourceLabel: entitySourceLabel,
+    });
   }
 
   for (const row of outputRows) {
@@ -92,16 +145,21 @@ export function mergeAllReportTableFieldOptions(
     if (!refEntity || !outputField) continue;
 
     const nestedPrefix = outputField.fieldName;
+    const nestedSourceLabel = outputField.label?.trim() || outputField.fieldName;
     const tableMeta = tableMetadataByRowId[row.id];
     for (const f of tableFieldsForReportTableSelection(tableMeta?.fields ?? [])) {
       const value = prefixedFieldName(nestedPrefix, f.fieldName);
       if (seen.has(value)) continue;
       seen.add(value);
-      options.push({ value, label: f.label || f.fieldName });
+      drafts.push({
+        value,
+        baseLabel: f.label || f.fieldName,
+        sourceLabel: nestedSourceLabel,
+      });
     }
   }
 
-  return options;
+  return disambiguateReportTableFieldOptionLabels(drafts);
 }
 
 
@@ -177,6 +235,22 @@ export function resolveReportColumnLabel(
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
 ): string {
+  if (!entityMetadata) {
+    return columnKey;
+  }
+  const fieldMapLocal = fieldMap.size
+    ? fieldMap
+    : new Map(entityMetadata.fields.map((f) => [f.fieldName, f]));
+  const options = mergeAllReportTableFieldOptions(
+    entityMetadata,
+    outputRows,
+    fieldMapLocal,
+    tableMetadataByRowId,
+  );
+  const match = options.find((o) => String(o.value) === columnKey);
+  if (match?.label) {
+    return match.label;
+  }
   return (
     findReportFieldDefForColumnKey(
       columnKey,

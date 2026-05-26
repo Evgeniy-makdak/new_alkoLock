@@ -129,12 +129,15 @@ export function ReportDateTimeFilterField({
   const isRange = isReportDateTimeBetweenOperation(operationCode);
 
   const commitAt = (index: number, iso: string | null) => {
-    const next: Values = [...value];
-    if (iso) {
-      next[index] = { value: iso, label: formatDateTimeDisplay(dayjs(iso)) };
-    } else {
-      next.splice(index, 1);
-    }
+    const makeEntry = (isoValue: string) => ({
+      value: isoValue,
+      label: formatDateTimeDisplay(dayjs(isoValue)),
+    });
+    const slot0 = index === 0 ? (iso ? makeEntry(iso) : undefined) : value[0];
+    const slot1 = index === 1 ? (iso ? makeEntry(iso) : undefined) : value[1];
+    const next: Values = [];
+    if (slot0) next[0] = slot0;
+    if (slot1) next[1] = slot1;
     onChange(next);
   };
 

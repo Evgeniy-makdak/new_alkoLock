@@ -51,6 +51,15 @@
   padding: 0 var(--table-page-content-inset-inline, 16px) 8px;
 }
 
+.mobileCreateBar {
+  flex-shrink: 0;
+  padding: 0 var(--table-page-content-inset-inline, 16px) 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
 .filtersBarInner {
   width: 100%;
 

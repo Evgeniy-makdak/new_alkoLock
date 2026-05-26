@@ -19,6 +19,7 @@ import {
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
+  reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import type { ReportEntityMetadata, ReportFieldDefinition } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -36,6 +37,7 @@ type ReportFieldFilterControlProps = {
   onChange: (values: Values) => void;
   onReferenceOptionsLoaded: (cacheKey: string, options: Values) => void;
   filterOperationCode?: string | null;
+  compact?: boolean;
 };
 
 export function ReportFieldFilterControl({
@@ -46,7 +48,9 @@ export function ReportFieldFilterControl({
   onChange,
   onReferenceOptionsLoaded,
   filterOperationCode,
+  compact = false,
 }: ReportFieldFilterControlProps) {
+  const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
   const { t } = useTranslation();
   const label = field.label || field.fieldName;
 
@@ -71,7 +75,7 @@ export function ReportFieldFilterControl({
         placeholder={t('reports.timePlaceholder')}
         invalid={invalid}
         errorMessage={t('reports.timeFormatError')}
-        sx={reportFilterControlSx}
+        sx={controlSx}
         onChange={(raw) => {
           const formatted = formatReportTimeInput(raw);
           onChange(formatted ? [{ value: formatted, label: formatted }] : []);
@@ -108,12 +112,13 @@ export function ReportFieldFilterControl({
   return (
     <ReportSearchMultipleSelect
       multiple
+      compact={compact}
       name={controlId}
       label={label}
       values={options}
       value={value}
       serverFilter={false}
-      sx={reportFilterControlSx}
+      sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
       isLoading={Boolean(field.referenceEntity) && !staticOptions.length && !referenceOptionsCache[cacheKey]}
       onOpen={() => {

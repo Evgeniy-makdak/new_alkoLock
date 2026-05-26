@@ -18,6 +18,7 @@ import { buildReferenceEntityPropertyOptions } from '@pages/reports/lib/reportRe
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
+  reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import type {
@@ -44,6 +45,7 @@ type ReportNestedEntityFilterControlProps = {
   state: ReportNestedEntityFilterState;
   onChange: (patch: Partial<ReportNestedEntityFilterState>) => void;
   filterOperationCode?: string | null;
+  compact?: boolean;
 };
 
 function mergeOptionsWithSelected(options: Values, selected: Values): Values {
@@ -71,8 +73,10 @@ export function ReportNestedEntityFilterControl({
   state,
   onChange,
   filterOperationCode,
+  compact = false,
 }: ReportNestedEntityFilterControlProps) {
   const { t } = useTranslation();
+  const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
   const [searchQuery, setSearchQuery] = useState('');
 
   const attributeField = useMemo(
@@ -225,6 +229,7 @@ export function ReportNestedEntityFilterControl({
     <Box className={pageStyles.reportFilterNestedEntity}>
       <ReportSearchMultipleSelect
         multiple={false}
+        compact={compact}
         name={`${field.fieldName}__property`}
         label={t('reports.entityPropertyLabel')}
         placeholder={t('reports.entityPropertyPlaceholder')}
@@ -232,7 +237,7 @@ export function ReportNestedEntityFilterControl({
         value={selectedProperty}
         serverFilter={false}
         isLoading={tableFieldsMetadataLoading}
-        sx={reportFilterControlSx}
+        sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
         setValueStore={(_, next) => {
           const picked = toValuesFromSingleSelect(next)[0];
@@ -255,6 +260,7 @@ export function ReportNestedEntityFilterControl({
       ) : state.attribute ? (
         <ReportSearchMultipleSelect
           multiple
+          compact={compact}
           name={`${field.fieldName}__terminalValues`}
           label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
           values={displayValueOptions}
@@ -263,7 +269,7 @@ export function ReportNestedEntityFilterControl({
           isLoading={
             valueOptionsLoading || (useServerFilter && !attributeField && tableFieldsMetadataLoading)
           }
-          sx={reportFilterControlSx}
+          sx={controlSx}
           slotProps={reportFilterAutocompleteSlotProps}
           onInputChange={useServerFilter ? setSearchQuery : undefined}
           setValueStore={(_, next) => onChange({ values: next as Values })}

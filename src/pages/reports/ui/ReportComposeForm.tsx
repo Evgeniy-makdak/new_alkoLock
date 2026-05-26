@@ -1,32 +1,32 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material';
+import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
+import { Alert, Autocomplete, CircularProgress, TextField, Typography } from '@mui/material';
 
-import { FilterPanel } from '@entities/filter_panel';
 import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
-import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
-import { reportsStore } from '@pages/reports/model/reportsStore';
-import { appStore } from '@shared/model/app_store/AppStore';
-import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
-import type { Values } from '@shared/ui/search_multiple_select';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { reportsStore } from '@pages/reports/model/reportsStore';
+import { appStore } from '@shared/model/app_store/AppStore';
+import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
+import type { Values } from '@shared/ui/search_multiple_select';
 
-import pageStyles from './Reports.module.scss';
+import composeStyles from './ReportComposeModal.module.scss';
 
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
+import { ReportComposeSection } from './ReportComposeSection';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 
-type ReportsDynamicFiltersProps = {
-  layout?: 'default' | 'stacked';
-  className?: string;
+export type ReportComposeFormProps = {
+  reportName: string;
+  onReportNameChange: (name: string) => void;
 };
 
-export function ReportsDynamicFilters({ layout = 'default', className }: ReportsDynamicFiltersProps) {
+export function ReportComposeForm({ reportName, onReportNameChange }: ReportComposeFormProps) {
   const { t } = useTranslation();
   const [addVariantDialogOpen, setAddVariantDialogOpen] = useState(false);
 
@@ -39,6 +39,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const metadataError = reportsStore((s) => s.metadataError);
   const filterControls = reportsStore((s) => s.filterControls);
   const outputRows = reportsStore((s) => s.outputRows);
+  const logicOperator = reportsStore((s) => s.logicOperator);
   const referenceRecordsCache = reportsStore((s) => s.referenceRecordsCache);
   const referenceRecordsLoading = reportsStore((s) => s.referenceRecordsLoading);
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
@@ -122,8 +123,8 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   );
 
   const handleConfirmAddVariant = useCallback(
-    (logicOperator: ReportLogicOperator) => {
-      addOutputRow(logicOperator);
+    (nextLogicOperator: ReportLogicOperator) => {
+      addOutputRow(nextLogicOperator);
     },
     [addOutputRow],
   );
@@ -131,12 +132,16 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
 
+  const logicHintKey =
+    logicOperator === 'and' ? 'reports.composeLogicAndHint' : 'reports.composeLogicOrHint';
+
   const renderEntityAutocomplete = () => (
     <Autocomplete
-      sx={reportFilterControlSx}
+      sx={{ ...reportFilterControlSx, width: '100%', maxWidth: '100%' }}
       slotProps={reportFilterAutocompleteSlotProps}
       options={entities}
       loading={entitiesLoading}
+      size="small"
       value={selectedEntity}
       getOptionLabel={(o) => o.label || o.entityName}
       isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
@@ -150,6 +155,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
       renderInput={(params) => (
         <TextField
           {...params}
+          size="small"
           label={t('reports.entityLabel')}
           placeholder={t('reports.entityPlaceholder')}
           InputProps={{
@@ -175,6 +181,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     <ReportOutputFilterRow
       key={row.id}
       row={row}
+      variant="modal"
       isPrimaryRow={options.isPrimaryRow}
       metadata={metadata!}
       outputFieldOptions={outputFieldOptions}
@@ -195,73 +202,86 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     />
   );
 
-  const useStackedLayout = layout === 'stacked';
-
-  const rootClassName = [
-    className,
-    useStackedLayout ? pageStyles.filtersBarInnerStacked : pageStyles.filtersBarInner,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <div className={rootClassName || undefined}>
+    <>
       {entitiesError ? (
-        <Alert severity="error" sx={{ mb: 1, width: '100%' }}>
+        <Alert severity="error" sx={{ width: '100%', gridColumn: '1 / -1' }}>
           {entitiesError}
         </Alert>
       ) : null}
 
-      <FilterPanel>
+      <div className={composeStyles.composeTopSlot}>
+        <div className={composeStyles.composeTopRow}>
+          <TextField
+            className={composeStyles.composeNameField}
+            size="small"
+            label={t('reports.composeReportNameLabel')}
+            placeholder={t('reports.composeReportNamePlaceholder')}
+            value={reportName}
+            onChange={(e) => onReportNameChange(e.target.value)}
+          />
+          <div className={composeStyles.composeEntityField}>{renderEntityAutocomplete()}</div>
+        </div>
+      </div>
+
+      <div className={composeStyles.composeFiltersSlot}>
         {metadataError ? (
-          <Alert severity="error" sx={{ width: '100%' }}>
+          <Alert severity="error" sx={{ width: '100%', mb: 1 }}>
             {metadataError}
           </Alert>
         ) : null}
 
-        {outputRows.map((row, index) => {
-          const isFirstRow = index === 0;
-          const isLastRow = index === outputRows.length - 1;
-          const rowTableMetadata = reportsStore.getState().reportTableFieldsMetadataByRowId[row.id] ?? null;
-          const rowComplete = isReportOutputRowComplete(row, fieldMap, rowTableMetadata, metadata);
+        {showOutputRow ? (
+        <ReportComposeSection
+          icon={FilterAltOutlinedIcon}
+          iconTone="rose"
+          title={t('reports.composeSectionFilters')}
+          action={
+            <button
+              type="button"
+              className={composeStyles.addGroupLink}
+              onClick={() => setAddVariantDialogOpen(true)}>
+              {t('reports.composeAddFilterGroup')}
+            </button>
+          }>
+          {outputRows.length > 1 ? (
+            <p className={composeStyles.logicHint}>{t(logicHintKey)}</p>
+          ) : null}
 
-          if (isFirstRow) {
-            return (
-              <div key={row.id} className={pageStyles.reportFilterRowPrimary}>
-                {renderEntityAutocomplete()}
-                {showOutputRow
-                  ? renderOutputRow(row, {
-                      isPrimaryRow: true,
-                      showAddButton: isLastRow,
-                      showRemoveButton: false,
-                    })
-                  : null}
-              </div>
-            );
-          }
+          <div className={composeStyles.filterGroups}>
+            {outputRows.map((row, index) => {
+              const isFirstRow = index === 0;
+              const isLastRow = index === outputRows.length - 1;
 
-          if (!showOutputRow) {
-            return null;
-          }
-
-          return (
-            <div key={row.id} className={pageStyles.reportFilterOutputRow}>
-              <div className={pageStyles.reportFilterRowEntitySpacer} aria-hidden />
-              {renderOutputRow(row, {
-                isPrimaryRow: false,
-                showAddButton: isLastRow,
-                showRemoveButton: true,
-              })}
-            </div>
-          );
-        })}
-      </FilterPanel>
+              return (
+                <div key={row.id} className={composeStyles.filterGroup}>
+                  <div className={composeStyles.filterGroupHead}>
+                    <span className={composeStyles.filterGroupLabel}>
+                      {t('reports.composeFilterGroup', { number: index + 1 })}
+                    </span>
+                  </div>
+                  {renderOutputRow(row, {
+                    isPrimaryRow: isFirstRow,
+                    showAddButton: isLastRow,
+                    showRemoveButton: !isFirstRow,
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </ReportComposeSection>
+        ) : selectedEntityName && metadataLoading ? (
+          <Typography variant="body2" color="text.secondary">
+            {t('reports.composeLoadingMetadata')}
+          </Typography>
+        ) : null}
+      </div>
 
       <ReportAddVariantDialog
         open={addVariantDialogOpen}
         onClose={() => setAddVariantDialogOpen(false)}
         onConfirm={handleConfirmAddVariant}
       />
-    </div>
+    </>
   );
 }

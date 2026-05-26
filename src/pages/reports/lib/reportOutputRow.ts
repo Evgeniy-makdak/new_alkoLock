@@ -37,12 +37,12 @@ export function isGroupFilterControlId(controlId: string): boolean {
   return controlId.startsWith('__group_');
 }
 
-/** Нижняя строка в UI: сущность, «+», общие фильтры сущности (тип события и т.д.). */
+/** Первая строка: «Группа фильтров №1», общие фильтры сущности (тип события и т.д.). */
 export function getPrimaryOutputRowFromList(rows: ReportOutputRow[]): ReportOutputRow {
   if (!rows.length) {
     return createDefaultReportOutputRow();
   }
-  return rows[rows.length - 1];
+  return rows[0];
 }
 
 export function getAdditionalOutputRows(rows: ReportOutputRow[]): ReportOutputRow[] {
