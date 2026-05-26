@@ -32,6 +32,7 @@ import { useTheme } from '@mui/material/styles';
 
 import { debounce } from '@shared/lib/debounce';
 import { Button, ButtonsType } from '@shared/ui/button';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import style from './SearchMultipleSelect.module.scss';
 import {
@@ -63,6 +64,8 @@ export type SearchMultipleSelectProps<T> = {
   serverFilter?: boolean;
   allowCustomEvents?: boolean;
   getTooltipTitle?: (value: string) => string;
+  /** Tooltip с полным текстом, если значение обрезано в узком поле. */
+  overflowTooltip?: boolean;
   /** Мобильный режим: список типов в модальном окне с чекбоксами (только при multiple). */
   mobileModalPicker?: boolean;
 } & Partial<
@@ -430,6 +433,7 @@ export function SearchMultipleSelect<T>({
   onInputChange,
   serverFilter = true,
   getTooltipTitle,
+  overflowTooltip = false,
   slotProps: userSlotProps,
   disabled,
   placeholder,
@@ -496,18 +500,39 @@ export function SearchMultipleSelect<T>({
       inputProps: {
         ...params.inputProps,
         'data-testid': testid,
+        style: {
+          ...(params.inputProps?.style as React.CSSProperties | undefined),
+          ...(overflowTooltip
+            ? {
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }
+            : {}),
+        },
       },
     };
     const hasValue = (value && value.length > 0) || !!inputState;
     // Пустая строка label у OutlinedInput оставляет «вырез» в рамке — пропадает верхняя граница (иногда нестабильно из‑за legend)
     const displayLabel = typeof label === 'string' && label.trim() !== '' ? label : undefined;
     const inputPropsNoLabel = displayLabel === undefined ? { notched: false as const } : {};
-    // Иначе не сжатый label перекрывает поле и placeholder не показывается (виден только текст label).
+    // Сжимаем label только при фокусе или значении — иначе длинный label вылезает за рамку узкого поля.
     const shrinkLabel =
       focused ||
       !!hasValue ||
       displayLabel === undefined ||
       !!(disabled && placeholder && String(placeholder).trim() !== '');
+    const modalLabelEllipsisSx =
+      overflowTooltip && displayLabel
+        ? {
+            '& .MuiInputLabel-root': {
+              maxWidth: 'calc(100% - 14px)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            },
+          }
+        : {};
     return (
       <TextField
         helperText={helperText}
@@ -520,6 +545,7 @@ export function SearchMultipleSelect<T>({
         sx={
           disabled
             ? (theme) => ({
+                ...modalLabelEllipsisSx,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: theme.palette.action.hover,
                   cursor: 'not-allowed',
@@ -529,7 +555,7 @@ export function SearchMultipleSelect<T>({
                   opacity: 1,
                 },
               })
-            : undefined
+            : modalLabelEllipsisSx
         }
         InputProps={{
           ...prop.InputProps,
@@ -545,26 +571,43 @@ export function SearchMultipleSelect<T>({
   const renderTags = (value: Value[], getTagProps: any) => {
     return value.map((option, index) => {
       const { key: tagKey, ...tagProps } = getTagProps({ index });
+      const chipTitle = getTooltipTitle ? getTooltipTitle(option.label) : option.label;
+      const chip = (
+        <Chip
+          key={tagKey}
+          label={option.label}
+          {...tagProps}
+          sx={{
+            maxWidth: '100%',
+            '& .MuiChip-label': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            },
+          }}
+        />
+      );
+
+      if (overflowTooltip) {
+        return (
+          <OverflowTooltip key={option.value} title={chipTitle}>
+            <span className={style.chipWrapper}>{chip}</span>
+          </OverflowTooltip>
+        );
+      }
+
+      if (getTooltipTitle) {
+        return (
+          <Tooltip key={option.value} title={chipTitle}>
+            <span className={style.chipWrapper}>{chip}</span>
+          </Tooltip>
+        );
+      }
+
       return (
-        <Tooltip
-          key={option.value}
-          title={getTooltipTitle ? getTooltipTitle(option.label) : option.label}>
-          <span className={style.chipWrapper}>
-            <Chip
-              key={tagKey}
-              label={option.label}
-              {...tagProps}
-              sx={{
-                maxWidth: '100%',
-                '& .MuiChip-label': {
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                },
-              }}
-            />
-          </span>
-        </Tooltip>
+        <span key={option.value} className={style.chipWrapper}>
+          {chip}
+        </span>
       );
     });
   };
@@ -611,6 +654,11 @@ export function SearchMultipleSelect<T>({
 
   const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
 
+  const singleOverflowTitle =
+    !multiple && readyValue && typeof readyValue === 'object' && 'label' in readyValue
+      ? String(readyValue.label ?? '')
+      : '';
+
   const mergedSlotProps = {
     ...userSlotProps,
     clearIndicator: {
@@ -620,7 +668,7 @@ export function SearchMultipleSelect<T>({
     },
   };
 
-  return (
+  const autocompleteNode = (
     <div className={style.searchSelect}>
       <Autocomplete
         {...rest}
@@ -636,7 +684,7 @@ export function SearchMultipleSelect<T>({
           }
           return String(option || '');
         }}
-        renderTags={getTooltipTitle ? renderTags : undefined}
+        renderTags={overflowTooltip || getTooltipTitle ? renderTags : undefined}
         inputValue={inputState || ''}
         multiple={multiple}
         onChange={onChange}
@@ -655,4 +703,10 @@ export function SearchMultipleSelect<T>({
       />
     </div>
   );
+
+  if (overflowTooltip && !multiple && singleOverflowTitle) {
+    return <OverflowTooltip title={singleOverflowTitle}>{autocompleteNode}</OverflowTooltip>;
+  }
+
+  return autocompleteNode;
 }

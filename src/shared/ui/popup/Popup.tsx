@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
 import {
+  Box,
   Dialog,
   DialogActions,
   DialogContent,
@@ -79,15 +80,14 @@ export const Popup = ({
 
   const paperPositionSx = dragResizeEnabled
     ? {
-        position: 'fixed' as const,
         top: geometry.y,
         left: geometry.x,
         width: geometry.w,
         height: geometry.h,
         minWidth: dragResize?.minWidth ?? 560,
         maxWidth: 'none',
-        margin: 0,
-        transform: 'none',
+        bottom: 'auto',
+        right: 'auto',
       }
     : {};
 
@@ -107,8 +107,11 @@ export const Popup = ({
         dragResizeEnabled
           ? {
               '& .MuiDialog-container': {
-                alignItems: 'flex-start',
-                justifyContent: 'flex-start',
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              '& .MuiDialog-paper': {
+                margin: 0,
               },
             }
           : undefined
@@ -134,10 +137,12 @@ export const Popup = ({
           backgroundImage: 'none',
           bgcolor: 'background.paper',
           color: 'text.primary',
-          position: 'relative',
+          position: dragResizeEnabled ? 'fixed' : 'relative',
           p: 0,
           display: 'flex',
           flexDirection: 'column',
+          margin: dragResizeEnabled ? 0 : undefined,
+          transform: dragResizeEnabled ? 'none' : undefined,
           ...paperPositionSx,
           '@media (max-width:768px)': dragResizeEnabled
             ? undefined
@@ -221,7 +226,7 @@ export const Popup = ({
           px: 3.5,
           pt: headerTitle ? 1 : 3,
           pb: buttons?.length ? 1 : 2,
-          overflow: 'auto',
+          overflow: dragResizeEnabled ? 'visible' : 'auto',
           color: 'text.primary',
           borderTop: 'none',
           borderBottom: 'none',
@@ -229,14 +234,24 @@ export const Popup = ({
           boxShadow: 'none',
           flex: 1,
           minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           '@media (max-width:768px)': {
             px: 2,
             pt: headerTitle ? 0.75 : 1.5,
             pb: 1.25,
-            overflow: dragResizeEnabled ? 'auto' : 'visible',
+            overflow: dragResizeEnabled ? 'visible' : 'visible',
           },
         }}>
-        {body}
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: dragResizeEnabled ? 'auto' : 'visible',
+            pt: dragResizeEnabled ? 0.5 : 0,
+          }}>
+          {body}
+        </Box>
       </DialogContent>
 
       {buttons && buttons.length > 0 ? (

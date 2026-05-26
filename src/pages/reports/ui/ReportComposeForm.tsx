@@ -14,6 +14,7 @@ import { reportsStore } from '@pages/reports/model/reportsStore';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
@@ -135,44 +136,59 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
   const logicHintKey =
     logicOperator === 'and' ? 'reports.composeLogicAndHint' : 'reports.composeLogicOrHint';
 
-  const renderEntityAutocomplete = () => (
-    <Autocomplete
-      sx={{ ...reportFilterControlSx, width: '100%', maxWidth: '100%' }}
-      slotProps={reportFilterAutocompleteSlotProps}
-      options={entities}
-      loading={entitiesLoading}
-      size="small"
-      value={selectedEntity}
-      getOptionLabel={(o) => o.label || o.entityName}
-      isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
-      onChange={(_, value) => {
-        setSelectedEntityName(value?.entityName ?? null);
-        if (value?.entityName) {
-          void loadMetadataForEntity(value.entityName);
-        }
-      }}
-      onOpen={handleEntityOpen}
-      renderInput={(params) => (
-        <TextField
-          {...params}
+  const renderEntityAutocomplete = () => {
+    const entityTitle = selectedEntity?.label || selectedEntity?.entityName || '';
+
+    return (
+      <OverflowTooltip title={entityTitle}>
+        <Autocomplete
+          sx={{ ...reportFilterControlSx, width: '100%', maxWidth: '100%' }}
+          slotProps={reportFilterAutocompleteSlotProps}
+          options={entities}
+          loading={entitiesLoading}
           size="small"
-          label={t('reports.entityLabel')}
-          placeholder={t('reports.entityPlaceholder')}
-          InputProps={{
-            ...params.InputProps,
-            endAdornment: (
-              <>
-                {entitiesLoading || metadataLoading ? (
-                  <CircularProgress color="inherit" size={18} />
-                ) : null}
-                {params.InputProps.endAdornment}
-              </>
-            ),
+          value={selectedEntity}
+          getOptionLabel={(o) => o.label || o.entityName}
+          isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
+          onChange={(_, value) => {
+            setSelectedEntityName(value?.entityName ?? null);
+            if (value?.entityName) {
+              void loadMetadataForEntity(value.entityName);
+            }
           }}
+          onOpen={handleEntityOpen}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              size="small"
+              label={t('reports.entityLabel')}
+              placeholder={t('reports.entityPlaceholder')}
+              inputProps={{
+                ...params.inputProps,
+                style: {
+                  ...(params.inputProps?.style as React.CSSProperties | undefined),
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                },
+              }}
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {entitiesLoading || metadataLoading ? (
+                      <CircularProgress color="inherit" size={18} />
+                    ) : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
         />
-      )}
-    />
-  );
+      </OverflowTooltip>
+    );
+  };
 
   const renderOutputRow = (
     row: (typeof outputRows)[number],

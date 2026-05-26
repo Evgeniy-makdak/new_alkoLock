@@ -207,6 +207,7 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       headerTitle={t('reports.composeModalTitle')}
       toggleModal={handleClose}
       onCloseModal={handleClose}
+      closeonClickSpace={false}
       dragResize={{
         defaultWidth: 1580,
         defaultHeight: Math.min(860, Math.round(window.innerHeight * 0.88)),

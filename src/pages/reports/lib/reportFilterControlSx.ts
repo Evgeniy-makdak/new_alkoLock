@@ -28,13 +28,28 @@ export const reportFilterAutocompleteSlotProps = {
 
 /** Компактные контролы в модалке «Новый отчёт» (как дата/время, size=small). */
 export const reportFilterModalControlSx: SxProps<Theme> = {
-  flex: '0 1 148px',
+  flex: '0 0 188px',
   minWidth: 132,
   maxWidth: 188,
-  width: 'auto',
+  width: 188,
   boxSizing: 'border-box',
+  '& .MuiFormControl-root': {
+    width: '100%',
+    minWidth: 0,
+  },
   '& .MuiInputBase-root': {
     minHeight: 40,
+  },
+  '& .MuiInputLabel-root': {
+    maxWidth: 'calc(100% - 14px)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  '& .MuiInputBase-input': {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
 };
 

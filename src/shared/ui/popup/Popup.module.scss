@@ -76,7 +76,10 @@
 .interactivePaper {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
+  position: fixed !important;
+  margin: 0 !important;
+  transform: none !important;
 }
 
 .interacting {

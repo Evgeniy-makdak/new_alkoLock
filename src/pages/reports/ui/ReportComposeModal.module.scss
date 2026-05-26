@@ -33,7 +33,7 @@
   align-items: flex-end;
   gap: 12px 20px;
   overflow: visible;
-  padding-top: 4px;
+  padding-top: 8px;
 }
 
 .composeNameField {
@@ -172,7 +172,7 @@
 }
 
 .filterGroup {
-  padding: 12px 12px 10px;
+  padding: 16px 12px 10px;
   border: 1px solid var(--mui-palette-divider, #e8e8e8);
   border-radius: 10px;
   background: #{'var(--mui-palette-background.default, #fafafa)'};
@@ -230,19 +230,35 @@
   min-width: 0;
   overflow-x: auto;
   overflow-y: visible;
-  padding-top: 2px;
+  padding-top: 8px;
+
+  :global(.MuiFormControl-root) {
+    flex: 0 0 auto;
+    min-width: 132px !important;
+    max-width: 188px !important;
+    width: 188px !important;
+  }
+
+  :global(.MuiInputLabel-root) {
+    max-width: calc(100% - 14px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.MuiInputBase-input),
+  :global(.MuiAutocomplete-input) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   :global(.MuiAutocomplete-root),
   :global([class*='searchSelect']) {
     flex: 0 0 auto;
     min-width: 132px !important;
     max-width: 188px !important;
-    width: auto !important;
-    overflow: visible;
-  }
-
-  :global(.MuiFormControl-root) {
-    overflow: visible;
+    width: 188px !important;
   }
 
   > *:not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
@@ -300,12 +316,28 @@
   min-height: 0;
 }
 
+.transferPanelHead {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 4px;
+  padding: 0 2px;
+  min-height: 24px;
+}
+
 .transferPanelTitle {
   display: block;
   font-weight: 600;
   color: var(--mui-palette-text-secondary, #666);
   margin-bottom: 4px;
   padding: 0 2px;
+  line-height: 1.3;
+}
+
+.transferPanelHead .transferPanelTitle {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .transferListBox {

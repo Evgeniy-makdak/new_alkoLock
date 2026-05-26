@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 
 export type PopupGeometry = {
   x: number;
@@ -73,7 +73,7 @@ export function usePopupDragResize({
     captureTarget: Element | null;
   } | null>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!enabled || !isOpen) return;
     setGeometry(computeCenteredPopupGeometry(defaultWidth, defaultHeight));
   }, [enabled, isOpen, defaultWidth, defaultHeight]);

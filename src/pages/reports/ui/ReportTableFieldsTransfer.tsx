@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 
 import type { Value, Values } from '@shared/ui/search_multiple_select';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
@@ -73,6 +74,23 @@ function mergeOptionMeta(
     ...option,
     value: key,
     label,
+  };
+}
+
+function listCheckboxSelectionState(
+  itemKeys: string[],
+  selectedKeys: string[],
+): { allChecked: boolean; indeterminate: boolean } {
+  if (!itemKeys.length) {
+    return { allChecked: false, indeterminate: false };
+  }
+  let selectedCount = 0;
+  for (const key of itemKeys) {
+    if (selectedKeys.includes(key)) selectedCount += 1;
+  }
+  return {
+    allChecked: selectedCount === itemKeys.length,
+    indeterminate: selectedCount > 0 && selectedCount < itemKeys.length,
   };
 }
 
@@ -147,6 +165,9 @@ export function ReportTableFieldsTransfer({
       ),
     [value, customLabelsByKey, defaultLabelsByValue, sortLocale],
   );
+
+  const availableKeys = useMemo(() => availableOptions.map(fieldKey), [availableOptions]);
+  const chosenKeysList = useMemo(() => chosenOptions.map(fieldKey), [chosenOptions]);
 
   const optionsKey = useMemo(() => options.map(fieldKey).join('|'), [options]);
 
@@ -320,10 +341,18 @@ export function ReportTableFieldsTransfer({
                   sx={{ flex: 1, minWidth: 0, mr: side === 'chosen' ? 4 : 0 }}
                 />
               ) : (
-                <ListItemText
-                  primary={label}
-                  primaryTypographyProps={{ variant: 'body2', noWrap: true }}
-                />
+                <OverflowTooltip title={label}>
+                  <ListItemText
+                    primary={label}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      noWrap: true,
+                      component: 'span',
+                      sx: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' },
+                    }}
+                    sx={{ minWidth: 0, flex: 1, m: 0 }}
+                  />
+                </OverflowTooltip>
               )}
             </ListItemButton>
           </ListItem>
@@ -336,12 +365,53 @@ export function ReportTableFieldsTransfer({
     setter((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
+  const renderPanelHead = (
+    title: string,
+    itemKeys: string[],
+    selectedKeys: string[],
+    setSelectedKeys: Dispatch<SetStateAction<string[]>>,
+  ) => {
+    const { allChecked, indeterminate } = listCheckboxSelectionState(itemKeys, selectedKeys);
+
+    return (
+      <div className={composeStyles.transferPanelHead}>
+        <Checkbox
+          size="small"
+          disabled={disabled || !itemKeys.length}
+          checked={allChecked}
+          indeterminate={indeterminate}
+          onChange={() => {
+            if (allChecked) {
+              setSelectedKeys([]);
+              return;
+            }
+            setSelectedKeys([...itemKeys]);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          inputProps={{
+            'aria-label': `${title}: ${t('reports.tableFieldsSelectAll')}`,
+          }}
+          sx={{ p: 0.25, flexShrink: 0 }}
+        />
+        <Typography
+          variant="caption"
+          component="span"
+          className={composeStyles.transferPanelTitle}>
+          {title}
+        </Typography>
+      </div>
+    );
+  };
+
   return (
     <div className={composeStyles.transferRoot}>
       <div className={composeStyles.transferPanel}>
-        <Typography variant="caption" className={composeStyles.transferPanelTitle}>
-          {t('reports.composeTransferAvailable')}
-        </Typography>
+        {renderPanelHead(
+          t('reports.composeTransferAvailable'),
+          availableKeys,
+          availableSelected,
+          setAvailableSelected,
+        )}
         <Box className={composeStyles.transferListBox}>
           {renderList(availableOptions, availableSelected, (key) => toggleInList(key, setAvailableSelected), 'available')}
         </Box>
@@ -371,9 +441,12 @@ export function ReportTableFieldsTransfer({
       </div>
 
       <div className={composeStyles.transferPanel}>
-        <Typography variant="caption" className={composeStyles.transferPanelTitle}>
-          {t('reports.composeTransferSelected')}
-        </Typography>
+        {renderPanelHead(
+          t('reports.composeTransferSelected'),
+          chosenKeysList,
+          chosenSelected,
+          setChosenSelected,
+        )}
         <Box className={composeStyles.transferListBox}>
           {renderList(chosenOptions, chosenSelected, (key) => toggleInList(key, setChosenSelected), 'chosen')}
         </Box>

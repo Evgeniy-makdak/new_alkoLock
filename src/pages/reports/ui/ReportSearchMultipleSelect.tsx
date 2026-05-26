@@ -28,6 +28,7 @@ export function ReportSearchMultipleSelect<T>({
     <SearchMultipleSelect
       {...rest}
       size={size ?? (compact ? 'small' : undefined)}
+      overflowTooltip={compact}
       sx={sx ? ([controlSx, sx] as SearchMultipleSelectProps<T>['sx']) : controlSx}
       onInputChange={onInputChange ?? reportFilterNoopInputChange}
     />
