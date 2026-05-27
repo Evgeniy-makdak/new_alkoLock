@@ -8,21 +8,20 @@ import { executeReportQuery } from '@pages/reports/api/reportsApi';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import { mergeAllReportTableFieldOptions } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
+  type ReportsComposeSnapshot,
   captureReportsComposeSnapshot,
   restoreReportsComposeSnapshot,
-  type ReportsComposeSnapshot,
 } from '@pages/reports/lib/reportsComposeSnapshot';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { getPrimaryReportOutputRow, reportsStore } from '@pages/reports/model/reportsStore';
 import type { ReportQueryRequest } from '@pages/reports/types/reportApiTypes';
 import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
+import popupStyles from '@shared/ui/popup/Popup.module.scss';
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import composeStyles from './ReportComposeModal.module.scss';
-import popupStyles from '@shared/ui/popup/Popup.module.scss';
-
 import { ReportComposeForm } from './ReportComposeForm';
+import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
 
@@ -40,9 +39,7 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const metadata = reportsStore((s) => s.metadata);
   const outputRows = reportsStore((s) => s.outputRows);
-  const reportTableFieldsMetadataByRowId = reportsStore(
-    (s) => s.reportTableFieldsMetadataByRowId,
-  );
+  const reportTableFieldsMetadataByRowId = reportsStore((s) => s.reportTableFieldsMetadataByRowId);
 
   const [reportName, setReportName] = useState('');
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
@@ -92,15 +89,28 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     [tableFieldsDialogOptions],
   );
 
-  /** При смене «Поля результата» / загрузке metadata — все колонки сразу в состав таблицы. */
+  const tableFieldsDialogOptionsRef = useRef(tableFieldsDialogOptions);
+  tableFieldsDialogOptionsRef.current = tableFieldsDialogOptions;
+
+  /** При смене «Поля результата» / загрузке metadata — синхронизируем выбранные колонки.
+   *  Удаляем недоступные, добавляем новые, сохраняем порядок и выбор пользователя. */
   useEffect(() => {
     if (!open) return;
-    if (!tableFieldsDialogOptions.length) {
+    const currentOptions = tableFieldsDialogOptionsRef.current;
+    if (!currentOptions.length) {
       setTableFieldsSelection([]);
       return;
     }
-    setTableFieldsSelection([...tableFieldsDialogOptions]);
-  }, [open, tableFieldsOptionsKey, tableFieldsDialogOptions]);
+    setTableFieldsSelection((prev) => {
+      if (prev.length === 0) return [...currentOptions];
+      const availableKeys = new Set(currentOptions.map((o) => String(o.value)));
+      const filtered = prev.filter((p) => availableKeys.has(String(p.value)));
+      const existingKeys = new Set(filtered.map((p) => String(p.value)));
+      const newOnes = currentOptions.filter((o) => !existingKeys.has(String(o.value)));
+      if (!newOnes.length && filtered.length === prev.length) return prev;
+      return [...filtered, ...newOnes];
+    });
+  }, [open, tableFieldsOptionsKey]);
 
   const loadReportTableFieldsMetadata = reportsStore((s) => s.loadReportTableFieldsMetadata);
 
@@ -148,7 +158,8 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       }
     }
 
-    const { pagination, setQueryContext, setPagination, setSort } = reportGenerationStore.getState();
+    const { pagination, setQueryContext, setPagination, setSort } =
+      reportGenerationStore.getState();
     reportGenerationStore.getState().start();
     setPagination({ page: 0 });
     setSort([]);

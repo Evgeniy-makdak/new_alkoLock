@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -18,8 +26,8 @@ import {
   Typography,
 } from '@mui/material';
 
-import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
+import type { Value, Values } from '@shared/ui/search_multiple_select';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
@@ -44,7 +52,11 @@ function resolveFieldLabel(
   return (customLabels[key] ?? item?.label ?? defaultLabels[key] ?? key).trim() || key;
 }
 
-function fieldDisplayLabel(item: Value, customLabels: Record<string, string>, defaultLabels: Record<string, string>): string {
+function fieldDisplayLabel(
+  item: Value,
+  customLabels: Record<string, string>,
+  defaultLabels: Record<string, string>,
+): string {
   return resolveFieldLabel(fieldKey(item), customLabels, defaultLabels, item);
 }
 
@@ -171,12 +183,15 @@ export function ReportTableFieldsTransfer({
 
   const optionsKey = useMemo(() => options.map(fieldKey).join('|'), [options]);
 
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
   useEffect(() => {
     setAvailableSelected([]);
     setChosenSelected([]);
     setRenamingKey(null);
-    setCustomLabelsByKey((prev) => collectCustomLabelsFromValues(value, prev));
-  }, [optionsKey, value]);
+    setCustomLabelsByKey((prev) => collectCustomLabelsFromValues(valueRef.current, prev));
+  }, [optionsKey]);
 
   const emitChosen = useCallback(
     (next: Values) => {
@@ -202,7 +217,9 @@ export function ReportTableFieldsTransfer({
 
   const moveToChosen = (keys: string[]) => {
     if (!keys.length) return;
-    const next = [...value.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue))];
+    const next = [
+      ...value.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)),
+    ];
     const existing = new Set(next.map(fieldKey));
     for (const key of keys) {
       if (existing.has(key)) continue;
@@ -393,10 +410,7 @@ export function ReportTableFieldsTransfer({
           }}
           sx={{ p: 0.25, flexShrink: 0 }}
         />
-        <Typography
-          variant="caption"
-          component="span"
-          className={composeStyles.transferPanelTitle}>
+        <Typography variant="caption" component="span" className={composeStyles.transferPanelTitle}>
           {title}
         </Typography>
       </div>
@@ -413,7 +427,12 @@ export function ReportTableFieldsTransfer({
           setAvailableSelected,
         )}
         <Box className={composeStyles.transferListBox}>
-          {renderList(availableOptions, availableSelected, (key) => toggleInList(key, setAvailableSelected), 'available')}
+          {renderList(
+            availableOptions,
+            availableSelected,
+            (key) => toggleInList(key, setAvailableSelected),
+            'available',
+          )}
         </Box>
       </div>
 
@@ -448,7 +467,12 @@ export function ReportTableFieldsTransfer({
           setChosenSelected,
         )}
         <Box className={composeStyles.transferListBox}>
-          {renderList(chosenOptions, chosenSelected, (key) => toggleInList(key, setChosenSelected), 'chosen')}
+          {renderList(
+            chosenOptions,
+            chosenSelected,
+            (key) => toggleInList(key, setChosenSelected),
+            'chosen',
+          )}
         </Box>
       </div>
     </div>
