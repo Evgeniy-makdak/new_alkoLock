@@ -6,8 +6,14 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import {
   Alert,
   Autocomplete,
+  Checkbox,
   CircularProgress,
+  FormControl,
+  FormControlLabel,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   TextField,
   Tooltip,
   Typography,
@@ -15,31 +21,46 @@ import {
 import { useTheme } from '@mui/material/styles';
 
 import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
-import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+import type {
+  ReportFieldDefinition,
+  ReportLogicOperator,
+} from '@pages/reports/types/reportApiTypes';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { appStore } from '@shared/model/app_store/AppStore';
-import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
-import type { Values } from '@shared/ui/search_multiple_select';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
-
-import composeStyles from './ReportComposeModal.module.scss';
-import pageStyles from './Reports.module.scss';
+import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
+import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
+import pageStyles from './Reports.module.scss';
+
+export type ReportExportFormat = 'CSV' | 'XLS' | 'PDF';
 
 export type ReportComposeFormProps = {
   reportName: string;
   onReportNameChange: (name: string) => void;
+  exportEnabled?: boolean;
+  exportFormat?: ReportExportFormat;
+  onExportEnabledChange?: (enabled: boolean) => void;
+  onExportFormatChange?: (format: ReportExportFormat) => void;
 };
 
-export function ReportComposeForm({ reportName, onReportNameChange }: ReportComposeFormProps) {
+export function ReportComposeForm({
+  reportName,
+  onReportNameChange,
+  exportEnabled = false,
+  exportFormat = 'CSV',
+  onExportEnabledChange,
+  onExportFormatChange,
+}: ReportComposeFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
@@ -129,13 +150,10 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
     void loadMetadataForEntity(selectedEntityName);
   };
 
-  const handleReferenceOptionsLoaded = useCallback(
-    (cacheKey: string, options: Values) => {
-      void cacheKey;
-      void options;
-    },
-    [],
-  );
+  const handleReferenceOptionsLoaded = useCallback((cacheKey: string, options: Values) => {
+    void cacheKey;
+    void options;
+  }, []);
 
   const handleConfirmAddVariant = useCallback(
     (nextLogicOperator: ReportLogicOperator) => {
@@ -249,6 +267,39 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
             value={reportName}
             onChange={(e) => onReportNameChange(e.target.value)}
           />
+          {reportName.trim() && onExportEnabledChange ? (
+            <div className={composeStyles.composeExportControls}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={exportEnabled}
+                    onChange={(_, checked) => onExportEnabledChange(checked)}
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontSize: 13 }}>
+                    {t('reports.saveAsFile')}
+                  </Typography>
+                }
+                sx={{ mr: 0 }}
+              />
+              {exportEnabled && onExportFormatChange ? (
+                <FormControl size="small" sx={{ minWidth: 100 }}>
+                  <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
+                  <Select
+                    labelId="report-export-format-label"
+                    value={exportFormat}
+                    label={t('reports.format')}
+                    onChange={(e) => onExportFormatChange(e.target.value as ReportExportFormat)}>
+                    <MenuItem value="CSV">CSV</MenuItem>
+                    <MenuItem value="XLS">XLS</MenuItem>
+                    <MenuItem value="PDF">PDF</MenuItem>
+                  </Select>
+                </FormControl>
+              ) : null}
+            </div>
+          ) : null}
           <div className={composeStyles.composeEntityField}>{renderEntityAutocomplete()}</div>
         </div>
       </div>
@@ -261,56 +312,56 @@ export function ReportComposeForm({ reportName, onReportNameChange }: ReportComp
         ) : null}
 
         {showOutputRow ? (
-        <ReportComposeSection
-          icon={FilterAltOutlinedIcon}
-          iconTone="rose"
-          title={t('reports.composeSectionFilters')}
-          action={
-            <button
-              type="button"
-              className={composeStyles.addGroupLink}
-              onClick={() => setAddVariantDialogOpen(true)}>
-              {t('reports.composeAddFilterGroup')}
-            </button>
-          }>
-          {outputRows.length > 1 ? (
-            <p className={composeStyles.logicHint}>{t(logicHintKey)}</p>
-          ) : null}
+          <ReportComposeSection
+            icon={FilterAltOutlinedIcon}
+            iconTone="rose"
+            title={t('reports.composeSectionFilters')}
+            action={
+              <button
+                type="button"
+                className={composeStyles.addGroupLink}
+                onClick={() => setAddVariantDialogOpen(true)}>
+                {t('reports.composeAddFilterGroup')}
+              </button>
+            }>
+            {outputRows.length > 1 ? (
+              <p className={composeStyles.logicHint}>{t(logicHintKey)}</p>
+            ) : null}
 
-          <div className={composeStyles.filterGroups}>
-            {outputRows.map((row, index) => {
-              const isFirstRow = index === 0;
-              const canRemoveGroup = !isFirstRow;
+            <div className={composeStyles.filterGroups}>
+              {outputRows.map((row, index) => {
+                const isFirstRow = index === 0;
+                const canRemoveGroup = !isFirstRow;
 
-              return (
-                <div key={row.id} className={composeStyles.filterGroup}>
-                  <div className={composeStyles.filterGroupMain}>
-                    <div className={composeStyles.filterGroupHead}>
-                      <span className={composeStyles.filterGroupLabel}>
-                        {t('reports.composeFilterGroup', { number: index + 1 })}
-                      </span>
+                return (
+                  <div key={row.id} className={composeStyles.filterGroup}>
+                    <div className={composeStyles.filterGroupMain}>
+                      <div className={composeStyles.filterGroupHead}>
+                        <span className={composeStyles.filterGroupLabel}>
+                          {t('reports.composeFilterGroup', { number: index + 1 })}
+                        </span>
+                      </div>
+                      <div className={composeStyles.filterGroupFields}>
+                        {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
+                      </div>
                     </div>
-                    <div className={composeStyles.filterGroupFields}>
-                      {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
-                    </div>
+                    {canRemoveGroup ? (
+                      <Tooltip title={t('reports.composeRemoveFilter')}>
+                        <IconButton
+                          type="button"
+                          aria-label={t('reports.composeRemoveFilter')}
+                          className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
+                          onClick={() => removeOutputRow(row.id)}
+                          sx={circleIconSx}>
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : null}
                   </div>
-                  {canRemoveGroup ? (
-                    <Tooltip title={t('reports.composeRemoveFilter')}>
-                      <IconButton
-                        type="button"
-                        aria-label={t('reports.composeRemoveFilter')}
-                        className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
-                        onClick={() => removeOutputRow(row.id)}
-                        sx={circleIconSx}>
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
-        </ReportComposeSection>
+                );
+              })}
+            </div>
+          </ReportComposeSection>
         ) : selectedEntityName && metadataLoading ? (
           <Typography variant="body2" color="text.secondary">
             {t('reports.composeLoadingMetadata')}

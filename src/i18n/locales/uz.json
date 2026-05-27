@@ -756,6 +756,8 @@
     "composeLogicAndHint": "Turli guruhlar natijalari «Va» qoidasi bo‘yicha birlashtiriladi.",
     "composeReportNameLabel": "Hisobot nomi",
     "composeReportNamePlaceholder": "Nomini kiriting",
+    "saveAsFile": "Fayl sifatida saqlash",
+    "format": "Format",
     "composeAddFilterGroup": "+ Filtr guruhi qo‘shish",
     "composeRemoveFilter": "Filtrni o‘chirish",
     "filterFunctionOptionalBadge": "(ixt.)",

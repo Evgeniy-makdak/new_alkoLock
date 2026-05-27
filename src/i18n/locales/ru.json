@@ -804,6 +804,8 @@
     "composeLogicAndHint": "Результаты разных групп объединяются по правилу «И».",
     "composeReportNameLabel": "Название отчёта",
     "composeReportNamePlaceholder": "Введите название",
+    "saveAsFile": "Сохранить как файл",
+    "format": "Формат",
     "composeAddFilterGroup": "+ Добавить группу фильтров",
     "composeRemoveFilter": "Удалить фильтр",
     "composeLoadingMetadata": "Загрузка параметров сущности…",

@@ -777,6 +777,8 @@
     "composeLogicAndHint": "Results from different groups are combined with AND logic.",
     "composeReportNameLabel": "Report name",
     "composeReportNamePlaceholder": "Enter a name",
+    "saveAsFile": "Save as file",
+    "format": "Format",
     "composeAddFilterGroup": "+ Add filter group",
     "composeRemoveFilter": "Remove filter",
     "composeLoadingMetadata": "Loading entity parameters…",

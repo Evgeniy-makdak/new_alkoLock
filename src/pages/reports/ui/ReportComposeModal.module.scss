@@ -48,6 +48,13 @@
   max-width: 320px;
 }
 
+.composeExportControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
 .composeMainGrid {
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);

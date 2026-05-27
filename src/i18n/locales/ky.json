@@ -756,6 +756,8 @@
     "composeLogicAndHint": "Ар кандай топтордун натыйжалары «Жана» эрежеси боюнча бириктирилет.",
     "composeReportNameLabel": "Отчёт аталышы",
     "composeReportNamePlaceholder": "Аталышын киргизиңиз",
+    "saveAsFile": "Файл катары сактоо",
+    "format": "Формат",
     "composeAddFilterGroup": "+ Фильтр тобун кошуу",
     "composeRemoveFilter": "Фильтрди өчүрүү",
     "filterFunctionOptionalBadge": "(мил.)",

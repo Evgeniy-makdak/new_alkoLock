@@ -1,4 +1,6 @@
-import { getQuery, postQuery } from '@shared/api/baseQueryTypes';
+import axios from 'axios';
+
+import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQueryTypes';
 
 import type {
   ReportEntityListItem,
@@ -8,7 +10,12 @@ import type {
   ReportQueryResponse,
 } from '../types/reportApiTypes';
 
-function unwrap<T>(res: { data: T | null; isError?: boolean; message?: string; detail?: string }): T {
+function unwrap<T>(res: {
+  data: T | null;
+  isError?: boolean;
+  message?: string;
+  detail?: string;
+}): T {
   if (res.isError || res.data == null) {
     throw new Error(res.message || res.detail || 'reports request failed');
   }
@@ -59,4 +66,30 @@ export async function executeReportQuery(
     throw new Error(res.message || res.detail || 'reports query failed');
   }
   return res.data;
+}
+
+export type ReportExportFormat = 'CSV' | 'XLS' | 'PDF';
+
+export async function exportReport(
+  entityName: string,
+  format: ReportExportFormat,
+  fileName: string,
+  body: ReportQueryRequest,
+): Promise<Blob> {
+  const encoded = encodeURIComponent(entityName);
+  const queryParts = [`format=${encodeURIComponent(format)}`];
+  if (fileName.trim()) {
+    queryParts.push(`fileName=${encodeURIComponent(fileName.trim())}`);
+  }
+  const url = `${getApiUrl()}api/v1/reports/${encoded}/export?${queryParts.join('&')}`;
+
+  const res = await axios.post(url, body, {
+    headers: returnHeaders(),
+    responseType: 'blob',
+  });
+
+  if (res.status >= 400) {
+    throw new Error('report export failed');
+  }
+  return res.data as Blob;
 }

@@ -756,6 +756,8 @@
     "composeLogicAndHint": "Әртүрлі топтар нәтижелері «Және» ережесі бойынша біріктіріледі.",
     "composeReportNameLabel": "Есеп атауы",
     "composeReportNamePlaceholder": "Атауын енгізіңіз",
+    "saveAsFile": "Файл ретінде сақтау",
+    "format": "Формат",
     "composeAddFilterGroup": "+ Сүзгі тобын қосу",
     "composeRemoveFilter": "Сүзгіні жою",
     "filterFunctionOptionalBadge": "(мін.)",

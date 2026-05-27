@@ -15,7 +15,7 @@ import { cookieManager } from '@shared/utils/cookie_manager';
 // import { enqueueSnackbar } from 'notistack';
 import { configLoader } from '../../config/configLoader';
 
-const getApiUrl = (): string => {
+export const getApiUrl = (): string => {
   try {
     let url = configLoader.getConfig().apiUrl?.trim() ?? '';
     // Если apiUrl уже содержит /api (бэк подставляет полный путь к API), убираем его —
@@ -59,18 +59,18 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   }
 
   return {
-    data: null,
+    data: null as unknown as T,
     message,
     detail,
-    status,
-    config: error?.config,
-    headers: error?.request,
-    statusText: error?.response?.statusText,
+    status: error?.response?.status ?? 0,
+    config: error?.config as unknown as AxiosRequestConfig<IError>,
+    headers: error?.request ?? {},
+    statusText: error?.response?.statusText ?? '',
     isError: true,
-  };
+  } as AppAxiosResponse<T>;
 }
 
-const returnHeaders = (headers: HeaderReq): HeaderReq => {
+export const returnHeaders = (headers?: HeaderReq): HeaderReq => {
   const isAuth = headers?.isAuth ?? true;
 
   return new AxiosHeaders({
