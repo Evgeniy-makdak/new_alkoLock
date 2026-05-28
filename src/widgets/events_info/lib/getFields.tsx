@@ -33,10 +33,9 @@ export const getFields = (
     eventType = data.events[0].eventType;
   }
 
-  const carString = Formatters.carNameFormatter(car);
-  const carForCopy = Formatters.carNameFormatter(car, false, false);
-  const exhaleError = (data.summary?.exhaleError ||
-    data?.summary?.result) as TypeSummaryExhaleResult;
+  const carString = Formatters.carNameFormatter(car) ?? '';
+  const carForCopy = Formatters.carNameFormatter(car, false, false) ?? '';
+  const exhaleError = (data.summary?.exhaleError || data?.summary?.result) as TypeSummaryExhaleResult | undefined;
 
   const time = Formatters.formatISODate(data?.occurredAt) || '';
   const name = Formatters.nameFormatter(data?.userAction) || '';
@@ -51,17 +50,6 @@ export const getFields = (
   const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
 
   // const hasDeviceError = data?.events?.some((event) => String(event.eventType).includes('Ошибка'));
-
-  const multiLineTextStyle: React.CSSProperties = {
-    whiteSpace: 'pre-wrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    display: '-webkit-box',
-    WebkitLineClamp: 2,
-    WebkitBoxOrient: 'vertical',
-    maxWidth: '100%',
-    fontSize: '16px',
-  };
 
   const additionalFields: Field[] = [
     !hasTestingEvent && data?.summary?.description?.connectionError
@@ -194,7 +182,7 @@ export const getFields = (
     </Tooltip>
   );
 
-  const fields: Field[] = [
+  const fields: (Field | null)[] = [
     {
       label: tr('info.dateTime'),
       type: TypeOfRows.DATE,
@@ -247,16 +235,16 @@ export const getFields = (
         label: data?.device.serialNumber || '',
       },
     },
-    // data?.type === 'SOBRIETY_TEST'
-    //   ? {
-    //       label: 'Количественный результат',
-    //       type: TypeOfRows.MG_ON_LITER,
-    //       value: {
-    //         label: `${data?.summary?.testResult ?? '-'} мг/л`,
-    //         color: 'default',
-    //       },
-    //     }
-    //   : null,
+    data?.type === 'SOBRIETY_TEST'
+      ? {
+          label: 'Количественный результат',
+          type: TypeOfRows.MG_ON_LITER,
+          value: {
+            label: `${data?.summary?.testResult ?? '-'} мг/л`,
+            color: 'default',
+          },
+        }
+      : null,
     data?.type === 'SOBRIETY_TEST'
       ? {
           label: tr('info.qualitativeResult'),
@@ -292,5 +280,5 @@ export const getFields = (
     ...additionalFields,
   ];
 
-  return fields.filter((item) => item !== null);
+  return fields.filter((item): item is Field => item !== null);
 };

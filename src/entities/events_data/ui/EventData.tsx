@@ -155,8 +155,8 @@ export const EventData: FC<EventData> = ({
 
       {isTestEvent && (
         <div className={style.row}>
-          {/* <span>Количественный результат</span>
-          <span>{event?.extra?.testResult ?? '-'} мг/л</span> */}
+          <span>Количественный результат</span>
+          <span>{event?.extra?.testResult ?? '-'} мг/л</span>
         </div>
       )}
 
