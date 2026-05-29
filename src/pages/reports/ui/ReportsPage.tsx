@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
 import { Button, Typography, useMediaQuery } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 
 import { PageWrapper } from '@layout/page_wrapper';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
@@ -19,7 +18,6 @@ import { ReportsResultsView } from './ReportsResultsView';
 
 export function ReportsPage() {
   const { t } = useTranslation();
-  const theme = useTheme();
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
 
@@ -55,39 +53,36 @@ export function ReportsPage() {
       {isMobile || isTablet ? <div style={{ height: '50px' }} /> : null}
       <PageWrapper>
         <div className={styles.wrapper}>
-          <div
-            className={styles.pageHeader}
-            style={{
-              backgroundColor:
-                theme.palette.mode === 'dark' ? theme.palette.background.default : '#f5f5f5',
-            }}>
-            <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
-              {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
-            </Typography>
-            {!isMobile ? (
-            <div className={styles.headerActions}>
-              <TableHeaderEndToolbar>
-                <Button
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  disabled={isGenerating}
-                  onClick={openComposeModal}
-                  sx={{
-                    textTransform: 'capitalize',
-                    fontWeight: 500,
-                    fontSize: '14px',
-                    letterSpacing: '0.1px',
-                    borderRadius: '10px',
-                    height: '30px',
-                    minWidth: '160px',
-                  }}>
-                  {t('reports.createNewReport')}
-                </Button>
-                <ResetFilters reset={handleResetFilters} />
-              </TableHeaderEndToolbar>
+          <div className={styles.pageHeader}>
+            <div className={styles.pageHeaderBar}>
+              <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
+                {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
+              </Typography>
+              {!isMobile ? (
+                <div className={styles.headerActions}>
+                  <TableHeaderEndToolbar>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      disabled={isGenerating}
+                      onClick={openComposeModal}
+                      sx={{
+                        textTransform: 'capitalize',
+                        fontWeight: 500,
+                        fontSize: '14px',
+                        letterSpacing: '0.1px',
+                        borderRadius: '10px',
+                        height: '30px',
+                        minWidth: '160px',
+                      }}>
+                      {t('reports.createNewReport')}
+                    </Button>
+                    <ResetFilters reset={handleResetFilters} />
+                  </TableHeaderEndToolbar>
+                </div>
+              ) : null}
             </div>
-            ) : null}
           </div>
 
           {isMobile ? (
