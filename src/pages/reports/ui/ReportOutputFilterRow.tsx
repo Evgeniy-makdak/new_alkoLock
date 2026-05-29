@@ -271,6 +271,7 @@ export function ReportOutputFilterRow({
           metadata={metadata}
           value={row.filterSelections[primaryField.fieldName] ?? []}
           referenceOptionsCache={{}}
+          vehicleLabelMaps={vehicleLabelMaps}
           filterOperationCode={filterOperationCode}
           onChange={(values) => onFilterChange(primaryField.fieldName, values)}
           onReferenceOptionsLoaded={onReferenceOptionsLoaded}
@@ -295,6 +296,7 @@ export function ReportOutputFilterRow({
             metadata={metadata}
             value={row.filterSelections[primaryField.fieldName] ?? []}
             referenceOptionsCache={{}}
+            vehicleLabelMaps={vehicleLabelMaps}
             filterOperationCode={filterOperationCode}
             onChange={(values) => onFilterChange(primaryField.fieldName, values)}
             onReferenceOptionsLoaded={onReferenceOptionsLoaded}

@@ -6,7 +6,7 @@ import {
 } from './deviceActionReportOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 
-import type { IAlcolock, ICar, IUser } from '@shared/types/BaseQueryTypes';
+import type { IAlcolock, ICar, IDeviceAction, IUser } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { Formatters } from '@shared/utils/formatters';
@@ -239,6 +239,16 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
         return { value: id, label: formatDeviceActionEntityListLabel(r) };
       })
       .filter((x): x is Values[number] => x != null);
+  }
+  if (referenceEntity === 'AutoServiceHistory') {
+    return (records as IDeviceAction[]).map((item) => {
+      const date = item.createdAt ? Formatters.formatISODate(item.createdAt) : '';
+      const type =
+        typeof item.eventType === 'string' ? item.eventType : item.eventType?.label;
+      const device = Formatters.alcolocksFormatter(item.device);
+      const label = [date, type, device].filter(Boolean).join(' · ') || String(item.id);
+      return { value: item.id, label };
+    });
   }
   return records
     .map((r) => {

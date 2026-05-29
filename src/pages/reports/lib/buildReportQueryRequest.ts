@@ -236,7 +236,10 @@ function buildRowReportTableFields(
     const defaultLabel = (fieldDef?.label ?? '').trim() || path;
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
     const payload: ReportSelectedFieldPayload = {
-      fieldName: resolveReportTableSelectedPayloadFieldName(path),
+      fieldName: resolveReportTableSelectedPayloadFieldName(
+        path,
+        context.entityMetadata.entityName,
+      ),
     };
     const isAutoQualified = displayLabel.includes(QUALIFIED_LABEL_SEPARATOR);
     const isSafeAlias = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(displayLabel);

@@ -5,13 +5,13 @@ import { SortsTypes } from '@shared/config/queryParamsEnums';
 
 /** Устаревшие ключи грида → ключ колонки content (как в selectedFields / content). */
 const REPORT_GRID_FIELD_TO_CONTENT_KEY: Record<string, string> = {
-  __reportRowCreatedAt: 'deviceEvent.timestamp',
+  __reportRowCreatedAt: 'timestamp',
   groupNames: 'groupMembership.group.name',
 };
 
 /**
  * Имя для query?sort=… — то же, что fieldName в selectedFields и ключ в content
- * (deviceEvent.reportedAt, vehicle.model, …).
+ * (reportedAt, vehicle.model, …).
  */
 export function resolveReportSortApiField(contentColumnKey: string): string {
   return contentColumnKey;

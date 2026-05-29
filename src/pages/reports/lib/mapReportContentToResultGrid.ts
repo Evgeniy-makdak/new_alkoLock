@@ -102,6 +102,11 @@ function formatDynamicCellValue(
   if (typeof raw === 'object') {
     return JSON.stringify(raw);
   }
+  if (labelMaps && typeof raw === 'string') {
+    const leaf = columnKey.includes('.') ? columnKey.slice(columnKey.lastIndexOf('.') + 1) : columnKey;
+    if (leaf === 'type') return labelMaps.types[raw] ?? raw;
+    if (leaf === 'color') return labelMaps.colors[raw] ?? raw;
+  }
   return String(raw);
 }
 

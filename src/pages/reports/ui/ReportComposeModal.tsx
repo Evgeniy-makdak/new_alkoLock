@@ -292,7 +292,7 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     snapshotRef.current = null;
     onClose();
 
-    if (exportEnabled && reportName.trim()) {
+    if (exportEnabled) {
       void executeReportExportLoad();
     } else {
       void executeReportLoad();

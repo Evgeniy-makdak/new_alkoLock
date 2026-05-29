@@ -145,6 +145,12 @@ export function ReportComposeForm({
     loadVehicleLabelMaps,
   ]);
 
+  useEffect(() => {
+    if (selectedEntityName === 'Vehicle') {
+      void loadVehicleLabelMaps();
+    }
+  }, [selectedEntityName, loadVehicleLabelMaps]);
+
   const handleEntityOpen = () => {
     if (!selectedEntityName) return;
     void loadMetadataForEntity(selectedEntityName);
@@ -267,7 +273,7 @@ export function ReportComposeForm({
             value={reportName}
             onChange={(e) => onReportNameChange(e.target.value)}
           />
-          {reportName.trim() && onExportEnabledChange ? (
+          {onExportEnabledChange ? (
             <div className={composeStyles.composeExportControls}>
               <FormControlLabel
                 control={

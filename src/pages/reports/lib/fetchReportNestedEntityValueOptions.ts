@@ -1,6 +1,6 @@
 import { AlcolocksApi, CarsApi, EventsApi, UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
-import type { IAlcolock, ICar, IUser } from '@shared/types/BaseQueryTypes';
+import type { IAlcolock, ICar, IDeviceAction, IUser } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
@@ -131,6 +131,19 @@ export async function fetchReportNestedEntityValueOptions(
           .filter((item, index, arr) => arr.findIndex((x) => x.value === item.value) === index);
       }
       return buildNestedEntityAttributeOptions(users, ref, attr, labelMaps);
+    }
+    case 'AutoServiceHistory': {
+      const res = await EventsApi.getHistoryList({
+        page: pageOpts.page,
+        limit: 25,
+        searchQuery: match,
+        filterOptions: branchId != null ? { branchId } : {},
+      });
+      const records = unwrapList<IDeviceAction>(res);
+      if (listPicker) {
+        return recordsToEntityListValues(ref, records);
+      }
+      return buildNestedEntityAttributeOptions(records, ref, attr, labelMaps);
     }
     case 'EventsForFront': {
       const res = await EventsApi.getEventsTypeList(

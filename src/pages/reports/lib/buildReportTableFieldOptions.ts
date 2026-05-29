@@ -70,10 +70,10 @@ export function prefixedFieldName(prefix: string, fieldName: string): string {
 }
 
 /**
- * Имя поля в filters[] (POST …/DeviceEvent/query).
- * Как в примере бэка: eventsForFront.event, user.surname — путь к связанной сущности;
- * поля корня отчёта (timestamp, reportedAt) — без префикса deviceEvent.
- * Префикс deviceEvent.* только в selectedFields / колонках таблицы.
+ * Имя поля в POST …/query (selectedFields, filters).
+ * Корень отчёта (DeviceEvent): timestamp, id — без префикса deviceEvent.
+ * Связи: eventsForFront.event, device.serialNumber и т.д.
+ * Устаревшие значения UI deviceEvent.* приводятся к имени из metadata.
  */
 export function resolveReportFilterFieldName(entityName: string, fieldName: string): string {
   const rootPrefix = reportEntityFieldPrefix(entityName);
@@ -106,7 +106,7 @@ export function collectOutputResultFieldNames(outputRows: ReportOutputRow[]): Se
 
 /**
  * Все опции «Поля в отчёте»:
- * — selectable поля сущности отчёта (deviceEvent.*), кроме полей-ссылок из строк фильтра;
+ * — selectable поля сущности отчёта (timestamp, id, …), кроме полей-ссылок из строк фильтра;
  * — selectable поля metadata каждой строки (device.*, vehicle.*, …).
  */
 export function mergeAllReportTableFieldOptions(
@@ -117,7 +117,6 @@ export function mergeAllReportTableFieldOptions(
 ): Values {
   if (!entityMetadata) return [];
 
-  const rootPrefix = reportEntityFieldPrefix(entityMetadata.entityName);
   const outputFieldNames = collectOutputResultFieldNames(outputRows);
   const entitySourceLabel = entityMetadata.label?.trim() || entityMetadata.entityName;
   const seen = new Set<string>();
@@ -126,7 +125,7 @@ export function mergeAllReportTableFieldOptions(
   for (const f of entityMetadata.fields) {
     if (outputFieldNames.has(f.fieldName)) continue;
     if (!isReportTableSelectableField(f)) continue;
-    const value = prefixedFieldName(rootPrefix, f.fieldName);
+    const value = f.fieldName;
     if (seen.has(value)) continue;
     seen.add(value);
     drafts.push({
@@ -205,11 +204,15 @@ export function findReportTableFieldDefinition(
   return allEntityFields.find((f) => f.fieldName === fieldPath);
 }
 
-/** Имя в POST selectedFields — путь уже полный из модалки. */
+/** Имя в POST selectedFields — как в metadata / filters (без префикса корневой сущности). */
 export function resolveReportTableSelectedPayloadFieldName(
   fieldNameOrPath: string,
+  entityName?: string,
 ): string {
-  return fieldNameOrPath;
+  if (!entityName?.trim()) {
+    return fieldNameOrPath;
+  }
+  return resolveReportFilterFieldName(entityName, fieldNameOrPath);
 }
 
 export function findReportFieldDefForColumnKey(

@@ -3,6 +3,7 @@ export const REPORT_SERVER_SEARCH_REFERENCE_ENTITIES = new Set([
   'Vehicle',
   'MonitoringDevice',
   'User',
+  'AutoServiceHistory',
   'EventsForFront',
   'BranchOffice',
   'DeviceAction',

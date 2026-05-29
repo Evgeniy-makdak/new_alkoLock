@@ -186,6 +186,9 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
       });
+      if (entityName === 'Vehicle') {
+        void get().loadVehicleLabelMaps();
+      }
     } catch (e) {
       set({
         metadataLoading: false,
