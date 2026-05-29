@@ -1,5 +1,6 @@
 import {
   type Dispatch,
+  type RefObject,
   type SetStateAction,
   useCallback,
   useEffect,
@@ -11,6 +12,8 @@ import { useTranslation } from 'react-i18next';
 
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
   Box,
@@ -131,6 +134,11 @@ export function ReportTableFieldsTransfer({
   const sortLocale = i18n.language || 'ru';
   const [availableSelected, setAvailableSelected] = useState<string[]>([]);
   const [chosenSelected, setChosenSelected] = useState<string[]>([]);
+  /** Индекс строки для построчного скролла (без выделения и без перестановки). */
+  const [scrollIndexAvailable, setScrollIndexAvailable] = useState<number | null>(null);
+  const [scrollIndexChosen, setScrollIndexChosen] = useState<number | null>(null);
+  const availableListRef = useRef<HTMLDivElement>(null);
+  const chosenListRef = useRef<HTMLDivElement>(null);
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   /** Алиасы колонок по fieldName — сохраняются при переносе между списками. */
@@ -169,13 +177,8 @@ export function ReportTableFieldsTransfer({
 
   const chosenOptions = useMemo(
     () =>
-      sortFieldsByLabel(
-        value.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)),
-        customLabelsByKey,
-        defaultLabelsByValue,
-        sortLocale,
-      ),
-    [value, customLabelsByKey, defaultLabelsByValue, sortLocale],
+      value.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)),
+    [value, customLabelsByKey, defaultLabelsByValue],
   );
 
   const availableKeys = useMemo(() => availableOptions.map(fieldKey), [availableOptions]);
@@ -189,31 +192,47 @@ export function ReportTableFieldsTransfer({
   useEffect(() => {
     setAvailableSelected([]);
     setChosenSelected([]);
+    setScrollIndexAvailable(null);
+    setScrollIndexChosen(null);
     setRenamingKey(null);
     setCustomLabelsByKey((prev) => collectCustomLabelsFromValues(valueRef.current, prev));
   }, [optionsKey]);
 
+  const scrollTransferKeyIntoView = (container: HTMLDivElement | null, key: string) => {
+    if (!container || !key) return;
+    const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key;
+    const row = container.querySelector(`[data-transfer-key="${escaped}"]`);
+    row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
+
+  const scrollListByRowStep = (
+    keys: string[],
+    scrollIndex: number | null,
+    delta: number,
+    listRef: RefObject<HTMLDivElement | null>,
+  ): number | null => {
+    if (!keys.length) return null;
+
+    let nextIndex: number;
+    if (scrollIndex == null) {
+      nextIndex = delta > 0 ? 0 : keys.length - 1;
+    } else {
+      nextIndex = scrollIndex + delta;
+      if (nextIndex < 0 || nextIndex >= keys.length) {
+        return scrollIndex;
+      }
+    }
+
+    scrollTransferKeyIntoView(listRef.current, keys[nextIndex]!);
+    return nextIndex;
+  };
+
   const emitChosen = useCallback(
     (next: Values) => {
-      onChange(sortFieldsByLabel(next, customLabelsByKey, defaultLabelsByValue, sortLocale));
+      onChange(next.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)));
     },
-    [onChange, customLabelsByKey, defaultLabelsByValue, sortLocale],
+    [onChange, customLabelsByKey, defaultLabelsByValue],
   );
-
-  useEffect(() => {
-    if (!value.length) return;
-    const sorted = sortFieldsByLabel(
-      value.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)),
-      customLabelsByKey,
-      defaultLabelsByValue,
-      sortLocale,
-    );
-    const currentKeys = value.map(fieldKey).join('\0');
-    const sortedKeys = sorted.map(fieldKey).join('\0');
-    if (currentKeys !== sortedKeys) {
-      emitChosen(sorted);
-    }
-  }, [value, customLabelsByKey, defaultLabelsByValue, sortLocale, emitChosen]);
 
   const moveToChosen = (keys: string[]) => {
     if (!keys.length) return;
@@ -281,6 +300,52 @@ export function ReportTableFieldsTransfer({
     setRenameDraft('');
   };
 
+  const renderListStepper = (
+    keys: string[],
+    scrollIndex: number | null,
+    setScrollIndex: Dispatch<SetStateAction<number | null>>,
+    listRef: RefObject<HTMLDivElement | null>,
+  ) => {
+    const canScrollUp = scrollIndex != null && scrollIndex > 0;
+    const canScrollDown =
+      keys.length > 0 && (scrollIndex == null ? true : scrollIndex < keys.length - 1);
+
+    return (
+      <div className={composeStyles.transferListStepper}>
+        <Tooltip title={t('reports.composeTransferMoveUp')}>
+          <span>
+            <IconButton
+              type="button"
+              size="small"
+              disabled={disabled || !canScrollUp}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setScrollIndex((prev) => scrollListByRowStep(keys, prev, -1, listRef));
+              }}>
+              <KeyboardArrowUpIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title={t('reports.composeTransferMoveDown')}>
+          <span>
+            <IconButton
+              type="button"
+              size="small"
+              disabled={disabled || !canScrollDown}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setScrollIndex((prev) => scrollListByRowStep(keys, prev, 1, listRef));
+              }}>
+              <KeyboardArrowDownIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </div>
+    );
+  };
+
   if (!options.length) {
     return (
       <Typography variant="body2" color="text.secondary">
@@ -298,7 +363,7 @@ export function ReportTableFieldsTransfer({
     <List dense disablePadding className={composeStyles.transferList}>
       {items.map((option) => {
         const key = fieldKey(option);
-        const isSelected = selectedKeys.includes(key);
+        const isChecked = selectedKeys.includes(key);
         const label = fieldDisplayLabel(option, customLabelsByKey, defaultLabelsByValue);
         const isRenaming = side === 'chosen' && renamingKey === key;
 
@@ -306,6 +371,7 @@ export function ReportTableFieldsTransfer({
           <ListItem
             key={key}
             disablePadding
+            data-transfer-key={key}
             className={composeStyles.transferListItem}
             secondaryAction={
               side === 'chosen' && !disabled ? (
@@ -321,7 +387,7 @@ export function ReportTableFieldsTransfer({
               ) : undefined
             }>
             <ListItemButton
-              selected={isSelected}
+              selected={false}
               disabled={disabled}
               onClick={() => onToggle(key)}
               className={composeStyles.transferListItemButton}>
@@ -329,7 +395,7 @@ export function ReportTableFieldsTransfer({
                 <Checkbox
                   edge="start"
                   size="small"
-                  checked={isSelected}
+                  checked={isChecked}
                   tabIndex={-1}
                   disableRipple
                   disabled={disabled}
@@ -426,7 +492,7 @@ export function ReportTableFieldsTransfer({
           availableSelected,
           setAvailableSelected,
         )}
-        <Box className={composeStyles.transferListBox}>
+        <Box ref={availableListRef} className={composeStyles.transferListBox}>
           {renderList(
             availableOptions,
             availableSelected,
@@ -434,6 +500,12 @@ export function ReportTableFieldsTransfer({
             'available',
           )}
         </Box>
+        {renderListStepper(
+          availableKeys,
+          scrollIndexAvailable,
+          setScrollIndexAvailable,
+          availableListRef,
+        )}
       </div>
 
       <div className={composeStyles.transferActions}>
@@ -466,7 +538,7 @@ export function ReportTableFieldsTransfer({
           chosenSelected,
           setChosenSelected,
         )}
-        <Box className={composeStyles.transferListBox}>
+        <Box ref={chosenListRef} className={composeStyles.transferListBox}>
           {renderList(
             chosenOptions,
             chosenSelected,
@@ -474,6 +546,12 @@ export function ReportTableFieldsTransfer({
             'chosen',
           )}
         </Box>
+        {renderListStepper(
+          chosenKeysList,
+          scrollIndexChosen,
+          setScrollIndexChosen,
+          chosenListRef,
+        )}
       </div>
     </div>
   );

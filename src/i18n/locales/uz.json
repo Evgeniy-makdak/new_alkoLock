@@ -799,6 +799,7 @@
     "otherBucket": "Boshqa turlar",
     "tooltipCount": "Soni",
     "loadError": "Maʼlumotlarni yuklab boʻlmadi",
+    "queryNetworkError": "Jadval yuklanmadi: javob olinayotganda ulanish uzildi. Eksport fayli to‘g‘ri bo‘lishi mumkin — uni oching yoki qayta urinib ko‘ring.",
     "empty": "Joriy filtrlar boʻyicha voqealar yoʻq.",
     "oversizeDialogTitle": "Katta hajmdagi maʼlumot",
     "oversizeDialogBody": "Hisobotda {{count}} dan ortiq yozuv bor. Tayyorlash uzoq vaqt olishi mumkin, lekin fon rejimida bajariladi. Batafsil hisobot PDF shaklida sizning {{email}} elektron pochtangizga yuboriladi. Davom etish?",

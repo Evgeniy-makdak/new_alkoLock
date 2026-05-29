@@ -2,6 +2,8 @@ import axios from 'axios';
 
 import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQueryTypes';
 
+import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
+
 import type {
   ReportEntityListItem,
   ReportEntityMetadata,
@@ -9,6 +11,24 @@ import type {
   ReportQueryRequest,
   ReportQueryResponse,
 } from '../types/reportApiTypes';
+
+/** Сигнал для UI: обрыв ответа (ERR_HTTP2_PROTOCOL_ERROR и т.п.), не ошибка бизнес-логики. */
+export const REPORT_QUERY_TRANSPORT_ERROR = 'REPORT_QUERY_TRANSPORT_ERROR';
+
+const REPORT_QUERY_ATTEMPTS = 3;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+/** Нет HTTP-статуса — тело JSON не дошло до axios (типично ERR_HTTP2_PROTOCOL_ERROR в DevTools). */
+function isLikelyTransportFailure(res: AppAxiosResponse<unknown>): boolean {
+  if (!res.isError) return false;
+  if (res.status != null && res.status >= 400) return false;
+  return res.status === 0 || res.data == null;
+}
 
 function unwrap<T>(res: {
   data: T | null;
@@ -58,14 +78,34 @@ export async function executeReportQuery(
   body: ReportQueryRequest,
   pageable?: ReportQueryPageable,
 ): Promise<ReportQueryResponse> {
-  const res = await postQuery<ReportQueryResponse, ReportQueryRequest>({
-    url: buildQueryUrl(entityName, pageable),
-    data: body,
-  });
-  if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'reports query failed');
+  const url = buildQueryUrl(entityName, pageable);
+  let lastRes: AppAxiosResponse<ReportQueryResponse> | null = null;
+
+  for (let attempt = 0; attempt < REPORT_QUERY_ATTEMPTS; attempt += 1) {
+    if (attempt > 0) {
+      await delay(400 * attempt);
+    }
+
+    const res = await postQuery<ReportQueryResponse, ReportQueryRequest>({
+      url,
+      data: body,
+    });
+
+    if (!res.isError && res.data != null) {
+      return res.data;
+    }
+
+    lastRes = res;
+    if (!isLikelyTransportFailure(res) || attempt >= REPORT_QUERY_ATTEMPTS - 1) {
+      break;
+    }
   }
-  return res.data;
+
+  if (lastRes && isLikelyTransportFailure(lastRes)) {
+    throw new Error(REPORT_QUERY_TRANSPORT_ERROR);
+  }
+
+  throw new Error(lastRes?.detail || lastRes?.message || 'reports query failed');
 }
 
 export type ReportExportFormat = 'CSV' | 'XLS' | 'PDF';

@@ -102,7 +102,12 @@ export function ReportsPage() {
           ) : null}
 
           <div
-            className={`${styles.tableArea} ${isGenerating ? styles.tableAreaGenerating : ''}`}>
+            className={[
+              styles.tableArea,
+              isGenerating ? styles.tableAreaGenerating : '',
+            ]
+              .filter(Boolean)
+              .join(' ')}>
             {isGenerating ? <ReportGeneratingOverlay /> : null}
             <ReportsResultsView />
           </div>

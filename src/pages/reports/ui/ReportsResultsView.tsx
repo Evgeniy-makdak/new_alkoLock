@@ -206,10 +206,13 @@ export function ReportsResultsView() {
   ]);
 
   const totalElements = lastResult?.totalElements ?? 0;
+  const showReportColumnHeaders = Boolean(queryContext && columns.length > 0);
 
   return (
-    <div className={styles.tableWrapper}>
-      <div className={styles.scrollableTable}>
+    <div
+      className={`${styles.tableWrapper} ${showReportColumnHeaders ? styles.tableAreaWithReportHeaders : ''}`}>
+      <div
+        className={`${styles.scrollableTable} ${showReportColumnHeaders ? '' : styles.scrollableTableHideColumnHeaders}`}>
         <Table
           key={reportTableKey}
           columns={columns}

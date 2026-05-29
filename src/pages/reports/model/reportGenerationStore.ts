@@ -1,7 +1,8 @@
+import i18n from 'i18next';
 import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
-import { executeReportQuery } from '../api/reportsApi';
+import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '../api/reportsApi';
 
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
@@ -199,7 +200,13 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
         set({ isLoadingPage: false });
         return;
       }
-      get().completeError(e instanceof Error ? e.message : 'reports query failed');
+      const message =
+        e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR
+          ? i18n.t('reports.queryNetworkError')
+          : e instanceof Error
+            ? e.message
+            : i18n.t('reports.loadError');
+      get().completeError(message);
     }
   },
 }));

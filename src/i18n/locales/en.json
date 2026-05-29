@@ -818,6 +818,7 @@
     "otherBucket": "Other types",
     "tooltipCount": "Count",
     "loadError": "Failed to load data",
+    "queryNetworkError": "Could not load the table: the connection dropped while receiving the response (often ERR_HTTP2_PROTOCOL_ERROR). The export file may still be valid — open it or try forming the report again.",
     "empty": "No data for current filters.",
     "oversizeDialogTitle": "Large dataset",
     "oversizeDialogBody": "The report contains more than {{count}} records. Generating the report may take a long time, but it will run in the background. A detailed report will be sent as a PDF to your email {{email}}. Continue?",

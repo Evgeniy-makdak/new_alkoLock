@@ -4,7 +4,11 @@ import { useTranslation } from 'react-i18next';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
-import { executeReportQuery, exportReport } from '@pages/reports/api/reportsApi';
+import {
+  REPORT_QUERY_TRANSPORT_ERROR,
+  executeReportQuery,
+  exportReport,
+} from '@pages/reports/api/reportsApi';
 import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import { mergeAllReportTableFieldOptions } from '@pages/reports/lib/buildReportTableFieldOptions';
@@ -196,6 +200,16 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     [tableFieldsSelection, tableFieldsInitialSelection],
   );
 
+  const reportQueryErrorMessage = useCallback(
+    (e: unknown) => {
+      if (e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR) {
+        return t('reports.queryNetworkError');
+      }
+      return e instanceof Error ? e.message : t('reports.loadError');
+    },
+    [t],
+  );
+
   const executeReportLoad = useCallback(async () => {
     saveTableFieldsSelectionToStore();
 
@@ -225,16 +239,14 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
         reportGenerationStore.getState().finishCancelled();
         return;
       }
-      reportGenerationStore
-        .getState()
-        .completeError(e instanceof Error ? e.message : t('reports.loadError'));
+      reportGenerationStore.getState().completeError(reportQueryErrorMessage(e));
     }
   }, [
-    t,
     buildCurrentReportBody,
     saveTableFieldsSelectionToStore,
     ensureSelectedFieldsInBody,
     onReportFormed,
+    reportQueryErrorMessage,
   ]);
 
   const executeReportExportLoad = useCallback(async () => {
@@ -252,9 +264,6 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     setSort([]);
 
     try {
-      const blob = await exportReport(entityName, exportFormat, reportName, body);
-      downloadReportFile(blob, reportName, exportFormat);
-
       setQueryContext({ entityName, body });
 
       const result = await executeReportQuery(entityName, body, {
@@ -263,24 +272,26 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
         sort: [],
       });
       reportGenerationStore.getState().completeSuccess(result);
+
+      const blob = await exportReport(entityName, exportFormat, reportName, body);
+      downloadReportFile(blob, reportName, exportFormat);
+
       onReportFormed?.();
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         reportGenerationStore.getState().finishCancelled();
         return;
       }
-      reportGenerationStore
-        .getState()
-        .completeError(e instanceof Error ? e.message : t('reports.loadError'));
+      reportGenerationStore.getState().completeError(reportQueryErrorMessage(e));
     }
   }, [
-    t,
     buildCurrentReportBody,
     saveTableFieldsSelectionToStore,
     ensureSelectedFieldsInBody,
     exportFormat,
     reportName,
     onReportFormed,
+    reportQueryErrorMessage,
   ]);
 
   const handleFormReport = useCallback(async () => {
