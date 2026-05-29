@@ -124,6 +124,46 @@ function collectCustomLabelsFromValues(
   return next;
 }
 
+function findTransferRow(container: HTMLDivElement, key: string): Element | null {
+  const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key;
+  return container.querySelector(`[data-transfer-key="${escaped}"]`);
+}
+
+/** Верхняя видимая строка в прокручиваемом списке (учитывает ручной скролл колёсиком). */
+function resolveVisibleScrollIndex(container: HTMLDivElement | null, keys: string[]): number | null {
+  if (!container || !keys.length) return null;
+
+  const containerRect = container.getBoundingClientRect();
+  let topmostVisible: number | null = null;
+  let topmostTop = Infinity;
+
+  for (let i = 0; i < keys.length; i += 1) {
+    const row = findTransferRow(container, keys[i]!);
+    if (!row) continue;
+
+    const rect = row.getBoundingClientRect();
+    if (rect.bottom <= containerRect.top + 1) continue;
+    if (rect.top >= containerRect.bottom - 1) break;
+
+    if (rect.top < topmostTop) {
+      topmostTop = rect.top;
+      topmostVisible = i;
+    }
+  }
+
+  return topmostVisible;
+}
+
+function canScrollListUp(container: HTMLDivElement | null): boolean {
+  return (container?.scrollTop ?? 0) > 1;
+}
+
+function canScrollListDown(container: HTMLDivElement | null): boolean {
+  if (!container) return false;
+  const maxScroll = container.scrollHeight - container.clientHeight;
+  return container.scrollTop < maxScroll - 1;
+}
+
 export function ReportTableFieldsTransfer({
   options,
   value,
@@ -198,33 +238,47 @@ export function ReportTableFieldsTransfer({
     setCustomLabelsByKey((prev) => collectCustomLabelsFromValues(valueRef.current, prev));
   }, [optionsKey]);
 
-  const scrollTransferKeyIntoView = (container: HTMLDivElement | null, key: string) => {
-    if (!container || !key) return;
-    const escaped = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(key) : key;
-    const row = container.querySelector(`[data-transfer-key="${escaped}"]`);
-    row?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-  };
-
   const scrollListByRowStep = (
     keys: string[],
     scrollIndex: number | null,
     delta: number,
     listRef: RefObject<HTMLDivElement | null>,
   ): number | null => {
-    if (!keys.length) return null;
+    const container = listRef.current;
+    if (!container || !keys.length) return null;
 
-    let nextIndex: number;
-    if (scrollIndex == null) {
-      nextIndex = delta > 0 ? 0 : keys.length - 1;
-    } else {
-      nextIndex = scrollIndex + delta;
-      if (nextIndex < 0 || nextIndex >= keys.length) {
-        return scrollIndex;
-      }
+    const anchorIndex = scrollIndex ?? resolveVisibleScrollIndex(container, keys) ?? 0;
+    const clampedAnchor = Math.min(Math.max(anchorIndex, 0), keys.length - 1);
+    const anchorRow = findTransferRow(container, keys[clampedAnchor]!);
+    const rowStep = Math.max(anchorRow?.getBoundingClientRect().height ?? 32, 1);
+
+    const maxScroll = Math.max(0, container.scrollHeight - container.clientHeight);
+    const prevScrollTop = container.scrollTop;
+    const nextScrollTop = Math.max(0, Math.min(maxScroll, prevScrollTop + delta * rowStep));
+
+    if (nextScrollTop === prevScrollTop) {
+      return clampedAnchor;
     }
 
-    scrollTransferKeyIntoView(listRef.current, keys[nextIndex]!);
-    return nextIndex;
+    container.scrollTo({ top: nextScrollTop, behavior: 'auto' });
+
+    const resolved = resolveVisibleScrollIndex(container, keys);
+    if (resolved != null && resolved !== clampedAnchor) {
+      return resolved;
+    }
+    const stepped = clampedAnchor + (delta > 0 ? 1 : -1);
+    return Math.min(keys.length - 1, Math.max(0, stepped));
+  };
+
+  const syncScrollIndexFromList = (
+    container: HTMLDivElement | null,
+    keys: string[],
+    setScrollIndex: Dispatch<SetStateAction<number | null>>,
+  ) => {
+    const index = resolveVisibleScrollIndex(container, keys);
+    if (index != null) {
+      setScrollIndex(index);
+    }
   };
 
   const emitChosen = useCallback(
@@ -306,9 +360,8 @@ export function ReportTableFieldsTransfer({
     setScrollIndex: Dispatch<SetStateAction<number | null>>,
     listRef: RefObject<HTMLDivElement | null>,
   ) => {
-    const canScrollUp = scrollIndex != null && scrollIndex > 0;
-    const canScrollDown =
-      keys.length > 0 && (scrollIndex == null ? true : scrollIndex < keys.length - 1);
+    const canScrollUp = canScrollListUp(listRef.current);
+    const canScrollDown = canScrollListDown(listRef.current);
 
     return (
       <div className={composeStyles.transferListStepper}>
@@ -492,7 +545,12 @@ export function ReportTableFieldsTransfer({
           availableSelected,
           setAvailableSelected,
         )}
-        <Box ref={availableListRef} className={composeStyles.transferListBox}>
+        <Box
+          ref={availableListRef}
+          className={composeStyles.transferListBox}
+          onScroll={() =>
+            syncScrollIndexFromList(availableListRef.current, availableKeys, setScrollIndexAvailable)
+          }>
           {renderList(
             availableOptions,
             availableSelected,
@@ -538,7 +596,12 @@ export function ReportTableFieldsTransfer({
           chosenSelected,
           setChosenSelected,
         )}
-        <Box ref={chosenListRef} className={composeStyles.transferListBox}>
+        <Box
+          ref={chosenListRef}
+          className={composeStyles.transferListBox}
+          onScroll={() =>
+            syncScrollIndexFromList(chosenListRef.current, chosenKeysList, setScrollIndexChosen)
+          }>
           {renderList(
             chosenOptions,
             chosenSelected,
