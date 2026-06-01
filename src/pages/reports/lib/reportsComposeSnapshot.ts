@@ -14,6 +14,8 @@ export type ReportsComposeSnapshot = {
   filterControls: ReportFilterControlDef[];
   outputRows: ReportOutputRow[];
   logicOperator: ReportLogicOperator;
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
+  referenceEntityMetadataLoadingByName: Record<string, boolean>;
   reportTableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null>;
   reportTableFieldsMetadataLoadingByRowId: Record<string, boolean>;
   reportTableFieldsMetadataKeyByRowId: Record<string, string>;
@@ -28,7 +30,7 @@ function cloneOutputRows(rows: ReportOutputRow[]): ReportOutputRow[] {
     nestedEntityFilterByField: Object.fromEntries(
       Object.entries(row.nestedEntityFilterByField).map(([key, state]) => [
         key,
-        { ...state, values: [...state.values] },
+        { ...state, path: [...(state.path ?? [])], values: [...state.values] },
       ]),
     ),
   }));
@@ -44,6 +46,8 @@ export function captureReportsComposeSnapshot(): ReportsComposeSnapshot {
     filterControls: [...state.filterControls],
     outputRows: cloneOutputRows(state.outputRows),
     logicOperator: state.logicOperator,
+    referenceEntityMetadataByName: { ...state.referenceEntityMetadataByName },
+    referenceEntityMetadataLoadingByName: { ...state.referenceEntityMetadataLoadingByName },
     reportTableFieldsMetadataByRowId: { ...state.reportTableFieldsMetadataByRowId },
     reportTableFieldsMetadataLoadingByRowId: {
       ...state.reportTableFieldsMetadataLoadingByRowId,
@@ -61,6 +65,8 @@ export function restoreReportsComposeSnapshot(snapshot: ReportsComposeSnapshot):
     filterControls: [...snapshot.filterControls],
     outputRows: cloneOutputRows(snapshot.outputRows),
     logicOperator: snapshot.logicOperator,
+    referenceEntityMetadataByName: { ...snapshot.referenceEntityMetadataByName },
+    referenceEntityMetadataLoadingByName: { ...snapshot.referenceEntityMetadataLoadingByName },
     reportTableFieldsMetadataByRowId: { ...snapshot.reportTableFieldsMetadataByRowId },
     reportTableFieldsMetadataLoadingByRowId: {
       ...snapshot.reportTableFieldsMetadataLoadingByRowId,

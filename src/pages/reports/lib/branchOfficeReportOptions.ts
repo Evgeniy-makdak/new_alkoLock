@@ -1,5 +1,4 @@
 import { getQuery } from '@shared/api/baseQueryTypes';
-import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
@@ -7,7 +6,13 @@ import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 export type BranchOfficeNode = {
   id?: number | string;
   name?: string;
+  parentOffice?: { id?: number | string; name?: string } | null;
   childOffices?: BranchOfficeNode[];
+  createdAt?: string;
+  lastModifiedAt?: string;
+  createdBy?: { id?: number | string; fullName?: string; surname?: string; firstName?: string };
+  lastModifiedBy?: { id?: number | string; fullName?: string; surname?: string; firstName?: string };
+  systemGenerated?: boolean;
 };
 
 function unwrapBranchContent(res: {
@@ -30,7 +35,7 @@ export function flattenBranchOffices(nodes: BranchOfficeNode[]): BranchOfficeNod
     if (node.id == null) return;
     const key = String(node.id);
     if (!byId.has(key)) {
-      byId.set(key, { id: node.id, name: node.name });
+      byId.set(key, node);
     }
     const children = node.childOffices;
     if (!Array.isArray(children)) return;
@@ -62,31 +67,3 @@ export async function fetchBranchOfficesForReport(
   return flattenBranchOffices(unwrapBranchContent(res));
 }
 
-/** Опции «Значение» для BranchOffice по выбранному полю metadata (name, id, …). */
-export function branchOfficeValuesForAttribute(
-  offices: BranchOfficeNode[],
-  attribute: string,
-  listPicker: boolean,
-): Values {
-  const attr = (attribute ?? '').trim();
-
-  if (listPicker || attr === 'id') {
-    return offices
-      .filter((o) => o.id != null)
-      .map((o) => ({
-        value: o.id as number | string,
-        label: (o.name ?? '').trim() || String(o.id),
-      }))
-      .sort((a, b) => String(a.label).localeCompare(String(b.label), 'ru'));
-  }
-
-  const seen = new Map<string, Values[number]>();
-  for (const office of offices) {
-    const name = (office.name ?? '').trim();
-    if (!name || seen.has(name)) continue;
-    seen.set(name, { value: name, label: name });
-  }
-  return Array.from(seen.values()).sort((a, b) =>
-    String(a.label).localeCompare(String(b.label), 'ru'),
-  );
-}

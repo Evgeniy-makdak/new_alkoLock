@@ -5,6 +5,7 @@ import { extractUserGroupNames } from './buildNestedEntityAttributeOptions';
 import {
   collectReportContentColumnKeys,
   findReportFieldDefForColumnKey,
+  orderReportContentColumnKeys,
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
@@ -19,9 +20,11 @@ import {
 } from './reportResultTableColumns';
 
 import type {
+  ReportEntityListItem,
   ReportEntityMetadata,
   ReportFieldDefinition,
   ReportOutputRow,
+  ReportSelectedFieldPayload,
 } from '../types/reportApiTypes';
 import type { ReportGridRow } from './mapReportContentToFixedGrid';
 
@@ -122,12 +125,19 @@ export function mapReportContentToResultGrid(
   fieldMap: Map<string, ReportFieldDefinition> = new Map(),
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null> = {},
   columnAliases: Map<string, string> = new Map(),
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  selectedFieldsForColumnOrder?: ReportSelectedFieldPayload[],
+  entities: ReportEntityListItem[] = [],
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
     return { columns: [], rows: [] };
   }
 
-  const columnKeys = collectReportContentColumnKeys(content);
+  const contentKeys = collectReportContentColumnKeys(content);
+  const columnKeys = orderReportContentColumnKeys(
+    contentKeys,
+    selectedFieldsForColumnOrder?.map((f) => f.fieldName),
+  );
 
   const columns: GridColDef[] = columnKeys.map((key) => {
     const fieldDef = findReportFieldDefForColumnKey(
@@ -136,6 +146,7 @@ export function mapReportContentToResultGrid(
       outputRows,
       fieldMap,
       tableMetadataByRowId,
+      referenceEntityMetadataByName,
     );
     return {
       field: key,
@@ -148,6 +159,8 @@ export function mapReportContentToResultGrid(
           outputRows,
           fieldMap,
           tableMetadataByRowId,
+          referenceEntityMetadataByName,
+          entities,
         ),
       ),
       flex: 1,
@@ -172,6 +185,7 @@ export function mapReportContentToResultGrid(
         outputRows,
         fieldMap,
         tableMetadataByRowId,
+        referenceEntityMetadataByName,
       );
       flat[key] = formatDynamicCellValue(
         key,

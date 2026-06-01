@@ -27,6 +27,7 @@ export function ReportsResultsView() {
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
   const metadata = reportsStore((s) => s.metadata);
+  const entities = reportsStore((s) => s.entities);
   const outputRows = reportsStore((s) => s.outputRows);
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const isLoadingPage = reportGenerationStore((s) => s.isLoadingPage);
@@ -67,6 +68,7 @@ export function ReportsResultsView() {
   const reportTableFieldsMetadataByRowId = reportsStore(
     (s) => s.reportTableFieldsMetadataByRowId,
   );
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
   const activeOutputRows = useMemo(
     () => outputRows.filter((row) => row.selectedOutputFields.length > 0),
     [outputRows],
@@ -121,11 +123,13 @@ export function ReportsResultsView() {
     return buildReportSortFieldMap(queryContext.body.selectedFields);
   }, [queryContext?.body.selectedFields]);
 
+  const frozenColumnHeaderLabels = queryContext?.columnHeaderLabels;
+
   const { columns, rows } = useMemo(() => {
     if (!lastResult?.content?.length) {
       return { columns: [], rows: [] };
     }
-    return mapReportContentToResultGrid(
+    const grid = mapReportContentToResultGrid(
       lastResult.content,
       primaryField,
       rowIdOffset,
@@ -136,7 +140,24 @@ export function ReportsResultsView() {
       fieldMap,
       reportTableFieldsMetadataByRowId,
       columnAliases,
+      referenceEntityMetadataByName,
+      queryContext?.body.selectedFields,
+      entities,
     );
+
+    if (!frozenColumnHeaderLabels) {
+      return grid;
+    }
+
+    return {
+      ...grid,
+      columns: grid.columns.map((col) => {
+        const field = col.field;
+        if (typeof field !== 'string') return col;
+        const frozen = frozenColumnHeaderLabels[field];
+        return frozen ? { ...col, headerName: frozen } : col;
+      }),
+    };
   }, [
     lastResult,
     primaryField,
@@ -148,6 +169,10 @@ export function ReportsResultsView() {
     fieldMap,
     reportTableFieldsMetadataByRowId,
     columnAliases,
+    referenceEntityMetadataByName,
+    queryContext?.body.selectedFields,
+    entities,
+    frozenColumnHeaderLabels,
   ]);
 
   const handlePaginationModelChange = useCallback(

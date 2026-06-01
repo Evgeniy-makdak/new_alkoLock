@@ -25,6 +25,12 @@ export type ReportFieldDefinition = {
   aggregation: string | null;
   availableOperations: ReportFieldOperation[];
   availableFunctions: ReportFieldOperation[];
+  /** Справочник значений для ENUM (если бэкенд отдаёт в metadata). */
+  allowedValues?: Array<
+    | string
+    | number
+    | { value?: string | number; label?: string; code?: string; name?: string }
+  > | null;
 };
 
 export type ReportSubscriptionEventType = {
@@ -128,10 +134,13 @@ export type ReportViewMode = 'table' | 'bar' | 'pie';
 
 export type ReportUiFilterSelections = Record<string, Values>;
 
-/** Фильтр по вложенной сущности: свойство и конечные значения. */
+/** Фильтр по вложенной сущности: цепочка полей metadata и конечные значения. */
 export type ReportNestedEntityFilterState = {
-  attribute: string | null;
+  /** fieldName на каждом уровне metadata (branch → office → …). */
+  path: string[];
   values: Values;
+  /** @deprecated Используйте path */
+  attribute?: string | null;
 };
 
 export type ReportNestedEntityFilterByField = Record<string, ReportNestedEntityFilterState>;

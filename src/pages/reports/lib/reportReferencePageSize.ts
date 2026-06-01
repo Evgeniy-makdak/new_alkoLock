@@ -1,2 +1,2 @@
 /** Размер страницы справочников в выпадающих списках отчётов (как на вкладке «События»). */
-export const REPORT_REFERENCE_LIST_PAGE_SIZE = 20;
+export const REPORT_REFERENCE_LIST_PAGE_SIZE = 25;

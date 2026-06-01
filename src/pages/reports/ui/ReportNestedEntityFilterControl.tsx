@@ -3,25 +3,27 @@ import { useTranslation } from 'react-i18next';
 
 import { Box } from '@mui/material';
 
-import {
-  buildNestedEntityAttributeOptions,
-  enrichNestedEntityFilterValues,
-} from '@pages/reports/lib/buildNestedEntityAttributeOptions';
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
-import { findReferenceEntityFieldByAttribute } from '@pages/reports/lib/findReferenceEntityFieldByAttribute';
 import {
-  buildNestedEntityStaticValueOptions,
-  resolveNestedEntityValueLoadKind,
-} from '@pages/reports/lib/reportNestedEntityValueOptions';
+  buildReferenceEntityPropertyOptions,
+  buildReportAttributeValueOptions,
+} from '@pages/reports/lib/reportMetadataFilterOptions';
+import { resolveNestedEntityValueLoadKind } from '@pages/reports/lib/reportNestedEntityValueOptions';
+import {
+  buildNestedFilterUiSegments,
+  collectNestedFilterMetadataEntities,
+  normalizeNestedFilterPath,
+} from '@pages/reports/lib/reportNestedFilterPath';
+import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
-import { buildReferenceEntityPropertyOptions } from '@pages/reports/lib/reportReferenceEntityProperties';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
+import { reportsStore } from '@pages/reports/model/reportsStore';
 import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
@@ -36,14 +38,152 @@ import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
 import pageStyles from './Reports.module.scss';
 
+import type { TFunction } from 'i18next';
+
+import type { NestedFilterValueSegment } from '@pages/reports/lib/reportNestedFilterPath';
+
+type NestedFilterValueControlProps = {
+  fieldKey: string;
+  segment: NestedFilterValueSegment;
+  values: Values;
+  filterOperationCode?: string | null;
+  compact: boolean;
+  controlSx: typeof reportFilterControlSx;
+  vehicleLabelMaps?: ReportVehicleLabelMaps;
+  t: TFunction;
+  onChange: (values: Values) => void;
+};
+
+function NestedFilterValueControl({
+  fieldKey,
+  segment,
+  values,
+  filterOperationCode,
+  compact,
+  controlSx,
+  vehicleLabelMaps,
+  t,
+  onChange,
+}: NestedFilterValueControlProps) {
+  const valueLoadKind = resolveNestedEntityValueLoadKind(segment.field, segment.leafEntityName);
+  const isBooleanValueField = isReportBooleanField(segment.field);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [remoteOptions, setRemoteOptions] = useState<Values>([]);
+  const [remoteLoading, setRemoteLoading] = useState(false);
+
+  useEffect(() => {
+    setSearchQuery('');
+  }, [segment.leafEntityName, segment.field.fieldName]);
+
+  const staticValueOptions = useMemo(() => {
+    if (valueLoadKind === 'static') {
+      return buildNestedEntityStaticValueOptions(segment.field, t);
+    }
+    if (valueLoadKind === 'enum') {
+      return buildReportAttributeValueOptions(segment.field, t);
+    }
+    return [];
+  }, [segment.field, valueLoadKind, t]);
+
+  useEffect(() => {
+    if (valueLoadKind !== 'domainList') {
+      setRemoteOptions([]);
+      return;
+    }
+
+    let cancelled = false;
+    setRemoteLoading(true);
+
+    void fetchReportNestedEntityValueOptions(
+      segment.leafEntityName,
+      segment.field,
+      searchQuery,
+      vehicleLabelMaps,
+    )
+      .then((opts) => {
+        if (!cancelled) setRemoteOptions(opts);
+      })
+      .catch(() => {
+        if (!cancelled) setRemoteOptions([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRemoteLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [valueLoadKind, segment.leafEntityName, segment.field, searchQuery, vehicleLabelMaps]);
+
+  const valueOptions =
+    valueLoadKind === 'domainList' ? remoteOptions : staticValueOptions;
+
+  const displayValueOptions = useMemo(
+    () => mergeOptionsWithSelected(valueOptions, values),
+    [valueOptions, values],
+  );
+
+  const useServerFilter = valueLoadKind === 'domainList';
+
+  if (valueLoadKind === 'year') {
+    return (
+      <ReportYearFilterField
+        label={t('reports.terminalValuesLabel', { parameter: segment.label })}
+        value={values}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (valueLoadKind === 'dateTime') {
+    return (
+      <ReportDateTimeFilterField
+        value={values}
+        operationCode={filterOperationCode}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (valueLoadKind === 'coordinate') {
+    return (
+      <ReportCoordinateFilterField
+        label={t('reports.terminalValuesLabel', { parameter: segment.label })}
+        value={values}
+        onChange={onChange}
+        sx={controlSx}
+      />
+    );
+  }
+
+  return (
+    <ReportSearchMultipleSelect
+      multiple={!isBooleanValueField}
+      compact={compact}
+      name={`${fieldKey}__terminalValues`}
+      label={t('reports.terminalValuesLabel', { parameter: segment.label })}
+      values={displayValueOptions}
+      value={isBooleanValueField ? values.slice(0, 1) : values}
+      serverFilter={useServerFilter}
+      isLoading={useServerFilter && remoteLoading}
+      sx={controlSx}
+      slotProps={reportFilterAutocompleteSlotProps}
+      onInputChange={useServerFilter ? setSearchQuery : undefined}
+      setValueStore={(_, next) =>
+        onChange(isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values))
+      }
+    />
+  );
+}
+
 type ReportNestedEntityFilterControlProps = {
   field: ReportFieldDefinition;
   referenceEntity: string;
   tableFieldsMetadata: ReportEntityMetadata | null;
   tableFieldsMetadataLoading?: boolean;
-  records: unknown[];
-  recordsLoading: boolean;
-  labelMaps: ReportVehicleLabelMaps;
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
+  referenceEntityMetadataLoadingByName: Record<string, boolean>;
+  vehicleLabelMaps?: ReportVehicleLabelMaps;
   state: ReportNestedEntityFilterState;
   onChange: (patch: Partial<ReportNestedEntityFilterState>) => void;
   filterOperationCode?: string | null;
@@ -69,9 +209,9 @@ export function ReportNestedEntityFilterControl({
   referenceEntity,
   tableFieldsMetadata,
   tableFieldsMetadataLoading = false,
-  records,
-  recordsLoading,
-  labelMaps,
+  referenceEntityMetadataByName,
+  referenceEntityMetadataLoadingByName,
+  vehicleLabelMaps,
   state,
   onChange,
   filterOperationCode,
@@ -79,221 +219,116 @@ export function ReportNestedEntityFilterControl({
 }: ReportNestedEntityFilterControlProps) {
   const { t } = useTranslation();
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
-  const [searchQuery, setSearchQuery] = useState('');
+  const path = normalizeNestedFilterPath(state);
 
-  const attributeField = useMemo(
+  const loadingByEntity = useMemo(() => {
+    const map: Record<string, boolean> = {
+      [referenceEntity]: tableFieldsMetadataLoading,
+    };
+    for (const [key, loading] of Object.entries(referenceEntityMetadataLoadingByName)) {
+      map[key] = loading;
+    }
+    return map;
+  }, [referenceEntity, tableFieldsMetadataLoading, referenceEntityMetadataLoadingByName]);
+
+  const metadataByEntity = useMemo(
+    () => ({
+      [referenceEntity]: tableFieldsMetadata,
+      ...referenceEntityMetadataByName,
+    }),
+    [referenceEntity, tableFieldsMetadata, referenceEntityMetadataByName],
+  );
+
+  useEffect(() => {
+    const refs = collectNestedFilterMetadataEntities(tableFieldsMetadata, path);
+    for (const ref of refs) {
+      void reportsStore.getState().loadReferenceEntityMetadata(ref);
+    }
+  }, [tableFieldsMetadata, path.join('\0')]);
+
+  const segments = useMemo(
     () =>
-      state.attribute
-        ? findReferenceEntityFieldByAttribute(tableFieldsMetadata, state.attribute)
-        : undefined,
-    [tableFieldsMetadata, state.attribute],
+      buildNestedFilterUiSegments(
+        referenceEntity,
+        tableFieldsMetadata,
+        path,
+        metadataByEntity,
+        loadingByEntity,
+      ),
+    [referenceEntity, tableFieldsMetadata, path, metadataByEntity, loadingByEntity],
   );
 
-  const valueLoadKind = useMemo(
-    () => resolveNestedEntityValueLoadKind(attributeField, referenceEntity, state.attribute ?? ''),
-    [attributeField, referenceEntity, state.attribute],
-  );
-
-  const fieldForRemoteSearch = useMemo((): ReportFieldDefinition | undefined => {
-    if (attributeField) return attributeField;
-    if (!state.attribute) return undefined;
-    return {
-      fieldName: state.attribute,
-      label: state.attribute,
-      alias: null,
-      type: 'TEXT',
-      filterable: true,
-      sortable: true,
-      groupable: true,
-      aggregation: null,
-      availableOperations: [],
-      availableFunctions: [],
-    };
-  }, [attributeField, state.attribute]);
-
-  const propertyOptions: Values = useMemo(
-    () => buildReferenceEntityPropertyOptions(referenceEntity, tableFieldsMetadata, t),
-    [referenceEntity, tableFieldsMetadata, t],
-  );
-
-  const selectedProperty = useMemo(() => {
-    if (!state.attribute) return [];
-    const hit = propertyOptions.find((o) => String(o.value) === state.attribute);
-    return hit ? [hit] : [{ value: state.attribute, label: state.attribute }];
-  }, [state.attribute, propertyOptions]);
-
-  const propertyLabel = useMemo(() => {
-    if (!state.attribute) return '';
-    return propertyOptions.find((o) => String(o.value) === state.attribute)?.label ?? state.attribute;
-  }, [state.attribute, propertyOptions]);
-
-  useEffect(() => {
-    setSearchQuery('');
-  }, [state.attribute, referenceEntity]);
-
-  const staticValueOptions = useMemo(() => {
-    if (!attributeField || valueLoadKind !== 'static') return [];
-    return buildNestedEntityStaticValueOptions(attributeField, t);
-  }, [attributeField, valueLoadKind, t]);
-
-  const frontDataOptions = useMemo(() => {
-    if (!state.attribute || valueLoadKind !== 'frontDataEnum') return [];
-    return buildNestedEntityAttributeOptions([], referenceEntity, state.attribute, labelMaps);
-  }, [valueLoadKind, referenceEntity, state.attribute, labelMaps]);
-
-  const [remoteOptions, setRemoteOptions] = useState<Values>([]);
-  const [remoteLoading, setRemoteLoading] = useState(false);
-
-  useEffect(() => {
-    const needsRemote = valueLoadKind === 'serverSearch' && state.attribute && fieldForRemoteSearch;
-
-    if (!needsRemote) {
-      setRemoteOptions([]);
-      return;
+  const handlePropertyChange = (depth: number, nextFieldName: string | null) => {
+    const nextPath = path.slice(0, depth);
+    if (nextFieldName) {
+      nextPath.push(nextFieldName);
     }
-
-    let cancelled = false;
-    setRemoteLoading(true);
-
-    const load = fetchReportNestedEntityValueOptions(
-      referenceEntity,
-      fieldForRemoteSearch,
-      searchQuery,
-      labelMaps,
-    );
-
-    void load
-      .then((opts) => {
-        if (!cancelled) setRemoteOptions(opts);
-      })
-      .catch(() => {
-        if (!cancelled) setRemoteOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setRemoteLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [valueLoadKind, referenceEntity, fieldForRemoteSearch, state.attribute, searchQuery, labelMaps]);
-
-  const legacyClientOptions = useMemo(() => {
-    if (
-      !state.attribute ||
-      valueLoadKind === 'serverSearch' ||
-      valueLoadKind === 'dateTime' ||
-      valueLoadKind === 'coordinate'
-    ) {
-      return [];
-    }
-    if (valueLoadKind === 'static' || valueLoadKind === 'frontDataEnum') {
-      return [];
-    }
-    return buildNestedEntityAttributeOptions(records, referenceEntity, state.attribute, labelMaps);
-  }, [
-    records,
-    referenceEntity,
-    state.attribute,
-    labelMaps,
-    valueLoadKind,
-  ]);
-
-  const valueOptions = useMemo(() => {
-    if (valueLoadKind === 'static') return staticValueOptions;
-    if (valueLoadKind === 'frontDataEnum') return frontDataOptions;
-    if (valueLoadKind === 'serverSearch') return remoteOptions;
-    return legacyClientOptions;
-  }, [valueLoadKind, staticValueOptions, frontDataOptions, remoteOptions, legacyClientOptions]);
-
-  const valueOptionsLoading =
-    valueLoadKind === 'serverSearch'
-      ? remoteLoading
-      : valueLoadKind === 'static' || valueLoadKind === 'frontDataEnum'
-        ? false
-        : recordsLoading;
-
-  const useServerFilter = valueLoadKind === 'serverSearch';
-  const isBooleanValueField = Boolean(attributeField && isReportBooleanField(attributeField));
-
-  const displayValueOptions = useMemo(
-    () => mergeOptionsWithSelected(valueOptions, state.values),
-    [valueOptions, state.values],
-  );
-
-  const selectedValues = useMemo(() => {
-    if (!state.attribute || !state.values.length) return state.values;
-    if (useServerFilter || valueLoadKind === 'static') return state.values;
-    return enrichNestedEntityFilterValues(
-      referenceEntity,
-      state.attribute,
-      state.values,
-      records,
-      labelMaps,
-    );
-  }, [referenceEntity, state.attribute, state.values, records, labelMaps, useServerFilter, valueLoadKind]);
+    onChange({ path: nextPath, values: [] });
+  };
 
   return (
     <Box className={pageStyles.reportFilterNestedEntity}>
-      <ReportSearchMultipleSelect
-        multiple={false}
-        compact={compact}
-        name={`${field.fieldName}__property`}
-        label={t('reports.entityPropertyLabel')}
-        placeholder={t('reports.entityPropertyPlaceholder')}
-        values={propertyOptions}
-        value={selectedProperty}
-        serverFilter={false}
-        isLoading={tableFieldsMetadataLoading}
-        sx={controlSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        setValueStore={(_, next) => {
-          const picked = toValuesFromSingleSelect(next)[0];
-          onChange({ attribute: picked ? String(picked.value) : null, values: [] });
-        }}
-      />
+      {segments.map((segment, index) => {
+        if (segment.kind === 'property') {
+          const propertyOptions = buildReferenceEntityPropertyOptions(segment.metadata);
+          const selectedProperty = segment.selectedFieldName
+            ? (() => {
+                const hit = propertyOptions.find(
+                  (o) => String(o.value) === segment.selectedFieldName,
+                );
+                return hit
+                  ? [hit]
+                  : [{ value: segment.selectedFieldName, label: segment.selectedFieldName }];
+              })()
+            : [];
 
-      {state.attribute && valueLoadKind === 'year' ? (
-        <ReportYearFilterField
-          label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
-          value={state.values}
-          onChange={(values) => onChange({ values })}
-        />
-      ) : state.attribute && valueLoadKind === 'dateTime' && attributeField ? (
-        <ReportDateTimeFilterField
-          value={state.values}
-          operationCode={filterOperationCode}
-          onChange={(values) => onChange({ values })}
-        />
-      ) : state.attribute && valueLoadKind === 'coordinate' ? (
-        <ReportCoordinateFilterField
-          label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
-          value={state.values}
-          onChange={(values) => onChange({ values })}
-          sx={controlSx}
-        />
-      ) : state.attribute ? (
-        <ReportSearchMultipleSelect
-          multiple={!isBooleanValueField}
-          compact={compact}
-          name={`${field.fieldName}__terminalValues`}
-          label={t('reports.terminalValuesLabel', { parameter: propertyLabel })}
-          values={displayValueOptions}
-          value={isBooleanValueField ? selectedValues.slice(0, 1) : selectedValues}
-          serverFilter={useServerFilter}
-          isLoading={
-            valueOptionsLoading || (useServerFilter && !attributeField && tableFieldsMetadataLoading)
-          }
-          sx={controlSx}
-          slotProps={reportFilterAutocompleteSlotProps}
-          onInputChange={useServerFilter ? setSearchQuery : undefined}
-          setValueStore={(_, next) =>
-            onChange({
-              values: isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values),
-            })
-          }
-        />
-      ) : null}
+          const propertyLabel =
+            segment.depth === 0
+              ? t('reports.entityPropertyLabel')
+              : t('reports.nestedEntityPropertyLabel', {
+                  entity: segment.entityName,
+                });
+
+          return (
+            <ReportSearchMultipleSelect
+              key={`${field.fieldName}__property_${segment.depth}`}
+              multiple={false}
+              compact={compact}
+              name={`${field.fieldName}__property_${segment.depth}`}
+              label={propertyLabel}
+              placeholder={t('reports.entityPropertyPlaceholder')}
+              values={propertyOptions}
+              value={selectedProperty}
+              serverFilter={false}
+              isLoading={segment.loading}
+              sx={controlSx}
+              slotProps={reportFilterAutocompleteSlotProps}
+              setValueStore={(_, next) => {
+                const picked = toValuesFromSingleSelect(next)[0];
+                handlePropertyChange(
+                  segment.depth,
+                  picked ? String(picked.value) : null,
+                );
+              }}
+            />
+          );
+        }
+
+        return (
+          <NestedFilterValueControl
+            key={`${field.fieldName}__value_${index}`}
+            fieldKey={field.fieldName}
+            segment={segment}
+            values={state.values}
+            filterOperationCode={filterOperationCode}
+            compact={compact}
+            controlSx={controlSx}
+            vehicleLabelMaps={vehicleLabelMaps}
+            t={t}
+            onChange={(values) => onChange({ values })}
+          />
+        );
+      })}
     </Box>
   );
 }

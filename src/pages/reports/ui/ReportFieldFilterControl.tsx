@@ -1,33 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TextField } from '@mui/material';
-
-import { fetchReportEntityMetadata } from '@pages/reports/api/reportsApi';
-import {
-  buildFilterControls,
-  fieldDefinitionsToValues,
-  getStaticOptionsForControl,
-} from '@pages/reports/lib/extractMetadataFilterOptions';
 import {
   formatReportTimeInput,
   isCompleteReportTime,
 } from '@pages/reports/lib/formatReportTimeInput';
 import { getReportFieldFilterValueOptions } from '@pages/reports/lib/extractMetadataFilterOptions';
-import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
-import { buildNestedEntityAttributeOptions } from '@pages/reports/lib/buildNestedEntityAttributeOptions';
-import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
+import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
+import {
+  buildReportAttributeValueOptions,
+  resolveReportMetadataValueLoadKind,
+} from '@pages/reports/lib/reportMetadataFilterOptions';
 import {
   isReportBooleanField,
   isReportCoordinateField,
   isReportDateTimeField,
   isReportTimeOnlyField,
+  isReportYearOnlyField,
 } from '@pages/reports/lib/reportFieldFilterKind';
-import { resolveNestedEntityValueLoadKind } from '@pages/reports/lib/reportNestedEntityValueOptions';
-import {
-  resolveReportRootFieldValueSearchEntity,
-  shouldUseReportRootFieldServerSearch,
-} from '@pages/reports/lib/reportRootEntityServerSearch';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
   reportFilterAutocompleteSlotProps,
@@ -42,15 +32,13 @@ import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 import { ReportCoordinateFilterField } from './ReportCoordinateFilterField';
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
 import { ReportTimeTextField } from './ReportTimeTextField';
+import { ReportYearFilterField } from './ReportYearFilterField';
 
 type ReportFieldFilterControlProps = {
   field: ReportFieldDefinition;
   metadata: ReportEntityMetadata;
   value: Values;
-  referenceOptionsCache: Record<string, Values>;
-  vehicleLabelMaps?: ReportVehicleLabelMaps;
   onChange: (values: Values) => void;
-  onReferenceOptionsLoaded: (cacheKey: string, options: Values) => void;
   filterOperationCode?: string | null;
   compact?: boolean;
 };
@@ -73,10 +61,7 @@ export function ReportFieldFilterControl({
   field,
   metadata,
   value,
-  referenceOptionsCache,
-  vehicleLabelMaps,
   onChange,
-  onReferenceOptionsLoaded,
   filterOperationCode,
   compact = false,
 }: ReportFieldFilterControlProps) {
@@ -85,61 +70,22 @@ export function ReportFieldFilterControl({
   const controlId = field.fieldName;
   const label = field.label || field.fieldName;
 
-  const valueSearchEntity = useMemo(
-    () => resolveReportRootFieldValueSearchEntity(metadata.entityName, field),
-    [metadata.entityName, field],
+  const valueLoadKind = useMemo(() => resolveReportMetadataValueLoadKind(field), [field]);
+
+  const metadataValueOptions = useMemo(
+    () => buildReportAttributeValueOptions(field, t),
+    [field, t],
   );
-  const useRootServerSearch = shouldUseReportRootFieldServerSearch(metadata.entityName, field);
-  const valueLoadKind = useMemo(
+
+  const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
+  const displayOptions = useMemo(
     () =>
-      valueSearchEntity
-        ? resolveNestedEntityValueLoadKind(field, valueSearchEntity, field.fieldName)
-        : null,
-    [valueSearchEntity, field],
+      mergeOptionsWithSelected(
+        groupStaticOptions.length > 0 ? groupStaticOptions : metadataValueOptions,
+        value,
+      ),
+    [groupStaticOptions, metadataValueOptions, value],
   );
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [remoteOptions, setRemoteOptions] = useState<Values>([]);
-  const [remoteLoading, setRemoteLoading] = useState(false);
-
-  useEffect(() => {
-    setSearchQuery('');
-  }, [field.fieldName, metadata.entityName]);
-
-  useEffect(() => {
-    if (!useRootServerSearch || !valueSearchEntity || valueLoadKind !== 'serverSearch') {
-      setRemoteOptions([]);
-      return;
-    }
-
-    let cancelled = false;
-    setRemoteLoading(true);
-
-    void fetchReportNestedEntityValueOptions(
-      valueSearchEntity,
-      field,
-      searchQuery,
-      vehicleLabelMaps,
-    )
-      .then((opts) => {
-        if (!cancelled) setRemoteOptions(opts);
-      })
-      .catch(() => {
-        if (!cancelled) setRemoteOptions([]);
-      })
-      .finally(() => {
-        if (!cancelled) setRemoteLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [useRootServerSearch, valueSearchEntity, valueLoadKind, field, searchQuery, vehicleLabelMaps]);
-
-  const frontDataOptions = useMemo(() => {
-    if (!valueSearchEntity || valueLoadKind !== 'frontDataEnum') return [];
-    return buildNestedEntityAttributeOptions([], valueSearchEntity, field.fieldName, vehicleLabelMaps);
-  }, [valueSearchEntity, valueLoadKind, field.fieldName, vehicleLabelMaps]);
 
   if (isReportDateTimeField(field)) {
     return (
@@ -148,6 +94,12 @@ export function ReportFieldFilterControl({
         operationCode={filterOperationCode}
         onChange={onChange}
       />
+    );
+  }
+
+  if (isReportYearOnlyField(field)) {
+    return (
+      <ReportYearFilterField label={label} value={value} onChange={onChange} />
     );
   }
 
@@ -202,83 +154,19 @@ export function ReportFieldFilterControl({
     );
   }
 
-  if (useRootServerSearch && valueLoadKind === 'frontDataEnum') {
-    const displayOptions = mergeOptionsWithSelected(frontDataOptions, value);
-    return (
-      <ReportSearchMultipleSelect
-        multiple
-        compact={compact}
-        name={controlId}
-        label={label}
-        values={displayOptions}
-        value={value}
-        serverFilter={false}
-        sx={controlSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        setValueStore={(_, next) => onChange(next as Values)}
-      />
-    );
-  }
-
-  if (useRootServerSearch && valueLoadKind === 'serverSearch') {
-    const displayOptions = mergeOptionsWithSelected(remoteOptions, value);
-    return (
-      <ReportSearchMultipleSelect
-        multiple
-        compact={compact}
-        name={controlId}
-        label={label}
-        values={displayOptions}
-        value={value}
-        serverFilter
-        isLoading={remoteLoading}
-        sx={controlSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        onInputChange={setSearchQuery}
-        setValueStore={(_, next) => onChange(next as Values)}
-      />
-    );
-  }
-
-  const staticOptions = getStaticOptionsForControl(controlId, metadata, t);
-  const cacheKey = field.referenceEntity ? `ref:${field.referenceEntity}` : controlId;
-  const options =
-    staticOptions.length > 0 ? staticOptions : (referenceOptionsCache[cacheKey] ?? []);
-
-  const loadReferenceOptions = async () => {
-    if (!field.referenceEntity || staticOptions.length > 0) return;
-    if (referenceOptionsCache[cacheKey]?.length) return;
-    try {
-      const refMeta = await fetchReportEntityMetadata(field.referenceEntity);
-      const refControls = buildFilterControls(refMeta);
-      const loaded: Values = [];
-      for (const c of refControls) {
-        loaded.push(...getStaticOptionsForControl(c.id, refMeta, t));
-      }
-      if (!loaded.length && refMeta.fields?.length) {
-        loaded.push(...fieldDefinitionsToValues(refMeta.fields));
-      }
-      onReferenceOptionsLoaded(cacheKey, loaded);
-    } catch {
-      onReferenceOptionsLoaded(cacheKey, []);
-    }
-  };
+  const multiple = valueLoadKind !== 'enum' || metadataValueOptions.length === 0;
 
   return (
     <ReportSearchMultipleSelect
-      multiple
+      multiple={multiple}
       compact={compact}
       name={controlId}
       label={label}
-      values={options}
+      values={displayOptions}
       value={value}
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      isLoading={Boolean(field.referenceEntity) && !staticOptions.length && !referenceOptionsCache[cacheKey]}
-      onOpen={() => {
-        void loadReferenceOptions();
-      }}
       setValueStore={(_, next) => onChange(next as Values)}
     />
   );

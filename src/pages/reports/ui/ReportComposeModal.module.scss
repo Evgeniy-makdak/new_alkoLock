@@ -444,6 +444,17 @@
   padding-right: 40px !important;
 }
 
+.transferListItemButtonChosen {
+  padding-right: 108px !important;
+}
+
+.transferRowActions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+}
+
 .transferListCheckbox {
   min-width: 36px !important;
 }

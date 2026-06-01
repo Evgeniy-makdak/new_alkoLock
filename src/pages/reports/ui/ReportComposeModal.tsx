@@ -11,7 +11,11 @@ import {
 } from '@pages/reports/api/reportsApi';
 import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
-import { mergeAllReportTableFieldOptions } from '@pages/reports/lib/buildReportTableFieldOptions';
+import {
+  buildRootReportTableFieldOptions,
+  collectReferenceEntitiesFromMetadata,
+  mergeAllReportTableFieldOptions,
+} from '@pages/reports/lib/buildReportTableFieldOptions';
 import { downloadReportFile } from '@pages/reports/lib/downloadReportFile';
 import {
   type ReportsComposeSnapshot,
@@ -44,8 +48,13 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const metadata = reportsStore((s) => s.metadata);
+  const entities = reportsStore((s) => s.entities);
   const outputRows = reportsStore((s) => s.outputRows);
   const reportTableFieldsMetadataByRowId = reportsStore((s) => s.reportTableFieldsMetadataByRowId);
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
+  const referenceEntityMetadataLoadingByName = reportsStore(
+    (s) => s.referenceEntityMetadataLoadingByName,
+  );
 
   const [reportName, setReportName] = useState('');
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
@@ -70,6 +79,17 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     onClose();
   }, [onClose]);
 
+  const nestedReferenceMetadataCacheKey = useMemo(() => {
+    if (!metadata) return '';
+    return collectReferenceEntitiesFromMetadata(metadata)
+      .map((ref) => {
+        const nested = referenceEntityMetadataByName[ref];
+        const loading = referenceEntityMetadataLoadingByName[ref];
+        return `${ref}:${loading ? 'loading' : (nested?.fields?.length ?? 0)}`;
+      })
+      .join('|');
+  }, [metadata, referenceEntityMetadataByName, referenceEntityMetadataLoadingByName]);
+
   const tableFieldsDialogOptions = useMemo((): Values => {
     if (!metadata) return [];
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
@@ -79,8 +99,17 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       activeRows,
       fieldMap,
       reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName,
+      entities,
     );
-  }, [metadata, outputRows, reportTableFieldsMetadataByRowId]);
+  }, [
+    metadata,
+    outputRows,
+    reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+    entities,
+    nestedReferenceMetadataCacheKey,
+  ]);
 
   const tableFieldsInitialSelection = useMemo((): Values => {
     const primaryRow = getPrimaryReportOutputRow();
@@ -102,8 +131,13 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
   const tableFieldsDialogOptionsRef = useRef(tableFieldsDialogOptions);
   tableFieldsDialogOptionsRef.current = tableFieldsDialogOptions;
 
-  /** При смене «Поля результата» / загрузке metadata — синхронизируем выбранные колонки.
-   *  Удаляем недоступные, добавляем новые, сохраняем порядок и выбор пользователя. */
+  const defaultRootTableFields = useMemo(() => {
+    if (!metadata) return [];
+    return buildRootReportTableFieldOptions(metadata, outputRows, entities);
+  }, [metadata, outputRows, entities]);
+
+  /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
+   *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
   useEffect(() => {
     if (!open) return;
     const currentOptions = tableFieldsDialogOptionsRef.current;
@@ -111,40 +145,38 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       setTableFieldsSelection([]);
       return;
     }
+    const optionByKey = new Map(currentOptions.map((o) => [String(o.value), o]));
     setTableFieldsSelection((prev) => {
-      if (prev.length === 0) return [...currentOptions];
-      const availableKeys = new Set(currentOptions.map((o) => String(o.value)));
-      const filtered = prev.filter((p) => availableKeys.has(String(p.value)));
-      const existingKeys = new Set(filtered.map((p) => String(p.value)));
-      const newOnes = currentOptions.filter((o) => !existingKeys.has(String(o.value)));
-      if (!newOnes.length && filtered.length === prev.length) return prev;
-      return [...filtered, ...newOnes];
+      if (prev.length === 0) {
+        return defaultRootTableFields.length ? [...defaultRootTableFields] : [];
+      }
+      const remapped = prev
+        .filter((p) => optionByKey.has(String(p.value)))
+        .map((p) => {
+          const key = String(p.value);
+          const opt = optionByKey.get(key);
+          return { value: key, label: opt?.label ?? p.label };
+        });
+      const unchanged =
+        remapped.length === prev.length &&
+        remapped.every(
+          (item, index) =>
+            item.value === prev[index]?.value && item.label === prev[index]?.label,
+        );
+      return unchanged ? prev : remapped;
     });
-  }, [open, tableFieldsOptionsKey]);
+  }, [open, tableFieldsOptionsKey, defaultRootTableFields]);
 
-  const loadReportTableFieldsMetadata = reportsStore((s) => s.loadReportTableFieldsMetadata);
+  const loadAllReferenceEntityMetadataForReport = reportsStore(
+    (s) => s.loadAllReferenceEntityMetadataForReport,
+  );
 
   const ensureTableFieldsMetadataLoaded = useCallback(async () => {
-    const {
-      selectedEntityName: entityName,
-      metadata: entityMetadata,
-      outputRows: currentOutputRows,
-    } = reportsStore.getState();
-    if (!entityName || !entityMetadata) return false;
-
-    const fieldMap = new Map(entityMetadata.fields.map((f) => [f.fieldName, f]));
-    const activeRows = currentOutputRows.filter((row) => row.selectedOutputFields.length > 0);
-    if (!activeRows.length) return false;
-
-    for (const row of activeRows) {
-      const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-      const ref = fieldMap.get(key)?.referenceEntity?.trim();
-      if (ref) {
-        await loadReportTableFieldsMetadata(row.id, ref);
-      }
-    }
+    const { metadata: entityMetadata } = reportsStore.getState();
+    if (!entityMetadata) return false;
+    await loadAllReferenceEntityMetadataForReport(entityMetadata);
     return true;
-  }, [loadReportTableFieldsMetadata]);
+  }, [loadAllReferenceEntityMetadataForReport]);
 
   const buildCurrentReportBody = useCallback((): {
     entityName: string;
@@ -155,6 +187,7 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       metadata: entityMetadata,
       logicOperator: currentLogicOperator,
       reportTableFieldsMetadataByRowId: tableMetadataByRowId,
+      referenceEntityMetadataByName: nestedMetadataByName,
     } = reportsStore.getState();
 
     if (!entityName) return null;
@@ -166,6 +199,7 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
           outputRows: reportsStore.getState().outputRows,
           logicOperator: currentLogicOperator,
           reportTableFieldsMetadataByRowId: tableMetadataByRowId,
+          referenceEntityMetadataByName: nestedMetadataByName,
         })
       : emptyBody;
 

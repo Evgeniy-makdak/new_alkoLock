@@ -288,6 +288,40 @@ export function ReportTableFieldsTransfer({
     [onChange, customLabelsByKey, defaultLabelsByValue],
   );
 
+  const reorderChosenKeys = useCallback(
+    (keys: string[]) => {
+      const valueByKey = new Map(value.map((item) => [fieldKey(item), item]));
+      return keys.map((key) => {
+        const existing = valueByKey.get(key);
+        if (existing) {
+          return mergeOptionMeta(existing, customLabelsByKey, defaultLabelsByValue);
+        }
+        const option = optionByKey.get(key);
+        if (option) {
+          return mergeOptionMeta(option, customLabelsByKey, defaultLabelsByValue);
+        }
+        return {
+          value: key,
+          label: resolveFieldLabel(key, customLabelsByKey, defaultLabelsByValue),
+        };
+      });
+    },
+    [value, customLabelsByKey, defaultLabelsByValue, optionByKey],
+  );
+
+  const moveChosenRow = useCallback(
+    (key: string, direction: -1 | 1) => {
+      const keys = [...chosenKeysList];
+      const index = keys.indexOf(key);
+      if (index < 0) return;
+      const swapWith = index + direction;
+      if (swapWith < 0 || swapWith >= keys.length) return;
+      [keys[index], keys[swapWith]] = [keys[swapWith]!, keys[index]!];
+      emitChosen(reorderChosenKeys(keys));
+    },
+    [chosenKeysList, emitChosen, reorderChosenKeys],
+  );
+
   const moveToChosen = (keys: string[]) => {
     if (!keys.length) return;
     const next = [
@@ -354,7 +388,7 @@ export function ReportTableFieldsTransfer({
     setRenameDraft('');
   };
 
-  const renderListStepper = (
+  const renderScrollListStepper = (
     keys: string[],
     scrollIndex: number | null,
     setScrollIndex: Dispatch<SetStateAction<number | null>>,
@@ -414,11 +448,13 @@ export function ReportTableFieldsTransfer({
     side: 'available' | 'chosen',
   ) => (
     <List dense disablePadding className={composeStyles.transferList}>
-      {items.map((option) => {
+      {items.map((option, rowIndex) => {
         const key = fieldKey(option);
         const isChecked = selectedKeys.includes(key);
         const label = fieldDisplayLabel(option, customLabelsByKey, defaultLabelsByValue);
         const isRenaming = side === 'chosen' && renamingKey === key;
+        const canMoveRowUp = side === 'chosen' && rowIndex > 0;
+        const canMoveRowDown = side === 'chosen' && rowIndex < items.length - 1;
 
         return (
           <ListItem
@@ -428,22 +464,62 @@ export function ReportTableFieldsTransfer({
             className={composeStyles.transferListItem}
             secondaryAction={
               side === 'chosen' && !disabled ? (
-                <Tooltip title={t('reports.composeTransferRename')}>
-                  <IconButton
-                    edge="end"
-                    size="small"
-                    aria-label={t('reports.composeTransferRename')}
-                    onClick={() => startRename(key, label)}>
-                    <EditOutlinedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <Box className={composeStyles.transferRowActions}>
+                  <Tooltip title={t('reports.composeTransferMoveUp')}>
+                    <span>
+                      <IconButton
+                        size="small"
+                        disabled={!canMoveRowUp}
+                        aria-label={t('reports.composeTransferMoveUp')}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          moveChosenRow(key, -1);
+                        }}>
+                        <KeyboardArrowUpIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={t('reports.composeTransferMoveDown')}>
+                    <span>
+                      <IconButton
+                        size="small"
+                        disabled={!canMoveRowDown}
+                        aria-label={t('reports.composeTransferMoveDown')}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          moveChosenRow(key, 1);
+                        }}>
+                        <KeyboardArrowDownIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                  <Tooltip title={t('reports.composeTransferRename')}>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      aria-label={t('reports.composeTransferRename')}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        startRename(key, label);
+                      }}>
+                      <EditOutlinedIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
               ) : undefined
             }>
             <ListItemButton
               selected={false}
               disabled={disabled}
               onClick={() => onToggle(key)}
-              className={composeStyles.transferListItemButton}>
+              className={
+                side === 'chosen'
+                  ? `${composeStyles.transferListItemButton} ${composeStyles.transferListItemButtonChosen}`
+                  : composeStyles.transferListItemButton
+              }>
               <ListItemIcon className={composeStyles.transferListCheckbox}>
                 <Checkbox
                   edge="start"
@@ -474,7 +550,7 @@ export function ReportTableFieldsTransfer({
                     }
                   }}
                   inputProps={{ 'aria-label': t('reports.tableFieldRenameAria', { field: key }) }}
-                  sx={{ flex: 1, minWidth: 0, mr: side === 'chosen' ? 4 : 0 }}
+                  sx={{ flex: 1, minWidth: 0, mr: side === 'chosen' ? 10 : 0 }}
                 />
               ) : (
                 <OverflowTooltip title={label}>
@@ -558,7 +634,7 @@ export function ReportTableFieldsTransfer({
             'available',
           )}
         </Box>
-        {renderListStepper(
+        {renderScrollListStepper(
           availableKeys,
           scrollIndexAvailable,
           setScrollIndexAvailable,
@@ -609,7 +685,7 @@ export function ReportTableFieldsTransfer({
             'chosen',
           )}
         </Box>
-        {renderListStepper(
+        {renderScrollListStepper(
           chosenKeysList,
           scrollIndexChosen,
           setScrollIndexChosen,

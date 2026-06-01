@@ -3,6 +3,8 @@ import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
 import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '../api/reportsApi';
+import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLabels';
+import { reportsStore } from './reportsStore';
 
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
@@ -11,6 +13,8 @@ export const DEFAULT_REPORT_PAGE_SIZE = 25;
 export type ReportQueryContext = {
   entityName: string;
   body: ReportQueryRequest;
+  /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
+  columnHeaderLabels?: Record<string, string>;
 };
 
 let reportFetchAbortController: AbortController | null = null;
@@ -126,10 +130,32 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     const pageLoaded = data.content?.length ?? 0;
     const totalElements = data.totalElements ?? pageLoaded;
     const pageIndex = typeof data.number === 'number' ? data.number : get().pagination.page;
+
+    const prevContext = get().queryContext;
+    let queryContext = prevContext;
+    if (prevContext && data.content?.length) {
+      const columnHeaderLabels =
+        prevContext.columnHeaderLabels ??
+        (() => {
+          const rs = reportsStore.getState();
+          return buildReportColumnHeaderLabels(
+            data.content,
+            rs.metadata,
+            prevContext.body,
+            rs.outputRows,
+            rs.reportTableFieldsMetadataByRowId,
+            rs.referenceEntityMetadataByName,
+            rs.entities,
+          );
+        })();
+      queryContext = { ...prevContext, columnHeaderLabels };
+    }
+
     set({
       isGenerating: false,
       isLoadingPage: false,
       lastResult: data,
+      queryContext,
       progress: 100,
       loaded: pageLoaded,
       total: totalElements,

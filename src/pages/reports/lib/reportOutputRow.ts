@@ -1,4 +1,9 @@
 import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
+import {
+  isNestedFilterPathReadyForValueInput,
+  normalizeNestedFilterPath,
+  resolveNestedFilterLeafField,
+} from './reportNestedFilterPath';
 import { reportOutputOperationKey } from './reportOutputFilterKeys';
 
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -56,6 +61,7 @@ export function isReportOutputRowComplete(
   fieldMap: Map<string, ReportFieldDefinition>,
   tableFieldsMetadata?: ReportEntityMetadata | null,
   entityMetadata?: ReportEntityMetadata | null,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
 ): boolean {
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
   if (!primaryKey) return false;
@@ -66,8 +72,15 @@ export function isReportOutputRowComplete(
   const refEntity = primaryField.referenceEntity?.trim();
   const nestedState = row.nestedEntityFilterByField[primaryField.fieldName];
 
+  const nestedPath = nestedState ? normalizeNestedFilterPath(nestedState) : [];
   const nestedTerminalReady = Boolean(
-    refEntity && nestedState?.attribute && (nestedState.values?.length ?? 0) > 0,
+    refEntity &&
+      isNestedFilterPathReadyForValueInput(
+        tableFieldsMetadata,
+        nestedPath,
+        referenceEntityMetadataByName,
+      ) &&
+      (nestedState?.values?.length ?? 0) > 0,
   );
 
   const scalarTerminalReady = Boolean(
@@ -82,8 +95,12 @@ export function isReportOutputRowComplete(
   if (!outputControlsReady) return false;
 
   const attributeField =
-    refEntity && nestedState?.attribute
-      ? findReferenceEntityFieldByAttribute(tableFieldsMetadata, nestedState.attribute)
+    refEntity && nestedPath.length
+      ? resolveNestedFilterLeafField(
+          tableFieldsMetadata,
+          nestedPath,
+          referenceEntityMetadataByName,
+        )
       : undefined;
   const operationSource = attributeField ?? primaryField;
 

@@ -6,10 +6,23 @@ import {
 } from './deviceActionReportOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 
-import type { IAlcolock, ICar, IDeviceAction, IUser } from '@shared/types/BaseQueryTypes';
+import type {
+  IAlcolock,
+  IAttachmentItems,
+  ICar,
+  IDeviceAction,
+  IUser,
+} from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { Formatters } from '@shared/utils/formatters';
+
+import { isEntityIdAttribute } from './reportEntityIdAttribute';
+import {
+  formatReportVehicleCarLabel,
+  isReportVehicleCarDisplayAttribute,
+  readReportVehicleCarFilterValue,
+} from './reportVehicleBindLabel';
 
 const USER_GROUP_NAME_ATTR = 'groupMembership.group.name';
 
@@ -43,15 +56,8 @@ function readRecordAttribute(record: unknown, attribute: string): string | numbe
   if (attribute === 'id' && 'id' in record) {
     return (record as { id: unknown }).id as string | number;
   }
-  if (attribute === 'vehicleBind') {
-    const bind = (record as Record<string, unknown>).vehicleBind;
-    if (bind != null && typeof bind === 'object' && !Array.isArray(bind)) {
-      const vehicle = (bind as Record<string, unknown>).vehicle;
-      if (vehicle != null && typeof vehicle === 'object' && 'id' in vehicle) {
-        return (vehicle as { id: unknown }).id as string | number;
-      }
-    }
-    return null;
+  if (isReportVehicleCarDisplayAttribute(attribute)) {
+    return readReportVehicleCarFilterValue(record);
   }
   if (attribute.includes('.')) {
     const parts = attribute.split('.');
@@ -63,6 +69,12 @@ function readRecordAttribute(record: unknown, attribute: string): string | numbe
     if (cur == null || cur === '') return null;
     if (typeof cur === 'boolean') return cur ? 'true' : 'false';
     if (typeof cur === 'string' || typeof cur === 'number') return cur;
+    if (typeof cur === 'object' && !Array.isArray(cur)) {
+      const o = cur as Record<string, unknown>;
+      if (o.id != null && (o.manufacturer != null || o.model != null || o.registrationNumber != null)) {
+        return o.id as string | number;
+      }
+    }
     return String(cur);
   }
   const value = (record as Record<string, unknown>)[attribute];
@@ -101,22 +113,18 @@ function resolveOptionLabel(
   record: unknown,
   labelMaps?: ReportVehicleLabelMaps,
 ): string {
+  if (isEntityIdAttribute(attribute)) {
+    return value;
+  }
+  if (isReportVehicleCarDisplayAttribute(attribute)) {
+    return formatReportVehicleCarLabel(
+      record != null && typeof record === 'object' ? record : undefined,
+      value,
+    );
+  }
   if (referenceEntity === 'Vehicle') {
     if (attribute === 'type') return labelMaps?.types[value] ?? value;
     if (attribute === 'color') return labelMaps?.colors[value] ?? value;
-    if (attribute === 'id' && record && typeof record === 'object') {
-      return Formatters.carNameFormatter(record as ICar, false, true, false);
-    }
-  }
-  if (referenceEntity === 'MonitoringDevice' && attribute === 'id' && record && typeof record === 'object') {
-    const d = record as IAlcolock;
-    const name = (d.name ?? '').trim();
-    const serial = d.serialNumber != null ? String(d.serialNumber).trim() : '';
-    if (name && serial) return `${name} (${serial})`;
-    return name || serial || value;
-  }
-  if (referenceEntity === 'User' && attribute === 'id' && record && typeof record === 'object') {
-    return Formatters.nameFormatter(record as IUser, false) || value;
   }
   if (referenceEntity === 'User' && attribute === USER_GROUP_NAME_ATTR) {
     return value;
@@ -126,18 +134,36 @@ function resolveOptionLabel(
     if (typeof fullName === 'string' && fullName.trim()) return fullName;
     return Formatters.nameFormatter(record as IUser, false) || value;
   }
-  if (referenceEntity === 'DeviceAction') {
-    return formatDeviceActionOptionLabel(record, attribute, value);
-  }
-  if (referenceEntity === 'MonitoringDevice' && attribute === 'vehicleBind' && record && typeof record === 'object') {
-    const bind = (record as Record<string, unknown>).vehicleBind;
-    if (bind != null && typeof bind === 'object') {
-      const vehicle = (bind as Record<string, unknown>).vehicle;
-      if (vehicle != null && typeof vehicle === 'object') {
-        return Formatters.carNameFormatter(vehicle as ICar, false, true, false) || value;
+  if (referenceEntity === 'BranchOffice') {
+    if (
+      (attribute === 'createdBy.id' ||
+        attribute === 'createdBy.fullName' ||
+        attribute === 'lastModifiedBy.id' ||
+        attribute === 'lastModifiedBy.fullName') &&
+      record &&
+      typeof record === 'object'
+    ) {
+      const root = attribute.split('.')[0];
+      const person = (record as Record<string, unknown>)[root];
+      if (person != null && typeof person === 'object' && !Array.isArray(person)) {
+        const p = person as Record<string, unknown>;
+        if (typeof p.fullName === 'string' && p.fullName.trim()) return p.fullName.trim();
+        const parts = [p.surname, p.firstName, p.middleName]
+          .map((x) => (typeof x === 'string' ? x.trim() : ''))
+          .filter(Boolean);
+        if (parts.length) return parts.join(' ');
       }
     }
-    return '—';
+    if (attribute === 'parentOffice.id' && record && typeof record === 'object') {
+      const parent = (record as Record<string, unknown>).parentOffice;
+      if (parent != null && typeof parent === 'object' && !Array.isArray(parent)) {
+        const name = (parent as { name?: string }).name;
+        if (typeof name === 'string' && name.trim()) return name.trim();
+      }
+    }
+  }
+  if (referenceEntity === 'DeviceAction') {
+    return formatDeviceActionOptionLabel(record, attribute, value);
   }
   return value;
 }
@@ -208,6 +234,21 @@ export function enrichNestedEntityFilterValues(
   });
 }
 
+/** Список по полю id — value и label совпадают с числовым идентификатором. */
+export function recordsToIdOnlyListValues(records: unknown[]): Values {
+  return records
+    .map((r) => {
+      const id = readRecordAttribute(r, 'id');
+      if (id == null) return null;
+      return { value: id, label: String(id) };
+    })
+    .filter((x): x is Values[number] => x != null);
+}
+
+function formatVehicleBindListLabel(item: IAttachmentItems): string {
+  return formatReportVehicleCarLabel(item, String(item.id));
+}
+
 /** Список сущностей (первый контрол) — id + подпись из записи API. */
 export function recordsToEntityListValues(referenceEntity: string, records: unknown[]): Values {
   if (referenceEntity === 'Vehicle') {
@@ -239,6 +280,18 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
         return { value: id, label: formatDeviceActionEntityListLabel(r) };
       })
       .filter((x): x is Values[number] => x != null);
+  }
+  if (referenceEntity === 'BranchOffice') {
+    return (records as { id?: number | string; name?: string }[]).map((office) => ({
+      value: office.id as number | string,
+      label: (office.name ?? '').trim() || String(office.id),
+    }));
+  }
+  if (referenceEntity === 'VehicleBind') {
+    return (records as IAttachmentItems[]).map((item) => ({
+      value: item.id,
+      label: formatVehicleBindListLabel(item),
+    }));
   }
   if (referenceEntity === 'AutoServiceHistory') {
     return (records as IDeviceAction[]).map((item) => {

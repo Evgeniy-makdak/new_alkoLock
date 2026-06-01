@@ -1,14 +1,6 @@
-/** Сущности «Поле результата»: page=0&size=20 и &all.match.contains= при поиске (как алкозамки). */
-export const REPORT_SERVER_SEARCH_REFERENCE_ENTITIES = new Set([
-  'Vehicle',
-  'MonitoringDevice',
-  'User',
-  'AutoServiceHistory',
-  'EventsForFront',
-  'BranchOffice',
-  'DeviceAction',
-]);
+/** @deprecated Справочники через доменные API отключены — только metadata отчёта. */
+export const REPORT_SERVER_SEARCH_REFERENCE_ENTITIES = new Set<string>();
 
-export function isReportReferenceEntityServerSearch(referenceEntity: string): boolean {
-  return REPORT_SERVER_SEARCH_REFERENCE_ENTITIES.has((referenceEntity ?? '').trim());
+export function isReportReferenceEntityServerSearch(_referenceEntity: string): boolean {
+  return false;
 }

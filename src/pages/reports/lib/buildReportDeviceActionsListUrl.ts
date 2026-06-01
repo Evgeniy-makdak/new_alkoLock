@@ -23,5 +23,7 @@ export function buildReportDeviceActionsListUrl(
         })
       : '';
   const searchQ = match ? `&all.match.contains=${encodeURIComponent(match)}` : '';
-  return `api/device-actions?page=0&size=${pageSize}${branchQ}${searchQ}&sort=occurredAt,DESC&sort=id,DESC`;
+  const serviceModeQ =
+    '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID';
+  return `api/device-actions?page=0&size=${pageSize}${branchQ}${serviceModeQ}${searchQ}&sort=occurredAt,DESC&sort=id,DESC`;
 }

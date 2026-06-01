@@ -1,57 +1,93 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import type {
+  ReportEntityListItem,
   ReportEntityMetadata,
   ReportFieldDefinition,
   ReportOutputRow,
 } from '../types/reportApiTypes';
 
-/** Черта между сущностью и полем (как Table.Column в Power BI / SQL). */
+/** @deprecated Используйте ROOT_ENTITY_LABEL_SEPARATOR; оставлено для распознавания старых подписей. */
 export const QUALIFIED_LABEL_SEPARATOR = ' · ';
+
+/** Между сущностью и полем (например «Отчёт по событиям -> Идентификатор», «ТС -> Марка»). */
+export const ROOT_ENTITY_LABEL_SEPARATOR = ' -> ';
 
 export type ReportTableFieldOptionDraft = {
   value: string;
   baseLabel: string;
   sourceLabel: string;
+  qualifyAs: 'root' | 'nested';
 };
 
-function normalizeReportFieldLabelKey(label: string): string {
-  return label.trim().toLocaleLowerCase();
-}
-
-/** «Сущность · поле» — только если одно и то же имя поля встречается у разных источников. */
+/** «Сущность -> поле» (корень и вложенные связи). */
 export function formatQualifiedReportTableFieldLabel(
   sourceLabel: string,
   fieldLabel: string,
 ): string {
-  const source = sourceLabel.trim();
-  const field = fieldLabel.trim();
-  if (!source) return field;
-  if (!field) return source;
-  return `${source}${QUALIFIED_LABEL_SEPARATOR}${field}`;
+  return formatRootReportTableFieldLabel(sourceLabel, fieldLabel);
 }
 
+/** «Сущность -> поле». */
+export function formatRootReportTableFieldLabel(
+  entityLabel: string,
+  fieldLabel: string,
+): string {
+  const entity = entityLabel.trim();
+  const field = fieldLabel.trim();
+  if (!entity) return field;
+  if (!field) return entity;
+  return `${entity}${ROOT_ENTITY_LABEL_SEPARATOR}${field}`;
+}
+
+export function buildReportTableFieldOptionLabel(draft: ReportTableFieldOptionDraft): string {
+  return formatRootReportTableFieldLabel(draft.sourceLabel, draft.baseLabel);
+}
+
+/** Подпись сущности отчёта: из GET …/entities, затем metadata, иначе entityName. */
+export function resolveReportEntitySourceLabel(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  entities: ReportEntityListItem[] = [],
+): string {
+  if (!entityMetadata) return '';
+  const fromList = entities.find((e) => e.entityName === entityMetadata.entityName)?.label?.trim();
+  return fromList || entityMetadata.label?.trim() || entityMetadata.entityName;
+}
+
+export function applyReportEntityListLabel(
+  metadata: ReportEntityMetadata,
+  entities: ReportEntityListItem[],
+): ReportEntityMetadata {
+  const label = resolveReportEntitySourceLabel(metadata, entities);
+  if (label === metadata.label) return metadata;
+  return { ...metadata, label };
+}
+
+export function buildReportTableFieldOptionLabels(drafts: ReportTableFieldOptionDraft[]): Values {
+  return drafts.map((draft) => ({
+    value: draft.value,
+    label: buildReportTableFieldOptionLabel(draft),
+  }));
+}
+
+/** @deprecated Используйте buildReportTableFieldOptionLabels — подписи всегда с префиксом сущности. */
 export function disambiguateReportTableFieldOptionLabels(
   drafts: ReportTableFieldOptionDraft[],
 ): Values {
-  const duplicateBaseKeys = new Set<string>();
-  const counts = new Map<string, number>();
-  for (const draft of drafts) {
-    const key = normalizeReportFieldLabelKey(draft.baseLabel);
-    const next = (counts.get(key) ?? 0) + 1;
-    counts.set(key, next);
-    if (next > 1) {
-      duplicateBaseKeys.add(key);
-    }
-  }
+  return buildReportTableFieldOptionLabels(drafts);
+}
 
-  return drafts.map(({ value, baseLabel, sourceLabel }) => {
-    const needsQualifier = duplicateBaseKeys.has(normalizeReportFieldLabelKey(baseLabel));
-    const label = needsQualifier
-      ? formatQualifiedReportTableFieldLabel(sourceLabel, baseLabel)
-      : baseLabel;
-    return { value, label };
-  });
+/** Уникальные referenceEntity из metadata сущности отчёта. */
+export function collectReferenceEntitiesFromMetadata(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+): string[] {
+  if (!entityMetadata?.fields?.length) return [];
+  const names = new Set<string>();
+  for (const field of entityMetadata.fields) {
+    const ref = field.referenceEntity?.trim();
+    if (ref) names.add(ref);
+  }
+  return Array.from(names);
 }
 
 /** DeviceEvent → deviceEvent (префикс полей корневой сущности в selectedFields). */
@@ -94,6 +130,55 @@ export function tableFieldsForReportTableSelection(
   return fields.filter(isReportTableSelectableField);
 }
 
+/**
+ * Поля вложенной сущности для «Доступные колонки».
+ * Сначала selectable=true; иначе — скалярные filterable (у BranchAssignment и др. часто selectable=false).
+ */
+/** Поля для «Параметр сущности» — шире, чем только filterable (как для колонок вложенной сущности). */
+export function referenceEntityFilterPropertyFields(
+  fields: ReportFieldDefinition[],
+): ReportFieldDefinition[] {
+  const fromNested = tableFieldsForNestedReportTableSelection(fields);
+  if (fromNested.length > 0) return fromNested;
+
+  const withOps = fields.filter(
+    (f) => f.filterable || (f.availableOperations?.length ?? 0) > 0,
+  );
+  if (withOps.length > 0) return withOps;
+
+  return fields.filter((f) => {
+    const type = (f.type ?? '').toUpperCase();
+    return type !== 'ENTITY' || f.filterable;
+  });
+}
+
+export function tableFieldsForNestedReportTableSelection(
+  fields: ReportFieldDefinition[],
+): ReportFieldDefinition[] {
+  const selectable = fields.filter(isReportTableSelectableField);
+  if (selectable.length > 0) {
+    return selectable;
+  }
+
+  const filterableScalars = fields.filter((f) => {
+    const type = (f.type ?? '').toUpperCase();
+    if (type === 'ENTITY') {
+      return isReportTableSelectableField(f);
+    }
+    return f.filterable && f.selectable !== false;
+  });
+  if (filterableScalars.length > 0) {
+    return filterableScalars;
+  }
+
+  const nonEntity = fields.filter((f) => (f.type ?? '').toUpperCase() !== 'ENTITY');
+  if (nonEntity.length > 0) {
+    return nonEntity;
+  }
+
+  return fields;
+}
+
 /** Имена «Поле результата» во всех строках фильтра (device, vehicle, …). */
 export function collectOutputResultFieldNames(outputRows: ReportOutputRow[]): Set<string> {
   const names = new Set<string>();
@@ -104,21 +189,56 @@ export function collectOutputResultFieldNames(outputRows: ReportOutputRow[]): Se
   return names;
 }
 
+function nestedMetadataFields(
+  referenceEntity: string,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>,
+): ReportFieldDefinition[] {
+  return referenceEntityMetadataByName[referenceEntity]?.fields ?? [];
+}
+
+/** Только selectable поля выбранной сущности отчёта (без вложенных связей). */
+export function buildRootReportTableFieldOptions(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  outputRows: ReportOutputRow[] = [],
+  entities: ReportEntityListItem[] = [],
+): Values {
+  if (!entityMetadata) return [];
+
+  const outputFieldNames = collectOutputResultFieldNames(outputRows);
+  const entitySourceLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
+  const drafts: ReportTableFieldOptionDraft[] = [];
+
+  for (const f of entityMetadata.fields) {
+    if (outputFieldNames.has(f.fieldName)) continue;
+    if (!isReportTableSelectableField(f)) continue;
+    drafts.push({
+      value: f.fieldName,
+      baseLabel: f.label || f.fieldName,
+      sourceLabel: entitySourceLabel,
+      qualifyAs: 'root',
+    });
+  }
+
+  return buildReportTableFieldOptionLabels(drafts);
+}
+
 /**
  * Все опции «Поля в отчёте»:
  * — selectable поля сущности отчёта (timestamp, id, …), кроме полей-ссылок из строк фильтра;
- * — selectable поля metadata каждой строки (device.*, vehicle.*, …).
+ * — selectable поля metadata всех вложенных сущностей (referenceEntity) из metadata отчёта.
  */
 export function mergeAllReportTableFieldOptions(
   entityMetadata: ReportEntityMetadata | null | undefined,
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  entities: ReportEntityListItem[] = [],
 ): Values {
   if (!entityMetadata) return [];
 
   const outputFieldNames = collectOutputResultFieldNames(outputRows);
-  const entitySourceLabel = entityMetadata.label?.trim() || entityMetadata.entityName;
+  const entitySourceLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
   const seen = new Set<string>();
   const drafts: ReportTableFieldOptionDraft[] = [];
 
@@ -132,21 +252,32 @@ export function mergeAllReportTableFieldOptions(
       value,
       baseLabel: f.label || f.fieldName,
       sourceLabel: entitySourceLabel,
+      qualifyAs: 'root',
     });
   }
 
-  for (const row of outputRows) {
-    const outputKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-    if (!outputKey) continue;
+  for (const parentField of entityMetadata.fields) {
+    const refEntity = parentField.referenceEntity?.trim();
+    if (!refEntity) continue;
 
-    const outputField = fieldMap.get(outputKey);
-    const refEntity = outputField?.referenceEntity?.trim();
-    if (!refEntity || !outputField) continue;
+    const nestedPrefix = parentField.fieldName;
+    const nestedSourceLabel = parentField.label?.trim() || parentField.fieldName;
+    const tableFields = nestedMetadataFields(refEntity, referenceEntityMetadataByName);
+    const fieldsToUse =
+      tableFields.length > 0
+        ? tableFields
+        : (() => {
+            for (const row of outputRows) {
+              const outputKey = row.selectedOutputFields[0]
+                ? String(row.selectedOutputFields[0].value)
+                : '';
+              if (outputKey !== parentField.fieldName) continue;
+              return tableMetadataByRowId[row.id]?.fields ?? [];
+            }
+            return [];
+          })();
 
-    const nestedPrefix = outputField.fieldName;
-    const nestedSourceLabel = outputField.label?.trim() || outputField.fieldName;
-    const tableMeta = tableMetadataByRowId[row.id];
-    for (const f of tableFieldsForReportTableSelection(tableMeta?.fields ?? [])) {
+    for (const f of tableFieldsForNestedReportTableSelection(fieldsToUse)) {
       const value = prefixedFieldName(nestedPrefix, f.fieldName);
       if (seen.has(value)) continue;
       seen.add(value);
@@ -154,21 +285,30 @@ export function mergeAllReportTableFieldOptions(
         value,
         baseLabel: f.label || f.fieldName,
         sourceLabel: nestedSourceLabel,
+        qualifyAs: 'nested',
       });
     }
   }
 
-  return disambiguateReportTableFieldOptionLabels(drafts);
+  return buildReportTableFieldOptionLabels(drafts);
 }
-
 
 export function hasReportTableFieldsMetadataDefaults(
   entityMetadata: ReportEntityMetadata | null | undefined,
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
 ): boolean {
-  return mergeAllReportTableFieldOptions(entityMetadata, outputRows, fieldMap, tableMetadataByRowId).length > 0;
+  return (
+    mergeAllReportTableFieldOptions(
+      entityMetadata,
+      outputRows,
+      fieldMap,
+      tableMetadataByRowId,
+      referenceEntityMetadataByName,
+    ).length > 0
+  );
 }
 
 export function findReportTableFieldDefinition(
@@ -177,6 +317,7 @@ export function findReportTableFieldDefinition(
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
 ): ReportFieldDefinition | undefined {
   const rootPrefix = reportEntityFieldPrefix(entityMetadata?.entityName ?? '');
   const allEntityFields = entityMetadata?.fields ?? [];
@@ -184,6 +325,23 @@ export function findReportTableFieldDefinition(
   if (rootPrefix && fieldPath.startsWith(`${rootPrefix}.`)) {
     const leaf = fieldPath.slice(rootPrefix.length + 1);
     return allEntityFields.find((f) => f.fieldName === leaf);
+  }
+
+  for (const parentField of allEntityFields) {
+    const nestedPrefix = parentField.fieldName?.trim() ?? '';
+    if (!nestedPrefix || !fieldPath.startsWith(`${nestedPrefix}.`)) continue;
+
+    const leaf = fieldPath.slice(nestedPrefix.length + 1);
+    const refEntity = parentField.referenceEntity?.trim();
+    const tableFields = refEntity
+      ? nestedMetadataFields(refEntity, referenceEntityMetadataByName)
+      : [];
+
+    const exact = tableFields.find((f) => f.fieldName === leaf);
+    if (exact) return exact;
+    const leafName = leaf.includes('.') ? leaf.slice(leaf.lastIndexOf('.') + 1) : leaf;
+    const byLeaf = tableFields.find((f) => f.fieldName === leafName);
+    if (byLeaf) return byLeaf;
   }
 
   for (const row of outputRows) {
@@ -194,7 +352,10 @@ export function findReportTableFieldDefinition(
     if (!nestedPrefix || !fieldPath.startsWith(`${nestedPrefix}.`)) continue;
 
     const leaf = fieldPath.slice(nestedPrefix.length + 1);
-    const tableFields = tableMetadataByRowId[row.id]?.fields ?? [];
+    const refEntity = outputField?.referenceEntity?.trim();
+    const tableFields = refEntity
+      ? nestedMetadataFields(refEntity, referenceEntityMetadataByName)
+      : (tableMetadataByRowId[row.id]?.fields ?? []);
     const exact = tableFields.find((f) => f.fieldName === leaf);
     if (exact) return exact;
     const leafName = leaf.includes('.') ? leaf.slice(leaf.lastIndexOf('.') + 1) : leaf;
@@ -221,6 +382,7 @@ export function findReportFieldDefForColumnKey(
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
 ): ReportFieldDefinition | undefined {
   return findReportTableFieldDefinition(
     columnKey,
@@ -228,6 +390,7 @@ export function findReportFieldDefForColumnKey(
     outputRows,
     fieldMap,
     tableMetadataByRowId,
+    referenceEntityMetadataByName,
   );
 }
 
@@ -237,6 +400,8 @@ export function resolveReportColumnLabel(
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  entities: ReportEntityListItem[] = [],
 ): string {
   if (!entityMetadata) {
     return columnKey;
@@ -249,6 +414,8 @@ export function resolveReportColumnLabel(
     outputRows,
     fieldMapLocal,
     tableMetadataByRowId,
+    referenceEntityMetadataByName,
+    entities,
   );
   const match = options.find((o) => String(o.value) === columnKey);
   if (match?.label) {
@@ -261,6 +428,7 @@ export function resolveReportColumnLabel(
       outputRows,
       fieldMap,
       tableMetadataByRowId,
+      referenceEntityMetadataByName,
     )?.label || columnKey
   );
 }
@@ -275,4 +443,38 @@ export function collectReportContentColumnKeys(content: Record<string, unknown>[
     }
   }
   return Array.from(keys);
+}
+
+/** Порядок колонок: сначала selectedFields из запроса, затем остальные ключи из content. */
+export function orderReportContentColumnKeys(
+  contentKeys: string[],
+  selectedFieldNames: string[] | undefined,
+): string[] {
+  if (!selectedFieldNames?.length) {
+    return contentKeys;
+  }
+  const contentSet = new Set(contentKeys);
+  const ordered: string[] = [];
+  const seen = new Set<string>();
+
+  for (const name of selectedFieldNames) {
+    if (!contentSet.has(name) || seen.has(name)) continue;
+    ordered.push(name);
+    seen.add(name);
+  }
+
+  for (const key of contentKeys) {
+    if (!seen.has(key)) {
+      ordered.push(key);
+      seen.add(key);
+    }
+  }
+
+  return ordered;
+}
+
+export function isReportTableFieldLabelAutoQualified(label: string): boolean {
+  return (
+    label.includes(QUALIFIED_LABEL_SEPARATOR) || label.includes(ROOT_ENTITY_LABEL_SEPARATOR)
+  );
 }

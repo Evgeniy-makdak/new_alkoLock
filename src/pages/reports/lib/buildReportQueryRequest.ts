@@ -13,12 +13,11 @@ import type {
   ReportUiFilterSelections,
 } from '../types/reportApiTypes';
 import {
-  QUALIFIED_LABEL_SEPARATOR,
   findReportTableFieldDefinition,
+  isReportTableFieldLabelAutoQualified,
   resolveReportFilterFieldName,
   resolveReportTableSelectedPayloadFieldName,
 } from './buildReportTableFieldOptions';
-import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
 import {
   formatFilterValueForField,
   toReportDateTimeFilterIso,
@@ -35,7 +34,11 @@ import {
 import { reportOutputFunctionKey, reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
-import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
+import {
+  normalizeNestedFilterPath,
+  resolveNestedFilterApiFieldName,
+  resolveNestedFilterLeafField,
+} from './reportNestedFilterPath';
 
 function pickOperator(field: ReportFieldDefinition | undefined, multi: boolean): string {
   if (!field?.availableOperations?.length) {
@@ -214,6 +217,7 @@ type BuildRowReportTableFieldsContext = {
   outputRows: ReportOutputRow[];
   fieldMap: Map<string, ReportFieldDefinition>;
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>;
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
 };
 
 function buildRowReportTableFields(
@@ -232,6 +236,7 @@ function buildRowReportTableFields(
       context.outputRows,
       context.fieldMap,
       context.tableMetadataByRowId,
+      context.referenceEntityMetadataByName,
     );
     const defaultLabel = (fieldDef?.label ?? '').trim() || path;
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
@@ -241,7 +246,7 @@ function buildRowReportTableFields(
         context.entityMetadata.entityName,
       ),
     };
-    const isAutoQualified = displayLabel.includes(QUALIFIED_LABEL_SEPARATOR);
+    const isAutoQualified = isReportTableFieldLabelAutoQualified(displayLabel);
     const isSafeAlias = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(displayLabel);
     if (!isAutoQualified && displayLabel !== defaultLabel && isSafeAlias) {
       payload.alias = displayLabel;
@@ -349,14 +354,16 @@ export function buildReportQueryRequestForRow(
     const ref = primary.referenceEntity?.trim();
     if (ref) {
       const nested = row.nestedEntityFilterByField[primary.fieldName];
-      if (nested?.attribute && nested.values.length) {
+      const nestedPath = nested ? normalizeNestedFilterPath(nested) : [];
+      if (nestedPath.length && nested.values.length) {
         const attributeField =
-          findReferenceEntityFieldByAttribute(
+          resolveNestedFilterLeafField(
             tableFieldsContext.tableMetadataByRowId[row.id],
-            nested.attribute,
+            nestedPath,
+            tableFieldsContext.referenceEntityMetadataByName,
           ) ?? primary;
         pushFilter(
-          resolveNestedEntityFilterFieldName(primary, nested.attribute),
+          resolveNestedFilterApiFieldName(primary, nestedPath),
           nested.values,
           attributeField,
         );
@@ -444,12 +451,14 @@ export function buildReportQueryRequest(params: {
   outputRows: ReportOutputRow[];
   logicOperator?: ReportLogicOperator;
   reportTableFieldsMetadataByRowId?: Record<string, ReportEntityMetadata | null>;
+  referenceEntityMetadataByName?: Record<string, ReportEntityMetadata | null>;
 }): ReportQueryRequest {
   const {
     metadata,
     outputRows,
     logicOperator = 'or',
     reportTableFieldsMetadataByRowId = {},
+    referenceEntityMetadataByName = {},
   } = params;
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
@@ -464,6 +473,7 @@ export function buildReportQueryRequest(params: {
     outputRows: activeRows,
     fieldMap,
     tableMetadataByRowId: reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
   };
 
   if (activeRows.length === 1) {

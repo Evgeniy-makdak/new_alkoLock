@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material';
@@ -6,9 +6,7 @@ import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material'
 import { FilterPanel } from '@entities/filter_panel';
 import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
 import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
-import { isReportReferenceEntityServerSearch } from '@pages/reports/lib/reportReferenceEntityServerSearch';
 import { reportsStore } from '@pages/reports/model/reportsStore';
-import { appStore } from '@shared/model/app_store/AppStore';
 import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import {
@@ -39,11 +37,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const metadataError = reportsStore((s) => s.metadataError);
   const filterControls = reportsStore((s) => s.filterControls);
   const outputRows = reportsStore((s) => s.outputRows);
-  const referenceRecordsCache = reportsStore((s) => s.referenceRecordsCache);
-  const referenceRecordsLoading = reportsStore((s) => s.referenceRecordsLoading);
-  const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
-  const selectedBranchId = appStore((s) => s.selectedBranchState?.id);
-
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
   const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
   const loadMetadataForEntity = reportsStore((s) => s.loadMetadataForEntity);
   const addOutputRow = reportsStore((s) => s.addOutputRow);
@@ -51,18 +45,15 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const setOutputRowSelectedFields = reportsStore((s) => s.setOutputRowSelectedFields);
   const setOutputRowFilterSelection = reportsStore((s) => s.setOutputRowFilterSelection);
   const setOutputRowNestedEntityFilter = reportsStore((s) => s.setOutputRowNestedEntityFilter);
-  const loadReferenceEntityRecords = reportsStore((s) => s.loadReferenceEntityRecords);
-  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
-
   const selectedEntity = useMemo(
     () => entities.find((e) => e.entityName === selectedEntityName) ?? null,
     [entities, selectedEntityName],
   );
 
-  const outputFieldOptions = useMemo(
-    () => (metadata ? fieldDefinitionsToValues(metadata.fields ?? []) : []),
-    [metadata],
-  );
+  const outputFieldOptions = useMemo(() => {
+    if (!metadata?.fields?.length) return [];
+    return fieldDefinitionsToValues(metadata.fields.filter((f) => f.filterable));
+  }, [metadata]);
 
   const fieldMap = useMemo(() => {
     const map = new Map<string, ReportFieldDefinition>();
@@ -77,49 +68,10 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     [filterControls],
   );
 
-  const referenceEntitiesInUse = useMemo(() => {
-    const entitiesSet = new Set<string>();
-    for (const row of outputRows) {
-      const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-      if (!key) continue;
-      const ref = fieldMap.get(key)?.referenceEntity?.trim();
-      if (ref) entitiesSet.add(ref);
-    }
-    return Array.from(entitiesSet).sort();
-  }, [outputRows, fieldMap]);
-
-  const referenceEntitiesKey = referenceEntitiesInUse.join('|');
-
-  useEffect(() => {
-    if (!referenceEntitiesKey) return;
-    for (const entity of referenceEntitiesInUse) {
-      if (!isReportReferenceEntityServerSearch(entity)) {
-        void loadReferenceEntityRecords(entity);
-      }
-    }
-    if (referenceEntitiesInUse.includes('Vehicle')) {
-      void loadVehicleLabelMaps();
-    }
-  }, [
-    referenceEntitiesKey,
-    referenceEntitiesInUse,
-    selectedBranchId,
-    loadReferenceEntityRecords,
-    loadVehicleLabelMaps,
-  ]);
-
   const handleEntityOpen = () => {
     if (!selectedEntityName) return;
     void loadMetadataForEntity(selectedEntityName);
   };
-
-  const handleReferenceOptionsLoaded = useCallback(
-    (cacheKey: string, options: Values) => {
-      void cacheKey;
-      void options;
-    },
-    [],
-  );
 
   const handleConfirmAddVariant = useCallback(
     (logicOperator: ReportLogicOperator) => {
@@ -180,9 +132,6 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
       outputFieldOptions={outputFieldOptions}
       fieldMap={fieldMap}
       groupControls={groupControls}
-      referenceRecordsCache={referenceRecordsCache}
-      referenceRecordsLoading={referenceRecordsLoading}
-      vehicleLabelMaps={vehicleLabelMaps}
       showAddButton={options.showAddButton}
       onRequestAddRow={() => setAddVariantDialogOpen(true)}
       onRemoveRow={options.showRemoveButton ? () => removeOutputRow(row.id) : undefined}
@@ -191,7 +140,6 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
       onNestedFilterChange={(fieldName, patch) =>
         setOutputRowNestedEntityFilter(row.id, fieldName, patch)
       }
-      onReferenceOptionsLoaded={handleReferenceOptionsLoaded}
     />
   );
 
@@ -223,7 +171,13 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
           const isFirstRow = index === 0;
           const isLastRow = index === outputRows.length - 1;
           const rowTableMetadata = reportsStore.getState().reportTableFieldsMetadataByRowId[row.id] ?? null;
-          const rowComplete = isReportOutputRowComplete(row, fieldMap, rowTableMetadata, metadata);
+          const rowComplete = isReportOutputRowComplete(
+            row,
+            fieldMap,
+            rowTableMetadata,
+            metadata,
+            referenceEntityMetadataByName,
+          );
 
           if (isFirstRow) {
             return (

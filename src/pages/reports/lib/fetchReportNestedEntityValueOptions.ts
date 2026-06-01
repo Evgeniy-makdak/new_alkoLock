@@ -1,30 +1,21 @@
-import { AlcolocksApi, CarsApi, EventsApi, UsersApi } from '@shared/api/baseQuerys';
+import { AlcolocksApi, AttachmentsApi, CarsApi, EventsApi, UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
-import type { IAlcolock, ICar, IDeviceAction, IUser } from '@shared/types/BaseQueryTypes';
+import type {
+  IAlcolock,
+  IAttachmentItems,
+  ICar,
+  IDeviceAction,
+  IUser,
+} from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
-import {
-  branchOfficeValuesForAttribute,
-  fetchBranchOfficesForReport,
-} from './branchOfficeReportOptions';
-import {
-  buildDeviceActionAttributeOptions,
-  buildDeviceActionDevicePickerOptions,
-  buildDeviceActionUserPickerOptions,
-  fetchDeviceActionsForReport,
-  isDeviceActionDeviceAttribute,
-  isDeviceActionUserAttribute,
-} from './deviceActionReportOptions';
-import {
-  buildNestedEntityAttributeOptions,
-  recordsToEntityListValues,
-} from './buildNestedEntityAttributeOptions';
+import { fetchBranchOfficesForReport } from './branchOfficeReportOptions';
+import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAttribute';
+import { isEntityIdAttribute } from './reportEntityIdAttribute';
+import { fetchDeviceActionsForReport } from './deviceActionReportOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
-import {
-  isNestedEntityListPickerField,
-  resolveNestedEntityValueLoadKind,
-} from './reportNestedEntityValueOptions';
+import { resolveNestedEntityValueLoadKind } from './reportNestedEntityValueOptions';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
@@ -43,7 +34,7 @@ function unwrapList<T>(res: {
 }
 
 /**
- * Опции «Значение (параметр)» — page=0&size=20, при вводе &all.match.contains=… (как алкозамки).
+ * Опции «Значение» для листового поля (referenceEntity === null) — доменный API по типу сущности.
  */
 export async function fetchReportNestedEntityValueOptions(
   referenceEntity: string,
@@ -55,16 +46,12 @@ export async function fetchReportNestedEntityValueOptions(
   const attr = (field.fieldName ?? '').trim();
   if (!ref || !attr) return [];
 
-  const kind = resolveNestedEntityValueLoadKind(field, ref, attr);
-  if (kind === 'static' || kind === 'dateTime') {
+  const kind = resolveNestedEntityValueLoadKind(field, ref);
+  if (kind !== 'domainList') {
     return [];
-  }
-  if (kind === 'frontDataEnum') {
-    return buildNestedEntityAttributeOptions([], ref, attr, labelMaps);
   }
 
   const match = Formatters.removeExtraSpaces(searchQuery ?? '');
-  const listPicker = isNestedEntityListPickerField(field, attr);
   const branchId = appStore.getState().selectedBranchState?.id;
   const pageOpts = {
     page: 0,
@@ -76,74 +63,52 @@ export async function fetchReportNestedEntityValueOptions(
   switch (ref) {
     case 'BranchOffice': {
       const offices = await fetchBranchOfficesForReport(match);
-      return branchOfficeValuesForAttribute(offices, attr, listPicker);
+      return buildDomainListValuesForAttribute(ref, offices, attr, labelMaps, field);
     }
     case 'DeviceAction': {
       const actions = await fetchDeviceActionsForReport(match);
-      if (listPicker && isDeviceActionDeviceAttribute(attr)) {
-        return buildDeviceActionDevicePickerOptions(actions);
-      }
-      if (listPicker && isDeviceActionUserAttribute(attr)) {
-        return buildDeviceActionUserPickerOptions(actions);
-      }
-      if (listPicker) {
-        return recordsToEntityListValues(ref, actions);
-      }
-      return buildDeviceActionAttributeOptions(actions, attr);
+      return buildDomainListValuesForAttribute(ref, actions, attr, labelMaps, field);
     }
     case 'Vehicle': {
       const res = await CarsApi.getCarsList({ ...pageOpts, isActive: true });
-      const cars = unwrapList<ICar>(res);
-      if (listPicker) {
-        return recordsToEntityListValues(ref, cars);
-      }
-      return buildNestedEntityAttributeOptions(cars, ref, attr, labelMaps);
+      return buildDomainListValuesForAttribute(ref, unwrapList<ICar>(res), attr, labelMaps, field);
     }
     case 'MonitoringDevice': {
       const res = await AlcolocksApi.getList({
         ...pageOpts,
-        query: '&all.id.notIn=3&all.isActive.in=true',
+        isAttachment: true,
+        query:
+          '&all.id.notIn=3&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber,ASC',
       });
-      const devices = unwrapList<IAlcolock>(res);
-      if (listPicker) {
-        return recordsToEntityListValues(ref, devices);
-      }
-      return buildNestedEntityAttributeOptions(devices, ref, attr, labelMaps);
+      return buildDomainListValuesForAttribute(ref, unwrapList<IAlcolock>(res), attr, labelMaps, field);
     }
-    case 'User': {
-      const res = await UsersApi.getListToAttachments(
-        { ...pageOpts, isAttachment: true },
+    case 'User':
+    case 'Driver': {
+      const res = await UsersApi.getList(
+        {
+          ...pageOpts,
+          excludeDisabledUsers: true,
+          filterOptions: {
+            ...pageOpts.filterOptions,
+            ...(ref === 'Driver' ? { driverSpecified: true } : {}),
+          },
+        },
         false,
       );
-      const users = unwrapList<IUser>(res);
-      if (listPicker) {
-        return recordsToEntityListValues(ref, users);
-      }
-      if (attr === 'fullName') {
-        return users
-          .map((u) => {
-            const label =
-              (typeof u.fullName === 'string' && u.fullName.trim()) ||
-              Formatters.nameFormatter(u, false) ||
-              String(u.id);
-            return { value: label, label };
-          })
-          .filter((item, index, arr) => arr.findIndex((x) => x.value === item.value) === index);
-      }
-      return buildNestedEntityAttributeOptions(users, ref, attr, labelMaps);
+      return buildDomainListValuesForAttribute(ref, unwrapList<IUser>(res), attr, labelMaps, field);
+    }
+    case 'VehicleBind': {
+      const res = await AttachmentsApi.getList(pageOpts);
+      return buildDomainListValuesForAttribute(ref, unwrapList<IAttachmentItems>(res), attr, labelMaps, field);
     }
     case 'AutoServiceHistory': {
       const res = await EventsApi.getHistoryList({
         page: pageOpts.page,
-        limit: 25,
+        limit: pageOpts.limit,
         searchQuery: match,
         filterOptions: branchId != null ? { branchId } : {},
       });
-      const records = unwrapList<IDeviceAction>(res);
-      if (listPicker) {
-        return recordsToEntityListValues(ref, records);
-      }
-      return buildNestedEntityAttributeOptions(records, ref, attr, labelMaps);
+      return buildDomainListValuesForAttribute(ref, unwrapList<IDeviceAction>(res), attr, labelMaps, field);
     }
     case 'EventsForFront': {
       const res = await EventsApi.getEventsTypeList(
@@ -157,12 +122,12 @@ export async function fetchReportNestedEntityValueOptions(
         label?: string;
         event?: string;
       }>(res);
-      if (field.fieldName === 'label') {
+      if (attr === 'label') {
         return types
           .filter((item) => item.label != null && item.label !== '')
           .map((item) => ({ value: String(item.label), label: String(item.label) }));
       }
-      if (field.fieldName === 'event') {
+      if (attr === 'event') {
         return types
           .filter((item) => typeof item.event === 'string' && item.event.trim() !== '')
           .map((item) => ({
@@ -170,21 +135,16 @@ export async function fetchReportNestedEntityValueOptions(
             label: item.label ?? String(item.event),
           }));
       }
+      if (isEntityIdAttribute(attr)) {
+        return buildDomainListValuesForAttribute(ref, types, attr, labelMaps, field);
+      }
       return types
-        .filter((item) => item.id != null)
-        .map((item) => {
-          const id =
-            typeof item.id === 'number' ? item.id : parseInt(String(item.id), 10);
-          return {
-            value: Number.isFinite(id) ? id : String(item.id),
-            label: item.label ?? String(item.id),
-          };
-        });
+        .filter((item) => item.label != null && item.label !== '')
+        .map((item) => ({ value: String(item.label), label: String(item.label) }));
     }
     default:
       return [];
   }
 }
 
-/** @deprecated Используйте fetchReportNestedEntityValueOptions */
 export const fetchReportNestedEntitySearchOptions = fetchReportNestedEntityValueOptions;

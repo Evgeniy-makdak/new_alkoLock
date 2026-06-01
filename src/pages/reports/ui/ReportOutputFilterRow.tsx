@@ -7,8 +7,13 @@ import { Box, IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
-import { findReferenceEntityFieldByAttribute } from '@pages/reports/lib/findReferenceEntityFieldByAttribute';
 import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
+import {
+  isNestedFilterPathReadyForValueInput,
+  normalizeNestedFilterPath,
+  resolveNestedFilterLeafEntityName,
+  resolveNestedFilterLeafField,
+} from '@pages/reports/lib/reportNestedFilterPath';
 import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import {
   reportFilterAutocompleteSlotProps,
@@ -20,9 +25,7 @@ import {
   reportOutputFunctionKey,
   reportOutputOperationKey,
 } from '@pages/reports/lib/reportOutputFilterKeys';
-import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import { reportsStore } from '@pages/reports/model/reportsStore';
-import { appStore } from '@shared/model/app_store/AppStore';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type {
   ReportEntityMetadata,
@@ -49,16 +52,12 @@ type ReportOutputFilterRowProps = {
   outputFieldOptions: Values;
   fieldMap: Map<string, ReportFieldDefinition>;
   groupControls: ReportFilterControlDef[];
-  referenceRecordsCache: Record<string, unknown[]>;
-  referenceRecordsLoading: boolean;
-  vehicleLabelMaps: ReportVehicleLabelMaps;
   showAddButton: boolean;
   onRequestAddRow: () => void;
   onRemoveRow?: () => void;
   onOutputFieldChange: (values: Values) => void;
   onFilterChange: (controlId: string, values: Values) => void;
   onNestedFilterChange: (fieldName: string, patch: Partial<ReportNestedEntityFilterState>) => void;
-  onReferenceOptionsLoaded: (cacheKey: string, options: Values) => void;
 };
 
 export function ReportOutputFilterRow({
@@ -69,16 +68,12 @@ export function ReportOutputFilterRow({
   outputFieldOptions,
   fieldMap,
   groupControls,
-  referenceRecordsCache,
-  referenceRecordsLoading,
-  vehicleLabelMaps,
   showAddButton,
   onRequestAddRow,
   onRemoveRow,
   onOutputFieldChange,
   onFilterChange,
   onNestedFilterChange,
-  onReferenceOptionsLoaded,
 }: ReportOutputFilterRowProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -87,28 +82,37 @@ export function ReportOutputFilterRow({
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
   const primaryField = primaryKey ? (fieldMap.get(primaryKey) ?? null) : null;
   const refEntity = primaryField?.referenceEntity?.trim();
-  const refRecords = refEntity ? (referenceRecordsCache[refEntity] ?? []) : [];
-  const selectedBranchId = appStore((s) => s.selectedBranchState?.id);
   const loadReportTableFieldsMetadata = reportsStore((s) => s.loadReportTableFieldsMetadata);
   const tableFieldsMetadata = reportsStore((s) => s.reportTableFieldsMetadataByRowId[row.id] ?? null);
   const tableFieldsMetadataLoading = reportsStore(
     (s) => s.reportTableFieldsMetadataLoadingByRowId[row.id] ?? false,
   );
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
+  const   referenceEntityMetadataLoadingByName = reportsStore(
+    (s) => s.referenceEntityMetadataLoadingByName,
+  );
+  const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
 
   const nestedState = primaryField ? row.nestedEntityFilterByField[primaryField.fieldName] : undefined;
-
-  useEffect(() => {
-    if (!refEntity) return;
-    void reportsStore.getState().loadReferenceEntityRecords(refEntity);
-    if (refEntity === 'Vehicle') {
-      void reportsStore.getState().loadVehicleLabelMaps();
-    }
-  }, [refEntity, selectedBranchId]);
+  const nestedPath = nestedState ? normalizeNestedFilterPath(nestedState) : [];
 
   useEffect(() => {
     if (!refEntity) return;
     void loadReportTableFieldsMetadata(row.id, refEntity);
   }, [refEntity, row.id, loadReportTableFieldsMetadata]);
+
+  useEffect(() => {
+    if (!refEntity || !nestedPath.length) return;
+    const leafEntity = resolveNestedFilterLeafEntityName(
+      refEntity,
+      tableFieldsMetadata,
+      nestedPath,
+      referenceEntityMetadataByName,
+    );
+    if (leafEntity === 'Vehicle') {
+      void reportsStore.getState().loadVehicleLabelMaps();
+    }
+  }, [refEntity, nestedPath, tableFieldsMetadata, referenceEntityMetadataByName]);
 
   const operationKey = reportOutputOperationKey(row.id);
   const functionKey = reportOutputFunctionKey(row.id);
@@ -119,13 +123,13 @@ export function ReportOutputFilterRow({
 
   const operationFunctionSource = useMemo(() => {
     if (!primaryField) return null;
-    if (refEntity && nestedState?.attribute) {
-      const attributeField = findReferenceEntityFieldByAttribute(
+    if (refEntity && nestedPath.length) {
+      const attributeField = resolveNestedFilterLeafField(
         tableFieldsMetadata,
-        nestedState.attribute,
+        nestedPath,
+        referenceEntityMetadataByName,
       );
       if (attributeField) return attributeField;
-      // Не подставлять device/vehicle (eq, in), пока нет metadata MonitoringDevice и т.д.
       if (tableFieldsMetadataLoading || !tableFieldsMetadata) return null;
       return primaryField;
     }
@@ -133,9 +137,10 @@ export function ReportOutputFilterRow({
   }, [
     primaryField,
     refEntity,
-    nestedState?.attribute,
+    nestedPath,
     tableFieldsMetadata,
     tableFieldsMetadataLoading,
+    referenceEntityMetadataByName,
   ]);
 
   const operationOptions = useMemo(
@@ -148,7 +153,13 @@ export function ReportOutputFilterRow({
   );
 
   const nestedTerminalReady = Boolean(
-    refEntity && nestedState?.attribute && (nestedState.values?.length ?? 0) > 0,
+    refEntity &&
+      isNestedFilterPathReadyForValueInput(
+        tableFieldsMetadata,
+        nestedPath,
+        referenceEntityMetadataByName,
+      ) &&
+      (nestedState?.values?.length ?? 0) > 0,
   );
 
   const scalarTerminalReady = Boolean(
@@ -166,7 +177,13 @@ export function ReportOutputFilterRow({
   const selectedOutputSingle = row.selectedOutputFields.slice(0, 1);
 
   const isModalVariant = variant === 'modal';
-  const rowComplete = isReportOutputRowComplete(row, fieldMap, tableFieldsMetadata, metadata);
+  const rowComplete = isReportOutputRowComplete(
+    row,
+    fieldMap,
+    tableFieldsMetadata,
+    metadata,
+    referenceEntityMetadataByName,
+  );
   const canShowAddButton = showAddButton && rowComplete && !isModalVariant;
   const showOperationAndFunction = isModalVariant
     ? Boolean(primaryField)
@@ -247,12 +264,12 @@ export function ReportOutputFilterRow({
       referenceEntity={refEntity}
       tableFieldsMetadata={tableFieldsMetadata}
       tableFieldsMetadataLoading={tableFieldsMetadataLoading}
-      records={refRecords}
-      recordsLoading={referenceRecordsLoading}
-      labelMaps={vehicleLabelMaps}
+      referenceEntityMetadataByName={referenceEntityMetadataByName}
+      referenceEntityMetadataLoadingByName={referenceEntityMetadataLoadingByName}
+      vehicleLabelMaps={vehicleLabelMaps}
       state={
         row.nestedEntityFilterByField[primaryField.fieldName] ?? {
-          attribute: null,
+          path: [],
           values: [],
         }
       }
@@ -270,11 +287,8 @@ export function ReportOutputFilterRow({
           field={primaryField}
           metadata={metadata}
           value={row.filterSelections[primaryField.fieldName] ?? []}
-          referenceOptionsCache={{}}
-          vehicleLabelMaps={vehicleLabelMaps}
           filterOperationCode={filterOperationCode}
           onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-          onReferenceOptionsLoaded={onReferenceOptionsLoaded}
         />
       ) : null}
     </>
@@ -295,11 +309,8 @@ export function ReportOutputFilterRow({
             field={primaryField}
             metadata={metadata}
             value={row.filterSelections[primaryField.fieldName] ?? []}
-            referenceOptionsCache={{}}
-            vehicleLabelMaps={vehicleLabelMaps}
             filterOperationCode={filterOperationCode}
             onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-            onReferenceOptionsLoaded={onReferenceOptionsLoaded}
           />
         ) : null}
       </>

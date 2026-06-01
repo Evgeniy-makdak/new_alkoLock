@@ -41,10 +41,10 @@ export function ReportsPage() {
 
   const openComposeModal = useCallback(() => {
     if (reportGenerationStore.getState().isGenerating) return;
-    setSelectedEntityName(null);
-    resetFilters();
+    // Не сбрасываем reportsStore: таблица результатов читает metadata/кэши для заголовков.
+    // Снимок и откат при отмене — в ReportComposeModal.
     setComposeModalOpen(true);
-  }, [setSelectedEntityName, resetFilters]);
+  }, []);
 
   const isCompactHeader = isMobile || isTablet;
 
