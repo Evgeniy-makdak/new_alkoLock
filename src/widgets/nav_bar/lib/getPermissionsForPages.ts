@@ -35,30 +35,30 @@ const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
     Permissions.PERMISSION_NOTIFICATIONS_CREATE,
     Permissions.PERMISSION_NOTIFICATIONS_DELETE,
   ],
-  [RoutePaths.roles_new]: [
+  [RoutePaths.roles]: [
     Permissions.PERMISSION_ROLES_READ,
     Permissions.PERMISSION_ROLES_CREATE,
     Permissions.PERMISSION_ROLES_EDIT,
     Permissions.PERMISSION_ROLES_DELETE,
   ],
-  [RoutePaths.tc]: [
+  [RoutePaths.transport]: [
     Permissions.PERMISSION_VEHICLE_READ,
     Permissions.PERMISSION_VEHICLE_CREATE,
     Permissions.PERMISSION_VEHICLE_EDIT,
     Permissions.PERMISSION_VEHICLE_DELETE,
   ],
-  [RoutePaths.alkozamki]: [
+  [RoutePaths.alcolocks]: [
     Permissions.PERMISSION_DEVICE_READ,
     Permissions.PERMISSION_DEVICE_CREATE,
     Permissions.PERMISSION_DEVICE_EDIT,
     Permissions.PERMISSION_DEVICE_DELETE,
   ],
-  [RoutePaths.autoService]: [
+  [RoutePaths.servicemode]: [
     Permissions.PERMISSION_SERVICE_MODE_READ,
     Permissions.PERMISSION_SERVICE_MODE_CREATE,
     Permissions.PERMISSION_SERVICE_MODE_EDIT,
   ],
-  [RoutePaths.attachments]: [
+  [RoutePaths.links]: [
     Permissions.PERMISSION_BINDINGS_READ,
     Permissions.PERMISSION_BINDINGS_CREATE,
     Permissions.PERMISSION_BINDINGS_EDIT,
@@ -69,14 +69,14 @@ const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
     Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE,
   ],
   [RoutePaths.operatorChatPopup]: [Permissions.PERMISSION_OPERATOR_CHATS_READ],
-  [RoutePaths.historyAutoService]: [Permissions.PERMISSION_HISTORY_READ],
+  [RoutePaths.servicemodehistory]: [Permissions.PERMISSION_HISTORY_READ],
   [RoutePaths.all]: [],
   [RoutePaths.root]: [],
   [RoutePaths.auth]: [],
   [RoutePaths.changePassword]: [],
   [RoutePaths.forgetPassword]: [],
   [RoutePaths.resetPassword]: [],
-  [RoutePaths.messages]: [],
+  [RoutePaths.templates]: [],
   [RoutePaths.settings]: [],
   [RoutePaths.confirmPassword]: [],
   [RoutePaths.groups]: [],

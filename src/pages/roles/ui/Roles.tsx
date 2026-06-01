@@ -1,33 +1,20 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef } from 'react';
 
 import { PageWrapper } from '@layout/page_wrapper';
-import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
-import { RolesTable } from '@widgets/roles_table';
+import { RolesTable_new } from '@widgets/roles_table_new';
 
 const Roles = () => {
-  const navigate = useNavigate();
-  const isAdmin = appStore.getState().isAdmin;
-  const prevBranch = useRef(null); // Храним предыдущее значение branchId
-  const { selectedBranchState } = appStore((state) => state); // Получаем текущий филиал
+  const prevBranch = useRef(null);
+  const { selectedBranchState } = appStore((state) => state);
 
-  // Проверяем, изменился ли branchId, и обновляем prevBranch
   if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
   }
 
-  // Проверка прав администратора
-  useEffect(() => {
-    if (!isAdmin) {
-      navigate(RoutePaths.events);
-    }
-  }, [isAdmin]);
-
   return (
     <PageWrapper>
-      <RolesTable prevBranch={prevBranch.current} />
+      <RolesTable_new prevBranch={prevBranch.current} />
     </PageWrapper>
   );
 };

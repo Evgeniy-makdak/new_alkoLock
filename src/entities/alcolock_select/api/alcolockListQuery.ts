@@ -12,7 +12,7 @@ export const useAlcolockListQuery = (options: QueryOptions) => {
 
   // Определяем параметры запроса в зависимости от пути
   const getQueryParams = (path: RoutePaths) => {
-    if (path === RoutePaths.attachments) {
+    if (path === RoutePaths.links) {
       return {
         excludeAlcolockId: 3,
         excludeType: 'all',
@@ -25,7 +25,7 @@ export const useAlcolockListQuery = (options: QueryOptions) => {
     if (path === RoutePaths.groups) {
       return { excludeAlcolockId: 3, excludeType: 'all' };
     }
-    if (path === RoutePaths.historyAutoService) {
+    if (path === RoutePaths.servicemodehistory) {
       return { excludeAlcolockId: 3, excludeType: 'all' };
     }
     if (path === RoutePaths.map) {

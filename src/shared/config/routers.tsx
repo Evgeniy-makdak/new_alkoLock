@@ -17,7 +17,7 @@ import { MapPage } from '@pages/map/MapPage';
 import OperatorChatPopupPage from '@pages/operator_chat_popup/OperatorChatPopupPage';
 import { NotFound } from '@pages/not_found';
 import { ReportsPage } from '@pages/reports/ui/ReportsPage';
-import { Roles_new } from '@pages/roles_new';
+import { Roles } from '@pages/roles';
 import { SettingsPage } from '@pages/settings/SettingsPage';
 import EmailTemplatesPage from '@pages/templates/EmailTemplatesPage';
 import { Users } from '@pages/users';
@@ -45,35 +45,35 @@ export const routers = createBrowserRouter([
         element: <Mailings />,
       },
       {
-        path: RoutePaths.roles_new,
-        element: <Roles_new />,
+        path: RoutePaths.roles,
+        element: <Roles />,
       },
       {
         path: RoutePaths.groups,
         element: <Groups />,
       },
       {
-        path: RoutePaths.tc,
+        path: RoutePaths.transport,
         element: <Vehicles />,
       },
       {
-        path: RoutePaths.alkozamki,
+        path: RoutePaths.alcolocks,
         element: <Alkozamki />,
       },
       {
-        path: RoutePaths.autoService,
+        path: RoutePaths.servicemode,
         element: <AutoService />,
       },
       {
-        path: RoutePaths.historyAutoService,
+        path: RoutePaths.servicemodehistory,
         element: <History />,
       },
       {
-        path: RoutePaths.attachments,
+        path: RoutePaths.links,
         element: <Attachments />,
       },
       {
-        path: RoutePaths.messages,
+        path: RoutePaths.templates,
         element: <EmailTemplatesPage />,
       },
       {

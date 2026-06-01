@@ -17,24 +17,24 @@ import TimeToLeaveOutlinedIcon from '@mui/icons-material/TimeToLeaveOutlined';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ExtractTypeFromArray } from '@shared/types/utility';
 
-export const frontendVersion = '1.134.2';
+export const frontendVersion = '1.135.0';
 
 export const NAV_LINKS = [
   { path: RoutePaths.events, nameKey: 'nav.events', icon: <InsertInvitationOutlinedIcon /> },
   { path: RoutePaths.users, nameKey: 'nav.users', icon: <GroupOutlinedIcon /> },
-  { path: RoutePaths.roles_new, nameKey: 'nav.roles', icon: <ContactsOutlinedIcon /> },
+  { path: RoutePaths.roles, nameKey: 'nav.roles', icon: <ContactsOutlinedIcon /> },
   { path: RoutePaths.groups, nameKey: 'nav.groups', icon: <HomeWorkOutlinedIcon /> },
-  { path: RoutePaths.tc, nameKey: 'nav.transport', icon: <TimeToLeaveOutlinedIcon /> },
-  { path: RoutePaths.alkozamki, nameKey: 'nav.alcolocks', icon: <SettingsRemoteOutlinedIcon /> },
-  { path: RoutePaths.autoService, nameKey: 'nav.serviceMode', icon: <EngineeringOutlinedIcon /> },
+  { path: RoutePaths.transport, nameKey: 'nav.transport', icon: <TimeToLeaveOutlinedIcon /> },
+  { path: RoutePaths.alcolocks, nameKey: 'nav.alcolocks', icon: <SettingsRemoteOutlinedIcon /> },
+  { path: RoutePaths.servicemode, nameKey: 'nav.serviceMode', icon: <EngineeringOutlinedIcon /> },
   {
-    path: RoutePaths.historyAutoService,
+    path: RoutePaths.servicemodehistory,
     nameKey: 'nav.serviceModeHistory',
     icon: <BallotIcon />,
   },
-  { path: RoutePaths.attachments, nameKey: 'nav.attachments', icon: <InsertLinkOutlinedIcon /> },
+  { path: RoutePaths.links, nameKey: 'nav.attachments', icon: <InsertLinkOutlinedIcon /> },
   { path: RoutePaths.mailings, nameKey: 'nav.mailings', icon: <EmailOutlinedIcon /> },
-  { path: RoutePaths.messages, nameKey: 'nav.messageTemplates', icon: <AttachmentIcon /> },
+  { path: RoutePaths.templates, nameKey: 'nav.messageTemplates', icon: <AttachmentIcon /> },
   { path: RoutePaths.settings, nameKey: 'nav.settings', icon: <HandymanIcon /> },
   { path: RoutePaths.reports, nameKey: 'nav.reports', icon: <AssessmentOutlinedIcon /> },
   { path: RoutePaths.map, nameKey: 'nav.map', icon: <MapIcon /> },

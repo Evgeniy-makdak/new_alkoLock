@@ -86,7 +86,7 @@ export const NavBar = () => {
 
       if (
         sliderState &&
-        (link.path === RoutePaths.messages ||
+        (link.path === RoutePaths.templates ||
           link.path === RoutePaths.settings ||
           link.path === RoutePaths.reports)
       ) {
@@ -95,7 +95,7 @@ export const NavBar = () => {
 
       if (
         !sliderState &&
-        link.path !== RoutePaths.messages &&
+        link.path !== RoutePaths.templates &&
         link.path !== RoutePaths.settings &&
         link.path !== RoutePaths.reports
       ) {
@@ -183,12 +183,12 @@ export const NavBar = () => {
           ? RoutePaths.settings
           : location.pathname === RoutePaths.reports
             ? RoutePaths.reports
-            : RoutePaths.messages,
+            : RoutePaths.templates,
     );
   };
 
   useEffect(() => {
-    if (location.pathname === RoutePaths.messages) {
+    if (location.pathname === RoutePaths.templates) {
       setSliderState(false);
     } else if (location.pathname === RoutePaths.settings) {
       setSliderState(false);
@@ -265,7 +265,7 @@ export const NavBar = () => {
   const canScrollDown = currentPage < totalPages - 1;
 
   const renderNavLink = (link: (typeof NAV_LINKS)[0], index: number) => {
-    const notification = link.path === RoutePaths.autoService;
+    const notification = link.path === RoutePaths.servicemode;
     const isMapTab = link.path === RoutePaths.map;
 
     return (

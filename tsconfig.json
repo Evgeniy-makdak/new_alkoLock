@@ -2,7 +2,6 @@
   "compileOnSave": true,
   "compilerOptions": {
     "target": "es5",
-    "ignoreDeprecations": "6.0",
     "module": "commonjs",
     "jsx": "react-jsx",
     "rootDir": "./src",

@@ -26,8 +26,8 @@ export function App() {
   const isNarrowViewport = isMobile || isTablet;
   const hasInlineTableToolbar = pathHasInlineTableToolbar(location.pathname);
   const isMessagesRoute =
-    location.pathname === RoutePaths.messages ||
-    location.pathname.startsWith(`${RoutePaths.messages}/`);
+    location.pathname === RoutePaths.templates ||
+    location.pathname.startsWith(`${RoutePaths.templates}/`);
   const isSettingsRoute =
     location.pathname === RoutePaths.settings ||
     location.pathname.startsWith(`${RoutePaths.settings}/`);

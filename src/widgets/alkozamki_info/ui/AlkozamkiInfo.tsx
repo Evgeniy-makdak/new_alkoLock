@@ -116,7 +116,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
         if (firstContent.some((car) => String(car?.id) === String(vehicleId))) {
           const hasAccess = await ensureVehicleAccess(vehicleId);
           if (!hasAccess) return;
-          navigate(RoutePaths.tc, {
+          navigate(RoutePaths.transport, {
             state: { selectedId: vehicleId, targetPage: 0, returnNavigation },
           });
           return;
@@ -134,7 +134,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           if (content.some((car) => String(car?.id) === String(vehicleId))) {
             const hasAccess = await ensureVehicleAccess(vehicleId);
             if (!hasAccess) return;
-            navigate(RoutePaths.tc, {
+            navigate(RoutePaths.transport, {
               state: { selectedId: vehicleId, targetPage: page, returnNavigation },
             });
             return;
@@ -145,7 +145,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       }
       const hasAccess = await ensureVehicleAccess(vehicleId);
       if (!hasAccess) return;
-      navigate(RoutePaths.tc, { state: { selectedId: vehicleId, returnNavigation } });
+      navigate(RoutePaths.transport, { state: { selectedId: vehicleId, returnNavigation } });
     },
     [ensureVehicleAccess, navigate, returnNavigation],
   );
