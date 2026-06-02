@@ -20,7 +20,72 @@ export type ReportTableFieldOptionDraft = {
   baseLabel: string;
   sourceLabel: string;
   qualifyAs: 'root' | 'nested';
+  /** metadata сущности листа + fieldName — один лист = один путь (самый короткий). */
+  leafKey: string;
 };
+
+export function buildReportTableFieldLeafKey(
+  referenceEntity: string,
+  fieldName: string,
+): string {
+  return `${referenceEntity.trim()}:${fieldName.trim()}`;
+}
+
+/**
+ * Один и тот же лист (например MonitoringDevice.inactiveSince) не должен появляться
+ * как device.inactiveSince, action.device.inactiveSince и vehicle.monitoringDevice.inactiveSince.
+ */
+/** Допустимые fieldName для selectedFields (после дедупа и лимита глубины). */
+export function buildAllowedReportTableFieldPaths(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  outputRows: ReportOutputRow[],
+  fieldMap: Map<string, ReportFieldDefinition>,
+  tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  entities: ReportEntityListItem[] = [],
+): Set<string> {
+  const options = mergeAllReportTableFieldOptions(
+    entityMetadata,
+    outputRows,
+    fieldMap,
+    tableMetadataByRowId,
+    referenceEntityMetadataByName,
+    entities,
+  );
+  return new Set(options.map((option) => String(option.value)));
+}
+
+export function dedupeReportTableFieldDraftsByShortestPath(
+  drafts: ReportTableFieldOptionDraft[],
+): ReportTableFieldOptionDraft[] {
+  const winnerByLeaf = new Map<string, ReportTableFieldOptionDraft>();
+
+  for (const draft of drafts) {
+    const prev = winnerByLeaf.get(draft.leafKey);
+    if (!prev) {
+      winnerByLeaf.set(draft.leafKey, draft);
+      continue;
+    }
+    const prevDepth = prev.value.split('.').length;
+    const nextDepth = draft.value.split('.').length;
+    if (
+      nextDepth < prevDepth ||
+      (nextDepth === prevDepth && draft.value.localeCompare(prev.value) < 0)
+    ) {
+      winnerByLeaf.set(draft.leafKey, draft);
+    }
+  }
+
+  const emitted = new Set<string>();
+  const result: ReportTableFieldOptionDraft[] = [];
+  for (const draft of drafts) {
+    if (winnerByLeaf.get(draft.leafKey) !== draft) continue;
+    if (emitted.has(draft.leafKey)) continue;
+    emitted.add(draft.leafKey);
+    result.push(draft);
+  }
+  return result;
+}
 
 /** «Сущность -> поле» (корень и вложенные связи). */
 export function formatQualifiedReportTableFieldLabel(
@@ -210,6 +275,7 @@ export function buildRootReportTableFieldOptions(
       baseLabel: f.label || f.fieldName,
       sourceLabel: entitySourceLabel,
       qualifyAs: 'root',
+      leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, f.fieldName),
     });
   }
 
@@ -246,6 +312,7 @@ export function mergeAllReportTableFieldOptions(
       baseLabel: f.label || f.fieldName,
       sourceLabel: entitySourceLabel,
       qualifyAs: 'root',
+      leafKey: buildReportTableFieldLeafKey(rootEntityName, f.fieldName),
     });
   }
 
@@ -275,6 +342,7 @@ export function mergeAllReportTableFieldOptions(
             baseLabel: f.label || f.fieldName,
             sourceLabel,
             qualifyAs: 'nested',
+            leafKey: buildReportTableFieldLeafKey(referenceEntity, f.fieldName),
           });
         }
 
@@ -303,7 +371,7 @@ export function mergeAllReportTableFieldOptions(
     );
   }
 
-  return buildReportTableFieldOptionLabels(drafts);
+  return buildReportTableFieldOptionLabels(dedupeReportTableFieldDraftsByShortestPath(drafts));
 }
 
 export function hasReportTableFieldsMetadataDefaults(

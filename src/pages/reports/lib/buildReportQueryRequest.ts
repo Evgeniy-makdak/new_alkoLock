@@ -13,6 +13,7 @@ import type {
   ReportUiFilterSelections,
 } from '../types/reportApiTypes';
 import {
+  buildAllowedReportTableFieldPaths,
   findReportTableFieldDefinition,
   isReportTableFieldLabelAutoQualified,
   resolveReportFilterFieldName,
@@ -218,6 +219,7 @@ type BuildRowReportTableFieldsContext = {
   fieldMap: Map<string, ReportFieldDefinition>;
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
+  allowedTableFieldPaths: Set<string>;
 };
 
 const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
@@ -233,6 +235,9 @@ function buildRowReportTableFields(
   return row.reportTableFields.flatMap((item) => {
     const path = String(item.value);
     if (path.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
+      return [];
+    }
+    if (!context.allowedTableFieldPaths.has(path)) {
       return [];
     }
     const fieldDef = findReportTableFieldDefinition(
@@ -487,12 +492,20 @@ export function buildReportQueryRequest(params: {
   }
 
   const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+  const allowedTableFieldPaths = buildAllowedReportTableFieldPaths(
+    metadata,
+    activeRows,
+    fieldMap,
+    reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+  );
   const tableFieldsContext: BuildRowReportTableFieldsContext = {
     entityMetadata: metadata,
     outputRows: activeRows,
     fieldMap,
     tableMetadataByRowId: reportTableFieldsMetadataByRowId,
     referenceEntityMetadataByName,
+    allowedTableFieldPaths,
   };
 
   if (activeRows.length === 1) {
