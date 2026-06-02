@@ -70,24 +70,26 @@ export async function fetchReportNestedEntityValueOptions(
       return buildDomainListValuesForAttribute(ref, actions, attr, labelMaps, field);
     }
     case 'Vehicle': {
-      const res = await CarsApi.getCarsList({ ...pageOpts, isActive: true });
+      const res = await CarsApi.getCarsList({ ...pageOpts, limit: 20, isActive: true });
       return buildDomainListValuesForAttribute(ref, unwrapList<ICar>(res), attr, labelMaps, field);
     }
     case 'MonitoringDevice': {
       const res = await AlcolocksApi.getList({
         ...pageOpts,
-        isAttachment: true,
-        query:
-          '&all.id.notIn=3&sort=vehicleBind.vehicle.manufacturer,vehicleBind.vehicle.model,vehicleBind.vehicle.registrationNumber,ASC',
+        limit: 20,
+        isAttachment: false,
+        includeActiveOnly: true,
+        query: '&all.id.notIn=3',
       });
       return buildDomainListValuesForAttribute(ref, unwrapList<IAlcolock>(res), attr, labelMaps, field);
     }
     case 'User':
     case 'Driver': {
-      const res = await UsersApi.getList(
+      const res = await UsersApi.getListToAttachments(
         {
           ...pageOpts,
-          excludeDisabledUsers: true,
+          limit: 20,
+          isAttachment: true,
           filterOptions: {
             ...pageOpts.filterOptions,
             ...(ref === 'Driver' ? { driverSpecified: true } : {}),

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box } from '@mui/material';
@@ -188,6 +188,8 @@ type ReportNestedEntityFilterControlProps = {
   onChange: (patch: Partial<ReportNestedEntityFilterState>) => void;
   filterOperationCode?: string | null;
   compact?: boolean;
+  /** Между «Параметр сущности» и «Значение» (обычно «Операция фильтра»). */
+  operationSlot?: ReactNode;
 };
 
 function mergeOptionsWithSelected(options: Values, selected: Values): Values {
@@ -216,6 +218,7 @@ export function ReportNestedEntityFilterControl({
   onChange,
   filterOperationCode,
   compact = false,
+  operationSlot = null,
 }: ReportNestedEntityFilterControlProps) {
   const { t } = useTranslation();
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
@@ -266,10 +269,13 @@ export function ReportNestedEntityFilterControl({
     onChange({ path: nextPath, values: [] });
   };
 
+  const propertySegments = segments.filter((s) => s.kind === 'property');
+  const valueSegments = segments.filter((s) => s.kind === 'value');
+
   return (
     <Box className={pageStyles.reportFilterNestedEntity}>
-      {segments.map((segment, index) => {
-        if (segment.kind === 'property') {
+      {propertySegments.map((segment) => {
+        if (segment.kind !== 'property') return null;
           const propertyOptions = buildReferenceEntityPropertyOptions(segment.metadata);
           const selectedProperty = segment.selectedFieldName
             ? (() => {
@@ -312,8 +318,12 @@ export function ReportNestedEntityFilterControl({
               }}
             />
           );
-        }
+      })}
 
+      {operationSlot}
+
+      {valueSegments.map((segment, index) => {
+        if (segment.kind !== 'value') return null;
         return (
           <NestedFilterValueControl
             key={`${field.fieldName}__value_${index}`}

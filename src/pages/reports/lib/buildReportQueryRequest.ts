@@ -228,7 +228,7 @@ function buildRowReportTableFields(
   const fnPick = row.filterSelections[functionKey]?.[0];
   const fnCode = fnPick?.value != null && fnPick.value !== '' ? String(fnPick.value) : null;
 
-  return row.reportTableFields.map((item) => {
+  return row.reportTableFields.flatMap((item) => {
     const path = String(item.value);
     const fieldDef = findReportTableFieldDefinition(
       path,
@@ -238,6 +238,13 @@ function buildRowReportTableFields(
       context.tableMetadataByRowId,
       context.referenceEntityMetadataByName,
     );
+    if (fieldDef && fieldDef.selectable === false) {
+      return [];
+    }
+    if (fieldDef && (fieldDef.type ?? '').toUpperCase() === 'ENTITY') {
+      return [];
+    }
+
     const defaultLabel = (fieldDef?.label ?? '').trim() || path;
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
     const payload: ReportSelectedFieldPayload = {
@@ -254,24 +261,31 @@ function buildRowReportTableFields(
     if (fnCode) {
       payload.aggregation = fnCode;
     }
-    return payload;
+    return [payload];
   });
 }
 
 function mergeSelectedFields(
   payloads: ReportSelectedFieldPayload[][],
 ): ReportSelectedFieldPayload[] {
-  const merged: ReportSelectedFieldPayload[] = [];
-  const seen = new Set<string>();
+  const merged = new Map<string, ReportSelectedFieldPayload>();
   for (const list of payloads) {
     for (const item of list) {
-      const key = `${item.fieldName}:${item.alias ?? ''}:${item.aggregation ?? ''}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      merged.push(item);
+      // Один fieldName на одну aggregation в итоговом SELECT.
+      // Иначе backend может получить AliasCollisionException (например дубли isActive).
+      const key = `${item.fieldName}:${item.aggregation ?? ''}`;
+      const prev = merged.get(key);
+      if (!prev) {
+        merged.set(key, item);
+        continue;
+      }
+      // Если ранее alias не был задан, а в новом элементе есть валидный alias — сохраняем его.
+      if (!prev.alias && item.alias) {
+        merged.set(key, { ...prev, alias: item.alias });
+      }
     }
   }
-  return merged;
+  return Array.from(merged.values());
 }
 
 type RowQueryBuildOptions = {

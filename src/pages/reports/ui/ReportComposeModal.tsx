@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
@@ -61,10 +61,14 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
   const [exportEnabled, setExportEnabled] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!open) return;
     confirmedRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
+    // Чтобы «Создать новый отчёт» открывался без черновых полей текущего отчёта.
+    // При «Отмена» снимок будет восстановлен (handleClose).
+    reportsStore.getState().setSelectedEntityName(null);
+    reportsStore.getState().resetFilters();
     setReportName('');
     setTableFieldsSelection([]);
     setExportEnabled(false);
@@ -141,12 +145,15 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
   useEffect(() => {
     if (!open) return;
     const currentOptions = tableFieldsDialogOptionsRef.current;
-    if (!currentOptions.length) {
-      setTableFieldsSelection([]);
-      return;
-    }
-    const optionByKey = new Map(currentOptions.map((o) => [String(o.value), o]));
     setTableFieldsSelection((prev) => {
+      // На части сущностей options может кратко стать пустым во время перерасчёта metadata.
+      // Не затираем уже отображённый «Текущий состав» в этот момент.
+      if (!currentOptions.length) {
+        return prev;
+      }
+      const optionByKey = new Map(
+        [...defaultRootTableFields, ...currentOptions].map((o) => [String(o.value), o]),
+      );
       if (prev.length === 0) {
         return defaultRootTableFields.length ? [...defaultRootTableFields] : [];
       }
@@ -157,13 +164,16 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
           const opt = optionByKey.get(key);
           return { value: key, label: opt?.label ?? p.label };
         });
+      const deduped = Array.from(
+        new Map(remapped.map((item) => [String(item.value), item])).values(),
+      );
       const unchanged =
-        remapped.length === prev.length &&
-        remapped.every(
+        deduped.length === prev.length &&
+        deduped.every(
           (item, index) =>
             item.value === prev[index]?.value && item.label === prev[index]?.label,
         );
-      return unchanged ? prev : remapped;
+      return unchanged ? prev : deduped;
     });
   }, [open, tableFieldsOptionsKey, defaultRootTableFields]);
 
@@ -208,8 +218,11 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
 
   const saveTableFieldsSelectionToStore = useCallback(() => {
     const { outputRows: currentOutputRows } = reportsStore.getState();
-    const selected =
+    const selectedRaw =
       tableFieldsSelection.length > 0 ? tableFieldsSelection : tableFieldsInitialSelection;
+    const selected = Array.from(
+      new Map(selectedRaw.map((item) => [String(item.value), item])).values(),
+    );
     if (selected.length) {
       const { setOutputRowReportTableFields: setTableFields } = reportsStore.getState();
       for (const row of currentOutputRows) {
@@ -225,10 +238,13 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
       if (body.selectedFields?.length) return body;
       const selected =
         tableFieldsSelection.length > 0 ? tableFieldsSelection : tableFieldsInitialSelection;
-      if (!selected.length) return body;
+      const deduped = Array.from(
+        new Map(selected.map((item) => [String(item.value), item])).values(),
+      );
+      if (!deduped.length) return body;
       return {
         ...body,
-        selectedFields: selected.map((f) => ({ fieldName: String(f.value) })),
+        selectedFields: deduped.map((f) => ({ fieldName: String(f.value) })),
       };
     },
     [tableFieldsSelection, tableFieldsInitialSelection],

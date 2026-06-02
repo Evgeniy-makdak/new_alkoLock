@@ -88,7 +88,7 @@ export function ReportOutputFilterRow({
     (s) => s.reportTableFieldsMetadataLoadingByRowId[row.id] ?? false,
   );
   const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
-  const   referenceEntityMetadataLoadingByName = reportsStore(
+  const referenceEntityMetadataLoadingByName = reportsStore(
     (s) => s.referenceEntityMetadataLoadingByName,
   );
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
@@ -275,44 +275,42 @@ export function ReportOutputFilterRow({
       }
       onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
       filterOperationCode={filterOperationCode}
+      operationSlot={showOperationAndFunction ? filterOperationBlock : null}
     />
   ) : null;
+
+  const scalarValueFilterControl =
+    primaryField && !refEntity && primaryField.filterable ? (
+      <ReportFieldFilterControl
+        compact={selectCompact}
+        field={primaryField}
+        metadata={metadata}
+        value={row.filterSelections[primaryField.fieldName] ?? []}
+        filterOperationCode={filterOperationCode}
+        onChange={(values) => onFilterChange(primaryField.fieldName, values)}
+        vehicleLabelMaps={vehicleLabelMaps}
+      />
+    ) : null;
 
   const valueFilterBlock = primaryField ? (
     <>
       {nestedEntityFilterControl}
-      {!refEntity && primaryField.filterable ? (
-        <ReportFieldFilterControl
-          compact={selectCompact}
-          field={primaryField}
-          metadata={metadata}
-          value={row.filterSelections[primaryField.fieldName] ?? []}
-          filterOperationCode={filterOperationCode}
-          onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-        />
+      {!refEntity ? (
+        <>
+          {filterOperationBlock}
+          {scalarValueFilterControl}
+        </>
       ) : null}
     </>
   ) : null;
 
   const modalFilterControlsBlock = primaryField ? (
-    primaryField && refEntity ? (
-      <>
-        {filterOperationBlock}
-        {nestedEntityFilterControl}
-      </>
+    refEntity ? (
+      nestedEntityFilterControl
     ) : (
       <>
         {filterOperationBlock}
-        {primaryField.filterable ? (
-          <ReportFieldFilterControl
-            compact={selectCompact}
-            field={primaryField}
-            metadata={metadata}
-            value={row.filterSelections[primaryField.fieldName] ?? []}
-            filterOperationCode={filterOperationCode}
-            onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-          />
-        ) : null}
+        {scalarValueFilterControl}
       </>
     )
   ) : null;
@@ -343,7 +341,6 @@ export function ReportOutputFilterRow({
         modalFilterControlsBlock
       ) : (
         <>
-          {filterOperationBlock}
           {valueFilterBlock}
           {filterFunctionBlock}
         </>

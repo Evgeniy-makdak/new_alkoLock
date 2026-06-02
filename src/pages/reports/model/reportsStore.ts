@@ -286,9 +286,26 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   },
 
   async loadAllReferenceEntityMetadataForReport(entityMetadata) {
-    const refs = collectReferenceEntitiesFromMetadata(entityMetadata);
-    if (!refs.length) return;
-    await Promise.all(refs.map((ref) => get().loadReferenceEntityMetadata(ref)));
+    const queue = [...collectReferenceEntitiesFromMetadata(entityMetadata)];
+    if (!queue.length) return;
+
+    const seen = new Set<string>();
+    while (queue.length > 0) {
+      const ref = (queue.shift() ?? '').trim();
+      if (!ref || seen.has(ref)) continue;
+      seen.add(ref);
+
+      await get().loadReferenceEntityMetadata(ref);
+      const loaded = get().referenceEntityMetadataByName[ref];
+      if (!loaded) continue;
+
+      const nestedRefs = collectReferenceEntitiesFromMetadata(loaded);
+      for (const nested of nestedRefs) {
+        if (!seen.has(nested)) {
+          queue.push(nested);
+        }
+      }
+    }
   },
 
   addOutputRow(logicOperator) {
