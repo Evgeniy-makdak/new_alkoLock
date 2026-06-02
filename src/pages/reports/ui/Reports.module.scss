@@ -54,6 +54,13 @@
   flex-shrink: 0;
 }
 
+.headerExportControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+}
+
 .filtersBar {
   flex-shrink: 0;
   padding: 0 var(--table-page-content-inset-inline, 16px) 8px;
@@ -65,6 +72,13 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 8px;
+}
+
+.mobileExportControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 

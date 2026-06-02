@@ -7,6 +7,8 @@ import type {
   ReportOutputRow,
 } from '../types/reportApiTypes';
 
+const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
+
 /** @deprecated Используйте ROOT_ENTITY_LABEL_SEPARATOR; оставлено для распознавания старых подписей. */
 export const QUALIFIED_LABEL_SEPARATOR = ' · ';
 
@@ -262,7 +264,11 @@ export function mergeAllReportTableFieldOptions(
 
       for (const f of meta.fields) {
         const value = prefixedFieldName(prefix, f.fieldName);
+        const segmentsCount = value.split('.').length;
         if (isReportTableSelectableField(f) && !seen.has(value)) {
+          if (segmentsCount > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
+            continue;
+          }
           seen.add(value);
           drafts.push({
             value,
@@ -279,6 +285,7 @@ export function mergeAllReportTableFieldOptions(
         if (rootEntityName && childRef === rootEntityName) continue;
         const nextVisited = new Set(visitedEntities);
         nextVisited.add(childRef);
+        if (segmentsCount >= MAX_SELECTED_FIELD_PATH_SEGMENTS) continue;
         walkNested(
           value,
           (f.label ?? '').trim() || f.fieldName,
@@ -345,9 +352,12 @@ export function findReportTableFieldDefinition(
 
     const exact = tableFields.find((f) => f.fieldName === leaf);
     if (exact) return exact;
-    const leafName = leaf.includes('.') ? leaf.slice(leaf.lastIndexOf('.') + 1) : leaf;
-    const byLeaf = tableFields.find((f) => f.fieldName === leafName);
-    if (byLeaf) return byLeaf;
+    // Fallback по leaf-name допустим только для одноуровневого пути.
+    // Для глубоких путей (a.b.c) это приводит к ложному совпадению и невалидному fieldName в payload.
+    if (!leaf.includes('.')) {
+      const byLeaf = tableFields.find((f) => f.fieldName === leaf);
+      if (byLeaf) return byLeaf;
+    }
   }
 
   for (const row of outputRows) {
@@ -364,8 +374,9 @@ export function findReportTableFieldDefinition(
       : (tableMetadataByRowId[row.id]?.fields ?? []);
     const exact = tableFields.find((f) => f.fieldName === leaf);
     if (exact) return exact;
-    const leafName = leaf.includes('.') ? leaf.slice(leaf.lastIndexOf('.') + 1) : leaf;
-    return tableFields.find((f) => f.fieldName === leafName);
+    if (!leaf.includes('.')) {
+      return tableFields.find((f) => f.fieldName === leaf);
+    }
   }
 
   return allEntityFields.find((f) => f.fieldName === fieldPath);

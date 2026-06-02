@@ -29,6 +29,8 @@ interface TableProps extends DataGridProps {
   pointer?: boolean;
   loadingColumnIndex?: number;
   chipColumns?: number[];
+  /** true: адаптивные колонки (minWidth + flex), при нехватке — горизонтальный скролл. */
+  disableColumnFlex?: boolean;
 }
 
 export const setTestIdsToHeaderColumns = (
@@ -47,6 +49,7 @@ export const Table = memo(
     pageSizeOptions,
     styles,
     chipColumns = [],
+    disableColumnFlex = false,
     ...rest
   }: TableProps) => {
     const { t, i18n } = useTranslation();
@@ -141,11 +144,21 @@ export const Table = memo(
       return <Box>{value}</Box>;
     };
 
+    const applyColumnSizing = (head: (typeof columns)[number]) => {
+      if (!disableColumnFlex) {
+        return { ...head, flex: 1 };
+      }
+      const minWidth = typeof head.minWidth === 'number' ? head.minWidth : 160;
+      // Для отчётов: растягиваем на всю ширину экрана при наличии места,
+      // но не даём сжиматься меньше minWidth — тогда появляется горизонтальный скролл.
+      return { ...head, minWidth, flex: typeof head.flex === 'number' ? head.flex : 1, width: undefined };
+    };
+
     const styledHeaders = columns.map((head, index) => {
       if (head?.type === 'actions') {
         const originalRenderCell = head.renderCell;
         return {
-          ...head,
+          ...applyColumnSizing(head),
           renderCell: (params: any) => {
             const content = originalRenderCell ? originalRenderCell(params) : null;
             if (params.row.isProcessing) {
@@ -174,15 +187,11 @@ export const Table = memo(
         head.field === ValuesHeader.STATE ||
         head.field === ValuesHeader.EXPIRES
       ) {
-        return {
-          ...head,
-          flex: 1,
-        };
+        return applyColumnSizing(head);
       }
 
       return {
-        ...head,
-        flex: 1,
+        ...applyColumnSizing(head),
         renderCell: (params: any) => {
           const useChip = chipColumns.includes(index);
           const value = useChip ? params.value : params.formattedValue;

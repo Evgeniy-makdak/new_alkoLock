@@ -6,14 +6,8 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import {
   Alert,
   Autocomplete,
-  Checkbox,
   CircularProgress,
-  FormControl,
-  FormControlLabel,
   IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
   Tooltip,
   Typography,
@@ -40,24 +34,14 @@ import { ReportComposeSection } from './ReportComposeSection';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 import pageStyles from './Reports.module.scss';
 
-export type ReportExportFormat = 'CSV' | 'XLS' | 'PDF';
-
 export type ReportComposeFormProps = {
   reportName: string;
   onReportNameChange: (name: string) => void;
-  exportEnabled?: boolean;
-  exportFormat?: ReportExportFormat;
-  onExportEnabledChange?: (enabled: boolean) => void;
-  onExportFormatChange?: (format: ReportExportFormat) => void;
 };
 
 export function ReportComposeForm({
   reportName,
   onReportNameChange,
-  exportEnabled = false,
-  exportFormat = 'CSV',
-  onExportEnabledChange,
-  onExportFormatChange,
 }: ReportComposeFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -217,39 +201,6 @@ export function ReportComposeForm({
             value={reportName}
             onChange={(e) => onReportNameChange(e.target.value)}
           />
-          {onExportEnabledChange ? (
-            <div className={composeStyles.composeExportControls}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    size="small"
-                    checked={exportEnabled}
-                    onChange={(_, checked) => onExportEnabledChange(checked)}
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ fontSize: 13 }}>
-                    {t('reports.saveAsFile')}
-                  </Typography>
-                }
-                sx={{ mr: 0 }}
-              />
-              {exportEnabled && onExportFormatChange ? (
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
-                  <Select
-                    labelId="report-export-format-label"
-                    value={exportFormat}
-                    label={t('reports.format')}
-                    onChange={(e) => onExportFormatChange(e.target.value as ReportExportFormat)}>
-                    <MenuItem value="CSV">CSV</MenuItem>
-                    <MenuItem value="XLS">XLS</MenuItem>
-                    <MenuItem value="PDF">PDF</MenuItem>
-                  </Select>
-                </FormControl>
-              ) : null}
-            </div>
-          ) : null}
           <div className={composeStyles.composeEntityField}>{renderEntityAutocomplete()}</div>
         </div>
       </div>

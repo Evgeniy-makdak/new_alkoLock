@@ -39,9 +39,17 @@ type ReportComposeModalProps = {
   open: boolean;
   onClose: () => void;
   onReportFormed?: () => void;
+  exportEnabled: boolean;
+  exportFormat: ReportExportFormat;
 };
 
-export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComposeModalProps) {
+export function ReportComposeModal({
+  open,
+  onClose,
+  onReportFormed,
+  exportEnabled,
+  exportFormat,
+}: ReportComposeModalProps) {
   const { t } = useTranslation();
   const snapshotRef = useRef<ReportsComposeSnapshot | null>(null);
   const confirmedRef = useRef(false);
@@ -58,8 +66,6 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
 
   const [reportName, setReportName] = useState('');
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
-  const [exportEnabled, setExportEnabled] = useState(false);
-  const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -71,8 +77,6 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     reportsStore.getState().resetFilters();
     setReportName('');
     setTableFieldsSelection([]);
-    setExportEnabled(false);
-    setExportFormat('CSV');
   }, [open]);
 
   const handleClose = useCallback(() => {
@@ -364,7 +368,6 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
     executeReportLoad,
     executeReportExportLoad,
     exportEnabled,
-    reportName,
   ]);
 
   useEffect(() => {
@@ -398,10 +401,6 @@ export function ReportComposeModal({ open, onClose, onReportFormed }: ReportComp
             <ReportComposeForm
               reportName={reportName}
               onReportNameChange={setReportName}
-              exportEnabled={exportEnabled}
-              exportFormat={exportFormat}
-              onExportEnabledChange={setExportEnabled}
-              onExportFormatChange={setExportFormat}
             />
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>

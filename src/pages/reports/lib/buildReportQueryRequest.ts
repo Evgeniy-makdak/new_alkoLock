@@ -220,6 +220,8 @@ type BuildRowReportTableFieldsContext = {
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
 };
 
+const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
+
 function buildRowReportTableFields(
   row: ReportOutputRow,
   context: BuildRowReportTableFieldsContext,
@@ -230,6 +232,9 @@ function buildRowReportTableFields(
 
   return row.reportTableFields.flatMap((item) => {
     const path = String(item.value);
+    if (path.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
+      return [];
+    }
     const fieldDef = findReportTableFieldDefinition(
       path,
       context.entityMetadata,
