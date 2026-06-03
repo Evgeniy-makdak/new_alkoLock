@@ -25,6 +25,10 @@
   .pageHeader {
     background: var(--mui-palette-background-default, #121212);
   }
+
+  .mobileExportControls :global(.MuiInputLabel-root) {
+    background-color: var(--mui-palette-background-default, #121212);
+  }
 }
 
 /* Заголовок страницы без серой полосы — она только у DataGrid после формирования отчёта. */
@@ -77,9 +81,151 @@
 
 .mobileExportControls {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 8px;
+  overflow: visible;
+  padding-top: 6px;
+
+  :global(.MuiFormControl-root) {
+    overflow: visible;
+  }
+
+  :global(.MuiInputLabel-root) {
+    z-index: 1;
+    background-color: var(--mui-palette-background-default, #fff);
+    padding: 0 4px;
+    line-height: 1.2;
+  }
+}
+
+.mobileCreateActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.mobileCreateButton {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.mobilePagination {
+  display: none;
+}
+
+.paginationButton {
+  padding: 8px 16px;
+  border: 1px solid var(--mui-palette-divider, #ddd);
+  background: var(--mui-palette-background-paper, #fff);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--mui-palette-text-primary, #333);
+  font-size: 14px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:not(:disabled):hover {
+    background: var(--mui-palette-action-hover, #f5f5f5);
+  }
+}
+
+.paginationInfo {
+  font-size: 14px;
+  color: var(--mui-palette-text-secondary, #777);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  /* Строки фильтров в модалке «Новый отчёт» (класс только variant=modal) */
+  .reportFilterOutputRowInner {
+    flex-direction: column;
+    align-items: stretch;
+    overflow-x: visible;
+
+    > *:not(.MuiIconButton-root):not(.reportFilterRowActions) {
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    .reportFilterNestedEntity {
+      flex-direction: column;
+      align-items: stretch;
+      width: 100% !important;
+      max-width: 100% !important;
+
+      > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+    }
+
+    .reportFilterDateTimeRoot,
+    .reportFilterDateTimeRootRange {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    .reportFilterDateTimeRootRange {
+      flex-wrap: wrap;
+    }
+
+    .reportFilterDateTimePairFields {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    .reportFilterDateField {
+      flex: 1 1 100%;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+
+      :global(.MuiFormControl-root) {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    .reportFilterTimeField {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    .reportFilterRowActions {
+      margin-left: 0;
+      align-self: flex-end;
+    }
+  }
+
+  .mobilePagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 12px var(--table-page-content-inset-inline, 16px);
+    background: var(--mui-palette-background-default, #fff);
+    border-top: 1px solid var(--mui-palette-divider, #e0e0e0);
+    gap: 8px;
+  }
+
+  .scrollableTable {
+    :global {
+      .MuiDataGrid-footerContainer {
+        display: none !important;
+      }
+    }
+  }
 }
 
 .filtersBarInner {

@@ -17,6 +17,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import { Formatters } from '@shared/utils/formatters';
 
+import { isEventsForFrontLevelAttribute } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import {
   formatReportVehicleCarLabel,
@@ -102,7 +103,11 @@ function readRecordAttributeValues(
   if (attribute === USER_GROUP_NAME_ATTR) {
     return extractUserGroupNames(record);
   }
-  const single = readRecordAttribute(record, attribute);
+  const readAttribute =
+    referenceEntity === 'EventsForFront' && isEventsForFrontLevelAttribute(attribute)
+      ? 'level'
+      : attribute;
+  const single = readRecordAttribute(record, readAttribute);
   return single != null ? [single] : [];
 }
 
@@ -191,10 +196,15 @@ export function buildNestedEntityAttributeOptions(
     return buildDeviceActionAttributeOptions(records, attribute);
   }
 
+  const readAttribute =
+    referenceEntity === 'EventsForFront' && isEventsForFrontLevelAttribute(attribute)
+      ? 'level'
+      : attribute;
+
   const seen = new Map<string, Values[number]>();
 
   for (const record of records) {
-    for (const raw of readRecordAttributeValues(record, attribute, referenceEntity)) {
+    for (const raw of readRecordAttributeValues(record, readAttribute, referenceEntity)) {
       const value = String(raw);
       if (seen.has(value)) continue;
       seen.set(value, {

@@ -12,6 +12,11 @@ import { Formatters } from '@shared/utils/formatters';
 
 import { fetchBranchOfficesForReport } from './branchOfficeReportOptions';
 import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAttribute';
+import {
+  fetchEventTypesForReport,
+  fetchEventsForFrontFilterValueOptions,
+  shouldUseEventsForFrontTypeListApi,
+} from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import { fetchDeviceActionsForReport } from './deviceActionReportOptions';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
@@ -45,6 +50,10 @@ export async function fetchReportNestedEntityValueOptions(
   const ref = (referenceEntity ?? '').trim();
   const attr = (field.fieldName ?? '').trim();
   if (!ref || !attr) return [];
+
+  if (shouldUseEventsForFrontTypeListApi(ref, field)) {
+    return fetchEventsForFrontFilterValueOptions(field, searchQuery);
+  }
 
   const kind = resolveNestedEntityValueLoadKind(field, ref);
   if (kind !== 'domainList') {
@@ -113,36 +122,11 @@ export async function fetchReportNestedEntityValueOptions(
       return buildDomainListValuesForAttribute(ref, unwrapList<IDeviceAction>(res), attr, labelMaps, field);
     }
     case 'EventsForFront': {
-      const res = await EventsApi.getEventsTypeList(
-        { filterOptions: { match } },
-        [63],
-        false,
-        false,
-      );
-      const types = unwrapList<{
-        id?: number | string;
-        label?: string;
-        event?: string;
-      }>(res);
-      if (attr === 'label') {
-        return types
-          .filter((item) => item.label != null && item.label !== '')
-          .map((item) => ({ value: String(item.label), label: String(item.label) }));
-      }
-      if (attr === 'event') {
-        return types
-          .filter((item) => typeof item.event === 'string' && item.event.trim() !== '')
-          .map((item) => ({
-            value: String(item.event).trim(),
-            label: item.label ?? String(item.event),
-          }));
-      }
       if (isEntityIdAttribute(attr)) {
+        const types = await fetchEventTypesForReport(match);
         return buildDomainListValuesForAttribute(ref, types, attr, labelMaps, field);
       }
-      return types
-        .filter((item) => item.label != null && item.label !== '')
-        .map((item) => ({ value: String(item.label), label: String(item.label) }));
+      return fetchEventsForFrontFilterValueOptions(field, match);
     }
     default:
       return [];

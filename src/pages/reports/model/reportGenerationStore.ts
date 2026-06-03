@@ -190,6 +190,8 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       lastResult: null,
       queryContext: null,
+      pagination: { page: 0, pageSize: get().pagination.pageSize },
+      sort: [],
     }),
 
   async loadReportPage(page, pageSize) {

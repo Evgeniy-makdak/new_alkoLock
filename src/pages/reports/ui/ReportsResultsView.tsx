@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { useMediaQuery } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import {
@@ -12,18 +13,22 @@ import {
   getReportGridRowId,
   mapReportContentToResultGrid,
 } from '@pages/reports/lib/mapReportContentToResultGrid';
+import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { buildReportColumnAliasMap } from '@pages/reports/lib/reportSelectedFieldAliases';
 import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { Table } from '@shared/components/Table/Table';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
+import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
 
 export function ReportsResultsView() {
   const { t } = useTranslation();
+  const isMobile = useMediaQuery(breakpoints.mobile);
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
   const metadata = reportsStore((s) => s.metadata);
@@ -88,10 +93,24 @@ export function ReportsResultsView() {
     }
   }, [activeOutputRows, fieldMap, loadVehicleLabelMaps]);
 
-  // Сброс страницы и сортировки только при новом запросе отчёта. changeTable* нестабильны — не в deps.
-  useEffect(() => {
+  const paginationModel = useMemo(
+    () => ({ page: storePagination.page, pageSize: storePagination.pageSize }),
+    [storePagination.page, storePagination.pageSize],
+  );
+
+  // Сброс страницы и сортировки при новом отчёте или после «Очистить фильтры». changeTable* нестабильны — не в deps.
+  useLayoutEffect(() => {
     if (!queryContext) {
       lastSyncedReportKeyRef.current = null;
+      const pageSize = pageSizeRef.current;
+      resetReportsTablePaginationStorage(pageSize);
+      setPagination({ page: 0, pageSize });
+      setSort([]);
+      changeTableState({ page: 0, pageSize });
+      changeTableSorts([]);
+      apiRef.current?.setSortModel?.([]);
+      apiRef.current?.setPage?.(0);
+      apiRef.current?.setPaginationModel?.({ page: 0, pageSize });
       return;
     }
     if (lastSyncedReportKeyRef.current === reportTableKey) return;
@@ -233,6 +252,16 @@ export function ReportsResultsView() {
   const totalElements = lastResult?.totalElements ?? 0;
   const showReportColumnHeaders = Boolean(queryContext && columns.length > 0);
 
+  const handleMobilePageChange = useCallback(
+    (newPage: number) => {
+      handlePaginationModelChange({
+        page: newPage,
+        pageSize: storePagination.pageSize,
+      });
+    },
+    [handlePaginationModelChange, storePagination.pageSize],
+  );
+
   return (
     <div
       className={`${styles.tableWrapper} ${showReportColumnHeaders ? styles.tableAreaWithReportHeaders : ''}`}>
@@ -246,6 +275,7 @@ export function ReportsResultsView() {
           rowCount={totalElements}
           paginationMode="server"
           sortingMode="server"
+          paginationModel={paginationModel}
           onSortModelChange={changeTableSorts}
           apiRef={apiRef}
           pageNumber={storePagination.page}
@@ -259,6 +289,19 @@ export function ReportsResultsView() {
           hideFooterSelectedRowCount
         />
       </div>
+      {isMobile ? (
+        <div className={styles.mobilePagination}>
+          <MobilePaginationWithJump
+            page={storePagination.page}
+            pageSize={storePagination.pageSize}
+            totalCount={totalElements}
+            loading={isLoadingPage || isGenerating}
+            onPageChange={handleMobilePageChange}
+            buttonClassName={styles.paginationButton}
+            infoClassName={styles.paginationInfo}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

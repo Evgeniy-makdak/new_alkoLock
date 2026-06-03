@@ -4,6 +4,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
+import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
 import { isReportBooleanField } from './reportFieldFilterKind';
 import { isReportLeafDomainListEntity } from './reportLeafEntityListApi';
 import { resolveReportMetadataValueLoadKind } from './reportMetadataFilterOptions';
@@ -37,6 +38,10 @@ export function resolveNestedEntityValueLoadKind(
   field: ReportFieldDefinition | undefined,
   leafEntityName: string,
 ): NestedEntityValueLoadKind {
+  if (shouldForceEventsForFrontDomainList(leafEntityName, field)) {
+    return 'domainList';
+  }
+
   const fromMetadata = resolveReportMetadataValueLoadKind(field);
   if (fromMetadata !== 'textInput') {
     return fromMetadata;

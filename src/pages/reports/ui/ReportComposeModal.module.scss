@@ -96,7 +96,9 @@
 }
 
 .formRootDisplayContents {
-  display: contents;
+  @media (min-width: 769px) {
+    display: contents;
+  }
 }
 
 .composeSection {
@@ -473,7 +475,239 @@
   color: var(--mui-palette-text-secondary, #888);
 }
 
+/* Мобильные экраны — только стили, десктоп без изменений */
+@media (max-width: 768px) {
+  .composeModalSize {
+    width: calc(100vw - 12px) !important;
+    max-width: calc(100vw - 12px) !important;
+  }
+
+  .composeMainGrid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .composeModalPaper {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 12px);
+    height: calc(100dvh - 12px);
+    overflow: hidden;
+
+    :global(.MuiDialogContent-root) {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow-x: hidden !important;
+      overflow-y: auto !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    :global(.MuiDialogActions-root) {
+      flex: 0 0 auto !important;
+      flex-shrink: 0 !important;
+      margin-top: auto !important;
+      border-top: 1px solid var(--mui-palette-divider, #e0e0e0);
+      background: var(--mui-palette-background-paper, #fff);
+      position: sticky;
+      bottom: 0;
+      z-index: 3;
+    }
+  }
+
+  .composeBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .composeTopRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .composeNameField,
+  .composeEntityField {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .filterGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filterGroupRemoveBtn {
+    align-self: flex-end;
+  }
+
+  .modalFilterRow {
+    flex-direction: column;
+    flex-wrap: wrap !important;
+    align-items: stretch;
+    overflow-x: visible;
+    overflow-y: visible;
+    gap: 10px;
+    padding-top: 0;
+
+    :global(.MuiFormControl-root),
+    :global(.MuiAutocomplete-root),
+    :global([class*='searchSelect']) {
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      overflow: visible;
+    }
+
+    :global(.MuiInputLabel-root) {
+      z-index: 1;
+      background: var(--mui-palette-background-paper, #fff);
+      padding: 0 4px;
+      line-height: 1.2;
+    }
+
+    > *:not(.reportFilterRowActions):not([class*='reportFilterDateTimeRoot']):not(
+        [class*='reportFilterDateTimeRootRange']
+      ):not([class*='reportFilterNestedEntity']):not(.optionalFilterControl) {
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    :global([class*='reportFilterNestedEntity']) {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 10px;
+      flex: 1 1 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      overflow: visible;
+
+      > *:not([class*='reportFilterDateTimeRoot']):not([class*='reportFilterDateTimeRootRange']) {
+        flex: 1 1 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+      }
+    }
+
+    :global([class*='reportFilterDateTimeRoot']),
+    :global([class*='reportFilterDateTimeRootRange']) {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    :global([class*='reportFilterDateTimeRootRange']) {
+      flex-wrap: wrap;
+    }
+
+    :global([class*='reportFilterDateTimePairFields']) {
+      flex-wrap: wrap;
+      width: 100%;
+    }
+
+    :global([class*='reportFilterDateField']) {
+      flex: 1 1 100%;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+
+      :global(.MuiFormControl-root) {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+    }
+
+    :global([class*='reportFilterTimeField']) {
+      flex: 1 1 100% !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+    }
+
+    .optionalFilterControl {
+      position: static;
+      margin-left: 0;
+      align-self: stretch;
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    :global(.reportFilterRowActions) {
+      margin-left: 0;
+      align-self: flex-end;
+      width: auto;
+    }
+  }
+
+  .transferRoot {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      'available'
+      'chosen'
+      'actions';
+    gap: 12px;
+    min-height: 0;
+  }
+
+  .transferPanel:first-of-type {
+    grid-area: available;
+  }
+
+  .transferPanel:last-of-type {
+    grid-area: chosen;
+  }
+
+  .transferPanel {
+    min-height: 0;
+  }
+
+  .transferListBox {
+    min-height: 120px;
+    max-height: 160px;
+  }
+
+  .transferActions {
+    grid-area: actions;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    padding-top: 0;
+    gap: 8px;
+  }
+
+  .transferListItemButton,
+  .transferListItemButtonChosen {
+    padding-right: 8px !important;
+  }
+
+  .transferListItemButtonChosen {
+    padding-right: 72px !important;
+  }
+}
+
 :global(html[data-theme='dark']) {
+  @media (max-width: 768px) {
+    .modalFilterRow :global(.MuiInputLabel-root) {
+      background: var(--mui-palette-background-paper, #121212);
+    }
+  }
+
   .filterGroup {
     background: rgba(255, 255, 255, 0.04);
   }

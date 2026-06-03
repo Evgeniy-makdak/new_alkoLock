@@ -35,6 +35,7 @@ import {
 import { reportOutputFunctionKey, reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
+import { resolveEventsForFrontLevelFilterApiFieldName } from './eventsForFrontReportOptions';
 import {
   normalizeNestedFilterPath,
   resolveNestedFilterApiFieldName,
@@ -386,11 +387,10 @@ export function buildReportQueryRequestForRow(
             nestedPath,
             tableFieldsContext.referenceEntityMetadataByName,
           ) ?? primary;
-        pushFilter(
-          resolveNestedFilterApiFieldName(primary, nestedPath),
-          nested.values,
-          attributeField,
-        );
+        const nestedFilterFieldName =
+          resolveEventsForFrontLevelFilterApiFieldName(primary, nestedPath) ??
+          resolveNestedFilterApiFieldName(primary, nestedPath);
+        pushFilter(nestedFilterFieldName, nested.values, attributeField);
       }
     } else {
       const selected = row.filterSelections[primary.fieldName] ?? [];

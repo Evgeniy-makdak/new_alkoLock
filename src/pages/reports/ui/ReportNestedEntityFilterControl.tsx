@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Box } from '@mui/material';
 
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
+import { resolveNestedFilterValueFetchTarget } from '@pages/reports/lib/eventsForFrontReportOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import {
   buildReferenceEntityPropertyOptions,
@@ -50,6 +51,7 @@ type NestedFilterValueControlProps = {
   compact: boolean;
   controlSx: typeof reportFilterControlSx;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
+  metadataByEntity: Record<string, import('@pages/reports/types/reportApiTypes').ReportEntityMetadata | null>;
   t: TFunction;
   onChange: (values: Values) => void;
 };
@@ -62,10 +64,19 @@ function NestedFilterValueControl({
   compact,
   controlSx,
   vehicleLabelMaps,
+  metadataByEntity,
   t,
   onChange,
 }: NestedFilterValueControlProps) {
-  const valueLoadKind = resolveNestedEntityValueLoadKind(segment.field, segment.leafEntityName);
+  const fetchTarget = useMemo(
+    () => resolveNestedFilterValueFetchTarget(segment.leafEntityName, segment.field, metadataByEntity),
+    [segment.leafEntityName, segment.field, metadataByEntity],
+  );
+
+  const valueLoadKind = resolveNestedEntityValueLoadKind(
+    fetchTarget.field,
+    fetchTarget.referenceEntity,
+  );
   const isBooleanValueField = isReportBooleanField(segment.field);
   const [searchQuery, setSearchQuery] = useState('');
   const [remoteOptions, setRemoteOptions] = useState<Values>([]);
@@ -73,7 +84,7 @@ function NestedFilterValueControl({
 
   useEffect(() => {
     setSearchQuery('');
-  }, [segment.leafEntityName, segment.field.fieldName]);
+  }, [fetchTarget.referenceEntity, fetchTarget.field.fieldName]);
 
   const staticValueOptions = useMemo(() => {
     if (valueLoadKind === 'static') {
@@ -95,8 +106,8 @@ function NestedFilterValueControl({
     setRemoteLoading(true);
 
     void fetchReportNestedEntityValueOptions(
-      segment.leafEntityName,
-      segment.field,
+      fetchTarget.referenceEntity,
+      fetchTarget.field,
       searchQuery,
       vehicleLabelMaps,
     )
@@ -113,7 +124,7 @@ function NestedFilterValueControl({
     return () => {
       cancelled = true;
     };
-  }, [valueLoadKind, segment.leafEntityName, segment.field, searchQuery, vehicleLabelMaps]);
+  }, [valueLoadKind, fetchTarget, searchQuery, vehicleLabelMaps]);
 
   const valueOptions =
     valueLoadKind === 'domainList' ? remoteOptions : staticValueOptions;
@@ -334,6 +345,7 @@ export function ReportNestedEntityFilterControl({
             compact={compact}
             controlSx={controlSx}
             vehicleLabelMaps={vehicleLabelMaps}
+            metadataByEntity={metadataByEntity}
             t={t}
             onChange={(values) => onChange({ values })}
           />

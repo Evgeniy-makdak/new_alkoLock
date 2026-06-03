@@ -16,6 +16,7 @@ import {
 
 import { PageWrapper } from '@layout/page_wrapper';
 import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
+import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
@@ -47,6 +48,8 @@ export function ReportsPage() {
   }, [loadEntities]);
 
   const handleResetFilters = () => {
+    const { pagination } = reportGenerationStore.getState();
+    resetReportsTablePaginationStorage(pagination.pageSize);
     resetFilters();
     setSelectedEntityName(null);
     reportGenerationStore.getState().clearResults();
@@ -158,17 +161,19 @@ export function ReportsPage() {
                   </Select>
                 </FormControl>
               </div>
-              <Button
-                variant="contained"
-                size="small"
-                startIcon={<AddIcon />}
-                fullWidth
-                disabled={isGenerating}
-                onClick={openComposeModal}
-                sx={{ textTransform: 'none', mb: 1 }}>
-                {t('reports.createNewReport')}
-              </Button>
-              <ResetFilters reset={handleResetFilters} />
+              <div className={styles.mobileCreateActions}>
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  disabled={isGenerating}
+                  onClick={openComposeModal}
+                  className={styles.mobileCreateButton}
+                  sx={{ textTransform: 'none' }}>
+                  {t('reports.createNewReport')}
+                </Button>
+                <ResetFilters reset={handleResetFilters} />
+              </div>
             </div>
           ) : null}
 

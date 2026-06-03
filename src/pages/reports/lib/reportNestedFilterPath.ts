@@ -1,4 +1,8 @@
 import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
+import {
+  isEventsForFrontLevelAttribute,
+  resolveEventsForFrontLevelValueField,
+} from './eventsForFrontReportOptions';
 import { isReportLeafDomainListEntity } from './reportLeafEntityListApi';
 import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
 
@@ -56,6 +60,10 @@ export function collectNestedFilterMetadataEntities(
     if (!ref) break;
     refs.push(ref);
     metadata = null;
+  }
+
+  if (path.some((step) => isEventsForFrontLevelAttribute(step)) && !refs.includes('EventsForFront')) {
+    refs.push('EventsForFront');
   }
 
   return refs;
@@ -199,11 +207,25 @@ export function buildNestedFilterUiSegments(
 
     if (!nextRef) {
       if (field) {
+        let valueField = field;
+        let valueLeafEntity = entityName;
+
+        if (
+          entityName !== 'EventsForFront' &&
+          isEventsForFrontLevelAttribute(field.fieldName)
+        ) {
+          const levelField = resolveEventsForFrontLevelValueField(metadataByEntity);
+          if (levelField) {
+            valueField = levelField;
+            valueLeafEntity = 'EventsForFront';
+          }
+        }
+
         segments.push({
           kind: 'value',
-          leafEntityName: entityName,
-          field,
-          label: (field.label ?? '').trim() || field.fieldName,
+          leafEntityName: valueLeafEntity,
+          field: valueField,
+          label: (valueField.label ?? '').trim() || valueField.fieldName,
         });
       }
       return segments;
