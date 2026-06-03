@@ -2,6 +2,10 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
 import {
+  buildCoordinatePairValueOptions,
+  isReportCoordinatesCompositePropertyFieldName,
+} from './reportCoordinateComposite';
+import {
   buildNestedEntityAttributeOptions,
   recordsToEntityListValues,
   recordsToIdOnlyListValues,
@@ -36,6 +40,10 @@ export function buildDomainListValuesForAttribute(
   const ref = (referenceEntity === 'Driver' ? 'User' : referenceEntity).trim();
   const attr = (attribute ?? '').trim();
   if (!ref || !attr || !records.length) return [];
+
+  if (isReportCoordinatesCompositePropertyFieldName(attr)) {
+    return buildCoordinatePairValueOptions(records);
+  }
 
   if (field && isDomainEntityReferencePicker(ref, field)) {
     return recordsToEntityListValues(ref, records);

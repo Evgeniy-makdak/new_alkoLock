@@ -8,6 +8,10 @@ import {
   orderReportContentColumnKeys,
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
+import {
+  formatReportCompositeCellValue,
+  planReportCompositeResultColumns,
+} from './reportEntityCompositeFields';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
@@ -77,6 +81,7 @@ function formatDynamicCellValue(
   primaryField: ReportFieldDefinition | null,
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
+  entityFields: ReportFieldDefinition[],
   labelMaps: ReportVehicleLabelMaps | undefined,
   t: TFunction,
 ): string {
@@ -87,6 +92,7 @@ function formatDynamicCellValue(
     outputRows,
     fieldMap,
     primaryField,
+    entityFields,
   );
   const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t);
   if (fromStatic != null) return fromStatic;
@@ -134,10 +140,13 @@ export function mapReportContentToResultGrid(
   }
 
   const contentKeys = collectReportContentColumnKeys(content);
-  const columnKeys = orderReportContentColumnKeys(
+  const orderedKeys = orderReportContentColumnKeys(
     contentKeys,
     selectedFieldsForColumnOrder?.map((f) => f.fieldName),
   );
+  const { displayColumnKeys: columnKeys, groups: compositeGroups } =
+    planReportCompositeResultColumns(orderedKeys, selectedFieldsForColumnOrder?.map((f) => f.fieldName));
+  const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
 
   const columns: GridColDef[] = columnKeys.map((key) => {
     const fieldDef = findReportFieldDefForColumnKey(
@@ -161,6 +170,7 @@ export function mapReportContentToResultGrid(
           tableMetadataByRowId,
           referenceEntityMetadataByName,
           entities,
+          t,
         ),
       ),
       flex: 1,
@@ -179,6 +189,11 @@ export function mapReportContentToResultGrid(
     const flat = { __rowKey } as ReportGridRow;
 
     for (const key of columnKeys) {
+      const compositeGroup = compositeByKey.get(key);
+      if (compositeGroup) {
+        flat[key] = formatReportCompositeCellValue(compositeGroup, row);
+        continue;
+      }
       const fieldDef = findReportFieldDefForColumnKey(
         key,
         entityMetadata,
@@ -194,6 +209,7 @@ export function mapReportContentToResultGrid(
         primaryField,
         outputRows,
         fieldMap,
+        entityMetadata?.fields ?? [],
         labelMaps,
         t,
       );

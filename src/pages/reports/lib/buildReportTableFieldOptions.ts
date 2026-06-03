@@ -1,4 +1,14 @@
+import type { TFunction } from 'i18next';
+
 import type { Values } from '@shared/ui/search_multiple_select';
+
+import {
+  applyReportEntityCompositeFieldGrouping,
+  expandCompositeFieldPath,
+  getReportEntityCompositeConfig,
+  isReportCompositeFieldPath,
+  parseCompositePath,
+} from './reportEntityCompositeFields';
 
 import type {
   ReportEntityListItem,
@@ -52,7 +62,15 @@ export function buildAllowedReportTableFieldPaths(
     referenceEntityMetadataByName,
     entities,
   );
-  return new Set(options.map((option) => String(option.value)));
+  const paths = new Set(options.map((option) => String(option.value)));
+  for (const path of Array.from(paths)) {
+    if (isReportCompositeFieldPath(path)) {
+      for (const member of expandCompositeFieldPath(path)) {
+        paths.add(member);
+      }
+    }
+  }
+  return paths;
 }
 
 export function dedupeReportTableFieldDraftsByShortestPath(
@@ -259,6 +277,7 @@ export function buildRootReportTableFieldOptions(
   entityMetadata: ReportEntityMetadata | null | undefined,
   outputRows: ReportOutputRow[] = [],
   entities: ReportEntityListItem[] = [],
+  t?: TFunction,
 ): Values {
   if (!entityMetadata) return [];
 
@@ -279,7 +298,8 @@ export function buildRootReportTableFieldOptions(
     });
   }
 
-  return buildReportTableFieldOptionLabels(drafts);
+  const grouped = t ? applyReportEntityCompositeFieldGrouping(drafts, t) : drafts;
+  return buildReportTableFieldOptionLabels(grouped);
 }
 
 /**
@@ -294,6 +314,7 @@ export function mergeAllReportTableFieldOptions(
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
   entities: ReportEntityListItem[] = [],
+  t?: TFunction,
 ): Values {
   if (!entityMetadata) return [];
   const rootEntityName = entityMetadata.entityName?.trim() ?? '';
@@ -371,7 +392,9 @@ export function mergeAllReportTableFieldOptions(
     );
   }
 
-  return buildReportTableFieldOptionLabels(dedupeReportTableFieldDraftsByShortestPath(drafts));
+  const deduped = dedupeReportTableFieldDraftsByShortestPath(drafts);
+  const grouped = t ? applyReportEntityCompositeFieldGrouping(deduped, t) : deduped;
+  return buildReportTableFieldOptionLabels(grouped);
 }
 
 export function hasReportTableFieldsMetadataDefaults(
@@ -487,9 +510,23 @@ export function resolveReportColumnLabel(
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
   entities: ReportEntityListItem[] = [],
+  t?: TFunction,
 ): string {
   if (!entityMetadata) {
     return columnKey;
+  }
+  if (t && isReportCompositeFieldPath(columnKey)) {
+    const parsed = parseCompositePath(columnKey);
+    const config = parsed ? getReportEntityCompositeConfig(parsed.kind) : undefined;
+    if (parsed && config) {
+      const parentField = parsed.prefix
+        ? entityMetadata.fields.find((f) => f.fieldName === parsed.prefix)
+        : undefined;
+      const sourceLabel = parsed.prefix
+        ? (parentField?.label ?? '').trim() || parsed.prefix
+        : resolveReportEntitySourceLabel(entityMetadata, entities);
+      return formatRootReportTableFieldLabel(sourceLabel, t(config.labelKey));
+    }
   }
   const fieldMapLocal = fieldMap.size
     ? fieldMap
@@ -501,6 +538,7 @@ export function resolveReportColumnLabel(
     tableMetadataByRowId,
     referenceEntityMetadataByName,
     entities,
+    t,
   );
   const match = options.find((o) => String(o.value) === columnKey);
   if (match?.label) {

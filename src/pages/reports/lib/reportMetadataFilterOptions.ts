@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { buildReferenceEntityPropertyOptionsWithComposite } from './reportEntityCompositeFields';
 import { buildNestedEntityStaticValueOptions } from './reportNestedEntityValueOptions';
 import {
   isReportBooleanField,
@@ -16,17 +17,12 @@ import type {
   ReportFieldDefinition,
 } from '../types/reportApiTypes';
 
-/** «Параметр сущности» — только filterable-поля из GET api/v1/reports/{referenceEntity}/metadata. */
+/** «Параметр сущности» — filterable-поля metadata; члены группы — одна опция «Пользователь» и т.д. */
 export function buildReferenceEntityPropertyOptions(
   tableMetadata: ReportEntityMetadata | null | undefined,
+  t: TFunction,
 ): Values {
-  const fields = (tableMetadata?.fields ?? []).filter((f) => f.filterable);
-  return fields
-    .map((f) => ({
-      value: f.fieldName,
-      label: (f.label ?? '').trim() || f.fieldName,
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  return buildReferenceEntityPropertyOptionsWithComposite(tableMetadata, t);
 }
 
 function readAllowedValues(field: ReportFieldDefinition): Values {

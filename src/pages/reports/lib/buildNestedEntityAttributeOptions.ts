@@ -17,6 +17,10 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import { Formatters } from '@shared/utils/formatters';
 
+import {
+  buildCoordinatePairValueOptions,
+  isReportCoordinatesCompositePropertyFieldName,
+} from './reportCoordinateComposite';
 import { isEventsForFrontLevelAttribute } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import {
@@ -186,6 +190,9 @@ export function buildNestedEntityAttributeOptions(
   attribute: string,
   labelMaps?: ReportVehicleLabelMaps,
 ): Values {
+  if (isReportCoordinatesCompositePropertyFieldName(attribute)) {
+    return buildCoordinatePairValueOptions(records);
+  }
   if (referenceEntity === 'Vehicle' && attribute === 'color' && labelMaps?.colors) {
     return dictionaryToValues(labelMaps.colors);
   }
@@ -277,10 +284,16 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
     });
   }
   if (referenceEntity === 'User') {
-    return (records as IUser[]).map((u) => ({
-      value: u.id,
-      label: Formatters.nameFormatter(u, false) || String(u.id),
-    }));
+    return (records as IUser[]).map((u) => {
+      const fio = Formatters.nameFormatter(u, false);
+      const email =
+        u.email != null && String(u.email).trim() ? String(u.email).trim() : '';
+      let label = String(u.id);
+      if (fio && fio !== '-' && email) label = `${fio} (${email})`;
+      else if (fio && fio !== '-') label = fio;
+      else if (email) label = email;
+      return { value: u.id, label };
+    });
   }
   if (referenceEntity === 'DeviceAction') {
     return records

@@ -20,6 +20,19 @@ import {
   resolveReportTableSelectedPayloadFieldName,
 } from './buildReportTableFieldOptions';
 import {
+  isReportCoordinatesCompositePropertyFieldName,
+  isRootCoordinatesCompositeOutputFilter,
+  parseCoordinatePairFilterValue,
+  resolveCoordinateMemberFilterFieldName,
+} from './reportCoordinateComposite';
+import {
+  expandCompositeFieldPath,
+  isReportCompositeFieldPath,
+  isRootCompositeOutputFilter,
+  resolveCompositeFilterApiFieldName,
+  resolveReportOutputPrimaryField,
+} from './reportEntityCompositeFields';
+import {
   formatFilterValueForField,
   toReportDateTimeFilterIso,
 } from './formatReportDateTimeFilterValue';
@@ -235,14 +248,22 @@ function buildRowReportTableFields(
 
   return row.reportTableFields.flatMap((item) => {
     const path = String(item.value);
-    if (path.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
+    const pathsToEmit = isReportCompositeFieldPath(path)
+      ? expandCompositeFieldPath(path)
+      : [path];
+
+    return pathsToEmit.flatMap((emitPath) => {
+    if (emitPath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
       return [];
     }
-    if (!context.allowedTableFieldPaths.has(path)) {
+    if (
+      !context.allowedTableFieldPaths.has(emitPath) &&
+      !(isReportCompositeFieldPath(path) && context.allowedTableFieldPaths.has(path))
+    ) {
       return [];
     }
     const fieldDef = findReportTableFieldDefinition(
-      path,
+      emitPath,
       context.entityMetadata,
       context.outputRows,
       context.fieldMap,
@@ -256,11 +277,11 @@ function buildRowReportTableFields(
       return [];
     }
 
-    const defaultLabel = (fieldDef?.label ?? '').trim() || path;
+    const defaultLabel = (fieldDef?.label ?? '').trim() || emitPath;
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
     const payload: ReportSelectedFieldPayload = {
       fieldName: resolveReportTableSelectedPayloadFieldName(
-        path,
+        emitPath,
         context.entityMetadata.entityName,
       ),
     };
@@ -273,6 +294,7 @@ function buildRowReportTableFields(
       payload.aggregation = fnCode;
     }
     return [payload];
+    });
   });
 }
 
@@ -320,10 +342,14 @@ export function buildReportQueryRequestForRow(
 ): ReportQueryRowPayload | null {
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
   const fieldMap = tableFieldsContext.fieldMap;
-  const primary = primaryKey ? fieldMap.get(primaryKey) : undefined;
+  const primary =
+    resolveReportOutputPrimaryField(primaryKey, fieldMap, metadata) ??
+    (primaryKey ? fieldMap.get(primaryKey) : undefined);
   if (!primary) {
     return null;
   }
+  const rootCompositeFilter = isRootCompositeOutputFilter(primaryKey, metadata);
+  const rootCoordinatesFilter = isRootCoordinatesCompositeOutputFilter(primaryKey, metadata);
 
   const operationKey = reportOutputOperationKey(row.id);
   const selectedFields = buildRowReportTableFields(row, tableFieldsContext);
@@ -376,26 +402,80 @@ export function buildReportQueryRequestForRow(
   };
 
   if (primary.filterable) {
-    const ref = primary.referenceEntity?.trim();
+    const ref =
+      rootCompositeFilter || rootCoordinatesFilter ? null : primary.referenceEntity?.trim();
     if (ref) {
       const nested = row.nestedEntityFilterByField[primary.fieldName];
       const nestedPath = nested ? normalizeNestedFilterPath(nested) : [];
       if (nestedPath.length && nested.values.length) {
-        const attributeField =
-          resolveNestedFilterLeafField(
-            tableFieldsContext.tableMetadataByRowId[row.id],
-            nestedPath,
-            tableFieldsContext.referenceEntityMetadataByName,
-          ) ?? primary;
-        const nestedFilterFieldName =
-          resolveEventsForFrontLevelFilterApiFieldName(primary, nestedPath) ??
-          resolveNestedFilterApiFieldName(primary, nestedPath);
-        pushFilter(nestedFilterFieldName, nested.values, attributeField);
+        const lastStep = nestedPath[nestedPath.length - 1];
+        if (isReportCoordinatesCompositePropertyFieldName(lastStep)) {
+          const tableMeta = tableFieldsContext.tableMetadataByRowId[row.id];
+          const latField =
+            resolveNestedFilterLeafField(
+              tableMeta,
+              [...nestedPath.filter((s) => !isReportCoordinatesCompositePropertyFieldName(s)), 'latitude'],
+              tableFieldsContext.referenceEntityMetadataByName,
+            ) ?? primary;
+          const lonField =
+            resolveNestedFilterLeafField(
+              tableMeta,
+              [...nestedPath.filter((s) => !isReportCoordinatesCompositePropertyFieldName(s)), 'longitude'],
+              tableFieldsContext.referenceEntityMetadataByName,
+            ) ?? primary;
+          for (const sel of nested.values) {
+            const pair = parseCoordinatePairFilterValue(sel.value);
+            if (!pair) continue;
+            pushFilter(
+              resolveCoordinateMemberFilterFieldName(primary, nestedPath, 'latitude'),
+              [{ value: pair.latitude, label: String(pair.latitude) }],
+              latField,
+            );
+            pushFilter(
+              resolveCoordinateMemberFilterFieldName(primary, nestedPath, 'longitude'),
+              [{ value: pair.longitude, label: String(pair.longitude) }],
+              lonField,
+            );
+          }
+        } else {
+          const attributeField =
+            resolveNestedFilterLeafField(
+              tableFieldsContext.tableMetadataByRowId[row.id],
+              nestedPath,
+              tableFieldsContext.referenceEntityMetadataByName,
+            ) ?? primary;
+          const nestedFilterFieldName =
+            resolveEventsForFrontLevelFilterApiFieldName(primary, nestedPath) ??
+            resolveNestedFilterApiFieldName(primary, nestedPath);
+          pushFilter(nestedFilterFieldName, nested.values, attributeField);
+        }
       }
     } else {
       const selected = row.filterSelections[primary.fieldName] ?? [];
       if (selected.length) {
-        pushFilter(primary.fieldName, selected, primary);
+        if (rootCoordinatesFilter) {
+          const latField = metadata.fields.find((f) => f.fieldName === 'latitude');
+          const lonField = metadata.fields.find((f) => f.fieldName === 'longitude');
+          for (const sel of selected) {
+            const pair = parseCoordinatePairFilterValue(sel.value);
+            if (!pair) continue;
+            pushFilter(
+              'latitude',
+              [{ value: pair.latitude, label: String(pair.latitude) }],
+              latField ?? primary,
+            );
+            pushFilter(
+              'longitude',
+              [{ value: pair.longitude, label: String(pair.longitude) }],
+              lonField ?? primary,
+            );
+          }
+        } else {
+          const apiFieldName = rootCompositeFilter
+            ? resolveCompositeFilterApiFieldName(metadata.entityName, primary, [])
+            : primary.fieldName;
+          pushFilter(apiFieldName, selected, primary);
+        }
       }
     }
   }

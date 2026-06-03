@@ -14,6 +14,11 @@ import {
   resolveNestedFilterLeafEntityName,
   resolveNestedFilterLeafField,
 } from '@pages/reports/lib/reportNestedFilterPath';
+import {
+  isRootCompositeOutputFilter,
+  parseCompositePath,
+  resolveReportOutputPrimaryField,
+} from '@pages/reports/lib/reportEntityCompositeFields';
 import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import {
   reportFilterAutocompleteSlotProps,
@@ -36,6 +41,7 @@ import type {
 } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { ReportCompositeEntityValueControl } from './ReportCompositeEntityValueControl';
 import { ReportFieldFilterControl } from './ReportFieldFilterControl';
 import { ReportNestedEntityFilterControl } from './ReportNestedEntityFilterControl';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -80,8 +86,20 @@ export function ReportOutputFilterRow({
   const addCircleSx = getToolbarCircleIconButtonSx(theme);
 
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-  const primaryField = primaryKey ? (fieldMap.get(primaryKey) ?? null) : null;
-  const refEntity = primaryField?.referenceEntity?.trim();
+  const primaryField = primaryKey
+    ? resolveReportOutputPrimaryField(primaryKey, fieldMap, metadata, t)
+    : null;
+  const rootCompositeFilter = isRootCompositeOutputFilter(primaryKey, metadata);
+  const rootCompositeParsed = rootCompositeFilter ? parseCompositePath(primaryKey) : null;
+  const rootCompositeKind =
+    rootCompositeParsed &&
+    rootCompositeParsed.kind !== 'Coordinates' &&
+    (rootCompositeParsed.kind === 'User' ||
+      rootCompositeParsed.kind === 'MonitoringDevice' ||
+      rootCompositeParsed.kind === 'Vehicle')
+      ? rootCompositeParsed.kind
+      : undefined;
+  const refEntity = rootCompositeFilter ? null : primaryField?.referenceEntity?.trim();
   const loadReportTableFieldsMetadata = reportsStore((s) => s.loadReportTableFieldsMetadata);
   const tableFieldsMetadata = reportsStore((s) => s.reportTableFieldsMetadataByRowId[row.id] ?? null);
   const tableFieldsMetadataLoading = reportsStore(
@@ -100,19 +118,6 @@ export function ReportOutputFilterRow({
     if (!refEntity) return;
     void loadReportTableFieldsMetadata(row.id, refEntity);
   }, [refEntity, row.id, loadReportTableFieldsMetadata]);
-
-  useEffect(() => {
-    if (!refEntity || !nestedPath.length) return;
-    const leafEntity = resolveNestedFilterLeafEntityName(
-      refEntity,
-      tableFieldsMetadata,
-      nestedPath,
-      referenceEntityMetadataByName,
-    );
-    if (leafEntity === 'Vehicle') {
-      void reportsStore.getState().loadVehicleLabelMaps();
-    }
-  }, [refEntity, nestedPath, tableFieldsMetadata, referenceEntityMetadataByName]);
 
   const operationKey = reportOutputOperationKey(row.id);
   const functionKey = reportOutputFunctionKey(row.id);
@@ -183,6 +188,7 @@ export function ReportOutputFilterRow({
     tableFieldsMetadata,
     metadata,
     referenceEntityMetadataByName,
+    t,
   );
   const canShowAddButton = showAddButton && rowComplete && !isModalVariant;
   const showOperationAndFunction = isModalVariant
@@ -281,15 +287,27 @@ export function ReportOutputFilterRow({
 
   const scalarValueFilterControl =
     primaryField && !refEntity && primaryField.filterable ? (
-      <ReportFieldFilterControl
-        compact={selectCompact}
-        field={primaryField}
-        metadata={metadata}
-        value={row.filterSelections[primaryField.fieldName] ?? []}
-        filterOperationCode={filterOperationCode}
-        onChange={(values) => onFilterChange(primaryField.fieldName, values)}
-        vehicleLabelMaps={vehicleLabelMaps}
-      />
+      rootCompositeKind ? (
+        <ReportCompositeEntityValueControl
+          kind={rootCompositeKind}
+          fieldKey={primaryField.fieldName}
+          values={row.filterSelections[primaryField.fieldName] ?? []}
+          filterOperationCode={filterOperationCode}
+          compact={selectCompact}
+          vehicleLabelMaps={vehicleLabelMaps}
+          onChange={(values) => onFilterChange(primaryField.fieldName, values)}
+        />
+      ) : (
+        <ReportFieldFilterControl
+          compact={selectCompact}
+          field={primaryField}
+          metadata={metadata}
+          value={row.filterSelections[primaryField.fieldName] ?? []}
+          filterOperationCode={filterOperationCode}
+          onChange={(values) => onFilterChange(primaryField.fieldName, values)}
+          vehicleLabelMaps={vehicleLabelMaps}
+        />
+      )
     ) : null;
 
   const valueFilterBlock = primaryField ? (

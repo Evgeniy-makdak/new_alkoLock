@@ -13,6 +13,11 @@ import { Formatters } from '@shared/utils/formatters';
 import { fetchBranchOfficesForReport } from './branchOfficeReportOptions';
 import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAttribute';
 import {
+  fetchDeviceEventCoordinatePairsForReport,
+  isDeviceEventReportEntity,
+} from './fetchDeviceEventCoordinatePairsForReport';
+import { isReportCoordinatesCompositePropertyFieldName } from './reportCoordinateComposite';
+import {
   fetchEventTypesForReport,
   fetchEventsForFrontFilterValueOptions,
   shouldUseEventsForFrontTypeListApi,
@@ -56,7 +61,15 @@ export async function fetchReportNestedEntityValueOptions(
   }
 
   const kind = resolveNestedEntityValueLoadKind(field, ref);
-  if (kind !== 'domainList') {
+
+  if (
+    (kind === 'coordinatePair' || isReportCoordinatesCompositePropertyFieldName(field.fieldName)) &&
+    isDeviceEventReportEntity(ref)
+  ) {
+    return fetchDeviceEventCoordinatePairsForReport(searchQuery);
+  }
+
+  if (kind !== 'domainList' && kind !== 'coordinatePair') {
     return [];
   }
 

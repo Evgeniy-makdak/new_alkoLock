@@ -3,6 +3,18 @@ import {
   isEventsForFrontLevelAttribute,
   resolveEventsForFrontLevelValueField,
 } from './eventsForFrontReportOptions';
+import i18n from 'i18next';
+
+import {
+  buildSyntheticCoordinatesFilterField,
+  isReportCoordinatesCompositePropertyFieldName,
+} from './reportCoordinateComposite';
+import {
+  buildSyntheticCompositeDomainListField,
+  getReportCompositeEntityLabelKey,
+  parseCompositePropertyFieldName,
+  type ReportCompositeKind,
+} from './reportEntityCompositeFields';
 import { isReportLeafDomainListEntity } from './reportLeafEntityListApi';
 import { resolveNestedEntityFilterFieldName } from './resolveNestedEntityFilterFieldName';
 
@@ -24,6 +36,14 @@ export function findFieldInMetadata(
   metadata: ReportEntityMetadata | null | undefined,
   fieldName: string,
 ): ReportFieldDefinition | undefined {
+  if (isReportCoordinatesCompositePropertyFieldName(fieldName)) {
+    const latField = findReferenceEntityFieldByAttribute(metadata, 'latitude');
+    return buildSyntheticCoordinatesFilterField(latField);
+  }
+  const compositeKind = parseCompositePropertyFieldName(fieldName);
+  if (compositeKind && compositeKind !== 'Coordinates') {
+    return buildSyntheticCompositeDomainListField(compositeKind, metadata);
+  }
   return findReferenceEntityFieldByAttribute(metadata, fieldName);
 }
 
@@ -93,7 +113,12 @@ export function resolveNestedFilterPendingReferenceEntity(
 /** Ссылка на доменную сущность (Vehicle, User, …) — сразу «Значение» + api/vehicles и т.д. */
 export function resolveNestedFilterDomainListEntity(
   field: ReportFieldDefinition | undefined,
+  fieldName?: string,
 ): string | null {
+  const compositeKind = fieldName ? parseCompositePropertyFieldName(fieldName) : undefined;
+  if (compositeKind && isReportLeafDomainListEntity(compositeKind)) {
+    return compositeKind;
+  }
   const ref = field?.referenceEntity?.trim();
   if (!ref || !isReportLeafDomainListEntity(ref)) return null;
   return ref;
@@ -105,9 +130,11 @@ export function isNestedFilterPathReadyForValueInput(
   metadataByEntity: Record<string, ReportEntityMetadata | null>,
 ): boolean {
   if (!path.length) return false;
+  const lastStep = path[path.length - 1];
+  if (isReportCoordinatesCompositePropertyFieldName(lastStep)) return true;
   const leaf = resolveNestedFilterLeafField(rootMetadata, path, metadataByEntity);
   if (!leaf) return false;
-  if (resolveNestedFilterDomainListEntity(leaf)) return true;
+  if (resolveNestedFilterDomainListEntity(leaf, lastStep)) return true;
   return !leaf.referenceEntity?.trim();
 }
 
@@ -116,6 +143,15 @@ export function resolveNestedFilterApiFieldName(
   path: string[],
 ): string {
   if (!path.length) return primaryField.fieldName;
+  const last = path[path.length - 1];
+  if (isReportCoordinatesCompositePropertyFieldName(last)) {
+    return primaryField.fieldName;
+  }
+  const compositeKind = parseCompositePropertyFieldName(last);
+  if (compositeKind && compositeKind !== 'Coordinates') {
+    const base = primaryField.fieldName;
+    return base.endsWith('.id') ? base : `${base}.id`;
+  }
   const attributePath = path.join('.');
   return resolveNestedEntityFilterFieldName(primaryField, attributePath);
 }
@@ -147,7 +183,8 @@ export function resolveNestedFilterLeafEntityName(
   if (!path.length) return rootEntityName;
 
   const leaf = resolveNestedFilterLeafField(rootMetadata, path, metadataByEntity);
-  const domainListEntity = resolveNestedFilterDomainListEntity(leaf);
+  const lastStep = path[path.length - 1];
+  const domainListEntity = resolveNestedFilterDomainListEntity(leaf, lastStep);
   if (domainListEntity) return domainListEntity;
 
   let entityName = rootEntityName;
@@ -203,7 +240,26 @@ export function buildNestedFilterUiSegments(
     });
 
     const field = findFieldInMetadata(metadata, selected);
-    const nextRef = field?.referenceEntity?.trim();
+    const compositeKind = parseCompositePropertyFieldName(selected) as ReportCompositeKind | undefined;
+    const nextRef =
+      compositeKind && compositeKind !== 'Coordinates'
+        ? compositeKind
+        : field?.referenceEntity?.trim();
+
+    if (
+      depth === path.length - 1 &&
+      compositeKind === 'Coordinates' &&
+      isReportCoordinatesCompositePropertyFieldName(selected)
+    ) {
+      const valueField = buildSyntheticCoordinatesFilterField(field ?? undefined);
+      segments.push({
+        kind: 'value',
+        leafEntityName: entityName,
+        field: valueField,
+        label: i18n.t('reports.composite.entityCoordinates'),
+      });
+      return segments;
+    }
 
     if (!nextRef) {
       if (field) {
@@ -231,13 +287,23 @@ export function buildNestedFilterUiSegments(
       return segments;
     }
 
-    if (depth === path.length - 1 && isReportLeafDomainListEntity(nextRef)) {
-      if (field) {
+    if (depth === path.length - 1 && nextRef && isReportLeafDomainListEntity(nextRef)) {
+      const valueField =
+        compositeKind && compositeKind !== 'Coordinates'
+          ? buildSyntheticCompositeDomainListField(
+              compositeKind,
+              metadataByEntity[nextRef] ?? metadata,
+            )
+          : field;
+      if (valueField) {
         segments.push({
           kind: 'value',
           leafEntityName: nextRef,
-          field,
-          label: (field.label ?? '').trim() || field.fieldName,
+          field: valueField,
+          label:
+            compositeKind && compositeKind !== 'Coordinates'
+              ? i18n.t(getReportCompositeEntityLabelKey(compositeKind))
+              : (valueField.label ?? '').trim() || valueField.fieldName,
         });
       }
       return segments;

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material';
 
 import { FilterPanel } from '@entities/filter_panel';
-import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
+import { buildReportOutputFieldOptions } from '@pages/reports/lib/reportEntityCompositeFields';
 import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
@@ -52,8 +52,8 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
 
   const outputFieldOptions = useMemo(() => {
     if (!metadata?.fields?.length) return [];
-    return fieldDefinitionsToValues(metadata.fields.filter((f) => f.filterable));
-  }, [metadata]);
+    return buildReportOutputFieldOptions(metadata, t);
+  }, [metadata, t]);
 
   const fieldMap = useMemo(() => {
     const map = new Map<string, ReportFieldDefinition>();
@@ -177,6 +177,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
             rowTableMetadata,
             metadata,
             referenceEntityMetadataByName,
+            t,
           );
 
           if (isFirstRow) {

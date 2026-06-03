@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
-import { fieldDefinitionsToValues } from '@pages/reports/lib/extractMetadataFilterOptions';
+import { buildReportOutputFieldOptions } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
@@ -72,8 +72,8 @@ export function ReportComposeForm({
 
   const outputFieldOptions = useMemo(() => {
     if (!metadata?.fields?.length) return [];
-    return fieldDefinitionsToValues(metadata.fields.filter((f) => f.filterable));
-  }, [metadata]);
+    return buildReportOutputFieldOptions(metadata, t);
+  }, [metadata, t]);
 
   const fieldMap = useMemo(() => {
     const map = new Map<string, ReportFieldDefinition>();

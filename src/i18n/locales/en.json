@@ -734,6 +734,16 @@
     "entityPlaceholder": "Select entity",
     "outputFieldsLabel": "Output fields",
     "reportTableFieldsLabel": "Report columns",
+    "composite": {
+      "userDisplay": "Last name First name Patronymic (e-mail)",
+      "deviceDisplay": "Name (serial number)",
+      "vehicleDisplay": "Make Model (license plate)",
+      "entityUser": "User",
+      "entityDevice": "Alcolock",
+      "entityVehicle": "Vehicle",
+      "coordinatesDisplay": "Latitude:longitude",
+      "entityCoordinates": "Coordinates"
+    },
     "reportTableFieldsPlaceholder": "Select fields for the table",
     "selectReportTableFieldsFirst": "Select fields to display in the report",
     "selectEntityFirst": "Select a report entity",

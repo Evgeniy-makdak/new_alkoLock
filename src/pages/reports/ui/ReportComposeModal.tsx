@@ -17,6 +17,7 @@ import {
   mergeAllReportTableFieldOptions,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
 import { downloadReportFile } from '@pages/reports/lib/downloadReportFile';
+import { normalizeCompositeTableFieldSelection } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   type ReportsComposeSnapshot,
   captureReportsComposeSnapshot,
@@ -109,6 +110,7 @@ export function ReportComposeModal({
       reportTableFieldsMetadataByRowId,
       referenceEntityMetadataByName,
       entities,
+      t,
     );
   }, [
     metadata,
@@ -141,8 +143,8 @@ export function ReportComposeModal({
 
   const defaultRootTableFields = useMemo(() => {
     if (!metadata) return [];
-    return buildRootReportTableFieldOptions(metadata, outputRows, entities);
-  }, [metadata, outputRows, entities]);
+    return buildRootReportTableFieldOptions(metadata, outputRows, entities, t);
+  }, [metadata, outputRows, entities, t]);
 
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
    *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
@@ -171,13 +173,14 @@ export function ReportComposeModal({
       const deduped = Array.from(
         new Map(remapped.map((item) => [String(item.value), item])).values(),
       );
+      const normalized = normalizeCompositeTableFieldSelection(deduped, currentOptions);
       const unchanged =
-        deduped.length === prev.length &&
-        deduped.every(
+        normalized.length === prev.length &&
+        normalized.every(
           (item, index) =>
             item.value === prev[index]?.value && item.label === prev[index]?.label,
         );
-      return unchanged ? prev : deduped;
+      return unchanged ? prev : normalized;
     });
   }, [open, tableFieldsOptionsKey, defaultRootTableFields]);
 

@@ -21,5 +21,5 @@ export function buildReferenceEntityPropertyOptions(
   tableMetadata: ReportEntityMetadata | null | undefined,
   _t: TFunction,
 ): Values {
-  return buildFromMetadata(tableMetadata);
+  return buildFromMetadata(tableMetadata, _t);
 }

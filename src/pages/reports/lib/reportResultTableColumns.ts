@@ -102,12 +102,37 @@ function matchReportResultColumnMeta(
  * Мета форматирования колонки по ключу из content (например vehicle.type → Vehicle).
  * Не зависит от «последней» строки фильтра (primary).
  */
+function resolveVehicleNestedPrefix(
+  columnKey: string,
+  fields: ReportFieldDefinition[],
+): string | undefined {
+  if (!columnKey.includes('.')) return undefined;
+  for (const field of fields) {
+    const prefix = field.fieldName?.trim();
+    if (!prefix || field.referenceEntity?.trim() !== 'Vehicle') continue;
+    if (columnKey === prefix || columnKey.startsWith(`${prefix}.`)) {
+      return prefix;
+    }
+  }
+  return undefined;
+}
+
 export function findReportResultColumnMetaForKey(
   columnKey: string,
   outputRows: ReportOutputRow[],
   fieldMap: Map<string, ReportFieldDefinition>,
   primaryField: ReportFieldDefinition | null | undefined,
+  entityFields: ReportFieldDefinition[] = [],
 ): ReportResultColumnMeta | undefined {
+  const vehicleMeta = REPORT_RESULT_COLUMNS_BY_REFERENCE.Vehicle;
+  const allFields = [...entityFields, ...Array.from(fieldMap.values())];
+  const vehiclePrefix = resolveVehicleNestedPrefix(columnKey, allFields);
+  if (vehiclePrefix && vehicleMeta) {
+    const sub = columnKey.slice(vehiclePrefix.length + 1);
+    const hit = vehicleMeta.find((m) => m.field === sub);
+    if (hit) return hit;
+  }
+
   for (const row of outputRows) {
     const outputKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
     if (!outputKey) continue;

@@ -749,6 +749,16 @@
     "nestedEntityPropertyLabel": "Параметр ({{entity}})",
     "entityPropertyPlaceholder": "Выберите свойство",
     "terminalValuesLabel": "Значение ({{parameter}})",
+    "composite": {
+      "userDisplay": "Фамилия Имя Отчество (e-mail)",
+      "deviceDisplay": "Название (серийный номер)",
+      "vehicleDisplay": "Марка Модель (гос. номер)",
+      "entityUser": "Пользователь",
+      "entityDevice": "Алкозамок",
+      "entityVehicle": "ТС",
+      "coordinatesDisplay": "Широта:долгота",
+      "entityCoordinates": "Координаты"
+    },
     "nestedProp": {
       "id": "ID",
       "name": "Название",

@@ -56,7 +56,7 @@ type NestedFilterValueControlProps = {
   onChange: (values: Values) => void;
 };
 
-function NestedFilterValueControl({
+export function NestedFilterValueControl({
   fieldKey,
   segment,
   values,
@@ -97,7 +97,7 @@ function NestedFilterValueControl({
   }, [segment.field, valueLoadKind, t]);
 
   useEffect(() => {
-    if (valueLoadKind !== 'domainList') {
+    if (valueLoadKind !== 'domainList' && valueLoadKind !== 'coordinatePair') {
       setRemoteOptions([]);
       return;
     }
@@ -127,14 +127,16 @@ function NestedFilterValueControl({
   }, [valueLoadKind, fetchTarget, searchQuery, vehicleLabelMaps]);
 
   const valueOptions =
-    valueLoadKind === 'domainList' ? remoteOptions : staticValueOptions;
+    valueLoadKind === 'domainList' || valueLoadKind === 'coordinatePair'
+      ? remoteOptions
+      : staticValueOptions;
 
   const displayValueOptions = useMemo(
     () => mergeOptionsWithSelected(valueOptions, values),
     [valueOptions, values],
   );
 
-  const useServerFilter = valueLoadKind === 'domainList';
+  const useServerFilter = valueLoadKind === 'domainList' || valueLoadKind === 'coordinatePair';
 
   if (valueLoadKind === 'year') {
     return (
@@ -287,7 +289,7 @@ export function ReportNestedEntityFilterControl({
     <Box className={pageStyles.reportFilterNestedEntity}>
       {propertySegments.map((segment) => {
         if (segment.kind !== 'property') return null;
-          const propertyOptions = buildReferenceEntityPropertyOptions(segment.metadata);
+          const propertyOptions = buildReferenceEntityPropertyOptions(segment.metadata, t);
           const selectedProperty = segment.selectedFieldName
             ? (() => {
                 const hit = propertyOptions.find(

@@ -15,6 +15,7 @@ import {
 } from '@pages/reports/lib/mapReportContentToResultGrid';
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { buildReportColumnAliasMap } from '@pages/reports/lib/reportSelectedFieldAliases';
+import { shouldLoadVehicleLabelMaps } from '@pages/reports/lib/reportVehicleContext';
 import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
@@ -83,15 +84,22 @@ export function ReportsResultsView() {
     [metadata],
   );
 
+  const reportEntityName = metadata?.entityName ?? null;
+  const contentColumnKeysSig = lastResult?.content?.length
+    ? Object.keys(lastResult.content[0] ?? {}).join('\0')
+    : '';
+
   useEffect(() => {
-    const hasVehicleVariant = activeOutputRows.some((row) => {
-      const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-      return fieldMap.get(key)?.referenceEntity?.trim() === 'Vehicle';
-    });
-    if (hasVehicleVariant) {
+    if (!reportEntityName) return;
+    if (
+      shouldLoadVehicleLabelMaps({
+        entityMetadata: metadata,
+        contentColumnKeys: contentColumnKeysSig ? contentColumnKeysSig.split('\0') : [],
+      })
+    ) {
       void loadVehicleLabelMaps();
     }
-  }, [activeOutputRows, fieldMap, loadVehicleLabelMaps]);
+  }, [reportEntityName, contentColumnKeysSig, loadVehicleLabelMaps, metadata]);
 
   const paginationModel = useMemo(
     () => ({ page: storePagination.page, pageSize: storePagination.pageSize }),

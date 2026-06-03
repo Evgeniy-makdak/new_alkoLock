@@ -1,10 +1,13 @@
 import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
+import { resolveReportOutputPrimaryField } from './reportEntityCompositeFields';
 import {
   isNestedFilterPathReadyForValueInput,
   normalizeNestedFilterPath,
   resolveNestedFilterLeafField,
 } from './reportNestedFilterPath';
 import { reportOutputOperationKey } from './reportOutputFilterKeys';
+
+import type { TFunction } from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -62,11 +65,14 @@ export function isReportOutputRowComplete(
   tableFieldsMetadata?: ReportEntityMetadata | null,
   entityMetadata?: ReportEntityMetadata | null,
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  t?: TFunction,
 ): boolean {
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
   if (!primaryKey) return false;
 
-  const primaryField = fieldMap.get(primaryKey);
+  const primaryField = t
+    ? resolveReportOutputPrimaryField(primaryKey, fieldMap, entityMetadata ?? null, t)
+    : fieldMap.get(primaryKey);
   if (!primaryField) return false;
 
   const refEntity = primaryField.referenceEntity?.trim();

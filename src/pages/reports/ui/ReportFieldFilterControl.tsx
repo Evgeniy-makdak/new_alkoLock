@@ -11,6 +11,7 @@ import {
   buildReportAttributeValueOptions,
   resolveReportMetadataValueLoadKind,
 } from '@pages/reports/lib/reportMetadataFilterOptions';
+import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
 import { resolveNestedEntityValueLoadKind } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import {
   isReportBooleanField,
@@ -90,7 +91,7 @@ export function ReportFieldFilterControl({
   }, [field.fieldName, metadata.entityName]);
 
   useEffect(() => {
-    if (nestedValueLoadKind !== 'domainList') {
+    if (nestedValueLoadKind !== 'domainList' && nestedValueLoadKind !== 'coordinatePair') {
       setRemoteOptions([]);
       return;
     }
@@ -125,6 +126,11 @@ export function ReportFieldFilterControl({
   );
 
   const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
+  const isCoordinatesComposite = isReportCoordinatesCompositePropertyFieldName(field.fieldName);
+  const coordinatePairOptions = useMemo(
+    () => mergeOptionsWithSelected(remoteOptions, value),
+    [remoteOptions, value],
+  );
   const displayOptions = useMemo(
     () =>
       mergeOptionsWithSelected(
@@ -166,6 +172,25 @@ export function ReportFieldFilterControl({
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
         setValueStore={(_, next) => onChange(toValuesFromSingleSelect(next))}
+      />
+    );
+  }
+
+  if (isCoordinatesComposite) {
+    return (
+      <ReportSearchMultipleSelect
+        multiple
+        compact={compact}
+        name={controlId}
+        label={label}
+        values={coordinatePairOptions}
+        value={value}
+        serverFilter
+        isLoading={remoteLoading}
+        sx={controlSx}
+        slotProps={reportFilterAutocompleteSlotProps}
+        onInputChange={setSearchQuery}
+        setValueStore={(_, next) => onChange(next as Values)}
       />
     );
   }

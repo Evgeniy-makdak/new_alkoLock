@@ -33,6 +33,9 @@ import type {
 /** Один запрос metadata на referenceEntity — параллельные вызовы ждут тот же Promise. */
 const referenceEntityMetadataInflight = new Map<string, Promise<void>>();
 
+/** Один запрос vehicle-color + vehicle-types на всё приложение отчётов. */
+let vehicleLabelMapsInflight: Promise<void> | null = null;
+
 type ReportsStore = {
   entities: ReportEntityListItem[];
   entitiesLoading: boolean;
@@ -212,7 +215,13 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataKeyByRowId: {},
       });
       await get().loadAllReferenceEntityMetadataForReport(metadata);
-      if (entityName === 'Vehicle') {
+      const { shouldLoadVehicleLabelMaps } = await import('../lib/reportVehicleContext');
+      if (
+        shouldLoadVehicleLabelMaps({
+          entityMetadata: metadata,
+          referenceEntityMetadataByName: get().referenceEntityMetadataByName,
+        })
+      ) {
         void get().loadVehicleLabelMaps();
       }
     } catch (e) {
@@ -520,18 +529,30 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
     const hasMaps =
       Object.keys(current.vehicleLabelMaps.types).length > 0 ||
       Object.keys(current.vehicleLabelMaps.colors).length > 0;
-    if (hasMaps && !current.vehicleLabelMapsLoading) {
+    if (hasMaps) {
       return;
     }
 
-    set({ vehicleLabelMapsLoading: true });
-    try {
-      const { fetchVehicleFrontDataMaps } = await import('../lib/fetchVehicleFrontDataMaps');
-      const vehicleLabelMaps = await fetchVehicleFrontDataMaps();
-      set({ vehicleLabelMaps, vehicleLabelMapsLoading: false });
-    } catch {
-      set({ vehicleLabelMaps: emptyLabelMaps(), vehicleLabelMapsLoading: false });
+    if (vehicleLabelMapsInflight) {
+      await vehicleLabelMapsInflight;
+      return;
     }
+
+    const loadPromise = (async () => {
+      set({ vehicleLabelMapsLoading: true });
+      try {
+        const { fetchVehicleFrontDataMaps } = await import('../lib/fetchVehicleFrontDataMaps');
+        const vehicleLabelMaps = await fetchVehicleFrontDataMaps();
+        set({ vehicleLabelMaps, vehicleLabelMapsLoading: false });
+      } catch {
+        set({ vehicleLabelMaps: emptyLabelMaps(), vehicleLabelMapsLoading: false });
+      } finally {
+        vehicleLabelMapsInflight = null;
+      }
+    })();
+
+    vehicleLabelMapsInflight = loadPromise;
+    await loadPromise;
   },
 
   setViewMode(mode) {

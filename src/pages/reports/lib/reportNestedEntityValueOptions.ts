@@ -4,6 +4,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
+import { isReportCoordinatesCompositePropertyFieldName } from './reportCoordinateComposite';
 import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
 import { isReportBooleanField } from './reportFieldFilterKind';
 import { isReportLeafDomainListEntity } from './reportLeafEntityListApi';
@@ -16,7 +17,8 @@ export type NestedEntityValueLoadKind =
   | 'domainList'
   | 'dateTime'
   | 'year'
-  | 'coordinate';
+  | 'coordinate'
+  | 'coordinatePair';
 
 /** Список сущностей (id + подпись) вместо значений скалярного поля. */
 export function isNestedEntityListPickerField(
@@ -38,6 +40,10 @@ export function resolveNestedEntityValueLoadKind(
   field: ReportFieldDefinition | undefined,
   leafEntityName: string,
 ): NestedEntityValueLoadKind {
+  if (field && isReportCoordinatesCompositePropertyFieldName(field.fieldName)) {
+    return 'coordinatePair';
+  }
+
   if (shouldForceEventsForFrontDomainList(leafEntityName, field)) {
     return 'domainList';
   }

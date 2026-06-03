@@ -1,7 +1,11 @@
+import i18n from 'i18next';
+
 import {
   collectReportContentColumnKeys,
+  orderReportContentColumnKeys,
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
+import { planReportCompositeResultColumns } from './reportEntityCompositeFields';
 import { buildReportColumnAliasMap, resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import type {
   ReportEntityListItem,
@@ -24,13 +28,22 @@ export function buildReportColumnHeaderLabels(
     return {};
   }
 
+  const t = i18n.t.bind(i18n);
   const columnAliases = buildReportColumnAliasMap(body?.selectedFields);
   const fieldMap = new Map(entityMetadata.fields.map((f) => [f.fieldName, f]));
   const activeOutputRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
-  const keys = collectReportContentColumnKeys(content);
+  const contentKeys = collectReportContentColumnKeys(content);
+  const orderedKeys = orderReportContentColumnKeys(
+    contentKeys,
+    body?.selectedFields?.map((f) => f.fieldName),
+  );
+  const { displayColumnKeys } = planReportCompositeResultColumns(
+    orderedKeys,
+    body?.selectedFields?.map((f) => f.fieldName),
+  );
   const labels: Record<string, string> = {};
 
-  for (const key of keys) {
+  for (const key of displayColumnKeys) {
     labels[key] = resolveReportColumnHeaderLabel(
       key,
       columnAliases,
@@ -42,6 +55,7 @@ export function buildReportColumnHeaderLabels(
         tableMetadataByRowId,
         referenceEntityMetadataByName,
         entities,
+        t,
       ),
     );
   }
