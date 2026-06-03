@@ -112,8 +112,6 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
               totalCount={tableData.totalCount}
               loading={tableData.isLoading}
               onPageChange={handlePageChange}
-              buttonClassName={style.paginationButton}
-              infoClassName={style.paginationInfo}
             />
           </div>
         </div>

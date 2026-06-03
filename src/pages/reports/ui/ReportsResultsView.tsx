@@ -297,8 +297,6 @@ export function ReportsResultsView() {
             totalCount={totalElements}
             loading={isLoadingPage || isGenerating}
             onPageChange={handleMobilePageChange}
-            buttonClassName={styles.paginationButton}
-            infoClassName={styles.paginationInfo}
           />
         </div>
       ) : null}

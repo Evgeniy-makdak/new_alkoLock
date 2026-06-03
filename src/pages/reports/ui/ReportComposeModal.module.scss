@@ -510,7 +510,8 @@
       flex: 0 0 auto !important;
       flex-shrink: 0 !important;
       margin-top: auto !important;
-      border-top: 1px solid var(--mui-palette-divider, #e0e0e0);
+      border-top: none !important;
+      box-shadow: none !important;
       background: var(--mui-palette-background-paper, #fff);
       position: sticky;
       bottom: 0;

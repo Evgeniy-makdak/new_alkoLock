@@ -110,8 +110,6 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
               totalCount={tableData.totalCount}
               loading={tableData.isLoading}
               onPageChange={handlePageChange}
-              buttonClassName={style.paginationButton}
-              infoClassName={style.paginationInfo}
             />
           </div>
         </div>

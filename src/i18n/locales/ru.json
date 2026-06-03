@@ -420,6 +420,8 @@
     "alcolockSerialNumber": "Серийный номер алкозамка",
     "coordinates": "Координаты",
     "additionalInfo": "ДОПОЛНИТЕЛЬНЫЕ СВЕДЕНИЯ:",
+    "tapToSeeFullText": "Нажмите, чтобы увидеть полный текст",
+    "holdToNavigate": "Удерживайте для перехода",
     "source": "Источник",
     "mobileDevice": "Мобильное устройство",
     "osVersion": "Версия ОС",

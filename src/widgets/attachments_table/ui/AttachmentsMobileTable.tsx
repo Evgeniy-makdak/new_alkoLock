@@ -578,8 +578,6 @@ export const AttachmentsMobileTable = ({
           totalCount={tableData.totalCount}
           loading={tableData.isLoading}
           onPageChange={handlePageChange}
-          buttonClassName={styles.paginationButton}
-          infoClassName={styles.paginationInfo}
         />
       </div>
 

@@ -473,8 +473,6 @@ export const AvtoServiceMobileTable = ({
           totalCount={tableData.totalCount}
           loading={tableData.isLoading}
           onPageChange={handlePageChange}
-          buttonClassName={styles.paginationButton}
-          infoClassName={styles.paginationInfo}
         />
       </div>
     </div>

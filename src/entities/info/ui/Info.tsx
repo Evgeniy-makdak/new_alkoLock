@@ -1,7 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Card, CardContent, Divider } from '@mui/material';
+import { Card, CardContent, Divider, useMediaQuery } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import {
@@ -25,6 +25,7 @@ type InfoProps = {
 export const Info = ({ fields, headerCard }: InfoProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const isMobile = useMediaQuery('(max-width:768px)');
   const summaryExhaleResult = getSummaryExhaleResult(t);
 
   return (
@@ -36,6 +37,7 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
           const value = field?.value;
           const valueIsArray = Array.isArray(value);
           const isSectionTitle = field.rowLayout === 'sectionTitle';
+          const isLastField = i === fields.length - 1;
 
           return (
             <React.Fragment key={i}>
@@ -52,18 +54,22 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
                 {!isSectionTitle ? (
                   <span className={style.value} style={field?.style}>
                     {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
-                    {!summaryExhaleResultText && !valueIsArray && getTypeOfRowIconValue(value, theme)}
+                    {!summaryExhaleResultText &&
+                      !valueIsArray &&
+                      getTypeOfRowIconValue(value, theme, { isMobile })}
                     {valueIsArray && (
                       <div className={style.labelWrapper}>
                         {value.map((val, j) => (
-                          <React.Fragment key={j}>{getTypeOfRowIconValue(val, theme)}</React.Fragment>
+                          <React.Fragment key={j}>
+                            {getTypeOfRowIconValue(val, theme, { isMobile })}
+                          </React.Fragment>
                         ))}
                       </div>
                     )}
                   </span>
                 ) : null}
               </div>
-              <Divider />
+              {!(isMobile && isLastField) ? <Divider /> : null}
             </React.Fragment>
           );
         })}

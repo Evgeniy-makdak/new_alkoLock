@@ -368,6 +368,8 @@
     "alcolockSerialNumber": "Алкозамок сериялық нөмірі",
     "coordinates": "Координаттар",
     "additionalInfo": "ҚОСЫМША АҚПАРАТ:",
+    "tapToSeeFullText": "Толық мәтінді көру үшін басыңыз",
+    "holdToNavigate": "Өту үшін басып тұрыңыз",
     "source": "Көзі",
     "mobileDevice": "Мобильді құрылғы",
     "osVersion": "ОЖ нұсқасы",

@@ -17,8 +17,13 @@ import {
 import type { Theme } from '@mui/material/styles';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import style from '../ui/Info.module.scss';
+
+export type GetTypeOfRowIconValueOptions = {
+  isMobile?: boolean;
+};
 
 export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
   copyble?: boolean;
@@ -68,7 +73,9 @@ export const getTypeOfRowIconValue = (
     ...rest
   }: GetTypeOfRowIconValueProps,
   theme?: Theme,
+  options?: GetTypeOfRowIconValueOptions,
 ) => {
+  const isMobile = options?.isMobile ?? false;
   if (element) return element;
   const label = { ...rest }?.label || '';
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
@@ -99,14 +106,22 @@ export const getTypeOfRowIconValue = (
     );
 
   const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}`;
+  const fullText = String(tooltipTitle);
+  const inner = <div className={wrapperClass}>{customStyled && shouldApplyCustomChip ? castomChip : chip}</div>;
 
-  return tooltip || count >= 33 ? (
-    <Tooltip title={tooltipTitle}>
-      <div className={wrapperClass}>{castomChip}</div>
-    </Tooltip>
-  ) : (
-    <div className={wrapperClass}>{chip}</div>
-  );
+  if (isMobile) {
+    return <OverflowTooltip title={fullText}>{inner}</OverflowTooltip>;
+  }
+
+  if (tooltip || count >= 33) {
+    return (
+      <Tooltip title={fullText}>
+        <div className={wrapperClass}>{castomChip}</div>
+      </Tooltip>
+    );
+  }
+
+  return inner;
 };
 
 // Добавляем prop-types для валидации

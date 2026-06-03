@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -12,6 +12,7 @@ import {
   Select,
   Typography,
   useMediaQuery,
+  useTheme,
 } from '@mui/material';
 
 import { PageWrapper } from '@layout/page_wrapper';
@@ -20,6 +21,7 @@ import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetRepo
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { getToolbarSecondaryButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
@@ -30,6 +32,8 @@ import { ReportsResultsView } from './ReportsResultsView';
 
 export function ReportsPage() {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const createReportButtonSx = useMemo(() => getToolbarSecondaryButtonSx(theme), [theme]);
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
 
@@ -112,15 +116,7 @@ export function ReportsPage() {
                       startIcon={<AddIcon />}
                       disabled={isGenerating}
                       onClick={openComposeModal}
-                      sx={{
-                        textTransform: 'capitalize',
-                        fontWeight: 500,
-                        fontSize: '14px',
-                        letterSpacing: '0.1px',
-                        borderRadius: '10px',
-                        height: '30px',
-                        minWidth: '160px',
-                      }}>
+                      sx={createReportButtonSx}>
                       {t('reports.createNewReport')}
                     </Button>
                     <ResetFilters reset={handleResetFilters} />
@@ -169,7 +165,7 @@ export function ReportsPage() {
                   disabled={isGenerating}
                   onClick={openComposeModal}
                   className={styles.mobileCreateButton}
-                  sx={{ textTransform: 'none' }}>
+                  sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
                   {t('reports.createNewReport')}
                 </Button>
                 <ResetFilters reset={handleResetFilters} />

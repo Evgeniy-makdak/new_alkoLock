@@ -370,6 +370,8 @@
     "alcolockSerialNumber": "Alcolock serial number",
     "coordinates": "Coordinates",
     "additionalInfo": "ADDITIONAL INFORMATION:",
+    "tapToSeeFullText": "Tap to see full text",
+    "holdToNavigate": "Hold to open",
     "source": "Source",
     "mobileDevice": "Mobile device",
     "osVersion": "OS Version",

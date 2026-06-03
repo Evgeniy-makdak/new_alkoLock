@@ -2,21 +2,27 @@ import { memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
-import { Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 
 import { Button, ButtonsType } from '@shared/ui/button';
+
+import styles from './MobilePaginationWithJump.module.scss';
 
 export interface MobilePaginationWithJumpProps {
   page: number;
   pageSize: number;
   totalCount: number;
   onPageChange: (newPage: number) => void;
-  buttonClassName: string;
-  /** Класс для текста «Страница N из M» (например из *.module.scss) */
+  /** @deprecated Не используйте — стили задаются в MobilePaginationWithJump.module.scss */
+  buttonClassName?: string;
+  /** @deprecated Не используйте — стили задаются в MobilePaginationWithJump.module.scss */
   infoClassName?: string;
   /** Как у DataGrid: пока true — не доверяем кратковременным total из пропсов */
   loading?: boolean;
+}
+
+function joinClasses(...parts: Array<string | undefined>) {
+  return parts.filter(Boolean).join(' ');
 }
 
 /**
@@ -32,8 +38,9 @@ function MobilePaginationWithJumpComponent({
   loading = false,
 }: MobilePaginationWithJumpProps) {
   const { t } = useTranslation();
-  const theme = useTheme();
   const lastStableTotalPagesRef = useRef<number | null>(null);
+  const navButtonClass = joinClasses(styles.navButton, buttonClassName);
+  const pageInfoClass = joinClasses(styles.pageInfo, infoClassName);
 
   const safePage =
     Number.isFinite(Number(page)) && Number(page) >= 0 ? Math.floor(Number(page)) : 0;
@@ -95,50 +102,31 @@ function MobilePaginationWithJumpComponent({
     setOpen(false);
   };
 
-  const infoClass = infoClassName || undefined;
-
   return (
-    <>
+    <Box className={styles.root} sx={{ typography: 'body2', color: 'text.secondary' }}>
       <button
         type="button"
-        className={buttonClassName}
+        className={navButtonClass}
         disabled={safePage === 0}
         onClick={() => onPageChange(safePage - 1)}
-        aria-label={t('pagination.prevPage')}
-        style={{ color: theme.palette.text.primary }}>
+        aria-label={t('pagination.prevPage')}>
         <KeyboardArrowUp />
       </button>
 
       <button
         type="button"
-        className={infoClass}
+        className={pageInfoClass}
         onClick={() => setOpen(true)}
-        aria-label={t('pagination.jumpToPage')}
-        style={{
-          cursor: 'pointer',
-          background: 'none',
-          border: 'none',
-          padding: '4px 8px',
-          font: 'inherit',
-          color: infoClassName ? 'inherit' : theme.palette.text.secondary,
-          fontSize: infoClassName ? 'inherit' : 14,
-          fontVariantNumeric: 'tabular-nums',
-          textDecoration: 'underline',
-          textDecorationStyle: 'dotted',
-          textUnderlineOffset: 3,
-          textAlign: 'center',
-          minWidth: infoClassName ? 0 : 132,
-        }}>
+        aria-label={t('pagination.jumpToPage')}>
         {t('pagination.pageOf', { page: safePage + 1, total: totalForI18n })}
       </button>
 
       <button
         type="button"
-        className={buttonClassName}
+        className={navButtonClass}
         disabled={!canGoNext}
         onClick={() => onPageChange(safePage + 1)}
-        aria-label={t('pagination.nextPage')}
-        style={{ color: theme.palette.text.primary }}>
+        aria-label={t('pagination.nextPage')}>
         <KeyboardArrowDown />
       </button>
 
@@ -214,7 +202,7 @@ function MobilePaginationWithJumpComponent({
           </Button>
         </DialogActions>
       </Dialog>
-    </>
+    </Box>
   );
 }
 

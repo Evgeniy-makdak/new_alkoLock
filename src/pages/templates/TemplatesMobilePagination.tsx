@@ -33,8 +33,6 @@ export const TemplatesMobilePagination: React.FC<TemplatesMobilePaginationProps>
         pageSize={rowsPerPage}
         totalCount={totalCount}
         onPageChange={onPageChange}
-        buttonClassName="pagination-button"
-        infoClassName=""
       />
     </Box>
   );

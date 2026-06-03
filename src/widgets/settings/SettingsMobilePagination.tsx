@@ -24,7 +24,8 @@ export const SettingsMobilePagination: React.FC<SettingsMobilePaginationProps> =
         alignItems: 'center',
         justifyContent: 'center',
         padding: '16px',
-        backgroundColor: 'white',
+        bgcolor: 'background.paper',
+        color: 'text.primary',
         gap: '16px',
       }}>
       <MobilePaginationWithJump
@@ -32,8 +33,6 @@ export const SettingsMobilePagination: React.FC<SettingsMobilePaginationProps> =
         pageSize={rowsPerPage}
         totalCount={totalCount}
         onPageChange={onPageChange}
-        buttonClassName="pagination-button"
-        infoClassName=""
       />
     </Box>
   );

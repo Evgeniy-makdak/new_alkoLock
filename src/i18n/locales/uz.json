@@ -368,6 +368,8 @@
     "alcolockSerialNumber": "Alkozamok seriya raqami",
     "coordinates": "Koordinatalar",
     "additionalInfo": "QO'SHIMCHA MA'LUMOTLAR:",
+    "tapToSeeFullText": "To'liq matnni ko'rish uchun bosing",
+    "holdToNavigate": "O'tish uchun bosib turing",
     "source": "Manba",
     "mobileDevice": "Mobil qurilma",
     "osVersion": "OS versiyasi",

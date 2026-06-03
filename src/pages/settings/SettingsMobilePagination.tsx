@@ -33,8 +33,6 @@ export const SettingsMobilePagination: React.FC<SettingsMobilePaginationProps> =
         pageSize={rowsPerPage}
         totalCount={totalCount}
         onPageChange={onPageChange}
-        buttonClassName="pagination-button"
-        infoClassName=""
       />
     </Box>
   );

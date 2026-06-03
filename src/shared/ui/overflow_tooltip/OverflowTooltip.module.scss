@@ -1,0 +1,88 @@
+.mobileTruncatedClickable {
+  cursor: pointer;
+  min-width: 0;
+
+  :global(.MuiChip-label),
+  :global(.MuiTypography-root),
+  :global(.MuiListItemText-primary) {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+}
+
+/* Чип-переход: короткий тап — полный текст, удержание — переход */
+.mobileTruncatedLongPress {
+  min-width: 0;
+
+  :global(.MuiChip-label) {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+  }
+}
+
+.mobileValueDialog {
+  :global(.MuiDialog-container) {
+    align-items: flex-end;
+  }
+
+  :global(.MuiDialog-paper) {
+    margin: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+  }
+}
+
+.mobileValueDialogContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobileValueDialogText {
+  font-size: 16px;
+  line-height: 1.4;
+  word-break: break-word;
+  color: var(--mui-palette-text-primary, rgba(0, 0, 0, 0.87));
+}
+
+.mobileValueDialogActions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 16px 16px;
+}
+
+.mobileValueDialogButton {
+  min-width: 128px;
+  height: 38px;
+  border: 1px solid #8f8f8f !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  color: #2f2f2f !important;
+  text-transform: uppercase !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+:global(html[data-theme='dark']) {
+  .mobileValueDialog {
+    :global(.MuiDialog-paper) {
+      background: #1e1e1e;
+      color: rgba(255, 255, 255, 0.87);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  }
+
+  .mobileValueDialogText {
+    color: rgba(255, 255, 255, 0.87);
+  }
+
+  .mobileValueDialogButton {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+  }
+}
