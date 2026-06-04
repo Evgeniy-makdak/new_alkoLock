@@ -18,12 +18,14 @@ interface GroupsMobileModalsProps {
     isOpen: boolean;
   };
   setState: (data: { selectedBranchState?: SelectedBranchState }) => void;
+  onCloseAside: () => void;
 }
 
 export const GroupsMobileModals: FC<GroupsMobileModalsProps> = ({
   addModalData,
   deleteModalData,
   setState,
+  onCloseAside,
 }) => {
   return (
     <>
@@ -44,11 +46,14 @@ export const GroupsMobileModals: FC<GroupsMobileModalsProps> = ({
         isOpen={deleteModalData.isOpen}
         toggleModal={deleteModalData.handleCloseDeleteModal}
         body={
-          <GroupDeleteForm
-            closeModal={deleteModalData.handleCloseDeleteModal}
-            branch={deleteModalData.selectBranchDelete}
-            setState={setState}
-          />
+          deleteModalData.selectBranchDelete ? (
+            <GroupDeleteForm
+              closeModal={deleteModalData.handleCloseDeleteModal}
+              branch={deleteModalData.selectBranchDelete}
+              setState={setState}
+              onGroupDeleted={onCloseAside}
+            />
+          ) : null
         }
         closeonClickSpace={false}
         closeOnEscapeKey={false}

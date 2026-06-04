@@ -1,4 +1,4 @@
-// useGroupDeleteForm.ts
+import { useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import { SelectedBranchState } from '@shared/model/app_store/AppStore';
@@ -7,14 +7,22 @@ import type { ID } from '@shared/types/BaseQueryTypes';
 import i18n from '../../../i18n';
 import { useGroupDeleteFormApi } from '../api/useGroupDeleteFormApi';
 
+export type GroupDeleteMode = 'plain' | 'transfer';
+
 export const useGroupDeleteForm = (
   id: ID,
   close: () => void,
   setState: (data: { selectedBranchState?: SelectedBranchState }) => void,
+  onGroupDeleted?: () => void,
 ) => {
   const { mutateAsync } = useGroupDeleteFormApi();
+  const [activeDeleteMode, setActiveDeleteMode] = useState<GroupDeleteMode | null>(null);
+  const isDeleting = activeDeleteMode !== null;
 
   const handleDelete = async (deactivateRecords: boolean) => {
+    if (isDeleting) return;
+
+    setActiveDeleteMode(deactivateRecords ? 'plain' : 'transfer');
     try {
       const response = await mutateAsync({ id, deactivateRecords });
 
@@ -25,15 +33,16 @@ export const useGroupDeleteForm = (
           style: { whiteSpace: 'pre-line' },
         });
       } else {
-        // Устанавливаем активную группу в Основной филиал (id=20)
         setState({ selectedBranchState: { id: 20, name: i18n.t('nav.mainBranch') } });
+        onGroupDeleted?.();
       }
-    } catch (error) {
+    } catch {
       enqueueSnackbar(i18n.t('errors.groupDeleteFailed'), { variant: 'error' });
     } finally {
+      setActiveDeleteMode(null);
       close();
     }
   };
 
-  return { handleDelete };
+  return { handleDelete, isDeleting, activeDeleteMode };
 };

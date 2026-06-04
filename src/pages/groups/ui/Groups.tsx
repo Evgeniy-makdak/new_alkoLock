@@ -13,7 +13,8 @@ import style from './Group.module.scss';
 
 const Groups = () => {
   const prevBranch = useRef<ID | null>(null);
-  const { selectedGroupId, onCloseAside, onClickRow, tabs, groupName, isLoading } = useGroups();
+  const { selectedGroupId, onCloseAside, onClickRow, tabs, groupName, isLoading, branch } =
+    useGroups();
   const { selectedBranchState, setState } = appStore((state) => state);
 
   const handleBranchChange = () => {
@@ -41,18 +42,20 @@ const Groups = () => {
         />
       </PageWrapper>
 
-      {selectedGroupId && (
+      {selectedGroupId ? (
         <Loader isLoading={isLoading}>
           <Aside onClose={onCloseAside} fullScreenOnMobile>
-            <div className={style.infoTab}>
-              <div className={style.name}>
-                <span>{groupName}</span>
+            {branch ? (
+              <div className={style.infoTab}>
+                <div className={style.name}>
+                  <span>{groupName}</span>
+                </div>
+                <RowTableInfo tabs={tabs} />
               </div>
-              <RowTableInfo tabs={tabs} />
-            </div>
+            ) : null}
           </Aside>
         </Loader>
-      )}
+      ) : null}
     </>
   );
 };

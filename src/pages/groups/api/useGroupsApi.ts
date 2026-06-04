@@ -4,7 +4,7 @@ import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
-export const useGroupsApi = (id: ID) => {
+export const useGroupsApi = (id: ID | null) => {
   const { data, isLoading, refetch } = useConfiguredQuery(
     [QueryKeys.BRANCH_ITEM],
     BranchApi.getBranch,

@@ -16,11 +16,22 @@ type GroupDeleteFormProps = {
   closeModal: () => void;
   branch: { id: ID; text: string };
   setState: (data: { selectedBranchState?: SelectedBranchState }) => void;
+  onGroupDeleted?: () => void;
 };
 
-export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal, setState }) => {
+export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({
+  branch,
+  closeModal,
+  setState,
+  onGroupDeleted,
+}) => {
   const { t } = useTranslation();
-  const { handleDelete } = useGroupDeleteForm(branch.id, closeModal, setState);
+  const { handleDelete, isDeleting, activeDeleteMode } = useGroupDeleteForm(
+    branch.id,
+    closeModal,
+    setState,
+    onGroupDeleted,
+  );
   return (
     <div>
       <Typography marginBottom={3} fontWeight={700} variant="h6">
@@ -31,13 +42,24 @@ export const GroupDeleteForm: FC<GroupDeleteFormProps> = ({ branch, closeModal, 
           {t('modals.confirmDeleteGroup', { name: reactNodeToPlainText(branch.text) })}
         </Typography>
         <ButtonFormWrapper>
-          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(true)}>
+          <Button
+            testid={`${testids.POPUP_ACTION_BUTTON}`}
+            disabled={isDeleting}
+            isLoading={activeDeleteMode === 'plain'}
+            onClick={() => void handleDelete(true)}>
             {t('modals.delete')}
           </Button>
-          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={() => handleDelete(false)}>
+          <Button
+            testid={`${testids.POPUP_ACTION_BUTTON}`}
+            disabled={isDeleting}
+            isLoading={activeDeleteMode === 'transfer'}
+            onClick={() => void handleDelete(false)}>
             {t('modals.deleteWithContentTransfer')}
           </Button>
-          <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
+          <Button
+            testid={`${testids.POPUP_CANCEL_BUTTON}`}
+            disabled={isDeleting}
+            onClick={closeModal}>
             {t('modals.cancel')}
           </Button>
         </ButtonFormWrapper>

@@ -261,11 +261,14 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
         isOpen={deleteModalData.isOpen}
         toggleModal={deleteModalData.handleCloseDeleteModal}
         body={
-          <GroupDeleteForm
-            closeModal={deleteModalData.handleCloseDeleteModal}
-            branch={deleteModalData.selectBranchDelete}
-            setState={setState}
-          />
+          deleteModalData.selectBranchDelete ? (
+            <GroupDeleteForm
+              closeModal={deleteModalData.handleCloseDeleteModal}
+              branch={deleteModalData.selectBranchDelete}
+              setState={setState}
+              onGroupDeleted={onCloseAside}
+            />
+          ) : null
         }
         closeonClickSpace={false}
         closeOnEscapeKey={false}

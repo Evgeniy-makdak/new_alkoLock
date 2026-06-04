@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { testids } from '@shared/const/testid';
@@ -18,25 +18,34 @@ export const useGroups = () => {
   const onCloseAside = () => {
     setSelectedGroupId(null);
   };
-  const tabs = [
-    {
-      testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_BUTTON,
-      name: t('groups.usersTab'),
-      content: <GroupUsersTable groupInfo={branch} />,
-    },
-    {
-      testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_ALCOLOCKS_BUTTON,
-      name: t('groups.alcolocksTab'),
-      content: <GroupAlcolocksTable groupInfo={branch} />,
-    },
-    {
-      testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_BUTTON,
-      name: t('groups.transportTab'),
-      content: <GroupCarTable groupInfo={branch} />,
-    },
-  ];
+
+  useEffect(() => {
+    if (selectedGroupId && !isLoading && !branch) {
+      onCloseAside();
+    }
+  }, [selectedGroupId, isLoading, branch]);
+  const tabs = branch
+    ? [
+        {
+          testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_BUTTON,
+          name: t('groups.usersTab'),
+          content: <GroupUsersTable groupInfo={branch} />,
+        },
+        {
+          testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_ALCOLOCKS_BUTTON,
+          name: t('groups.alcolocksTab'),
+          content: <GroupAlcolocksTable groupInfo={branch} />,
+        },
+        {
+          testid: testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_BUTTON,
+          name: t('groups.transportTab'),
+          content: <GroupCarTable groupInfo={branch} />,
+        },
+      ]
+    : [];
   return {
     groupName: branch?.name ?? '-',
+    branch,
     selectedGroupId,
     onClickRow,
     onCloseAside,

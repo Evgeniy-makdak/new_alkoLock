@@ -593,6 +593,7 @@ export const GroupMobileTable = ({
         addModalData={addModalData}
         deleteModalData={deleteModalData}
         setState={setState}
+        onCloseAside={onCloseAside}
       />
     </div>
   );
