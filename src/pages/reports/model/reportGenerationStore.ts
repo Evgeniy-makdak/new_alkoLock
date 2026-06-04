@@ -2,7 +2,13 @@ import i18n from 'i18next';
 import { enqueueSnackbar } from 'notistack';
 import { create } from 'zustand';
 
-import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '../api/reportsApi';
+import {
+  REPORT_QUERY_TRANSPORT_ERROR,
+  executeReportQuery,
+  exportReport,
+  type ReportExportFormat,
+} from '../api/reportsApi';
+import { downloadReportFile } from '../lib/downloadReportFile';
 import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLabels';
 import { reportsStore } from './reportsStore';
 
@@ -13,6 +19,8 @@ export const DEFAULT_REPORT_PAGE_SIZE = 25;
 export type ReportQueryContext = {
   entityName: string;
   body: ReportQueryRequest;
+  /** Имя файла при экспорте (из модалки формирования). */
+  reportName?: string;
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
 };
@@ -22,6 +30,7 @@ let reportPageRequestSeq = 0;
 
 type ReportGenerationState = {
   isGenerating: boolean;
+  isExporting: boolean;
   isLoadingPage: boolean;
   progress: number;
   loaded: number;
@@ -43,6 +52,7 @@ type ReportGenerationState = {
   completeError: (message: string) => void;
   finishCancelled: () => void;
   clearResults: () => void;
+  exportDisplayedReport: (format: ReportExportFormat) => Promise<void>;
   loadReportPage: (page: number, pageSize: number) => Promise<void>;
 };
 
@@ -55,6 +65,7 @@ const resetRunMetrics = {
 
 export const reportGenerationStore = create<ReportGenerationState>()((set, get) => ({
   isGenerating: false,
+  isExporting: false,
   isLoadingPage: false,
   progress: 0,
   loaded: 0,
@@ -193,6 +204,38 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       pagination: { page: 0, pageSize: get().pagination.pageSize },
       sort: [],
     }),
+
+  async exportDisplayedReport(format) {
+    const { queryContext, isGenerating, isExporting } = get();
+    if (isGenerating || isExporting) return;
+    if (!queryContext) {
+      enqueueSnackbar(i18n.t('reports.noReportToExport'), { variant: 'warning' });
+      return;
+    }
+
+    set({ isExporting: true });
+    try {
+      const fileName = queryContext.reportName ?? '';
+      const blob = await exportReport(
+        queryContext.entityName,
+        format,
+        fileName,
+        queryContext.body,
+      );
+      downloadReportFile(blob, fileName, format);
+      enqueueSnackbar(i18n.t('reports.exportSuccess'), { variant: 'success' });
+    } catch (e) {
+      const message =
+        e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR
+          ? i18n.t('reports.queryNetworkError')
+          : e instanceof Error
+            ? e.message
+            : i18n.t('reports.exportError');
+      enqueueSnackbar(message, { variant: 'error' });
+    } finally {
+      set({ isExporting: false });
+    }
+  },
 
   async loadReportPage(page, pageSize) {
     const { queryContext } = get();

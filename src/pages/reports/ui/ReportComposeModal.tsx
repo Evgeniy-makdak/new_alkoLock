@@ -282,7 +282,7 @@ export function ReportComposeModal({
     setSort([]);
 
     try {
-      setQueryContext({ entityName, body });
+      setQueryContext({ entityName, body, reportName: reportName.trim() || undefined });
 
       const result = await executeReportQuery(entityName, body, {
         page: 0,
@@ -321,7 +321,7 @@ export function ReportComposeModal({
     setSort([]);
 
     try {
-      setQueryContext({ entityName, body });
+      setQueryContext({ entityName, body, reportName: reportName.trim() || undefined });
 
       const result = await executeReportQuery(entityName, body, {
         page: 0,

@@ -42,10 +42,57 @@ export function ReportsPage() {
   const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
+  const isExporting = reportGenerationStore((s) => s.isExporting);
+  const exportDisplayedReport = reportGenerationStore((s) => s.exportDisplayedReport);
 
   const [composeModalOpen, setComposeModalOpen] = useState(false);
   const [exportEnabled, setExportEnabled] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
+
+  const handleExportEnabledChange = useCallback(
+    (checked: boolean) => {
+      setExportEnabled(checked);
+      if (!checked || isGenerating || isExporting) return;
+      const { queryContext: ctx, lastResult: result } = reportGenerationStore.getState();
+      if (!ctx || !result) return;
+      void exportDisplayedReport(exportFormat);
+    },
+    [exportFormat, exportDisplayedReport, isGenerating, isExporting],
+  );
+
+  const renderExportControls = () => (
+    <>
+      <FormControlLabel
+        control={
+          <Checkbox
+            size="small"
+            checked={exportEnabled}
+            disabled={isGenerating || isExporting}
+            onChange={(_, checked) => handleExportEnabledChange(checked)}
+          />
+        }
+        label={
+          <Typography variant="body2" sx={{ fontSize: 13 }}>
+            {t('reports.saveAsFile')}
+          </Typography>
+        }
+        sx={{ mr: 0 }}
+      />
+      <FormControl size="small" sx={{ minWidth: 100 }}>
+        <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
+        <Select
+          labelId="report-export-format-label"
+          value={exportFormat}
+          label={t('reports.format')}
+          disabled={isGenerating || isExporting}
+          onChange={(e) => setExportFormat(e.target.value as ReportExportFormat)}>
+          <MenuItem value="CSV">CSV</MenuItem>
+          <MenuItem value="XLS">XLS</MenuItem>
+          <MenuItem value="PDF">PDF</MenuItem>
+        </Select>
+      </FormControl>
+    </>
+  );
 
   useEffect(() => {
     void loadEntities();
@@ -81,35 +128,7 @@ export function ReportsPage() {
               {!isMobile ? (
                 <div className={styles.headerActions}>
                   <TableHeaderEndToolbar>
-                    <div className={styles.headerExportControls}>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            size="small"
-                            checked={exportEnabled}
-                            onChange={(_, checked) => setExportEnabled(checked)}
-                          />
-                        }
-                        label={
-                          <Typography variant="body2" sx={{ fontSize: 13 }}>
-                            {t('reports.saveAsFile')}
-                          </Typography>
-                        }
-                        sx={{ mr: 0 }}
-                      />
-                      <FormControl size="small" sx={{ minWidth: 100 }}>
-                        <InputLabel id="report-export-format-header-label">{t('reports.format')}</InputLabel>
-                        <Select
-                          labelId="report-export-format-header-label"
-                          value={exportFormat}
-                          label={t('reports.format')}
-                          onChange={(e) => setExportFormat(e.target.value as ReportExportFormat)}>
-                          <MenuItem value="CSV">CSV</MenuItem>
-                          <MenuItem value="XLS">XLS</MenuItem>
-                          <MenuItem value="PDF">PDF</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </div>
+                    <div className={styles.headerExportControls}>{renderExportControls()}</div>
                     <Button
                       variant="contained"
                       size="small"
@@ -128,35 +147,7 @@ export function ReportsPage() {
 
           {isMobile ? (
             <div className={styles.mobileCreateBar}>
-              <div className={styles.mobileExportControls}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={exportEnabled}
-                      onChange={(_, checked) => setExportEnabled(checked)}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" sx={{ fontSize: 13 }}>
-                      {t('reports.saveAsFile')}
-                    </Typography>
-                  }
-                  sx={{ mr: 0 }}
-                />
-                <FormControl size="small" sx={{ minWidth: 100 }}>
-                  <InputLabel id="report-export-format-mobile-label">{t('reports.format')}</InputLabel>
-                  <Select
-                    labelId="report-export-format-mobile-label"
-                    value={exportFormat}
-                    label={t('reports.format')}
-                    onChange={(e) => setExportFormat(e.target.value as ReportExportFormat)}>
-                    <MenuItem value="CSV">CSV</MenuItem>
-                    <MenuItem value="XLS">XLS</MenuItem>
-                    <MenuItem value="PDF">PDF</MenuItem>
-                  </Select>
-                </FormControl>
-              </div>
+              <div className={styles.mobileExportControls}>{renderExportControls()}</div>
               <div className={styles.mobileCreateActions}>
                 <Button
                   variant="contained"
