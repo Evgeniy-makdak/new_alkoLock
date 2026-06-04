@@ -764,6 +764,7 @@
     "exportSuccess": "Отчет файлы сакталды",
     "exportError": "Отчетти файлга сактоо мүмкүн болгон жок",
     "saveReportFile": "Файлды сактоо",
+    "saveReportModalTitle": "Отчетти сактоо",
     "composeAddFilterGroup": "+ Фильтр тобун кошуу",
     "composeRemoveFilter": "Фильтрди өчүрүү",
     "filterFunctionOptionalBadge": "(мил.)",

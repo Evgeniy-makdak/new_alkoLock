@@ -19,8 +19,6 @@ export const DEFAULT_REPORT_PAGE_SIZE = 25;
 export type ReportQueryContext = {
   entityName: string;
   body: ReportQueryRequest;
-  /** Имя файла при экспорте (из модалки формирования). */
-  reportName?: string;
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
 };
@@ -52,7 +50,7 @@ type ReportGenerationState = {
   completeError: (message: string) => void;
   finishCancelled: () => void;
   clearResults: () => void;
-  exportDisplayedReport: (format: ReportExportFormat) => Promise<void>;
+  exportDisplayedReport: (format: ReportExportFormat, fileName?: string) => Promise<boolean>;
   loadReportPage: (page: number, pageSize: number) => Promise<void>;
 };
 
@@ -205,17 +203,16 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       sort: [],
     }),
 
-  async exportDisplayedReport(format) {
+  async exportDisplayedReport(format, fileName = '') {
     const { queryContext, isGenerating, isExporting } = get();
-    if (isGenerating || isExporting) return;
+    if (isGenerating || isExporting) return false;
     if (!queryContext) {
       enqueueSnackbar(i18n.t('reports.noReportToExport'), { variant: 'warning' });
-      return;
+      return false;
     }
 
     set({ isExporting: true });
     try {
-      const fileName = queryContext.reportName ?? '';
       const blob = await exportReport(
         queryContext.entityName,
         format,
@@ -224,6 +221,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       );
       downloadReportFile(blob, fileName, format);
       enqueueSnackbar(i18n.t('reports.exportSuccess'), { variant: 'success' });
+      return true;
     } catch (e) {
       const message =
         e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR
@@ -232,6 +230,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
             ? e.message
             : i18n.t('reports.exportError');
       enqueueSnackbar(message, { variant: 'error' });
+      return false;
     } finally {
       set({ isExporting: false });
     }

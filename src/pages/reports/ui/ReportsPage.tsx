@@ -27,6 +27,7 @@ import { breakpoints } from '@widgets/nav_bar/breakpoints';
 import styles from './Reports.module.scss';
 import { ReportComposeModal } from './ReportComposeModal';
 import { ReportGeneratingOverlay } from './ReportGeneratingOverlay';
+import { ReportSaveFileDialog } from './ReportSaveFileDialog';
 import { ReportsResultsView } from './ReportsResultsView';
 
 export function ReportsPage() {
@@ -44,9 +45,8 @@ export function ReportsPage() {
   const isExporting = reportGenerationStore((s) => s.isExporting);
   const queryContext = reportGenerationStore((s) => s.queryContext);
   const lastResult = reportGenerationStore((s) => s.lastResult);
-  const exportDisplayedReport = reportGenerationStore((s) => s.exportDisplayedReport);
-
   const [composeModalOpen, setComposeModalOpen] = useState(false);
+  const [saveFileDialogOpen, setSaveFileDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
   const hasDisplayableReport = !!queryContext && !!lastResult;
@@ -54,8 +54,8 @@ export function ReportsPage() {
 
   const handleSaveReportToFile = useCallback(() => {
     if (!canSaveReportToFile) return;
-    void exportDisplayedReport(exportFormat);
-  }, [canSaveReportToFile, exportDisplayedReport, exportFormat]);
+    setSaveFileDialogOpen(true);
+  }, [canSaveReportToFile]);
 
   const renderExportControls = () => (
     <>
@@ -75,7 +75,6 @@ export function ReportsPage() {
       <Button
         typeButton={ButtonsType.action}
         disabled={!canSaveReportToFile}
-        isLoading={isExporting}
         onClick={handleSaveReportToFile}>
         {t('common.save')}
       </Button>
@@ -168,6 +167,12 @@ export function ReportsPage() {
       <ReportComposeModal
         open={composeModalOpen}
         onClose={() => setComposeModalOpen(false)}
+      />
+
+      <ReportSaveFileDialog
+        open={saveFileDialogOpen}
+        exportFormat={exportFormat}
+        onClose={() => setSaveFileDialogOpen(false)}
       />
     </>
   );

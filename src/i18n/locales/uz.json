@@ -764,6 +764,7 @@
     "exportSuccess": "Hisobot fayli saqlandi",
     "exportError": "Hisobotni faylga saqlab bo‘lmadi",
     "saveReportFile": "Faylni saqlash",
+    "saveReportModalTitle": "Hisobotni saqlash",
     "composeAddFilterGroup": "+ Filtr guruhi qo‘shish",
     "composeRemoveFilter": "Filtrni o‘chirish",
     "filterFunctionOptionalBadge": "(ixt.)",

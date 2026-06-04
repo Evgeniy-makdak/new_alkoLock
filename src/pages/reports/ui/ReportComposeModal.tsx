@@ -55,7 +55,6 @@ export function ReportComposeModal({
     (s) => s.referenceEntityMetadataLoadingByName,
   );
 
-  const [reportName, setReportName] = useState('');
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
 
   useLayoutEffect(() => {
@@ -66,7 +65,6 @@ export function ReportComposeModal({
     // При «Отмена» снимок будет восстановлен (handleClose).
     reportsStore.getState().setSelectedEntityName(null);
     reportsStore.getState().resetFilters();
-    setReportName('');
     setTableFieldsSelection([]);
   }, [open]);
 
@@ -272,7 +270,7 @@ export function ReportComposeModal({
     setSort([]);
 
     try {
-      setQueryContext({ entityName, body, reportName: reportName.trim() || undefined });
+      setQueryContext({ entityName, body });
 
       const result = await executeReportQuery(entityName, body, {
         page: 0,
@@ -336,10 +334,7 @@ export function ReportComposeModal({
             className={[composeStyles.composeMainGrid, composeStyles.formRootDisplayContents].join(
               ' ',
             )}>
-            <ReportComposeForm
-              reportName={reportName}
-              onReportNameChange={setReportName}
-            />
+            <ReportComposeForm />
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>
                 <ReportComposeSection

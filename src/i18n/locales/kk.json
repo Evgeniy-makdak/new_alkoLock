@@ -764,6 +764,7 @@
     "exportSuccess": "Есеп файлы сақталды",
     "exportError": "Есепті файлға сақтау сәтсіз аяқталды",
     "saveReportFile": "Файлды сақтау",
+    "saveReportModalTitle": "Есепті сақтау",
     "composeAddFilterGroup": "+ Сүзгі тобын қосу",
     "composeRemoveFilter": "Сүзгіні жою",
     "filterFunctionOptionalBadge": "(мін.)",

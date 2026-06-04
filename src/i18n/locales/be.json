@@ -765,6 +765,7 @@
     "exportSuccess": "Файл справаздачы захаваны",
     "exportError": "Не ўдалося захаваць справаздачу ў файл",
     "saveReportFile": "Захаваць файл",
+    "saveReportModalTitle": "Захаванне справаздачы",
     "composeAddFilterGroup": "+ Дадаць групу фільтраў",
     "composeRemoveFilter": "Выдаліць фільтр",
     "filterFunctionOptionalBadge": "(неаб.)",

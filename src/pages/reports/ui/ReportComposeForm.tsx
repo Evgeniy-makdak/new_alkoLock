@@ -6,7 +6,6 @@ import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import {
   Alert,
   Autocomplete,
-  Box,
   CircularProgress,
   IconButton,
   TextField,
@@ -35,15 +34,7 @@ import { ReportComposeSection } from './ReportComposeSection';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 import pageStyles from './Reports.module.scss';
 
-export type ReportComposeFormProps = {
-  reportName: string;
-  onReportNameChange: (name: string) => void;
-};
-
-export function ReportComposeForm({
-  reportName,
-  onReportNameChange,
-}: ReportComposeFormProps) {
+export function ReportComposeForm() {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
@@ -194,32 +185,6 @@ export function ReportComposeForm({
 
       <div className={composeStyles.composeTopSlot}>
         <div className={composeStyles.composeTopRow}>
-          <Tooltip title={t('reports.filterFunctionOptionalHint')} placement="top">
-            <TextField
-              className={`${composeStyles.composeNameField} ${composeStyles.optionalComposeNameField}`}
-              size="small"
-              label={
-                <Box
-                  component="span"
-                  sx={{ display: 'inline-flex', alignItems: 'baseline', gap: 0.5 }}>
-                  {t('reports.composeReportNameLabel')}
-                  <Box
-                    component="span"
-                    sx={{
-                      fontSize: '0.75rem',
-                      fontWeight: 400,
-                      color: 'text.secondary',
-                      letterSpacing: 0,
-                    }}>
-                    {t('reports.filterFunctionOptionalBadge')}
-                  </Box>
-                </Box>
-              }
-              placeholder={t('reports.composeReportNamePlaceholder')}
-              value={reportName}
-              onChange={(e) => onReportNameChange(e.target.value)}
-            />
-          </Tooltip>
           <div className={composeStyles.composeEntityField}>{renderEntityAutocomplete()}</div>
         </div>
       </div>

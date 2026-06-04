@@ -827,6 +827,7 @@
     "exportSuccess": "Файл отчёта сохранён",
     "exportError": "Не удалось сохранить отчёт в файл",
     "saveReportFile": "Сохранить файл",
+    "saveReportModalTitle": "Сохранение отчёта",
     "composeAddFilterGroup": "+ Добавить группу фильтров",
     "composeRemoveFilter": "Удалить фильтр",
     "composeLoadingMetadata": "Загрузка параметров сущности…",

@@ -795,6 +795,7 @@
     "exportSuccess": "Report file saved",
     "exportError": "Could not save the report to a file",
     "saveReportFile": "Save file",
+    "saveReportModalTitle": "Save report",
     "composeAddFilterGroup": "+ Add filter group",
     "composeRemoveFilter": "Remove filter",
     "composeLoadingMetadata": "Loading entity parameters…",
