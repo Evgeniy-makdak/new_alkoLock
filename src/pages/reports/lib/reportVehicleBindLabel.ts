@@ -1,12 +1,15 @@
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
-import { Formatters } from '@shared/utils/formatters';
+import { formatReportCarDisplay, isReportEmptyValue } from './reportDisplayValue';
 
 /** Как в фильтре «Поиск по ТС» (CarsSelect): manufacturer model ( госномер ). */
 export function formatReportVehicleCarLabel(record: unknown, fallback = ''): string {
   const car = extractVehicleCarFromRecord(record);
-  if (!car) return fallback;
-  return Formatters.carNameFormatter(car, false, true, false) || fallback || String(car.id ?? '');
+  if (!car) return isReportEmptyValue(fallback) ? '—' : fallback;
+  const formatted = formatReportCarDisplay(car);
+  if (formatted !== '—') return formatted;
+  if (!isReportEmptyValue(fallback)) return fallback;
+  return isReportEmptyValue(car.id) ? '—' : String(car.id);
 }
 
 /** vehicle / vehicleBind.vehicle из записи MonitoringDevice, VehicleBind и т.п. */

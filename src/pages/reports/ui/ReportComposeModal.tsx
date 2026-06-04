@@ -4,19 +4,13 @@ import { useTranslation } from 'react-i18next';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
-import {
-  REPORT_QUERY_TRANSPORT_ERROR,
-  executeReportQuery,
-  exportReport,
-} from '@pages/reports/api/reportsApi';
-import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
+import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports/api/reportsApi';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
   buildRootReportTableFieldOptions,
   collectReferenceEntitiesFromMetadata,
   mergeAllReportTableFieldOptions,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
-import { downloadReportFile } from '@pages/reports/lib/downloadReportFile';
 import { normalizeCompositeTableFieldSelection } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   type ReportsComposeSnapshot,
@@ -40,16 +34,12 @@ type ReportComposeModalProps = {
   open: boolean;
   onClose: () => void;
   onReportFormed?: () => void;
-  exportEnabled: boolean;
-  exportFormat: ReportExportFormat;
 };
 
 export function ReportComposeModal({
   open,
   onClose,
   onReportFormed,
-  exportEnabled,
-  exportFormat,
 }: ReportComposeModalProps) {
   const { t } = useTranslation();
   const snapshotRef = useRef<ReportsComposeSnapshot | null>(null);
@@ -306,51 +296,6 @@ export function ReportComposeModal({
     reportQueryErrorMessage,
   ]);
 
-  const executeReportExportLoad = useCallback(async () => {
-    saveTableFieldsSelectionToStore();
-
-    const ctx = buildCurrentReportBody();
-    if (!ctx) return;
-    const { entityName, body: rawBody } = ctx;
-    const body = ensureSelectedFieldsInBody(rawBody);
-
-    const { pagination, setQueryContext, setPagination, setSort } =
-      reportGenerationStore.getState();
-    reportGenerationStore.getState().start();
-    setPagination({ page: 0 });
-    setSort([]);
-
-    try {
-      setQueryContext({ entityName, body, reportName: reportName.trim() || undefined });
-
-      const result = await executeReportQuery(entityName, body, {
-        page: 0,
-        size: pagination.pageSize,
-        sort: [],
-      });
-      reportGenerationStore.getState().completeSuccess(result);
-
-      const blob = await exportReport(entityName, exportFormat, reportName, body);
-      downloadReportFile(blob, reportName, exportFormat);
-
-      onReportFormed?.();
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'AbortError') {
-        reportGenerationStore.getState().finishCancelled();
-        return;
-      }
-      reportGenerationStore.getState().completeError(reportQueryErrorMessage(e));
-    }
-  }, [
-    buildCurrentReportBody,
-    saveTableFieldsSelectionToStore,
-    ensureSelectedFieldsInBody,
-    exportFormat,
-    reportName,
-    onReportFormed,
-    reportQueryErrorMessage,
-  ]);
-
   const handleFormReport = useCallback(async () => {
     if (reportGenerationStore.getState().isGenerating) return;
 
@@ -360,18 +305,8 @@ export function ReportComposeModal({
     snapshotRef.current = null;
     onClose();
 
-    if (exportEnabled) {
-      void executeReportExportLoad();
-    } else {
-      void executeReportLoad();
-    }
-  }, [
-    ensureTableFieldsMetadataLoaded,
-    onClose,
-    executeReportLoad,
-    executeReportExportLoad,
-    exportEnabled,
-  ]);
+    void executeReportLoad();
+  }, [ensureTableFieldsMetadataLoaded, onClose, executeReportLoad]);
 
   useEffect(() => {
     if (!open || !metadata) return;

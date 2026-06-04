@@ -1,6 +1,11 @@
 import { buildReportTableColumnDefs, REPORT_TABLE_COLUMN_META } from './reportTableColumns';
 import { extractReportVehicleRecord } from './extractReportVehicleRecord';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
+import {
+  REPORT_EMPTY_DISPLAY,
+  finalizeReportCellDisplay,
+  isReportEmptyValue,
+} from './reportDisplayValue';
 
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import type { ReportTableColumnKey } from './reportTableColumns';
@@ -30,8 +35,8 @@ function formatCellValue(
   raw: unknown,
   labelMaps?: ReportVehicleLabelMaps,
 ): string {
-  if (raw == null || raw === '') {
-    return '—';
+  if (isReportEmptyValue(raw)) {
+    return REPORT_EMPTY_DISPLAY;
   }
 
   const meta = REPORT_TABLE_COLUMN_META.find((c) => c.field === field);
@@ -47,9 +52,9 @@ function formatCellValue(
   }
 
   if (typeof raw === 'object') {
-    return JSON.stringify(raw);
+    return finalizeReportCellDisplay(JSON.stringify(raw));
   }
-  return String(raw);
+  return finalizeReportCellDisplay(String(raw));
 }
 
 export function mapReportContentToFixedGrid(

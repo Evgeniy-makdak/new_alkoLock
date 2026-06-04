@@ -1,11 +1,13 @@
+import { REPORT_EMPTY_DISPLAY, finalizeReportCellDisplay, isReportEmptyValue } from './reportDisplayValue';
+
 /** ДД.ММ.ГГГГ ЧЧ:ММ для ячеек отчёта. */
 export function formatReportTableDateTime(value: unknown): string {
-  if (value == null || value === '') {
-    return '—';
+  if (isReportEmptyValue(value)) {
+    return REPORT_EMPTY_DISPLAY;
   }
   const date = new Date(String(value));
   if (Number.isNaN(date.getTime())) {
-    return String(value);
+    return finalizeReportCellDisplay(String(value));
   }
 
   const day = String(date.getDate()).padStart(2, '0');

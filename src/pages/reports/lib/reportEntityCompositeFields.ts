@@ -14,6 +14,12 @@ import {
   isReportCoordinatesCompositePropertyFieldName,
   isRootCoordinatesCompositeOutputFilter,
 } from './reportCoordinateComposite';
+import {
+  REPORT_EMPTY_DISPLAY,
+  finalizeReportCellDisplay,
+  formatReportCarDisplay,
+  isReportEmptyValue,
+} from './reportDisplayValue';
 
 import {
   buildReportTableFieldLeafKey,
@@ -22,7 +28,6 @@ import {
 } from './buildReportTableFieldOptions';
 
 import { Formatters } from '@shared/utils/formatters';
-import type { ICar } from '@shared/types/BaseQueryTypes';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -341,6 +346,8 @@ export function formatReportCompositeCellValue(
     return readRowValue(row, key);
   };
 
+  let display: string;
+
   switch (group.kind) {
     case 'User': {
       const person = {
@@ -351,47 +358,53 @@ export function formatReportCompositeCellValue(
       };
       const fio = Formatters.nameFormatter(
         {
-          surname: String(person.surname ?? '').trim() || undefined,
-          firstName: String(person.firstName ?? '').trim() || undefined,
-          middleName: String(person.middleName ?? '').trim() || undefined,
+          surname: isReportEmptyValue(person.surname)
+            ? undefined
+            : String(person.surname).trim() || undefined,
+          firstName: isReportEmptyValue(person.firstName)
+            ? undefined
+            : String(person.firstName).trim() || undefined,
+          middleName: isReportEmptyValue(person.middleName)
+            ? undefined
+            : String(person.middleName).trim() || undefined,
         },
         false,
       );
-      const email =
-        person.email != null && String(person.email).trim()
-          ? String(person.email).trim()
-          : '';
-      if (fio && fio !== '-' && email) return `${fio} (${email})`;
-      if (fio && fio !== '-') return fio;
-      return email || '—';
+      const email = isReportEmptyValue(person.email) ? '' : String(person.email).trim();
+      if (fio && fio !== '-' && email) display = `${fio} (${email})`;
+      else if (fio && fio !== '-') display = fio;
+      else display = email || REPORT_EMPTY_DISPLAY;
+      break;
     }
     case 'MonitoringDevice': {
       const device = {
         name: read('name'),
         serialNumber: read('serialNumber'),
       };
-      return (
+      display =
         formatDeviceNameSerialLabel({
-          name: device.name != null ? String(device.name) : '',
-          serialNumber: device.serialNumber,
-        }) || '—'
-      );
+          name: isReportEmptyValue(device.name) ? '' : String(device.name),
+          serialNumber: isReportEmptyValue(device.serialNumber)
+            ? undefined
+            : device.serialNumber,
+        }) || REPORT_EMPTY_DISPLAY;
+      break;
     }
-    case 'Vehicle': {
-      const car = {
-        manufacturer: read('manufacturer'),
-        model: read('model'),
-        registrationNumber: read('registrationNumber'),
-      };
-      return (
-        Formatters.carNameFormatter(car as ICar, false, true, false) || '—'
-      );
-    }
+    case 'Vehicle':
+      display = formatReportCarDisplay({
+        manufacturer: read('manufacturer') as string | undefined,
+        model: read('model') as string | undefined,
+        registrationNumber: read('registrationNumber') as string | undefined,
+      });
+      break;
     case COORDINATES_COMPOSITE_KIND:
-      return formatReportCoordinatesCompositeCellValue(group.prefix, row);
+      display = formatReportCoordinatesCompositeCellValue(group.prefix, row);
+      break;
     default:
-      return '—';
+      display = REPORT_EMPTY_DISPLAY;
   }
+
+  return finalizeReportCellDisplay(display);
 }
 
 export function isReportCompositeMemberField(leaf: string): boolean {

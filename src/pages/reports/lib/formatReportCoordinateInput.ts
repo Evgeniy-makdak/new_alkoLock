@@ -1,3 +1,9 @@
+import {
+  REPORT_EMPTY_DISPLAY,
+  finalizeReportCellDisplay,
+  isReportEmptyValue,
+} from './reportDisplayValue';
+
 const COORDINATE_FRACTION_DIGITS = 5;
 const COORDINATE_INTEGER_DIGITS = 2;
 
@@ -82,7 +88,8 @@ export function formatReportCoordinateDisplay(value: unknown): string {
         parseFloat(String(value).trim().replace(',', '.'));
 
   if (!Number.isFinite(num)) {
-    return String(value ?? '—');
+    if (isReportEmptyValue(value)) return REPORT_EMPTY_DISPLAY;
+    return finalizeReportCellDisplay(String(value));
   }
 
   const truncated = truncateReportCoordinateDecimals(num);

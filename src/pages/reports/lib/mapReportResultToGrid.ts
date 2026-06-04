@@ -1,5 +1,7 @@
 import type { GridColDef } from '@mui/x-data-grid';
 
+import { finalizeReportCellDisplay, isReportEmptyValue, REPORT_EMPTY_DISPLAY } from './reportDisplayValue';
+
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 export function mapReportContentToGrid(
@@ -35,12 +37,11 @@ export function mapReportContentToGrid(
     const flat: Record<string, unknown> = { id: rowIdOffset + index };
     for (const key of sampleKeys) {
       const val = row[key] ?? row[labelByKey.get(key) ?? ''];
-      flat[key] =
-        val == null
-          ? '—'
-          : typeof val === 'object'
-            ? JSON.stringify(val)
-            : String(val);
+      flat[key] = isReportEmptyValue(val)
+        ? REPORT_EMPTY_DISPLAY
+        : typeof val === 'object'
+          ? finalizeReportCellDisplay(JSON.stringify(val))
+          : finalizeReportCellDisplay(String(val));
     }
     return flat;
   });

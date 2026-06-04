@@ -3,10 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
 import {
-  Button,
-  Checkbox,
+  Button as MuiButton,
   FormControl,
-  FormControlLabel,
   InputLabel,
   MenuItem,
   Select,
@@ -22,6 +20,7 @@ import { reportGenerationStore } from '@pages/reports/model/reportGenerationStor
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { getToolbarSecondaryButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
+import { Button, ButtonsType } from '@shared/ui/button';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
@@ -43,41 +42,23 @@ export function ReportsPage() {
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const isExporting = reportGenerationStore((s) => s.isExporting);
+  const queryContext = reportGenerationStore((s) => s.queryContext);
+  const lastResult = reportGenerationStore((s) => s.lastResult);
   const exportDisplayedReport = reportGenerationStore((s) => s.exportDisplayedReport);
 
   const [composeModalOpen, setComposeModalOpen] = useState(false);
-  const [exportEnabled, setExportEnabled] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
-  const handleExportEnabledChange = useCallback(
-    (checked: boolean) => {
-      setExportEnabled(checked);
-      if (!checked || isGenerating || isExporting) return;
-      const { queryContext: ctx, lastResult: result } = reportGenerationStore.getState();
-      if (!ctx || !result) return;
-      void exportDisplayedReport(exportFormat);
-    },
-    [exportFormat, exportDisplayedReport, isGenerating, isExporting],
-  );
+  const hasDisplayableReport = !!queryContext && !!lastResult;
+  const canSaveReportToFile = hasDisplayableReport && !isGenerating && !isExporting;
+
+  const handleSaveReportToFile = useCallback(() => {
+    if (!canSaveReportToFile) return;
+    void exportDisplayedReport(exportFormat);
+  }, [canSaveReportToFile, exportDisplayedReport, exportFormat]);
 
   const renderExportControls = () => (
     <>
-      <FormControlLabel
-        control={
-          <Checkbox
-            size="small"
-            checked={exportEnabled}
-            disabled={isGenerating || isExporting}
-            onChange={(_, checked) => handleExportEnabledChange(checked)}
-          />
-        }
-        label={
-          <Typography variant="body2" sx={{ fontSize: 13 }}>
-            {t('reports.saveAsFile')}
-          </Typography>
-        }
-        sx={{ mr: 0 }}
-      />
       <FormControl size="small" sx={{ minWidth: 100 }}>
         <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
         <Select
@@ -91,6 +72,13 @@ export function ReportsPage() {
           <MenuItem value="PDF">PDF</MenuItem>
         </Select>
       </FormControl>
+      <Button
+        typeButton={ButtonsType.action}
+        disabled={!canSaveReportToFile}
+        isLoading={isExporting}
+        onClick={handleSaveReportToFile}>
+        {t('common.save')}
+      </Button>
     </>
   );
 
@@ -129,7 +117,7 @@ export function ReportsPage() {
                 <div className={styles.headerActions}>
                   <TableHeaderEndToolbar>
                     <div className={styles.headerExportControls}>{renderExportControls()}</div>
-                    <Button
+                    <MuiButton
                       variant="contained"
                       size="small"
                       startIcon={<AddIcon />}
@@ -137,7 +125,7 @@ export function ReportsPage() {
                       onClick={openComposeModal}
                       sx={createReportButtonSx}>
                       {t('reports.createNewReport')}
-                    </Button>
+                    </MuiButton>
                     <ResetFilters reset={handleResetFilters} />
                   </TableHeaderEndToolbar>
                 </div>
@@ -149,7 +137,7 @@ export function ReportsPage() {
             <div className={styles.mobileCreateBar}>
               <div className={styles.mobileExportControls}>{renderExportControls()}</div>
               <div className={styles.mobileCreateActions}>
-                <Button
+                <MuiButton
                   variant="contained"
                   size="small"
                   startIcon={<AddIcon />}
@@ -158,7 +146,7 @@ export function ReportsPage() {
                   className={styles.mobileCreateButton}
                   sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
                   {t('reports.createNewReport')}
-                </Button>
+                </MuiButton>
                 <ResetFilters reset={handleResetFilters} />
               </div>
             </div>
@@ -180,8 +168,6 @@ export function ReportsPage() {
       <ReportComposeModal
         open={composeModalOpen}
         onClose={() => setComposeModalOpen(false)}
-        exportEnabled={exportEnabled}
-        exportFormat={exportFormat}
       />
     </>
   );

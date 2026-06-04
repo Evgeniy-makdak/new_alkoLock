@@ -15,6 +15,13 @@ import {
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
+import {
+  REPORT_EMPTY_DISPLAY,
+  finalizeReportCellDisplay,
+  formatReportCarDisplay,
+  isReportEmptyValue,
+} from './reportDisplayValue';
+import { extractVehicleCarFromRecord } from './reportVehicleBindLabel';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import { isReportCoordinateField, isReportDateTimeField } from './reportFieldFilterKind';
 import {
@@ -32,17 +39,13 @@ import type {
 } from '../types/reportApiTypes';
 import type { ReportGridRow } from './mapReportContentToFixedGrid';
 
-import { Formatters } from '@shared/utils/formatters';
-import type { ICar } from '@shared/types/BaseQueryTypes';
-
 function formatVehicleBind(raw: unknown): string {
-  if (raw == null) return '—';
-  if (typeof raw !== 'object') return String(raw);
-  const bind = raw as { vehicle?: unknown };
-  if (bind.vehicle != null && typeof bind.vehicle === 'object') {
-    return Formatters.carNameFormatter(bind.vehicle as ICar, false, true, false) || '—';
+  if (isReportEmptyValue(raw) || typeof raw !== 'object') {
+    return REPORT_EMPTY_DISPLAY;
   }
-  return '—';
+  const car = extractVehicleCarFromRecord(raw);
+  if (!car) return REPORT_EMPTY_DISPLAY;
+  return formatReportCarDisplay(car);
 }
 
 function formatFromStaticMeta(
@@ -52,7 +55,7 @@ function formatFromStaticMeta(
   t: TFunction,
 ): string | null {
   if (!meta) return null;
-  if (raw == null || raw === '') return '—';
+  if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
   if (meta.isDateTime) return formatReportTableDateTime(raw);
 
   const format = meta.format as ReportResultColumnFormat | undefined;
@@ -69,7 +72,7 @@ function formatFromStaticMeta(
   }
   if (format === 'userGroupNames') {
     const names = Array.isArray(raw) ? raw.map(String) : extractUserGroupNames(raw);
-    return names.length ? names.join(', ') : '—';
+    return names.length ? names.join(', ') : REPORT_EMPTY_DISPLAY;
   }
   return null;
 }
@@ -85,7 +88,7 @@ function formatDynamicCellValue(
   labelMaps: ReportVehicleLabelMaps | undefined,
   t: TFunction,
 ): string {
-  if (raw == null || raw === '') return '—';
+  if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
 
   const staticMeta = findReportResultColumnMetaForKey(
     columnKey,
@@ -95,7 +98,7 @@ function formatDynamicCellValue(
     entityFields,
   );
   const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t);
-  if (fromStatic != null) return fromStatic;
+  if (fromStatic != null) return finalizeReportCellDisplay(fromStatic);
 
   if (fieldDef && isReportDateTimeField(fieldDef)) {
     return formatReportTableDateTime(raw);
@@ -109,14 +112,18 @@ function formatDynamicCellValue(
     return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
   }
   if (typeof raw === 'object') {
-    return JSON.stringify(raw);
+    return finalizeReportCellDisplay(JSON.stringify(raw));
   }
   if (labelMaps && typeof raw === 'string') {
     const leaf = columnKey.includes('.') ? columnKey.slice(columnKey.lastIndexOf('.') + 1) : columnKey;
-    if (leaf === 'type') return labelMaps.types[raw] ?? raw;
-    if (leaf === 'color') return labelMaps.colors[raw] ?? raw;
+    if (leaf === 'type') {
+      return finalizeReportCellDisplay(labelMaps.types[raw] ?? raw);
+    }
+    if (leaf === 'color') {
+      return finalizeReportCellDisplay(labelMaps.colors[raw] ?? raw);
+    }
   }
-  return String(raw);
+  return finalizeReportCellDisplay(String(raw));
 }
 
 /** Колонки и строки таблицы строго по ключам из content ответа query. */
