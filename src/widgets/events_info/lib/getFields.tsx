@@ -258,6 +258,10 @@ export const getFields = (
       type: TypeOfRows.COORDS,
       value: {
         clickable: true,
+        // Для тултипа `getTypeOfRowIconValue` использует `copyText ?? label`.
+        // Здесь `label` — JSX (<MapLink />), и при приведении к строке получается "object object".
+        // Поэтому задаём именно строковое значение координат в `copyText`.
+        copyText: longitudeExists ? `${String(latitude)} ${String(longitude)}` : '-',
         label: longitudeExists ? (
           <MapLink
             testid={testids.page_events.events_widget_info.EVENTS_WIDGET_INFO_MAPLINK}

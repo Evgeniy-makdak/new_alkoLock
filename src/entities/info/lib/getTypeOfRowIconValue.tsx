@@ -84,7 +84,13 @@ export const getTypeOfRowIconValue = (
 
   const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme);
 
-  const tooltipTitle = copyText ?? ({ ...rest }.label || '');
+  // `copyText` иногда приходит как объект (например, для координат lat/lon).
+  // Если оставить как есть — в тултип попадёт строка вида "object object".
+  // В таком случае берём отображаемый `label`, который уже должен быть строкой.
+  const tooltipTitle =
+    copyText != null && typeof copyText === 'object'
+      ? ({ ...rest }.label || '')
+      : copyText ?? ({ ...rest }.label || '');
 
   const chip = copyble ? (
     <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} sx={commonChipStyles} />
