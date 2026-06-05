@@ -27,6 +27,17 @@ import {
   isReportVehicleCarDisplayAttribute,
 } from './reportVehicleBindLabel';
 
+/** Имя скалярного поля в записи API (user.phone → phone на корне User). */
+function resolveDomainScalarAttribute(referenceEntity: string, attribute: string): string {
+  const attr = (attribute ?? '').trim();
+  if (!attr.includes('.')) return attr;
+  const entity = (referenceEntity ?? '').trim();
+  if (entity === 'User' || entity === 'Driver') {
+    return attr.slice(attr.lastIndexOf('.') + 1);
+  }
+  return attr;
+}
+
 /**
  * Опции «Значение» из ответа доменного API по выбранному параметру metadata (не «всегда имя»).
  */
@@ -38,15 +49,15 @@ export function buildDomainListValuesForAttribute(
   field?: ReportFieldDefinition,
 ): Values {
   const ref = (referenceEntity === 'Driver' ? 'User' : referenceEntity).trim();
-  const attr = (attribute ?? '').trim();
+  const attr = resolveDomainScalarAttribute(referenceEntity, attribute);
   if (!ref || !attr || !records.length) return [];
 
   if (isReportCoordinatesCompositePropertyFieldName(attr)) {
     return buildCoordinatePairValueOptions(records);
   }
 
-  if (field && isDomainEntityReferencePicker(ref, field)) {
-    return recordsToEntityListValues(ref, records);
+  if (field && isDomainEntityReferencePicker(referenceEntity.trim(), field)) {
+    return recordsToEntityListValues(referenceEntity.trim(), records);
   }
 
   if (isEntityIdAttribute(attr)) {
@@ -79,5 +90,5 @@ export function buildDomainListValuesForAttribute(
     return buildDeviceActionAttributeOptions(records, attr);
   }
 
-  return buildNestedEntityAttributeOptions(records, ref, attr, labelMaps);
+  return buildNestedEntityAttributeOptions(records, referenceEntity.trim(), attr, labelMaps);
 }

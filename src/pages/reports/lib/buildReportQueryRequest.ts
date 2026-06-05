@@ -27,6 +27,7 @@ import {
 } from './reportCoordinateComposite';
 import {
   expandCompositeFieldPath,
+  expandCompositeSelectedFields,
   isReportCompositeFieldPath,
   isRootCompositeOutputFilter,
   resolveCompositeFilterApiFieldName,
@@ -253,13 +254,13 @@ function buildRowReportTableFields(
       : [path];
 
     return pathsToEmit.flatMap((emitPath) => {
+    if (isReportCompositeFieldPath(emitPath)) {
+      return [];
+    }
     if (emitPath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
       return [];
     }
-    if (
-      !context.allowedTableFieldPaths.has(emitPath) &&
-      !(isReportCompositeFieldPath(path) && context.allowedTableFieldPaths.has(path))
-    ) {
+    if (!context.allowedTableFieldPaths.has(emitPath)) {
       return [];
     }
     const fieldDef = findReportTableFieldDefinition(
@@ -550,6 +551,39 @@ function buildSharedGroupFilters(
   return filters;
 }
 
+/** UI-ключи __composite.* никогда не отправляются в POST …/query. */
+function finalizeReportSelectedFields(
+  fields: ReportSelectedFieldPayload[],
+): ReportSelectedFieldPayload[] {
+  return expandCompositeSelectedFields(fields).filter(
+    (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
+  );
+}
+
+function createTableFieldsContext(
+  metadata: ReportEntityMetadata,
+  outputRows: ReportOutputRow[],
+  reportTableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>,
+): BuildRowReportTableFieldsContext {
+  const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+  const allowedTableFieldPaths = buildAllowedReportTableFieldPaths(
+    metadata,
+    outputRows,
+    fieldMap,
+    reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+  );
+  return {
+    entityMetadata: metadata,
+    outputRows,
+    fieldMap,
+    tableMetadataByRowId: reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+    allowedTableFieldPaths,
+  };
+}
+
 export function buildReportQueryRequest(params: {
   metadata: ReportEntityMetadata;
   outputRows: ReportOutputRow[];
@@ -567,25 +601,35 @@ export function buildReportQueryRequest(params: {
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
 
-  if (!activeRows.length) {
-    return { selectedFields: [], filters: [] };
-  }
-
-  const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
-  const allowedTableFieldPaths = buildAllowedReportTableFieldPaths(
+  const tableFieldsContext = createTableFieldsContext(
     metadata,
-    activeRows,
-    fieldMap,
+    outputRows,
     reportTableFieldsMetadataByRowId,
     referenceEntityMetadataByName,
   );
-  const tableFieldsContext: BuildRowReportTableFieldsContext = {
-    entityMetadata: metadata,
+
+  /** Отчёт без фильтров: колонки из «Текущего состава» первой строки (с раскрытием composite). */
+  if (!activeRows.length) {
+    if (!primaryRow.reportTableFields.length) {
+      return { selectedFields: [], filters: [] };
+    }
+    const selectedFields = buildRowReportTableFields(primaryRow, tableFieldsContext);
+    const filters = buildSharedGroupFilters(metadata, primaryRow).map((filter) =>
+      withFilterGroup(filter, reportFilterGroupNumberForRowIndex(0)),
+    );
+    return { selectedFields: finalizeReportSelectedFields(selectedFields), filters };
+  }
+
+  const activeTableFieldsContext: BuildRowReportTableFieldsContext = {
+    ...tableFieldsContext,
     outputRows: activeRows,
-    fieldMap,
-    tableMetadataByRowId: reportTableFieldsMetadataByRowId,
-    referenceEntityMetadataByName,
-    allowedTableFieldPaths,
+    allowedTableFieldPaths: buildAllowedReportTableFieldPaths(
+      metadata,
+      activeRows,
+      tableFieldsContext.fieldMap,
+      reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName,
+    ),
   };
 
   if (activeRows.length === 1) {
@@ -596,13 +640,13 @@ export function buildReportQueryRequest(params: {
         includeGroupFilters: activeRows[0].id === primaryRow.id,
         groupNumber: reportFilterGroupNumberForRowIndex(0),
       },
-      tableFieldsContext,
+      activeTableFieldsContext,
     );
     if (!single) {
       return { selectedFields: [], filters: [] };
     }
     return {
-      selectedFields: single.selectedFields,
+      selectedFields: finalizeReportSelectedFields(single.selectedFields),
       filters: single.filters,
     };
   }
@@ -618,7 +662,7 @@ export function buildReportQueryRequest(params: {
         includeGroupFilters: false,
         groupNumber: reportFilterGroupNumberForRowIndex(rowIndex),
       },
-      tableFieldsContext,
+      activeTableFieldsContext,
     );
     if (!rowPayload) return;
     filters.push(...rowPayload.filters);
@@ -635,7 +679,7 @@ export function buildReportQueryRequest(params: {
   }
 
   return {
-    selectedFields: mergeSelectedFields(selectedFieldLists),
+    selectedFields: finalizeReportSelectedFields(mergeSelectedFields(selectedFieldLists)),
     filters,
     logicConnects: buildReportLogicConnects(activeRows.length, logicOperator),
   };

@@ -11,7 +11,11 @@ export function isDomainEntityReferencePicker(
   if (!field) return false;
   const type = (field.type ?? '').toUpperCase();
   if (type !== 'ENTITY') return false;
-  const ref = (domainEntity === 'Driver' ? 'User' : domainEntity).trim();
+  const domain = (domainEntity ?? '').trim();
   const fieldRef = (field.referenceEntity ?? '').trim();
-  return Boolean(ref && fieldRef === ref);
+  if (!domain || !fieldRef) return false;
+  if (fieldRef === domain) return true;
+  if (domain === 'Driver' && (fieldRef === 'Driver' || fieldRef === 'User')) return true;
+  if (domain === 'User' && fieldRef === 'User') return true;
+  return false;
 }

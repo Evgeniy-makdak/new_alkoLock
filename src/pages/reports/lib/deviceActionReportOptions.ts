@@ -2,6 +2,7 @@ import { getQuery } from '@shared/api/baseQueryTypes';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { buildReportDeviceActionsListUrl } from './buildReportDeviceActionsListUrl';
+import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
 import { getEventTypeLabel } from './sobriety';
 
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -321,16 +322,15 @@ export function formatDeviceActionOptionLabel(
 
 export async function fetchDeviceActionsForReport(searchQuery?: string): Promise<unknown[]> {
   const branchId = appStore.getState().selectedBranchState?.id;
-  const url = buildReportDeviceActionsListUrl(
-    REPORT_REFERENCE_LIST_PAGE_SIZE,
-    branchId,
-    searchQuery,
+  const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
+
+  return fetchAllReportReferencePages(
+    (page) =>
+      getQuery<{ content?: unknown[]; totalElements?: number }>({
+        url: buildReportDeviceActionsListUrl(pageSize, branchId, searchQuery, page),
+      }),
+    pageSize,
   );
-  const res = await getQuery<{ content?: unknown[] }>({ url });
-  if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'device-actions request failed');
-  }
-  return res.data.content ?? [];
 }
 
 /** Уникальные алкозамки из device-actions: value = device.id, label = BI8 (serial). */

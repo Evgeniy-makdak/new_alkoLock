@@ -425,10 +425,18 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         const rowTerminalReset =
           pathChanged || (patch.values !== undefined && nextValues.length === 0);
 
+        const opKey = reportOutputOperationKey(row.id);
+        const fnKey = reportOutputFunctionKey(row.id);
+        let nextFilterSelections = row.filterSelections;
+        if (patch.path !== undefined) {
+          const { [opKey]: _op, [fnKey]: _fn, ...rest } = row.filterSelections;
+          nextFilterSelections = rest;
+        }
+
         return {
           ...row,
           reportTableFields: rowTerminalReset ? [] : row.reportTableFields,
-          filterSelections: rowTerminalReset ? emptySelections() : row.filterSelections,
+          filterSelections: nextFilterSelections,
           nestedEntityFilterByField: {
             ...row.nestedEntityFilterByField,
             [fieldName]: {

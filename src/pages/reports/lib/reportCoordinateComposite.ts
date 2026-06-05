@@ -82,8 +82,12 @@ export function parseCoordinatePairFilterValue(
   value: unknown,
 ): { latitude: number; longitude: number } | null {
   const raw = String(value ?? '').trim();
-  if (!raw.includes(COORDINATE_PAIR_VALUE_SEPARATOR)) return null;
-  const [latPart, lonPart] = raw.split(COORDINATE_PAIR_VALUE_SEPARATOR);
+  if (!raw) return null;
+
+  const separator = raw.includes(':') ? ':' : raw.includes(';') ? ';' : null;
+  if (!separator) return null;
+
+  const [latPart, lonPart] = raw.split(separator);
   const latitude = normalizeReportCoordinateFilterValue(latPart);
   const longitude = normalizeReportCoordinateFilterValue(lonPart);
   if (latitude == null || longitude == null) return null;
@@ -208,7 +212,7 @@ export function applyReportCoordinateFieldGrouping(
     );
     compositeDrafts.push({
       value: compositePath,
-      baseLabel: t('reports.composite.coordinatesDisplay'),
+      baseLabel: t('reports.composite.entityCoordinates'),
       sourceLabel: group.sourceLabel,
       qualifyAs: group.prefix ? 'nested' : 'root',
       leafKey: `${COORDINATES_COMPOSITE_KIND}:${REPORT_COMPOSITE_SEGMENT}.${COORDINATES_COMPOSITE_KIND}`,

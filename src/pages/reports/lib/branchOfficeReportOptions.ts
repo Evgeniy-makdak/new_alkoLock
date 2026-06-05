@@ -1,6 +1,7 @@
 import { getQuery } from '@shared/api/baseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 
+import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 
 export type BranchOfficeNode = {
@@ -14,18 +15,6 @@ export type BranchOfficeNode = {
   lastModifiedBy?: { id?: number | string; fullName?: string; surname?: string; firstName?: string };
   systemGenerated?: boolean;
 };
-
-function unwrapBranchContent(res: {
-  data?: { content?: BranchOfficeNode[] } | null;
-  isError?: boolean;
-  message?: string;
-  detail?: string;
-}): BranchOfficeNode[] {
-  if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'branch-offices request failed');
-  }
-  return res.data.content ?? [];
-}
 
 /** Все офисы из ответа API (корневые + childOffices), без дублей по id. */
 export function flattenBranchOffices(nodes: BranchOfficeNode[]): BranchOfficeNode[] {
@@ -53,17 +42,27 @@ export function flattenBranchOffices(nodes: BranchOfficeNode[]): BranchOfficeNod
   return Array.from(byId.values());
 }
 
-function buildReportBranchOfficesListUrl(pageSize: number, searchQuery?: string): string {
+function buildReportBranchOfficesListUrl(
+  pageSize: number,
+  searchQuery?: string,
+  page = 0,
+): string {
   const match = Formatters.removeExtraSpaces(searchQuery ?? '');
   const searchQ = match ? `&all.match.contains=${encodeURIComponent(match)}` : '';
-  return `api/branch-offices?page=0&size=${pageSize}${searchQ}&sort=name`;
+  return `api/branch-offices?page=${page}&size=${pageSize}${searchQ}&sort=name`;
 }
 
 export async function fetchBranchOfficesForReport(
   searchQuery?: string,
 ): Promise<BranchOfficeNode[]> {
-  const url = buildReportBranchOfficesListUrl(REPORT_REFERENCE_LIST_PAGE_SIZE, searchQuery);
-  const res = await getQuery<{ content: BranchOfficeNode[] }>({ url });
-  return flattenBranchOffices(unwrapBranchContent(res));
+  const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
+  const roots = await fetchAllReportReferencePages<BranchOfficeNode>(
+    (page) =>
+      getQuery<{ content: BranchOfficeNode[]; totalElements?: number }>({
+        url: buildReportBranchOfficesListUrl(pageSize, searchQuery, page),
+      }),
+    pageSize,
+  );
+  return flattenBranchOffices(roots);
 }
 

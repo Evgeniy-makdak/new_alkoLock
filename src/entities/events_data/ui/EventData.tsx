@@ -3,8 +3,12 @@ import type { FC } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+import { useTheme } from '@mui/material/styles';
+
+import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { EventsApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
+import { copyContent } from '@shared/lib/copyText';
 import type { ID, IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
 import { EventInfo } from '@widgets/events_info';
@@ -47,11 +51,15 @@ export const EventData: FC<EventData> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const theme = useTheme();
   // Координаты могут быть в summary, events[0] или на верхнем уровне (разная структура API)
   const latitude = event?.summary?.lat ?? event?.events?.[0]?.latitude ?? (event as any)?.latitude;
   const longitude =
     event?.summary?.lon ?? event?.events?.[0]?.longitude ?? (event as any)?.longitude;
   const hasCoordinates = !!latitude && !!longitude;
+  const coordinateLabel = hasCoordinates
+    ? `${Number(latitude).toFixed(6)} ${Number(longitude).toFixed(6)}`
+    : '';
   const isTestEvent =
     event?.eventType === 'Тестирование пройдено' || event?.eventType === 'Тестирование не пройдено';
 
@@ -172,12 +180,14 @@ export const EventData: FC<EventData> = ({
         <span>{t('map.eventDetails.coordinates')}</span>
         <span>
           {hasCoordinates ? (
-            <button
-              className={`${style.mapLink} ${freezeMarkers ? style.active : ''}`}
-              onClick={handleMapClick}
-              data-testid={testid}>
-              {Number(latitude).toFixed(6)}, {Number(longitude).toFixed(6)}
-            </button>
+            <div data-testid={testid}>
+              <InfoClickableChipValue
+                label={coordinateLabel}
+                onNavigate={handleMapClick}
+                onCopy={() => copyContent(coordinateLabel, () => {})}
+                theme={theme}
+              />
+            </div>
           ) : (
             '-'
           )}

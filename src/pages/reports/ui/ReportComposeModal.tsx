@@ -5,6 +5,7 @@ import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
 import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports/api/reportsApi';
+import { buildComposeSortParams } from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
   buildRootReportTableFieldOptions,
@@ -25,9 +26,12 @@ import { Popup } from '@shared/ui/popup';
 import popupStyles from '@shared/ui/popup/Popup.module.scss';
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import type { ReportComposeSortRow } from '@pages/reports/types/reportComposeSort';
+
 import { ReportComposeForm } from './ReportComposeForm';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
+import { ReportComposeSortSection } from './ReportComposeSortSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
 
 type ReportComposeModalProps = {
@@ -47,6 +51,8 @@ export function ReportComposeModal({
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const metadata = reportsStore((s) => s.metadata);
+  const metadataLoading = reportsStore((s) => s.metadataLoading);
+  const selectedEntityName = reportsStore((s) => s.selectedEntityName);
   const entities = reportsStore((s) => s.entities);
   const outputRows = reportsStore((s) => s.outputRows);
   const reportTableFieldsMetadataByRowId = reportsStore((s) => s.reportTableFieldsMetadataByRowId);
@@ -56,6 +62,7 @@ export function ReportComposeModal({
   );
 
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
+  const [composeSortRows, setComposeSortRows] = useState<ReportComposeSortRow[]>([]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -66,6 +73,7 @@ export function ReportComposeModal({
     reportsStore.getState().setSelectedEntityName(null);
     reportsStore.getState().resetFilters();
     setTableFieldsSelection([]);
+    setComposeSortRows([]);
   }, [open]);
 
   const handleClose = useCallback(() => {
@@ -116,10 +124,10 @@ export function ReportComposeModal({
 
   const showColumnsSection = tableFieldsDialogOptions.length > 0;
 
-  const canFormReport = useMemo(() => {
-    const primaryRow = getPrimaryReportOutputRow();
-    return primaryRow.selectedOutputFields.length > 0;
-  }, [outputRows]);
+  const canFormReport = useMemo(
+    () => Boolean(selectedEntityName && metadata && !metadataLoading),
+    [selectedEntityName, metadata, metadataLoading],
+  );
 
   const tableFieldsOptionsKey = useMemo(
     () => tableFieldsDialogOptions.map((o) => String(o.value)).join('\0'),
@@ -133,6 +141,16 @@ export function ReportComposeModal({
     if (!metadata) return [];
     return buildRootReportTableFieldOptions(metadata, outputRows, entities, t);
   }, [metadata, outputRows, entities, t]);
+
+  const sortColumnOptions = useMemo(() => {
+    const selected =
+      tableFieldsSelection.length > 0
+        ? tableFieldsSelection
+        : tableFieldsInitialSelection.length > 0
+          ? tableFieldsInitialSelection
+          : defaultRootTableFields;
+    return Array.from(new Map(selected.map((item) => [String(item.value), item])).values());
+  }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
 
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
    *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
@@ -212,38 +230,23 @@ export function ReportComposeModal({
   }, []);
 
   const saveTableFieldsSelectionToStore = useCallback(() => {
-    const { outputRows: currentOutputRows } = reportsStore.getState();
     const selectedRaw =
-      tableFieldsSelection.length > 0 ? tableFieldsSelection : tableFieldsInitialSelection;
+      tableFieldsSelection.length > 0
+        ? tableFieldsSelection
+        : tableFieldsInitialSelection.length > 0
+          ? tableFieldsInitialSelection
+          : defaultRootTableFields;
     const selected = Array.from(
       new Map(selectedRaw.map((item) => [String(item.value), item])).values(),
     );
-    if (selected.length) {
-      const { setOutputRowReportTableFields: setTableFields } = reportsStore.getState();
-      for (const row of currentOutputRows) {
-        if (row.selectedOutputFields.length > 0) {
-          setTableFields(row.id, selected);
-        }
-      }
+    if (!selected.length) return;
+    const { setOutputRowReportTableFields: setTableFields, outputRows } = reportsStore.getState();
+    for (const row of outputRows) {
+      setTableFields(row.id, selected);
     }
-  }, [tableFieldsSelection, tableFieldsInitialSelection]);
+  }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
 
-  const ensureSelectedFieldsInBody = useCallback(
-    (body: ReportQueryRequest): ReportQueryRequest => {
-      if (body.selectedFields?.length) return body;
-      const selected =
-        tableFieldsSelection.length > 0 ? tableFieldsSelection : tableFieldsInitialSelection;
-      const deduped = Array.from(
-        new Map(selected.map((item) => [String(item.value), item])).values(),
-      );
-      if (!deduped.length) return body;
-      return {
-        ...body,
-        selectedFields: deduped.map((f) => ({ fieldName: String(f.value) })),
-      };
-    },
-    [tableFieldsSelection, tableFieldsInitialSelection],
-  );
+  const ensureSelectedFieldsInBody = useCallback((body: ReportQueryRequest) => body, []);
 
   const reportQueryErrorMessage = useCallback(
     (e: unknown) => {
@@ -263,11 +266,12 @@ export function ReportComposeModal({
     const { entityName, body: rawBody } = ctx;
     const body = ensureSelectedFieldsInBody(rawBody);
 
+    const sortParams = buildComposeSortParams(composeSortRows);
     const { pagination, setQueryContext, setPagination, setSort } =
       reportGenerationStore.getState();
     reportGenerationStore.getState().start();
     setPagination({ page: 0 });
-    setSort([]);
+    setSort(sortParams);
 
     try {
       setQueryContext({ entityName, body });
@@ -275,7 +279,7 @@ export function ReportComposeModal({
       const result = await executeReportQuery(entityName, body, {
         page: 0,
         size: pagination.pageSize,
-        sort: [],
+        sort: sortParams,
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
@@ -290,6 +294,7 @@ export function ReportComposeModal({
     buildCurrentReportBody,
     saveTableFieldsSelectionToStore,
     ensureSelectedFieldsInBody,
+    composeSortRows,
     onReportFormed,
     reportQueryErrorMessage,
   ]);
@@ -298,13 +303,14 @@ export function ReportComposeModal({
     if (reportGenerationStore.getState().isGenerating) return;
 
     await ensureTableFieldsMetadataLoaded();
+    saveTableFieldsSelectionToStore();
 
     confirmedRef.current = true;
     snapshotRef.current = null;
     onClose();
 
     void executeReportLoad();
-  }, [ensureTableFieldsMetadataLoaded, onClose, executeReportLoad]);
+  }, [ensureTableFieldsMetadataLoaded, saveTableFieldsSelectionToStore, onClose, executeReportLoad]);
 
   useEffect(() => {
     if (!open || !metadata) return;
@@ -320,7 +326,7 @@ export function ReportComposeModal({
       closeonClickSpace={false}
       dragResize={{
         defaultWidth: 1580,
-        defaultHeight: Math.min(860, Math.round(window.innerHeight * 0.88)),
+        defaultHeight: window.innerHeight - 24,
         minWidth: 720,
         minHeight: 420,
       }}
@@ -338,6 +344,7 @@ export function ReportComposeModal({
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>
                 <ReportComposeSection
+                  className={composeStyles.composeColumnsSection}
                   icon={ViewColumnOutlinedIcon}
                   iconTone="violet"
                   title={t('reports.composeSectionColumns')}>
@@ -347,20 +354,29 @@ export function ReportComposeModal({
                     onChange={setTableFieldsSelection}
                   />
                 </ReportComposeSection>
+                {sortColumnOptions.length > 0 ? (
+                  <div className={composeStyles.sortSectionSlot}>
+                    <ReportComposeSortSection
+                      columnOptions={sortColumnOptions}
+                      sortRows={composeSortRows}
+                      onChange={setComposeSortRows}
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
         </Box>
       }
       buttons={[
-        <Button key="cancel" onClick={handleClose}>
-          {t('common.cancel')}
-        </Button>,
         <Button
           key="form"
           disabled={!canFormReport || isGenerating}
           onClick={() => void handleFormReport()}>
           {t('reports.formReport')}
+        </Button>,
+        <Button key="cancel" onClick={handleClose}>
+          {t('common.cancel')}
         </Button>,
       ]}
     />

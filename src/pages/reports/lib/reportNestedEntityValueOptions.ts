@@ -6,8 +6,14 @@ import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 import { isReportCoordinatesCompositePropertyFieldName } from './reportCoordinateComposite';
 import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
-import { isReportBooleanField } from './reportFieldFilterKind';
-import { isReportLeafDomainListEntity } from './reportLeafEntityListApi';
+import {
+  isReportBooleanField,
+  isReportCoordinateField,
+  isReportDateTimeField,
+  isReportTimeOnlyField,
+  isReportYearOnlyField,
+} from './reportFieldFilterKind';
+import { resolveReportDomainListEntityName } from './reportLeafEntityListApi';
 import { resolveReportMetadataValueLoadKind } from './reportMetadataFilterOptions';
 
 export type NestedEntityValueLoadKind =
@@ -18,7 +24,7 @@ export type NestedEntityValueLoadKind =
   | 'dateTime'
   | 'year'
   | 'coordinate'
-  | 'coordinatePair';
+  | 'coordinatePairInput';
 
 /** Список сущностей (id + подпись) вместо значений скалярного поля. */
 export function isNestedEntityListPickerField(
@@ -33,6 +39,22 @@ export function isNestedEntityListPickerField(
   return false;
 }
 
+/** Скаляры и ENTITY на leaf-сущности — значения из доменного API, не из metadata.ENUM. */
+export function shouldForceReportLeafDomainList(
+  leafEntityName: string,
+  field: ReportFieldDefinition | undefined,
+): boolean {
+  if (!field) return false;
+  const domainEntity = resolveReportDomainListEntityName(leafEntityName);
+  if (!domainEntity) return false;
+  if (isReportCoordinatesCompositePropertyFieldName(field.fieldName)) return false;
+  if (isReportBooleanField(field)) return false;
+  if (isReportDateTimeField(field) || isReportTimeOnlyField(field)) return false;
+  if (isReportYearOnlyField(field)) return false;
+  if (isReportCoordinateField(field)) return false;
+  return true;
+}
+
 /**
  * Листовое «Значение»: сначала тип из metadata; для скаляров — доменный API по leafEntityName.
  */
@@ -41,19 +63,20 @@ export function resolveNestedEntityValueLoadKind(
   leafEntityName: string,
 ): NestedEntityValueLoadKind {
   if (field && isReportCoordinatesCompositePropertyFieldName(field.fieldName)) {
-    return 'coordinatePair';
+    return 'coordinatePairInput';
   }
 
   if (shouldForceEventsForFrontDomainList(leafEntityName, field)) {
     return 'domainList';
   }
 
+  if (shouldForceReportLeafDomainList(leafEntityName, field)) {
+    return 'domainList';
+  }
+
   const fromMetadata = resolveReportMetadataValueLoadKind(field);
   if (fromMetadata !== 'textInput') {
     return fromMetadata;
-  }
-  if (isReportLeafDomainListEntity(leafEntityName)) {
-    return 'domainList';
   }
   return 'textInput';
 }

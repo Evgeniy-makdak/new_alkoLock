@@ -194,9 +194,33 @@ export const Table = memo(
         return disableColumnFlex ? applyReportColumnSizing(head) : { ...head, flex: 1 };
       }
 
+      const originalRenderCell = head.renderCell;
+      const sizedHead = disableColumnFlex ? applyReportColumnSizing(head) : { ...head, flex: 1 };
+
       return {
-        ...(disableColumnFlex ? applyReportColumnSizing(head) : { ...head, flex: 1 }),
+        ...sizedHead,
         renderCell: (params: any) => {
+          if (originalRenderCell) {
+            const content = originalRenderCell(params);
+            if (params.row.isProcessing) {
+              return (
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    overflow: 'hidden',
+                  }}>
+                  <Box sx={{ flex: 1 }}>{content}</Box>
+                  <CustomLinearLoader />
+                </Box>
+              );
+            }
+            return content;
+          }
+
           const useChip = chipColumns.includes(index);
           const value = useChip ? params.value : params.formattedValue;
 

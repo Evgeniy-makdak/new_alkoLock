@@ -1,5 +1,6 @@
+import { createElement } from 'react';
 import type { TFunction } from 'i18next';
-import type { GridColDef } from '@mui/x-data-grid';
+import type { GridColDef, GridRenderCellParams } from '@mui/x-data-grid';
 
 import { extractUserGroupNames } from './buildNestedEntityAttributeOptions';
 import {
@@ -12,6 +13,13 @@ import {
   formatReportCompositeCellValue,
   planReportCompositeResultColumns,
 } from './reportEntityCompositeFields';
+import { COORDINATES_COMPOSITE_KIND } from './reportCoordinateComposite';
+import {
+  parseReportCoordinatePairFromDisplay,
+  readReportRowCoordinatePair,
+  readReportRowVehicleRegistration,
+} from './reportCoordinateMapLink';
+import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
@@ -38,6 +46,17 @@ import type {
   ReportSelectedFieldPayload,
 } from '../types/reportApiTypes';
 import type { ReportGridRow } from './mapReportContentToFixedGrid';
+
+function buildReportGridRowKey(
+  row: Record<string, unknown>,
+  index: number,
+  rowIdOffset: number,
+): string {
+  const rootId = row.id;
+  return rootId != null && rootId !== ''
+    ? `report-row-${String(rootId)}`
+    : `report-row-${rowIdOffset + index}`;
+}
 
 function formatVehicleBind(raw: unknown): string {
   if (isReportEmptyValue(raw) || typeof raw !== 'object') {
@@ -155,6 +174,11 @@ export function mapReportContentToResultGrid(
     planReportCompositeResultColumns(orderedKeys, selectedFieldsForColumnOrder?.map((f) => f.fieldName));
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
 
+  const rawRowByGridKey = new Map<string, Record<string, unknown>>();
+  content.forEach((row, index) => {
+    rawRowByGridKey.set(buildReportGridRowKey(row, index, rowIdOffset), row);
+  });
+
   const columns: GridColDef[] = columnKeys.map((key) => {
     const fieldDef = findReportFieldDefForColumnKey(
       key,
@@ -164,7 +188,8 @@ export function mapReportContentToResultGrid(
       tableMetadataByRowId,
       referenceEntityMetadataByName,
     );
-    return {
+    const compositeGroup = compositeByKey.get(key);
+    const colDef: GridColDef = {
       field: key,
       headerName: resolveReportColumnHeaderLabel(
         key,
@@ -184,14 +209,30 @@ export function mapReportContentToResultGrid(
       minWidth: 140,
       sortable: fieldDef?.sortable !== false,
     };
+
+    if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND) {
+      const prefix = compositeGroup.prefix;
+      colDef.renderCell = (params: GridRenderCellParams<ReportGridRow>) => {
+        const rawRow = rawRowByGridKey.get(params.row.__rowKey);
+        if (!rawRow) {
+          return params.formattedValue ?? params.value ?? REPORT_EMPTY_DISPLAY;
+        }
+        const pair =
+          readReportRowCoordinatePair(rawRow, prefix) ??
+          parseReportCoordinatePairFromDisplay(params.formattedValue ?? params.value);
+        if (!pair) {
+          return params.formattedValue ?? params.value ?? REPORT_EMPTY_DISPLAY;
+        }
+        const vehicle = readReportRowVehicleRegistration(rawRow);
+        return createElement(ReportCoordinateMapCell, { pair, vehicle });
+      };
+    }
+
+    return colDef;
   });
 
   const rows: ReportGridRow[] = content.map((row, index) => {
-    const rootId = row.id;
-    const __rowKey =
-      rootId != null && rootId !== ''
-        ? `report-row-${String(rootId)}`
-        : `report-row-${rowIdOffset + index}`;
+    const __rowKey = buildReportGridRowKey(row, index, rowIdOffset);
 
     const flat = { __rowKey } as ReportGridRow;
 

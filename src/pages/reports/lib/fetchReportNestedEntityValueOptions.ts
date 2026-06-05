@@ -1,22 +1,17 @@
-import { AlcolocksApi, AttachmentsApi, CarsApi, EventsApi, UsersApi } from '@shared/api/baseQuerys';
+import { AlcolocksApi, AttachmentsApi, CarsApi, EventsApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type {
   IAlcolock,
   IAttachmentItems,
   ICar,
   IDeviceAction,
-  IUser,
 } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
 import { fetchBranchOfficesForReport } from './branchOfficeReportOptions';
 import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAttribute';
-import {
-  fetchDeviceEventCoordinatePairsForReport,
-  isDeviceEventReportEntity,
-} from './fetchDeviceEventCoordinatePairsForReport';
-import { isReportCoordinatesCompositePropertyFieldName } from './reportCoordinateComposite';
+import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
 import {
   fetchEventTypesForReport,
   fetchEventsForFrontFilterValueOptions,
@@ -24,24 +19,11 @@ import {
 } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import { fetchDeviceActionsForReport } from './deviceActionReportOptions';
+import { fetchUsersForReportFilter } from './fetchUsersForReportFilter';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import { resolveNestedEntityValueLoadKind } from './reportNestedEntityValueOptions';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
-
-function unwrapList<T>(res: {
-  data?: T[] | { content?: T[] } | null;
-  isError?: boolean;
-  message?: string;
-  detail?: string;
-}): T[] {
-  if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'report nested search failed');
-  }
-  const data = res.data;
-  if (Array.isArray(data)) return data;
-  return data.content ?? [];
-}
 
 /**
  * Опции «Значение» для листового поля (referenceEntity === null) — доменный API по типу сущности.
@@ -62,25 +44,14 @@ export async function fetchReportNestedEntityValueOptions(
 
   const kind = resolveNestedEntityValueLoadKind(field, ref);
 
-  if (
-    (kind === 'coordinatePair' || isReportCoordinatesCompositePropertyFieldName(field.fieldName)) &&
-    isDeviceEventReportEntity(ref)
-  ) {
-    return fetchDeviceEventCoordinatePairsForReport(searchQuery);
-  }
-
-  if (kind !== 'domainList' && kind !== 'coordinatePair') {
+  if (kind !== 'domainList') {
     return [];
   }
 
   const match = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = appStore.getState().selectedBranchState?.id;
-  const pageOpts = {
-    page: 0,
-    limit: REPORT_REFERENCE_LIST_PAGE_SIZE,
-    searchQuery: match,
-    filterOptions: branchId != null ? { branchId } : {},
-  };
+  const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
+  const branchFilter = branchId != null ? { branchId } : {};
 
   switch (ref) {
     case 'BranchOffice': {
@@ -92,47 +63,70 @@ export async function fetchReportNestedEntityValueOptions(
       return buildDomainListValuesForAttribute(ref, actions, attr, labelMaps, field);
     }
     case 'Vehicle': {
-      const res = await CarsApi.getCarsList({ ...pageOpts, limit: 20, isActive: true });
-      return buildDomainListValuesForAttribute(ref, unwrapList<ICar>(res), attr, labelMaps, field);
+      const cars = await fetchAllReportReferencePages<ICar>(
+        (page) =>
+          CarsApi.getCarsList({
+            page,
+            limit: pageSize,
+            searchQuery: match,
+            isActive: true,
+            filterOptions: branchFilter,
+          }),
+        pageSize,
+      );
+      return buildDomainListValuesForAttribute(ref, cars, attr, labelMaps, field);
     }
     case 'MonitoringDevice': {
-      const res = await AlcolocksApi.getList({
-        ...pageOpts,
-        limit: 20,
-        isAttachment: false,
-        includeActiveOnly: true,
-        query: '&all.id.notIn=3',
-      });
-      return buildDomainListValuesForAttribute(ref, unwrapList<IAlcolock>(res), attr, labelMaps, field);
+      const devices = await fetchAllReportReferencePages<IAlcolock>(
+        (page) =>
+          AlcolocksApi.getList({
+            page,
+            limit: pageSize,
+            searchQuery: match,
+            isAttachment: false,
+            includeActiveOnly: true,
+            query: '&all.id.notIn=3',
+            filterOptions: branchFilter,
+          }),
+        pageSize,
+      );
+      return buildDomainListValuesForAttribute(ref, devices, attr, labelMaps, field);
     }
     case 'User':
     case 'Driver': {
-      const res = await UsersApi.getListToAttachments(
-        {
-          ...pageOpts,
-          limit: 20,
-          isAttachment: true,
-          filterOptions: {
-            ...pageOpts.filterOptions,
-            ...(ref === 'Driver' ? { driverSpecified: true } : {}),
-          },
-        },
-        false,
-      );
-      return buildDomainListValuesForAttribute(ref, unwrapList<IUser>(res), attr, labelMaps, field);
+      const users = await fetchUsersForReportFilter({
+        pageSize,
+        searchQuery: match,
+        branchId: branchId ?? undefined,
+        driversOnly: ref === 'Driver',
+      });
+      return buildDomainListValuesForAttribute(ref, users, attr, labelMaps, field);
     }
     case 'VehicleBind': {
-      const res = await AttachmentsApi.getList(pageOpts);
-      return buildDomainListValuesForAttribute(ref, unwrapList<IAttachmentItems>(res), attr, labelMaps, field);
+      const binds = await fetchAllReportReferencePages<IAttachmentItems>(
+        (page) =>
+          AttachmentsApi.getList({
+            page,
+            limit: pageSize,
+            searchQuery: match,
+            filterOptions: branchFilter,
+          }),
+        pageSize,
+      );
+      return buildDomainListValuesForAttribute(ref, binds, attr, labelMaps, field);
     }
     case 'AutoServiceHistory': {
-      const res = await EventsApi.getHistoryList({
-        page: pageOpts.page,
-        limit: pageOpts.limit,
-        searchQuery: match,
-        filterOptions: branchId != null ? { branchId } : {},
-      });
-      return buildDomainListValuesForAttribute(ref, unwrapList<IDeviceAction>(res), attr, labelMaps, field);
+      const history = await fetchAllReportReferencePages<IDeviceAction>(
+        (page) =>
+          EventsApi.getHistoryList({
+            page,
+            limit: pageSize,
+            searchQuery: match,
+            filterOptions: branchFilter,
+          }),
+        pageSize,
+      );
+      return buildDomainListValuesForAttribute(ref, history, attr, labelMaps, field);
     }
     case 'EventsForFront': {
       if (isEntityIdAttribute(attr)) {

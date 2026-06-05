@@ -4,6 +4,11 @@ import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQ
 
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
+import {
+  expandCompositeSelectedFields,
+  isReportCompositeFieldPath,
+} from '../lib/reportEntityCompositeFields';
+
 import type {
   ReportEntityListItem,
   ReportEntityMetadata,
@@ -11,6 +16,13 @@ import type {
   ReportQueryRequest,
   ReportQueryResponse,
 } from '../types/reportApiTypes';
+
+function sanitizeReportQueryBody(body: ReportQueryRequest): ReportQueryRequest {
+  const selectedFields = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
+    (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
+  );
+  return { ...body, selectedFields };
+}
 
 /** Сигнал для UI: обрыв ответа (ERR_HTTP2_PROTOCOL_ERROR и т.п.), не ошибка бизнес-логики. */
 export const REPORT_QUERY_TRANSPORT_ERROR = 'REPORT_QUERY_TRANSPORT_ERROR';
@@ -88,7 +100,7 @@ export async function executeReportQuery(
 
     const res = await postQuery<ReportQueryResponse, ReportQueryRequest>({
       url,
-      data: body,
+      data: sanitizeReportQueryBody(body),
     });
 
     if (!res.isError && res.data != null) {
@@ -123,7 +135,7 @@ export async function exportReport(
   }
   const url = `${getApiUrl()}api/v1/reports/${encoded}/export?${queryParts.join('&')}`;
 
-  const res = await axios.post(url, body, {
+  const res = await axios.post(url, sanitizeReportQueryBody(body), {
     headers: returnHeaders(),
     responseType: 'blob',
   });

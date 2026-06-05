@@ -6,6 +6,12 @@ import {
 
 const COORDINATE_FRACTION_DIGITS = 5;
 const COORDINATE_INTEGER_DIGITS = 2;
+const COORDINATE_DIGIT_COUNT = COORDINATE_INTEGER_DIGITS + COORDINATE_FRACTION_DIGITS;
+
+/** Макс. длина маски «широта:долгота» (59.84391:30.00875). */
+export const REPORT_COORDINATE_PAIR_INPUT_MAX_LENGTH =
+  COORDINATE_INTEGER_DIGITS + 1 + COORDINATE_FRACTION_DIGITS + 1 +
+  COORDINATE_INTEGER_DIGITS + 1 + COORDINATE_FRACTION_DIGITS;
 
 /** Маска: только цифры; после 2-й цифры точка подставляется сама, затем до 5 цифр дробной части. */
 export function formatReportCoordinateInput(value: string): string {
@@ -38,6 +44,80 @@ export function isValidReportCoordinateInput(value: string): boolean {
 
 export function isCompleteReportCoordinate(value: string): boolean {
   return /^\d{1,2}\.\d{1,5}$/.test(value);
+}
+
+function tryParseTwoPartCoordinatePaste(
+  value: string,
+): { latPart: string; lonPart: string } | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const normalized = trimmed.replace(/,/g, '.');
+
+  const separatorIndex = normalized.search(/[:;]/);
+  if (separatorIndex >= 0) {
+    return {
+      latPart: normalized.slice(0, separatorIndex).trim(),
+      lonPart: normalized.slice(separatorIndex + 1).trim(),
+    };
+  }
+
+  const spaceParts = normalized.split(/\s+/).filter(Boolean);
+  if (spaceParts.length >= 2) {
+    return { latPart: spaceParts[0], lonPart: spaceParts[1] };
+  }
+
+  return null;
+}
+
+function formatCoordinatePairParts(latPart: string, lonPart: string): string {
+  const lat = latPart ? formatReportCoordinateInput(latPart) : '';
+  const lon = lonPart ? formatReportCoordinateInput(lonPart) : '';
+  if (!lat && !lon) return '';
+  if (!lon) return lat;
+  if (!lat) return lon;
+  return `${lat}:${lon}`;
+}
+
+/**
+ * Маска пары координат: каждая часть — как formatReportCoordinateInput;
+ * между широтой и долготой «:» подставляется автоматически.
+ * Поддерживает вставку «59.84391 30.00875», «59.84391:30.00875», «59.84391;30.00875».
+ */
+export function formatReportCoordinatePairInput(value: string): string {
+  if (!value.trim()) return '';
+
+  const twoPart = tryParseTwoPartCoordinatePaste(value);
+  if (twoPart) {
+    return formatCoordinatePairParts(twoPart.latPart, twoPart.lonPart);
+  }
+
+  const allDigits = value.replace(/\D/g, '').slice(0, COORDINATE_DIGIT_COUNT * 2);
+  const latDigits = allDigits.slice(0, COORDINATE_DIGIT_COUNT);
+  const lonDigits = allDigits.slice(COORDINATE_DIGIT_COUNT);
+
+  const lat = latDigits ? formatReportCoordinateInput(latDigits) : '';
+  if (!lonDigits) return lat;
+
+  const lon = formatReportCoordinateInput(lonDigits);
+  return lat ? `${lat}:${lon}` : lon;
+}
+
+export function isValidReportCoordinatePairInput(value: string): boolean {
+  if (!value) return true;
+  const normalized = value.replace(';', ':');
+  if (!normalized.includes(':')) {
+    return isValidReportCoordinateInput(normalized);
+  }
+  const [lat, lon = ''] = normalized.split(':');
+  return isValidReportCoordinateInput(lat) && isValidReportCoordinateInput(lon);
+}
+
+export function isCompleteReportCoordinatePair(value: string): boolean {
+  const normalized = value.replace(';', ':');
+  if (!normalized.includes(':')) return false;
+  const [lat, lon = ''] = normalized.split(':');
+  return isCompleteReportCoordinate(lat) && isCompleteReportCoordinate(lon);
 }
 
 export function truncateReportCoordinateDecimals(num: number): number {

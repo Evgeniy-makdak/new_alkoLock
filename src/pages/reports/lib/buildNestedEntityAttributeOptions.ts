@@ -31,6 +31,23 @@ import {
 
 const USER_GROUP_NAME_ATTR = 'groupMembership.group.name';
 
+const DRIVER_NESTED_SCALAR_ATTRS = new Set([
+  'id',
+  'licenseCode',
+  'licenseIssueDate',
+  'licenseExpirationDate',
+  'licenseClass',
+  'isActive',
+]);
+
+function resolveDriverNestedAttribute(attribute: string): string {
+  const attr = (attribute ?? '').trim();
+  if (!attr || attr.includes('.')) return attr;
+  if (attr === 'id') return 'driver.id';
+  if (DRIVER_NESTED_SCALAR_ATTRS.has(attr)) return `driver.${attr}`;
+  return attr;
+}
+
 /** Названия ролей (групп) из groupMembership[].group.name. */
 export function extractUserGroupNames(record: unknown): string[] {
   if (record == null || typeof record !== 'object') return [];
@@ -107,10 +124,13 @@ function readRecordAttributeValues(
   if (attribute === USER_GROUP_NAME_ATTR) {
     return extractUserGroupNames(record);
   }
-  const readAttribute =
+  let readAttribute =
     referenceEntity === 'EventsForFront' && isEventsForFrontLevelAttribute(attribute)
       ? 'level'
       : attribute;
+  if (referenceEntity === 'Driver') {
+    readAttribute = resolveDriverNestedAttribute(readAttribute);
+  }
   const single = readRecordAttribute(record, readAttribute);
   return single != null ? [single] : [];
 }
@@ -142,6 +162,14 @@ function resolveOptionLabel(
     const fullName = (record as Record<string, unknown>).fullName;
     if (typeof fullName === 'string' && fullName.trim()) return fullName;
     return Formatters.nameFormatter(record as IUser, false) || value;
+  }
+  if (referenceEntity === 'Driver' && record && typeof record === 'object') {
+    const driver = (record as IUser).driver;
+    if (attribute === 'licenseCode' && typeof driver?.licenseCode === 'string' && driver.licenseCode.trim()) {
+      return driver.licenseCode.trim();
+    }
+    const fio = Formatters.nameFormatter(record as IUser, false);
+    if (fio && fio !== '-') return fio;
   }
   if (referenceEntity === 'BranchOffice') {
     if (
@@ -203,10 +231,13 @@ export function buildNestedEntityAttributeOptions(
     return buildDeviceActionAttributeOptions(records, attribute);
   }
 
-  const readAttribute =
+  let readAttribute =
     referenceEntity === 'EventsForFront' && isEventsForFrontLevelAttribute(attribute)
       ? 'level'
       : attribute;
+  if (referenceEntity === 'Driver') {
+    readAttribute = resolveDriverNestedAttribute(readAttribute);
+  }
 
   const seen = new Map<string, Values[number]>();
 
@@ -294,6 +325,21 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
       else if (email) label = email;
       return { value: u.id, label };
     });
+  }
+  if (referenceEntity === 'Driver') {
+    return (records as IUser[])
+      .filter((u) => u.driver?.id != null)
+      .map((u) => {
+        const driverId = u.driver!.id;
+        const fio = Formatters.nameFormatter(u, false);
+        const license =
+          typeof u.driver?.licenseCode === 'string' && u.driver.licenseCode.trim()
+            ? u.driver.licenseCode.trim()
+            : '';
+        let label = fio && fio !== '-' ? fio : String(driverId);
+        if (license) label = `${label} (${license})`;
+        return { value: driverId, label };
+      });
   }
   if (referenceEntity === 'DeviceAction') {
     return records

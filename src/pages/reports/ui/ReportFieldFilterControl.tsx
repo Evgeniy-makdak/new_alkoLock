@@ -13,6 +13,7 @@ import {
 } from '@pages/reports/lib/reportMetadataFilterOptions';
 import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
 import { resolveNestedEntityValueLoadKind } from '@pages/reports/lib/reportNestedEntityValueOptions';
+import { resolveReportDomainListEntityName } from '@pages/reports/lib/reportLeafEntityListApi';
 import {
   isReportBooleanField,
   isReportCoordinateField,
@@ -34,6 +35,7 @@ import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFron
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 
 import { ReportCoordinateFilterField } from './ReportCoordinateFilterField';
+import { ReportCoordinatePairFilterField } from './ReportCoordinatePairFilterField';
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
 import { ReportTimeTextField } from './ReportTimeTextField';
 import { ReportYearFilterField } from './ReportYearFilterField';
@@ -77,9 +79,13 @@ export function ReportFieldFilterControl({
   const label = field.label || field.fieldName;
 
   const valueLoadKind = useMemo(() => resolveReportMetadataValueLoadKind(field), [field]);
+  const domainListEntityName = useMemo(
+    () => resolveReportDomainListEntityName(metadata.entityName) ?? metadata.entityName,
+    [metadata.entityName],
+  );
   const nestedValueLoadKind = useMemo(
-    () => resolveNestedEntityValueLoadKind(field, metadata.entityName),
-    [field, metadata.entityName],
+    () => resolveNestedEntityValueLoadKind(field, domainListEntityName),
+    [field, domainListEntityName],
   );
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,7 +97,7 @@ export function ReportFieldFilterControl({
   }, [field.fieldName, metadata.entityName]);
 
   useEffect(() => {
-    if (nestedValueLoadKind !== 'domainList' && nestedValueLoadKind !== 'coordinatePair') {
+    if (nestedValueLoadKind !== 'domainList') {
       setRemoteOptions([]);
       return;
     }
@@ -100,7 +106,7 @@ export function ReportFieldFilterControl({
     setRemoteLoading(true);
 
     void fetchReportNestedEntityValueOptions(
-      metadata.entityName,
+      domainListEntityName,
       field,
       searchQuery,
       vehicleLabelMaps,
@@ -118,7 +124,7 @@ export function ReportFieldFilterControl({
     return () => {
       cancelled = true;
     };
-  }, [nestedValueLoadKind, metadata.entityName, field, searchQuery, vehicleLabelMaps]);
+  }, [nestedValueLoadKind, domainListEntityName, field, searchQuery, vehicleLabelMaps]);
 
   const metadataValueOptions = useMemo(
     () => buildReportAttributeValueOptions(field, t),
@@ -127,10 +133,7 @@ export function ReportFieldFilterControl({
 
   const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
   const isCoordinatesComposite = isReportCoordinatesCompositePropertyFieldName(field.fieldName);
-  const coordinatePairOptions = useMemo(
-    () => mergeOptionsWithSelected(remoteOptions, value),
-    [remoteOptions, value],
-  );
+
   const displayOptions = useMemo(
     () =>
       mergeOptionsWithSelected(
@@ -178,19 +181,11 @@ export function ReportFieldFilterControl({
 
   if (isCoordinatesComposite) {
     return (
-      <ReportSearchMultipleSelect
-        multiple
-        compact={compact}
-        name={controlId}
+      <ReportCoordinatePairFilterField
         label={label}
-        values={coordinatePairOptions}
         value={value}
-        serverFilter
-        isLoading={remoteLoading}
+        onChange={onChange}
         sx={controlSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        onInputChange={setSearchQuery}
-        setValueStore={(_, next) => onChange(next as Values)}
       />
     );
   }
@@ -236,11 +231,10 @@ export function ReportFieldFilterControl({
         label={label}
         values={displayOptions}
         value={value}
-        serverFilter
+        serverFilter={false}
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
-        onInputChange={setSearchQuery}
         setValueStore={(_, next) => onChange(next as Values)}
       />
     );

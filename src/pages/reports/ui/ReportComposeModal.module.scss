@@ -10,21 +10,42 @@
 
 .composeModalPaper {
   max-height: calc(100vh - 24px);
+  height: calc(100vh - 24px);
   display: flex;
   flex-direction: column;
+  overflow: hidden !important;
+
+  :global(.MuiDialogContent-root) {
+    overflow: hidden !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(.MuiDialogContent-root > div) {
+    overflow: hidden !important;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
 }
 
 .composeModalContent {
-  overflow: visible !important;
-  flex: 0 1 auto;
+  overflow: hidden !important;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .composeBody {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
-  overflow: visible;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .composeTopRow {
@@ -66,15 +87,20 @@
 }
 
 .composeMainGrid {
+  /* Две независимые панели: фильтры слева (скролл), колонки справа (фикс. высота). */
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
   grid-template-rows: auto minmax(0, 1fr);
   gap: 12px 20px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
 
   @media (max-width: 900px) {
     grid-template-columns: 1fr;
     grid-template-rows: auto;
+    overflow: visible;
   }
 }
 
@@ -83,14 +109,39 @@
 }
 
 .composeFiltersSlot {
+  --compose-filter-block-height: 140px;
+  --compose-filter-connector-height: 24px;
+  --compose-filters-list-gap: 8px;
+  --compose-filters-visible-count: 2;
+  --compose-filters-scroll-max-height: calc(
+    var(--compose-filters-visible-count) * var(--compose-filter-block-height) +
+      (var(--compose-filters-visible-count) - 1) *
+      (var(--compose-filter-connector-height) + var(--compose-filters-list-gap))
+  );
+
   grid-column: 1;
   grid-row: 2;
   min-width: 0;
+  min-height: 0;
   overflow: visible;
+  align-self: start;
+
+  .sectionBody {
+    max-height: var(--compose-filters-scroll-max-height);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+  }
 
   @media (max-width: 900px) {
     grid-column: 1;
     grid-row: auto;
+    align-self: stretch;
+
+    .sectionBody {
+      max-height: min(var(--compose-filters-scroll-max-height), 42vh);
+    }
   }
 }
 
@@ -98,11 +149,36 @@
   grid-column: 2;
   grid-row: 2;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  align-self: start;
+  overflow: visible;
 
   @media (max-width: 900px) {
     grid-column: 1;
     grid-row: auto;
+    align-self: stretch;
   }
+}
+
+.composeColumnsSection {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+
+  .sectionBody {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+
+.sortSectionSlot {
+  flex: 0 0 auto;
+  min-height: 140px;
+  padding-bottom: 8px;
 }
 
 .formRootDisplayContents {
@@ -236,6 +312,54 @@
   font-size: 12px;
   color: var(--mui-palette-text-secondary, #757575);
   margin: 0 0 4px;
+}
+
+.filterLogicConnector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--mui-palette-text-secondary, #757575);
+  text-transform: uppercase;
+}
+
+.sortSectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  min-height: 72px;
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sortRowFields {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sortRowDash {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--mui-palette-text-secondary, #757575);
+  padding-bottom: 8px;
+}
+
+.sortRowRemoveBtn {
+  flex: 0 0 auto;
+  align-self: center;
 }
 
 .optionalFilterControl {
@@ -386,14 +510,19 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 8px;
   align-items: stretch;
-  min-height: 168px;
+  flex: 0 0 auto;
+  height: 360px;
+  min-height: 360px;
+  overflow: hidden;
 }
 
 .transferPanel {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100%;
   min-height: 0;
+  overflow: hidden;
 }
 
 .transferPanelHead {
@@ -421,10 +550,12 @@
 }
 
 .transferListBox {
-  flex: 1;
-  min-height: 140px;
-  max-height: 140px;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--mui-palette-divider, #e0e0e0);
   border-radius: 8px;
   background: #{'var(--mui-palette-background.paper, #fff)'};

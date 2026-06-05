@@ -18,6 +18,7 @@ import {
 } from '@pages/reports/lib/reportNestedFilterPath';
 import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
+import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
@@ -33,6 +34,7 @@ import type {
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
 import { ReportCoordinateFilterField } from './ReportCoordinateFilterField';
+import { ReportCoordinatePairFilterField } from './ReportCoordinatePairFilterField';
 import { ReportDateTimeFilterField } from './ReportDateTimeFilterField';
 import { ReportYearFilterField } from './ReportYearFilterField';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -97,7 +99,7 @@ export function NestedFilterValueControl({
   }, [segment.field, valueLoadKind, t]);
 
   useEffect(() => {
-    if (valueLoadKind !== 'domainList' && valueLoadKind !== 'coordinatePair') {
+    if (valueLoadKind !== 'domainList') {
       setRemoteOptions([]);
       return;
     }
@@ -126,17 +128,26 @@ export function NestedFilterValueControl({
     };
   }, [valueLoadKind, fetchTarget, searchQuery, vehicleLabelMaps]);
 
-  const valueOptions =
-    valueLoadKind === 'domainList' || valueLoadKind === 'coordinatePair'
-      ? remoteOptions
-      : staticValueOptions;
+  const valueOptions = valueLoadKind === 'domainList' ? remoteOptions : staticValueOptions;
 
   const displayValueOptions = useMemo(
     () => mergeOptionsWithSelected(valueOptions, values),
     [valueOptions, values],
   );
 
-  const useServerFilter = valueLoadKind === 'domainList' || valueLoadKind === 'coordinatePair';
+  if (
+    valueLoadKind === 'coordinatePairInput' ||
+    isReportCoordinatesCompositePropertyFieldName(segment.field.fieldName)
+  ) {
+    return (
+      <ReportCoordinatePairFilterField
+        label={t('reports.terminalValuesLabel', { parameter: segment.label })}
+        value={values}
+        onChange={onChange}
+        sx={controlSx}
+      />
+    );
+  }
 
   if (valueLoadKind === 'year') {
     return (
@@ -177,11 +188,10 @@ export function NestedFilterValueControl({
       label={t('reports.terminalValuesLabel', { parameter: segment.label })}
       values={displayValueOptions}
       value={isBooleanValueField ? values.slice(0, 1) : values}
-      serverFilter={useServerFilter}
-      isLoading={useServerFilter && remoteLoading}
+      serverFilter={false}
+      isLoading={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      onInputChange={useServerFilter ? setSearchQuery : undefined}
       setValueStore={(_, next) =>
         onChange(isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values))
       }

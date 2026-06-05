@@ -13,6 +13,34 @@ function isOnlyInterruptedSoberityTestEventFilter(eventIds: string[]): boolean {
   return eventIds.length === 1 && eventIds[0] === '24';
 }
 
+/** Убирает ведущие/замыкающие &, пробелы. */
+function normalizeQuerySegment(segment: string | undefined | null | false): string | undefined {
+  if (!segment) return undefined;
+  const trimmed = String(segment).trim().replace(/^&+/, '').replace(/&+$/, '');
+  return trimmed || undefined;
+}
+
+/**
+ * Склеивает фрагменты query-string через «&» без дублирования и «склеивания» значений.
+ * Возвращает строку без ведущего «&».
+ */
+export function joinQuerySegments(
+  ...segments: Array<string | undefined | null | false>
+): string {
+  return segments
+    .map(normalizeQuerySegment)
+    .filter((segment): segment is string => Boolean(segment))
+    .join('&');
+}
+
+/** Добавляет query-сегменты к URL после «?» (с ведущим «&», если base уже содержит «?»). */
+function appendQueryParts(baseUrl: string, ...segments: Array<string | undefined | null | false>): string {
+  const extra = joinQuerySegments(...segments);
+  if (!extra) return baseUrl;
+  const separator = baseUrl.includes('?') ? '&' : '?';
+  return `${baseUrl}${separator}${extra}`;
+}
+
 const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) => {
   const orderStr = ',' + order.toUpperCase();
 
@@ -224,7 +252,7 @@ const getSelectBranchToQueryUrl = ({
     branch = `any.assignment.branch.id.notIn=${notBranch}&all.id.notIn=2&all.id.notIn=1&all.isActive.in=true`;
   }
 
-  return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
+  return joinQuerySegments(parameters, branch || undefined);
 };
 
 const getSelectBranchToQueryUrlToChat = ({
@@ -249,7 +277,7 @@ const getSelectBranchToQueryUrlToChat = ({
     branch = `any.assignment.branch.id.notIn=${notBranch}&all.id.notIn=2&all.id.notIn=1&all.isActive.in=true`;
   }
 
-  return `${parameters ? parameters : ''}${page ? page + '.' : ''}${branch}`;
+  return joinQuerySegments(parameters, branch || undefined);
 };
 
 export function getUrlCountEventsToQuery({ filterOptions: { branchId } }: QueryOptions) {
@@ -294,8 +322,11 @@ const createBranchQueryBuilder = (mode: 'all' | 'any' = 'all') => {
       branch = `assignment.branch.id.notIn=${notBranch}&all.id.notIn=1`;
     }
 
-    const prefix = mode;
-    return `${parameters ? parameters : ''}&${prefix}.${page ? page + '.' : ''}${branch}`;
+    const branchPart = branch
+      ? `${mode}.${page ? `${page}.` : ''}${branch}`
+      : undefined;
+    const joined = joinQuerySegments(parameters, branchPart);
+    return joined ? `&${joined}` : '';
   };
 };
 
@@ -338,7 +369,7 @@ export function getUserListURL(
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
   let queries = getSelectBranchQueryUrl({
-    parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
+    parameters: driverSpecified ? 'all.driver.id.specified=true' : undefined,
     branchId,
     notBranch: notBranchId,
     page: 'assignment',
@@ -407,7 +438,7 @@ export function getUserListURLToAttachments(
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
   let queries = getSelectBranchToQueryUrl({
-    parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
+    parameters: driverSpecified ? 'all.driver.id.specified=true' : undefined,
     branchId,
     notBranch: notBranchId,
     forChat,
@@ -451,7 +482,11 @@ export function getUserListURLToAttachments(
   // }
 
   // queries += `&branch.id.notIn=${branchId}`;
-  return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&sort=surname,firstName,middleName`;
+  return appendQueryParts(
+    `api/users/full-name?page=${page || 0}&size=${limit || 20}`,
+    queries,
+    'sort=surname,firstName,middleName',
+  );
 }
 
 export function getUserListURLToChat(
@@ -468,7 +503,7 @@ export function getUserListURLToChat(
   const trimmedQuery = Formatters.removeExtraSpaces(searchQuery ?? '');
 
   let queries = getSelectBranchToQueryUrlToChat({
-    parameters: driverSpecified ? `&all.driver.id.specified=true` : '',
+    parameters: driverSpecified ? 'all.driver.id.specified=true' : undefined,
     branchId,
     notBranch: notBranchId,
     forChat,
@@ -505,7 +540,12 @@ export function getUserListURLToChat(
   // }
 
   // queries += `&branch.id.notIn=${branchId}`;
-  return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&all.isActive.in=true&sort=surname,firstName,middleName`;
+  return appendQueryParts(
+    `api/users/full-name?page=${page || 0}&size=${limit || 20}`,
+    queries,
+    'all.isActive.in=true',
+    'sort=surname,firstName,middleName',
+  );
 }
 
 /** Операторы с правом PERMISSION_OPERATOR_CHATS_CREATE — список для передачи диалога в чате. */
@@ -531,7 +571,11 @@ export function getChatTransferOperatorsListURL({
     queries += `&all.match.contains=${trimmedQuery}`;
   }
 
-  return `api/users/full-name?page=${page || 0}&size=${limit || 20}&${queries}&sort=surname,firstName,middleName`;
+  return appendQueryParts(
+    `api/users/full-name?page=${page || 0}&size=${limit || 20}`,
+    queries,
+    'sort=surname,firstName,middleName',
+  );
 }
 
 /////////////////////////////////////////////////////////CARS API ===================================================

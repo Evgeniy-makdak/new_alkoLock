@@ -11,6 +11,7 @@ export function buildReportDeviceActionsListUrl(
   pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE,
   branchId?: number | string | null,
   searchQuery?: string,
+  page = 0,
 ): string {
   const match = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchQ =
@@ -25,5 +26,5 @@ export function buildReportDeviceActionsListUrl(
   const searchQ = match ? `&all.match.contains=${encodeURIComponent(match)}` : '';
   const serviceModeQ =
     '&all.type.in=SERVICE_MODE_ACTIVATE,SERVICE_MODE_DEACTIVATE&all.seen.in=false&all.status.notIn=INVALID';
-  return `api/device-actions?page=0&size=${pageSize}${branchQ}${serviceModeQ}${searchQ}&sort=occurredAt,DESC&sort=id,DESC`;
+  return `api/device-actions?page=${page}&size=${pageSize}${branchQ}${serviceModeQ}${searchQ}&sort=occurredAt,DESC&sort=id,DESC`;
 }

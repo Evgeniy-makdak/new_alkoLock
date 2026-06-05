@@ -14,3 +14,10 @@ export const REPORT_LEAF_DOMAIN_LIST_ENTITIES = new Set([
 export function isReportLeafDomainListEntity(entityName: string): boolean {
   return REPORT_LEAF_DOMAIN_LIST_ENTITIES.has((entityName ?? '').trim());
 }
+
+/** Имя сущности для доменного справочника (User, Vehicle, …). */
+export function resolveReportDomainListEntityName(entityName: string): string | null {
+  const name = (entityName ?? '').trim();
+  if (isReportLeafDomainListEntity(name)) return name;
+  return null;
+}

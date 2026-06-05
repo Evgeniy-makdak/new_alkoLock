@@ -218,9 +218,14 @@ export function expandCompositeSelectedFields(
   items: ReportSelectedFieldPayload[],
 ): ReportSelectedFieldPayload[] {
   return items.flatMap((item) => {
-    const members = expandCompositeFieldPath(item.fieldName);
-    if (members.length <= 1 && members[0] === item.fieldName) {
+    if (!isReportCompositeFieldPath(item.fieldName)) {
       return [item];
+    }
+    const members = expandCompositeFieldPath(item.fieldName).filter(
+      (member) => !isReportCompositeFieldPath(member),
+    );
+    if (!members.length) {
+      return [];
     }
     return members.map((fieldName) => ({
       fieldName,
@@ -299,12 +304,19 @@ export function planReportCompositeResultColumns(
     const coordMemberKeys = COORDINATE_MEMBER_FIELD_NAMES.map((leaf) =>
       prefix ? `${prefix}.${leaf}` : leaf,
     );
+    const compositeCoordKey = buildReportCompositeFieldPath(prefix, COORDINATES_COMPOSITE_KIND);
     const allCoordInContent = coordMemberKeys.every((k) => keySet.has(k));
-    const allCoordSelected = coordMemberKeys.every((k) => selectedSet.has(k));
+    const allCoordSelected =
+      coordMemberKeys.every((k) => selectedSet.has(k)) ||
+      selectedSet.has(compositeCoordKey) ||
+      Array.from(selectedSet).some(
+        (name) =>
+          isReportCoordinatesCompositePath(name) &&
+          (parseCompositePath(name)?.prefix ?? '') === prefix,
+      );
     if (allCoordInContent && allCoordSelected) {
-      const compositeKey = buildReportCompositeFieldPath(prefix, COORDINATES_COMPOSITE_KIND);
       groups.push({
-        compositeKey,
+        compositeKey: compositeCoordKey,
         memberKeys: coordMemberKeys,
         kind: COORDINATES_COMPOSITE_KIND,
         prefix,

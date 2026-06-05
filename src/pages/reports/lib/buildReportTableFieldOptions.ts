@@ -9,6 +9,10 @@ import {
   isReportCompositeFieldPath,
   parseCompositePath,
 } from './reportEntityCompositeFields';
+import {
+  COORDINATES_COMPOSITE_KIND,
+  isReportCoordinatesCompositePath,
+} from './reportCoordinateComposite';
 
 import type {
   ReportEntityListItem,
@@ -517,6 +521,15 @@ export function resolveReportColumnLabel(
   }
   if (t && isReportCompositeFieldPath(columnKey)) {
     const parsed = parseCompositePath(columnKey);
+    if (parsed?.kind === COORDINATES_COMPOSITE_KIND) {
+      const parentField = parsed.prefix
+        ? entityMetadata.fields.find((f) => f.fieldName === parsed.prefix)
+        : undefined;
+      const sourceLabel = parsed.prefix
+        ? (parentField?.label ?? '').trim() || parsed.prefix
+        : resolveReportEntitySourceLabel(entityMetadata, entities);
+      return formatRootReportTableFieldLabel(sourceLabel, t('reports.composite.entityCoordinates'));
+    }
     const config = parsed ? getReportEntityCompositeConfig(parsed.kind) : undefined;
     if (parsed && config) {
       const parentField = parsed.prefix

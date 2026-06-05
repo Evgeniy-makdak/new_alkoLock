@@ -1,5 +1,10 @@
 import type { GridSortModel } from '@mui/x-data-grid';
 
+import {
+  expandCompositeFieldPath,
+  isReportCompositeFieldPath,
+} from './reportEntityCompositeFields';
+
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 import { SortsTypes } from '@shared/config/queryParamsEnums';
 
@@ -52,4 +57,27 @@ export function buildReportSortParams(
 export function reportSortParamsEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
+}
+
+function resolveComposeSortApiField(columnKey: string): string | null {
+  const key = columnKey.trim();
+  if (!key || isReportCompositeFieldPath(key)) {
+    const members = isReportCompositeFieldPath(key) ? expandCompositeFieldPath(key) : [];
+    const firstMember = members.find((member) => !isReportCompositeFieldPath(member));
+    return firstMember ? resolveReportSortApiField(firstMember) : null;
+  }
+  return resolveReportSortApiField(key);
+}
+
+/** Строки сортировки из формы «Новый отчёт» → параметры pageable.sort. */
+export function buildComposeSortParams(
+  rows: { columnKey: string; direction: 'ASC' | 'DESC' }[],
+): string[] {
+  return rows
+    .map((row) => {
+      const apiField = resolveComposeSortApiField(row.columnKey);
+      if (!apiField) return null;
+      return `${apiField},${row.direction}`;
+    })
+    .filter((item): item is string => item != null);
 }

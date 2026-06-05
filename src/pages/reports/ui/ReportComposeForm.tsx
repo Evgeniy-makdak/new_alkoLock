@@ -95,8 +95,8 @@ export function ReportComposeForm() {
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
 
-  const logicHintKey =
-    logicOperator === 'and' ? 'reports.composeLogicAndHint' : 'reports.composeLogicOrHint';
+  const filterLogicLabel =
+    logicOperator === 'and' ? t('reports.logicAnd') : t('reports.logicOr');
 
   const renderEntityAutocomplete = () => {
     const entityTitle = selectedEntity?.label || selectedEntity?.entityName || '';
@@ -209,39 +209,47 @@ export function ReportComposeForm() {
                 {t('reports.composeAddFilterGroup')}
               </button>
             }>
-            {outputRows.length > 1 ? (
-              <p className={composeStyles.logicHint}>{t(logicHintKey)}</p>
-            ) : null}
-
             <div className={composeStyles.filterGroups}>
               {outputRows.map((row, index) => {
                 const isFirstRow = index === 0;
                 const canRemoveGroup = !isFirstRow;
+                const showLogicConnector = index > 0;
 
                 return (
-                  <div key={row.id} className={composeStyles.filterGroup}>
-                    <div className={composeStyles.filterGroupMain}>
-                      <div className={composeStyles.filterGroupHead}>
-                        <span className={composeStyles.filterGroupLabel}>
-                          {t('reports.composeFilterGroup', { number: index + 1 })}
-                        </span>
+                  <div key={row.id}>
+                    {showLogicConnector ? (
+                      <div
+                        className={composeStyles.filterLogicConnector}
+                        aria-label={t('reports.composeFilterLogicConnector', {
+                          logic: filterLogicLabel,
+                        })}>
+                        {filterLogicLabel}
                       </div>
-                      <div className={composeStyles.filterGroupFields}>
-                        {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
-                      </div>
-                    </div>
-                    {canRemoveGroup ? (
-                      <Tooltip title={t('reports.composeRemoveFilter')}>
-                        <IconButton
-                          type="button"
-                          aria-label={t('reports.composeRemoveFilter')}
-                          className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
-                          onClick={() => removeOutputRow(row.id)}
-                          sx={circleIconSx}>
-                          <CloseIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
                     ) : null}
+                    <div className={composeStyles.filterGroup}>
+                      <div className={composeStyles.filterGroupMain}>
+                        <div className={composeStyles.filterGroupHead}>
+                          <span className={composeStyles.filterGroupLabel}>
+                            {t('reports.composeFilterGroup', { number: index + 1 })}
+                          </span>
+                        </div>
+                        <div className={composeStyles.filterGroupFields}>
+                          {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
+                        </div>
+                      </div>
+                      {canRemoveGroup ? (
+                        <Tooltip title={t('reports.composeRemoveFilter')}>
+                          <IconButton
+                            type="button"
+                            aria-label={t('reports.composeRemoveFilter')}
+                            className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
+                            onClick={() => removeOutputRow(row.id)}
+                            sx={circleIconSx}>
+                            <CloseIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      ) : null}
+                    </div>
                   </div>
                 );
               })}
