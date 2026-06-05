@@ -31,6 +31,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
+import { ReportFilterLogicConnector } from './ReportFilterLogicConnector';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 import pageStyles from './Reports.module.scss';
 
@@ -49,7 +50,6 @@ export function ReportComposeForm() {
   const metadataError = reportsStore((s) => s.metadataError);
   const filterControls = reportsStore((s) => s.filterControls);
   const outputRows = reportsStore((s) => s.outputRows);
-  const logicOperator = reportsStore((s) => s.logicOperator);
   const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
   const loadMetadataForEntity = reportsStore((s) => s.loadMetadataForEntity);
   const addOutputRow = reportsStore((s) => s.addOutputRow);
@@ -94,9 +94,6 @@ export function ReportComposeForm() {
 
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
-
-  const filterLogicLabel =
-    logicOperator === 'and' ? t('reports.logicAnd') : t('reports.logicOr');
 
   const renderEntityAutocomplete = () => {
     const entityTitle = selectedEntity?.label || selectedEntity?.entityName || '';
@@ -213,19 +210,10 @@ export function ReportComposeForm() {
               {outputRows.map((row, index) => {
                 const isFirstRow = index === 0;
                 const canRemoveGroup = !isFirstRow;
-                const showLogicConnector = index > 0;
 
                 return (
                   <div key={row.id}>
-                    {showLogicConnector ? (
-                      <div
-                        className={composeStyles.filterLogicConnector}
-                        aria-label={t('reports.composeFilterLogicConnector', {
-                          logic: filterLogicLabel,
-                        })}>
-                        {filterLogicLabel}
-                      </div>
-                    ) : null}
+                    {index === 1 ? <ReportFilterLogicConnector /> : null}
                     <div className={composeStyles.filterGroup}>
                       <div className={composeStyles.filterGroupMain}>
                         <div className={composeStyles.filterGroupHead}>

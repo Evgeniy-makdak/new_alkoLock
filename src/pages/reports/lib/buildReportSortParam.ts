@@ -5,8 +5,11 @@ import {
   isReportCompositeFieldPath,
 } from './reportEntityCompositeFields';
 
+import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
+import { createReportComposeSortRow } from '../types/reportComposeSort';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 import { SortsTypes } from '@shared/config/queryParamsEnums';
+import type { Values } from '@shared/ui/search_multiple_select';
 
 /** Устаревшие ключи грида → ключ колонки content (как в selectedFields / content). */
 const REPORT_GRID_FIELD_TO_CONTENT_KEY: Record<string, string> = {
@@ -80,4 +83,42 @@ export function buildComposeSortParams(
       return `${apiField},${row.direction}`;
     })
     .filter((item): item is string => item != null);
+}
+
+function findComposeSortColumnKey(apiField: string, columnKeys: Values): string {
+  for (const item of columnKeys) {
+    const key = String(item.value);
+    if (resolveComposeSortApiField(key) === apiField) {
+      return key;
+    }
+  }
+  for (const item of columnKeys) {
+    const key = String(item.value);
+    if (key === apiField) {
+      return key;
+    }
+  }
+  return apiField;
+}
+
+/** pageable.sort → строки сортировки формы (для редактирования сформированного отчёта). */
+export function parseComposeSortRowsFromSortParams(
+  sortParams: string[],
+  columnKeys: Values,
+): ReportComposeSortRow[] {
+  return sortParams
+    .map((param) => {
+      const commaIndex = param.lastIndexOf(',');
+      if (commaIndex <= 0) return null;
+
+      const apiField = param.slice(0, commaIndex);
+      const directionRaw = param.slice(commaIndex + 1).toUpperCase();
+      if (directionRaw !== 'ASC' && directionRaw !== 'DESC') return null;
+
+      return createReportComposeSortRow(
+        findComposeSortColumnKey(apiField, columnKeys),
+        directionRaw as ReportSortDirection,
+      );
+    })
+    .filter((row): row is ReportComposeSortRow => row != null);
 }

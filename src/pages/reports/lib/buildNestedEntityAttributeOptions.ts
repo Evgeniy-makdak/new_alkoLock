@@ -294,7 +294,15 @@ export function recordsToIdOnlyListValues(records: unknown[]): Values {
 }
 
 function formatVehicleBindListLabel(item: IAttachmentItems): string {
-  return formatReportVehicleCarLabel(item, String(item.id));
+  const car = formatReportVehicleCarLabel(item, '');
+  const driverAccount = item.driver?.userAccount ?? item.userAction;
+  const driver =
+    driverAccount != null
+      ? Formatters.nameFormatter(driverAccount, false)
+      : Formatters.nameFormatter(item, false);
+  const parts = [car, driver].filter((part) => part && part !== '—' && part !== '-');
+  if (parts.length) return parts.join(' · ');
+  return String(item.id);
 }
 
 /** Список сущностей (первый контрол) — id + подпись из записи API. */

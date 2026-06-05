@@ -509,6 +509,14 @@
       min-height: 0;
     }
 
+    .MuiDataGrid-virtualScroller {
+      overflow-x: auto !important;
+    }
+
+    .MuiDataGrid-columnHeaderTitle {
+      white-space: nowrap;
+    }
+
     .MuiDataGrid-footerContainer {
       flex-shrink: 0;
     }

@@ -1,8 +1,7 @@
-import { AlcolocksApi, AttachmentsApi, CarsApi, EventsApi } from '@shared/api/baseQuerys';
+import { AlcolocksApi, CarsApi, EventsApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type {
   IAlcolock,
-  IAttachmentItems,
   ICar,
   IDeviceAction,
 } from '@shared/types/BaseQueryTypes';
@@ -12,6 +11,7 @@ import { Formatters } from '@shared/utils/formatters';
 import { fetchBranchOfficesForReport } from './branchOfficeReportOptions';
 import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAttribute';
 import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
+import { fetchVehicleDriverAllotmentsForReportFilter } from './fetchVehicleDriverAllotmentsForReportFilter';
 import {
   fetchEventTypesForReport,
   fetchEventsForFrontFilterValueOptions,
@@ -103,16 +103,7 @@ export async function fetchReportNestedEntityValueOptions(
       return buildDomainListValuesForAttribute(ref, users, attr, labelMaps, field);
     }
     case 'VehicleBind': {
-      const binds = await fetchAllReportReferencePages<IAttachmentItems>(
-        (page) =>
-          AttachmentsApi.getList({
-            page,
-            limit: pageSize,
-            searchQuery: match,
-            filterOptions: branchFilter,
-          }),
-        pageSize,
-      );
+      const binds = await fetchVehicleDriverAllotmentsForReportFilter(match);
       return buildDomainListValuesForAttribute(ref, binds, attr, labelMaps, field);
     }
     case 'AutoServiceHistory': {

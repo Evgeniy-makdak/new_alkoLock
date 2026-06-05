@@ -5,7 +5,7 @@ import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
 import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports/api/reportsApi';
-import { buildComposeSortParams } from '@pages/reports/lib/buildReportSortParam';
+import { buildComposeSortParams, parseComposeSortRowsFromSortParams } from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
   buildRootReportTableFieldOptions,
@@ -34,14 +34,18 @@ import { ReportComposeSection } from './ReportComposeSection';
 import { ReportComposeSortSection } from './ReportComposeSortSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
 
+export type ReportComposeModalMode = 'create' | 'edit';
+
 type ReportComposeModalProps = {
   open: boolean;
+  mode?: ReportComposeModalMode;
   onClose: () => void;
   onReportFormed?: () => void;
 };
 
 export function ReportComposeModal({
   open,
+  mode = 'create',
   onClose,
   onReportFormed,
 }: ReportComposeModalProps) {
@@ -68,13 +72,25 @@ export function ReportComposeModal({
     if (!open) return;
     confirmedRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
-    // Чтобы «Создать новый отчёт» открывался без черновых полей текущего отчёта.
-    // При «Отмена» снимок будет восстановлен (handleClose).
-    reportsStore.getState().setSelectedEntityName(null);
-    reportsStore.getState().resetFilters();
-    setTableFieldsSelection([]);
-    setComposeSortRows([]);
-  }, [open]);
+
+    if (mode === 'create') {
+      // Чтобы «Создать новый отчёт» открывался без черновых полей текущего отчёта.
+      // При «Отмена» снимок будет восстановлен (handleClose).
+      reportsStore.getState().setSelectedEntityName(null);
+      reportsStore.getState().resetFilters();
+      setTableFieldsSelection([]);
+      setComposeSortRows([]);
+      return;
+    }
+
+    const primaryRow = getPrimaryReportOutputRow();
+    const tableFields =
+      primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
+    setTableFieldsSelection(tableFields);
+    setComposeSortRows(
+      parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
+    );
+  }, [open, mode]);
 
   const handleClose = useCallback(() => {
     if (!confirmedRef.current && snapshotRef.current) {
@@ -320,7 +336,9 @@ export function ReportComposeModal({
   return (
     <Popup
       isOpen={open}
-      headerTitle={t('reports.composeModalTitle')}
+      headerTitle={
+        mode === 'edit' ? t('reports.composeModalEditTitle') : t('reports.composeModalTitle')
+      }
       toggleModal={handleClose}
       onCloseModal={handleClose}
       closeonClickSpace={false}

@@ -60,6 +60,10 @@ export function buildDomainListValuesForAttribute(
     return recordsToEntityListValues(referenceEntity.trim(), records);
   }
 
+  if (referenceEntity.trim() === 'VehicleBind' && isEntityIdAttribute(attr)) {
+    return recordsToEntityListValues('VehicleBind', records);
+  }
+
   if (isEntityIdAttribute(attr)) {
     return recordsToIdOnlyListValues(records);
   }

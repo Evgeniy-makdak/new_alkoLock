@@ -56,6 +56,7 @@ type ReportsStore = {
   setSelectedEntityName: (name: string | null) => void;
   loadMetadataForEntity: (entityName: string) => Promise<void>;
   addOutputRow: (logicOperator: ReportLogicOperator) => void;
+  setLogicOperator: (logicOperator: ReportLogicOperator) => void;
   removeOutputRow: (rowId: string) => void;
   setOutputRowSelectedFields: (rowId: string, values: Values) => void;
   setOutputRowFilterSelection: (rowId: string, controlId: string, values: Values) => void;
@@ -325,6 +326,11 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         ? [...current, createAdditionalReportOutputRow()]
         : [createDefaultReportOutputRow()],
     });
+  },
+
+  setLogicOperator(logicOperator) {
+    if (get().logicOperator === logicOperator) return;
+    set({ logicOperator });
   },
 
   removeOutputRow(rowId) {

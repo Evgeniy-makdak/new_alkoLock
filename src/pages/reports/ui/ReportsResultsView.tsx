@@ -295,6 +295,11 @@ export function ReportsResultsView() {
           disableRowSelectionOnClick
           pageSizeOptions={[25, 50, 75, 100]}
           hideFooterSelectedRowCount
+          sx={{
+            '& .MuiDataGrid-virtualScroller': {
+              overflowX: 'auto',
+            },
+          }}
         />
       </div>
       {isMobile ? (

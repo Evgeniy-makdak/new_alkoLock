@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
   Button as MuiButton,
   FormControl,
@@ -25,7 +26,7 @@ import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
-import { ReportComposeModal } from './ReportComposeModal';
+import { ReportComposeModal, type ReportComposeModalMode } from './ReportComposeModal';
 import { ReportGeneratingOverlay } from './ReportGeneratingOverlay';
 import { ReportSaveFileDialog } from './ReportSaveFileDialog';
 import { ReportsResultsView } from './ReportsResultsView';
@@ -46,6 +47,7 @@ export function ReportsPage() {
   const queryContext = reportGenerationStore((s) => s.queryContext);
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
+  const [composeModalMode, setComposeModalMode] = useState<ReportComposeModalMode>('create');
   const [saveFileDialogOpen, setSaveFileDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
@@ -93,10 +95,16 @@ export function ReportsPage() {
     reportGenerationStore.getState().clearResults();
   };
 
-  const openComposeModal = useCallback(() => {
+  const openComposeModalForCreate = useCallback(() => {
     if (reportGenerationStore.getState().isGenerating) return;
-    // Не сбрасываем reportsStore: таблица результатов читает metadata/кэши для заголовков.
-    // Снимок и откат при отмене — в ReportComposeModal.
+    setComposeModalMode('create');
+    setComposeModalOpen(true);
+  }, []);
+
+  const openComposeModalForEdit = useCallback(() => {
+    if (reportGenerationStore.getState().isGenerating) return;
+    if (!reportGenerationStore.getState().queryContext) return;
+    setComposeModalMode('edit');
     setComposeModalOpen(true);
   }, []);
 
@@ -116,12 +124,23 @@ export function ReportsPage() {
                 <div className={styles.headerActions}>
                   <TableHeaderEndToolbar>
                     <div className={styles.headerExportControls}>{renderExportControls()}</div>
+                    {hasDisplayableReport ? (
+                      <MuiButton
+                        variant="contained"
+                        size="small"
+                        startIcon={<EditOutlinedIcon />}
+                        disabled={isGenerating}
+                        onClick={openComposeModalForEdit}
+                        sx={createReportButtonSx}>
+                        {t('reports.editReport')}
+                      </MuiButton>
+                    ) : null}
                     <MuiButton
                       variant="contained"
                       size="small"
                       startIcon={<AddIcon />}
                       disabled={isGenerating}
-                      onClick={openComposeModal}
+                      onClick={openComposeModalForCreate}
                       sx={createReportButtonSx}>
                       {t('reports.createNewReport')}
                     </MuiButton>
@@ -136,12 +155,24 @@ export function ReportsPage() {
             <div className={styles.mobileCreateBar}>
               <div className={styles.mobileExportControls}>{renderExportControls()}</div>
               <div className={styles.mobileCreateActions}>
+                {hasDisplayableReport ? (
+                  <MuiButton
+                    variant="contained"
+                    size="small"
+                    startIcon={<EditOutlinedIcon />}
+                    disabled={isGenerating}
+                    onClick={openComposeModalForEdit}
+                    className={styles.mobileCreateButton}
+                    sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
+                    {t('reports.editReport')}
+                  </MuiButton>
+                ) : null}
                 <MuiButton
                   variant="contained"
                   size="small"
                   startIcon={<AddIcon />}
                   disabled={isGenerating}
-                  onClick={openComposeModal}
+                  onClick={openComposeModalForCreate}
                   className={styles.mobileCreateButton}
                   sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
                   {t('reports.createNewReport')}
@@ -166,6 +197,7 @@ export function ReportsPage() {
 
       <ReportComposeModal
         open={composeModalOpen}
+        mode={composeModalMode}
         onClose={() => setComposeModalOpen(false)}
       />
 

@@ -30,8 +30,8 @@ interface TableProps extends DataGridProps {
   loadingColumnIndex?: number;
   chipColumns?: number[];
   /**
-   * Только для вкладки «Отчёты»: адаптивные колонки (minWidth + flex),
-   * при нехватке места — горизонтальный скролл.
+   * Только для вкладки «Отчёты»: фиксированная minWidth без flex —
+   * при большом числе колонок появляется горизонтальный скролл.
    */
   disableColumnFlex?: boolean;
 }
@@ -147,14 +147,13 @@ export const Table = memo(
       return <Box>{value}</Box>;
     };
 
-    /** Адаптивные ширины — только для отчётов (ReportsResultsView). */
+    /** Фиксированная ширина колонок отчёта — без flex, чтобы не сжимать при многих столбцах. */
     const applyReportColumnSizing = (head: (typeof columns)[number]) => {
       const minWidth = typeof head.minWidth === 'number' ? head.minWidth : 160;
-      const { width: _fixedWidth, ...columnWithoutWidth } = head;
+      const { width: _fixedWidth, flex: _flex, ...columnWithoutWidth } = head;
       return {
         ...columnWithoutWidth,
         minWidth,
-        flex: typeof head.flex === 'number' ? head.flex : 1,
       };
     };
 

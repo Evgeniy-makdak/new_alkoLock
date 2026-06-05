@@ -319,11 +319,25 @@
   align-items: center;
   justify-content: center;
   padding: 2px 0;
+}
+
+.filterLogicConnectorSelect {
   font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 400;
   color: var(--mui-palette-text-secondary, #757575);
-  text-transform: uppercase;
+
+  :global(.MuiSelect-select) {
+    padding: 2px 18px 2px 0 !important;
+    min-height: 0 !important;
+    line-height: 1.4;
+    text-align: center;
+  }
+
+  :global(.MuiSelect-icon) {
+    color: var(--mui-palette-text-secondary, #757575);
+    font-size: 16px;
+    right: 0;
+  }
 }
 
 .sortSectionBody {
