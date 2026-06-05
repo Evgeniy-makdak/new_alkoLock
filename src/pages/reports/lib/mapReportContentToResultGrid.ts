@@ -205,6 +205,7 @@ export function mapReportContentToResultGrid(
           t,
         ),
       ),
+      flex: 1,
       minWidth: 160,
       sortable: fieldDef?.sortable !== false,
     };

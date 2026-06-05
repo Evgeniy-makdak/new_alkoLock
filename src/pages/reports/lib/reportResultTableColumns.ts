@@ -182,7 +182,7 @@ export function buildReportResultColumnDefs(
     field,
     headerName: t(labelKey),
     flex: 1,
-    minWidth: minWidth ?? 120,
+    minWidth: minWidth ?? 160,
     sortable: true,
   }));
 }

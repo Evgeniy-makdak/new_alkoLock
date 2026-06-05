@@ -35,7 +35,7 @@ export function buildReportTableColumnDefs(): GridColDef[] {
     field,
     headerName,
     flex: 1,
-    minWidth: field === 'vin' ? 160 : 120,
+    minWidth: 160,
     sortable: false,
   }));
 }
