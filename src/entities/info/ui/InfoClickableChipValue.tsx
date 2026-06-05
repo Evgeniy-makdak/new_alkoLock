@@ -5,7 +5,10 @@ import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
 import { Chip, IconButton, Tooltip, useMediaQuery } from '@mui/material';
 import type { Theme } from '@mui/material/styles';
 
-import { getInfoClickableValueChipSx } from '../lib/getInfoLinkChipSx';
+import {
+  getInfoClickableValueChipSx,
+  getReportTableCoordinateChipSx,
+} from '../lib/getInfoLinkChipSx';
 import { findOverflowTarget, isElementOverflowing } from '@shared/ui/overflow_tooltip/overflowMeasure';
 import { MobileOverflowTextDialog } from '@shared/ui/overflow_tooltip/MobileOverflowTextDialog';
 import styles from '@shared/ui/overflow_tooltip/OverflowTooltip.module.scss';
@@ -18,6 +21,8 @@ type InfoClickableChipValueProps = {
   onNavigate: () => void;
   onCopy: () => void;
   theme: Theme;
+  /** Компактный вид для таблицы отчётов. */
+  compact?: boolean;
 };
 
 /** Значение в «Инфо» с копированием и переходом: голубой чип 16px на всю ширину колонки. */
@@ -26,6 +31,7 @@ export function InfoClickableChipValue({
   onNavigate,
   onCopy,
   theme,
+  compact = false,
 }: InfoClickableChipValueProps) {
   const { t } = useTranslation();
   const isMobile = useMediaQuery('(max-width:768px)');
@@ -107,7 +113,10 @@ export function InfoClickableChipValue({
 
   return (
     <>
-      <div className={`${style.wrapperText} ${style.wrapperTextCopyble}`}>
+      <div
+        className={`${style.wrapperText} ${style.wrapperTextCopyble}${
+          compact ? ` ${style.wrapperTextCompact}` : ''
+        }`}>
         <Tooltip title={t('tooltips.copy')}>
           <IconButton
             size="small"
@@ -115,14 +124,18 @@ export function InfoClickableChipValue({
               event.stopPropagation();
               onCopy();
             }}
-            sx={{ p: '2px', flexShrink: 0 }}>
+            sx={{ p: compact ? '1px' : '2px', flexShrink: 0, fontSize: compact ? 16 : undefined }}>
             <ContentCopyOutlinedIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
         <div
           ref={chipWrapRef}
           className={canExpandOnMobile ? styles.mobileTruncatedLongPress : undefined}
-          style={{ flex: 1, minWidth: 0 }}>
+          style={
+            compact
+              ? { flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }
+              : { flex: 1, minWidth: 0 }
+          }>
           <Chip
             clickable
             label={label}
@@ -136,7 +149,9 @@ export function InfoClickableChipValue({
                 ? `${label}. ${t('info.tapToSeeFullText')}. ${t('info.holdToNavigate')}`
                 : label
             }
-            sx={getInfoClickableValueChipSx(theme)}
+            sx={
+              compact ? getReportTableCoordinateChipSx(theme) : getInfoClickableValueChipSx(theme)
+            }
           />
         </div>
       </div>

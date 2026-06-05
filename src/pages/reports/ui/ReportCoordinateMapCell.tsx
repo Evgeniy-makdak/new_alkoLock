@@ -14,6 +14,7 @@ export function ReportCoordinateMapCell({ pair, vehicle }: ReportCoordinateMapCe
       longitude={pair.longitude}
       vehicle={vehicle ?? undefined}
       returnState={{ mapReturnContext: { sourceTab: 'reports' } }}
+      compact
     />
   );
 }

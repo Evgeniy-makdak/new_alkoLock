@@ -213,7 +213,7 @@ export function ReportComposeForm() {
 
                 return (
                   <div key={row.id}>
-                    {index === 1 ? <ReportFilterLogicConnector /> : null}
+                    {index > 0 ? <ReportFilterLogicConnector /> : null}
                     <div className={composeStyles.filterGroup}>
                       <div className={composeStyles.filterGroupMain}>
                         <div className={composeStyles.filterGroupHead}>

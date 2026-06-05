@@ -45,7 +45,8 @@
   min-width: 0;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .composeTopRow {
@@ -87,25 +88,19 @@
 }
 
 .composeMainGrid {
-  /* Две независимые панели: фильтры слева (скролл), колонки справа (фикс. высота). */
-  display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   align-items: stretch;
+  width: 100%;
   flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    overflow: visible;
-  }
+  min-width: 0;
 }
 
 .composeTopSlot {
-  grid-column: 1 / -1;
+  width: 100%;
+  flex: 0 0 auto;
 }
 
 .composeFiltersSlot {
@@ -119,26 +114,20 @@
       (var(--compose-filter-connector-height) + var(--compose-filters-list-gap))
   );
 
-  grid-column: 1;
-  grid-row: 2;
+  width: 100%;
   min-width: 0;
-  min-height: 0;
+  flex: 0 0 auto;
   overflow: visible;
-  align-self: start;
 
   .sectionBody {
     max-height: var(--compose-filters-scroll-max-height);
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-right: 4px;
+    padding: 10px 4px 4px 0;
   }
 
   @media (max-width: 900px) {
-    grid-column: 1;
-    grid-row: auto;
-    align-self: stretch;
-
     .sectionBody {
       max-height: min(var(--compose-filters-scroll-max-height), 42vh);
     }
@@ -146,32 +135,26 @@
 }
 
 .composeColumnsSlot {
-  grid-column: 2;
-  grid-row: 2;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  flex-shrink: 0;
-  align-self: start;
-  overflow: visible;
-
-  @media (max-width: 900px) {
-    grid-column: 1;
-    grid-row: auto;
-    align-self: stretch;
-  }
+  flex: 0 0 auto;
+  overflow: hidden;
 }
 
 .composeColumnsSection {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  width: 100%;
+  overflow: hidden;
 
   .sectionBody {
     flex: 0 0 auto;
-    overflow: visible;
+    width: 100%;
+    overflow: hidden;
   }
 }
 
@@ -181,14 +164,9 @@
   padding-bottom: 8px;
 }
 
-.formRootDisplayContents {
-  @media (min-width: 769px) {
-    display: contents;
-  }
-}
-
 .composeSection {
   min-width: 0;
+  width: 100%;
 }
 
 .sectionHead {
@@ -264,17 +242,20 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .filterGroup {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
   padding: 16px 12px 10px;
   border: 1px solid var(--mui-palette-divider, #e8e8e8);
   border-radius: 10px;
   background: #{'var(--mui-palette-background.default, #fafafa)'};
   overflow: visible;
+  box-sizing: border-box;
 }
 
 .filterGroupMain {
@@ -301,6 +282,9 @@
 
 .filterGroupFields {
   min-width: 0;
+  width: 100%;
+  overflow: visible;
+  padding-top: 4px;
 }
 
 .filterGroupRemoveBtn {
@@ -318,7 +302,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2px 0;
+  padding: 6px 0;
+  overflow: visible;
 }
 
 .filterLogicConnectorSelect {
@@ -377,17 +362,15 @@
 }
 
 .optionalFilterControl {
-  flex: 0 0 auto;
   display: flex;
   align-items: flex-end;
-  min-width: 132px !important;
-  max-width: 188px !important;
-  width: 188px !important;
-  margin-left: auto;
-  position: sticky;
-  right: 0;
-  background: var(--mui-palette-background-paper, #fff);
-  z-index: 1;
+  min-width: 0 !important;
+  max-width: none !important;
+  width: 100% !important;
+  margin-left: 0;
+  position: static;
+  background: transparent;
+  z-index: auto;
 
   :global(.MuiOutlinedInput-notchedOutline) {
     border-style: dashed;
@@ -427,28 +410,27 @@
 }
 
 .modalFilterRow {
-  display: flex;
+  display: flex !important;
   flex-direction: row;
-  flex-wrap: nowrap !important;
-  align-content: center !important;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 12px;
   align-items: flex-end;
-  flex: 1 1 auto;
+  width: 100%;
   min-width: 0;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding-top: 8px;
+  box-sizing: border-box;
+  overflow: visible;
+  padding-top: 12px;
 
   :global(.MuiFormControl-root) {
-    flex: 0 0 auto;
-    min-width: 132px !important;
-    max-width: 188px !important;
-    width: 188px !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    overflow: visible;
   }
 
   :global(.MuiInputLabel-root) {
     max-width: calc(100% - 14px);
-    overflow: hidden;
+    overflow: visible;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -462,42 +444,55 @@
 
   :global(.MuiAutocomplete-root),
   :global([class*='searchSelect']) {
-    flex: 0 0 auto;
-    min-width: 132px !important;
-    max-width: 188px !important;
-    width: 188px !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
   }
 
-  > *:not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange):not(
-      [class*='reportFilterNestedEntity']
-    ):not(.optionalFilterControl) {
-    flex: 0 0 auto !important;
-    min-width: 132px !important;
-    max-width: 188px !important;
+  > *:not(.modalFilterOutputField):not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(
+      .reportFilterDateTimeRootRange
+    ):not([class*='reportFilterNestedEntity']):not(.optionalFilterControl) {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .modalFilterOutputField {
+    flex: 0 1 240px !important;
+    min-width: 200px !important;
+    max-width: 320px !important;
+    width: auto !important;
+    box-sizing: border-box;
   }
 
   :global([class*='reportFilterNestedEntity']) {
     display: flex;
+    flex: 3 1 0;
     flex-wrap: nowrap;
     align-items: flex-end;
-    gap: 8px;
-    flex: 0 0 auto;
+    gap: 12px;
     min-width: 0;
-    max-width: none !important;
-    width: auto !important;
     overflow: visible;
 
     > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-      flex: 0 0 auto !important;
-      min-width: 132px !important;
-      max-width: 188px !important;
-      width: 188px !important;
+      flex: 1 1 0 !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      width: auto !important;
     }
+  }
+
+  .optionalFilterControl {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
   }
 
   :global(.reportFilterDateTimeRoot),
   :global(.reportFilterDateTimeRootRange) {
-    flex: 0 0 auto !important;
+    flex: 2 1 0 !important;
     min-width: 0 !important;
     max-width: none !important;
     width: auto !important;
@@ -524,6 +519,7 @@
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 8px;
   align-items: stretch;
+  width: 100%;
   flex: 0 0 auto;
   height: 360px;
   min-height: 360px;
@@ -705,11 +701,11 @@
   }
 
   .modalFilterRow {
+    display: flex !important;
     flex-direction: column;
-    flex-wrap: wrap !important;
+    flex-wrap: wrap;
     align-items: stretch;
-    overflow-x: visible;
-    overflow-y: visible;
+    overflow: visible;
     gap: 10px;
     padding-top: 0;
 
@@ -730,9 +726,18 @@
       line-height: 1.2;
     }
 
-    > *:not(.reportFilterRowActions):not([class*='reportFilterDateTimeRoot']):not(
-        [class*='reportFilterDateTimeRootRange']
-      ):not([class*='reportFilterNestedEntity']):not(.optionalFilterControl) {
+    > *:not(.modalFilterOutputField):not(.reportFilterRowActions):not(
+        [class*='reportFilterDateTimeRoot']
+      ):not([class*='reportFilterDateTimeRootRange']):not([class*='reportFilterNestedEntity']):not(
+        .optionalFilterControl
+      ) {
+      flex: 1 1 100% !important;
+      min-width: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    .modalFilterOutputField {
       flex: 1 1 100% !important;
       min-width: 0 !important;
       max-width: 100% !important;

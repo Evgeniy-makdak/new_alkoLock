@@ -12,6 +12,8 @@ interface MapLinkProps {
   vehicle?: string;
   testid?: string;
   returnState?: Record<string, unknown>;
+  /** Компактный чип для таблицы отчётов. */
+  compact?: boolean;
 }
 
 function formatMapCoordinateLabel(latitude: string | number, longitude: string | number): string {
@@ -23,7 +25,14 @@ function formatMapCoordinateLabel(latitude: string | number, longitude: string |
   return `${latitude} ${longitude}`;
 }
 
-export const MapLink = ({ latitude, longitude, vehicle, testid, returnState }: MapLinkProps) => {
+export const MapLink = ({
+  latitude,
+  longitude,
+  vehicle,
+  testid,
+  returnState,
+  compact = false,
+}: MapLinkProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
@@ -62,6 +71,7 @@ export const MapLink = ({ latitude, longitude, vehicle, testid, returnState }: M
         onNavigate={handleNavigate}
         onCopy={() => copyContent(label, () => {})}
         theme={theme}
+        compact={compact}
       />
     </div>
   );

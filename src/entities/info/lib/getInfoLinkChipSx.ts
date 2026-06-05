@@ -85,3 +85,58 @@ export function getInfoClickableValueChipSx(theme: Theme): SxProps<Theme> {
     },
   };
 }
+
+/** Компактный чип координат в таблице отчётов — размер шрифта как у ячеек DataGrid. */
+export function getReportTableCoordinateChipSx(theme: Theme): SxProps<Theme> {
+  const isDark = theme.palette.mode === 'dark';
+  const labelSx = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    px: 0.75,
+    py: 0,
+    fontSize: '0.8125rem',
+    fontWeight: 400,
+    lineHeight: 1.43,
+    textAlign: 'left',
+    display: 'block',
+    maxWidth: '100%',
+    ...(isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
+  } as const;
+
+  if (isDark) {
+    return {
+      flex: '0 1 auto',
+      minWidth: 0,
+      maxWidth: '100%',
+      width: 'auto',
+      height: 24,
+      borderRadius: '12px',
+      justifyContent: 'flex-start',
+      backgroundColor: 'rgba(144, 202, 249, 0.14)',
+      border: '1px solid rgba(144, 202, 249, 0.45)',
+      '& .MuiChip-label': labelSx,
+      '&:hover': {
+        backgroundColor: 'rgba(144, 202, 249, 0.22)',
+        borderColor: 'rgba(144, 202, 249, 0.55)',
+      },
+    };
+  }
+
+  return {
+    flex: '0 1 auto',
+    minWidth: 0,
+    maxWidth: '100%',
+    width: 'auto',
+    height: 24,
+    borderRadius: '12px',
+    justifyContent: 'flex-start',
+    backgroundColor: '#eef5ff',
+    border: '1px solid #b8d3ff',
+    '& .MuiChip-label': labelSx,
+    '&:hover': {
+      backgroundColor: '#e3efff',
+      borderColor: '#9fc4ff',
+    },
+  };
+}

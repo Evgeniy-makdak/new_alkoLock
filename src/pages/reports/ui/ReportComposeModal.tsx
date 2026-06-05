@@ -354,10 +354,7 @@ export function ReportComposeModal({
       }}
       body={
         <Box className={composeStyles.composeBody}>
-          <div
-            className={[composeStyles.composeMainGrid, composeStyles.formRootDisplayContents].join(
-              ' ',
-            )}>
+          <div className={composeStyles.composeMainGrid}>
             <ReportComposeForm />
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>

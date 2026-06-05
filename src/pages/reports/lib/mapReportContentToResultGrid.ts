@@ -212,6 +212,7 @@ export function mapReportContentToResultGrid(
 
     if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND) {
       const prefix = compositeGroup.prefix;
+      colDef.minWidth = 210;
       colDef.renderCell = (params: GridRenderCellParams<ReportGridRow>) => {
         const rawRow = rawRowByGridKey.get(params.row.__rowKey);
         if (!rawRow) {

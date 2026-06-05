@@ -340,20 +340,28 @@ export function ReportOutputFilterRow({
     .filter(Boolean)
     .join(' ');
 
+  const outputFieldControl = (
+    <ReportSearchMultipleSelect
+      multiple={false}
+      compact={selectCompact}
+      name={`selectedField_${row.id}`}
+      label={t('reports.outputFieldsLabel')}
+      values={outputFieldOptions}
+      value={selectedOutputSingle}
+      serverFilter={false}
+      sx={selectSx}
+      slotProps={reportFilterAutocompleteSlotProps}
+      setValueStore={(_, value) => onOutputFieldChange(toValuesFromSingleSelect(value))}
+    />
+  );
+
   return (
     <div className={rowClassName}>
-      <ReportSearchMultipleSelect
-        multiple={false}
-        compact={selectCompact}
-        name={`selectedField_${row.id}`}
-        label={t('reports.outputFieldsLabel')}
-        values={outputFieldOptions}
-        value={selectedOutputSingle}
-        serverFilter={false}
-        sx={selectSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        setValueStore={(_, value) => onOutputFieldChange(toValuesFromSingleSelect(value))}
-      />
+      {isModalVariant ? (
+        <Box className={composeStyles.modalFilterOutputField}>{outputFieldControl}</Box>
+      ) : (
+        outputFieldControl
+      )}
 
       {isModalVariant ? (
         modalFilterControlsBlock
