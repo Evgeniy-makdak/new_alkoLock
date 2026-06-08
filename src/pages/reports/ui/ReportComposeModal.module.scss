@@ -425,14 +425,16 @@
     min-width: 0 !important;
     max-width: none !important;
     width: 100% !important;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   :global(.MuiInputLabel-root) {
-    max-width: calc(100% - 14px);
-    overflow: visible;
+    max-width: calc(100% - 32px);
+    overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    display: block;
   }
 
   :global(.MuiInputBase-input),
@@ -474,6 +476,19 @@
     gap: 12px;
     min-width: 0;
     overflow: visible;
+
+    :global(.MuiFormControl-root) {
+      overflow-x: clip;
+      overflow-y: visible;
+    }
+
+    :global(.MuiInputLabel-root) {
+      max-width: calc(100% - 32px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
+    }
 
     > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
       flex: 1 1 0 !important;
@@ -716,11 +731,17 @@
       min-width: 0 !important;
       max-width: 100% !important;
       width: 100% !important;
-      overflow: visible;
+      overflow-x: clip;
+      overflow-y: visible;
     }
 
     :global(.MuiInputLabel-root) {
       z-index: 1;
+      max-width: calc(100% - 32px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      display: block;
       background: var(--mui-palette-background-paper, #fff);
       padding: 0 4px;
       line-height: 1.2;

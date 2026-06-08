@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { TextField, Tooltip } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
+
 type ReportYearTextFieldProps = {
   label: ReactNode;
   value: string;
@@ -11,6 +13,7 @@ type ReportYearTextFieldProps = {
   errorMessage: string;
   onChange: (value: string) => void;
   sx?: SxProps<Theme>;
+  overflowTooltip?: boolean;
 };
 
 export function ReportYearTextField({
@@ -21,8 +24,13 @@ export function ReportYearTextField({
   errorMessage,
   onChange,
   sx,
+  overflowTooltip = false,
 }: ReportYearTextFieldProps) {
-  return (
+  const labelText = typeof label === 'string' ? label.trim() : '';
+  const placeholderText = placeholder?.trim() ?? '';
+  const overflowTitle = labelText || placeholderText;
+
+  const field = (
     <Tooltip
       open={invalid}
       title={errorMessage}
@@ -45,4 +53,10 @@ export function ReportYearTextField({
       />
     </Tooltip>
   );
+
+  if (overflowTooltip && overflowTitle) {
+    return <OverflowTooltip title={overflowTitle}>{field}</OverflowTooltip>;
+  }
+
+  return field;
 }

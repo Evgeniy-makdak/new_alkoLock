@@ -17,6 +17,7 @@ type ReportCoordinatePairFilterFieldProps = {
   value: Values;
   onChange: (values: Values) => void;
   sx?: SxProps<Theme>;
+  overflowTooltip?: boolean;
 };
 
 /** Ручной ввод пары «широта:долгота» с маской (точка и «:» подставляются автоматически). */
@@ -25,6 +26,7 @@ export function ReportCoordinatePairFilterField({
   value,
   onChange,
   sx,
+  overflowTooltip = false,
 }: ReportCoordinatePairFilterFieldProps) {
   const { t } = useTranslation();
   const pairValue = value[0]?.value != null ? String(value[0].value) : '';
@@ -47,6 +49,7 @@ export function ReportCoordinatePairFilterField({
       maxLength={REPORT_COORDINATE_PAIR_INPUT_MAX_LENGTH}
       inputMode="decimal"
       sx={sx}
+      overflowTooltip={overflowTooltip}
       onChange={applyFormattedValue}
     />
   );

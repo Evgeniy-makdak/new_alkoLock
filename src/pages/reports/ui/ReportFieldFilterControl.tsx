@@ -155,7 +155,13 @@ export function ReportFieldFilterControl({
 
   if (isReportYearOnlyField(field)) {
     return (
-      <ReportYearFilterField label={label} value={value} onChange={onChange} />
+      <ReportYearFilterField
+        label={label}
+        value={value}
+        onChange={onChange}
+        sx={controlSx}
+        overflowTooltip={compact}
+      />
     );
   }
 
@@ -186,6 +192,7 @@ export function ReportFieldFilterControl({
         value={value}
         onChange={onChange}
         sx={controlSx}
+        overflowTooltip={compact}
       />
     );
   }
@@ -197,6 +204,7 @@ export function ReportFieldFilterControl({
         value={value}
         onChange={onChange}
         sx={controlSx}
+        overflowTooltip={compact}
       />
     );
   }
@@ -213,6 +221,7 @@ export function ReportFieldFilterControl({
         invalid={invalid}
         errorMessage={t('reports.timeFormatError')}
         sx={controlSx}
+        overflowTooltip={compact}
         onChange={(raw) => {
           const formatted = formatReportTimeInput(raw);
           onChange(formatted ? [{ value: formatted, label: formatted }] : []);

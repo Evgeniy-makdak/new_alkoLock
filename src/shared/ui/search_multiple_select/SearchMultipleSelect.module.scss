@@ -24,6 +24,13 @@
     overflow: hidden;
   }
 
+  .overflowTooltipWrap {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
   // Контейнер тегов Autocomplete — позволяем сжатие
   :global(.MuiAutocomplete-root) {
     .MuiInputAdornment-root {

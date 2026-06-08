@@ -145,6 +145,7 @@ export function NestedFilterValueControl({
         value={values}
         onChange={onChange}
         sx={controlSx}
+        overflowTooltip={compact}
       />
     );
   }
@@ -155,6 +156,8 @@ export function NestedFilterValueControl({
         label={t('reports.terminalValuesLabel', { parameter: segment.label })}
         value={values}
         onChange={onChange}
+        sx={controlSx}
+        overflowTooltip={compact}
       />
     );
   }
@@ -176,6 +179,7 @@ export function NestedFilterValueControl({
         value={values}
         onChange={onChange}
         sx={controlSx}
+        overflowTooltip={compact}
       />
     );
   }

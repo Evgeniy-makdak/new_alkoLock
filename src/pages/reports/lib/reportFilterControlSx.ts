@@ -35,17 +35,25 @@ export const reportFilterModalControlSx: SxProps<Theme> = {
   '& .MuiFormControl-root': {
     width: '100%',
     minWidth: 0,
+    overflowX: 'clip',
+    overflowY: 'visible',
   },
-  '& .MuiInputBase-root': {
+  '& .MuiOutlinedInput-root': {
     minHeight: 40,
   },
   '& .MuiInputLabel-root': {
-    maxWidth: 'calc(100% - 14px)',
-    overflow: 'visible',
+    maxWidth: 'calc(100% - 32px)',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    display: 'block',
+  },
+  '& .MuiInputBase-input': {
+    overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  '& .MuiInputBase-input': {
+  '& .MuiInputBase-input::placeholder': {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',

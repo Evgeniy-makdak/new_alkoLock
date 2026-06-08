@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { TextField, Tooltip } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
+
 type ReportTimeTextFieldProps = {
   label: ReactNode;
   value: string;
@@ -14,6 +16,8 @@ type ReportTimeTextFieldProps = {
   sx?: SxProps<Theme>;
   maxLength?: number;
   inputMode?: 'numeric' | 'decimal' | 'text';
+  /** Tooltip с полным label/placeholder при обрезке текста в узком поле. */
+  overflowTooltip?: boolean;
 };
 
 /** Поле времени в строке фильтров: ошибка в tooltip, без helperText (не ломает flex-вёрстку). */
@@ -28,8 +32,13 @@ export function ReportTimeTextField({
   sx,
   maxLength = 5,
   inputMode = 'numeric',
+  overflowTooltip = false,
 }: ReportTimeTextFieldProps) {
-  return (
+  const labelText = typeof label === 'string' ? label.trim() : '';
+  const placeholderText = placeholder?.trim() ?? '';
+  const overflowTitle = labelText || placeholderText;
+
+  const field = (
     <Tooltip
       open={invalid}
       title={errorMessage}
@@ -53,4 +62,10 @@ export function ReportTimeTextField({
       />
     </Tooltip>
   );
+
+  if (overflowTooltip && overflowTitle) {
+    return <OverflowTooltip title={overflowTitle}>{field}</OverflowTooltip>;
+  }
+
+  return field;
 }

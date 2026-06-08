@@ -16,6 +16,7 @@ type ReportCoordinateFilterFieldProps = {
   value: Values;
   onChange: (values: Values) => void;
   sx?: SxProps<Theme>;
+  overflowTooltip?: boolean;
 };
 
 export function ReportCoordinateFilterField({
@@ -23,6 +24,7 @@ export function ReportCoordinateFilterField({
   value,
   onChange,
   sx,
+  overflowTooltip = false,
 }: ReportCoordinateFilterFieldProps) {
   const { t } = useTranslation();
   const coordinateValue = value[0]?.value != null ? String(value[0].value) : '';
@@ -40,6 +42,7 @@ export function ReportCoordinateFilterField({
       maxLength={8}
       inputMode="decimal"
       sx={sx}
+      overflowTooltip={overflowTooltip}
       onChange={(raw) => {
         const formatted = formatReportCoordinateInput(raw);
         onChange(formatted ? [{ value: formatted, label: formatted }] : []);

@@ -533,10 +533,20 @@ export function SearchMultipleSelect<T>({
       displayLabel === undefined ||
       !!(disabled && placeholder && String(placeholder).trim() !== '');
     const modalLabelEllipsisSx =
-      overflowTooltip && displayLabel
+      overflowTooltip && (displayLabel || placeholderText)
         ? {
+            '& .MuiFormControl-root': {
+              overflowX: 'clip',
+              overflowY: 'visible',
+            },
             '& .MuiInputLabel-root': {
-              maxWidth: 'calc(100% - 14px)',
+              maxWidth: 'calc(100% - 32px)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              display: 'block',
+            },
+            '& .MuiInputBase-input::placeholder': {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -664,10 +674,25 @@ export function SearchMultipleSelect<T>({
 
   const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
 
+  const displayLabel = resolveSearchSelectDisplayLabel(label);
+  const displayLabelText =
+    typeof displayLabel === 'string' && displayLabel.trim() !== '' ? displayLabel.trim() : '';
+  const placeholderText =
+    placeholder && String(placeholder).trim() !== '' ? String(placeholder).trim() : '';
+
   const singleOverflowTitle =
     !multiple && readyValue && typeof readyValue === 'object' && 'label' in readyValue
       ? String(readyValue.label ?? '')
       : '';
+
+  const overflowTooltipTitle =
+    overflowTooltip && singleOverflowTitle
+      ? singleOverflowTitle
+      : overflowTooltip && displayLabelText
+        ? displayLabelText
+        : overflowTooltip && placeholderText
+          ? placeholderText
+          : '';
 
   const mergedSlotProps = {
     ...userSlotProps,
@@ -714,8 +739,12 @@ export function SearchMultipleSelect<T>({
     </div>
   );
 
-  if (overflowTooltip && !multiple && singleOverflowTitle) {
-    return <OverflowTooltip title={singleOverflowTitle}>{autocompleteNode}</OverflowTooltip>;
+  if (overflowTooltip && overflowTooltipTitle) {
+    return (
+      <OverflowTooltip title={overflowTooltipTitle}>
+        <span className={style.overflowTooltipWrap}>{autocompleteNode}</span>
+      </OverflowTooltip>
+    );
   }
 
   return autocompleteNode;
