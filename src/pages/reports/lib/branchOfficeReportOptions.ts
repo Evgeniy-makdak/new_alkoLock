@@ -65,4 +65,3 @@ export async function fetchBranchOfficesForReport(
   );
   return flattenBranchOffices(roots);
 }
-
