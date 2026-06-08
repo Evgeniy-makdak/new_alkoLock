@@ -20,6 +20,7 @@ import {
   readReportRowVehicleRegistration,
 } from './reportCoordinateMapLink';
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
+import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
@@ -226,6 +227,11 @@ export function mapReportContentToResultGrid(
         }
         const vehicle = readReportRowVehicleRegistration(rawRow);
         return createElement(ReportCoordinateMapCell, { pair, vehicle });
+      };
+    } else {
+      colDef.renderCell = (params: GridRenderCellParams<ReportGridRow>) => {
+        const display = params.formattedValue ?? params.value ?? REPORT_EMPTY_DISPLAY;
+        return createElement(ReportTableCellTooltip, { value: display, children: display });
       };
     }
 

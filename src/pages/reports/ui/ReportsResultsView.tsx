@@ -279,6 +279,7 @@ export function ReportsResultsView() {
           key={reportTableKey}
           columns={columns}
           rows={rows}
+          disableColumnFlex
           rowCount={totalElements}
           paginationMode="server"
           sortingMode="server"

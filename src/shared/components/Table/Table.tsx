@@ -19,6 +19,7 @@ import { ValuesHeader } from '@widgets/events_table/lib/getColumns';
 import { getDataGridLocaleText } from '../../../i18n/dataGridLocales';
 import { CustomLinearLoader } from './CustomLinearLoader';
 import style from './Table.module.scss';
+import { renderTableCellValue } from './tableCellOverflow';
 import { CustomNoRowsOverlay, StyledDataGrid, getStyle } from './styledTable';
 
 interface TableProps extends DataGridProps {
@@ -110,7 +111,11 @@ export const Table = memo(
         },
       },
     });
-    const renderValue = (value: any) => {
+    const renderValue = (value: any, withOverflowTooltip = false) => {
+      if (withOverflowTooltip) {
+        return renderTableCellValue(value);
+      }
+
       if (Array.isArray(value)) {
         return (
           <Box
@@ -222,6 +227,7 @@ export const Table = memo(
 
           const useChip = chipColumns.includes(index);
           const value = useChip ? params.value : params.formattedValue;
+          const useCellOverflowTooltip = disableColumnFlex && !originalRenderCell;
 
           if (params.row.isProcessing) {
             return (
@@ -234,7 +240,7 @@ export const Table = memo(
                   alignItems: 'center',
                   overflow: 'hidden',
                 }}>
-                <Box sx={{ flex: 1 }}>{renderValue(value)}</Box>
+                <Box sx={{ flex: 1 }}>{renderValue(value, useCellOverflowTooltip)}</Box>
                 <CustomLinearLoader />
               </Box>
             );
@@ -248,8 +254,9 @@ export const Table = memo(
                 display: 'flex',
                 alignItems: 'center',
                 overflow: 'hidden',
+                minWidth: 0,
               }}>
-              {renderValue(value)}
+              {renderValue(value, useCellOverflowTooltip)}
             </Box>
           );
         },

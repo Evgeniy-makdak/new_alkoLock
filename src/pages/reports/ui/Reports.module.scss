@@ -517,6 +517,16 @@
       white-space: nowrap;
     }
 
+    .MuiDataGrid-cell {
+      min-width: 0;
+    }
+
+    .MuiDataGrid-cellContent {
+      width: 100%;
+      min-width: 0;
+      overflow: hidden;
+    }
+
     .MuiDataGrid-footerContainer {
       flex-shrink: 0;
     }
@@ -622,4 +632,13 @@
 .tableAreaError {
   flex-shrink: 0;
   padding: 8px var(--table-page-content-inset-inline, 16px) 0;
+}
+
+.reportTableCellEllipsis {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

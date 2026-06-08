@@ -4,6 +4,13 @@
   display: flex;
 }
 
+.cellChipWrapper {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
 .header {
   background-color: rgba(0, 0, 0, 0.13);
 }
