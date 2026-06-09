@@ -23,6 +23,8 @@ import { MobileModals } from '@shared/ui/popup/MobileModals';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
+import { getLicenseExpirationRowClassName } from '@shared/utils/getLicenseExpirationStatus';
+
 import { useUsersTable } from '../hooks/useUsersTable';
 import styles from './UsersTable.module.scss';
 
@@ -673,7 +675,10 @@ export const UsersMobileTable = ({
               key={row.id}
               className={`${styles.mobileRow} ${
                 index === selectedRowIndex ? styles.selectedRow : ''
-              } ${row.isProcessing ? styles.processingRow : ''}`}
+              } ${row.isProcessing ? styles.processingRow : ''} ${getLicenseExpirationRowClassName(
+                row.licenseExpirationStatus,
+                styles,
+              )}`}
               aria-busy={row.isProcessing ? true : undefined}
               onClick={() => handleRowClick(row)}>
               <div className={styles.rowMain}>

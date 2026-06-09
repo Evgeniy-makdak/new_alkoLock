@@ -18,6 +18,10 @@ import { Button } from '@shared/ui/button';
 import { FieldSelect } from '@shared/ui/field_select';
 import { Loader } from '@shared/ui/loader';
 import { PhoneInput } from '@shared/ui/phone_input';
+import {
+  getLicenseExpirationStatus,
+  getLicenseExpirationTextFieldSx,
+} from '@shared/utils/getLicenseExpirationStatus';
 
 import { useUserAddChangeForm } from '../hooks/useUserAddChangeForm';
 import { isDisabledAdminRole } from '../lib/validate';
@@ -41,6 +45,11 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
     isUserDriver,
     hasFormChanges,
   } = useUserAddChangeForm(id, closeModal);
+
+  const licenseExpirationHighlightSx = useMemo(
+    () => getLicenseExpirationTextFieldSx(getLicenseExpirationStatus(state.state.licenseExpirationDate)),
+    [state.state.licenseExpirationDate],
+  );
 
   const [licenseIssueDateInput, setLicenseIssueDateInput] = useState('');
   const [licenseExpirationDateInput, setLicenseExpirationDateInput] = useState('');
@@ -784,6 +793,7 @@ export const UserAddChangeMobileForm: FC<UserAddChangeMobileFormProps> = ({ clos
                       helperText={
                         licenseExpirationDateError || state.errors.errorLicenseExpirationDate
                       }
+                      sx={licenseExpirationHighlightSx}
                       InputLabelProps={{
                         shrink: true,
                       }}

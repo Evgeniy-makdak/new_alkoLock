@@ -4,6 +4,10 @@ import type { Field, GetTypeOfRowIconValueProps } from '@entities/info';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import type { IUser } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
+import {
+  getLicenseExpirationChipProps,
+  getLicenseExpirationStatus,
+} from '@shared/utils/getLicenseExpirationStatus';
 
 export const getFields = (userData: IUser, t?: TFunction): Field[] => {
   if (!userData) return [];
@@ -87,6 +91,9 @@ export const getFields = (userData: IUser, t?: TFunction): Field[] => {
       type: TypeOfRows.DATE,
       value: {
         label: Formatters.convertDateFormat(userData?.driver?.licenseExpirationDate),
+        ...getLicenseExpirationChipProps(
+          getLicenseExpirationStatus(userData?.driver?.licenseExpirationDate),
+        ),
       },
     },
     {

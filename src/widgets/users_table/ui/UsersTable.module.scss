@@ -291,6 +291,43 @@
   }
 }
 
+@keyframes licenseExpirationRowBgBlink {
+  0%,
+  100% {
+    background-color: rgba(237, 108, 2, 0.1);
+  }
+
+  50% {
+    background-color: rgba(237, 108, 2, 0.2);
+  }
+}
+
+.licenseExpirationRowExpired :global(.MuiDataGrid-cell) {
+  background-color: rgba(211, 47, 47, 0.08) !important;
+}
+
+.licenseExpirationRowExpiringSoon :global(.MuiDataGrid-cell) {
+  background-color: rgba(237, 108, 2, 0.08) !important;
+}
+
+.licenseExpirationRowExpiringToday :global(.MuiDataGrid-cell) {
+  animation: licenseExpirationRowBgBlink 1.2s ease-in-out infinite;
+  background-color: rgba(237, 108, 2, 0.1) !important;
+}
+
+.mobileRow.licenseExpirationRowExpired {
+  background-color: rgba(211, 47, 47, 0.08);
+}
+
+.mobileRow.licenseExpirationRowExpiringSoon {
+  background-color: rgba(237, 108, 2, 0.08);
+}
+
+.mobileRow.licenseExpirationRowExpiringToday {
+  animation: licenseExpirationRowBgBlink 1.2s ease-in-out infinite;
+  background-color: rgba(237, 108, 2, 0.1);
+}
+
 .rowMain {
   display: flex;
   justify-content: space-between;

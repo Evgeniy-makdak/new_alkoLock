@@ -18,6 +18,8 @@ import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
+import { getLicenseExpirationRowClassName } from '@shared/utils/getLicenseExpirationStatus';
+
 import { useUsersTable } from '../hooks/useUsersTable';
 import styles from './UsersTable.module.scss';
 
@@ -363,9 +365,20 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
           pointer
           onRowClick={handleRowClick}
           onCellClick={handleRowClick} // Добавляем обработчик клика по ячейке
-          getRowClassName={(params) =>
-            params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
-          }
+          getRowClassName={(params) => {
+            const classes: string[] = [];
+            if (params.id === tableData.rows[selectedRowIndex]?.id) {
+              classes.push('selected-row');
+            }
+            const licenseRowClass = getLicenseExpirationRowClassName(
+              params.row.licenseExpirationStatus,
+              styles,
+            );
+            if (licenseRowClass) {
+              classes.push(licenseRowClass);
+            }
+            return classes.join(' ');
+          }}
           sx={{
             '& .MuiDataGrid-virtualScroller': {
               overflowX: 'auto',

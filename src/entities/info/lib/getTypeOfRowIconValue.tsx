@@ -14,7 +14,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import type { Theme } from '@mui/material/styles';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
@@ -82,7 +82,11 @@ export const getTypeOfRowIconValue = (
   const count =
     typeof label === 'string' || typeof label === 'number' ? label?.toString().length : 33;
 
+  const { sx: customChipSx, ...chipRest } = rest;
   const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme);
+  const mergedChipSx: SxProps<Theme> = customChipSx
+    ? ([commonChipStyles, customChipSx] as SxProps<Theme>)
+    : commonChipStyles;
 
   // `copyText` иногда приходит как объект (например, для координат lat/lon).
   // Если оставить как есть — в тултип попадёт строка вида "object object".
@@ -93,9 +97,14 @@ export const getTypeOfRowIconValue = (
       : copyText ?? ({ ...rest }.label || '');
 
   const chip = copyble ? (
-    <ChipCopyTextIcon copyText={copyText} {...rest} style={style.labelText} sx={commonChipStyles} />
+    <ChipCopyTextIcon
+      copyText={copyText}
+      {...chipRest}
+      style={style.labelText}
+      sx={mergedChipSx}
+    />
   ) : (
-    <Chip {...rest} className={style.labelText} sx={commonChipStyles} />
+    <Chip {...chipRest} className={style.labelText} sx={mergedChipSx} />
   );
 
   const shouldApplyCustomChip = [
@@ -106,9 +115,14 @@ export const getTypeOfRowIconValue = (
 
   const castomChip =
     customStyled && shouldApplyCustomChip ? (
-      <ChipCopyTextIcon copyText={copyText} variant="outlined" sx={commonChipStyles} {...rest} />
+      <ChipCopyTextIcon
+        copyText={copyText}
+        variant="outlined"
+        sx={mergedChipSx}
+        {...chipRest}
+      />
     ) : (
-      <Chip {...rest} sx={commonChipStyles} />
+      <Chip {...chipRest} sx={mergedChipSx} />
     );
 
   const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}`;

@@ -19,6 +19,10 @@ import { InputDate } from '@shared/ui/input_date/InputDate';
 import { InputDateBirth } from '@shared/ui/input_date/InputDateBirth';
 import { Loader } from '@shared/ui/loader';
 import { PhoneInput } from '@shared/ui/phone_input';
+import {
+  getLicenseExpirationStatus,
+  getLicenseExpirationTextFieldSx,
+} from '@shared/utils/getLicenseExpirationStatus';
 
 import { useUserAddChangeForm } from '../hooks/useUserAddChangeForm';
 import { isDisabledAdminRole } from '../lib/validate';
@@ -42,6 +46,11 @@ export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ cl
     isUserDriver,
     hasFormChanges,
   } = useUserAddChangeForm(id, closeModal);
+
+  const licenseExpirationHighlightSx = useMemo(
+    () => getLicenseExpirationTextFieldSx(getLicenseExpirationStatus(state.state.licenseExpirationDate)),
+    [state.state.licenseExpirationDate],
+  );
 
   // Санитизация значения, идущего в RolesSelect (на случай дубликатов/пустых).
   const sanitizedUserGroups = useMemo(() => {
@@ -273,6 +282,7 @@ export const UserAddChangeDesktopForm: FC<UserAddChangeDesktopFormProps> = ({ cl
                         textField: {
                           error: Boolean(state.errors.errorLicenseExpirationDate),
                           helperText: state.errors.errorLicenseExpirationDate,
+                          sx: licenseExpirationHighlightSx,
                         },
                       }}
                       disablePast

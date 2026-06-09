@@ -7,6 +7,7 @@ import type { GridRowsProp } from '@mui/x-data-grid';
 import { useProcessingStore } from '@shared/model/processing_store/processingStore';
 import { type IUser } from '@shared/types/BaseQueryTypes';
 import { Formatters } from '@shared/utils/formatters';
+import { getLicenseExpirationStatus } from '@shared/utils/getLicenseExpirationStatus';
 
 import { ValuesHeader } from './getColumns';
 import { isUsersTableExcludedUser } from './usersTableSystemUsers';
@@ -39,6 +40,9 @@ export const useGetRows = ({ data, excludeUserIds = [] }: UseGetRowsProps): Grid
             [ValuesHeader.ACCESS]: access,
             [ValuesHeader.CREATED_AT]: Formatters.formatISODate(user.createdAt),
             isActive: user.isActive,
+            licenseExpirationStatus: getLicenseExpirationStatus(
+              user.driver?.licenseExpirationDate,
+            ),
           };
         }),
     [data, excludeUserIds, processingIds, t],
