@@ -20,16 +20,18 @@ import style from './Info.module.scss';
 type InfoProps = {
   fields: Field[];
   headerCard?: ReactNode;
+  /** Чипы значений по ширине контента (только для явно переданных экранов) */
+  compactValueChips?: boolean;
 };
 
-export const Info = ({ fields, headerCard }: InfoProps) => {
+export const Info = ({ fields, headerCard, compactValueChips = false }: InfoProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:768px)');
   const summaryExhaleResult = getSummaryExhaleResult(t);
 
   return (
-    <Card className={style.card}>
+    <Card className={`${style.card}${compactValueChips ? ` ${style.cardCompactValues}` : ''}`}>
       {headerCard}
       <CardContent className={`${style.info}`}>
         {fields.map((field, i) => {
@@ -56,12 +58,15 @@ export const Info = ({ fields, headerCard }: InfoProps) => {
                     {summaryExhaleResultText && summaryExhaleResult[summaryExhaleResultText]}
                     {!summaryExhaleResultText &&
                       !valueIsArray &&
-                      getTypeOfRowIconValue(value, theme, { isMobile })}
+                      getTypeOfRowIconValue(value, theme, { isMobile, compact: compactValueChips })}
                     {valueIsArray && (
                       <div className={style.labelWrapper}>
                         {value.map((val, j) => (
                           <React.Fragment key={j}>
-                            {getTypeOfRowIconValue(val, theme, { isMobile })}
+                            {getTypeOfRowIconValue(val, theme, {
+                              isMobile,
+                              compact: compactValueChips,
+                            })}
                           </React.Fragment>
                         ))}
                       </div>

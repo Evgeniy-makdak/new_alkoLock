@@ -29,6 +29,7 @@ export const UserInfo: FC<UserInfoProps> = ({ selectedUserId, closeTab }) => {
       <Stack className={style.infoContainer}>
         <Info
           fields={fields}
+          compactValueChips
           headerCard={
             <Stack
               marginBottom={2}

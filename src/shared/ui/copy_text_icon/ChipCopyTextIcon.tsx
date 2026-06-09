@@ -12,12 +12,13 @@ interface ChipCopyTextIconProps extends ChipOwnProps {
   style?: string;
   copyText?: string | number;
   click?: () => void;
+  compact?: boolean;
 }
 
 export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { copyText, click, style, ...rest } = props;
+  const { copyText, click, style, compact = false, ...rest } = props;
   const [state, setState] = useState(false);
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
   const isDark = theme.palette.mode === 'dark';
@@ -34,9 +35,9 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
   const onCopy = () => copyContent(`${copyText || props.label}`, setState);
 
   const baseChipSx = {
-    flex: 1,
+    flex: compact ? '0 1 auto' : 1,
     minWidth: 0,
-    width: '100%',
+    width: compact ? 'auto' : '100%',
     maxWidth: '100%',
     height: '28px',
     borderRadius: '16px',
@@ -59,13 +60,20 @@ export const ChipCopyTextIcon = (props: ChipCopyTextIconProps) => {
       fontWeight: 500,
       textAlign: 'left',
       display: 'block',
-      width: '100%',
+      width: compact ? 'auto' : '100%',
       ...(!hasSemanticColor && isDark ? { color: 'rgba(255, 255, 255, 0.92)' } : {}),
     },
   };
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%', maxWidth: '100%' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        width: compact ? 'auto' : '100%',
+        maxWidth: '100%',
+      }}>
       <Tooltip title={t('tooltips.copy')}>
         <IconButton
           size="small"

@@ -23,6 +23,8 @@ import style from '../ui/Info.module.scss';
 
 export type GetTypeOfRowIconValueOptions = {
   isMobile?: boolean;
+  /** Чип по ширине контента, а не на всю колонку значения */
+  compact?: boolean;
 };
 
 export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
@@ -33,11 +35,15 @@ export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
   customStyled?: boolean;
 }
 
-const buildCommonChipStyles = (hasSemanticColor: boolean, theme?: Theme) => {
+const buildCommonChipStyles = (
+  hasSemanticColor: boolean,
+  theme?: Theme,
+  compact = false,
+) => {
   const isDark = theme?.palette.mode === 'dark';
   return {
-    flex: 1,
-    width: '100%',
+    flex: compact ? '0 1 auto' : 1,
+    width: compact ? 'auto' : '100%',
     maxWidth: '100%',
     minWidth: 0,
     height: '28px',
@@ -76,6 +82,7 @@ export const getTypeOfRowIconValue = (
   options?: GetTypeOfRowIconValueOptions,
 ) => {
   const isMobile = options?.isMobile ?? false;
+  const compact = options?.compact ?? false;
   if (element) return element;
   const label = { ...rest }?.label || '';
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
@@ -83,7 +90,7 @@ export const getTypeOfRowIconValue = (
     typeof label === 'string' || typeof label === 'number' ? label?.toString().length : 33;
 
   const { sx: customChipSx, ...chipRest } = rest;
-  const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme);
+  const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme, compact);
   const mergedChipSx: SxProps<Theme> = customChipSx
     ? ([commonChipStyles, customChipSx] as SxProps<Theme>)
     : commonChipStyles;
@@ -100,6 +107,7 @@ export const getTypeOfRowIconValue = (
     <ChipCopyTextIcon
       copyText={copyText}
       {...chipRest}
+      compact={compact}
       style={style.labelText}
       sx={mergedChipSx}
     />
@@ -118,6 +126,7 @@ export const getTypeOfRowIconValue = (
       <ChipCopyTextIcon
         copyText={copyText}
         variant="outlined"
+        compact={compact}
         sx={mergedChipSx}
         {...chipRest}
       />
@@ -125,7 +134,9 @@ export const getTypeOfRowIconValue = (
       <Chip {...chipRest} sx={mergedChipSx} />
     );
 
-  const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}`;
+  const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}${
+    compact ? ` ${style.wrapperTextCompact}` : ''
+  }`;
   const fullText = String(tooltipTitle);
   const inner = <div className={wrapperClass}>{customStyled && shouldApplyCustomChip ? castomChip : chip}</div>;
 
