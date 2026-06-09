@@ -107,6 +107,13 @@ export const useGetColumns = (
         headerName: t('tables.access'),
         field: ValuesHeader.ACCESS,
         sortable: false,
+        renderCell: ({ row }) => {
+          const access = row[ValuesHeader.ACCESS];
+          if (row.accessDenied) {
+            return <span className={style.accessDenied}>{access}</span>;
+          }
+          return access;
+        },
       },
       {
         renderHeader: setTestIdsToHeaderColumnsAdapter,

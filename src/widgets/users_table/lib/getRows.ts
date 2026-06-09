@@ -40,6 +40,7 @@ export const useGetRows = ({ data, excludeUserIds = [] }: UseGetRowsProps): Grid
             [ValuesHeader.ACCESS]: access,
             [ValuesHeader.CREATED_AT]: Formatters.formatISODate(user.createdAt),
             isActive: user.isActive,
+            accessDenied: Boolean(user.disabled),
             licenseExpirationStatus: getLicenseExpirationStatus(
               user.driver?.licenseExpirationDate,
             ),
