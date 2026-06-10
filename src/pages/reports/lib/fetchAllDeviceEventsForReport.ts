@@ -4,6 +4,8 @@ import { EventsApi } from '@shared/api/baseQuerys';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 
+import { isReportRecordWithAnonymousUser } from './reportAnonymousUser';
+
 const PAGE_SIZE = 200;
 
 export function isReportFetchAbortError(e: unknown): boolean {
@@ -39,7 +41,9 @@ export async function fetchAllDeviceEventsForReport(
     if (res.isError) {
       throw new Error(res.message || res.detail || 'device-events request failed');
     }
-    const content = res.data?.content ?? [];
+    const content = (res.data?.content ?? []).filter(
+      (item) => !isReportRecordWithAnonymousUser(item),
+    );
     total = Number(res.data?.totalElements ?? 0);
     all.push(...content);
     onProgress?.(all.length, total);

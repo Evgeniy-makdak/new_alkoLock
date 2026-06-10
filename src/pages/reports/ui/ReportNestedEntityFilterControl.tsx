@@ -18,6 +18,7 @@ import {
 } from '@pages/reports/lib/reportNestedFilterPath';
 import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
+import { resolveReportFilterValueMaxValues } from '@pages/reports/lib/mapReportQueryOperator';
 import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
 import {
   reportFilterAutocompleteSlotProps,
@@ -184,9 +185,17 @@ export function NestedFilterValueControl({
     );
   }
 
+  const maxValues = resolveReportFilterValueMaxValues(
+    filterOperationCode,
+    valueLoadKind !== 'enum' || staticValueOptions.length === 0,
+    isBooleanValueField,
+  );
+
   return (
     <ReportSearchMultipleSelect
+      key={`${fieldKey}__terminalValues__${filterOperationCode ?? 'none'}`}
       multiple={!isBooleanValueField}
+      maxValues={maxValues}
       compact={compact}
       name={`${fieldKey}__terminalValues`}
       label={t('reports.terminalValuesLabel', { parameter: segment.label })}

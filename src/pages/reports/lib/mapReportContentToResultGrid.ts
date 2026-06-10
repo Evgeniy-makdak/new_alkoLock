@@ -17,6 +17,7 @@ import { COORDINATES_COMPOSITE_KIND } from './reportCoordinateComposite';
 import {
   parseReportCoordinatePairFromDisplay,
   readReportRowCoordinatePair,
+  readReportRowEventId,
   readReportRowVehicleRegistration,
 } from './reportCoordinateMapLink';
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
@@ -225,8 +226,9 @@ export function mapReportContentToResultGrid(
         if (!pair) {
           return params.formattedValue ?? params.value ?? REPORT_EMPTY_DISPLAY;
         }
-        const vehicle = readReportRowVehicleRegistration(rawRow);
-        return createElement(ReportCoordinateMapCell, { pair, vehicle });
+        const vehicle = readReportRowVehicleRegistration(rawRow, prefix);
+        const eventId = readReportRowEventId(rawRow, prefix);
+        return createElement(ReportCoordinateMapCell, { pair, vehicle, eventId });
       };
     } else {
       colDef.renderCell = (params: GridRenderCellParams<ReportGridRow>) => {

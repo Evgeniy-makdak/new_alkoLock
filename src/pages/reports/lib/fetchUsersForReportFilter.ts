@@ -2,6 +2,7 @@ import { UsersApi } from '@shared/api/baseQuerys';
 import type { IUser } from '@shared/types/BaseQueryTypes';
 
 import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
+import { isReportAnonymousUser } from './reportAnonymousUser';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 
 type FetchUsersForReportFilterOptions = {
@@ -23,7 +24,7 @@ export async function fetchUsersForReportFilter(
   const branchFilter =
     options.branchId != null ? { branchId: options.branchId } : {};
 
-  return fetchAllReportReferencePages<IUser>(
+  const users = await fetchAllReportReferencePages<IUser>(
     (page) =>
       UsersApi.getList(
         {
@@ -40,4 +41,6 @@ export async function fetchUsersForReportFilter(
       ),
     pageSize,
   );
+
+  return users.filter((user) => !isReportAnonymousUser(user));
 }

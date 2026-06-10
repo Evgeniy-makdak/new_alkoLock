@@ -25,6 +25,7 @@ import {
   parseCoordinatePairFilterValue,
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
+import { augmentReportSelectedFieldsForMapNavigation } from './reportCoordinateMapLink';
 import {
   expandCompositeFieldPath,
   expandCompositeSelectedFields,
@@ -554,10 +555,12 @@ function buildSharedGroupFilters(
 /** UI-ключи __composite.* никогда не отправляются в POST …/query. */
 function finalizeReportSelectedFields(
   fields: ReportSelectedFieldPayload[],
+  allowedTableFieldPaths: Set<string>,
 ): ReportSelectedFieldPayload[] {
-  return expandCompositeSelectedFields(fields).filter(
+  const expanded = expandCompositeSelectedFields(fields).filter(
     (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
   );
+  return augmentReportSelectedFieldsForMapNavigation(expanded, allowedTableFieldPaths);
 }
 
 function createTableFieldsContext(
@@ -617,7 +620,13 @@ export function buildReportQueryRequest(params: {
     const filters = buildSharedGroupFilters(metadata, primaryRow).map((filter) =>
       withFilterGroup(filter, reportFilterGroupNumberForRowIndex(0)),
     );
-    return { selectedFields: finalizeReportSelectedFields(selectedFields), filters };
+    return {
+      selectedFields: finalizeReportSelectedFields(
+        selectedFields,
+        tableFieldsContext.allowedTableFieldPaths,
+      ),
+      filters,
+    };
   }
 
   const activeTableFieldsContext: BuildRowReportTableFieldsContext = {
@@ -646,7 +655,10 @@ export function buildReportQueryRequest(params: {
       return { selectedFields: [], filters: [] };
     }
     return {
-      selectedFields: finalizeReportSelectedFields(single.selectedFields),
+      selectedFields: finalizeReportSelectedFields(
+        single.selectedFields,
+        activeTableFieldsContext.allowedTableFieldPaths,
+      ),
       filters: single.filters,
     };
   }
@@ -679,7 +691,10 @@ export function buildReportQueryRequest(params: {
   }
 
   return {
-    selectedFields: finalizeReportSelectedFields(mergeSelectedFields(selectedFieldLists)),
+    selectedFields: finalizeReportSelectedFields(
+      mergeSelectedFields(selectedFieldLists),
+      activeTableFieldsContext.allowedTableFieldPaths,
+    ),
     filters,
     logicConnects: buildReportLogicConnects(activeRows.length, logicOperator),
   };

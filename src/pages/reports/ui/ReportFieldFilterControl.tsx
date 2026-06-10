@@ -22,6 +22,7 @@ import {
   isReportYearOnlyField,
 } from '@pages/reports/lib/reportFieldFilterKind';
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
+import { resolveReportFilterValueMaxValues } from '@pages/reports/lib/mapReportQueryOperator';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
   reportFilterAutocompleteSlotProps,
@@ -232,9 +233,12 @@ export function ReportFieldFilterControl({
 
   if (nestedValueLoadKind === 'domainList') {
     const displayOptions = mergeOptionsWithSelected(remoteOptions, value);
+    const maxValues = resolveReportFilterValueMaxValues(filterOperationCode, true);
     return (
       <ReportSearchMultipleSelect
+        key={`${controlId}__${filterOperationCode ?? 'none'}`}
         multiple
+        maxValues={maxValues}
         compact={compact}
         name={controlId}
         label={label}
@@ -249,11 +253,14 @@ export function ReportFieldFilterControl({
     );
   }
 
-  const multiple = valueLoadKind !== 'enum' || metadataValueOptions.length === 0;
+  const defaultMultiple = valueLoadKind !== 'enum' || metadataValueOptions.length === 0;
+  const maxValues = resolveReportFilterValueMaxValues(filterOperationCode, defaultMultiple);
 
   return (
     <ReportSearchMultipleSelect
-      multiple={multiple}
+      key={`${controlId}__${filterOperationCode ?? 'none'}`}
+      multiple
+      maxValues={maxValues}
       compact={compact}
       name={controlId}
       label={label}

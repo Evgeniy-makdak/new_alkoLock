@@ -52,3 +52,43 @@
     }
   }
 }
+
+// Один чип при maxValues=1: без переноса инпута на вторую строку
+.singleChipLocked {
+  .chipWrapper {
+    display: inline-flex;
+    vertical-align: middle;
+    max-width: 100%;
+  }
+
+  :global(.MuiAutocomplete-root) {
+    .MuiOutlinedInput-root {
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      align-content: center !important;
+      row-gap: 0 !important;
+      padding-top: 2px !important;
+      padding-bottom: 2px !important;
+      min-height: 40px !important;
+      height: 40px !important;
+      box-sizing: border-box !important;
+    }
+
+    .MuiAutocomplete-input {
+      display: none !important;
+      width: 0 !important;
+      min-width: 0 !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      height: 0 !important;
+      min-height: 0 !important;
+      flex: 0 0 0 !important;
+      opacity: 0 !important;
+    }
+
+    .MuiAutocomplete-tag {
+      margin: 0 4px 0 0 !important;
+      max-width: calc(100% - 28px);
+    }
+  }
+}

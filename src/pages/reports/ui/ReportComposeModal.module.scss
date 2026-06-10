@@ -409,6 +409,14 @@
   }
 }
 
+%modalFilterFieldWidth {
+  flex: 0 1 240px !important;
+  min-width: 200px !important;
+  max-width: 320px !important;
+  width: auto !important;
+  box-sizing: border-box;
+}
+
 .modalFilterRow {
   display: flex !important;
   flex-direction: row;
@@ -454,23 +462,16 @@
   > *:not(.modalFilterOutputField):not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(
       .reportFilterDateTimeRootRange
     ):not([class*='reportFilterNestedEntity']):not(.optionalFilterControl) {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    width: auto !important;
+    @extend %modalFilterFieldWidth;
   }
 
   .modalFilterOutputField {
-    flex: 0 1 240px !important;
-    min-width: 200px !important;
-    max-width: 320px !important;
-    width: auto !important;
-    box-sizing: border-box;
+    @extend %modalFilterFieldWidth;
   }
 
   :global([class*='reportFilterNestedEntity']) {
     display: flex;
-    flex: 3 1 0;
+    flex: 0 1 auto;
     flex-wrap: nowrap;
     align-items: flex-end;
     gap: 12px;
@@ -491,18 +492,12 @@
     }
 
     > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-      flex: 1 1 0 !important;
-      min-width: 0 !important;
-      max-width: none !important;
-      width: auto !important;
+      @extend %modalFilterFieldWidth;
     }
   }
 
   .optionalFilterControl {
-    flex: 1 1 0 !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    width: auto !important;
+    @extend %modalFilterFieldWidth;
   }
 
   :global(.reportFilterDateTimeRoot),

@@ -6,6 +6,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import CloseIcon from '@mui/icons-material/Close';
 import {
   Autocomplete,
+  type AutocompleteChangeReason,
   type AutocompleteInputChangeReason,
   type AutocompleteProps,
   type AutocompleteRenderInputParams,
@@ -28,6 +29,7 @@ import {
   Typography,
   createFilterOptions,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 
 import { debounce } from '@shared/lib/debounce';
@@ -52,6 +54,58 @@ function resolveSearchSelectDisplayLabel(label: ReactNode | undefined): ReactNod
   }
   return label;
 }
+
+function toValuesArray(
+  value: string | Value | Values | (string | Value | Values)[] | null,
+): Values {
+  if (!value) return [];
+  if (Array.isArray(value)) return value as Values;
+  if (typeof value === 'object' && 'value' in value) return [value as Value];
+  return [];
+}
+
+function applyMaxValuesLimit(
+  values: Values,
+  maxValues: number | undefined,
+  reason: AutocompleteChangeReason,
+  pickedOption?: Value | null,
+): Values {
+  if (maxValues == null || maxValues < 1) return values;
+  if (reason === 'selectOption' && maxValues === 1 && pickedOption) {
+    return [pickedOption];
+  }
+  if (values.length <= maxValues) return values;
+  return values.slice(-maxValues);
+}
+
+/** Один чип (maxValues=1): одна строка, без пустого инпута под чипом. */
+const singleChipLockedSx: SxProps<Theme> = {
+  '& .MuiOutlinedInput-root': {
+    flexWrap: 'nowrap !important',
+    alignItems: 'center',
+    alignContent: 'center',
+    py: '2px',
+    minHeight: 40,
+    height: 40,
+    boxSizing: 'border-box',
+  },
+  '& .MuiAutocomplete-input': {
+    display: 'none !important',
+    width: '0 !important',
+    minWidth: '0 !important',
+    padding: '0 !important',
+    margin: '0 !important',
+    height: '0 !important',
+    minHeight: '0 !important',
+    flex: '0 0 0 !important',
+    opacity: 0,
+  },
+  '& .MuiAutocomplete-tag': {
+    my: 0,
+    mx: '2px',
+    maxWidth: 'calc(100% - 28px)',
+  },
+};
 
 // TODO => почистить тип пропсов, очень много лишнего (не используется)
 export type SearchMultipleSelectProps<T> = {
@@ -78,6 +132,8 @@ export type SearchMultipleSelectProps<T> = {
   overflowTooltip?: boolean;
   /** Мобильный режим: список типов в модальном окне с чекбоксами (только при multiple). */
   mobileModalPicker?: boolean;
+  /** Лимит выбранных значений; включает режим чипов (multiple) и блокирует список при достижении лимита. */
+  maxValues?: number;
 } & Partial<
   Omit<AutocompleteProps<Value, boolean, boolean, boolean>, 'onInputChange' | 'value' | 'name'>
 >;
@@ -95,6 +151,7 @@ function SearchMultipleSelectMobileModal<T>({
   onInputChange,
   disabled,
   placeholder,
+  maxValues,
   sx,
 }: Pick<
   SearchMultipleSelectProps<T>,
@@ -110,6 +167,7 @@ function SearchMultipleSelectMobileModal<T>({
   | 'onInputChange'
   | 'disabled'
   | 'placeholder'
+  | 'maxValues'
 > & { sx?: SearchMultipleSelectProps<T>['sx'] }) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -178,6 +236,10 @@ function SearchMultipleSelectMobileModal<T>({
     setDraft((prev) => {
       const exists = prev.some((p) => String(p.value) === String(opt.value));
       if (exists) return prev.filter((p) => String(p.value) !== String(opt.value));
+      if (maxValues === 1) return [opt];
+      if (maxValues != null && prev.length >= maxValues) {
+        return [...prev.slice(1), opt];
+      }
       return [...prev, opt];
     });
   };
@@ -448,6 +510,7 @@ export function SearchMultipleSelect<T>({
   disabled,
   placeholder,
   mobileModalPicker,
+  maxValues,
   sx,
   size,
   ...rest
@@ -456,9 +519,14 @@ export function SearchMultipleSelect<T>({
   const clearLabel = t('datePicker.clear');
   const [inputState, setInputState] = useState('');
   const [focused, setFocused] = useState(false);
+  const [popupOpen, setPopupOpen] = useState(false);
   const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
+  const isMultipleMode = maxValues != null ? true : Boolean(multiple);
+  const atMaxCapacity =
+    maxValues != null && maxValues > 0 && (value?.length ?? 0) >= maxValues;
+  const singleChipLocked = atMaxCapacity && maxValues === 1;
 
-  if (mobileModalPicker && multiple) {
+  if (mobileModalPicker && isMultipleMode) {
     return (
       <SearchMultipleSelectMobileModal<T>
         testid={testid}
@@ -473,6 +541,7 @@ export function SearchMultipleSelect<T>({
         onInputChange={onInputChange}
         disabled={disabled}
         placeholder={placeholder}
+        maxValues={maxValues}
         sx={sx}
       />
     );
@@ -510,6 +579,7 @@ export function SearchMultipleSelect<T>({
       inputProps: {
         ...params.inputProps,
         'data-testid': testid,
+        ...(singleChipLocked ? { readOnly: true, tabIndex: -1 } : {}),
         style: {
           ...(params.inputProps?.style as React.CSSProperties | undefined),
           ...(overflowTooltip
@@ -517,6 +587,17 @@ export function SearchMultipleSelect<T>({
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+              }
+            : {}),
+          ...(singleChipLocked
+            ? {
+                display: 'none',
+                width: 0,
+                minWidth: 0,
+                padding: 0,
+                margin: 0,
+                height: 0,
+                minHeight: 0,
               }
             : {}),
         },
@@ -654,25 +735,36 @@ export function SearchMultipleSelect<T>({
     debouncedFunc(value);
   };
 
-  const onChange: OnChange = (_event, value, reason) => {
-    if (reason === 'clear' || !value) {
-      // Очистить значение при сбросе или отсутствии значения
+  const onChange: OnChange = (_event, nextValue, reason, details) => {
+    if (reason === 'clear' || !nextValue) {
       setValueStore(name, []);
       setInputState('');
+      setPopupOpen(false);
       return;
     }
 
     if (reason === 'selectOption') {
-      // Очистить inputState при выборе опции
       setInputState('');
       debouncedFunc('');
     }
 
-    // Установить значение при выборе
-    setValueStore(name, value);
+    const pickedOption =
+      details?.option && typeof details.option === 'object'
+        ? (details.option as Value)
+        : null;
+    const limited = applyMaxValuesLimit(
+      toValuesArray(nextValue),
+      maxValues,
+      reason,
+      pickedOption,
+    );
+    setValueStore(name, limited);
+    if (maxValues != null && limited.length >= maxValues) {
+      setPopupOpen(false);
+    }
   };
 
-  const readyValue = multiple ? value : value.length > 0 ? value[0] : null;
+  const readyValue = isMultipleMode ? value : value.length > 0 ? value[0] : null;
 
   const displayLabel = resolveSearchSelectDisplayLabel(label);
   const displayLabelText =
@@ -681,7 +773,7 @@ export function SearchMultipleSelect<T>({
     placeholder && String(placeholder).trim() !== '' ? String(placeholder).trim() : '';
 
   const singleOverflowTitle =
-    !multiple && readyValue && typeof readyValue === 'object' && 'label' in readyValue
+    !isMultipleMode && readyValue && typeof readyValue === 'object' && 'label' in readyValue
       ? String(readyValue.label ?? '')
       : '';
 
@@ -703,12 +795,21 @@ export function SearchMultipleSelect<T>({
     },
   };
 
+  const mergedAutocompleteSx: SearchMultipleSelectProps<T>['sx'] = singleChipLocked
+    ? sx
+      ? ([sx, singleChipLockedSx] as SearchMultipleSelectProps<T>['sx'])
+      : singleChipLockedSx
+    : sx;
+
   const autocompleteNode = (
-    <div className={style.searchSelect}>
+    <div
+      className={[style.searchSelect, singleChipLocked ? style.singleChipLocked : '']
+        .filter(Boolean)
+        .join(' ')}>
       <Autocomplete
         {...rest}
         size={size}
-        sx={sx}
+        sx={mergedAutocompleteSx}
         disabled={disabled}
         slotProps={mergedSlotProps}
         getOptionLabel={(option) => {
@@ -719,13 +820,19 @@ export function SearchMultipleSelect<T>({
           }
           return String(option || '');
         }}
-        renderTags={overflowTooltip || getTooltipTitle ? renderTags : undefined}
-        inputValue={inputState || ''}
-        multiple={multiple}
+        renderTags={overflowTooltip || getTooltipTitle || maxValues != null ? renderTags : undefined}
+        inputValue={atMaxCapacity ? '' : inputState || ''}
+        multiple={isMultipleMode}
         onChange={onChange}
         fullWidth
         freeSolo
         value={readyValue || null}
+        open={maxValues != null ? (atMaxCapacity ? false : popupOpen) : undefined}
+        onOpen={() => {
+          if (atMaxCapacity) return;
+          setPopupOpen(true);
+        }}
+        onClose={() => setPopupOpen(false)}
         isOptionEqualToValue={isOptionEqualToValue}
         options={!isLoading ? values : []}
         loading={isLoading}

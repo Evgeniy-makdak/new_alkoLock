@@ -1,3 +1,5 @@
+import { filterReportContentRowsForUi } from './reportAnonymousUser';
+
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
 export type ReportChartRow = { name: string; value: number };
@@ -7,15 +9,17 @@ export function buildChartDataFromReport(
   selectedFields: ReportFieldDefinition[],
   maxCategories = 12,
 ): { rows: ReportChartRow[]; dimensionLabel: string } | null {
-  if (!content.length) return null;
+  const visibleContent = filterReportContentRowsForUi(content);
+  if (!visibleContent.length) return null;
 
   const dimensionField =
     selectedFields.find((f) => f.groupable || f.filterable) ?? selectedFields[0];
-  const key = dimensionField?.alias || dimensionField?.fieldName || Object.keys(content[0] ?? {})[0];
+  const key =
+    dimensionField?.alias || dimensionField?.fieldName || Object.keys(visibleContent[0] ?? {})[0];
   if (!key) return null;
 
   const counts = new Map<string, number>();
-  for (const row of content) {
+  for (const row of visibleContent) {
     const raw = row[key];
     const name =
       raw == null || raw === ''

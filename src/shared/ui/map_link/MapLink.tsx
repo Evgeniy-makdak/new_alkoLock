@@ -3,13 +3,17 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
 
 import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
+import { EventsApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { copyContent } from '@shared/lib/copyText';
+import type { ID } from '@shared/types/BaseQueryTypes';
 
 interface MapLinkProps {
   latitude: string | number;
   longitude: string | number;
   vehicle?: string;
+  /** Подгрузка госномера по событию, если в строке отчёта его нет. */
+  eventId?: ID;
   testid?: string;
   returnState?: Record<string, unknown>;
   /** Компактный чип для таблицы отчётов. */
@@ -25,10 +29,38 @@ function formatMapCoordinateLabel(latitude: string | number, longitude: string |
   return `${latitude} ${longitude}`;
 }
 
+async function resolveVehicleRegistration(
+  vehicle: string | undefined,
+  eventId: ID | undefined,
+): Promise<string | undefined> {
+  const trimmed = vehicle?.trim();
+  if (trimmed && trimmed !== '—' && trimmed !== '-') {
+    return trimmed;
+  }
+  if (eventId == null || eventId === '') return undefined;
+
+  try {
+    const response = await EventsApi.getEventItem(eventId);
+    const event = response?.data;
+    const registration =
+      event?.vehicleRecord?.registrationNumber ||
+      event?.action?.vehicleRecord?.registrationNumber;
+    const normalized = registration?.trim();
+    if (normalized && normalized !== '—' && normalized !== '-') {
+      return normalized;
+    }
+  } catch {
+    // Переход на карту по координатам возможен и без госномера.
+  }
+
+  return undefined;
+}
+
 export const MapLink = ({
   latitude,
   longitude,
   vehicle,
+  eventId,
   testid,
   returnState,
   compact = false,
@@ -38,12 +70,15 @@ export const MapLink = ({
   const theme = useTheme();
   const label = formatMapCoordinateLabel(latitude, longitude);
 
-  const handleNavigate = () => {
+  const handleNavigate = async () => {
     const lat = Number(latitude);
     const lng = Number(longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
 
-    const vehicleParam = vehicle ? `&vehicle=${encodeURIComponent(vehicle)}` : '';
+    const resolvedVehicle = await resolveVehicleRegistration(vehicle, eventId);
+    const vehicleParam = resolvedVehicle
+      ? `&vehicle=${encodeURIComponent(resolvedVehicle)}`
+      : '';
     const returnNavigation = {
       pathname: location.pathname,
       search: location.search,

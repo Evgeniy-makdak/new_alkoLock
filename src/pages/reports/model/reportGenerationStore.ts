@@ -10,6 +10,7 @@ import {
 } from '../api/reportsApi';
 import { downloadReportFile } from '../lib/downloadReportFile';
 import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLabels';
+import { filterReportContentRowsForUi } from '../lib/reportAnonymousUser';
 import { reportsStore } from './reportsStore';
 
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
@@ -136,19 +137,21 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
 
   completeSuccess: (data) => {
     reportFetchAbortController = null;
-    const pageLoaded = data.content?.length ?? 0;
+    const visibleContent = filterReportContentRowsForUi(data.content ?? []);
+    const pageLoaded = visibleContent.length;
     const totalElements = data.totalElements ?? pageLoaded;
     const pageIndex = typeof data.number === 'number' ? data.number : get().pagination.page;
+    const visibleData = { ...data, content: visibleContent };
 
     const prevContext = get().queryContext;
     let queryContext = prevContext;
-    if (prevContext && data.content?.length) {
+    if (prevContext && visibleContent.length) {
       const columnHeaderLabels =
         prevContext.columnHeaderLabels ??
         (() => {
           const rs = reportsStore.getState();
           return buildReportColumnHeaderLabels(
-            data.content,
+            visibleContent,
             rs.metadata,
             prevContext.body,
             rs.outputRows,
@@ -163,7 +166,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       isGenerating: false,
       isLoadingPage: false,
-      lastResult: data,
+      lastResult: visibleData,
       queryContext,
       progress: 100,
       loaded: pageLoaded,

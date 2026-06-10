@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 
+import { isReportRecordWithAnonymousUser } from './reportAnonymousUser';
 import { classifySobrietyLabel, getEventTypeLabel } from './sobriety';
 
 /** Маркер для суммы «остальных» типов событий в столбиковой диаграмме. */
@@ -51,6 +52,8 @@ export function aggregateReportData(events: IDeviceAction[]): ReportAggregates {
   const vehicles = new Map<string, number>();
 
   for (const ev of events) {
+    if (isReportRecordWithAnonymousUser(ev)) continue;
+
     const label = getEventTypeLabel(ev);
     addMap(byType, label || '—');
 

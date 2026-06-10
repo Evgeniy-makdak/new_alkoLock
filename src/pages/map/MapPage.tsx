@@ -8,7 +8,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { enqueueSnackbar } from 'notistack';
 
-import { useMediaQuery } from '@mui/material';
+import UndoRoundedIcon from '@mui/icons-material/UndoRounded';
+import { IconButton, Tooltip, useMediaQuery } from '@mui/material';
 
 import { HistoryTypes } from '@entities/events_data';
 import { RowTableInfo } from '@entities/row_table_info';
@@ -1409,6 +1410,28 @@ export const MapPage = () => {
             width: '100%',
           }}
         />
+
+        {returnNavigation && urlLat && urlLng && !selectedVehicleId && panelStack.length === 0 ? (
+          <Tooltip title={t('aside.returnToOrigin', 'Вернуться назад')}>
+            <IconButton
+              color="info"
+              onClick={handleReturnToOrigin}
+              aria-label={t('aside.returnToOrigin', 'Вернуться назад')}
+              sx={{
+                position: 'absolute',
+                bottom: 12,
+                right: 12,
+                zIndex: 1002,
+                backgroundColor: asidePanelBackground,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                '&:hover': {
+                  backgroundColor: asidePanelBackground,
+                },
+              }}>
+              <UndoRoundedIcon />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </div>
 
       {isMobile && !isCoordinateTransitionMode ? (

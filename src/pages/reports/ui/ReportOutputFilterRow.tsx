@@ -7,6 +7,7 @@ import { Box, IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
+import { isReportSingleValueFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
 import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
 import {
   isNestedFilterPathReadyForValueInput,
@@ -157,14 +158,17 @@ export function ReportOutputFilterRow({
     [operationFunctionSource],
   );
 
-  const nestedTerminalReady = Boolean(
+  const nestedAttributeReady = Boolean(
     refEntity &&
       isNestedFilterPathReadyForValueInput(
         tableFieldsMetadata,
         nestedPath,
         referenceEntityMetadataByName,
-      ) &&
-      (nestedState?.values?.length ?? 0) > 0,
+      ),
+  );
+
+  const nestedTerminalReady = Boolean(
+    nestedAttributeReady && (nestedState?.values?.length ?? 0) > 0,
   );
 
   const scalarTerminalReady = Boolean(
@@ -195,11 +199,17 @@ export function ReportOutputFilterRow({
     ? Boolean(primaryField)
     : outputControlsReady;
 
+  const showOperatorField = isModalVariant
+    ? Boolean(primaryField) && (!refEntity || nestedAttributeReady)
+    : refEntity
+      ? nestedAttributeReady
+      : outputControlsReady;
+
   const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
   const selectCompact = isModalVariant;
 
   const filterOperationBlock =
-    primaryField && showOperationAndFunction ? (
+    primaryField && showOperatorField ? (
       <ReportSearchMultipleSelect
         multiple={false}
         compact={selectCompact}
@@ -211,9 +221,30 @@ export function ReportOutputFilterRow({
         isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
         sx={selectSx}
         slotProps={reportFilterAutocompleteSlotProps}
-        setValueStore={(_, value) =>
-          onFilterChange(operationKey, toValuesFromSingleSelect(value))
-        }
+        setValueStore={(_, value) => {
+          const nextOperation = toValuesFromSingleSelect(value);
+          const prevOperationCode = filterOperationCode;
+          const nextOperationCode =
+            nextOperation[0]?.value != null && nextOperation[0].value !== ''
+              ? String(nextOperation[0].value)
+              : null;
+
+          onFilterChange(operationKey, nextOperation);
+
+          const operatorCleared = nextOperation.length === 0;
+          const switchedToSingleOperator =
+            isReportSingleValueFilterOperation(nextOperationCode) &&
+            Boolean(prevOperationCode) &&
+            !isReportSingleValueFilterOperation(prevOperationCode);
+
+          if ((operatorCleared || switchedToSingleOperator) && primaryField) {
+            if (refEntity) {
+              onNestedFilterChange(primaryField.fieldName, { values: [] });
+            } else if (primaryField.filterable) {
+              onFilterChange(primaryField.fieldName, []);
+            }
+          }
+        }}
       />
     ) : null;
 
@@ -281,7 +312,7 @@ export function ReportOutputFilterRow({
       }
       onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
       filterOperationCode={filterOperationCode}
-      operationSlot={showOperationAndFunction ? filterOperationBlock : null}
+      operationSlot={showOperatorField ? filterOperationBlock : null}
     />
   ) : null;
 

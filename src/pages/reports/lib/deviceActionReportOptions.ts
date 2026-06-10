@@ -9,6 +9,10 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import { Formatters } from '@shared/utils/formatters';
 
+import {
+  isReportAnonymousUser,
+  isReportRecordWithAnonymousUser,
+} from './reportAnonymousUser';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 
 type ActionRecord = Record<string, unknown>;
@@ -324,13 +328,15 @@ export async function fetchDeviceActionsForReport(searchQuery?: string): Promise
   const branchId = appStore.getState().selectedBranchState?.id;
   const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
 
-  return fetchAllReportReferencePages(
+  const records = await fetchAllReportReferencePages(
     (page) =>
       getQuery<{ content?: unknown[]; totalElements?: number }>({
         url: buildReportDeviceActionsListUrl(pageSize, branchId, searchQuery, page),
       }),
     pageSize,
   );
+
+  return records.filter((record) => !isReportRecordWithAnonymousUser(record));
 }
 
 /** Уникальные алкозамки из device-actions: value = device.id, label = BI8 (serial). */
@@ -366,7 +372,7 @@ export function buildDeviceActionUserPickerOptions(
     const action = asActionRecord(record);
     if (!action) continue;
     const person = readUserForAttribute(action, attribute);
-    if (!person || person.id == null) continue;
+    if (!person || person.id == null || isReportAnonymousUser(person)) continue;
     const key = String(person.id);
     if (seen.has(key)) continue;
     seen.set(key, {

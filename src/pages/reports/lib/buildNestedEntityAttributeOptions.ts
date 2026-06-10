@@ -24,6 +24,10 @@ import {
 import { isEventsForFrontLevelAttribute } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import {
+  filterReportReferenceRecordsForUi,
+  isReportAnonymousUser,
+} from './reportAnonymousUser';
+import {
   formatReportVehicleCarLabel,
   isReportVehicleCarDisplayAttribute,
   readReportVehicleCarFilterValue,
@@ -218,8 +222,10 @@ export function buildNestedEntityAttributeOptions(
   attribute: string,
   labelMaps?: ReportVehicleLabelMaps,
 ): Values {
+  const visibleRecords = filterReportReferenceRecordsForUi(referenceEntity, records);
+
   if (isReportCoordinatesCompositePropertyFieldName(attribute)) {
-    return buildCoordinatePairValueOptions(records);
+    return buildCoordinatePairValueOptions(visibleRecords);
   }
   if (referenceEntity === 'Vehicle' && attribute === 'color' && labelMaps?.colors) {
     return dictionaryToValues(labelMaps.colors);
@@ -228,7 +234,7 @@ export function buildNestedEntityAttributeOptions(
     return dictionaryToValues(labelMaps.types);
   }
   if (referenceEntity === 'DeviceAction') {
-    return buildDeviceActionAttributeOptions(records, attribute);
+    return buildDeviceActionAttributeOptions(visibleRecords, attribute);
   }
 
   let readAttribute =
@@ -241,7 +247,7 @@ export function buildNestedEntityAttributeOptions(
 
   const seen = new Map<string, Values[number]>();
 
-  for (const record of records) {
+  for (const record of visibleRecords) {
     for (const raw of readRecordAttributeValues(record, readAttribute, referenceEntity)) {
       const value = String(raw);
       if (seen.has(value)) continue;
@@ -323,7 +329,9 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
     });
   }
   if (referenceEntity === 'User') {
-    return (records as IUser[]).map((u) => {
+    return (records as IUser[])
+      .filter((u) => !isReportAnonymousUser(u))
+      .map((u) => {
       const fio = Formatters.nameFormatter(u, false);
       const email =
         u.email != null && String(u.email).trim() ? String(u.email).trim() : '';
@@ -336,6 +344,7 @@ export function recordsToEntityListValues(referenceEntity: string, records: unkn
   }
   if (referenceEntity === 'Driver') {
     return (records as IUser[])
+      .filter((u) => !isReportAnonymousUser(u))
       .filter((u) => u.driver?.id != null)
       .map((u) => {
         const driverId = u.driver!.id;

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
 import { useMediaQuery } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
@@ -27,8 +28,15 @@ import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
 
+type ReportsRestoreState = {
+  page: number;
+  pageSize: number;
+  sort: string[];
+};
+
 export function ReportsResultsView() {
   const { t } = useTranslation();
+  const location = useLocation();
   const isMobile = useMediaQuery(breakpoints.mobile);
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
@@ -55,6 +63,7 @@ export function ReportsResultsView() {
   const lastSyncedReportKeyRef = useRef<string | null>(null);
   /** Блокирует sort-effect на кадре сброса (stale sortModel до setState). */
   const suppressSortFetchRef = useRef(false);
+  const lastReportsRestoreKeyRef = useRef<string | null>(null);
 
   const reportTableKey = useMemo(
     () =>
@@ -135,6 +144,33 @@ export function ReportsResultsView() {
     setSort([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
+
+  useLayoutEffect(() => {
+    const restore = (location.state as { reportsRestore?: ReportsRestoreState } | null)
+      ?.reportsRestore;
+    if (!restore || !queryContext) return;
+
+    const restoreKey = `${reportTableKey}:${restore.page}:${restore.pageSize}:${restore.sort.join('|')}`;
+    if (lastReportsRestoreKeyRef.current === restoreKey) return;
+    lastReportsRestoreKeyRef.current = restoreKey;
+
+    const { pagination, isGenerating } = reportGenerationStore.getState();
+    if (isGenerating) return;
+
+    pageSizeRef.current = restore.pageSize;
+    changeTableState({ page: restore.page, pageSize: restore.pageSize });
+    setPagination({ page: restore.page, pageSize: restore.pageSize });
+    if (!reportSortParamsEqual(restore.sort, reportGenerationStore.getState().sort)) {
+      setSort(restore.sort);
+    }
+    apiRef.current?.setPage?.(restore.page);
+    apiRef.current?.setPaginationModel?.({ page: restore.page, pageSize: restore.pageSize });
+
+    if (restore.page !== pagination.page || restore.pageSize !== pagination.pageSize) {
+      void loadReportPage(restore.page, restore.pageSize);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- restore once per returnNavigation
+  }, [location.state, queryContext, reportTableKey]);
 
   const rowIdOffset = storePagination.page * storePagination.pageSize;
 

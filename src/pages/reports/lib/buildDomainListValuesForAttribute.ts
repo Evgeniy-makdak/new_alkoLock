@@ -22,6 +22,7 @@ import {
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import type { IUser } from '@shared/types/BaseQueryTypes';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
+import { filterReportReferenceRecordsForUi } from './reportAnonymousUser';
 import {
   buildReportVehicleCarValueOptions,
   isReportVehicleCarDisplayAttribute,
@@ -50,30 +51,31 @@ export function buildDomainListValuesForAttribute(
 ): Values {
   const ref = (referenceEntity === 'Driver' ? 'User' : referenceEntity).trim();
   const attr = resolveDomainScalarAttribute(referenceEntity, attribute);
-  if (!ref || !attr || !records.length) return [];
+  const visibleRecords = filterReportReferenceRecordsForUi(ref, records);
+  if (!ref || !attr || !visibleRecords.length) return [];
 
   if (isReportCoordinatesCompositePropertyFieldName(attr)) {
-    return buildCoordinatePairValueOptions(records);
+    return buildCoordinatePairValueOptions(visibleRecords);
   }
 
   if (field && isDomainEntityReferencePicker(referenceEntity.trim(), field)) {
-    return recordsToEntityListValues(referenceEntity.trim(), records);
+    return recordsToEntityListValues(referenceEntity.trim(), visibleRecords);
   }
 
   if (referenceEntity.trim() === 'VehicleBind' && isEntityIdAttribute(attr)) {
-    return recordsToEntityListValues('VehicleBind', records);
+    return recordsToEntityListValues('VehicleBind', visibleRecords);
   }
 
   if (isEntityIdAttribute(attr)) {
-    return recordsToIdOnlyListValues(records);
+    return recordsToIdOnlyListValues(visibleRecords);
   }
 
   if (isReportVehicleCarDisplayAttribute(attr)) {
-    return buildReportVehicleCarValueOptions(records);
+    return buildReportVehicleCarValueOptions(visibleRecords);
   }
 
   if (ref === 'User' && attr === 'fullName') {
-    return (records as IUser[])
+    return (visibleRecords as IUser[])
       .map((u) => {
         const label =
           (typeof u.fullName === 'string' && u.fullName.trim()) ||
@@ -86,13 +88,13 @@ export function buildDomainListValuesForAttribute(
 
   if (ref === 'DeviceAction') {
     if (isDeviceActionDeviceAttribute(attr)) {
-      return buildDeviceActionDevicePickerOptions(records);
+      return buildDeviceActionDevicePickerOptions(visibleRecords);
     }
     if (isDeviceActionUserAttribute(attr)) {
-      return buildDeviceActionUserPickerOptions(records);
+      return buildDeviceActionUserPickerOptions(visibleRecords, attr);
     }
-    return buildDeviceActionAttributeOptions(records, attr);
+    return buildDeviceActionAttributeOptions(visibleRecords, attr);
   }
 
-  return buildNestedEntityAttributeOptions(records, referenceEntity.trim(), attr, labelMaps);
+  return buildNestedEntityAttributeOptions(visibleRecords, referenceEntity.trim(), attr, labelMaps);
 }
