@@ -5,6 +5,13 @@ import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
 import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports/api/reportsApi';
+import {
+  buildGroupableColumnOptions,
+  buildComposeGroupParams,
+  finalizeReportQueryBodyForGroupBy,
+  parseComposeGroupRowsFromGroupBy,
+} from '@pages/reports/lib/buildReportGroupParam';
+import { buildComposeFilterConfigurationKey } from '@pages/reports/lib/buildComposeFilterConfigurationKey';
 import { buildComposeSortParams, parseComposeSortRowsFromSortParams } from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
@@ -26,10 +33,12 @@ import { Popup } from '@shared/ui/popup';
 import popupStyles from '@shared/ui/popup/Popup.module.scss';
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
 import type { ReportComposeSortRow } from '@pages/reports/types/reportComposeSort';
 
 import { ReportComposeForm } from './ReportComposeForm';
 import composeStyles from './ReportComposeModal.module.scss';
+import { ReportComposeGroupSection } from './ReportComposeGroupSection';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportComposeSortSection } from './ReportComposeSortSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
@@ -59,6 +68,7 @@ export function ReportComposeModal({
   const selectedEntityName = reportsStore((s) => s.selectedEntityName);
   const entities = reportsStore((s) => s.entities);
   const outputRows = reportsStore((s) => s.outputRows);
+  const logicOperator = reportsStore((s) => s.logicOperator);
   const reportTableFieldsMetadataByRowId = reportsStore((s) => s.reportTableFieldsMetadataByRowId);
   const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
   const referenceEntityMetadataLoadingByName = reportsStore(
@@ -67,6 +77,18 @@ export function ReportComposeModal({
 
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
   const [composeSortRows, setComposeSortRows] = useState<ReportComposeSortRow[]>([]);
+  const [composeGroupRows, setComposeGroupRows] = useState<ReportComposeGroupRow[]>([]);
+  const filterConfigurationKeyRef = useRef<string | null>(null);
+
+  const filterConfigurationKey = useMemo(
+    () =>
+      buildComposeFilterConfigurationKey({
+        selectedEntityName,
+        logicOperator,
+        outputRows,
+      }),
+    [selectedEntityName, logicOperator, outputRows],
+  );
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -80,17 +102,43 @@ export function ReportComposeModal({
       reportsStore.getState().resetFilters();
       setTableFieldsSelection([]);
       setComposeSortRows([]);
+      setComposeGroupRows([]);
       return;
     }
 
     const primaryRow = getPrimaryReportOutputRow();
     const tableFields =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
+    const queryBody = reportGenerationStore.getState().queryContext?.body;
     setTableFieldsSelection(tableFields);
     setComposeSortRows(
       parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
     );
+    setComposeGroupRows(parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields));
+    filterConfigurationKeyRef.current = buildComposeFilterConfigurationKey({
+      selectedEntityName: reportsStore.getState().selectedEntityName,
+      logicOperator: reportsStore.getState().logicOperator,
+      outputRows: reportsStore.getState().outputRows,
+    });
   }, [open, mode]);
+
+  useEffect(() => {
+    if (!open) {
+      filterConfigurationKeyRef.current = null;
+      return;
+    }
+
+    if (filterConfigurationKeyRef.current === null) {
+      filterConfigurationKeyRef.current = filterConfigurationKey;
+      return;
+    }
+
+    if (filterConfigurationKeyRef.current === filterConfigurationKey) return;
+
+    filterConfigurationKeyRef.current = filterConfigurationKey;
+    setComposeSortRows([]);
+    setComposeGroupRows([]);
+  }, [open, filterConfigurationKey]);
 
   const handleClose = useCallback(() => {
     if (!confirmedRef.current && snapshotRef.current) {
@@ -167,6 +215,26 @@ export function ReportComposeModal({
           : defaultRootTableFields;
     return Array.from(new Map(selected.map((item) => [String(item.value), item])).values());
   }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
+
+  const groupColumnOptions = useMemo(() => {
+    if (!metadata) return [];
+    const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+    const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
+    return buildGroupableColumnOptions(
+      sortColumnOptions,
+      metadata,
+      activeRows,
+      fieldMap,
+      reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName,
+    );
+  }, [
+    sortColumnOptions,
+    metadata,
+    outputRows,
+    reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+  ]);
 
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
    *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
@@ -283,6 +351,25 @@ export function ReportComposeModal({
     const body = ensureSelectedFieldsInBody(rawBody);
 
     const sortParams = buildComposeSortParams(composeSortRows);
+    const groupBy = buildComposeGroupParams(composeGroupRows);
+    const {
+      metadata: entityMetadata,
+      outputRows: currentOutputRows,
+      reportTableFieldsMetadataByRowId: tableMetadataByRowId,
+      referenceEntityMetadataByName: nestedMetadataByName,
+    } = reportsStore.getState();
+    const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
+      { ...body, ...(groupBy.length ? { groupBy } : {}) },
+      groupBy.length && entityMetadata
+        ? {
+            metadata: entityMetadata,
+            outputRows: currentOutputRows,
+            fieldMap: new Map(entityMetadata.fields.map((f) => [f.fieldName, f])),
+            tableMetadataByRowId: tableMetadataByRowId,
+            referenceEntityMetadataByName: nestedMetadataByName,
+          }
+        : undefined,
+    );
     const { pagination, setQueryContext, setPagination, setSort } =
       reportGenerationStore.getState();
     reportGenerationStore.getState().start();
@@ -290,9 +377,9 @@ export function ReportComposeModal({
     setSort(sortParams);
 
     try {
-      setQueryContext({ entityName, body });
+      setQueryContext({ entityName, body: bodyWithGroup });
 
-      const result = await executeReportQuery(entityName, body, {
+      const result = await executeReportQuery(entityName, bodyWithGroup, {
         page: 0,
         size: pagination.pageSize,
         sort: sortParams,
@@ -311,6 +398,7 @@ export function ReportComposeModal({
     saveTableFieldsSelectionToStore,
     ensureSelectedFieldsInBody,
     composeSortRows,
+    composeGroupRows,
     onReportFormed,
     reportQueryErrorMessage,
   ]);
@@ -375,6 +463,15 @@ export function ReportComposeModal({
                       columnOptions={sortColumnOptions}
                       sortRows={composeSortRows}
                       onChange={setComposeSortRows}
+                    />
+                  </div>
+                ) : null}
+                {groupColumnOptions.length > 0 ? (
+                  <div className={composeStyles.sortSectionSlot}>
+                    <ReportComposeGroupSection
+                      columnOptions={groupColumnOptions}
+                      groupRows={composeGroupRows}
+                      onChange={setComposeGroupRows}
                     />
                   </div>
                 ) : null}

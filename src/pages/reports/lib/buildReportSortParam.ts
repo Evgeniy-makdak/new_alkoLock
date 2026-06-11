@@ -62,7 +62,8 @@ export function reportSortParamsEqual(a: string[], b: string[]): boolean {
   return a.every((v, i) => v === b[i]);
 }
 
-function resolveComposeSortApiField(columnKey: string): string | null {
+/** UI-ключ колонки → fieldName для sort / groupBy в POST …/query. */
+export function resolveComposeColumnApiField(columnKey: string): string | null {
   const key = columnKey.trim();
   if (!key || isReportCompositeFieldPath(key)) {
     const members = isReportCompositeFieldPath(key) ? expandCompositeFieldPath(key) : [];
@@ -78,7 +79,7 @@ export function buildComposeSortParams(
 ): string[] {
   return rows
     .map((row) => {
-      const apiField = resolveComposeSortApiField(row.columnKey);
+      const apiField = resolveComposeColumnApiField(row.columnKey);
       if (!apiField) return null;
       return `${apiField},${row.direction}`;
     })
@@ -88,7 +89,7 @@ export function buildComposeSortParams(
 function findComposeSortColumnKey(apiField: string, columnKeys: Values): string {
   for (const item of columnKeys) {
     const key = String(item.value);
-    if (resolveComposeSortApiField(key) === apiField) {
+    if (resolveComposeColumnApiField(key) === apiField) {
       return key;
     }
   }

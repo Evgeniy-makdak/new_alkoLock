@@ -4,6 +4,7 @@ import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQ
 
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
+import { finalizeReportQueryBodyForGroupBy } from '../lib/buildReportGroupParam';
 import {
   expandCompositeSelectedFields,
   isReportCompositeFieldPath,
@@ -21,7 +22,7 @@ function sanitizeReportQueryBody(body: ReportQueryRequest): ReportQueryRequest {
   const selectedFields = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
     (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
   );
-  return { ...body, selectedFields };
+  return finalizeReportQueryBodyForGroupBy({ ...body, selectedFields });
 }
 
 /** Сигнал для UI: обрыв ответа (ERR_HTTP2_PROTOCOL_ERROR и т.п.), не ошибка бизнес-логики. */

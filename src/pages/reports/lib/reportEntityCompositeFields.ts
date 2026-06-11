@@ -423,6 +423,86 @@ export function isReportCompositeMemberField(leaf: string): boolean {
   return MEMBER_FIELDS_GLOBAL.has(leaf) || isReportCoordinateMemberField(leaf);
 }
 
+type ReportCompositeMemberBundle = {
+  memberFieldNames: string[];
+};
+
+function bundleKeyForMembers(members: string[]): string {
+  return members.join('\0');
+}
+
+/** Наборы полей, которые в UI склеиваются в одну составную колонку (User, Координаты, …). */
+export function collectReportCompositeMemberBundles(fieldNames: string[]): ReportCompositeMemberBundle[] {
+  const bundles = new Map<string, ReportCompositeMemberBundle>();
+
+  for (const fieldName of fieldNames) {
+    const parts = fieldName.split('.');
+    const leaf = parts[parts.length - 1] ?? fieldName;
+    const prefix = parts.length > 1 ? parts.slice(0, -1).join('.') : '';
+
+    if (isReportCoordinateMemberField(leaf)) {
+      const members = COORDINATE_MEMBER_FIELD_NAMES.map((member) =>
+        prefix ? `${prefix}.${member}` : member,
+      );
+      bundles.set(bundleKeyForMembers(members), { memberFieldNames: members });
+      continue;
+    }
+
+    for (const config of COMPOSITE_CONFIGS) {
+      if (!config.memberFieldNames.includes(leaf)) continue;
+      const members = config.memberFieldNames.map((member) =>
+        prefix ? `${prefix}.${member}` : member,
+      );
+      bundles.set(bundleKeyForMembers(members), { memberFieldNames: members });
+      break;
+    }
+  }
+
+  return Array.from(bundles.values());
+}
+
+function isCompositeBundleRepresentedInGroupBy(
+  bundle: ReportCompositeMemberBundle,
+  groupSet: Set<string>,
+): boolean {
+  if (bundle.memberFieldNames.length > 1) {
+    return bundle.memberFieldNames.every((member) => groupSet.has(member));
+  }
+
+  return bundle.memberFieldNames.some((member) => groupSet.has(member));
+}
+
+/**
+ * При GROUP BY нельзя независимо агрегировать части составной колонки (max фамилии + max имени → «франкенштейн»).
+ * Убираем членов bundle, если группировка не по этой сущности.
+ */
+export function stripUngroupedCompositeMemberFields(
+  fields: ReportSelectedFieldPayload[],
+  groupBy: string[] | undefined,
+): ReportSelectedFieldPayload[] {
+  if (!groupBy?.length) return fields;
+
+  const groupSet = new Set(groupBy);
+  const fieldNames = fields
+    .map((field) => field.fieldName?.trim())
+    .filter((name): name is string => Boolean(name));
+  const removeSet = new Set<string>();
+
+  for (const bundle of collectReportCompositeMemberBundles(fieldNames)) {
+    if (isCompositeBundleRepresentedInGroupBy(bundle, groupSet)) continue;
+
+    const presentMembers = bundle.memberFieldNames.filter((member) => fieldNames.includes(member));
+    if (presentMembers.length === 0) continue;
+
+    for (const member of presentMembers) {
+      removeSet.add(member);
+    }
+  }
+
+  if (!removeSet.size) return fields;
+  return fields.filter((field) => !field.fieldName || !removeSet.has(field.fieldName));
+}
+
 /** Имя шага path / опции «Параметр сущности» для объединённого фильтра. */
 export function buildReportCompositePropertyFieldName(kind: ReportEntityCompositeKind): string {
   return `${REPORT_COMPOSITE_SEGMENT}.${kind}`;
