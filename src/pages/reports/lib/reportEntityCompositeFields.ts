@@ -492,7 +492,9 @@ export function stripUngroupedCompositeMemberFields(
     if (isCompositeBundleRepresentedInGroupBy(bundle, groupSet)) continue;
 
     const presentMembers = bundle.memberFieldNames.filter((member) => fieldNames.includes(member));
-    if (presentMembers.length === 0) continue;
+    // Снимаем только если в отчёте реально раскрыта составная колонка (2+ поля bundle).
+    // Одно поле вроде branch.name не должно удаляться из-за совпадения листа name с device.name.
+    if (presentMembers.length < 2) continue;
 
     for (const member of presentMembers) {
       removeSet.add(member);

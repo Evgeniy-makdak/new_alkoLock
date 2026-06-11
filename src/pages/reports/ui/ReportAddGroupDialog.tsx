@@ -6,7 +6,10 @@ import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { reportFilterAutocompleteSlotProps, reportFilterControlSx } from '@pages/reports/lib/reportFilterControlSx';
+import {
+  reportFilterAutocompleteSlotProps,
+  reportFilterModalControlSx,
+} from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -69,13 +72,14 @@ export function ReportAddGroupDialog({
         <InputsColumnWrapper>
           <ReportSearchMultipleSelect
             multiple={false}
+            compact
             name="report-add-group-column"
             label={t('reports.composeGroupColumnLabel')}
             placeholder={t('reports.composeGroupColumnPlaceholder')}
             values={columnOptions}
             value={selectedColumn}
             serverFilter={false}
-            sx={reportFilterControlSx}
+            sx={reportFilterModalControlSx}
             slotProps={reportFilterAutocompleteSlotProps}
             setValueStore={(_, next) => {
               const picked = toValuesFromSingleSelect(next)[0];

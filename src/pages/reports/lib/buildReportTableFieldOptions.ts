@@ -13,6 +13,7 @@ import {
   COORDINATES_COMPOSITE_KIND,
   isReportCoordinatesCompositePath,
 } from './reportCoordinateComposite';
+import { isEventsForFrontTypeListAttribute } from './eventsForFrontReportOptions';
 
 import type {
   ReportEntityListItem,
@@ -259,6 +260,61 @@ export function tableFieldsForNestedReportTableSelection(
   return fields.filter(isReportTableSelectableField);
 }
 
+function isScalarReportTableColumnField(field: ReportFieldDefinition): boolean {
+  return (field.type ?? '').toUpperCase() !== 'ENTITY';
+}
+
+/**
+ * Вложенные поля для «Доступные колонки» / selectedFields.
+ * selectable=true; иначе filterable скаляры (EventsForFront.label и др.).
+ */
+export function nestedFieldsForReportTableColumns(
+  fields: ReportFieldDefinition[],
+  referenceEntity?: string,
+): ReportFieldDefinition[] {
+  const byName = new Map<string, ReportFieldDefinition>();
+
+  const add = (field: ReportFieldDefinition) => {
+    if (!isScalarReportTableColumnField(field)) return;
+    if (isReportTableSelectableField(field)) {
+      byName.set(field.fieldName, field);
+    }
+  };
+
+  for (const field of fields) {
+    add(field);
+  }
+
+  for (const field of fields) {
+    if (byName.has(field.fieldName)) continue;
+    if (!isScalarReportTableColumnField(field)) continue;
+    if (field.filterable || (field.availableOperations?.length ?? 0) > 0) {
+      byName.set(field.fieldName, field);
+    }
+  }
+
+  if (referenceEntity === 'EventsForFront') {
+    for (const field of fields) {
+      if (byName.has(field.fieldName)) continue;
+      if (!isEventsForFrontTypeListAttribute(field.fieldName)) continue;
+      if (isScalarReportTableColumnField(field)) {
+        byName.set(field.fieldName, field);
+      }
+    }
+  }
+
+  return Array.from(byName.values());
+}
+
+/** Поле из metadata можно отправить в selectedFields (если путь разрешён). */
+export function isEmittableReportTableField(field: ReportFieldDefinition): boolean {
+  if (!isScalarReportTableColumnField(field)) return false;
+  if (field.selectable === true) return true;
+  if (field.filterable || (field.availableOperations?.length ?? 0) > 0) return true;
+  if (isEventsForFrontTypeListAttribute(field.fieldName)) return true;
+  return false;
+}
+
 /** Имена «Поле результата» во всех строках фильтра (device, vehicle, …). */
 export function collectOutputResultFieldNames(outputRows: ReportOutputRow[]): Set<string> {
   const names = new Set<string>();
@@ -354,10 +410,10 @@ export function mergeAllReportTableFieldOptions(
       const meta = referenceEntityMetadataByName[referenceEntity] ?? null;
       if (!meta?.fields?.length) return;
 
-      for (const f of meta.fields) {
+      for (const f of nestedFieldsForReportTableColumns(meta.fields, referenceEntity)) {
         const value = prefixedFieldName(prefix, f.fieldName);
         const segmentsCount = value.split('.').length;
-        if (isReportTableSelectableField(f) && !seen.has(value)) {
+        if (!seen.has(value)) {
           if (segmentsCount > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
             continue;
           }

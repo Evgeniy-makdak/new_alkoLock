@@ -179,12 +179,14 @@ export function ReportsResultsView() {
     [queryContext?.body.selectedFields],
   );
 
+  const reportGroupBy = queryContext?.body.groupBy;
+
   const sortFieldByColumn = useMemo(() => {
     if (!queryContext?.body.selectedFields || !metadata?.entityName) {
       return new Map<string, string>();
     }
-    return buildReportSortFieldMap(queryContext.body.selectedFields);
-  }, [queryContext?.body.selectedFields]);
+    return buildReportSortFieldMap(queryContext.body.selectedFields, reportGroupBy);
+  }, [queryContext?.body.selectedFields, reportGroupBy, metadata?.entityName]);
 
   const frozenColumnHeaderLabels = queryContext?.columnHeaderLabels;
 
@@ -206,6 +208,7 @@ export function ReportsResultsView() {
       referenceEntityMetadataByName,
       queryContext?.body.selectedFields,
       entities,
+      reportGroupBy,
     );
 
     if (!frozenColumnHeaderLabels) {
@@ -272,7 +275,7 @@ export function ReportsResultsView() {
     const { isGenerating, sort, pagination } = reportGenerationStore.getState();
     if (isGenerating) return;
 
-    const nextSort = buildReportSortParams(tableState.sortModel, sortFieldByColumn);
+    const nextSort = buildReportSortParams(tableState.sortModel, sortFieldByColumn, reportGroupBy);
     if (reportSortParamsEqual(sort, nextSort)) return;
 
     setSort(nextSort);
@@ -286,6 +289,7 @@ export function ReportsResultsView() {
     tableState.sortModel[0]?.field,
     tableState.sortModel[0]?.sort,
     sortFieldByColumn,
+    reportGroupBy,
     changeTableState,
     loadReportPage,
     setPagination,

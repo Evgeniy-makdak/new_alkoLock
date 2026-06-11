@@ -3,6 +3,7 @@ import type { GridSortModel } from '@mui/x-data-grid';
 import {
   expandCompositeFieldPath,
   isReportCompositeFieldPath,
+  planReportCompositeResultColumns,
 } from './reportEntityCompositeFields';
 
 import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
@@ -25,16 +26,79 @@ export function resolveReportSortApiField(contentColumnKey: string): string {
   return contentColumnKey;
 }
 
+function resolveGroupApiFieldsForColumnKey(columnKey: string): string[] {
+  const key = columnKey.trim();
+  if (!key) return [];
+  if (isReportCompositeFieldPath(key)) {
+    return expandCompositeFieldPath(key).filter(Boolean);
+  }
+  return [key];
+}
+
+/**
+ * При активном GROUP BY ORDER BY допустим только по полям из groupBy
+ * (иначе PostgreSQL: column must appear in GROUP BY).
+ */
+export function resolveReportSortApiFieldForQuery(
+  columnKey: string,
+  groupBy?: string[],
+): string | null {
+  const apiField = resolveComposeColumnApiField(columnKey);
+  if (!apiField) return null;
+  if (!groupBy?.length) return apiField;
+
+  const groupSet = new Set(groupBy);
+  if (groupSet.has(apiField)) return apiField;
+
+  if (isReportCompositeFieldPath(columnKey)) {
+    const members = resolveGroupApiFieldsForColumnKey(columnKey);
+    if (members.length > 1 && members.every((member) => groupSet.has(member))) {
+      return apiField;
+    }
+  }
+
+  return null;
+}
+
+export function isReportSortAllowedWithGroupBy(
+  columnKey: string,
+  groupBy: string[] | undefined,
+): boolean {
+  return resolveReportSortApiFieldForQuery(columnKey, groupBy) != null;
+}
+
 /** content-ключ колонки → имя для &sort= */
 export function buildReportSortFieldMap(
   selectedFields: ReportSelectedFieldPayload[],
+  groupBy?: string[],
 ): Map<string, string> {
   const map = new Map<string, string>();
+  const fieldNames: string[] = [];
+
   for (const { fieldName } of selectedFields) {
-    if (fieldName) {
-      map.set(fieldName, resolveReportSortApiField(fieldName));
+    if (!fieldName || isReportCompositeFieldPath(fieldName)) continue;
+    fieldNames.push(fieldName);
+    const sortField = resolveReportSortApiFieldForQuery(fieldName, groupBy);
+    if (sortField) {
+      map.set(fieldName, sortField);
     }
   }
+
+  const { displayColumnKeys, groups } = planReportCompositeResultColumns(fieldNames, fieldNames);
+  for (const group of groups) {
+    const sortField = resolveReportSortApiFieldForQuery(group.compositeKey, groupBy);
+    if (sortField) {
+      map.set(group.compositeKey, sortField);
+    }
+  }
+  for (const key of displayColumnKeys) {
+    if (map.has(key)) continue;
+    const sortField = resolveReportSortApiFieldForQuery(key, groupBy);
+    if (sortField) {
+      map.set(key, sortField);
+    }
+  }
+
   return map;
 }
 
@@ -44,6 +108,7 @@ export function buildReportSortFieldMap(
 export function buildReportSortParams(
   sortModel: GridSortModel,
   sortFieldByColumn: Map<string, string>,
+  groupBy?: string[],
 ): string[] {
   const item = sortModel[0];
   if (!item?.field || !item.sort) {
@@ -52,7 +117,9 @@ export function buildReportSortParams(
 
   const contentKey = REPORT_GRID_FIELD_TO_CONTENT_KEY[item.field] ?? item.field;
   const apiField =
-    sortFieldByColumn.get(contentKey) ?? resolveReportSortApiField(contentKey);
+    sortFieldByColumn.get(contentKey) ??
+    resolveReportSortApiFieldForQuery(contentKey, groupBy);
+  if (!apiField) return [];
   const direction = item.sort === SortsTypes.asc ? 'ASC' : 'DESC';
   return [`${apiField},${direction}`];
 }
@@ -76,10 +143,11 @@ export function resolveComposeColumnApiField(columnKey: string): string | null {
 /** Строки сортировки из формы «Новый отчёт» → параметры pageable.sort. */
 export function buildComposeSortParams(
   rows: { columnKey: string; direction: 'ASC' | 'DESC' }[],
+  groupBy?: string[],
 ): string[] {
   return rows
     .map((row) => {
-      const apiField = resolveComposeColumnApiField(row.columnKey);
+      const apiField = resolveReportSortApiFieldForQuery(row.columnKey, groupBy);
       if (!apiField) return null;
       return `${apiField},${row.direction}`;
     })

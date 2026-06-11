@@ -22,6 +22,7 @@ import {
 } from './reportCoordinateMapLink';
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
+import { isReportSortAllowedWithGroupBy } from './buildReportSortParam';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
@@ -162,6 +163,7 @@ export function mapReportContentToResultGrid(
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
   selectedFieldsForColumnOrder?: ReportSelectedFieldPayload[],
   entities: ReportEntityListItem[] = [],
+  groupBy?: string[],
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
     return { columns: [], rows: [] };
@@ -209,7 +211,8 @@ export function mapReportContentToResultGrid(
       ),
       flex: 1,
       minWidth: 160,
-      sortable: fieldDef?.sortable !== false,
+      sortable:
+        fieldDef?.sortable !== false && isReportSortAllowedWithGroupBy(key, groupBy),
     };
 
     if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND) {

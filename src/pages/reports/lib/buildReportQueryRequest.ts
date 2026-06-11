@@ -15,6 +15,7 @@ import type {
 import {
   buildAllowedReportTableFieldPaths,
   findReportTableFieldDefinition,
+  isEmittableReportTableField,
   isReportTableFieldLabelAutoQualified,
   resolveReportFilterFieldName,
   resolveReportTableSelectedPayloadFieldName,
@@ -272,10 +273,7 @@ function buildRowReportTableFields(
       context.tableMetadataByRowId,
       context.referenceEntityMetadataByName,
     );
-    if (fieldDef && fieldDef.selectable === false) {
-      return [];
-    }
-    if (fieldDef && (fieldDef.type ?? '').toUpperCase() === 'ENTITY') {
+    if (fieldDef && !isEmittableReportTableField(fieldDef)) {
       return [];
     }
 

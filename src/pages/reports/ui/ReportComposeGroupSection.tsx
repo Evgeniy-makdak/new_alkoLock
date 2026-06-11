@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import LayersOutlinedIcon from '@mui/icons-material/LayersOutlined';
 import { IconButton, Tooltip, Typography } from '@mui/material';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import { useTheme } from '@mui/material/styles';
 
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
@@ -91,9 +92,14 @@ export function ReportComposeGroupSection({
               return (
                 <div key={row.id} className={composeStyles.sortRow}>
                   <div className={composeStyles.sortRowFields}>
-                    <Typography variant="body2" component="span">
-                      {columnLabel}
-                    </Typography>
+                    <OverflowTooltip title={columnLabel}>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {columnLabel}
+                      </Typography>
+                    </OverflowTooltip>
                   </div>
                   <Tooltip title={t('reports.composeRemoveGroup')}>
                     <IconButton

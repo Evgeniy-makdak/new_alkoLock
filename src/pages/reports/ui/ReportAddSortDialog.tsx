@@ -17,7 +17,10 @@ import { Popup } from '@shared/ui/popup';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
-import { reportFilterAutocompleteSlotProps, reportFilterControlSx } from '@pages/reports/lib/reportFilterControlSx';
+import {
+  reportFilterAutocompleteSlotProps,
+  reportFilterModalControlSx,
+} from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 
 type ReportAddSortDialogProps = {
@@ -99,13 +102,14 @@ export function ReportAddSortDialog({
         <InputsColumnWrapper>
           <ReportSearchMultipleSelect
             multiple={false}
+            compact
             name="report-add-sort-column"
             label={t('reports.composeSortColumnLabel')}
             placeholder={t('reports.composeSortColumnPlaceholder')}
             values={columnOptions}
             value={selectedColumn}
             serverFilter={false}
-            sx={reportFilterControlSx}
+            sx={reportFilterModalControlSx}
             slotProps={reportFilterAutocompleteSlotProps}
             setValueStore={(_, next) => {
               const picked = toValuesFromSingleSelect(next)[0];

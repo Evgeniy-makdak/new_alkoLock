@@ -1,5 +1,6 @@
 import { resolveComposeColumnApiField } from './buildReportSortParam';
 import { findReportTableFieldDefinition } from './buildReportTableFieldOptions';
+import { isEventsForFrontTypeListAttribute } from './eventsForFrontReportOptions';
 import {
   isReportCoordinatesCompositePath,
   expandCoordinatesCompositeFieldPath,
@@ -8,7 +9,6 @@ import {
   expandCompositeFieldPath,
   isReportCompositeFieldPath,
   parseCompositePath,
-  stripUngroupedCompositeMemberFields,
 } from './reportEntityCompositeFields';
 import { reportOutputFunctionKey } from './reportOutputFilterKeys';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
@@ -221,6 +221,8 @@ export function buildGroupableColumnOptions(
 
 const NON_MAX_AGGREGATABLE_FIELD_TYPES = new Set([
   'ENUM',
+  'BOOLEAN',
+  'BOOL',
   'JSON',
   'BLOB',
   'BINARY',
@@ -239,6 +241,36 @@ function isMaxAggregatableReportFieldType(type: string | undefined): boolean {
   return !NON_MAX_AGGREGATABLE_FIELD_TYPES.has(type.toUpperCase());
 }
 
+/**
+ * Листья путей без metadata: enum/boolean и др. типы, для которых Hibernate не принимает max().
+ * Используется при sanitize без контекста metadata.
+ */
+const LIKELY_NON_MAX_AGGREGATABLE_LEAVES = new Set([
+  'color',
+  'type',
+  'level',
+  'status',
+  'state',
+  'mode',
+  'isActive',
+  'active',
+  'seen',
+  'enabled',
+  'disabled',
+  'licenseClass',
+  'licenseCode',
+]);
+
+function isEventsForFrontEnumLikePath(fieldName: string): boolean {
+  const trimmed = fieldName.trim();
+  const dot = trimmed.lastIndexOf('.');
+  if (dot <= 0) return false;
+  const prefix = trimmed.slice(0, dot);
+  const leaf = trimmed.slice(dot + 1);
+  if (prefix !== 'eventsForFront' && !prefix.endsWith('.eventsForFront')) return false;
+  return isEventsForFrontTypeListAttribute(leaf);
+}
+
 function isMaxAggregatableReportField(
   fieldName: string,
   fieldDef: ReportFieldDefinition | undefined,
@@ -246,8 +278,9 @@ function isMaxAggregatableReportField(
   if (fieldDef?.type) {
     return isMaxAggregatableReportFieldType(fieldDef.type);
   }
+  if (isEventsForFrontEnumLikePath(fieldName)) return false;
   const leaf = fieldName.slice(fieldName.lastIndexOf('.') + 1);
-  return leaf !== 'color' && leaf !== 'type';
+  return !LIKELY_NON_MAX_AGGREGATABLE_LEAVES.has(leaf);
 }
 
 function collectEntityPrefixesFromGroupBy(groupBy: string[]): Set<string> {
@@ -363,8 +396,13 @@ function resolveAggregationForGroupedField(
   const nested = isNestedReportFieldName(fieldName);
 
   if (nested) {
-    const maxFallback = isMaxAggregatableReportField(fieldName, fieldDef) ? 'MAX' : 'COUNT';
-    return normalizeAggregationForApi(pickAggregationForGroupedField(fieldDef, null, maxFallback));
+    const canMax = isMaxAggregatableReportField(fieldName, fieldDef);
+    const maxFallback = canMax ? 'MAX' : 'COUNT';
+    const picked = pickAggregationForGroupedField(fieldDef, null, maxFallback);
+    if (!canMax && normalizeAggregationCode(picked) === 'MAX') {
+      return normalizeAggregationForApi('COUNT');
+    }
+    return normalizeAggregationForApi(picked);
   }
 
   if (field.aggregation) {
@@ -413,36 +451,11 @@ export function finalizeReportQueryBodyForGroupBy(
   if (!groupBy?.length) return body;
 
   const globalAggregation = context ? readGlobalAggregationFromOutputRows(context.outputRows) : null;
-  const withoutIncoherentComposites = stripUngroupedCompositeMemberFields(
-    body.selectedFields,
-    groupBy,
-  );
-  const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(
-    groupBy,
-    withoutIncoherentComposites,
-  );
+  const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, body.selectedFields);
   const groupSet = new Set(effectiveGroupBy);
-  const deduped = dedupeSelectedFieldsByFieldName(withoutIncoherentComposites, groupSet);
+  const deduped = dedupeSelectedFieldsByFieldName(body.selectedFields, groupSet);
 
-  const aggregatableFields = deduped.filter((field) => {
-    if (!field.fieldName || groupSet.has(field.fieldName)) return true;
-    if (!field.fieldName.includes('.')) return true;
-
-    const fieldDef = context
-      ? findReportTableFieldDefinition(
-          field.fieldName,
-          context.metadata,
-          context.outputRows,
-          context.fieldMap,
-          context.tableMetadataByRowId,
-          context.referenceEntityMetadataByName,
-        )
-      : undefined;
-
-    return isMaxAggregatableReportField(field.fieldName, fieldDef);
-  });
-
-  const selectedFields = aggregatableFields.map((field) => {
+  const selectedFields = deduped.map((field) => {
     if (!field.fieldName) return field;
 
     if (groupSet.has(field.fieldName)) {

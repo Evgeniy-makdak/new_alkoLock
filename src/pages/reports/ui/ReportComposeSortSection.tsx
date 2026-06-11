@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import SortOutlinedIcon from '@mui/icons-material/SortOutlined';
 import { IconButton, Tooltip, Typography } from '@mui/material';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import { useTheme } from '@mui/material/styles';
 
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
@@ -91,9 +92,14 @@ export function ReportComposeSortSection({
               return (
                 <div key={row.id} className={composeStyles.sortRow}>
                   <div className={composeStyles.sortRowFields}>
-                    <Typography variant="body2" component="span">
-                      {columnLabel}
-                    </Typography>
+                    <OverflowTooltip title={columnLabel}>
+                      <Typography
+                        variant="body2"
+                        component="span"
+                        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {columnLabel}
+                      </Typography>
+                    </OverflowTooltip>
                     <span className={composeStyles.sortRowDash}>—</span>
                     <Typography variant="body2" component="span" color="text.secondary">
                       {directionLabel(row.direction, t)}

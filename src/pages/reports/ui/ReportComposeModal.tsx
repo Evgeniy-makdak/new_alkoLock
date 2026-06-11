@@ -12,7 +12,11 @@ import {
   parseComposeGroupRowsFromGroupBy,
 } from '@pages/reports/lib/buildReportGroupParam';
 import { buildComposeFilterConfigurationKey } from '@pages/reports/lib/buildComposeFilterConfigurationKey';
-import { buildComposeSortParams, parseComposeSortRowsFromSortParams } from '@pages/reports/lib/buildReportSortParam';
+import {
+  buildComposeSortParams,
+  isReportSortAllowedWithGroupBy,
+  parseComposeSortRowsFromSortParams,
+} from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
   buildRootReportTableFieldOptions,
@@ -236,6 +240,28 @@ export function ReportComposeModal({
     referenceEntityMetadataByName,
   ]);
 
+  const composeGroupBy = useMemo(
+    () => buildComposeGroupParams(composeGroupRows),
+    [composeGroupRows],
+  );
+
+  const sortColumnOptionsForUi = useMemo(() => {
+    if (!composeGroupBy.length) return sortColumnOptions;
+    return sortColumnOptions.filter((option) =>
+      isReportSortAllowedWithGroupBy(String(option.value), composeGroupBy),
+    );
+  }, [sortColumnOptions, composeGroupBy]);
+
+  useEffect(() => {
+    if (!open || !composeGroupBy.length) return;
+    setComposeSortRows((prev) => {
+      const next = prev.filter((row) =>
+        isReportSortAllowedWithGroupBy(row.columnKey, composeGroupBy),
+      );
+      return next.length === prev.length ? prev : next;
+    });
+  }, [open, composeGroupBy]);
+
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
    *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
   useEffect(() => {
@@ -350,8 +376,8 @@ export function ReportComposeModal({
     const { entityName, body: rawBody } = ctx;
     const body = ensureSelectedFieldsInBody(rawBody);
 
-    const sortParams = buildComposeSortParams(composeSortRows);
-    const groupBy = buildComposeGroupParams(composeGroupRows);
+    const groupBy = composeGroupBy;
+    const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
     const {
       metadata: entityMetadata,
       outputRows: currentOutputRows,
@@ -398,7 +424,7 @@ export function ReportComposeModal({
     saveTableFieldsSelectionToStore,
     ensureSelectedFieldsInBody,
     composeSortRows,
-    composeGroupRows,
+    composeGroupBy,
     onReportFormed,
     reportQueryErrorMessage,
   ]);
@@ -457,10 +483,10 @@ export function ReportComposeModal({
                     onChange={setTableFieldsSelection}
                   />
                 </ReportComposeSection>
-                {sortColumnOptions.length > 0 ? (
+                {sortColumnOptionsForUi.length > 0 ? (
                   <div className={composeStyles.sortSectionSlot}>
                     <ReportComposeSortSection
-                      columnOptions={sortColumnOptions}
+                      columnOptions={sortColumnOptionsForUi}
                       sortRows={composeSortRows}
                       onChange={setComposeSortRows}
                     />
