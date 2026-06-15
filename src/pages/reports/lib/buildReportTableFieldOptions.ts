@@ -234,7 +234,7 @@ export function tableFieldsForReportTableSelection(
 
 /**
  * Поля вложенной сущности для «Доступные колонки».
- * Сначала selectable=true; иначе — скалярные filterable (у BranchAssignment и др. часто selectable=false).
+ * Только selectable=true (контракт metadata).
  */
 /** Поля для «Параметр сущности» — шире, чем только filterable (как для колонок вложенной сущности). */
 export function referenceEntityFilterPropertyFields(
@@ -266,7 +266,7 @@ function isScalarReportTableColumnField(field: ReportFieldDefinition): boolean {
 
 /**
  * Вложенные поля для «Доступные колонки» / selectedFields.
- * selectable=true; иначе filterable скаляры (EventsForFront.label и др.).
+ * Только selectable=true; исключение — EventsForFront.label/event (selectable=false в metadata).
  */
 export function nestedFieldsForReportTableColumns(
   fields: ReportFieldDefinition[],
@@ -274,21 +274,9 @@ export function nestedFieldsForReportTableColumns(
 ): ReportFieldDefinition[] {
   const byName = new Map<string, ReportFieldDefinition>();
 
-  const add = (field: ReportFieldDefinition) => {
-    if (!isScalarReportTableColumnField(field)) return;
-    if (isReportTableSelectableField(field)) {
-      byName.set(field.fieldName, field);
-    }
-  };
-
   for (const field of fields) {
-    add(field);
-  }
-
-  for (const field of fields) {
-    if (byName.has(field.fieldName)) continue;
     if (!isScalarReportTableColumnField(field)) continue;
-    if (field.filterable || (field.availableOperations?.length ?? 0) > 0) {
+    if (isReportTableSelectableField(field)) {
       byName.set(field.fieldName, field);
     }
   }
@@ -310,7 +298,6 @@ export function nestedFieldsForReportTableColumns(
 export function isEmittableReportTableField(field: ReportFieldDefinition): boolean {
   if (!isScalarReportTableColumnField(field)) return false;
   if (field.selectable === true) return true;
-  if (field.filterable || (field.availableOperations?.length ?? 0) > 0) return true;
   if (isEventsForFrontTypeListAttribute(field.fieldName)) return true;
   return false;
 }
