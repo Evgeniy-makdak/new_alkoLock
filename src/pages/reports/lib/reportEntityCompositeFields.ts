@@ -385,6 +385,35 @@ export function shouldUseAnchorOnlyCompositeDisplay(
   return group.memberKeys.some((member) => aggregationMap.has(member));
 }
 
+/** При count на всех полях bundle — одно число, не «1 1 (1)». */
+function shouldUseSingleCountCompositeDisplay(
+  group: CompositeColumnGroup,
+  aggregationMap: Map<string, string> | undefined,
+): boolean {
+  if (!aggregationMap?.size || group.kind === COORDINATES_COMPOSITE_KIND) return false;
+
+  const normalized = group.memberKeys
+    .map((member) => aggregationMap.get(member)?.trim().toLowerCase())
+    .filter((agg): agg is string => Boolean(agg));
+
+  if (!normalized.length) return false;
+  return normalized.every((agg) => agg === 'count');
+}
+
+function formatAggregatedCompositeCountValue(
+  group: CompositeColumnGroup,
+  read: (leaf: string) => unknown,
+): string {
+  const anchorLeaf =
+    getReportCompositeAnchorLeaf(group.kind) ??
+    group.memberKeys[0]?.slice(group.memberKeys[0].lastIndexOf('.') + 1);
+  if (!anchorLeaf) return REPORT_EMPTY_DISPLAY;
+
+  const raw = read(anchorLeaf);
+  if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
+  return finalizeReportCellDisplay(String(raw));
+}
+
 function formatAnchorOnlyCompositeCellValue(
   group: CompositeColumnGroup,
   read: (leaf: string) => unknown,
@@ -412,6 +441,12 @@ export function formatReportCompositeCellValue(
     const key = group.prefix ? `${group.prefix}.${leaf}` : leaf;
     return readRowValue(row, key);
   };
+
+  if (
+    shouldUseSingleCountCompositeDisplay(group, displayContext?.aggregationMap)
+  ) {
+    return formatAggregatedCompositeCountValue(group, read);
+  }
 
   if (
     shouldUseAnchorOnlyCompositeDisplay(
