@@ -239,6 +239,7 @@ export function ReportsResultsView() {
     queryContext?.body.selectedFields,
     entities,
     frozenColumnHeaderLabels,
+    reportGroupBy,
   ]);
 
   const handlePaginationModelChange = useCallback(

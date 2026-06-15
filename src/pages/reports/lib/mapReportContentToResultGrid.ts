@@ -13,7 +13,10 @@ import {
   formatReportCompositeCellValue,
   planReportCompositeResultColumns,
 } from './reportEntityCompositeFields';
-import { COORDINATES_COMPOSITE_KIND } from './reportCoordinateComposite';
+import {
+  COORDINATES_COMPOSITE_KIND,
+  formatReportCoordinatesCompositeCellValue,
+} from './reportCoordinateComposite';
 import {
   parseReportCoordinatePairFromDisplay,
   readReportRowCoordinatePair,
@@ -23,6 +26,15 @@ import {
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
 import { isReportSortAllowedWithGroupBy } from './buildReportSortParam';
+import {
+  applyReportAggregationHeaderLabel,
+  buildReportFieldAggregationMap,
+  buildReportGroupBySet,
+  formatAggregatedReportCoordinateCountValue,
+  resolveReportColumnDisplayAggregation,
+  shouldRenderReportCoordinateAsMap,
+  isReportFieldAggregatedForDisplay,
+} from './reportAggregationDisplay';
 import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
@@ -109,8 +121,16 @@ function formatDynamicCellValue(
   entityFields: ReportFieldDefinition[],
   labelMaps: ReportVehicleLabelMaps | undefined,
   t: TFunction,
+  aggregationMap: Map<string, string>,
 ): string {
   if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
+
+  if (isReportFieldAggregatedForDisplay(columnKey, aggregationMap)) {
+    if (typeof raw === 'boolean') {
+      return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
+    }
+    return finalizeReportCellDisplay(String(raw));
+  }
 
   const staticMeta = findReportResultColumnMetaForKey(
     columnKey,
@@ -177,6 +197,8 @@ export function mapReportContentToResultGrid(
   const { displayColumnKeys: columnKeys, groups: compositeGroups } =
     planReportCompositeResultColumns(orderedKeys, selectedFieldsForColumnOrder?.map((f) => f.fieldName));
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
+  const aggregationMap = buildReportFieldAggregationMap(selectedFieldsForColumnOrder);
+  const groupBySet = buildReportGroupBySet(groupBy);
 
   const rawRowByGridKey = new Map<string, Record<string, unknown>>();
   content.forEach((row, index) => {
@@ -193,29 +215,36 @@ export function mapReportContentToResultGrid(
       referenceEntityMetadataByName,
     );
     const compositeGroup = compositeByKey.get(key);
+    const columnAggregation = resolveReportColumnDisplayAggregation(
+      key,
+      compositeGroup,
+      aggregationMap,
+      groupBySet,
+    );
+    const baseHeaderLabel = resolveReportColumnHeaderLabel(
+      key,
+      columnAliases,
+      resolveReportColumnLabel(
+        key,
+        entityMetadata,
+        outputRows,
+        fieldMap,
+        tableMetadataByRowId,
+        referenceEntityMetadataByName,
+        entities,
+        t,
+      ),
+    );
     const colDef: GridColDef = {
       field: key,
-      headerName: resolveReportColumnHeaderLabel(
-        key,
-        columnAliases,
-        resolveReportColumnLabel(
-          key,
-          entityMetadata,
-          outputRows,
-          fieldMap,
-          tableMetadataByRowId,
-          referenceEntityMetadataByName,
-          entities,
-          t,
-        ),
-      ),
+      headerName: applyReportAggregationHeaderLabel(baseHeaderLabel, columnAggregation, t),
       flex: 1,
       minWidth: 160,
       sortable:
         fieldDef?.sortable !== false && isReportSortAllowedWithGroupBy(key, groupBy),
     };
 
-    if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND) {
+    if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND && shouldRenderReportCoordinateAsMap(compositeGroup, aggregationMap)) {
       const prefix = compositeGroup.prefix;
       colDef.minWidth = 210;
       colDef.renderCell = (params: GridRenderCellParams<ReportGridRow>) => {
@@ -251,7 +280,18 @@ export function mapReportContentToResultGrid(
     for (const key of columnKeys) {
       const compositeGroup = compositeByKey.get(key);
       if (compositeGroup) {
-        flat[key] = formatReportCompositeCellValue(compositeGroup, row);
+        if (compositeGroup.kind === COORDINATES_COMPOSITE_KIND) {
+          if (shouldRenderReportCoordinateAsMap(compositeGroup, aggregationMap)) {
+            flat[key] = formatReportCoordinatesCompositeCellValue(compositeGroup.prefix, row);
+          } else {
+            flat[key] = formatAggregatedReportCoordinateCountValue(compositeGroup, row);
+          }
+        } else {
+          flat[key] = formatReportCompositeCellValue(compositeGroup, row, {
+            aggregationMap,
+            groupBySet,
+          });
+        }
         continue;
       }
       const fieldDef = findReportFieldDefForColumnKey(
@@ -272,6 +312,7 @@ export function mapReportContentToResultGrid(
         entityMetadata?.fields ?? [],
         labelMaps,
         t,
+        aggregationMap,
       );
     }
 

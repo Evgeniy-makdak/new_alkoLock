@@ -349,14 +349,79 @@ function readRowValue(row: Record<string, unknown>, path: string): unknown {
   return row[path];
 }
 
+export type ReportCompositeCellDisplayContext = {
+  aggregationMap?: Map<string, string>;
+  groupBySet?: Set<string>;
+};
+
+/** Ключевое поле сущности при агрегации вне groupBy — не смешиваем max() по разным членам bundle. */
+export function getReportCompositeAnchorLeaf(kind: ReportCompositeKind): string | null {
+  if (kind === COORDINATES_COMPOSITE_KIND) return null;
+  switch (kind) {
+    case 'User':
+      return 'surname';
+    case 'MonitoringDevice':
+      return 'name';
+    case 'Vehicle':
+      return 'registrationNumber';
+    default:
+      return null;
+  }
+}
+
+/** Только User: при max() вне groupBy не склеиваем ФИО из разных записей. ТС/алкозамок — полный состав из строки. */
+export function shouldUseAnchorOnlyCompositeDisplay(
+  group: Pick<CompositeColumnGroup, 'kind' | 'memberKeys'>,
+  aggregationMap: Map<string, string> | undefined,
+  groupBySet: Set<string> | undefined,
+): boolean {
+  if (!aggregationMap?.size || group.kind !== 'User') return false;
+
+  const groupSet = groupBySet ?? new Set<string>();
+  if (group.memberKeys.length > 0 && group.memberKeys.every((member) => groupSet.has(member))) {
+    return false;
+  }
+
+  return group.memberKeys.some((member) => aggregationMap.has(member));
+}
+
+function formatAnchorOnlyCompositeCellValue(
+  group: CompositeColumnGroup,
+  read: (leaf: string) => unknown,
+): string {
+  const anchorLeaf = getReportCompositeAnchorLeaf(group.kind);
+  if (!anchorLeaf) return REPORT_EMPTY_DISPLAY;
+
+  const anchorValue = read(anchorLeaf);
+  if (isReportEmptyValue(anchorValue)) return REPORT_EMPTY_DISPLAY;
+
+  switch (group.kind) {
+    case 'User':
+      return finalizeReportCellDisplay(String(anchorValue).trim());
+    default:
+      return finalizeReportCellDisplay(String(anchorValue));
+  }
+}
+
 export function formatReportCompositeCellValue(
   group: CompositeColumnGroup,
   row: Record<string, unknown>,
+  displayContext?: ReportCompositeCellDisplayContext,
 ): string {
   const read = (leaf: string) => {
     const key = group.prefix ? `${group.prefix}.${leaf}` : leaf;
     return readRowValue(row, key);
   };
+
+  if (
+    shouldUseAnchorOnlyCompositeDisplay(
+      group,
+      displayContext?.aggregationMap,
+      displayContext?.groupBySet,
+    )
+  ) {
+    return formatAnchorOnlyCompositeCellValue(group, read);
+  }
 
   let display: string;
 

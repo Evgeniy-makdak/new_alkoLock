@@ -759,6 +759,13 @@
       "coordinatesDisplay": "Широта:долгота",
       "entityCoordinates": "Координаты"
     },
+    "aggregation": {
+      "count": "количество",
+      "max": "макс. значение",
+      "min": "мин. значение",
+      "sum": "сумма",
+      "avg": "среднее"
+    },
     "nestedProp": {
       "id": "ID",
       "name": "Название",
