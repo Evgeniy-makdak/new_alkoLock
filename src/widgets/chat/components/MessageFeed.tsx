@@ -15,7 +15,7 @@ interface MessageFeedProps {
   sessionId: string;
   messages: any[];
   onReplyToMessage?: (message: any) => void;
-  onDeleteMessage?: (messageId: string) => void;
+  onDeleteMessage?: (messageId: string) => void | Promise<void>;
   onEditMessage?: (messageId: string, newText: string) => void;
   currentUserId?: number;
   attachments?: File[];
@@ -239,7 +239,7 @@ function MessageFeed({
     const filtered = messages.filter(
       (msg) => String(msg.dialogId ?? msg.dialog?.id ?? '') === feedDialogId,
     );
-    return [...filtered].sort((a: any, b: any) => {
+    const sorted = [...filtered].sort((a: any, b: any) => {
       const idA = Number(a.id);
       const idB = Number(b.id);
       if (Number.isFinite(idA) && Number.isFinite(idB) && idA !== idB) {
@@ -250,7 +250,16 @@ function MessageFeed({
       if (ta !== tb) return ta - tb;
       return 0;
     });
-  }, [messages, feedDialogId]);
+
+    return sorted.filter((msg) => {
+      if (msg.isDeleted) return false;
+      const id = msg.id != null ? String(msg.id) : '';
+      const uuid = msg.uuid != null ? String(msg.uuid) : '';
+      if (id && deletedMessages.has(id)) return false;
+      if (uuid && deletedMessages.has(uuid)) return false;
+      return true;
+    });
+  }, [messages, feedDialogId, deletedMessages]);
 
   const hasUnreadOnExpandHint =
     !!scrollToBottomOnExpand &&
@@ -1238,11 +1247,20 @@ function MessageFeed({
     if (onReplyToMessage) onReplyToMessage(message);
   };
 
-  const handleDeleteClick = (message: any, e: React.MouseEvent) => {
+  const handleDeleteClick = async (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (message.id && canEditOrDelete(message)) {
-      setDeletedMessages((prev) => new Set(prev).add(message.id));
-      if (onDeleteMessage) onDeleteMessage(message.id);
+    if (!message.id || !canEditOrDelete(message) || !onDeleteMessage) return;
+
+    try {
+      await onDeleteMessage(message.id);
+      setDeletedMessages((prev) => {
+        const next = new Set(prev);
+        if (message.id != null) next.add(String(message.id));
+        if (message.uuid != null) next.add(String(message.uuid));
+        return next;
+      });
+    } catch (error) {
+      console.error('Error deleting message:', error);
     }
   };
 
@@ -1501,7 +1519,10 @@ function MessageFeed({
           const originalMessage = msg.replyTo
             ? findOriginalMessage(msg.replyTo)
             : msg.replyToMessage;
-          const isDeleted = msg.id && deletedMessages.has(msg.id);
+          const isDeleted =
+            Boolean(msg.isDeleted) ||
+            (msg.id != null && deletedMessages.has(String(msg.id))) ||
+            (msg.uuid != null && deletedMessages.has(String(msg.uuid)));
           const isEditing = msg.id === editingMessageId;
           const isOperatorMessage = msg.messageStatus === 'TO_USER';
           const canEditDelete = canEditOrDelete(msg) && canInteractWithMessages;

@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 
 import { ChatsApi } from '@shared/api/baseQuerys';
 
+import { isNumericServerMessageId } from '../../lib/resolveServerMessageId';
 import { ChatRefs } from './useChatRefs';
 
 interface MessageHandlersDeps {
@@ -309,6 +310,11 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
         const updatedMessages = session.messages.map((msg: any) => {
           if (msg.uuid !== messageData.uuid && msg.id !== messageData.id) return msg;
           let next = { ...msg, ...newMessage };
+          if (messageData.id != null) {
+            next.id = String(messageData.id);
+          } else if (isNumericServerMessageId(msg.id)) {
+            next.id = String(msg.id);
+          }
           if (
             !session.isMinimized &&
             next.messageStatus === 'TO_OPERATOR' &&

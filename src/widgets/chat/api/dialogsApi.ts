@@ -213,4 +213,10 @@ export class DialogsApi {
   static getDialogMessagesInfo(dialogId: string) {
     return this.getMessages({ dialogId, page: 0, size: 1 });
   }
+
+  static deleteMessage(messageId: string | number) {
+    return deleteQuery({
+      url: `api/v1/messages/${messageId}`,
+    });
+  }
 }

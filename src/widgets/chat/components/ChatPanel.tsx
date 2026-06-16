@@ -10,6 +10,10 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
 import { useSocket } from '../contexts/SocketContext';
+import {
+  findChatMessageByKey,
+  resolveServerMessageId,
+} from '../lib/resolveServerMessageId';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './ChatPanel.module.scss';
 import { DialogActions } from './DialogActions';
@@ -803,16 +807,73 @@ function ChatPanel({
 
   const handleDeleteMessage = useCallback(
     async (messageId: string) => {
+      const liveSession = getSession(sessionId);
+      const messages = liveSession?.messages || [];
+      const message = findChatMessageByKey(messages, messageId);
+
+      let serverMessageId = resolveServerMessageId(message);
+
+      if (!serverMessageId && message?.uuid) {
+        const dialogId =
+          message.dialogId ?? liveSession?.selectedDialog?.id ?? liveSession?.assignedDialogId;
+        if (dialogId && String(dialogId) !== '0') {
+          try {
+            const response = await api.getDialogMessagesWithPagination(
+              String(dialogId),
+              0,
+              50,
+              'createdAt,desc',
+            );
+            const fromServer = (response?.content || []).find(
+              (item: any) => String(item.uuid) === String(message.uuid),
+            );
+            if (fromServer?.id != null) {
+              serverMessageId = Number(fromServer.id);
+            }
+          } catch (lookupError) {
+            console.error('Error resolving message id for delete:', lookupError);
+          }
+        }
+      }
+
+      if (!serverMessageId) {
+        throw new Error('Не удалось определить id сообщения на сервере');
+      }
+
+      const patchNumericId = (list: any[]) =>
+        list.map((msg: any) => {
+          const isTarget =
+            String(msg.id) === String(messageId) ||
+            String(msg.uuid) === String(messageId) ||
+            (message?.uuid && String(msg.uuid) === String(message.uuid));
+
+          return isTarget ? { ...msg, id: String(serverMessageId) } : msg;
+        });
+
+      if (message && String(message.id) !== String(serverMessageId)) {
+        updateSession(sessionId, { messages: patchNumericId(messages) });
+      }
+
       try {
-        const updatedMessages = (session?.messages || []).map((msg: any) =>
-          msg.id === messageId ? { ...msg, isDeleted: true } : msg,
-        );
+        await api.deleteMessage(serverMessageId);
+
+        const currentMessages = getSession(sessionId)?.messages || patchNumericId(messages);
+        const updatedMessages = currentMessages.map((msg: any) => {
+          const isTarget =
+            String(msg.id) === String(messageId) ||
+            String(msg.uuid) === String(messageId) ||
+            (message?.uuid && String(msg.uuid) === String(message.uuid)) ||
+            String(msg.id) === String(serverMessageId);
+
+          return isTarget ? { ...msg, id: String(serverMessageId), isDeleted: true } : msg;
+        });
         updateSession(sessionId, { messages: updatedMessages });
       } catch (error) {
         console.error('Error deleting message:', error);
+        throw error;
       }
     },
-    [sessionId, session?.messages, updateSession],
+    [sessionId, getSession, updateSession],
   );
 
   const handleEditMessage = useCallback(

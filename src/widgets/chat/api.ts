@@ -251,6 +251,11 @@ const deleteDialog = async (dialogId: string) => {
   return response?.data;
 };
 
+const deleteMessage = async (messageId: string | number) => {
+  const response = await DialogsApi.deleteMessage(messageId);
+  return response?.data;
+};
+
 const getAllDialogs = async () => {
   const response = await DialogsApi.getAllDialogs();
   return response?.data;
@@ -506,6 +511,7 @@ const api = {
   completeDialog,
   transferDialog,
   deleteDialog,
+  deleteMessage,
   uploadAttachments,
   uploadFile,
   getAllDialogs,
