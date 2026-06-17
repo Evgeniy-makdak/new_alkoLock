@@ -7,6 +7,9 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   closeCurrentWindow() {
     return ipcRenderer.invoke('operator-chat-popup:close-current');
   },
+  closeOperatorChatPopup() {
+    return ipcRenderer.invoke('operator-chat-popup:close');
+  },
 });
 
 contextBridge.exposeInMainWorld('alcolockDesktopSetup', {

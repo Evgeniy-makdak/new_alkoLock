@@ -5,6 +5,7 @@ const path = require('path');
 const OPERATOR_CHAT_POPUP_PATH = '/operator-chat-popup';
 const AUTH_PATH = '/authorization';
 const FALLBACK_APP_URL = 'http://localhost/authorization';
+const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY = 'alcolock_desktop_operator_chat_popup_closed_v1';
 const CHAT_CONTROL_LABEL_FIX_CSS = `
   [class*="usersSelectContainer"] .MuiFormControl-root > .MuiBox-root,
   [class*="transferRow"] .MuiFormControl-root > .MuiBox-root {
@@ -29,6 +30,11 @@ const CHAT_CONTROL_LABEL_FIX_CSS = `
     box-shadow: 0 0 0 4px #1e1e1e !important;
   }
 `;
+const DESKTOP_SHELL_CHAT_CSS = `
+  [class*="dockOpenWindowButton"] {
+    display: none !important;
+  }
+`;
 const OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS = `
   html,
   body,
@@ -50,13 +56,18 @@ const OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS = `
     background-image: none !important;
   }
 
-  [class*="chatHeader"] {
+  [data-chat-layout-pinned="0"] [class*="chatHeader"] {
     -webkit-app-region: drag !important;
     cursor: grab !important;
   }
 
-  [class*="chatHeader"]:active {
+  [data-chat-layout-pinned="0"] [class*="chatHeader"]:active {
     cursor: grabbing !important;
+  }
+
+  [data-chat-layout-pinned="1"] [class*="chatHeader"] {
+    -webkit-app-region: no-drag !important;
+    cursor: default !important;
   }
 
   [class*="headerActions"],
@@ -67,6 +78,16 @@ const OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS = `
   [class*="chatHeader"] [role="button"],
   [class*="chatHeader"] svg {
     -webkit-app-region: no-drag !important;
+  }
+
+  [data-operator-chat-dock="1"] {
+    top: 0 !important;
+    bottom: auto !important;
+  }
+
+  [data-chat-panel-header-action="minimize"],
+  [data-chat-panel-header-action="close"] {
+    display: none !important;
   }
 `;
 
@@ -469,11 +490,17 @@ function createMainWindow() {
   mainWindow.webContents.on('did-finish-load', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       void mainWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
+      void mainWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
     }
   });
   installZoomShortcuts(mainWindow);
   installOperatorPopupWindowOpenHandler(mainWindow);
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.maximize();
+    mainWindow.show();
+    mainWindow.focus();
+  });
   mainWindow.loadURL(appUrl);
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -563,6 +590,7 @@ function createOperatorChatPopupWindow(payload = {}) {
     if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
       void operatorChatPopupWindow.webContents.insertCSS(OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS);
       void operatorChatPopupWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
+      void operatorChatPopupWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
       operatorChatPopupWindow.setBackgroundColor('#00000000');
     }
   });
@@ -576,6 +604,16 @@ function createOperatorChatPopupWindow(payload = {}) {
   });
   operatorChatPopupWindow.on('closed', () => {
     operatorChatPopupWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const script = `
+        try {
+          localStorage.removeItem('alcolock_operator_chat_popup_active_v1');
+          localStorage.setItem(${JSON.stringify(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY)}, String(Date.now()));
+          window.dispatchEvent(new Event(${JSON.stringify(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY)}));
+        } catch {}
+      `;
+      void mainWindow.webContents.executeJavaScript(script, true);
+    }
   });
   operatorChatPopupWindow.loadURL(appUrl);
 }
@@ -588,6 +626,12 @@ ipcMain.handle('operator-chat-popup:close-current', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (win && !win.isDestroyed()) {
     win.close();
+  }
+});
+
+ipcMain.handle('operator-chat-popup:close', () => {
+  if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
+    operatorChatPopupWindow.close();
   }
 });
 

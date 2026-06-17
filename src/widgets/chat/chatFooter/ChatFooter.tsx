@@ -28,8 +28,10 @@ import { appStore } from '@shared/model/app_store/AppStore';
 
 import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
 import {
+  CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
+  CHAT_POPUP_ACTIVE_STORAGE_KEY,
 } from '../chatPopup/constants';
 import {
   persistMainRestoreFromPopupState,
@@ -41,6 +43,7 @@ import {
 } from '../chatPopup/openOperatorChatPopup';
 import { OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX } from '../chatPopup/operatorChatPopupLayout';
 import { writeOperatorChatPopupFrameLock } from '../chatPopup/operatorChatPopupFrameLock';
+import { CHAT_POPUP_HEARTBEAT_MS, readMainChatFooterSuppressedByPopup } from '../chatPopup/popupPresence';
 import {
   CHAT_POPUP_LAYOUT_PINNED,
   chatPanelDockStorageKeys,
@@ -449,8 +452,13 @@ const useOperatorPermissions = () => {
 
 const ChatToggleButton = () => {
   const { t } = useTranslation();
-  const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession } = useChat();
+  const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId } =
+    useChat();
   const { calculateTotalUnread, dialogsUnreadCounts, unreadCount: socketUnreadTotal } = useSocket();
+  const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
+  const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
+    isDesktopShell ? readMainChatFooterSuppressedByPopup() : false,
+  );
   const iconUnreadTotalBase = calculateTotalUnread();
   // Редкий кейс сразу после жёсткой перезагрузки: общий бейдж может кратковременно быть 0,
   // пока WS-карта/агрегат не синхронизировались, но в сессии уже есть непрочитанные по ленте.
@@ -469,7 +477,16 @@ const ChatToggleButton = () => {
         : 0;
 
   const handleToggle = () => {
-    if (isChatOpen) {
+    if (isDesktopShell) {
+      if (isDesktopPopupOpen) {
+        void window.alcolockDesktop?.closeOperatorChatPopup();
+        setIsDesktopPopupOpen(false);
+        return;
+      }
+      persistMainToOperatorPopupHandoff({ isChatOpen: true, sessions, activeSessionId });
+      openOperatorChatPopup();
+      setIsDesktopPopupOpen(true);
+    } else if (isChatOpen) {
       sessions.forEach((session) => {
         closeSession(session.id);
       });
@@ -480,7 +497,39 @@ const ChatToggleButton = () => {
     }
   };
 
-  const tooltipTitle = t('chat.toggleTooltip', { count: iconUnreadTotal });
+  const tooltipTitle = isDesktopShell
+    ? isDesktopPopupOpen
+      ? 'Закрыть диалоговое окно'
+      : 'Открыть диалоговое окно'
+    : t('chat.toggleTooltip', { count: iconUnreadTotal });
+
+  useEffect(() => {
+    if (!isDesktopShell) return;
+
+    const syncDesktopPopupState = () => {
+      setIsDesktopPopupOpen(readMainChatFooterSuppressedByPopup());
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (
+        event.key === CHAT_POPUP_ACTIVE_STORAGE_KEY ||
+        event.key === CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY
+      ) {
+        syncDesktopPopupState();
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY, syncDesktopPopupState);
+    const timer = window.setInterval(syncDesktopPopupState, CHAT_POPUP_HEARTBEAT_MS);
+    syncDesktopPopupState();
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY, syncDesktopPopupState);
+      window.clearInterval(timer);
+    };
+  }, [isDesktopShell]);
 
   return (
     <Tooltip title={tooltipTitle} placement="left">
@@ -490,7 +539,11 @@ const ChatToggleButton = () => {
           onClick={handleToggle}
           color="primary"
           size="large">
-          {isChatOpen ? <CloseIcon /> : <ChatIcon />}
+          {(isDesktopShell && isDesktopPopupOpen) || (isChatOpen && !isDesktopShell) ? (
+            <CloseIcon />
+          ) : (
+            <ChatIcon />
+          )}
         </IconButton>
         <UnreadMessagesBadge count={iconUnreadTotal} />
       </div>
@@ -631,6 +684,32 @@ const ChatContainer = () => {
     forceLoadUnreadDialogs,
     isOperatorChatPopupWindow,
   ]);
+
+  useEffect(() => {
+    if (isOperatorChatPopupWindow || !window.alcolockDesktop) return;
+
+    const closeMainDesktopChatState = () => {
+      sessionsForBranchClearRef.current.forEach((session) => {
+        closeSessionForBranchClearRef.current(session.id);
+      });
+      setIsChatOpen(false);
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY) {
+        closeMainDesktopChatState();
+      }
+    };
+
+    const onCustomEvent = () => closeMainDesktopChatState();
+
+    window.addEventListener('storage', onStorage);
+    window.addEventListener(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY, onCustomEvent);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY, onCustomEvent);
+    };
+  }, [isOperatorChatPopupWindow, setIsChatOpen]);
 
   const operatorChatSessionRestoreFingerprint = useMemo(() => {
     if (!isOperatorChatPopupWindow) return '';
@@ -1455,10 +1534,14 @@ const ChatContainer = () => {
       {allowDesktopPanelResize ? (
         <div
           className={`${styles.chatFloatingDock} ${isDockDragging ? styles.chatFloatingDockDragging : ''}`}
-          style={{ right: dockRightPx, bottom: dockBottomPx }}
+          style={
+            isOperatorChatPopupWindow
+              ? { right: dockRightPx, top: 0 }
+              : { right: dockRightPx, bottom: dockBottomPx }
+          }
           {...(isOperatorChatPopupWindow ? { 'data-operator-chat-dock': '1' } : {})}>
           <div className={styles.dockFabColumn}>
-            {!isChatLayoutPinned ? (
+            {!isChatLayoutPinned && !window.alcolockDesktop ? (
               <Tooltip title={operatorChatWindowButtonLabel} placement="left">
                 <IconButton
                   className={styles.dockOpenWindowButton}

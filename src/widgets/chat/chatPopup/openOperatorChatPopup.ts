@@ -24,8 +24,15 @@ export function openOperatorChatPopup(): void {
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const availLeft = scr.availLeft ?? 0;
   const availTop = scr.availTop ?? 0;
-  const left = availLeft + Math.max(0, (scr.availWidth - outerW) / 2);
-  const top = availTop + Math.max(0, (scr.availHeight - outerH) / 2);
+  const desktopBridge = window.alcolockDesktop;
+  const desktopMarginPx = 16;
+  const desktopVisiblePanelH = Math.min(outerH, 560);
+  const left = desktopBridge
+    ? availLeft + Math.max(0, scr.availWidth - outerW - desktopMarginPx)
+    : availLeft + Math.max(0, (scr.availWidth - outerW) / 2);
+  const top = desktopBridge
+    ? availTop + Math.max(0, scr.availHeight - desktopVisiblePanelH - desktopMarginPx)
+    : availTop + Math.max(0, (scr.availHeight - outerH) / 2);
 
   const features = [
     'popup=yes',
@@ -49,7 +56,6 @@ export function openOperatorChatPopup(): void {
     top: Math.round(top),
   });
 
-  const desktopBridge = window.alcolockDesktop;
   if (desktopBridge) {
     void desktopBridge.openOperatorChatPopup({
       url,

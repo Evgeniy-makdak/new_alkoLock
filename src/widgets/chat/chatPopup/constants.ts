@@ -35,6 +35,10 @@ export const CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY =
 export const CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY =
   'alcolock_chat_popup_from_main_fetch_once_v1';
 
+/** Electron desktop: popup закрылся, основное окно должно сбросить состояние чата. */
+export const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY =
+  'alcolock_desktop_operator_chat_popup_closed_v1';
+
 export const OPERATOR_CHAT_POPUP_WINDOW_NAME = 'alcolock-operator-chat';
 
 /** Маркер на `.chatFloatingDock` в окне operator-chat-popup — подгонка размера окна под чат. */

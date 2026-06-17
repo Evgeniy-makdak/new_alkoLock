@@ -1400,7 +1400,10 @@ function ChatPanel({
   }, [dialogStatusEffective, isTransferBannerPinned]);
 
   return (
-    <div className={styles.panel} data-session-id={sessionId}>
+    <div
+      className={styles.panel}
+      data-session-id={sessionId}
+      data-chat-layout-pinned={chatLayoutPinned ? '1' : '0'}>
       <div
         className={`${styles.chatHeader} ${dockDragEnabled ? styles.chatHeaderDraggable : ''}`}
         onPointerDown={handleDockHeaderPointerDown}>
@@ -1414,6 +1417,7 @@ function ChatPanel({
           {onToggleChatLayoutPin ? (
             <IconButton
               size="small"
+              data-chat-panel-header-action="pin"
               onClick={(e) => {
                 e.stopPropagation();
                 onToggleChatLayoutPin();
@@ -1426,10 +1430,18 @@ function ChatPanel({
               )}
             </IconButton>
           ) : null}
-          <IconButton size="small" onClick={handleMinimize} title={t('chat.minimizeDialog')}>
+          <IconButton
+            size="small"
+            data-chat-panel-header-action="minimize"
+            onClick={handleMinimize}
+            title={t('chat.minimizeDialog')}>
             <Minimize fontSize="small" />
           </IconButton>
-          <IconButton size="small" onClick={handleCloseAllChats} title={t('chat.closeDialog')}>
+          <IconButton
+            size="small"
+            data-chat-panel-header-action="close"
+            onClick={handleCloseAllChats}
+            title={t('chat.closeDialog')}>
             <Close fontSize="small" />
           </IconButton>
         </div>

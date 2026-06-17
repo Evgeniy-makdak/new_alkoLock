@@ -40,5 +40,6 @@ interface Window {
       };
     }): Promise<void>;
     closeCurrentWindow(): Promise<void>;
+    closeOperatorChatPopup(): Promise<void>;
   };
 }
