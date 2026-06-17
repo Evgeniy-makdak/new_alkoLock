@@ -28,6 +28,10 @@ export const CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY =
 export const CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY =
   'alcolock_chat_main_to_operator_popup_handoff_v1';
 
+/** Snapshot боковых preview-карточек при открытии /operator-chat-popup из основной вкладки. */
+export const CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY =
+  'alcolock_operator_chat_popup_preview_snapshot_v1';
+
 /**
  * В окне popup: после первого fetch истории/unread по handoff из основной вкладки — не повторять при
  * React Strict Mode (двойной mount в dev).
@@ -43,3 +47,6 @@ export const OPERATOR_CHAT_POPUP_WINDOW_NAME = 'alcolock-operator-chat';
 
 /** Маркер на `.chatFloatingDock` в окне operator-chat-popup — подгонка размера окна под чат. */
 export const OPERATOR_CHAT_POPUP_DOCK_SELECTOR = '[data-operator-chat-dock="1"]';
+
+/** Карточки свёрнутых/непрочитанных превью внутри popup dock. */
+export const OPERATOR_CHAT_POPUP_PREVIEW_SELECTOR = '[data-operator-chat-preview="1"]';

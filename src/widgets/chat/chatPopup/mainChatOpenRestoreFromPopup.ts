@@ -6,6 +6,7 @@ import {
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
   CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY,
+  CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY,
 } from './constants';
 
 /** Снимок сессии для передачи из popup в основную вкладку (только JSON-поля). */
@@ -16,6 +17,9 @@ export type PopupReturnSerializedSession = {
   selectedUserName: string;
   selectedDialogId: string | number | null;
   assignedDialogId: string | null;
+  unreadDialogs?: ChatSession['unreadDialogs'];
+  unreadCount?: number;
+  totalUnreadCount?: number;
 };
 
 export type PopupReturnHandoffPayload =
@@ -26,6 +30,84 @@ export type PopupReturnHandoffPayload =
       activeSessionId: string | null;
       sessions: PopupReturnSerializedSession[];
     };
+
+export type OperatorPopupPreviewSnapshotEntry =
+  | {
+      kind: 'session';
+      key: string;
+      sessionId: string;
+      title: string;
+      subtitle?: string;
+      unread: number;
+    }
+  | {
+      kind: 'unread';
+      key: string;
+      sessionId: string;
+      dialog: NonNullable<ChatSession['unreadDialogs']>[number];
+      title: string;
+      subtitle?: string;
+      unread: number;
+    };
+
+function previewLineFromSession(s: ChatSession): string {
+  const last = Array.isArray(s.messages) ? s.messages[s.messages.length - 1] : null;
+  const text = typeof last?.text === 'string' ? last.text.trim() : '';
+  if (text) return text.length <= 60 ? text : `${text.slice(0, 60)}…`;
+  return '';
+}
+
+function buildOperatorPopupPreviewSnapshot(
+  sessions: ChatSession[],
+): OperatorPopupPreviewSnapshotEntry[] {
+  const entries: OperatorPopupPreviewSnapshotEntry[] = [];
+  const coveredDialogIds = new Set<string>();
+
+  sessions.forEach((session) => {
+    const selectedDialogId =
+      session.selectedDialog?.id != null ? String(session.selectedDialog.id) : session.assignedDialogId;
+    if (selectedDialogId) coveredDialogIds.add(String(selectedDialogId));
+
+    if (!session.isMinimized) return;
+    const title =
+      session.selectedUserName ||
+      session.selectedDialog?.client_name ||
+      session.selectedDialog?.clientName ||
+      '';
+    if (!title && !selectedDialogId && !session.selectedUsers?.length) return;
+    entries.push({
+      kind: 'session',
+      key: `snapshot-minimized-${session.id}`,
+      sessionId: session.id,
+      title: title || 'Новый чат',
+      subtitle: previewLineFromSession(session) || undefined,
+      unread: Math.max(session.unreadCount ?? 0, session.totalUnreadCount ?? 0),
+    });
+  });
+
+  const seenUnreadIds = new Set<number>();
+  sessions.forEach((session) => {
+    (session.unreadDialogs ?? []).forEach((dialog) => {
+      if (!dialog?.id || seenUnreadIds.has(dialog.id)) return;
+      if (coveredDialogIds.has(String(dialog.id))) return;
+      seenUnreadIds.add(dialog.id);
+      entries.push({
+        kind: 'unread',
+        key: `snapshot-unread-${dialog.id}`,
+        sessionId: session.id,
+        dialog,
+        title: dialog.owner?.fullName || 'Непрочитанный диалог',
+        unread: Math.max(
+          Number(dialog.countUnMessages ?? 0),
+          Number(dialog.countUnreadMess ?? 0),
+          0,
+        ),
+      });
+    });
+  });
+
+  return entries;
+}
 
 export function serializeSessionsForPopupHandoff(
   sessions: ChatSession[],
@@ -49,6 +131,9 @@ export function serializeSessionsForPopupHandoff(
       String(s.assignedDialogId) !== 'assigned'
         ? String(s.assignedDialogId)
         : null,
+    unreadDialogs: Array.isArray(s.unreadDialogs) ? s.unreadDialogs : [],
+    unreadCount: s.unreadCount,
+    totalUnreadCount: s.totalUnreadCount,
   }));
 }
 
@@ -104,8 +189,10 @@ function deserializeOne(row: PopupReturnSerializedSession): ChatSession {
     lastSendError: null,
     assignedDialogId: row.assignedDialogId ?? null,
     transferRecipientFullName: null,
-    unreadDialogs: [],
+    unreadDialogs: Array.isArray(row.unreadDialogs) ? row.unreadDialogs : [],
     isLoadingUnreadDialogs: false,
+    unreadCount: row.unreadCount,
+    totalUnreadCount: row.totalUnreadCount,
   };
 }
 
@@ -113,6 +200,50 @@ export function deserializeSessionsForMainRestore(
   rows: PopupReturnSerializedSession[],
 ): ChatSession[] {
   return rows.map(deserializeOne);
+}
+
+function makeMinimizedSnapshotSession(entry: OperatorPopupPreviewSnapshotEntry): ChatSession {
+  const selectedDialogId = entry.kind === 'unread' ? entry.dialog.id : null;
+  const ownerId = entry.kind === 'unread' ? entry.dialog.owner?.id : undefined;
+  return deserializeOne({
+    id: entry.sessionId,
+    isMinimized: true,
+    selectedUsers: ownerId ? [ownerId] : [],
+    selectedUserName: entry.title,
+    selectedDialogId,
+    assignedDialogId: selectedDialogId != null ? String(selectedDialogId) : null,
+    unreadDialogs: entry.kind === 'unread' ? [entry.dialog] : [],
+    unreadCount: entry.unread,
+    totalUnreadCount: entry.unread,
+  });
+}
+
+function mergePreviewSnapshotIntoSessions(sessions: ChatSession[]): ChatSession[] {
+  const snapshot = readOperatorPopupPreviewSnapshot();
+  if (snapshot.length === 0) return sessions;
+
+  let next = sessions;
+  for (const entry of snapshot) {
+    const existingIndex = next.findIndex((session) => session.id === entry.sessionId);
+    if (existingIndex >= 0) {
+      if (entry.kind !== 'unread') continue;
+      next = next.map((session, index) => {
+        if (index !== existingIndex) return session;
+        const alreadyHasDialog = session.unreadDialogs?.some((dialog) => dialog.id === entry.dialog.id);
+        return {
+          ...session,
+          unreadDialogs: alreadyHasDialog
+            ? session.unreadDialogs
+            : [...(session.unreadDialogs ?? []), entry.dialog],
+        };
+      });
+      continue;
+    }
+
+    next = [...next, makeMinimizedSnapshotSession(entry)];
+  }
+
+  return next;
 }
 
 function parseHandoffJson(raw: string): PopupReturnHandoffPayload | null {
@@ -177,8 +308,25 @@ export function persistMainToOperatorPopupHandoff(args: {
   };
   try {
     localStorage.setItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY, JSON.stringify(payload));
+    localStorage.setItem(
+      CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY,
+      JSON.stringify(buildOperatorPopupPreviewSnapshot(sessions)),
+    );
   } catch {
     /* ignore */
+  }
+}
+
+export function readOperatorPopupPreviewSnapshot(): OperatorPopupPreviewSnapshotEntry[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as OperatorPopupPreviewSnapshotEntry[];
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry) => entry && typeof entry.key === 'string');
+  } catch {
+    return [];
   }
 }
 
@@ -191,7 +339,7 @@ function deserializeMainToOperatorPopupHandoffRaw(raw: string | null): InitialSe
     if (!p || p.v !== 2 || !Array.isArray(p.sessions) || p.sessions.length === 0) {
       return { sessions: [], activeSessionId: null, fromMainToPopup: false };
     }
-    const sessions = deserializeSessionsForMainRestore(p.sessions);
+    const sessions = mergePreviewSnapshotIntoSessions(deserializeSessionsForMainRestore(p.sessions));
     let active = p.activeSessionId ?? null;
     if (active && !sessions.some((s) => s.id === active)) {
       const firstExpanded = sessions.find((s) => !s.isMinimized);

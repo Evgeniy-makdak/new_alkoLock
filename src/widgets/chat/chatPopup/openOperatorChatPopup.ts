@@ -2,7 +2,10 @@ import { RoutePaths } from '@shared/config/routePathsEnum';
 
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
 import { estimateOperatorChatPopupOuterSize } from './estimateOperatorChatPopupWindowSize';
-import { clearMainRestoreIsChatOpenFromPopup } from './mainChatOpenRestoreFromPopup';
+import {
+  clearMainRestoreIsChatOpenFromPopup,
+  readOperatorPopupPreviewSnapshot,
+} from './mainChatOpenRestoreFromPopup';
 import { writeOperatorChatPopupFrameLock } from './operatorChatPopupFrameLock';
 import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
 
@@ -15,7 +18,11 @@ export function openOperatorChatPopup(): void {
   clearOperatorChatPopupLayoutStorage();
   clearMainRestoreIsChatOpenFromPopup();
   const url = `${window.location.origin}${RoutePaths.operatorChatPopup}`;
-  const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize();
+  const desktopBridge = window.alcolockDesktop;
+  const hasPreviewSnapshot = readOperatorPopupPreviewSnapshot().length > 0;
+  const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize({
+    includePreviewColumn: Boolean(desktopBridge) || hasPreviewSnapshot,
+  });
   let outerW = Math.min(window.screen.availWidth, estOuterW);
   let outerH = Math.min(window.screen.availHeight, estOuterH);
   outerW = Math.max(estOuterW, outerW);
@@ -24,7 +31,6 @@ export function openOperatorChatPopup(): void {
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const availLeft = scr.availLeft ?? 0;
   const availTop = scr.availTop ?? 0;
-  const desktopBridge = window.alcolockDesktop;
   const desktopMarginPx = 16;
   const desktopVisiblePanelH = Math.min(outerH, 560);
   const left = desktopBridge

@@ -23,10 +23,16 @@ function readSavedPopupPanel(): { w: number; h: number } {
   return { w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX };
 }
 
-/** Внутренние размеры для window.open (с колонкой превью). */
-export function estimateOperatorChatPopupInnerSize(): { innerW: number; innerH: number } {
+type EstimateOperatorChatPopupSizeOptions = {
+  includePreviewColumn?: boolean;
+};
+
+/** Внутренние размеры для window.open. */
+export function estimateOperatorChatPopupInnerSize(
+  options: EstimateOperatorChatPopupSizeOptions = {},
+): { innerW: number; innerH: number } {
   const { w: pw, h: ph } = readSavedPopupPanel();
-  const min = getOperatorChatPopupMinInnerSize(pw);
+  const min = getOperatorChatPopupMinInnerSize(pw, options);
   return {
     innerW: min.innerW,
     innerH: Math.max(ph, min.innerH),
@@ -34,7 +40,9 @@ export function estimateOperatorChatPopupInnerSize(): { innerW: number; innerH: 
 }
 
 /** Внешние размеры окна при открытии. */
-export function estimateOperatorChatPopupOuterSize(): { outerW: number; outerH: number } {
+export function estimateOperatorChatPopupOuterSize(
+  options: EstimateOperatorChatPopupSizeOptions = {},
+): { outerW: number; outerH: number } {
   const { w: pw } = readSavedPopupPanel();
-  return getOperatorChatPopupMinOuterSize(pw);
+  return getOperatorChatPopupMinOuterSize(pw, options);
 }

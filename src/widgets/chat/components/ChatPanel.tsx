@@ -33,6 +33,9 @@ interface ChatPanelProps {
   /** Закрепить положение и размер окна чата (только режим floating dock). */
   chatLayoutPinned?: boolean;
   onToggleChatLayoutPin?: () => void;
+  /** В отдельном web popup внутренний крестик закрывает всё окно-обёртку, как native X. */
+  onCloseAllChats?: () => void;
+  closeAllChatsTitle?: string;
 }
 
 function getLastOperatorIdFromDialog(d: any): number | string | undefined {
@@ -68,6 +71,8 @@ function ChatPanel({
   onDockDragPointerDown,
   chatLayoutPinned = false,
   onToggleChatLayoutPin,
+  onCloseAllChats,
+  closeAllChatsTitle,
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -751,11 +756,15 @@ function ChatPanel({
   ]);
 
   const handleCloseAllChats = useCallback(() => {
+    if (onCloseAllChats) {
+      onCloseAllChats();
+      return;
+    }
     sessions.forEach((s) => {
       closeSession(s.id);
     });
     setIsChatOpen(false);
-  }, [sessions, closeSession, setIsChatOpen]);
+  }, [onCloseAllChats, sessions, closeSession, setIsChatOpen]);
 
   const handleDockHeaderPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1441,7 +1450,7 @@ function ChatPanel({
             size="small"
             data-chat-panel-header-action="close"
             onClick={handleCloseAllChats}
-            title={t('chat.closeDialog')}>
+            title={closeAllChatsTitle ?? t('chat.closeDialog')}>
             <Close fontSize="small" />
           </IconButton>
         </div>

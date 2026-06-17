@@ -210,11 +210,13 @@ function normalizeSessionDialogId(raw: unknown): number | null {
 
 function hasRenderableMinimizedContent(session: {
   selectedUsers?: unknown[];
+  selectedUserName?: unknown;
   selectedDialog?: { id?: unknown } | null;
   assignedDialogId?: unknown;
   messages?: unknown[];
 }): boolean {
   const hasSelectedUser = (session.selectedUsers?.length ?? 0) > 0;
+  const hasSelectedUserName = typeof session.selectedUserName === 'string' && session.selectedUserName.trim() !== '';
   const selectedDialogId = session.selectedDialog?.id;
   const hasSelectedDialogId = Boolean(
     selectedDialogId != null &&
@@ -230,7 +232,7 @@ function hasRenderableMinimizedContent(session: {
       String(assignedDialogId) !== 'assigned',
   );
   const hasMessages = (session.messages?.length ?? 0) > 0;
-  return hasSelectedUser || hasSelectedDialogId || hasAssignedDialogId || hasMessages;
+  return hasSelectedUser || hasSelectedUserName || hasSelectedDialogId || hasAssignedDialogId || hasMessages;
 }
 
 /** Диалог уже открыт/привязан к какой‑либо сессии — не показывать его второй раз в превью «непрочитанных». */
@@ -450,7 +452,11 @@ const useOperatorPermissions = () => {
   return hasChatPermissions;
 };
 
-const ChatToggleButton = () => {
+const ChatToggleButton = ({
+  isOperatorChatPopupWindow = false,
+}: {
+  isOperatorChatPopupWindow?: boolean;
+}) => {
   const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId } =
     useChat();
@@ -477,7 +483,16 @@ const ChatToggleButton = () => {
         : 0;
 
   const handleToggle = () => {
-    if (isDesktopShell) {
+    if (isOperatorChatPopupWindow) {
+      if (isChatOpen) {
+        closeOperatorChatPopupAndRestoreMain();
+        return;
+      }
+      setIsChatOpen(true);
+      if (sessions.length === 0) {
+        createNewSession();
+      }
+    } else if (isDesktopShell) {
       if (isDesktopPopupOpen) {
         void window.alcolockDesktop?.closeOperatorChatPopup();
         setIsDesktopPopupOpen(false);
@@ -497,11 +512,15 @@ const ChatToggleButton = () => {
     }
   };
 
-  const tooltipTitle = isDesktopShell
-    ? isDesktopPopupOpen
+  const tooltipTitle = isOperatorChatPopupWindow
+    ? isChatOpen
       ? 'Закрыть диалоговое окно'
       : 'Открыть диалоговое окно'
-    : t('chat.toggleTooltip', { count: iconUnreadTotal });
+    : isDesktopShell
+      ? isDesktopPopupOpen
+        ? 'Закрыть диалоговое окно'
+        : 'Открыть диалоговое окно'
+      : t('chat.toggleTooltip', { count: iconUnreadTotal });
 
   useEffect(() => {
     if (!isDesktopShell) return;
@@ -539,7 +558,9 @@ const ChatToggleButton = () => {
           onClick={handleToggle}
           color="primary"
           size="large">
-          {(isDesktopShell && isDesktopPopupOpen) || (isChatOpen && !isDesktopShell) ? (
+          {(isOperatorChatPopupWindow && isChatOpen) ||
+          (isDesktopShell && isDesktopPopupOpen) ||
+          (isChatOpen && !isDesktopShell && !isOperatorChatPopupWindow) ? (
             <CloseIcon />
           ) : (
             <ChatIcon />
@@ -1369,7 +1390,6 @@ const ChatContainer = () => {
     t,
     solePreviewSocketUnreadHint,
   ]);
-
   useEffect(() => {
     const previewUnreadBadges = compactMinimizedEntries
       .filter((e): e is Extract<typeof e, { kind: 'unread' }> => e.kind === 'unread')
@@ -1529,7 +1549,9 @@ const ChatContainer = () => {
           </Drawer>
         </>
       )}
-      {!allowDesktopPanelResize && <ChatToggleButton />}
+      {!allowDesktopPanelResize && (
+        <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
+      )}
 
       {allowDesktopPanelResize ? (
         <div
@@ -1539,7 +1561,13 @@ const ChatContainer = () => {
               ? { right: dockRightPx, top: 0 }
               : { right: dockRightPx, bottom: dockBottomPx }
           }
-          {...(isOperatorChatPopupWindow ? { 'data-operator-chat-dock': '1' } : {})}>
+          {...(isOperatorChatPopupWindow
+            ? {
+                'data-operator-chat-dock': '1',
+                'data-operator-chat-preview-count':
+                  minimizedSessions.length + dedupedUnreadPreviewRows.length,
+              }
+            : {})}>
           <div className={styles.dockFabColumn}>
             {!isChatLayoutPinned && !window.alcolockDesktop ? (
               <Tooltip title={operatorChatWindowButtonLabel} placement="left">
@@ -1554,7 +1582,7 @@ const ChatContainer = () => {
               </Tooltip>
             ) : null}
             <NewChatButton />
-            <ChatToggleButton />
+            <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
           </div>
           <div className={styles.dockPanelsColumn}>
             {expandedSessions.map((session) => (
@@ -1587,6 +1615,12 @@ const ChatContainer = () => {
                     onDockDragPointerDown={handleDockDragPointerDown}
                     chatLayoutPinned={isChatLayoutPinned}
                     onToggleChatLayoutPin={handleToggleChatLayoutPin}
+                    onCloseAllChats={
+                      isOperatorChatPopupWindow ? closeOperatorChatPopupAndRestoreMain : undefined
+                    }
+                    closeAllChatsTitle={
+                      isOperatorChatPopupWindow ? 'Закрыть диалоговое окно' : undefined
+                    }
                   />
                 </Card>
               </ChatFooterResizableFrame>
@@ -1602,6 +1636,7 @@ const ChatContainer = () => {
               return (
                 <div
                   key={`minimized-${session.id}`}
+                  data-operator-chat-preview="1"
                   className={`${styles.minimizedChat} ${minimizedUnread > 0 ? styles.hasUnread : ''}`}
                   style={{ zIndex: 1000 - index }}
                   onClick={() => handleExpandSession(session.id)}>
@@ -1638,6 +1673,7 @@ const ChatContainer = () => {
               return (
                 <div
                   key={`unread-${dialog.id}`}
+                  data-operator-chat-preview="1"
                   className={`${styles.minimizedChat} ${styles.unreadDialog} ${
                     unreadCount > 0 ? styles.hasUnread : ''
                   }`}

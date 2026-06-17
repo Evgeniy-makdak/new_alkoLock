@@ -1398,6 +1398,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   ]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/operator-chat-popup')) {
+      return;
+    }
     if (sessions.length > 1) removeDuplicateSessions();
   }, [sessions, removeDuplicateSessions]);
 
@@ -1428,6 +1431,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   }, [isChatOpen, activeSessionId, getSession, statusHandlers.sendDeliveredStatusesForSession]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.pathname.includes('/operator-chat-popup')) {
+      return;
+    }
     if (activeSessionId) {
       removeEmptySessions(activeSessionId);
     } else {

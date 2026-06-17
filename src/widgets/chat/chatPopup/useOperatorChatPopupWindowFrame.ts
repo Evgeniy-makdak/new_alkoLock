@@ -6,13 +6,16 @@ import {
   readOperatorChatPopupFrameLock,
   writeOperatorChatPopupFrameLock,
 } from './operatorChatPopupFrameLock';
-import { getOperatorChatPopupMinOuterSize } from './operatorChatPopupLayout';
-import { readChatLayoutPinned } from './popupLayoutStorage';
+import {
+  getOperatorChatPopupMinOuterSize,
+  measureOperatorChatPopupDockOuterSize,
+} from './operatorChatPopupLayout';
 
 const LOCK_TOLERANCE_PX = 8;
 const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const DOCK_FIT_CHECK_DELAY_MS = 600;
+const DOCK_FIT_CHECK_INTERVAL_MS = 400;
 
 function captureFrameLock(): OperatorChatPopupFrameLock {
   return {
@@ -24,7 +27,7 @@ function captureFrameLock(): OperatorChatPopupFrameLock {
 }
 
 function normalizeLock(raw: OperatorChatPopupFrameLock | null): OperatorChatPopupFrameLock {
-  const min = getOperatorChatPopupMinOuterSize();
+  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: false });
   const base = raw ?? captureFrameLock();
   return {
     outerW: Math.max(base.outerW, min.outerW),
@@ -36,8 +39,8 @@ function normalizeLock(raw: OperatorChatPopupFrameLock | null): OperatorChatPopu
 
 function isLockSatisfied(lock: OperatorChatPopupFrameLock): boolean {
   return (
-    window.outerWidth + LOCK_TOLERANCE_PX >= lock.outerW &&
-    window.outerHeight + LOCK_TOLERANCE_PX >= lock.outerH
+    Math.abs(window.outerWidth - lock.outerW) <= LOCK_TOLERANCE_PX &&
+    Math.abs(window.outerHeight - lock.outerH) <= LOCK_TOLERANCE_PX
   );
 }
 
@@ -51,14 +54,19 @@ function isWidthSatisfied(lock: OperatorChatPopupFrameLock): boolean {
  */
 export function useOperatorChatPopupWindowFrame(): void {
   useEffect(() => {
+    if (window.alcolockDesktop) return;
+
     let cancelled = false;
     let isApplyingLock = false;
     let restoreTimer = 0;
     let initialApplyTimer = 0;
+    let fitDockTimer = 0;
+    let fitDockRaf = 0;
     let positionPersistTimer = 0;
     let initialAttempts = 0;
     let initialApplyDone = false;
-    let fitDockOnceDone = false;
+    let resizeObserver: ResizeObserver | null = null;
+    let mutationObserver: MutationObserver | null = null;
 
     const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
     writeOperatorChatPopupFrameLock(lockRef.current);
@@ -93,31 +101,53 @@ export function useOperatorChatPopupWindowFrame(): void {
       writeOperatorChatPopupFrameLock(lockRef.current);
     };
 
-    /** Один раз после появления dock: превью слева обрезано (r.left < 0) — чуть расширить lock. */
-    const fitDockOnce = () => {
-      if (cancelled || fitDockOnceDone || !initialApplyDone) return;
-      if (readChatLayoutPinned(true)) {
-        fitDockOnceDone = true;
-        return;
-      }
+    /** Подгоняем browser popup под реальный dock: компактно без превью, шире при появлении превью. */
+    const fitDockToContent = () => {
+      if (cancelled || !initialApplyDone) return;
       const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
       if (!dock) return;
 
-      const r = dock.getBoundingClientRect();
-      if (r.left >= 8 && r.right <= window.innerWidth - 8) {
-        fitDockOnceDone = true;
+      const measured = measureOperatorChatPopupDockOuterSize(dock);
+      const next = {
+        ...lockRef.current,
+        outerW: measured.outerW,
+        outerH: measured.outerH,
+      };
+      if (
+        Math.abs(next.outerW - lockRef.current.outerW) <= LOCK_TOLERANCE_PX &&
+        Math.abs(next.outerH - lockRef.current.outerH) <= LOCK_TOLERANCE_PX
+      ) {
+        applyLock();
         return;
       }
-
-      let extra = 0;
-      if (r.left < 8) extra += Math.ceil(8 - r.left);
-      if (r.right > window.innerWidth - 8) extra += Math.ceil(r.right - (window.innerWidth - 8));
-      if (extra <= 0) return;
-
-      lockRef.current.outerW += extra;
+      lockRef.current = next;
       writeOperatorChatPopupFrameLock(lockRef.current);
       applyLock();
-      fitDockOnceDone = true;
+    };
+
+    const scheduleFitDockToContent = () => {
+      if (cancelled || !initialApplyDone) return;
+      window.cancelAnimationFrame(fitDockRaf);
+      fitDockRaf = window.requestAnimationFrame(fitDockToContent);
+    };
+
+    const installContentObservers = () => {
+      const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+      if (!dock) return;
+
+      if (!resizeObserver && typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(scheduleFitDockToContent);
+        resizeObserver.observe(dock);
+      }
+      if (!mutationObserver && document.body) {
+        mutationObserver = new MutationObserver(scheduleFitDockToContent);
+        mutationObserver.observe(document.body, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['class', 'style', 'data-operator-chat-preview'],
+        });
+      }
     };
 
     const runInitialApply = () => {
@@ -125,12 +155,14 @@ export function useOperatorChatPopupWindowFrame(): void {
       applyLock();
       if (isWidthSatisfied(lockRef.current)) {
         initialApplyDone = true;
-        window.setTimeout(fitDockOnce, DOCK_FIT_CHECK_DELAY_MS);
+        installContentObservers();
+        window.setTimeout(fitDockToContent, DOCK_FIT_CHECK_DELAY_MS);
         return;
       }
       if (initialAttempts++ >= INITIAL_APPLY_MAX_ATTEMPTS) {
         initialApplyDone = true;
-        window.setTimeout(fitDockOnce, DOCK_FIT_CHECK_DELAY_MS);
+        installContentObservers();
+        window.setTimeout(fitDockToContent, DOCK_FIT_CHECK_DELAY_MS);
         return;
       }
       initialApplyTimer = window.setTimeout(runInitialApply, INITIAL_APPLY_INTERVAL_MS);
@@ -138,9 +170,8 @@ export function useOperatorChatPopupWindowFrame(): void {
 
     const scheduleRestoreFromOs = () => {
       if (cancelled || isApplyingLock || !initialApplyDone) return;
-      if (readChatLayoutPinned(true)) return;
       window.clearTimeout(restoreTimer);
-      restoreTimer = window.setTimeout(applyLock, 150);
+      restoreTimer = window.setTimeout(fitDockToContent, 150);
     };
 
     requestAnimationFrame(() => {
@@ -148,13 +179,18 @@ export function useOperatorChatPopupWindowFrame(): void {
     });
 
     positionPersistTimer = window.setInterval(persistCurrentPosition, 500);
+    fitDockTimer = window.setInterval(fitDockToContent, DOCK_FIT_CHECK_INTERVAL_MS);
     window.addEventListener('resize', scheduleRestoreFromOs);
 
     return () => {
       cancelled = true;
       window.clearTimeout(restoreTimer);
       window.clearTimeout(initialApplyTimer);
+      window.cancelAnimationFrame(fitDockRaf);
+      window.clearInterval(fitDockTimer);
       window.clearInterval(positionPersistTimer);
+      resizeObserver?.disconnect();
+      mutationObserver?.disconnect();
       window.removeEventListener('resize', scheduleRestoreFromOs);
     };
   }, []);

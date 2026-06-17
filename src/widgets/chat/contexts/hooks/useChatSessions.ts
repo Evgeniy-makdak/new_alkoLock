@@ -363,8 +363,23 @@ export const useChatSessions = (
           }
 
           const hasUnreadPreviewDialogs = (session.unreadDialogs?.length ?? 0) > 0;
+          const hasSelectedUserName =
+            typeof session.selectedUserName === 'string' && session.selectedUserName.trim() !== '';
+          const hasSelectedDialog =
+            session.selectedDialog?.id != null &&
+            String(session.selectedDialog.id) !== '' &&
+            String(session.selectedDialog.id) !== '0' &&
+            String(session.selectedDialog.id) !== 'assigned';
+          const hasAssignedDialog =
+            session.assignedDialogId != null &&
+            String(session.assignedDialogId) !== '' &&
+            String(session.assignedDialogId) !== '0' &&
+            String(session.assignedDialogId) !== 'assigned';
           const isEmpty =
             session.selectedUsers.length === 0 &&
+            !hasSelectedUserName &&
+            !hasSelectedDialog &&
+            !hasAssignedDialog &&
             session.messages.length === 0 &&
             !hasUnreadPreviewDialogs;
           return !isEmpty;
