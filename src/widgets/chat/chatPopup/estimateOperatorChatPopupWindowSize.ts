@@ -25,6 +25,7 @@ function readSavedPopupPanel(): { w: number; h: number } {
 
 type EstimateOperatorChatPopupSizeOptions = {
   includePreviewColumn?: boolean;
+  compactWebPopup?: boolean;
 };
 
 /** Внутренние размеры для window.open. */

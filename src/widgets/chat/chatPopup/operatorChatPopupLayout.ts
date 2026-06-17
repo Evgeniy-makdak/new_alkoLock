@@ -9,8 +9,8 @@ export const OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX = 16;
 export const POPUP_DOCK_PANEL_W_PX = 520;
 export const POPUP_DOCK_FAB_COLUMN_W_PX = 56;
 export const POPUP_MINIMIZED_PREVIEW_GAP_PX = 28;
-/** .minimizedChat { width: 260px } + padding/border/hover/shadow. */
-export const POPUP_PREVIEW_COL_W_PX = 300;
+/** .minimizedChat { width: 260px }; без большого запаса, чтобы wrapper не оставлял пустое поле. */
+export const POPUP_PREVIEW_COL_W_PX = 260;
 export const POPUP_DOCK_FAB_STACK_H_PX = 196;
 export const POPUP_DOCK_PANEL_H_PX = 660;
 /** Доп. ширина inner, чтобы превью слева не обрезались. */
@@ -21,6 +21,7 @@ export const POPUP_FIREFOX_MIN_OUTER_WIDTH_PX = 1120;
 
 type OperatorChatPopupSizeOptions = {
   includePreviewColumn?: boolean;
+  compactWebPopup?: boolean;
 };
 
 function isFirefoxUa(): boolean {
@@ -51,16 +52,23 @@ export function getOperatorChatPopupMinInnerSize(
 } {
   const edge = OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX;
   const includePreviewColumn = options.includePreviewColumn ?? false;
+  const gapW = includePreviewColumn
+    ? 2 * POPUP_MINIMIZED_PREVIEW_GAP_PX
+    : POPUP_MINIMIZED_PREVIEW_GAP_PX;
+  const sidePad = options.compactWebPopup ? 4 : 2 * edge + OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX;
   const extraW =
-    (includePreviewColumn ? POPUP_EXTRA_INNER_WIDTH_BUFFER_PX : Math.floor(POPUP_EXTRA_INNER_WIDTH_BUFFER_PX / 2)) +
+    (includePreviewColumn
+      ? 8
+      : options.compactWebPopup
+        ? 4
+        : Math.floor(POPUP_EXTRA_INNER_WIDTH_BUFFER_PX / 2)) +
     (isFirefoxUa() && includePreviewColumn ? POPUP_FIREFOX_EXTRA_INNER_WIDTH_BUFFER_PX : 0);
   const innerW =
     panelW +
     POPUP_DOCK_FAB_COLUMN_W_PX +
-    2 * POPUP_MINIMIZED_PREVIEW_GAP_PX +
+    gapW +
     (includePreviewColumn ? POPUP_PREVIEW_COL_W_PX : 0) +
-    2 * edge +
-    OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX +
+    sidePad +
     extraW;
   const innerH =
     Math.max(POPUP_DOCK_PANEL_H_PX, POPUP_DOCK_FAB_STACK_H_PX) +
@@ -104,13 +112,18 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
   const dx = window.outerWidth - window.innerWidth;
   const dy = window.outerHeight - window.innerHeight;
   const pad = OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX;
-  const rightGap = Math.max(0, window.innerWidth - right);
   const leftOverflow = Math.max(0, -left);
-  const innerW = Math.ceil(right - left + rightGap + pad);
+  const innerW = Math.ceil(right - left + pad);
   const innerH = Math.ceil(bottom + pad);
-  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: false });
+  const min = getOperatorChatPopupMinOuterSize(undefined, {
+    includePreviewColumn: false,
+    compactWebPopup: true,
+  });
   const minWithPreview = hasPreview
-    ? getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: true })
+    ? getOperatorChatPopupMinOuterSize(undefined, {
+        includePreviewColumn: true,
+        compactWebPopup: true,
+      })
     : min;
   const chrome = getOperatorChatPopupChromePadding();
   const minMeasuredOuterH =
