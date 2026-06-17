@@ -1,0 +1,6 @@
+{
+  "name": "alcolocks-operator-desktop",
+  "version": "0.1.0",
+  "description": "Alcolocks operator desktop shell",
+  "main": "main.cjs"
+}

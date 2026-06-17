@@ -63,8 +63,10 @@ function UsersSelect({
   const surface = disabled
     ? theme.palette.action.disabledBackground
     : theme.palette.background.paper;
+  const labelSurface = isDark ? '#1e1e1e' : theme.palette.background.paper;
   const borderSubtle = isDark ? 'rgba(255, 255, 255, 0.23)' : '#ccc';
   const borderHover = isDark ? 'rgba(255, 255, 255, 0.45)' : '#000';
+  const labelColor = disabled ? theme.palette.text.disabled : theme.palette.text.secondary;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [users, setUsers] = useState<IUser[]>([]);
@@ -269,21 +271,26 @@ function UsersSelect({
           '&:hover': {
             borderColor: disabled ? borderSubtle : borderHover,
           },
-          opacity: disabled ? 0.7 : 1,
         }}>
         <Box
           component="span"
           sx={{
             position: 'absolute',
-            top: '-6px',
-            left: '8px',
-            backgroundColor: surface,
-            padding: '0 4px',
+            top: '-10px',
+            left: '11px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            height: '18px',
+            backgroundColor: labelSurface,
+            padding: '0 7px',
+            borderRadius: '4px',
+            boxShadow: `0 0 0 4px ${labelSurface}`,
             fontSize: '0.75rem',
-            color: theme.palette.text.secondary,
+            color: labelColor,
             fontWeight: 400,
             lineHeight: 1,
-            zIndex: 1,
+            zIndex: 2,
+            pointerEvents: 'none',
           }}>
           {t('chat.usersLabel')}
         </Box>
@@ -296,7 +303,7 @@ function UsersSelect({
               size="small"
               sx={{
                 backgroundColor: 'transparent',
-                color: theme.palette.text.primary,
+                color: disabled ? theme.palette.text.disabled : theme.palette.text.primary,
                 fontWeight: 500,
                 border: `1px solid ${borderSubtle}`,
               }}

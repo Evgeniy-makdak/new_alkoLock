@@ -14,6 +14,24 @@ export default function OperatorChatPopupPage(): null {
   useOperatorChatPopupWindowFrame();
 
   useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const root = document.getElementById('root');
+    const popupClassName = 'operator-chat-popup-transparent';
+
+    const prevHtmlBackground = html.style.background;
+    const prevBodyBackground = body.style.background;
+    const prevRootBackground = root?.style.background ?? '';
+
+    html.classList.add(popupClassName);
+    body.classList.add(popupClassName);
+    root?.classList.add(popupClassName);
+    html.style.background = 'transparent';
+    body.style.background = 'transparent';
+    if (root) {
+      root.style.background = 'transparent';
+    }
+
     const pulse = () => {
       try {
         localStorage.setItem(CHAT_POPUP_ACTIVE_STORAGE_KEY, String(Date.now()));
@@ -38,6 +56,14 @@ export default function OperatorChatPopupPage(): null {
     return () => {
       window.clearInterval(interval);
       window.removeEventListener('beforeunload', unmark);
+      html.classList.remove(popupClassName);
+      body.classList.remove(popupClassName);
+      root?.classList.remove(popupClassName);
+      html.style.background = prevHtmlBackground;
+      body.style.background = prevBodyBackground;
+      if (root) {
+        root.style.background = prevRootBackground;
+      }
     };
   }, []);
 

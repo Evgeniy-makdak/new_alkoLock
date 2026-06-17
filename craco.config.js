@@ -60,6 +60,32 @@ module.exports = {
         }
       }
 
+      // Некоторые зависимости публикуют sourcemap со ссылками на вложенные пакеты,
+      // которых нет после hoist-а yarn/npm. В dev-server это превращается в ENOENT
+      // от source-map-loader, хотя runtime-код приложения корректен.
+      const disableSourceMapLoaderForNodeModules = (rules) => {
+        if (!Array.isArray(rules)) return;
+        rules.forEach((rule) => {
+          if (rule.oneOf) {
+            disableSourceMapLoaderForNodeModules(rule.oneOf);
+          }
+          if (rule.rules) {
+            disableSourceMapLoaderForNodeModules(rule.rules);
+          }
+          const loaders = [
+            rule.loader,
+            ...(Array.isArray(rule.use)
+              ? rule.use.map((entry) => (typeof entry === 'string' ? entry : entry?.loader))
+              : []),
+          ].filter(Boolean);
+          if (loaders.some((loader) => loader.includes('source-map-loader'))) {
+            rule.exclude = /node_modules/;
+          }
+        });
+      };
+
+      disableSourceMapLoaderForNodeModules(webpackConfig.module.rules);
+
       return webpackConfig;
     },
   },

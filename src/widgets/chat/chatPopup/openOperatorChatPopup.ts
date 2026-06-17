@@ -49,6 +49,20 @@ export function openOperatorChatPopup(): void {
     top: Math.round(top),
   });
 
+  const desktopBridge = window.alcolockDesktop;
+  if (desktopBridge) {
+    void desktopBridge.openOperatorChatPopup({
+      url,
+      lock: {
+        outerW: Math.round(outerW),
+        outerH: Math.round(outerH),
+        left: Math.round(left),
+        top: Math.round(top),
+      },
+    });
+    return;
+  }
+
   const win = window.open(url, OPERATOR_CHAT_POPUP_WINDOW_NAME, features);
   win?.focus();
 }
@@ -64,6 +78,10 @@ export function closeOperatorChatPopupAndRestoreMain(): void {
     window.opener?.focus();
   } catch {
     /* ignore */
+  }
+  if (window.alcolockDesktop) {
+    void window.alcolockDesktop.closeCurrentWindow();
+    return;
   }
   window.close();
 }

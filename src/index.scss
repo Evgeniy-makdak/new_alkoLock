@@ -11,6 +11,29 @@
   }
 } /* Links*/
 
+html.operator-chat-popup-transparent,
+html.operator-chat-popup-transparent body,
+html.operator-chat-popup-transparent #root,
+html.operator-chat-popup-transparent #root > div,
+html.operator-chat-popup-transparent main,
+body.operator-chat-popup-transparent,
+body.operator-chat-popup-transparent #root,
+#root.operator-chat-popup-transparent {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+body.operator-chat-popup-transparent {
+  overflow: hidden;
+}
+
+body.operator-chat-popup-transparent .MuiCssBaseline-root {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
 a {
   text-decoration: none;
 

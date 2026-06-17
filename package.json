@@ -65,7 +65,15 @@
     "precommit": "yarn format && yarn lint && yarn lint:fix",
     "watch": "yarn typed-scss-modules src --watch",
     "start": "cross-env SASS_WARN_DEPRECATION=0 craco start --silent",
-    "build": "cross-env ESLINT_NO_CACHE=1 SASS_WARN_DEPRECATION=0 craco build --silent"
+    "build": "cross-env ESLINT_NO_CACHE=1 SASS_WARN_DEPRECATION=0 craco build --silent",
+    "electron": "electron electron/main.cjs",
+    "electron:dev": "concurrently -k \"cross-env BROWSER=none SASS_WARN_DEPRECATION=0 craco start --silent\" \"wait-on http://localhost && electron electron/main.cjs\"",
+    "electron:pack": "yarn electron:pack:win",
+    "electron:pack:win": "electron-builder --config electron-builder.json --win portable --x64",
+    "electron:pack:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64",
+    "electron:dist": "yarn electron:dist:win",
+    "electron:dist:win": "electron-builder --config electron-builder.json --win nsis portable --x64",
+    "electron:dist:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64"
   },
   "husky": {
     "hooks": {
@@ -104,7 +112,10 @@
     "@types/react-window": "^1.8.8",
     "@typescript-eslint/eslint-plugin": "^6.19.0",
     "@typescript-eslint/parser": "^6.19.0",
+    "concurrently": "8",
     "cross-env": "^10.1.0",
+    "electron": "33",
+    "electron-builder": "24",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
@@ -117,7 +128,8 @@
     "react-app-alias": "^2.2.2",
     "sass-migrator": "^2.0.2",
     "typed-scss-modules": "^8.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wait-on": "7"
   },
   "lint-staged": {
     "*.tsx": "eslint --cache --fix",

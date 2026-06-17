@@ -1,0 +1,53 @@
+{
+  "extends": null,
+  "appId": "ru.alcolocks.operator",
+  "productName": "Alcolocks Operator",
+  "directories": {
+    "app": "electron",
+    "output": "release"
+  },
+  "files": [
+    "**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "electron/app.config.json",
+      "to": "app.config.json"
+    }
+  ],
+  "win": {
+    "signAndEditExecutable": false,
+    "target": [
+      "nsis",
+      "portable"
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "mac": {
+    "category": "public.app-category.business",
+    "target": [
+      "dmg"
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
+  },
+  "dmg": {
+    "contents": [
+      {
+        "x": 130,
+        "y": 220
+      },
+      {
+        "x": 410,
+        "y": 220,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
+  }
+}

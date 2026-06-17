@@ -46,6 +46,7 @@ export function TransferOperatorSelect({
   const surface = disabled
     ? theme.palette.action.disabledBackground
     : theme.palette.background.paper;
+  const labelSurface = isDark ? '#1e1e1e' : theme.palette.background.paper;
   const borderSubtle = isDark ? 'rgba(255, 255, 255, 0.23)' : '#ccc';
   const borderHover = isDark ? 'rgba(255, 255, 255, 0.45)' : '#000';
 
@@ -66,6 +67,8 @@ export function TransferOperatorSelect({
     (state) => state.selectedBranchState?.id ?? state.assignmentBranch?.id,
   );
   const currentUserId = appStore((state) => state.authId);
+  const isControlDisabled = disabled || !branchId;
+  const labelColor = isControlDisabled ? theme.palette.text.disabled : theme.palette.text.secondary;
 
   const getOperatorName = (user: IUser) =>
     user.fullName ||
@@ -190,7 +193,7 @@ export function TransferOperatorSelect({
           px: 1.5,
           py: 1.25,
           minHeight: 48,
-          cursor: disabled || !branchId ? 'default' : 'pointer',
+          cursor: isControlDisabled ? 'default' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -199,22 +202,27 @@ export function TransferOperatorSelect({
           position: 'relative',
           transition: 'border-color 0.15s ease',
           '&:hover': {
-            borderColor: disabled || !branchId ? borderSubtle : borderHover,
+            borderColor: isControlDisabled ? borderSubtle : borderHover,
           },
-          opacity: disabled || !branchId ? 0.72 : 1,
         }}>
         <Box
           component="span"
           sx={{
             position: 'absolute',
-            top: -7,
-            left: 10,
-            backgroundColor: surface,
-            px: 0.5,
+            top: -10,
+            left: 11,
+            display: 'inline-flex',
+            alignItems: 'center',
+            height: 18,
+            backgroundColor: labelSurface,
+            px: 0.875,
+            borderRadius: '4px',
+            boxShadow: `0 0 0 4px ${labelSurface}`,
             fontSize: '0.75rem',
-            color: 'text.secondary',
+            color: labelColor,
             lineHeight: 1,
-            zIndex: 1,
+            zIndex: 2,
+            pointerEvents: 'none',
           }}>
           {t('chat.transferDialogOpen')}
         </Box>
@@ -227,7 +235,11 @@ export function TransferOperatorSelect({
             flex: 1,
             mt: 0.5,
             minWidth: 0,
-            color: isPlaceholder ? 'text.secondary' : 'text.primary',
+            color: isControlDisabled
+              ? 'text.disabled'
+              : isPlaceholder
+                ? 'text.secondary'
+                : 'text.primary',
             fontWeight: isPlaceholder ? 400 : 500,
           }}>
           {mainLine}

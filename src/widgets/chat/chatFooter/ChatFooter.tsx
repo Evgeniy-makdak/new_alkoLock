@@ -1500,7 +1500,7 @@ const ChatContainer = () => {
                     onMinimize={() => handleToggleSessionMinimize(session.id)}
                     scrollToBottomOnExpand={justExpandedSessionId === session.id}
                     onScrollToBottomDone={handleScrollToBottomDone}
-                    dockDragEnabled={!isChatLayoutPinned}
+                    dockDragEnabled={!isChatLayoutPinned && !isOperatorChatPopupWindow}
                     onDockDragPointerDown={handleDockDragPointerDown}
                     chatLayoutPinned={isChatLayoutPinned}
                     onToggleChatLayoutPin={handleToggleChatLayoutPin}

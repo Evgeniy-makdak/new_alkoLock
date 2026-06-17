@@ -27,3 +27,18 @@ declare module '*.module.sass' {
 }
 
 declare module 'maplibre-gl/dist/maplibre-gl.css';
+
+interface Window {
+  alcolockDesktop?: {
+    openOperatorChatPopup(payload: {
+      url: string;
+      lock: {
+        outerW: number;
+        outerH: number;
+        left: number;
+        top: number;
+      };
+    }): Promise<void>;
+    closeCurrentWindow(): Promise<void>;
+  };
+}

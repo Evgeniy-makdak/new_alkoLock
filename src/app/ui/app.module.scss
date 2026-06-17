@@ -5,6 +5,20 @@
   overflow: hidden;
 }
 
+.appOperatorChatPopup {
+  background: transparent !important;
+}
+
+.appOperatorChatPopup.appDark {
+  background: transparent !important;
+
+  .main,
+  .content,
+  .contentWrapper {
+    background: transparent !important;
+  }
+}
+
 .appDark {
   .main {
     background-color: #121212;
@@ -31,9 +45,12 @@
 }
 
 .mainOperatorChatPopup {
+  background: transparent !important;
+
   .content,
   .contentWrapper {
     overflow: visible;
+    background: transparent !important;
   }
 }
 

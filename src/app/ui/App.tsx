@@ -48,7 +48,10 @@ export function App() {
     ((!hasInlineTableToolbar && !themeInMapToolbar) || needsMobileFloatingTheme);
 
   return (
-    <div className={`${style.app} ${mode === 'dark' ? style.appDark : ''}`}>
+    <div
+      className={`${style.app} ${mode === 'dark' ? style.appDark : ''} ${
+        isOperatorChatPopupRoute ? style.appOperatorChatPopup : ''
+      }`}>
       {isLoading ? (
         <div className={style.loadingPage}>
           <CircularProgress />

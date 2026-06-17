@@ -61,6 +61,21 @@
   }
 }
 
+:global(body.operator-chat-popup-transparent) {
+  .chatHeader {
+    -webkit-app-region: drag;
+  }
+
+  .headerActions,
+  button,
+  input,
+  textarea,
+  select,
+  [role='button'] {
+    -webkit-app-region: no-drag;
+  }
+}
+
 .headerActions {
   display: flex;
   gap: chat-s(12px);

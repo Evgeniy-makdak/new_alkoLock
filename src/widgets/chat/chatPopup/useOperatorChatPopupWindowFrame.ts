@@ -37,9 +37,7 @@ function normalizeLock(raw: OperatorChatPopupFrameLock | null): OperatorChatPopu
 function isLockSatisfied(lock: OperatorChatPopupFrameLock): boolean {
   return (
     window.outerWidth + LOCK_TOLERANCE_PX >= lock.outerW &&
-    window.outerHeight + LOCK_TOLERANCE_PX >= lock.outerH &&
-    Math.abs(window.screenX - lock.left) <= LOCK_TOLERANCE_PX &&
-    Math.abs(window.screenY - lock.top) <= LOCK_TOLERANCE_PX
+    window.outerHeight + LOCK_TOLERANCE_PX >= lock.outerH
   );
 }
 
@@ -57,6 +55,7 @@ export function useOperatorChatPopupWindowFrame(): void {
     let isApplyingLock = false;
     let restoreTimer = 0;
     let initialApplyTimer = 0;
+    let positionPersistTimer = 0;
     let initialAttempts = 0;
     let initialApplyDone = false;
     let fitDockOnceDone = false;
@@ -72,13 +71,26 @@ export function useOperatorChatPopupWindowFrame(): void {
       isApplyingLock = true;
       try {
         window.resizeTo(lock.outerW, lock.outerH);
-        window.moveTo(lock.left, lock.top);
       } catch {
         /* политика браузера */
       }
       window.setTimeout(() => {
         isApplyingLock = false;
       }, 50);
+    };
+
+    const persistCurrentPosition = () => {
+      const left = window.screenX;
+      const top = window.screenY;
+      const lock = lockRef.current;
+      if (
+        Math.abs(lock.left - left) <= LOCK_TOLERANCE_PX &&
+        Math.abs(lock.top - top) <= LOCK_TOLERANCE_PX
+      ) {
+        return;
+      }
+      lockRef.current = { ...lock, left, top };
+      writeOperatorChatPopupFrameLock(lockRef.current);
     };
 
     /** Один раз после появления dock: превью слева обрезано (r.left < 0) — чуть расширить lock. */
@@ -135,12 +147,14 @@ export function useOperatorChatPopupWindowFrame(): void {
       requestAnimationFrame(runInitialApply);
     });
 
+    positionPersistTimer = window.setInterval(persistCurrentPosition, 500);
     window.addEventListener('resize', scheduleRestoreFromOs);
 
     return () => {
       cancelled = true;
       window.clearTimeout(restoreTimer);
       window.clearTimeout(initialApplyTimer);
+      window.clearInterval(positionPersistTimer);
       window.removeEventListener('resize', scheduleRestoreFromOs);
     };
   }, []);
