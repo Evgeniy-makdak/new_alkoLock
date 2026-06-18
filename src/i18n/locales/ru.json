@@ -741,7 +741,6 @@
     "filterFunctionLabelOptional": "Функция (необязательно)",
     "filterFunctionOptionalBadge": "(необ.)",
     "filterFunctionOptionalHint": "Необязательное поле",
-    "filterFunctionOptionalHint": "Необязательно",
     "filterFunctionPlaceholder": "Не выбрано",
     "dateRangeStartDate": "Дата начала",
     "dateRangeEndDate": "Дата окончания",
