@@ -612,7 +612,13 @@ const NewChatButton = () => {
     setActiveSessionId(newSessionId);
   };
 
-  if (sessions.length === 0) return null;
+  // Показываем кнопку только если есть сессии с выбранным пользователем
+  // Если все сессии без пользователя (новый чат) - кнопка не нужна
+  const hasSessionWithUser = sessions.some(
+    (s) => (s.selectedUsers?.length ?? 0) > 0 || s.selectedUserName?.trim()
+  );
+  
+  if (sessions.length === 0 || !hasSessionWithUser) return null;
 
   return (
     <Tooltip title={t('chat.openNewChat')} placement="left">
@@ -881,6 +887,13 @@ const ChatContainer = () => {
       openOperatorChatPopup();
     }
   }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId]);
+
+  const handleCloseAllChats = useCallback(() => {
+    sessions.forEach((session) => {
+      closeSession(session.id);
+    });
+    setIsChatOpen(false);
+  }, [sessions, closeSession, setIsChatOpen]);
 
   const operatorChatWindowButtonLabel = t(
     isOperatorChatPopupWindow ? 'chat.returnToSingleWindow' : 'chat.openInSeparateWindow',
@@ -1498,21 +1511,52 @@ const ChatContainer = () => {
 
   return (
     <div className={styles.chatContainer}>
-      {/* Кнопки управления: в режиме mobile/web (!allowDesktopPanelResize) */}
-      {!allowDesktopPanelResize && !isDesktopMainChatHost && <NewChatButton />}
+      {/* Кнопки управления: 
+          - Desktop (Electron) главное окно: только toggle button (открыть/закрыть popup)
+          - Desktop popup окно: только toggle button (остальные кнопки внутри ChatPanel)
+          - Web версия: toggle button + new chat button (вертикально)
+          - Mobile: кнопки поверх чата 
+      */}
+      
+      {/* Desktop Electron: главное окно - только кнопка открытия чата */}
+      {isDesktopMainChatHost && (
+        <ChatToggleButton isOperatorChatPopupWindow={false} />
+      )}
+      
+      {/* Desktop popup окно: только toggle button */}
+      {isOperatorChatPopupWindow && !allowDesktopPanelResize && (
+        <ChatToggleButton isOperatorChatPopupWindow={true} />
+      )}
+
+      {/* Web версия (не desktop, не popup): toggle button + new chat вертикально */}
+      {!isDesktopMainChatHost && !isOperatorChatPopupWindow && !allowDesktopPanelResize && (
+        <>
+          <ChatToggleButton isOperatorChatPopupWindow={false} />
+          <NewChatButton />
+        </>
+      )}
+      
+      {/* Desktop popup: кнопки в свёрнутом режиме */}
       {isOperatorChatPopupWindow && !allowDesktopPanelResize && !isChatLayoutPinned && (
-        <Tooltip title={operatorChatWindowButtonLabel} placement="left">
-          <div className={styles.operatorPopupReturnFab}>
-            <IconButton
-              className={styles.dockOpenWindowButton}
-              size="large"
-              color="primary"
-              onClick={handleOperatorChatWindowButtonClick}
-              aria-label={operatorChatWindowButtonLabel}>
-              <OpenInBrowserIcon />
-            </IconButton>
-          </div>
-        </Tooltip>
+        <>
+          {/* Кнопка "открыть в отдельном окне" (вернуться в главное окно) - вверху */}
+          <Tooltip title={operatorChatWindowButtonLabel} placement="left">
+            <div className={styles.operatorPopupReturnFab}>
+              <IconButton
+                className={styles.dockOpenWindowButton}
+                size="large"
+                color="primary"
+                onClick={handleOperatorChatWindowButtonClick}
+                aria-label={operatorChatWindowButtonLabel}>
+                <OpenInBrowserIcon />
+              </IconButton>
+            </div>
+          </Tooltip>
+          {/* Кнопка "новый чат" - только если есть сессии с пользователем */}
+          <NewChatButton />
+          {/* Кнопка toggle */}
+          <ChatToggleButton isOperatorChatPopupWindow={true} />
+        </>
       )}
       {isCompactMinimizedUi && !isOperatorChatPopupWindow && compactMinimizedEntries.length > 0 && (
         <>
@@ -1600,9 +1644,6 @@ const ChatContainer = () => {
           </Drawer>
         </>
       )}
-      {!allowDesktopPanelResize && !isDesktopMainChatHost && (
-        <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
-      )}
 
       {allowDesktopPanelResize ? (
         <div
@@ -1620,7 +1661,12 @@ const ChatContainer = () => {
               }
             : {})}>
           <div className={styles.dockFabColumn}>
-            {!isChatLayoutPinned && !window.alcolockDesktop ? (
+            {/* Кнопка "новый чат" - только если есть сессии с пользователем (внизу колонки) */}
+            <NewChatButton />
+            {/* Кнопка toggle - в dock для web-версии */}
+            <ChatToggleButton isOperatorChatPopupWindow={false} />
+            {/* Кнопка "открыть в отдельном окне" для web-версии (вверху) */}
+            {!isChatLayoutPinned && !isDesktopShell && !isOperatorChatPopupWindow && (
               <Tooltip title={operatorChatWindowButtonLabel} placement="left">
                 <IconButton
                   className={styles.dockOpenWindowButton}
@@ -1628,12 +1674,10 @@ const ChatContainer = () => {
                   color="primary"
                   onClick={handleOperatorChatWindowButtonClick}
                   aria-label={operatorChatWindowButtonLabel}>
-                  {isOperatorChatPopupWindow ? <OpenInBrowserIcon /> : <OpenInNewIcon />}
+                  <OpenInNewIcon />
                 </IconButton>
               </Tooltip>
-            ) : null}
-            <NewChatButton />
-            <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
+            )}
           </div>
           <div className={styles.dockPanelsColumn}>
             {expandedSessionsForDock.map((session) => (
@@ -1819,10 +1863,10 @@ const ChatContainer = () => {
             </div>
           ) : null}
 
-          {/* Развёрнутые сессии в режиме mobile/web: позиционируем их абсолютно, чтобы не накладывались */}
+          {/* Развёрнутые сессии в режиме mobile/web/desktop popup: позиционируем их абсолютно */}
           {!isDesktopMainChatHost
             ? expandedSessions.map((session, index) => {
-                // Для mobile/web: развёрнутые чаты позиционируем друг над другом с z-index
+                // Для mobile/web/desktop popup: развёрнутые чаты позиционируем друг над другом с z-index
                 // Последний (активный) чат будет сверху
                 const chatIndex = expandedSessions.length - 1 - index;
                 return (
@@ -1840,6 +1884,13 @@ const ChatContainer = () => {
                       onMinimize={() => handleToggleSessionMinimize(session.id)}
                       scrollToBottomOnExpand={justExpandedSessionId === session.id}
                       onScrollToBottomDone={handleScrollToBottomDone}
+                      // Для desktop popup добавляем кнопку закрытия
+                      onCloseAllChats={
+                        isOperatorChatPopupWindow ? closeOperatorChatPopupAndRestoreMain : undefined
+                      }
+                      closeAllChatsTitle={
+                        isOperatorChatPopupWindow ? 'Закрыть диалоговое окно' : undefined
+                      }
                     />
                   </Card>
                 );

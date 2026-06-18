@@ -11,7 +11,8 @@ export const POPUP_DOCK_FAB_COLUMN_W_PX = 56;
 export const POPUP_MINIMIZED_PREVIEW_GAP_PX = 28;
 /** .minimizedChat { width: 260px }; без большого запаса, чтобы wrapper не оставлял пустое поле. */
 export const POPUP_PREVIEW_COL_W_PX = 260;
-export const POPUP_DOCK_FAB_STACK_H_PX = 196;
+/** Высота колонки FAB: 2 кнопки (toggle, return) по 56px + 1 gap 10px + запас = 150px, плюс превью */
+export const POPUP_DOCK_FAB_STACK_H_PX = 280;
 export const POPUP_DOCK_PANEL_H_PX = 660;
 /** Доп. ширина inner, чтобы превью слева не обрезались. */
 export const POPUP_EXTRA_INNER_WIDTH_BUFFER_PX = 64;

@@ -17,7 +17,9 @@ const INITIAL_APPLY_INTERVAL_MS = 120;
 const DOCK_FIT_CHECK_DELAY_MS = 600;
 const DOCK_FIT_CHECK_INTERVAL_MS = 400;
 /** Дебаунс для fitDockToContent: предотвращает бесконечный цикл resize → observer → resize */
-const FIT_DOCK_DEBOUNCE_MS = 150;
+const FIT_DOCK_DEBOUNCE_MS = 300;
+/** Минимальная дельта для вызова resizeTo - если меньше, игнорируем (защита от микро-колебаний) */
+const MIN_RESIZE_DELTA_PX = 16;
 
 function captureFrameLock(): OperatorChatPopupFrameLock {
   return {
@@ -118,13 +120,12 @@ export function useOperatorChatPopupWindowFrame(): void {
 
       const measured = measureOperatorChatPopupDockOuterSize(dock);
       
-      // Проверяем, что размер действительно изменился (защита от бесконечного цикла)
-      if (
-        Math.abs(measured.outerW - lastAppliedOuterW) <= LOCK_TOLERANCE_PX &&
-        Math.abs(measured.outerH - lastAppliedOuterH) <= LOCK_TOLERANCE_PX
-      ) {
-        // Размер не изменился в пределах погрешности — не вызываем resizeTo
-        applyLock();
+      // Защита от бесконечного цикла: проверяем, что размер изменился значительно
+      const deltaW = Math.abs(measured.outerW - lastAppliedOuterW);
+      const deltaH = Math.abs(measured.outerH - lastAppliedOuterH);
+      
+      // Игнорируем микро-колебания (< MIN_RESIZE_DELTA_PX)
+      if (deltaW < MIN_RESIZE_DELTA_PX && deltaH < MIN_RESIZE_DELTA_PX) {
         return;
       }
       
@@ -133,15 +134,19 @@ export function useOperatorChatPopupWindowFrame(): void {
         outerW: measured.outerW,
         outerH: measured.outerH,
       };
-      if (
-        Math.abs(next.outerW - lockRef.current.outerW) <= LOCK_TOLERANCE_PX &&
-        Math.abs(next.outerH - lockRef.current.outerH) <= LOCK_TOLERANCE_PX
-      ) {
-        applyLock();
+      
+      // Проверяем, что изменение значимое относительно текущего lock
+      const lockDeltaW = Math.abs(next.outerW - lockRef.current.outerW);
+      const lockDeltaH = Math.abs(next.outerH - lockRef.current.outerH);
+      
+      if (lockDeltaW <= LOCK_TOLERANCE_PX && lockDeltaH <= LOCK_TOLERANCE_PX) {
         return;
       }
+      
       lockRef.current = next;
       writeOperatorChatPopupFrameLock(lockRef.current);
+      lastAppliedOuterW = measured.outerW;
+      lastAppliedOuterH = measured.outerH;
       applyLock();
     };
 

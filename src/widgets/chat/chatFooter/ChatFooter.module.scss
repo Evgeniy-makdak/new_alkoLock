@@ -134,10 +134,10 @@
   z-index: 1000;
 }
 
-// Обертки для кнопок с правильным позиционированием
+// Обертки для кнопок с правильным позиционированием - СТРОГО ПО ВЕРТИКАЛИ
 .toggleButtonWrapper {
   position: absolute;
-  bottom: 0;
+  bottom: 56px; // Выше закрытия (56px)
   right: 0;
   z-index: 1001;
   display: inline-flex;
@@ -154,7 +154,7 @@
 
 .newChatButtonWrapper {
   position: absolute;
-  bottom: 60px;
+  bottom: 112px; // Выше toggle (56px + 56px)
   right: 0;
   z-index: 1001;
   display: inline-flex;
@@ -170,7 +170,7 @@
 
 .showMinimizedButtonWrapper {
   position: absolute;
-  bottom: 120px;
+  bottom: 168px; // 112px + 56px
   right: 0;
   z-index: 1001;
   display: inline-flex;
@@ -184,10 +184,10 @@
   }
 }
 
-/* Отдельное окно чата без dock: «вернуться в вкладку» — слот как у showMinimized (120px), в попапе список ViewList скрыт */
+/* Отдельное окно чата без dock: «вернуться в вкладку» — слот выше new chat */
 .operatorPopupReturnFab {
   position: absolute;
-  bottom: 120px;
+  bottom: 168px; // Выше new chat (112px + 56px)
   right: 0;
   z-index: 1001;
   display: inline-flex;
@@ -198,6 +198,28 @@
     position: relative !important;
     bottom: auto !important;
     right: auto !important;
+  }
+}
+
+/* Кнопка закрытия чата для desktop popup - внизу */
+.closeChatButtonWrapper {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 1001;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .closeChatButton {
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
+    background-color: #d32f2f !important;
+    
+    &:hover {
+      background-color: #b71c1c !important;
+    }
   }
 }
 
