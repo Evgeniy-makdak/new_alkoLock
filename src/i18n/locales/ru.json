@@ -636,7 +636,7 @@
     "collapseWindow": "Свернуть окно"
   },
   "chat": {
-    "toggleTooltip": "Непрочитанных сообщений: {{count}} (Shift + Ctrl + D)",
+    "toggleTooltip": "Закрыть диалоговое окно",
     "openNewChat": "Открыть новый чат",
     "openInSeparateWindow": "Открыть чат в отдельном окне (второй монитор)",
     "returnToSingleWindow": "Режим одного окна: вернуть чат в основную вкладку",
