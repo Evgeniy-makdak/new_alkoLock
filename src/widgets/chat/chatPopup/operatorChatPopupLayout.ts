@@ -109,11 +109,9 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
   const left = Math.min(...rects.map((rect) => rect.left));
   const right = Math.max(...rects.map((rect) => rect.right));
   const bottom = Math.max(...rects.map((rect) => rect.bottom));
-  const dx = window.outerWidth - window.innerWidth;
   const dy = window.outerHeight - window.innerHeight;
   const pad = OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX;
   const leftOverflow = Math.max(0, -left);
-  const innerW = Math.ceil(right - left + pad);
   const innerH = Math.ceil(bottom + pad);
   const min = getOperatorChatPopupMinOuterSize(undefined, {
     includePreviewColumn: false,
@@ -130,7 +128,7 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
     Math.max(320, POPUP_DOCK_FAB_STACK_H_PX + 2 * OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX + pad) +
     chrome.h;
   return {
-    outerW: Math.max(min.outerW, minWithPreview.outerW, innerW + (Number.isFinite(dx) ? dx : 0)),
+    outerW: minWithPreview.outerW,
     outerH: Math.max(minMeasuredOuterH, innerH + (Number.isFinite(dy) ? dy : 0)),
     leftOverflowPx: leftOverflow,
   };

@@ -64,6 +64,11 @@ export function openOperatorChatPopup(): void {
   });
 
   if (desktopBridge) {
+    try {
+      localStorage.setItem(CHAT_POPUP_ACTIVE_STORAGE_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
     void desktopBridge.openOperatorChatPopup({
       url,
       lock: {

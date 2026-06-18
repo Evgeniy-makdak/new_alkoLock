@@ -235,6 +235,31 @@ function hasRenderableMinimizedContent(session: {
   return hasSelectedUser || hasSelectedUserName || hasSelectedDialogId || hasAssignedDialogId || hasMessages;
 }
 
+/** Боковое превью — только сессии с конкретным пользователем (не «Новый чат»). */
+function hasConcreteUserForSidePreview(session: {
+  selectedUsers?: unknown[];
+  selectedUserName?: unknown;
+  selectedDialog?: { client_name?: unknown; clientName?: unknown } | null;
+}): boolean {
+  const hasSelectedUserName =
+    typeof session.selectedUserName === 'string' && session.selectedUserName.trim() !== '';
+  const clientName = session.selectedDialog?.client_name ?? session.selectedDialog?.clientName;
+  const hasClientName = typeof clientName === 'string' && clientName.trim() !== '';
+  const hasSelectedUser = (session.selectedUsers?.length ?? 0) > 0;
+  return hasSelectedUserName || hasClientName || hasSelectedUser;
+}
+
+function shouldShowSessionInSidePreview(session: {
+  selectedUsers?: unknown[];
+  selectedUserName?: unknown;
+  selectedDialog?: { id?: unknown; client_name?: unknown; clientName?: unknown } | null;
+  assignedDialogId?: unknown;
+  messages?: unknown[];
+  isMinimized?: boolean;
+}): boolean {
+  return hasRenderableMinimizedContent(session) && hasConcreteUserForSidePreview(session);
+}
+
 /** Диалог уже открыт/привязан к какой‑либо сессии — не показывать его второй раз в превью «непрочитанных». */
 function sessionListAlreadyCoversDialog(
   sessions: Array<{ selectedDialog?: { id?: unknown }; assignedDialogId?: unknown }>,
@@ -608,6 +633,9 @@ const ChatContainer = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const isOperatorChatPopupWindow = location.pathname === RoutePaths.operatorChatPopup;
+  const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
+  /** В Electron чат живёт только в откреплённом окне; в главном — только FAB-кнопки. */
+  const isDesktopMainChatHost = isDesktopShell && !isOperatorChatPopupWindow;
   const {
     isChatOpen,
     sessions,
@@ -868,7 +896,9 @@ const ChatContainer = () => {
   // В попапе после shrink-to-fit окно часто <1024px — без исключения dock пропадал бы из‑за compact.
   // Пустой dock при 0 развёрнутых сессиях нельзя: useOperatorChatPopupWindowFrame схлопывает окно под колонку FAB.
   const allowDesktopPanelResize =
-    expandedSessionCount > 0 && (!isCompactMinimizedUi || isOperatorChatPopupWindow);
+    !isDesktopMainChatHost &&
+    expandedSessionCount > 0 &&
+    (!isCompactMinimizedUi || isOperatorChatPopupWindow);
 
   const [panelSize, setPanelSize] = useState<ChatFooterPanelSize>(() => {
     if (typeof window === 'undefined') {
@@ -926,11 +956,31 @@ const ChatContainer = () => {
   }, [dedupedUnreadPreviewRows, calculateTotalUnread]);
 
   const expandedSessions = useMemo(() => sessions.filter((s) => !s.isMinimized), [sessions]);
+  const desktopPopupPrimaryExpandedSessionId = useMemo(() => {
+    if (!isOperatorChatPopupWindow || !isDesktopShell) return null;
+    if (activeSessionId && expandedSessions.some((session) => session.id === activeSessionId)) {
+      return activeSessionId;
+    }
+    return expandedSessions[0]?.id ?? null;
+  }, [activeSessionId, expandedSessions, isDesktopShell, isOperatorChatPopupWindow]);
+  const expandedSessionsForDock = useMemo(() => {
+    if (!desktopPopupPrimaryExpandedSessionId) return expandedSessions;
+    return expandedSessions.filter((session) => session.id === desktopPopupPrimaryExpandedSessionId);
+  }, [desktopPopupPrimaryExpandedSessionId, expandedSessions]);
+  const desktopPopupExtraExpandedPreviewSessions = useMemo(() => {
+    if (!desktopPopupPrimaryExpandedSessionId) return [];
+    return expandedSessions.filter((session) => session.id !== desktopPopupPrimaryExpandedSessionId);
+  }, [desktopPopupPrimaryExpandedSessionId, expandedSessions]);
 
   const minimizedSessions = useMemo(
     () =>
-      sessions.filter((session) => session.isMinimized && hasRenderableMinimizedContent(session)),
-    [sessions],
+      [
+        ...desktopPopupExtraExpandedPreviewSessions.filter(shouldShowSessionInSidePreview),
+        ...sessions.filter(
+          (session) => session.isMinimized && shouldShowSessionInSidePreview(session),
+        ),
+      ],
+    [desktopPopupExtraExpandedPreviewSessions, sessions],
   );
 
   const [isChatLayoutPinned, setIsChatLayoutPinned] = useState(() =>
@@ -1051,7 +1101,7 @@ const ChatContainer = () => {
     const previewCount = minimizedSessions.length + dedupedUnreadPreviewRows.length;
     const pw = panelSize.w;
     const ph = panelSize.h;
-    const nExp = expandedSessions.length;
+    const nExp = expandedSessionsForDock.length;
     const previewColW = previewCount > 0 ? 260 : 0;
     const previewStackH =
       previewCount > 0 ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8 : 0;
@@ -1066,7 +1116,7 @@ const ChatContainer = () => {
   }, [
     allowDesktopPanelResize,
     dedupedUnreadPreviewRows.length,
-    expandedSessions.length,
+    expandedSessionsForDock.length,
     minimizedSessions.length,
     panelSize.h,
     panelSize.w,
@@ -1214,7 +1264,7 @@ const ChatContainer = () => {
       }
       return clampPanelSizeForFloatingDock(s, {
         previewCount: dockPreviewCount,
-        expandedCount: expandedSessions.length,
+        expandedCount: expandedSessionsForDock.length,
         dockRightPx,
         dockBottomPx,
       });
@@ -1223,7 +1273,7 @@ const ChatContainer = () => {
       allowDesktopPanelResize,
       isOperatorChatPopupWindow,
       dockPreviewCount,
-      expandedSessions.length,
+      expandedSessionsForDock.length,
       dockRightPx,
       dockBottomPx,
     ],
@@ -1238,7 +1288,7 @@ const ChatContainer = () => {
     }
     return getMaxPanelSizeForFloatingDock({
       previewCount: dockPreviewCount,
-      expandedCount: expandedSessions.length,
+      expandedCount: expandedSessionsForDock.length,
       dockRightPx,
       dockBottomPx,
     });
@@ -1247,7 +1297,7 @@ const ChatContainer = () => {
     panelSize.w,
     panelSize.h,
     dockPreviewCount,
-    expandedSessions.length,
+    expandedSessionsForDock.length,
     dockRightPx,
     dockBottomPx,
   ]);
@@ -1585,7 +1635,7 @@ const ChatContainer = () => {
             <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
           </div>
           <div className={styles.dockPanelsColumn}>
-            {expandedSessions.map((session) => (
+            {expandedSessionsForDock.map((session) => (
               <ChatFooterResizableFrame
                 key={`expanded-${session.id}`}
                 docked
@@ -1694,8 +1744,9 @@ const ChatContainer = () => {
         </div>
       ) : (
         <>
-          <div className={styles.minimizedChats}>
-            {minimizedSessions.map((session, index) => {
+          {!isDesktopMainChatHost ? (
+            <div className={styles.minimizedChats}>
+              {minimizedSessions.map((session, index) => {
               const previewLine = truncatePreviewLine(
                 minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
                 30,
@@ -1764,9 +1815,11 @@ const ChatContainer = () => {
                 </div>
               );
             })}
-          </div>
+            </div>
+          ) : null}
 
-          {expandedSessions.map((session) => (
+          {!isDesktopMainChatHost
+            ? expandedSessions.map((session) => (
             <Card
               key={`expanded-${session.id}`}
               className={`${styles.chatFooter} ${styles.expanded}`}>
@@ -1777,7 +1830,8 @@ const ChatContainer = () => {
                 onScrollToBottomDone={handleScrollToBottomDone}
               />
             </Card>
-          ))}
+              ))
+            : null}
         </>
       )}
     </div>

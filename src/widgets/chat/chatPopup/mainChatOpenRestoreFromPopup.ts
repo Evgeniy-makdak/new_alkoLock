@@ -74,12 +74,12 @@ function buildOperatorPopupPreviewSnapshot(
       session.selectedDialog?.client_name ||
       session.selectedDialog?.clientName ||
       '';
-    if (!title && !selectedDialogId && !session.selectedUsers?.length) return;
+    if (!title.trim()) return;
     entries.push({
       kind: 'session',
       key: `snapshot-minimized-${session.id}`,
       sessionId: session.id,
-      title: title || 'Новый чат',
+      title,
       subtitle: previewLineFromSession(session) || undefined,
       unread: Math.max(session.unreadCount ?? 0, session.totalUnreadCount ?? 0),
     });
