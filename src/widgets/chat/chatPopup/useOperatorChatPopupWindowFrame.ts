@@ -16,6 +16,8 @@ const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const DOCK_FIT_CHECK_DELAY_MS = 600;
 const DOCK_FIT_CHECK_INTERVAL_MS = 400;
+/** Дебаунс для fitDockToContent: предотвращает бесконечный цикл resize → observer → resize */
+const FIT_DOCK_DEBOUNCE_MS = 150;
 
 function captureFrameLock(): OperatorChatPopupFrameLock {
   return {
@@ -67,6 +69,11 @@ export function useOperatorChatPopupWindowFrame(): void {
     let initialApplyDone = false;
     let resizeObserver: ResizeObserver | null = null;
     let mutationObserver: MutationObserver | null = null;
+    /** Дебаунс-таймер для fitDockToContent */
+    let fitDockDebounceTimer = 0;
+    /** Последний применённый размер для предотвращения цикла */
+    let lastAppliedOuterW = 0;
+    let lastAppliedOuterH = 0;
 
     const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
     writeOperatorChatPopupFrameLock(lockRef.current);
@@ -79,6 +86,8 @@ export function useOperatorChatPopupWindowFrame(): void {
       isApplyingLock = true;
       try {
         window.resizeTo(lock.outerW, lock.outerH);
+        lastAppliedOuterW = lock.outerW;
+        lastAppliedOuterH = lock.outerH;
       } catch {
         /* политика браузера */
       }
@@ -108,6 +117,17 @@ export function useOperatorChatPopupWindowFrame(): void {
       if (!dock) return;
 
       const measured = measureOperatorChatPopupDockOuterSize(dock);
+      
+      // Проверяем, что размер действительно изменился (защита от бесконечного цикла)
+      if (
+        Math.abs(measured.outerW - lastAppliedOuterW) <= LOCK_TOLERANCE_PX &&
+        Math.abs(measured.outerH - lastAppliedOuterH) <= LOCK_TOLERANCE_PX
+      ) {
+        // Размер не изменился в пределах погрешности — не вызываем resizeTo
+        applyLock();
+        return;
+      }
+      
       const next = {
         ...lockRef.current,
         outerW: measured.outerW,
@@ -125,10 +145,14 @@ export function useOperatorChatPopupWindowFrame(): void {
       applyLock();
     };
 
+    /** Обёртка с дебаунсом для fitDockToContent */
     const scheduleFitDockToContent = () => {
       if (cancelled || !initialApplyDone) return;
+      window.clearTimeout(fitDockDebounceTimer);
       window.cancelAnimationFrame(fitDockRaf);
-      fitDockRaf = window.requestAnimationFrame(fitDockToContent);
+      fitDockDebounceTimer = window.setTimeout(() => {
+        fitDockRaf = window.requestAnimationFrame(fitDockToContent);
+      }, FIT_DOCK_DEBOUNCE_MS);
     };
 
     const installContentObservers = () => {
@@ -186,6 +210,7 @@ export function useOperatorChatPopupWindowFrame(): void {
       cancelled = true;
       window.clearTimeout(restoreTimer);
       window.clearTimeout(initialApplyTimer);
+      window.clearTimeout(fitDockDebounceTimer);
       window.cancelAnimationFrame(fitDockRaf);
       window.clearInterval(fitDockTimer);
       window.clearInterval(positionPersistTimer);

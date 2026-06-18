@@ -106,6 +106,20 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
       node.getBoundingClientRect(),
     ),
   ].filter((rect) => rect.width > 0 && rect.height > 0);
+  
+  // Защита от пустых rect — может вызывать бесконечный цикл
+  if (rects.length === 0) {
+    const min = getOperatorChatPopupMinOuterSize(undefined, {
+      includePreviewColumn: false,
+      compactWebPopup: true,
+    });
+    return {
+      outerW: min.outerW,
+      outerH: min.outerH,
+      leftOverflowPx: 0,
+    };
+  }
+  
   const left = Math.min(...rects.map((rect) => rect.left));
   const right = Math.max(...rects.map((rect) => rect.right));
   const bottom = Math.max(...rects.map((rect) => rect.bottom));
@@ -113,10 +127,7 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
   const pad = OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX;
   const leftOverflow = Math.max(0, -left);
   const innerH = Math.ceil(bottom + pad);
-  const min = getOperatorChatPopupMinOuterSize(undefined, {
-    includePreviewColumn: false,
-    compactWebPopup: true,
-  });
+  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: false, compactWebPopup: true });
   const minWithPreview = hasPreview
     ? getOperatorChatPopupMinOuterSize(undefined, {
         includePreviewColumn: true,

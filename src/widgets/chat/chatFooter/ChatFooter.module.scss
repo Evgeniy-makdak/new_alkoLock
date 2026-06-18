@@ -307,6 +307,10 @@
   flex-direction: column;
   overflow: visible;
   transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+  /* Предотвращаем сжатие по содержимому — размер задаётся явно через style.width/height */
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
 }
 
 .chatFooterResizeRoot.chatFooterResizeDocked {
@@ -315,6 +319,10 @@
   right: auto;
   z-index: 1000;
   transition: none;
+  /* В dock: фиксированный размер, без авто-подстройки под контент */
+  flex-shrink: 0;
+  min-width: 0;
+  min-height: 0;
 }
 
 .chatFloatingDock {
@@ -333,6 +341,9 @@
 
   .dockFabColumn {
     overflow: visible;
+    /* Фиксируем ширину колонки FAB, чтобы она не «плавала» при ресайзе */
+    min-width: 48px;
+    max-width: 48px;
   }
 
   .toggleButtonWrapper {
@@ -345,6 +356,9 @@
 
   .minimizedChatsDocked {
     overflow: visible;
+    /* Фиксируем ширину колонки превью, чтобы она не влияла на общую ширину dock */
+    min-width: 260px;
+    max-width: 260px;
   }
 }
 
@@ -841,7 +855,7 @@
     padding: 10px 12px;
     min-height: 44px;
   }
-  
+
   .messageFeedContainer {
     min-height: 200px; // Минимальная высота для области сообщений
   }

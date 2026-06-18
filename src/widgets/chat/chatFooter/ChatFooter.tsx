@@ -1498,7 +1498,8 @@ const ChatContainer = () => {
 
   return (
     <div className={styles.chatContainer}>
-      {!allowDesktopPanelResize && <NewChatButton />}
+      {/* Кнопки управления: в режиме mobile/web (!allowDesktopPanelResize) */}
+      {!allowDesktopPanelResize && !isDesktopMainChatHost && <NewChatButton />}
       {isOperatorChatPopupWindow && !allowDesktopPanelResize && !isChatLayoutPinned && (
         <Tooltip title={operatorChatWindowButtonLabel} placement="left">
           <div className={styles.operatorPopupReturnFab}>
@@ -1599,7 +1600,7 @@ const ChatContainer = () => {
           </Drawer>
         </>
       )}
-      {!allowDesktopPanelResize && (
+      {!allowDesktopPanelResize && !isDesktopMainChatHost && (
         <ChatToggleButton isOperatorChatPopupWindow={isOperatorChatPopupWindow} />
       )}
 
@@ -1818,19 +1819,31 @@ const ChatContainer = () => {
             </div>
           ) : null}
 
+          {/* Развёрнутые сессии в режиме mobile/web: позиционируем их абсолютно, чтобы не накладывались */}
           {!isDesktopMainChatHost
-            ? expandedSessions.map((session) => (
-            <Card
-              key={`expanded-${session.id}`}
-              className={`${styles.chatFooter} ${styles.expanded}`}>
-              <ChatPanel
-                sessionId={session.id}
-                onMinimize={() => handleToggleSessionMinimize(session.id)}
-                scrollToBottomOnExpand={justExpandedSessionId === session.id}
-                onScrollToBottomDone={handleScrollToBottomDone}
-              />
-            </Card>
-              ))
+            ? expandedSessions.map((session, index) => {
+                // Для mobile/web: развёрнутые чаты позиционируем друг над другом с z-index
+                // Последний (активный) чат будет сверху
+                const chatIndex = expandedSessions.length - 1 - index;
+                return (
+                  <Card
+                    key={`expanded-${session.id}`}
+                    className={`${styles.chatFooter} ${styles.expanded}`}
+                    sx={{
+                      // Позиционируем каждый чат со смещением, чтобы они не перекрывали друг друга полностью
+                      bottom: `${CHAT_FOOTER_BOTTOM + chatIndex * 24}px`,
+                      right: `${CHAT_FOOTER_RIGHT + chatIndex * 24}px`,
+                      zIndex: 1000 + chatIndex,
+                    }}>
+                    <ChatPanel
+                      sessionId={session.id}
+                      onMinimize={() => handleToggleSessionMinimize(session.id)}
+                      scrollToBottomOnExpand={justExpandedSessionId === session.id}
+                      onScrollToBottomDone={handleScrollToBottomDone}
+                    />
+                  </Card>
+                );
+              })
             : null}
         </>
       )}
