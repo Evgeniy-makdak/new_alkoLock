@@ -638,6 +638,7 @@
   "chat": {
     "toggleTooltip": "Закрыть диалоговое окно",
     "openNewChat": "Открыть новый чат",
+    "openChatWindow": "Открыть диалоговое окно",
     "openInSeparateWindow": "Открыть чат в отдельном окне (второй монитор)",
     "returnToSingleWindow": "Режим одного окна: вернуть чат в основную вкладку",
     "minimizedListTooltip": "Свёрнутые диалоги и уведомления",

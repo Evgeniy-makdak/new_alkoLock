@@ -22,7 +22,6 @@ export function openOperatorChatPopup(): void {
   const hasPreviewSnapshot = readOperatorPopupPreviewSnapshot().length > 0;
   const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize({
     includePreviewColumn: Boolean(desktopBridge) || hasPreviewSnapshot,
-    compactWebPopup: !desktopBridge,
   });
   let outerW = Math.min(window.screen.availWidth, estOuterW);
   let outerH = Math.min(window.screen.availHeight, estOuterH);

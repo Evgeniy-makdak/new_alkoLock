@@ -545,7 +545,9 @@ const ChatToggleButton = ({
       ? isDesktopPopupOpen
         ? 'Закрыть диалоговое окно'
         : 'Открыть диалоговое окно'
-      : t('chat.toggleTooltip', { count: iconUnreadTotal });
+      : isChatOpen
+        ? t('chat.toggleTooltip', { count: iconUnreadTotal })
+        : t('chat.openChatWindow');
 
   useEffect(() => {
     if (!isDesktopShell) return;
@@ -888,16 +890,23 @@ const ChatContainer = () => {
     }
   }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId]);
 
+  const operatorChatWindowButtonLabel = useMemo(() => {
+    if (isOperatorChatPopupWindow) {
+      return t('chat.returnToSingleWindow');
+    }
+    // Для web-версии: если нет развёрнутых сессий - "открыть диалоговое окно", иначе - "вернуться"
+    if (sessions.filter((s) => !s.isMinimized).length === 0) {
+      return t('chat.openChatWindow');
+    }
+    return t('chat.openInSeparateWindow');
+  }, [isOperatorChatPopupWindow, sessions, t]);
+
   const handleCloseAllChats = useCallback(() => {
     sessions.forEach((session) => {
       closeSession(session.id);
     });
     setIsChatOpen(false);
   }, [sessions, closeSession, setIsChatOpen]);
-
-  const operatorChatWindowButtonLabel = t(
-    isOperatorChatPopupWindow ? 'chat.returnToSingleWindow' : 'chat.openInSeparateWindow',
-  );
 
   const isCompactMinimizedUi = useMediaQuery(CHAT_COMPACT_MINIMIZED_QUERY);
   const [minimizedListOpen, setMinimizedListOpen] = useState(false);

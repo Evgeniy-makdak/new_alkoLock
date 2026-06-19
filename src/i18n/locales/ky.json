@@ -635,6 +635,7 @@
   "chat": {
     "toggleTooltip": "Окула элек кабарлар: {{count}} (Shift + Ctrl + D)",
     "openNewChat": "Жаңы чат ачуу",
+    "openChatWindow": "Диалогдук терезени ачуу",
     "openInSeparateWindow": "Чатты өзүнчө терезеде ачуу (экинчи монитор)",
     "returnToSingleWindow": "Бир терезе режими: чатты негизги кыстырмага кайтаруу",
     "minimizedListTooltip": "Жыйналган диалогдор жана кабарлоолор",
