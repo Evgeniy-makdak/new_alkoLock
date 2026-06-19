@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useSelectedBranchOfficeSync } from '@features/nav_bar_branch_select/hooks/useSelectedBranchOfficeSync';
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY } from '@widgets/chat/chatPopup/constants';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
+import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
 
 /**
@@ -12,6 +13,10 @@ import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOper
 export default function OperatorChatPopupPage(): null {
   useSelectedBranchOfficeSync();
   useOperatorChatPopupWindowFrame();
+
+  useEffect(() => {
+    installOperatorChatPopupResizeObserverErrorGuard();
+  }, []);
 
   useEffect(() => {
     const html = document.documentElement;

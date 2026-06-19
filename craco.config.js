@@ -13,6 +13,14 @@ module.exports = {
   ],
   devServer: {
     port: 80,
+    client: {
+      overlay: {
+        runtimeErrors: (error) => {
+          const message = error?.message ?? String(error ?? '');
+          return !message.includes('ResizeObserver loop');
+        },
+      },
+    },
   },
   webpack: {
     alias: {

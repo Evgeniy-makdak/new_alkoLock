@@ -20,6 +20,7 @@ import { StatusFilterProvider } from '@shared/ui/search_multiple_select/StatusFi
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { DeviceStatusProvider } from '@widgets/alkozamki_info/DeviceStatusContext';
 import { AutoServiceInfoProvider } from '@widgets/auto_service_info/AutoServiceInfoContext';
+import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { SocketProvider } from '@widgets/chat/contexts/SocketContext';
 import { CountProvider } from '@widgets/nav_bar/api/CountContext';
 import { UserContextProvider } from '@widgets/users_info/UserContext';
@@ -29,6 +30,10 @@ import { configLoader } from './config/configLoader';
 import './i18n';
 import './index.scss';
 import * as serviceWorker from './serviceWorker';
+
+if (typeof window !== 'undefined' && window.location.pathname.includes('/operator-chat-popup')) {
+  installOperatorChatPopupResizeObserverErrorGuard();
+}
 
 const queryClient = new QueryClient();
 

@@ -88,7 +88,7 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
 } {
   const previewCount = Number(dock.getAttribute('data-operator-chat-preview-count') || 0);
   const hasPreview = previewCount > 0;
-  
+
   // Получаем rectы dock и всех preview элементов
   const rects = [
     dock.getBoundingClientRect(),
@@ -96,7 +96,7 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
       node.getBoundingClientRect(),
     ),
   ].filter((rect) => rect.width > 0 && rect.height > 0);
-  
+
   // Защита от пустых rect
   if (rects.length === 0) {
     const min = getOperatorChatPopupMinOuterSize(undefined, {
@@ -108,25 +108,25 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
       leftOverflowPx: 0,
     };
   }
-  
+
   // Для Chrome используем меньший pad
   const pad = isChromeUa() ? 8 : OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX;
-  
+
   // Находим границы ВСЕХ элементов (dock + preview)
   const left = Math.min(...rects.map((rect) => rect.left));
   const top = Math.min(...rects.map((rect) => rect.top));
   const right = Math.max(...rects.map((rect) => rect.right));
   const bottom = Math.max(...rects.map((rect) => rect.bottom));
   const leftOverflow = Math.max(0, -left);
-  
+
   // РАСЧЁТ РАЗМЕРОВ: используем height/width rect, а не absolute coordinates
   // Это работает одинаково во всех браузерах
   const contentWidth = right - left;
   const contentHeight = bottom - top;
-  
+
   const measuredWidth = Math.ceil(contentWidth) + pad * 2;
   const innerH = Math.ceil(contentHeight) + pad;
-  
+
   const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: false });
   const minWithPreview = hasPreview
     ? getOperatorChatPopupMinOuterSize(undefined, {
