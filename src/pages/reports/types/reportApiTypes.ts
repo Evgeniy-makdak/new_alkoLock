@@ -130,7 +130,14 @@ export type ReportFilterControlDef = {
   referenceEntity?: string;
 };
 
-export type ReportViewMode = 'table' | 'bar' | 'pie';
+export type ReportViewMode = 'table' | 'bar' | 'dashboard';
+
+/** Совместимость со старыми значениями (pictogram, pie, line). */
+export function normalizeReportViewMode(mode: string): ReportViewMode {
+  if (mode === 'bar') return 'bar';
+  if (mode === 'dashboard' || mode === 'pictogram') return 'dashboard';
+  return 'table';
+}
 
 export type ReportUiFilterSelections = Record<string, Values>;
 

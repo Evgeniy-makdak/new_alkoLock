@@ -642,3 +642,136 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.chartsArea {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px var(--table-page-content-inset-inline, 16px) 16px;
+  box-sizing: border-box;
+}
+
+.chartsLoading {
+  flex: 1;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.chartsWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chartPageHint {
+  margin: 0 0 4px;
+}
+
+.chartPagination {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--mui-palette-divider, #e0e0e0);
+
+  :global(.MuiTablePagination-root) {
+    width: 100%;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 768px) {
+  .chartPagination {
+    display: none;
+  }
+}
+
+.pictogramGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.pictogramCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px 16px !important;
+  text-align: center;
+  min-height: 148px;
+}
+
+.pictogramIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mui-palette-primary-main, #1976d2);
+}
+
+.pictogramCard[data-tone='success'] .pictogramIcon {
+  color: var(--mui-palette-success-main, #2e7d32);
+}
+
+.pictogramCard[data-tone='error'] .pictogramIcon {
+  color: var(--mui-palette-error-main, #d32f2f);
+}
+
+.pictogramCard[data-tone='warning'] .pictogramIcon {
+  color: var(--mui-palette-warning-main, #ed6c02);
+}
+
+.pictogramCard[data-tone='info'] .pictogramIcon {
+  color: var(--mui-palette-info-main, #0288d1);
+}
+
+.pictogramValue {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.pictogramLabel {
+  margin: 0;
+}
+
+.pictogramDetail {
+  margin: 4px 0 0;
+  font-weight: 600;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.pictogramTypeList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pictogramTypeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mui-palette-divider, #e0e0e0);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.pictogramTypeName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

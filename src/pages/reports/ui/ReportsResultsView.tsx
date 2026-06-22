@@ -2,9 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
-import { useMediaQuery } from '@mui/material';
+import { useMediaQuery, Box, CircularProgress, TablePagination, Typography } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
+import { aggregateReportGridForCharts } from '@pages/reports/lib/aggregateReportGridForCharts';
 import {
   buildReportSortFieldMap,
   buildReportSortParams,
@@ -20,13 +21,15 @@ import { shouldLoadVehicleLabelMaps } from '@pages/reports/lib/reportVehicleCont
 import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
-import { MobilePaginationWithJump } from '@shared/components/Pagination';
+import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
+import { MobilePaginationWithJump, TablePaginationJumpActions } from '@shared/components/Pagination';
 import { Table } from '@shared/components/Table/Table';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
+import { ReportsCharts } from './ReportsCharts';
 
 type ReportsRestoreState = {
   page: number;
@@ -51,6 +54,8 @@ export function ReportsResultsView() {
   const loadReportPage = reportGenerationStore((s) => s.loadReportPage);
   const setPagination = reportGenerationStore((s) => s.setPagination);
   const setSort = reportGenerationStore((s) => s.setSort);
+  const sort = reportGenerationStore((s) => s.sort);
+  const viewMode = reportsStore((s) => normalizeReportViewMode(s.viewMode));
 
   const [tableState, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.REPORTS_TABLE_SORTS,
@@ -300,6 +305,12 @@ export function ReportsResultsView() {
 
   const totalElements = lastResult?.totalElements ?? 0;
   const showReportColumnHeaders = Boolean(queryContext && columns.length > 0);
+  const isChartView = viewMode !== 'table';
+
+  const chartAggregates = useMemo(() => {
+    if (!isChartView || !rows.length) return null;
+    return aggregateReportGridForCharts(columns, rows);
+  }, [isChartView, columns, rows]);
 
   const handleMobilePageChange = useCallback(
     (newPage: number) => {
@@ -313,46 +324,102 @@ export function ReportsResultsView() {
 
   return (
     <div
-      className={`${styles.tableWrapper} ${showReportColumnHeaders ? styles.tableAreaWithReportHeaders : ''}`}>
-      <div
-        className={`${styles.scrollableTable} ${showReportColumnHeaders ? '' : styles.scrollableTableHideColumnHeaders}`}>
-        <Table
-          key={reportTableKey}
-          columns={columns}
-          rows={rows}
-          rowCount={totalElements}
-          paginationMode="server"
-          sortingMode="server"
-          paginationModel={paginationModel}
-          onSortModelChange={changeTableSorts}
-          apiRef={apiRef}
-          pageNumber={storePagination.page}
-          pageSize={storePagination.pageSize}
-          loading={isLoadingPage}
-          onPaginationModelChange={handlePaginationModelChange}
-          getRowId={getReportGridRowId}
-          pointer={false}
-          disableRowSelectionOnClick
-          pageSizeOptions={[25, 50, 75, 100]}
-          hideFooterSelectedRowCount
-          sx={{
-            '& .MuiDataGrid-virtualScroller': {
-              overflowX: 'auto',
-            },
-          }}
-        />
-      </div>
-      {isMobile ? (
-        <div className={styles.mobilePagination}>
-          <MobilePaginationWithJump
-            page={storePagination.page}
-            pageSize={storePagination.pageSize}
-            totalCount={totalElements}
-            loading={isLoadingPage || isGenerating}
-            onPageChange={handleMobilePageChange}
-          />
+      className={`${styles.tableWrapper} ${showReportColumnHeaders && !isChartView ? styles.tableAreaWithReportHeaders : ''}`}>
+      {isChartView ? (
+        <div className={styles.chartsArea}>
+          {isLoadingPage || isGenerating ? (
+            <Box className={styles.chartsLoading}>
+              <CircularProgress size={48} />
+              <Typography color="text.secondary">{t('reports.chartLoading')}</Typography>
+            </Box>
+          ) : (
+            <>
+              <ReportsCharts
+                data={chartAggregates}
+                viewMode={viewMode as Exclude<typeof viewMode, 'table'>}
+                pageRows={rows.length}
+                reportTotal={totalElements}
+              />
+              {totalElements > storePagination.pageSize ? (
+                isMobile ? (
+                  <div className={styles.mobilePagination}>
+                    <MobilePaginationWithJump
+                      page={storePagination.page}
+                      pageSize={storePagination.pageSize}
+                      totalCount={totalElements}
+                      loading={isLoadingPage || isGenerating}
+                      onPageChange={handleMobilePageChange}
+                    />
+                  </div>
+                ) : (
+                  <div className={styles.chartPagination}>
+                    <TablePagination
+                      component="div"
+                      count={totalElements}
+                      page={storePagination.page}
+                      rowsPerPage={storePagination.pageSize}
+                      rowsPerPageOptions={[25, 50, 75, 100]}
+                      onPageChange={(_event, newPage) => {
+                        handlePaginationModelChange({
+                          page: newPage,
+                          pageSize: storePagination.pageSize,
+                        });
+                      }}
+                      onRowsPerPageChange={(event) => {
+                        const pageSize = parseInt(event.target.value, 10);
+                        handlePaginationModelChange({ page: 0, pageSize });
+                      }}
+                      ActionsComponent={TablePaginationJumpActions}
+                    />
+                  </div>
+                )
+              ) : null}
+            </>
+          )}
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div
+            className={`${styles.scrollableTable} ${showReportColumnHeaders ? '' : styles.scrollableTableHideColumnHeaders}`}>
+            <Table
+              key={reportTableKey}
+              columns={columns}
+              rows={rows}
+              rowCount={totalElements}
+              paginationMode="server"
+              sortingMode="server"
+              paginationModel={paginationModel}
+              onSortModelChange={changeTableSorts}
+              apiRef={apiRef}
+              pageNumber={storePagination.page}
+              pageSize={storePagination.pageSize}
+              loading={isLoadingPage}
+              onPaginationModelChange={handlePaginationModelChange}
+              getRowId={getReportGridRowId}
+              pointer={false}
+              disableRowSelectionOnClick
+              pageSizeOptions={[25, 50, 75, 100]}
+              hideFooterSelectedRowCount
+              sx={{
+                '& .MuiDataGrid-virtualScroller': {
+                  overflowX: 'auto',
+                },
+              }}
+            />
+          </div>
+          {isMobile ? (
+            <div className={styles.mobilePagination}>
+              <MobilePaginationWithJump
+                page={storePagination.page}
+                pageSize={storePagination.pageSize}
+                totalCount={totalElements}
+                loading={isLoadingPage || isGenerating}
+                onPageChange={handleMobilePageChange}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

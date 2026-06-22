@@ -35,8 +35,14 @@ export function getEventTypeLabel(ev: unknown): string {
 
 export function classifySobrietyLabel(label: string): SobrietyOutcomeKey | null {
   const s = label.toLowerCase();
-  if (s.includes('тестирование пройдено')) return 'passed';
-  if (s.includes('тестирование не пройдено')) return 'failed';
-  if (s.includes('тестирование прервано')) return 'interrupted';
+  if (s.includes('тестирование пройдено') || s === 'passed' || s.includes('passed')) {
+    return 'passed';
+  }
+  if (s.includes('тестирование не пройдено') || s === 'failed' || s.includes('failed')) {
+    return 'failed';
+  }
+  if (s.includes('тестирование прервано') || s === 'interrupted' || s.includes('interrupted')) {
+    return 'interrupted';
+  }
   return null;
 }

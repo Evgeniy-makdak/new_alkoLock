@@ -18,16 +18,17 @@ import {
   PRIMARY_REPORT_OUTPUT_ROW_ID,
 } from '../lib/reportOutputRow';
 
-import type {
-  ReportEntityListItem,
-  ReportEntityMetadata,
-  ReportFilterControlDef,
-  ReportLogicOperator,
-  ReportNestedEntityFilterByField,
-  ReportNestedEntityFilterState,
-  ReportOutputRow,
-  ReportUiFilterSelections,
-  ReportViewMode,
+import {
+  normalizeReportViewMode,
+  type ReportEntityListItem,
+  type ReportEntityMetadata,
+  type ReportFilterControlDef,
+  type ReportLogicOperator,
+  type ReportNestedEntityFilterByField,
+  type ReportNestedEntityFilterState,
+  type ReportOutputRow,
+  type ReportUiFilterSelections,
+  type ReportViewMode,
 } from '../types/reportApiTypes';
 
 /** Один запрос metadata на referenceEntity — параллельные вызовы ждут тот же Promise. */
@@ -570,7 +571,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   },
 
   setViewMode(mode) {
-    set({ viewMode: mode });
+    set({ viewMode: normalizeReportViewMode(mode) });
   },
 
   resetFilters() {

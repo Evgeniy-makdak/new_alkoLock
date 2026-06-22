@@ -30,6 +30,7 @@ import { ReportComposeModal, type ReportComposeModalMode } from './ReportCompose
 import { ReportGeneratingOverlay } from './ReportGeneratingOverlay';
 import { ReportSaveFileDialog } from './ReportSaveFileDialog';
 import { ReportsResultsView } from './ReportsResultsView';
+import { ReportsViewModeSelect } from './ReportsViewModeSelect';
 
 export function ReportsPage() {
   const { t } = useTranslation();
@@ -61,6 +62,9 @@ export function ReportsPage() {
 
   const renderExportControls = () => (
     <>
+      {hasDisplayableReport ? (
+        <ReportsViewModeSelect disabled={isGenerating || isExporting} />
+      ) : null}
       <FormControl size="small" sx={{ minWidth: 100 }}>
         <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
         <Select

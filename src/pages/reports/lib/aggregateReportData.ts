@@ -11,6 +11,10 @@ export const REPORT_CHART_OTHER_KEY = '__report_other__';
 export interface NamedCount {
   name: string;
   count: number;
+  /** Расшифровка по типам событий (для тултипов и детализации). */
+  byEventType?: NamedCount[];
+  /** Доля от общего числа событий, % (одна десятичная). */
+  sharePercent?: string;
 }
 
 export interface ReportAggregates {
