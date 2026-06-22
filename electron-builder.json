@@ -20,8 +20,7 @@
     "target": [
       "nsis",
       "portable"
-    ],
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
+    ]
   },
   "mac": {
     "category": "public.app-category.business",
@@ -47,7 +46,13 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true
+    "createDesktopShortcut": "always",
+    "createStartMenuShortcut": true,
+    "shortcutName": "Alcolocks Operator",
+    "artifactName": "${productName} Setup-${version}-${arch}.${ext}",
+    "uninstallDisplayName": "Alcolocks Operator"
+  },
+  "portable": {
+    "artifactName": "${productName}-${version}-portable-${arch}.${ext}"
   }
 }

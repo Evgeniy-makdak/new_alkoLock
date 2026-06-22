@@ -70,6 +70,7 @@
     "electron:dev": "concurrently -k \"cross-env BROWSER=none SASS_WARN_DEPRECATION=0 craco start --silent\" \"wait-on http://localhost && electron electron/main.cjs\"",
     "electron:pack": "yarn electron:pack:win",
     "electron:pack:win": "electron-builder --config electron-builder.json --win portable --x64",
+    "electron:setup:win": "electron-builder --config electron-builder.json --win nsis --x64",
     "electron:pack:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64",
     "electron:dist": "yarn electron:dist:win",
     "electron:dist:win": "electron-builder --config electron-builder.json --win nsis portable --x64",
