@@ -11,20 +11,46 @@ export const REPORT_CHART_OTHER_KEY = '__report_other__';
 export interface NamedCount {
   name: string;
   count: number;
+  /** Доп. строка в тултипе (e-mail, госномер и т.п.). */
+  detail?: string;
   /** Расшифровка по типам событий (для тултипов и детализации). */
   byEventType?: NamedCount[];
+  byBranch?: NamedCount[];
+  byUser?: NamedCount[];
+  byVehicle?: NamedCount[];
+  byDevice?: NamedCount[];
   /** Доля от общего числа событий, % (одна десятичная). */
   sharePercent?: string;
 }
 
+export type ReportChartDimensions = {
+  eventType: boolean;
+  date: boolean;
+  user: boolean;
+  vehicle: boolean;
+  device: boolean;
+  branch: boolean;
+};
+
+export const EMPTY_CHART_DIMENSIONS: ReportChartDimensions = {
+  eventType: false,
+  date: false,
+  user: false,
+  vehicle: false,
+  device: false,
+  branch: false,
+};
+
 export interface ReportAggregates {
   total: number;
+  dimensions: ReportChartDimensions;
   byEventType: NamedCount[];
   byDay: NamedCount[];
   sobrietyOnly: { name: string; value: number }[];
   topUsers: NamedCount[];
   topDevices: NamedCount[];
   topVehicles: NamedCount[];
+  topBranches: NamedCount[];
 }
 
 function addMap(m: Map<string, number>, key: string, n = 1) {
@@ -95,12 +121,21 @@ export function aggregateReportData(events: IDeviceAction[]): ReportAggregates {
 
   return {
     total: events.length,
+    dimensions: {
+      eventType: true,
+      date: byDaySorted.length > 0,
+      user: topUserRowsFromBucket(userBuckets, 1).length > 0,
+      vehicle: topSorted(vehicles, 1).length > 0,
+      device: topSorted(devices, 1).length > 0,
+      branch: false,
+    },
     byEventType: topSorted(byType, 12, { mergeTail: true }),
     byDay: byDaySorted,
     sobrietyOnly,
     topUsers: topUserRowsFromBucket(userBuckets, allRanked),
     topDevices: topSorted(devices, allRanked),
     topVehicles: topSorted(vehicles, allRanked),
+    topBranches: [],
   };
 }
 

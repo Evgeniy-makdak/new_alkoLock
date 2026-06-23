@@ -9,21 +9,32 @@ import {
   type ReportAggregates,
   REPORT_CHART_OTHER_KEY,
 } from './aggregateReportData';
-import {
-  collectReportContentColumnKeys,
-  orderReportContentColumnKeys,
-} from './buildReportTableFieldOptions';
 import { normalizeReportAggregationCode } from './reportAggregationDisplay';
 import { isReportEmptyValue } from './reportDisplayValue';
+import {
+  detectChartDimensions,
+  extractRowFacts,
+  type DetectedChartDimensions,
+  type EntityLabel,
+  type RowFacts,
+} from './reportChartRowLabels';
 import { classifySobrietyLabel, getEventTypeLabel } from './sobriety';
 
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
-const DATE_KEY_HINTS = ['date', 'time', 'at', 'timestamp', 'occurred', 'created'];
-const EVENT_TYPE_KEY_HINTS = ['label', 'event', 'type', 'status'];
-const USER_KEY_HINTS = ['user', 'driver', 'initiator', 'handler', 'fullname', 'surname'];
-const DEVICE_KEY_HINTS = ['device', 'alcolock', 'monitoring'];
-const VEHICLE_KEY_HINTS = ['vehicle', 'car', 'registration'];
+const RANKING_CHART_LIMIT = 12;
+const BREAKDOWN_LIMIT = 8;
+
+type BucketStore = {
+  count: number;
+  label: string;
+  detail?: string;
+  byEventType: Map<string, number>;
+  byBranch: Map<string, number>;
+  byUser: Map<string, { count: number; label: string }>;
+  byVehicle: Map<string, { count: number; label: string }>;
+  byDevice: Map<string, { count: number; label: string }>;
+};
 
 function isDeviceEventContentRow(row: Record<string, unknown>): boolean {
   return (
@@ -36,22 +47,12 @@ function isDeviceEventContentRow(row: Record<string, unknown>): boolean {
   );
 }
 
-function keyMatchesHints(key: string, hints: string[]): boolean {
-  const lower = key.toLowerCase();
-  return hints.some((hint) => lower.includes(hint));
-}
-
 function readScalarLabel(value: unknown): string {
   if (isReportEmptyValue(value)) return '—';
   if (typeof value === 'object' && value != null) {
     const record = value as Record<string, unknown>;
     if (typeof record.label === 'string' && record.label.trim()) return record.label.trim();
     if (typeof record.name === 'string' && record.name.trim()) return record.name.trim();
-    if (typeof record.fullName === 'string' && record.fullName.trim()) return record.fullName.trim();
-    const surname = [record.surname, record.firstName].filter(Boolean).join(' ').trim();
-    if (surname) return surname;
-    if (record.registrationNumber) return String(record.registrationNumber);
-    if (record.serialNumber) return String(record.serialNumber);
   }
   return String(value).trim() || '—';
 }
@@ -70,6 +71,44 @@ function addMap(m: Map<string, number>, key: string, n = 1) {
   m.set(label, (m.get(label) ?? 0) + n);
 }
 
+function addEntityMap(
+  m: Map<string, { count: number; label: string }>,
+  entity: EntityLabel | null,
+  n = 1,
+) {
+  if (!entity?.key) return;
+  const prev = m.get(entity.key);
+  m.set(entity.key, {
+    count: (prev?.count ?? 0) + n,
+    label: entity.label || prev?.label || entity.key,
+  });
+}
+
+function ensureBucket(
+  store: Map<string, BucketStore>,
+  key: string,
+  label: string,
+  detail?: string,
+): BucketStore {
+  const prev = store.get(key);
+  if (prev) {
+    if (detail && !prev.detail) prev.detail = detail;
+    return prev;
+  }
+  const bucket: BucketStore = {
+    count: 0,
+    label,
+    detail,
+    byEventType: new Map(),
+    byBranch: new Map(),
+    byUser: new Map(),
+    byVehicle: new Map(),
+    byDevice: new Map(),
+  };
+  store.set(key, bucket);
+  return bucket;
+}
+
 function topSorted(m: Map<string, number>, limit: number, mergeTail = false): NamedCount[] {
   const arr = Array.from(m.entries()).sort((a, b) => b[1] - a[1]);
   if (!mergeTail || arr.length <= limit) {
@@ -79,6 +118,165 @@ function topSorted(m: Map<string, number>, limit: number, mergeTail = false): Na
   const rest = arr.slice(limit).reduce((sum, [, count]) => sum + count, 0);
   if (rest > 0) head.push({ name: REPORT_CHART_OTHER_KEY, count: rest });
   return head;
+}
+
+function topEntitySorted(
+  m: Map<string, { count: number; label: string }>,
+  limit: number,
+  mergeTail = false,
+): NamedCount[] {
+  const arr = Array.from(m.entries())
+    .map(([key, value]) => ({ key, name: value.label, count: value.count }))
+    .sort((a, b) => b.count - a.count);
+  if (!mergeTail || arr.length <= limit) {
+    return arr.slice(0, limit).map(({ name, count }) => ({ name, count }));
+  }
+  const head = arr.slice(0, limit).map(({ name, count }) => ({ name, count }));
+  const rest = arr.slice(limit).reduce((sum, item) => sum + item.count, 0);
+  if (rest > 0) head.push({ name: REPORT_CHART_OTHER_KEY, count: rest });
+  return head;
+}
+
+function mapBreakdown(m: Map<string, number> | undefined, limit = BREAKDOWN_LIMIT): NamedCount[] | undefined {
+  if (!m?.size) return undefined;
+  return topSorted(m, limit, false);
+}
+
+function mapEntityBreakdown(
+  m: Map<string, { count: number; label: string }> | undefined,
+  limit = BREAKDOWN_LIMIT,
+): NamedCount[] | undefined {
+  if (!m?.size) return undefined;
+  return topEntitySorted(m, limit, false);
+}
+
+function finalizeBuckets(
+  store: Map<string, BucketStore>,
+  limit: number,
+  mergeTail: boolean,
+  dimensions: DetectedChartDimensions,
+): NamedCount[] {
+  const arr = Array.from(store.values()).sort((a, b) => b.count - a.count);
+  const sliced = mergeTail && arr.length > limit ? arr.slice(0, limit) : arr.slice(0, limit);
+  const items = sliced.map((bucket) => ({
+    name: bucket.label,
+    count: bucket.count,
+    detail: bucket.detail,
+    byEventType: dimensions.eventType ? mapBreakdown(bucket.byEventType) : undefined,
+    byBranch: dimensions.branch ? mapBreakdown(bucket.byBranch) : undefined,
+    byUser: dimensions.user ? mapEntityBreakdown(bucket.byUser) : undefined,
+    byVehicle: dimensions.vehicle ? mapEntityBreakdown(bucket.byVehicle) : undefined,
+    byDevice: dimensions.device ? mapEntityBreakdown(bucket.byDevice) : undefined,
+  }));
+
+  if (!mergeTail || arr.length <= limit) return items;
+
+  const restCount = arr.slice(limit).reduce((sum, bucket) => sum + bucket.count, 0);
+  if (restCount <= 0) return items;
+
+  return [...items, { name: REPORT_CHART_OTHER_KEY, count: restCount }];
+}
+
+function applyRowBreakdowns(bucket: BucketStore, facts: RowFacts) {
+  if (facts.eventType) addMap(bucket.byEventType, facts.eventType);
+  if (facts.branch) addMap(bucket.byBranch, facts.branch);
+  addEntityMap(bucket.byUser, facts.user);
+  addEntityMap(bucket.byVehicle, facts.vehicle);
+  addEntityMap(bucket.byDevice, facts.device);
+}
+
+function aggregateFlatContent(content: Record<string, unknown>[]): ReportAggregates {
+  const keys = collectContentKeys(content);
+  const dimensions = detectChartDimensions(content);
+
+  const byTypeStore = new Map<string, BucketStore>();
+  const byDayStore = new Map<string, BucketStore>();
+  const usersStore = new Map<string, BucketStore>();
+  const devicesStore = new Map<string, BucketStore>();
+  const vehiclesStore = new Map<string, BucketStore>();
+  const branchesStore = new Map<string, BucketStore>();
+  const sobriety = new Map<string, number>();
+
+  let countedRows = 0;
+
+  for (const row of content) {
+    const facts = extractRowFacts(row, keys);
+    if (!facts) continue;
+    countedRows += 1;
+
+    if (facts.eventType) {
+      const bucket = ensureBucket(byTypeStore, facts.eventType, facts.eventType);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+      const cls = classifySobrietyLabel(facts.eventType);
+      if (cls) addMap(sobriety, cls);
+    }
+
+    if (facts.day) {
+      const bucket = ensureBucket(byDayStore, facts.day, facts.day);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+    }
+
+    if (facts.user) {
+      const bucket = ensureBucket(usersStore, facts.user.key, facts.user.label, facts.user.detail);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+    }
+
+    if (facts.device) {
+      const bucket = ensureBucket(devicesStore, facts.device.key, facts.device.label);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+    }
+
+    if (facts.vehicle) {
+      const bucket = ensureBucket(vehiclesStore, facts.vehicle.key, facts.vehicle.label);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+    }
+
+    if (facts.branch) {
+      const bucket = ensureBucket(branchesStore, facts.branch, facts.branch);
+      bucket.count += 1;
+      applyRowBreakdowns(bucket, facts);
+    }
+  }
+
+  const byDaySorted = Array.from(byDayStore.values())
+    .sort((a, b) => a.label.localeCompare(b.label))
+    .map((bucket) => ({
+      name: bucket.label,
+      count: bucket.count,
+      byEventType: dimensions.eventType ? mapBreakdown(bucket.byEventType) : undefined,
+      byBranch: dimensions.branch ? mapBreakdown(bucket.byBranch) : undefined,
+      byUser: dimensions.user ? mapEntityBreakdown(bucket.byUser) : undefined,
+      byVehicle: dimensions.vehicle ? mapEntityBreakdown(bucket.byVehicle) : undefined,
+      byDevice: dimensions.device ? mapEntityBreakdown(bucket.byDevice) : undefined,
+    }));
+
+  return {
+    total: countedRows || content.length,
+    dimensions,
+    byEventType: finalizeBuckets(byTypeStore, RANKING_CHART_LIMIT, true, dimensions),
+    byDay: byDaySorted,
+    sobrietyOnly: ['passed', 'failed', 'interrupted'].map((key) => ({
+      name: key,
+      value: sobriety.get(key) ?? 0,
+    })),
+    topUsers: finalizeBuckets(usersStore, RANKING_CHART_LIMIT, true, dimensions),
+    topDevices: finalizeBuckets(devicesStore, RANKING_CHART_LIMIT, true, dimensions),
+    topVehicles: finalizeBuckets(vehiclesStore, RANKING_CHART_LIMIT, true, dimensions),
+    topBranches: finalizeBuckets(branchesStore, RANKING_CHART_LIMIT, true, dimensions),
+  };
+}
+
+function collectContentKeys(content: Record<string, unknown>[]): string[] {
+  const keys = new Set<string>();
+  for (const row of content) {
+    for (const key of Object.keys(row)) keys.add(key);
+  }
+  return Array.from(keys);
 }
 
 function findCountValueColumn(
@@ -103,69 +301,6 @@ function findCountValueColumn(
   return null;
 }
 
-function scoreCategoryKey(key: string): number {
-  const lower = key.toLowerCase();
-  if (lower.endsWith('.label') || lower.includes('eventsforfront')) return 100;
-  if (lower.includes('eventtypelabel') || lower.includes('eventtype')) return 90;
-  if (lower.includes('.label')) return 80;
-  if (lower.includes('event')) return 70;
-  if (lower.includes('type') && !lower.includes('vehicle')) return 55;
-  if (lower.includes('status')) return 45;
-  if (lower.includes('.name') && !lower.includes('user') && !lower.includes('branch')) return 35;
-  return 0;
-}
-
-function scoreDateKey(key: string): number {
-  const lower = key.toLowerCase();
-  if (lower.includes('occurred') || lower.includes('timestamp')) return 100;
-  if (lower.includes('createdat') || lower.includes('startedat')) return 80;
-  if (keyMatchesHints(key, DATE_KEY_HINTS)) return 60;
-  return 0;
-}
-
-function scoreHintKey(key: string, hints: string[]): number {
-  return keyMatchesHints(key, hints) ? 50 : 0;
-}
-
-function pickBestColumnKey(
-  contentKeys: string[],
-  selectedFieldNames: string[] | undefined,
-  scoreFn: (key: string) => number,
-): string | null {
-  const seen = new Set<string>();
-  const candidates: string[] = [];
-
-  for (const name of selectedFieldNames ?? []) {
-    if (!contentKeys.includes(name) || seen.has(name)) continue;
-    candidates.push(name);
-    seen.add(name);
-  }
-
-  for (const key of contentKeys) {
-    if (!seen.has(key)) {
-      candidates.push(key);
-      seen.add(key);
-    }
-  }
-
-  let best: string | null = null;
-  let bestScore = 0;
-  for (const key of candidates) {
-    const score = scoreFn(key);
-    if (score > bestScore) {
-      bestScore = score;
-      best = key;
-    }
-  }
-
-  return bestScore > 0 ? best : null;
-}
-
-function pickColumnKey(keys: string[], hints: string[], exclude: Set<string>): string | null {
-  const available = keys.filter((key) => !exclude.has(key));
-  return available.find((key) => keyMatchesHints(key, hints)) ?? null;
-}
-
 function aggregateGroupedContent(
   content: Record<string, unknown>[],
   groupBy: string[],
@@ -173,6 +308,8 @@ function aggregateGroupedContent(
 ): ReportAggregates {
   const groupKey = groupBy[0];
   const valueKey = findCountValueColumn(content, groupBy, selectedFields);
+  const dimensions = detectChartDimensions(content);
+
   const byCategory: NamedCount[] = content.map((row) => ({
     name: readScalarLabel(row[groupKey]),
     count: valueKey ? (readNumericValue(row[valueKey]) ?? 0) : 1,
@@ -187,9 +324,10 @@ function aggregateGroupedContent(
 
   return {
     total,
+    dimensions: { ...dimensions, eventType: true },
     byEventType: topSorted(
       new Map(byCategory.map((row) => [row.name, row.count])),
-      12,
+      RANKING_CHART_LIMIT,
       true,
     ),
     byDay: [],
@@ -200,85 +338,11 @@ function aggregateGroupedContent(
     topUsers: [],
     topDevices: [],
     topVehicles: [],
+    topBranches: [],
   };
 }
 
-function aggregateGenericContent(
-  content: Record<string, unknown>[],
-  selectedFieldNames?: string[],
-): ReportAggregates {
-  const keys = orderReportContentColumnKeys(
-    collectReportContentColumnKeys(content),
-    selectedFieldNames,
-  );
-  const used = new Set<string>();
-
-  const dateKey = pickBestColumnKey(keys, selectedFieldNames, scoreDateKey);
-  if (dateKey) used.add(dateKey);
-
-  const categoryKey = pickBestColumnKey(keys, selectedFieldNames, scoreCategoryKey);
-  if (categoryKey) used.add(categoryKey);
-
-  const userKey =
-    pickBestColumnKey(keys, selectedFieldNames, (key) => scoreHintKey(key, USER_KEY_HINTS)) ??
-    pickColumnKey(keys, USER_KEY_HINTS, used);
-  if (userKey) used.add(userKey);
-
-  const deviceKey =
-    pickBestColumnKey(keys, selectedFieldNames, (key) => scoreHintKey(key, DEVICE_KEY_HINTS)) ??
-    pickColumnKey(keys, DEVICE_KEY_HINTS, used);
-  if (deviceKey) used.add(deviceKey);
-
-  const vehicleKey =
-    pickBestColumnKey(keys, selectedFieldNames, (key) => scoreHintKey(key, VEHICLE_KEY_HINTS)) ??
-    pickColumnKey(keys, VEHICLE_KEY_HINTS, used);
-  if (vehicleKey) used.add(vehicleKey);
-
-  const byDay = new Map<string, number>();
-  const byType = new Map<string, number>();
-  const sobriety = new Map<string, number>();
-  const users = new Map<string, number>();
-  const devices = new Map<string, number>();
-  const vehicles = new Map<string, number>();
-
-  for (const row of content) {
-    if (dateKey) {
-      const raw = row[dateKey];
-      const day = raw ? dayjs(String(raw)).format('YYYY-MM-DD') : '';
-      if (day && dayjs(day).isValid()) addMap(byDay, day);
-    }
-
-    if (categoryKey) {
-      const label = readScalarLabel(row[categoryKey]);
-      addMap(byType, label);
-      const cls = classifySobrietyLabel(label);
-      if (cls) addMap(sobriety, cls);
-    }
-
-    if (userKey) addMap(users, readScalarLabel(row[userKey]));
-    if (deviceKey) addMap(devices, readScalarLabel(row[deviceKey]));
-    if (vehicleKey) addMap(vehicles, readScalarLabel(row[vehicleKey]));
-  }
-
-  const byDaySorted = Array.from(byDay.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([name, count]) => ({ name, count }));
-
-  return {
-    total: content.length,
-    byEventType: topSorted(byType, 12, true),
-    byDay: byDaySorted,
-    sobrietyOnly: ['passed', 'failed', 'interrupted'].map((key) => ({
-      name: key,
-      value: sobriety.get(key) ?? 0,
-    })),
-    topUsers: topSorted(users, Number.MAX_SAFE_INTEGER),
-    topDevices: topSorted(devices, Number.MAX_SAFE_INTEGER),
-    topVehicles: topSorted(vehicles, Number.MAX_SAFE_INTEGER),
-  };
-}
-
-/** Строит агрегаты для диаграмм по всем строкам отчёта. */
+/** Строит агрегаты для диаграмм по строкам текущей страницы отчёта. */
 export function aggregateReportContentForCharts(
   content: Record<string, unknown>[],
   options?: {
@@ -288,10 +352,6 @@ export function aggregateReportContentForCharts(
   },
 ): ReportAggregates | null {
   if (!content.length) return null;
-
-  const selectedFieldNames = options?.selectedFields
-    ?.map((field) => field.fieldName)
-    .filter((name): name is string => Boolean(name?.trim()));
 
   const groupBy = (options?.groupBy ?? []).filter(Boolean);
   if (groupBy.length) {
@@ -303,8 +363,8 @@ export function aggregateReportContentForCharts(
     return aggregateReportData(eventLikeRows as unknown as IDeviceAction[]);
   }
 
-  const generic = aggregateGenericContent(content, selectedFieldNames);
-  if (!generic.byEventType.length && !generic.byDay.length) {
+  const flat = aggregateFlatContent(content);
+  if (!flat.byEventType.length && !flat.byDay.length) {
     const labelFromEvents = content
       .map((row) => getEventTypeLabel(row))
       .filter((label) => label.trim());
@@ -313,5 +373,5 @@ export function aggregateReportContentForCharts(
     }
   }
 
-  return generic;
+  return flat;
 }

@@ -205,6 +205,14 @@ export function aggregateReportGridForCharts(
 
   return {
     total: countedRows || rows.length,
+    dimensions: {
+      eventType: byType.size > 0,
+      date: byDay.size > 0,
+      user: users.size > 0,
+      vehicle: vehicles.size > 0,
+      device: devices.size > 0,
+      branch: false,
+    },
     byEventType: topSorted(byType, 12, true),
     byDay: withEventBreakdown(byDaySorted, dayByType),
     sobrietyOnly: ['passed', 'failed', 'interrupted'].map((key) => ({
@@ -214,5 +222,6 @@ export function aggregateReportGridForCharts(
     topUsers: withEventBreakdown(topSorted(users, Number.MAX_SAFE_INTEGER), userByType),
     topDevices: withEventBreakdown(topSorted(devices, Number.MAX_SAFE_INTEGER), deviceByType),
     topVehicles: withEventBreakdown(topSorted(vehicles, Number.MAX_SAFE_INTEGER), vehicleByType),
+    topBranches: [],
   };
 }

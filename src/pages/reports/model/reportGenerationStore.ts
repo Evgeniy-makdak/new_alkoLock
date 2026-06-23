@@ -13,6 +13,8 @@ import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLab
 import { filterReportContentRowsForUi } from '../lib/reportAnonymousUser';
 import { reportsStore } from './reportsStore';
 
+import type { Values } from '@shared/ui/search_multiple_select';
+
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
 export const DEFAULT_REPORT_PAGE_SIZE = 25;
@@ -22,6 +24,10 @@ export type ReportQueryContext = {
   body: ReportQueryRequest;
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
+  /** Выбранные филиалы суперадмина (query: all.branch.id.in=…). */
+  branchIds?: number[];
+  /** Подписи выбранных филиалов для восстановления UI при редактировании. */
+  branchOffices?: Values;
 };
 
 let reportFetchAbortController: AbortController | null = null;
@@ -221,6 +227,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
         format,
         fileName,
         queryContext.body,
+        queryContext.branchIds,
       );
       downloadReportFile(blob, fileName, format);
       enqueueSnackbar(i18n.t('reports.exportSuccess'), { variant: 'success' });
@@ -259,6 +266,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
         page,
         size: pageSize,
         sort,
+        branchIds: queryContext.branchIds,
       });
       if (requestSeq !== reportPageRequestSeq) {
         set({ isLoadingPage: false });

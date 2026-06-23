@@ -4,6 +4,7 @@ import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQ
 
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
+import { appendReportBranchIdsToQueryParts } from '../lib/buildReportBranchQueryParams';
 import { finalizeReportQueryBodyForGroupBy } from '../lib/buildReportGroupParam';
 import {
   expandCompositeSelectedFields,
@@ -58,16 +59,17 @@ function unwrap<T>(res: {
 function buildQueryUrl(entityName: string, pageable?: ReportQueryPageable): string {
   const encoded = encodeURIComponent(entityName);
   const base = `api/v1/reports/${encoded}/query`;
-  if (!pageable) {
-    return base;
-  }
-  const queryParts = [`page=${pageable.page}`, `size=${pageable.size}`];
-  for (const sort of pageable.sort ?? []) {
-    if (sort) {
-      queryParts.push(`sort=${sort}`);
+  const queryParts: string[] = [];
+  if (pageable) {
+    queryParts.push(`page=${pageable.page}`, `size=${pageable.size}`);
+    for (const sort of pageable.sort ?? []) {
+      if (sort) {
+        queryParts.push(`sort=${sort}`);
+      }
     }
+    appendReportBranchIdsToQueryParts(queryParts, pageable.branchIds);
   }
-  return `${base}?${queryParts.join('&')}`;
+  return queryParts.length ? `${base}?${queryParts.join('&')}` : base;
 }
 
 export async function fetchReportEntities(): Promise<ReportEntityListItem[]> {
@@ -128,12 +130,14 @@ export async function exportReport(
   format: ReportExportFormat,
   fileName: string,
   body: ReportQueryRequest,
+  branchIds?: number[],
 ): Promise<Blob> {
   const encoded = encodeURIComponent(entityName);
   const queryParts = [`format=${encodeURIComponent(format)}`];
   if (fileName.trim()) {
     queryParts.push(`fileName=${encodeURIComponent(fileName.trim())}`);
   }
+  appendReportBranchIdsToQueryParts(queryParts, branchIds);
   const url = `${getApiUrl()}api/v1/reports/${encoded}/export?${queryParts.join('&')}`;
 
   const res = await axios.post(url, sanitizeReportQueryBody(body), {

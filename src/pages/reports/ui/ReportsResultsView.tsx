@@ -5,7 +5,7 @@ import { useLocation } from 'react-router-dom';
 import { useMediaQuery, Box, CircularProgress, TablePagination, Typography } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
-import { aggregateReportGridForCharts } from '@pages/reports/lib/aggregateReportGridForCharts';
+import { aggregateReportContentForCharts } from '@pages/reports/lib/aggregateReportContentForCharts';
 import {
   buildReportSortFieldMap,
   buildReportSortParams,
@@ -308,9 +308,13 @@ export function ReportsResultsView() {
   const isChartView = viewMode !== 'table';
 
   const chartAggregates = useMemo(() => {
-    if (!isChartView || !rows.length) return null;
-    return aggregateReportGridForCharts(columns, rows);
-  }, [isChartView, columns, rows]);
+    if (!isChartView || !lastResult?.content?.length) return null;
+    return aggregateReportContentForCharts(lastResult.content, {
+      groupBy: queryContext?.body.groupBy,
+      selectedFields: queryContext?.body.selectedFields,
+      t,
+    });
+  }, [isChartView, lastResult?.content, queryContext?.body.groupBy, queryContext?.body.selectedFields, t]);
 
   const handleMobilePageChange = useCallback(
     (newPage: number) => {

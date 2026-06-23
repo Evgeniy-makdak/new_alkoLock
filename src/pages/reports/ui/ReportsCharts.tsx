@@ -149,6 +149,18 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
       });
     }
 
+    const topBranch = data.topBranches[0];
+    if (topBranch) {
+      cards.push({
+        key: 'top-branch',
+        label: t('reports.dashboardTopBranch'),
+        detail: formatAxisLabel(topBranch.name),
+        value: topBranch.count,
+        icon: <EventNoteOutlinedIcon fontSize="large" />,
+        tone: 'warning',
+      });
+    }
+
     return cards;
   }, [data, t]);
 
@@ -167,6 +179,16 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
       </Typography>
     );
   }
+
+  const hasRankingCharts =
+    (data.dimensions.branch && data.topBranches.length > 0) ||
+    (data.dimensions.user && data.topUsers.length > 0) ||
+    (data.dimensions.device && data.topDevices.length > 0) ||
+    (data.dimensions.vehicle && data.topVehicles.length > 0);
+  const hasTrendCharts =
+    (data.dimensions.date && data.byDay.length > 0) ||
+    (data.dimensions.eventType && data.byEventType.length > 0);
+  const hasVisualCharts = hasRankingCharts || hasTrendCharts;
 
   const hint =
     pageRows > 0 && reportTotal > 0 ? (
@@ -193,8 +215,7 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
     const chartRows = rows.map((r) => ({
       ...r,
       displayName: formatAxisLabel(r.name),
-      sharePercent:
-        data.total > 0 ? ((r.count / data.total) * 100).toFixed(1) : '0',
+      sharePercent: data.total > 0 ? ((r.count / data.total) * 100).toFixed(1) : '0',
     }));
     const maxLabelLen = Math.max(...chartRows.map((row) => row.displayName.length), 8);
     const rowHeight = 40;
@@ -235,10 +256,20 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
     );
   };
 
+  const breakdownSectionLabels = useMemo(
+    () => ({
+      eventType: t('reports.tooltipByEventType'),
+      branch: t('reports.tooltipByBranch'),
+      user: t('reports.tooltipByUser'),
+      vehicle: t('reports.tooltipByVehicle'),
+      device: t('reports.tooltipByDevice'),
+    }),
+    [t],
+  );
+
   const renderBarView = () => (
   <>
-      {totalCard}
-      {data.byDay.length ? (
+      {data.dimensions.date && data.byDay.length ? (
         <Paper sx={{ p: 2, minHeight: 320 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             {t('reports.chartByDay')}
@@ -255,7 +286,7 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
         </Paper>
       ) : null}
 
-      {byTypeForChart.length ? (
+      {data.dimensions.eventType && byTypeForChart.length ? (
         <Paper sx={{ p: 2 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             {t('reports.chartByType')}
@@ -293,9 +324,18 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
           flexDirection: 'column',
           gap: 3,
         }}>
-        {topBar(t('reports.chartByUsers'), data.topUsers, theme.palette.primary.dark)}
-        {topBar(t('reports.chartByDevices'), data.topDevices, theme.palette.info.main)}
-        {topBar(t('reports.chartByVehicles'), data.topVehicles, theme.palette.success.main)}
+        {data.dimensions.branch
+          ? topBar(t('reports.chartByBranches'), data.topBranches, theme.palette.warning.main)
+          : null}
+        {data.dimensions.user
+          ? topBar(t('reports.chartByUsers'), data.topUsers, theme.palette.primary.dark)
+          : null}
+        {data.dimensions.device
+          ? topBar(t('reports.chartByDevices'), data.topDevices, theme.palette.info.main)
+          : null}
+        {data.dimensions.vehicle
+          ? topBar(t('reports.chartByVehicles'), data.topVehicles, theme.palette.success.main)
+          : null}
       </Box>
     </>
   );
@@ -314,8 +354,11 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
         <div className={styles.pictogramTypeList}>
           {rows.slice(0, limit).map((row) => {
             const label = formatAxisLabel(row.name);
-            const breakdownTitle = formatBreakdownTitle(row, (name) =>
-              name === REPORT_CHART_OTHER_KEY ? t('reports.otherBucket') : formatAxisLabel(name),
+            const breakdownTitle = formatBreakdownTitle(
+              row,
+              (name) =>
+                name === REPORT_CHART_OTHER_KEY ? t('reports.otherBucket') : formatAxisLabel(name),
+              breakdownSectionLabels,
             );
             return (
             <div
@@ -338,7 +381,6 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
 
   const renderDashboardView = () => (
     <>
-      {totalCard}
       <div className={styles.pictogramGrid}>
         {dashboardCards.map((card) => (
           <Paper key={card.key} className={styles.pictogramCard} data-tone={card.tone}>
@@ -365,10 +407,11 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
           gap: 2,
           mt: 2,
         }}>
-        {renderPictogramList(t('reports.chartByType'), byTypeForChart)}
-        {renderPictogramList(t('reports.chartByUsers'), data.topUsers)}
-        {renderPictogramList(t('reports.chartByDevices'), data.topDevices)}
-        {renderPictogramList(t('reports.chartByVehicles'), data.topVehicles)}
+        {data.dimensions.eventType ? renderPictogramList(t('reports.chartByType'), byTypeForChart) : null}
+        {data.dimensions.branch ? renderPictogramList(t('reports.chartByBranches'), data.topBranches) : null}
+        {data.dimensions.user ? renderPictogramList(t('reports.chartByUsers'), data.topUsers) : null}
+        {data.dimensions.device ? renderPictogramList(t('reports.chartByDevices'), data.topDevices) : null}
+        {data.dimensions.vehicle ? renderPictogramList(t('reports.chartByVehicles'), data.topVehicles) : null}
       </Box>
     </>
   );
@@ -376,8 +419,14 @@ export function ReportsCharts({ data, viewMode, pageRows, reportTotal }: Reports
   return (
     <Box className={styles.chartsWrapper}>
       {hint}
-      {viewMode === 'bar' ? renderBarView() : null}
-      {viewMode === 'dashboard' ? renderDashboardView() : null}
+      {totalCard}
+      {!hasVisualCharts ? (
+        <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+          {t('reports.chartNoVisualData')}
+        </Typography>
+      ) : null}
+      {viewMode === 'bar' && hasVisualCharts ? renderBarView() : null}
+      {viewMode === 'dashboard' && hasVisualCharts ? renderDashboardView() : null}
     </Box>
   );
 }

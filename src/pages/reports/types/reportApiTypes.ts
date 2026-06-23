@@ -110,6 +110,8 @@ export type ReportQueryPageable = {
   page: number;
   size: number;
   sort?: string[];
+  /** Фильтр филиалов для суперадмина (query: all.branch.id.in=…). */
+  branchIds?: number[];
 };
 
 export type ReportQueryResponse = {

@@ -35,6 +35,7 @@ import type { ReportQueryRequest } from '@pages/reports/types/reportApiTypes';
 import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
 import popupStyles from '@shared/ui/popup/Popup.module.scss';
+import { appStore } from '@shared/model/app_store/AppStore';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
@@ -42,6 +43,10 @@ import type { ReportComposeSortRow } from '@pages/reports/types/reportComposeSor
 
 import { ReportComposeForm } from './ReportComposeForm';
 import composeStyles from './ReportComposeModal.module.scss';
+import {
+  ReportComposeBranchSelect,
+  reportComposeBranchValuesToIds,
+} from './ReportComposeBranchSelect';
 import { ReportComposeGroupSection } from './ReportComposeGroupSection';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportComposeSortSection } from './ReportComposeSortSection';
@@ -78,10 +83,13 @@ export function ReportComposeModal({
   const referenceEntityMetadataLoadingByName = reportsStore(
     (s) => s.referenceEntityMetadataLoadingByName,
   );
+  const authId = appStore((s) => s.authId);
+  const isSuperAdmin = Number(authId) === 1;
 
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
   const [composeSortRows, setComposeSortRows] = useState<ReportComposeSortRow[]>([]);
   const [composeGroupRows, setComposeGroupRows] = useState<ReportComposeGroupRow[]>([]);
+  const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const filterConfigurationKeyRef = useRef<string | null>(null);
 
   const filterConfigurationKey = useMemo(
@@ -107,6 +115,7 @@ export function ReportComposeModal({
       setTableFieldsSelection([]);
       setComposeSortRows([]);
       setComposeGroupRows([]);
+      setSelectedBranchOffices([]);
       return;
     }
 
@@ -114,7 +123,16 @@ export function ReportComposeModal({
     const tableFields =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
     const queryBody = reportGenerationStore.getState().queryContext?.body;
+    const savedBranchOffices = reportGenerationStore.getState().queryContext?.branchOffices;
+    const savedBranchIds = reportGenerationStore.getState().queryContext?.branchIds;
     setTableFieldsSelection(tableFields);
+    setSelectedBranchOffices(
+      savedBranchOffices?.length
+        ? [...savedBranchOffices]
+        : savedBranchIds?.length
+          ? savedBranchIds.map((id) => ({ value: id, label: String(id) }))
+          : [],
+    );
     setComposeSortRows(
       parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
     );
@@ -398,17 +416,24 @@ export function ReportComposeModal({
     );
     const { pagination, setQueryContext, setPagination, setSort } =
       reportGenerationStore.getState();
+    const branchIds = isSuperAdmin ? reportComposeBranchValuesToIds(selectedBranchOffices) : [];
     reportGenerationStore.getState().start();
     setPagination({ page: 0 });
     setSort(sortParams);
 
     try {
-      setQueryContext({ entityName, body: bodyWithGroup });
+      setQueryContext({
+        entityName,
+        body: bodyWithGroup,
+        branchIds: branchIds.length ? branchIds : undefined,
+        branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
+      });
 
       const result = await executeReportQuery(entityName, bodyWithGroup, {
         page: 0,
         size: pagination.pageSize,
         sort: sortParams,
+        branchIds: branchIds.length ? branchIds : undefined,
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
@@ -427,6 +452,8 @@ export function ReportComposeModal({
     composeGroupBy,
     onReportFormed,
     reportQueryErrorMessage,
+    isSuperAdmin,
+    selectedBranchOffices,
   ]);
 
   const handleFormReport = useCallback(async () => {
@@ -507,15 +534,23 @@ export function ReportComposeModal({
         </Box>
       }
       buttons={[
-        <Button
-          key="form"
-          disabled={!canFormReport || isGenerating}
-          onClick={() => void handleFormReport()}>
-          {t('reports.formReport')}
-        </Button>,
-        <Button key="cancel" onClick={handleClose}>
-          {t('common.cancel')}
-        </Button>,
+        ...(isSuperAdmin
+          ? [
+              <ReportComposeBranchSelect
+                key="branch"
+                value={selectedBranchOffices}
+                onChange={setSelectedBranchOffices}
+              />,
+            ]
+          : []),
+        <div key="actions" className={composeStyles.composeFooterButtons}>
+          <Button
+            disabled={!canFormReport || isGenerating}
+            onClick={() => void handleFormReport()}>
+            {t('reports.formReport')}
+          </Button>
+          <Button onClick={handleClose}>{t('common.cancel')}</Button>
+        </div>,
       ]}
     />
   );

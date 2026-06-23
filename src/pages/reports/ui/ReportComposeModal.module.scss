@@ -30,6 +30,34 @@
     display: flex;
     flex-direction: column;
   }
+
+  :global(.MuiDialogActions-root) {
+    justify-content: space-between;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
+
+.composeFooterBranch {
+  flex: 1 1 320px;
+  min-width: 220px;
+  max-width: 520px;
+  margin-right: auto;
+
+  :global(.MuiFormControl-root),
+  :global(.MuiAutocomplete-root),
+  :global([class*='searchSelect']) {
+    width: 100%;
+  }
+}
+
+.composeFooterButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 
 .composeModalContent {
