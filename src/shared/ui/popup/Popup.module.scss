@@ -84,6 +84,7 @@
 
 .interacting {
   user-select: none;
+  will-change: left, top, width, height;
 
   * {
     user-select: none;

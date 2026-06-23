@@ -57,7 +57,8 @@ export const Popup = ({
   const isNarrowViewport = useMediaQuery('(max-width:900px)');
   const dragResizeEnabled = Boolean(dragResize) && !isNarrowViewport;
 
-  const { geometry, isInteracting, onTitlePointerDown, onResizePointerDown } = usePopupDragResize({
+  const { geometry, isInteracting, onTitlePointerDown, onResizePointerDown, setPaperRef } =
+    usePopupDragResize({
     enabled: dragResizeEnabled,
     isOpen,
     defaultWidth: dragResize?.defaultWidth ?? 900,
@@ -127,6 +128,7 @@ export const Popup = ({
         },
       }}
       PaperProps={{
+        ref: setPaperRef,
         className: paperClassName,
         sx: {
           minWidth: dragResizeEnabled ? undefined : 550,

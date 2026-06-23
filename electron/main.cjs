@@ -149,9 +149,13 @@ function applyWindowIcon(win) {
 function installWindowIcon(win) {
   applyWindowIcon(win);
   if (!win || win.isDestroyed()) return;
+  let faviconInjected = false;
   win.webContents.on('page-favicon-updated', () => {
     applyWindowIcon(win);
-    injectPageFavicon(win);
+    if (!faviconInjected) {
+      faviconInjected = true;
+      injectPageFavicon(win);
+    }
   });
 }
 
@@ -703,7 +707,9 @@ function createMainWindow() {
     }
   });
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
-    console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
+    if (level >= 2) {
+      console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
+    }
   });
   mainWindow.webContents.on('did-finish-load', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -723,12 +729,6 @@ function createMainWindow() {
     mainWindow.focus();
   });
   mainWindow.loadURL(appUrl);
-  mainWindow.on('close', (event) => {
-    if (serverSetupChangeMode && serverSetupWindow && !serverSetupWindow.isDestroyed()) {
-      event.preventDefault();
-      serverSetupWindow.focus();
-    }
-  });
   mainWindow.on('closed', () => {
     mainWindow = null;
     if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
@@ -752,9 +752,7 @@ function createServerSetupWindow(options = {}) {
     resizable: false,
     maximizable: false,
     show: false,
-    parent:
-      mode === 'change' && mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
-    modal: mode === 'change' && mainWindow && !mainWindow.isDestroyed(),
+    alwaysOnTop: mode === 'change',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -777,6 +775,7 @@ function createServerSetupWindow(options = {}) {
     serverSetupWindow = null;
     serverSetupChangeMode = false;
     if (wasChangeMode && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.setAlwaysOnTop(false);
       mainWindow.show();
       mainWindow.focus();
     }
