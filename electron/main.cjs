@@ -278,13 +278,55 @@ function readLaunchOverrideAppUrl() {
   return '';
 }
 
+function isBrokenDesktopAppUrl(url) {
+  try {
+    const { hostname } = new URL(url);
+    return hostname === 'localhost' || hostname === '127.0.0.1';
+  } catch {
+    return !url;
+  }
+}
+
+function getLegacyUserConfigPath() {
+  return path.join(app.getPath('appData'), 'alcolocks-operator-desktop', 'app.config.json');
+}
+
+function sanitizeSavedAppConfigs() {
+  const configPaths = [getUserConfigPath(), getLegacyUserConfigPath()];
+  for (const configPath of configPaths) {
+    const config = readJsonConfig(configPath);
+    const url = toAuthorizationUrl(config?.appUrl);
+    if (url && isBrokenDesktopAppUrl(url)) {
+      console.warn(`[electron] removing broken saved server url: ${url} (${configPath})`);
+      try {
+        fs.rmSync(configPath, { force: true });
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+}
+
 function readConfiguredAppUrl() {
   const fromLaunchOverride = readLaunchOverrideAppUrl();
   if (fromLaunchOverride) return fromLaunchOverride;
 
-  const userConfig = readJsonConfig(getUserConfigPath());
-  const fromUserConfig = toAuthorizationUrl(userConfig?.appUrl);
-  if (fromUserConfig) return fromUserConfig;
+  const configPaths = [getUserConfigPath(), getLegacyUserConfigPath()];
+  for (const configPath of configPaths) {
+    const userConfig = readJsonConfig(configPath);
+    const fromUserConfig = toAuthorizationUrl(userConfig?.appUrl);
+    if (!fromUserConfig) continue;
+    if (isBrokenDesktopAppUrl(fromUserConfig)) {
+      console.warn(`[electron] ignoring broken saved server url: ${fromUserConfig}`);
+      try {
+        fs.rmSync(configPath, { force: true });
+      } catch {
+        /* ignore */
+      }
+      continue;
+    }
+    return fromUserConfig;
+  }
 
   return '';
 }
@@ -643,6 +685,22 @@ function createMainWindow() {
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     console.error(`[electron] failed to load ${validatedURL}: ${errorCode} ${errorDescription}`);
+    if (errorCode === -2 || errorCode === -105 || errorCode === -106) {
+      const configPaths = [getUserConfigPath(), getLegacyUserConfigPath()];
+      for (const configPath of configPaths) {
+        const savedUrl = readJsonConfig(configPath)?.appUrl;
+        if (savedUrl && isBrokenDesktopAppUrl(toAuthorizationUrl(savedUrl))) {
+          try {
+            fs.rmSync(configPath, { force: true });
+          } catch {
+            /* ignore */
+          }
+        }
+      }
+      const fallbackUrl = getAppUrl();
+      console.log(`[electron] retrying with fallback url: ${fallbackUrl}`);
+      mainWindow.loadURL(fallbackUrl);
+    }
   });
   mainWindow.webContents.on('console-message', (_event, level, message, line, sourceId) => {
     console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`);
@@ -864,17 +922,45 @@ ipcMain.handle('server-config:save-url', async (_event, serverUrl) => {
   return savedAppUrl;
 });
 
+app.setAppUserModelId('ru.alcolocks.operator');
+
+const singleInstanceLock = app.requestSingleInstanceLock();
+if (!singleInstanceLock) {
+  app.quit();
+  process.exit(0);
+}
+
+app.on('second-instance', () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    return;
+  }
+
+  if (readConfiguredAppUrl()) {
+    createMainWindow();
+  } else {
+    createServerSetupWindow();
+  }
+});
+
 app.whenReady().then(() => {
   app.setName(APP_DISPLAY_NAME);
-  const iconPath = resolveAppIconPath();
-  console.log(`[electron] app icon: ${iconPath || 'not found'}`);
   if (process.platform === 'win32') {
     app.setAppUserModelId('ru.alcolocks.operator');
   }
+  sanitizeSavedAppConfigs();
+  const iconPath = resolveAppIconPath();
+  console.log(`[electron] app icon: ${iconPath || 'not found'}`);
   applyAppIcon();
   installAppMenu();
 
   if (readConfiguredAppUrl()) {
+    createMainWindow();
+  } else if (readDefaultSetupAppUrl()) {
     createMainWindow();
   } else {
     createServerSetupWindow();
@@ -882,7 +968,7 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      if (readConfiguredAppUrl()) {
+      if (readConfiguredAppUrl() || readDefaultSetupAppUrl()) {
         createMainWindow();
       } else {
         createServerSetupWindow();

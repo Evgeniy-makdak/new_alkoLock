@@ -55,6 +55,8 @@
     "artifactName": "Alkozamok-SMART-Setup-${version}-${arch}.${ext}",
     "uninstallDisplayName": "Информационная система «Алкозамок-М СМАРТ»",
     "runAfterFinish": true,
+    "deleteAppDataOnUninstall": false,
+    "guid": "a4e8c2f1-9b3d-4e7a-8c5f-1d2e3f4a5b6c",
     "include": "build/installer.nsh"
   },
   "portable": {
