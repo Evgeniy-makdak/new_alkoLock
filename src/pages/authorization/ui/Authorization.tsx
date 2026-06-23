@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 
-import { TextField } from '@mui/material';
+import { Autocomplete, TextField } from '@mui/material';
 
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper/InputsColumnWrapper';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -27,6 +27,9 @@ export const Authorization = () => {
     errorUsername,
     rememberMe,
     handleChangeRemember,
+    rememberedUsernames,
+    handleUsernameChange,
+    usernameValue,
   } = useAuthorization();
 
   const navigate = useNavigate();
@@ -64,18 +67,35 @@ export const Authorization = () => {
           <form
             data-testid={testids.page_auth.AUTH_FORM}
             className={style.form}
+            autoComplete="on"
             onSubmit={handleSubmit}>
             <InputsColumnWrapper>
-              <TextField
-                {...register('username')}
-                name="username"
-                helperText={errorUsername}
-                error={!!errorUsername}
-                autoComplete="off"
-                fullWidth
-                type={'text'}
-                variant={'outlined'}
-                label={t('auth.login')}
+              <Autocomplete
+                freeSolo
+                openOnFocus
+                clearOnBlur={false}
+                options={rememberedUsernames}
+                filterOptions={(options) => options}
+                value={usernameValue}
+                onChange={(_event, value) => handleUsernameChange(typeof value === 'string' ? value : '')}
+                onInputChange={(_event, value, reason) => {
+                  if (reason === 'input' || reason === 'clear' || reason === 'reset') {
+                    handleUsernameChange(value ?? '');
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    name="username"
+                    helperText={errorUsername}
+                    error={!!errorUsername}
+                    autoComplete="username"
+                    fullWidth
+                    type="text"
+                    variant="outlined"
+                    label={t('auth.login')}
+                  />
+                )}
               />
               <InputPassword
                 helperText={errorPassword}
@@ -83,7 +103,7 @@ export const Authorization = () => {
                 {...register('password')}
                 name="password"
                 control={control}
-                autoComplete="off"
+                autoComplete="current-password"
                 fullWidth
                 type={'password'}
                 variant={'outlined'}

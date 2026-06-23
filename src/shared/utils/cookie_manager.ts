@@ -1,9 +1,14 @@
 class CookieManager {
-  set(name: string | number, value: string | number, days = 7) {
+  set(name: string | number, value: string | number, days?: number | null) {
+    const pathPart = 'path=/';
+    if (days == null) {
+      document.cookie = `${name}=${value};${pathPart}`;
+      return;
+    }
     const date = new Date();
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     const expires = `expires=${date.toUTCString()}`;
-    document.cookie = `${name}=${value};${expires};path=/`;
+    document.cookie = `${name}=${value};${expires};${pathPart}`;
   }
 
   get(name: string | number) {
@@ -17,7 +22,7 @@ class CookieManager {
     return null;
   }
 
-  update(name: string | number, value: string | number, days = 7) {
+  update(name: string | number, value: string | number, days?: number | null) {
     this.set(name, value, days);
   }
 

@@ -21,6 +21,12 @@ export enum StorageKeys {
   HISTORY_TABLE_SORTS = 'HISTORY_TABLE_SORTS',
   NAVBAR_SLIDER_STATE = 'navbarSliderState',
   EMAILS_TABLE = 'EMAILSS_TABLE',
+  /** Сохранённые учётные записи (логин/пароль) для «Запомнить меня» */
+  AUTH_REMEMBERED_ACCOUNTS = 'auth_remembered_accounts_v1',
+  /** Логин, сохранённый при «Запомнить меня» */
+  AUTH_REMEMBER_USERNAME = 'auth_remember_username',
+  /** Флаг «Запомнить меня» */
+  AUTH_REMEMBER_ME = 'auth_remember_me',
 }
 
 /**

@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Menu, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, screen, nativeImage } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
 const OPERATOR_CHAT_POPUP_PATH = '/operator-chat-popup';
 const AUTH_PATH = '/authorization';
-const FALLBACK_APP_URL = 'http://localhost/authorization';
+const FALLBACK_APP_URL = 'http://alcolock-test.lsystems.ru/authorization';
+const APP_DISPLAY_NAME = 'Информационная система «Алкозамок-М СМАРТ»';
 const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY = 'alcolock_desktop_operator_chat_popup_closed_v1';
 const CHAT_CONTROL_LABEL_FIX_CSS = `
   [class*="usersSelectContainer"] .MuiFormControl-root > .MuiBox-root,
@@ -94,6 +95,91 @@ const OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS = `
 let mainWindow = null;
 let operatorChatPopupWindow = null;
 let serverSetupWindow = null;
+let serverSetupChangeMode = false;
+
+function resolveAppIconPath() {
+  const candidates = [
+    path.join(__dirname, 'app-icon.ico'),
+    path.join(__dirname, 'app-icon.png'),
+    path.join(app.getAppPath(), 'app-icon-512.png'),
+    path.join(app.getAppPath(), 'app-icon.png'),
+    path.join(app.getAppPath(), 'app-icon.ico'),
+    path.join(process.resourcesPath, 'app-icon-512.png'),
+    path.join(process.resourcesPath, 'app-icon.png'),
+    path.join(process.resourcesPath, 'app-icon.ico'),
+    path.join(process.resourcesPath, 'favicon-32x32.png'),
+    path.join(__dirname, '..', 'public', 'favicon-32x32.png'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function getAppIconImage() {
+  const iconPath = resolveAppIconPath();
+  if (!iconPath) return null;
+  const image = nativeImage.createFromPath(iconPath);
+  return image.isEmpty() ? null : image;
+}
+
+function getWindowIconOptions() {
+  const icon = getAppIconImage();
+  return icon ? { icon } : {};
+}
+
+function applyAppIcon() {
+  const icon = getAppIconImage();
+  if (!icon) return;
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(icon);
+  }
+}
+
+function applyWindowIcon(win) {
+  if (!win || win.isDestroyed()) return;
+  const icon = getAppIconImage();
+  if (icon) {
+    win.setIcon(icon);
+  }
+}
+
+function installWindowIcon(win) {
+  applyWindowIcon(win);
+  if (!win || win.isDestroyed()) return;
+  win.webContents.on('page-favicon-updated', () => {
+    applyWindowIcon(win);
+    injectPageFavicon(win);
+  });
+}
+
+function injectPageFavicon(win) {
+  if (!win || win.isDestroyed()) return;
+  const iconPath = resolveAppIconPath();
+  if (!iconPath) return;
+
+  try {
+    const iconBuffer = fs.readFileSync(iconPath);
+    const mimeType = iconPath.toLowerCase().endsWith('.ico') ? 'image/x-icon' : 'image/png';
+    const dataUrl = `data:${mimeType};base64,${iconBuffer.toString('base64')}`;
+    void win.webContents.executeJavaScript(
+      `(function () {
+        let link = document.querySelector('link[rel*="icon"]');
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = ${JSON.stringify(dataUrl)};
+      })();`,
+      true,
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 function clampZoomLevel(level) {
   return Math.min(5, Math.max(-4, level));
@@ -227,6 +313,14 @@ function getAppUrl() {
   return readConfiguredAppUrl() || readDefaultSetupAppUrl();
 }
 
+function getHostFromUrl(rawUrl) {
+  try {
+    return new URL(rawUrl).hostname;
+  } catch {
+    return '';
+  }
+}
+
 function persistUserAppUrl(appUrl) {
   const normalized = toAuthorizationUrl(appUrl);
   if (!normalized) {
@@ -241,36 +335,60 @@ function persistUserAppUrl(appUrl) {
   }
 }
 
-function resetSavedServerAndOpenSetup() {
-  try {
-    fs.rmSync(getUserConfigPath(), { force: true });
-  } catch {
-    /* ignore */
-  }
-  if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
-    operatorChatPopupWindow.close();
-  }
+function getActiveServerBaseUrl() {
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.close();
+    try {
+      const url = new URL(mainWindow.webContents.getURL());
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return `${url.protocol}//${url.host}`;
+      }
+    } catch {
+      /* ignore */
+    }
   }
-  if (!serverSetupWindow || serverSetupWindow.isDestroyed()) {
-    createServerSetupWindow();
-  } else {
+  return '';
+}
+
+function getConfiguredServerBaseUrl() {
+  const appUrl = readConfiguredAppUrl();
+  if (appUrl) {
+    try {
+      const url = new URL(appUrl);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      return String(appUrl).replace(/\/authorization\/?$/, '');
+    }
+  }
+  return getActiveServerBaseUrl();
+}
+
+function openServerChangeDialog() {
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    createMainWindow();
+    return;
+  }
+
+  if (!mainWindow.isVisible()) {
+    mainWindow.show();
+  }
+
+  if (serverSetupWindow && !serverSetupWindow.isDestroyed()) {
     serverSetupWindow.focus();
+    return;
   }
+
+  createServerSetupWindow({ mode: 'change' });
 }
 
 function installAppMenu() {
   const template = [
     {
-      label: 'Alcolocks Operator',
+      label: 'Сменить сервер',
       submenu: [
         {
           label: 'Сменить сервер',
-          click: resetSavedServerAndOpenSetup,
+          click: openServerChangeDialog,
         },
-        { type: 'separator' },
-        { role: 'quit', label: 'Выход' },
       ],
     },
     {
@@ -296,7 +414,17 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function createServerSetupHtml(defaultUrl) {
+function createServerSetupHtml(defaultUrl, options = {}) {
+  const isChangeMode = options.mode === 'change';
+  const title = isChangeMode ? 'Сменить сервер' : 'Введите адрес сервера';
+  const description = isChangeMode
+    ? 'Текущий адрес указан ниже. После смены сервера потребуется повторный вход в систему.'
+    : 'Адрес сохраняется на этом компьютере. При следующих запусках приложение откроется автоматически.';
+  const submitLabel = isChangeMode ? 'Сменить сервер' : 'Подключиться';
+  const cancelButton = isChangeMode
+    ? '<button id="cancel" type="button" class="secondary">Отмена</button>'
+    : '';
+
   return `<!doctype html>
 <html lang="ru">
 <head>
@@ -352,17 +480,28 @@ function createServerSetupHtml(defaultUrl) {
       border-color: #667a8a;
       box-shadow: 0 0 0 3px rgba(102, 122, 138, 0.16);
     }
-    button {
-      width: 100%;
-      height: 44px;
+    .actions {
+      display: flex;
+      gap: 10px;
       margin-top: 18px;
+    }
+    .actions button {
+      flex: 1;
+      height: 44px;
+      margin-top: 0;
       border: 0;
       border-radius: 8px;
-      background: #667a8a;
-      color: #fff;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
+    }
+    #submit {
+      background: #667a8a;
+      color: #fff;
+    }
+    button.secondary {
+      background: #eceff1;
+      color: #455a64;
     }
     button:disabled {
       opacity: 0.7;
@@ -378,11 +517,14 @@ function createServerSetupHtml(defaultUrl) {
 </head>
 <body>
   <form class="card" id="form">
-    <h1>Введите адрес сервера</h1>
-    <p>Адрес сохраняется на этом компьютере. При следующих запусках приложение откроется автоматически.</p>
+    <h1>${title}</h1>
+    <p>${description}</p>
     <label for="serverUrl">Адрес сервера</label>
     <input id="serverUrl" name="serverUrl" autocomplete="url" value="${escapeHtml(defaultUrl)}" placeholder="https://server-company.ru" />
-    <button id="submit" type="submit">Подключиться</button>
+    <div class="actions">
+      ${cancelButton}
+      <button id="submit" type="submit">${submitLabel}</button>
+    </div>
     <div class="error" id="error"></div>
   </form>
   <script>
@@ -390,16 +532,33 @@ function createServerSetupHtml(defaultUrl) {
     const input = document.getElementById('serverUrl');
     const error = document.getElementById('error');
     const submit = document.getElementById('submit');
+    const cancel = document.getElementById('cancel');
+
+    if (cancel) {
+      cancel.addEventListener('click', () => window.close());
+    }
+
+    (async () => {
+      try {
+        const isChangeMode = ${JSON.stringify(isChangeMode)};
+        const url = isChangeMode
+          ? await window.alcolockDesktopSetup.getCurrentServerUrl()
+          : await window.alcolockDesktopSetup.getDefaultServerUrl();
+        if (url) input.value = url;
+      } catch {}
+    })();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       error.textContent = '';
       submit.disabled = true;
+      if (cancel) cancel.disabled = true;
       try {
         await window.alcolockDesktopSetup.saveServerUrl(input.value);
       } catch (err) {
         error.textContent = err && err.message ? err.message : 'Не удалось сохранить адрес сервера';
         submit.disabled = false;
+        if (cancel) cancel.disabled = false;
       }
     });
   </script>
@@ -468,6 +627,7 @@ function createMainWindow() {
   const appUrl = getAppUrl();
   console.log(`[electron] loading main window: ${appUrl}`);
   mainWindow = new BrowserWindow({
+    ...getWindowIconOptions(),
     width: 1440,
     height: 900,
     minWidth: 1024,
@@ -489,12 +649,15 @@ function createMainWindow() {
   });
   mainWindow.webContents.on('did-finish-load', () => {
     if (mainWindow && !mainWindow.isDestroyed()) {
+      applyWindowIcon(mainWindow);
+      injectPageFavicon(mainWindow);
       void mainWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
       void mainWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
     }
   });
   installZoomShortcuts(mainWindow);
   installOperatorPopupWindowOpenHandler(mainWindow);
+  installWindowIcon(mainWindow);
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.maximize();
@@ -502,6 +665,12 @@ function createMainWindow() {
     mainWindow.focus();
   });
   mainWindow.loadURL(appUrl);
+  mainWindow.on('close', (event) => {
+    if (serverSetupChangeMode && serverSetupWindow && !serverSetupWindow.isDestroyed()) {
+      event.preventDefault();
+      serverSetupWindow.focus();
+    }
+  });
   mainWindow.on('closed', () => {
     mainWindow = null;
     if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
@@ -510,10 +679,14 @@ function createMainWindow() {
   });
 }
 
-function createServerSetupWindow() {
-  const defaultAppUrl = readDefaultSetupAppUrl();
-  console.log(`[electron] opening server setup window, default: ${defaultAppUrl}`);
+function createServerSetupWindow(options = {}) {
+  const mode = options.mode === 'change' ? 'change' : 'initial';
+  serverSetupChangeMode = mode === 'change';
+  const defaultUrl =
+    mode === 'change' ? getConfiguredServerBaseUrl() : readDefaultSetupAppUrl();
+  console.log(`[electron] opening server setup window (${mode}), default: ${defaultUrl}`);
   serverSetupWindow = new BrowserWindow({
+    ...getWindowIconOptions(),
     width: 540,
     height: 420,
     minWidth: 460,
@@ -521,6 +694,9 @@ function createServerSetupWindow() {
     resizable: false,
     maximizable: false,
     show: false,
+    parent:
+      mode === 'change' && mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined,
+    modal: mode === 'change' && mainWindow && !mainWindow.isDestroyed(),
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -531,6 +707,7 @@ function createServerSetupWindow() {
 
   serverSetupWindow.setMenuBarVisibility(false);
   installZoomShortcuts(serverSetupWindow);
+  installWindowIcon(serverSetupWindow);
   serverSetupWindow.once('ready-to-show', () => {
     if (serverSetupWindow && !serverSetupWindow.isDestroyed()) {
       serverSetupWindow.show();
@@ -538,10 +715,16 @@ function createServerSetupWindow() {
     }
   });
   serverSetupWindow.on('closed', () => {
+    const wasChangeMode = mode === 'change';
     serverSetupWindow = null;
+    serverSetupChangeMode = false;
+    if (wasChangeMode && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+      mainWindow.focus();
+    }
   });
   serverSetupWindow.loadURL(
-    `data:text/html;charset=utf-8,${encodeURIComponent(createServerSetupHtml(''))}`,
+    `data:text/html;charset=utf-8,${encodeURIComponent(createServerSetupHtml(defaultUrl, { mode }))}`,
   );
 }
 
@@ -557,6 +740,7 @@ function createOperatorChatPopupWindow(payload = {}) {
   }
 
   operatorChatPopupWindow = new BrowserWindow({
+    ...getWindowIconOptions(),
     ...bounds,
     frame: false,
     transparent: true,
@@ -637,21 +821,57 @@ ipcMain.handle('operator-chat-popup:close', () => {
 
 ipcMain.handle('server-config:get-default-url', () => readDefaultSetupAppUrl());
 
-ipcMain.handle('server-config:save-url', (_event, serverUrl) => {
+ipcMain.handle('server-config:get-current-url', () => getConfiguredServerBaseUrl());
+
+ipcMain.handle('server-config:save-url', async (_event, serverUrl) => {
   const appUrl = normalizeServerInput(serverUrl);
   if (!appUrl) {
     throw new Error('Введите корректный адрес, например https://alcolock-test.lsystems.ru');
   }
 
+  const previousHost = getHostFromUrl(readConfiguredAppUrl() || readDefaultSetupAppUrl());
   const savedAppUrl = persistUserAppUrl(appUrl);
+  const nextHost = getHostFromUrl(savedAppUrl);
+
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (serverSetupWindow && !serverSetupWindow.isDestroyed()) {
+      serverSetupWindow.close();
+    }
+
+    if (previousHost === nextHost) {
+      mainWindow.show();
+      mainWindow.focus();
+      return savedAppUrl;
+    }
+
+    if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
+      operatorChatPopupWindow.close();
+    }
+    await mainWindow.webContents.session.clearStorageData();
+    mainWindow.loadURL(savedAppUrl);
+    if (!mainWindow.isVisible()) {
+      mainWindow.show();
+    }
+    mainWindow.focus();
+    return savedAppUrl;
+  }
+
   if (serverSetupWindow && !serverSetupWindow.isDestroyed()) {
     serverSetupWindow.close();
   }
+
   createMainWindow();
   return savedAppUrl;
 });
 
 app.whenReady().then(() => {
+  app.setName(APP_DISPLAY_NAME);
+  const iconPath = resolveAppIconPath();
+  console.log(`[electron] app icon: ${iconPath || 'not found'}`);
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('ru.alcolocks.operator');
+  }
+  applyAppIcon();
   installAppMenu();
 
   if (readConfiguredAppUrl()) {

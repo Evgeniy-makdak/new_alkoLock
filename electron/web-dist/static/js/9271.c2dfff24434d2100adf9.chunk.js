@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkalcolocks=self.webpackChunkalcolocks||[]).push([[1678,9271],{11678:(e,r,t)=>{t.d(r,{isReportReferenceEntityServerSearch:()=>c});new Set;function c(e){return!1}},99271:(e,r,t)=>{t.d(r,{fetchReportReferenceEntityRecords:()=>n});var c=t(11678);async function n(e){const r=(null!==e&&void 0!==e?e:"").trim();return!r||(0,c.isReportReferenceEntityServerSearch)(r),[]}}}]);
+//# sourceMappingURL=9271.c2dfff24434d2100adf9.chunk.js.map

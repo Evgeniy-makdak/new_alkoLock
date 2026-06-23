@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('alcolockDesktopSetup', {
   getDefaultServerUrl() {
     return ipcRenderer.invoke('server-config:get-default-url');
   },
+  getCurrentServerUrl() {
+    return ipcRenderer.invoke('server-config:get-current-url');
+  },
   saveServerUrl(serverUrl) {
     return ipcRenderer.invoke('server-config:save-url', serverUrl);
   },

@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkalcolocks=self.webpackChunkalcolocks||[]).push([[5295],{95295:(c,s,l)=>{l.r(s),l.d(s,{default:()=>e});const e={}}}]);
+//# sourceMappingURL=5295.20caeef0a9d753fc8bf5.chunk.js.map

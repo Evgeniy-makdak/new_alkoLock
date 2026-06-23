@@ -37,11 +37,16 @@ import {
   persistMainRestoreFromPopupState,
   persistMainToOperatorPopupHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
+import { isBrowserWebChatShell } from '../chatPopup/chatShellEnvironment';
 import {
   closeOperatorChatPopupAndRestoreMain,
   openOperatorChatPopup,
 } from '../chatPopup/openOperatorChatPopup';
-import { OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX } from '../chatPopup/operatorChatPopupLayout';
+import {
+  OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
+  POPUP_DOCK_PANEL_H_PX,
+  POPUP_DOCK_PANEL_W_PX,
+} from '../chatPopup/operatorChatPopupLayout';
 import { writeOperatorChatPopupFrameLock } from '../chatPopup/operatorChatPopupFrameLock';
 import { CHAT_POPUP_HEARTBEAT_MS, readMainChatFooterSuppressedByPopup } from '../chatPopup/popupPresence';
 import {
@@ -641,6 +646,7 @@ const ChatContainer = () => {
   const { t } = useTranslation();
   const location = useLocation();
   const isOperatorChatPopupWindow = location.pathname === RoutePaths.operatorChatPopup;
+  const isBrowserDetachedChatPopup = isOperatorChatPopupWindow && isBrowserWebChatShell();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   /** В Electron чат живёт только в откреплённом окне; в главном — только FAB-кнопки. */
   const isDesktopMainChatHost = isDesktopShell && !isOperatorChatPopupWindow;
@@ -926,6 +932,10 @@ const ChatContainer = () => {
     if (typeof window === 'undefined') {
       return { ...DEFAULT_CHAT_PANEL };
     }
+    const isPopupPath = window.location.pathname === RoutePaths.operatorChatPopup;
+    if (isPopupPath && isBrowserWebChatShell()) {
+      return { w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX };
+    }
     const saved = readSavedPanelSize(isOperatorChatPopupWindow);
     const pinnedOnMount = readChatLayoutPinned(isOperatorChatPopupWindow);
     if (saved && pinnedOnMount) {
@@ -1028,16 +1038,22 @@ const ChatContainer = () => {
     try {
       const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
       const { r, b } = dockPosRef.current;
-      localStorage.setItem(k.panelW, String(panelSize.w));
-      localStorage.setItem(k.panelH, String(panelSize.h));
+      if (!isBrowserDetachedChatPopup) {
+        localStorage.setItem(k.panelW, String(panelSize.w));
+        localStorage.setItem(k.panelH, String(panelSize.h));
+      }
       localStorage.setItem(k.dockR, String(r));
       localStorage.setItem(k.dockB, String(b));
     } catch {
       /* ignore */
     }
-  }, [isOperatorChatPopupWindow, panelSize.h, panelSize.w]);
+  }, [isBrowserDetachedChatPopup, isOperatorChatPopupWindow, panelSize.h, panelSize.w]);
 
   const applyPinnedLayoutFromStorage = useCallback(() => {
+    if (isBrowserDetachedChatPopup) {
+      setPanelSize({ w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX });
+      return;
+    }
     if (!readChatLayoutPinned(isOperatorChatPopupWindow)) return;
     const saved = readSavedPanelSize(isOperatorChatPopupWindow);
     const dock = readSavedDockMargins(isOperatorChatPopupWindow);
@@ -1052,7 +1068,12 @@ const ChatContainer = () => {
       setDockBottomPx(dock.b);
       dockPosRef.current = { r: dock.r, b: dock.b };
     }
-  }, [isOperatorChatPopupWindow]);
+  }, [isBrowserDetachedChatPopup, isOperatorChatPopupWindow]);
+
+  useLayoutEffect(() => {
+    if (!isBrowserDetachedChatPopup) return;
+    setPanelSize({ w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX });
+  }, [isBrowserDetachedChatPopup]);
 
   const handleToggleChatLayoutPin = useCallback(() => {
     setIsChatLayoutPinned((prev) => {
@@ -1277,6 +1298,9 @@ const ChatContainer = () => {
 
   const resolvePanelSize = useCallback(
     (s: ChatFooterPanelSize) => {
+      if (isBrowserDetachedChatPopup) {
+        return { w: POPUP_DOCK_PANEL_W_PX, h: POPUP_DOCK_PANEL_H_PX };
+      }
       if (!allowDesktopPanelResize) return clampPanelSize(s);
       if (isOperatorChatPopupWindow) {
         return {
@@ -1293,6 +1317,7 @@ const ChatContainer = () => {
     },
     [
       allowDesktopPanelResize,
+      isBrowserDetachedChatPopup,
       isOperatorChatPopupWindow,
       dockPreviewCount,
       expandedSessionsForDock.length,
@@ -1326,7 +1351,7 @@ const ChatContainer = () => {
 
   const handlePanelSizeCommit = useCallback(
     (next: ChatFooterPanelSize) => {
-      if (isChatLayoutPinned) return;
+      if (isBrowserDetachedChatPopup || isChatLayoutPinned) return;
       const clamped = resolvePanelSize(next);
       setPanelSize(clamped);
       try {
@@ -1337,7 +1362,7 @@ const ChatContainer = () => {
         /* ignore */
       }
     },
-    [resolvePanelSize, isOperatorChatPopupWindow, isChatLayoutPinned],
+    [resolvePanelSize, isOperatorChatPopupWindow, isChatLayoutPinned, isBrowserDetachedChatPopup],
   );
 
   useLayoutEffect(() => {
@@ -1693,10 +1718,10 @@ const ChatContainer = () => {
               <ChatFooterResizableFrame
                 key={`expanded-${session.id}`}
                 docked
-                resizeDisabled={isChatLayoutPinned}
+                resizeDisabled={isChatLayoutPinned || isBrowserDetachedChatPopup}
                 size={panelSize}
                 onSizeLiveChange={(s) => {
-                  if (isChatLayoutPinned) return;
+                  if (isChatLayoutPinned || isBrowserDetachedChatPopup) return;
                   setPanelSize(resolvePanelSize(s));
                 }}
                 onSizeCommit={handlePanelSizeCommit}

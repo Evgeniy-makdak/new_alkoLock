@@ -1,0 +1,2 @@
+"use strict";(self.webpackChunkalcolocks=self.webpackChunkalcolocks||[]).push([[2417],{2417:(e,o,t)=>{t.d(o,{fetchVehicleFrontDataMaps:()=>l});var c=t(74917);const s=()=>({types:{},colors:{}});function r(e){const o={};for(const t of null!==e&&void 0!==e?e:[])null!==t&&void 0!==t&&t.key&&(o[t.key]=t.value);return o}async function l(){try{const[e,o]=await Promise.all([c.Yw.getVehicleColors(),c.Yw.getVehicleTypes()]);return e.isError||o.isError?s():{colors:r(e.data),types:r(o.data)}}catch(e){return s()}}}}]);
+//# sourceMappingURL=2417.32eb0f023daf99bfa28c.chunk.js.map

@@ -1,21 +1,34 @@
 {
   "extends": null,
   "appId": "ru.alcolocks.operator",
-  "productName": "Alcolocks Operator",
+  "productName": "Alkozamok-SMART",
+  "executableName": "Alkozamok-SMART",
+  "icon": "electron/app-icon.ico",
+  "afterPack": "scripts/after-pack.cjs",
   "directories": {
     "app": "electron",
     "output": "release"
   },
   "files": [
-    "**/*"
+    "**/*",
+    "!web-dist/**"
   ],
   "extraResources": [
     {
       "from": "electron/app.config.json",
       "to": "app.config.json"
+    },
+    {
+      "from": "public/favicon-32x32.png",
+      "to": "favicon-32x32.png"
+    },
+    {
+      "from": "electron/app-icon.ico",
+      "to": "app-icon.ico"
     }
   ],
   "win": {
+    "icon": "electron/app-icon.ico",
     "signAndEditExecutable": false,
     "target": [
       "nsis",
@@ -23,36 +36,28 @@
     ]
   },
   "mac": {
+    "icon": "electron/app-icon-512.png",
     "category": "public.app-category.business",
     "target": [
       "dmg"
     ],
-    "artifactName": "${productName}-${version}-${arch}.${ext}"
-  },
-  "dmg": {
-    "contents": [
-      {
-        "x": 130,
-        "y": 220
-      },
-      {
-        "x": 410,
-        "y": 220,
-        "type": "link",
-        "path": "/Applications"
-      }
-    ]
+    "artifactName": "Alkozamok-SMART-${version}-${arch}.${ext}"
   },
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
     "createDesktopShortcut": "always",
     "createStartMenuShortcut": true,
-    "shortcutName": "Alcolocks Operator",
-    "artifactName": "${productName} Setup-${version}-${arch}.${ext}",
-    "uninstallDisplayName": "Alcolocks Operator"
+    "shortcutName": "Алкозамок-М СМАРТ",
+    "installerIcon": "electron/app-icon.ico",
+    "uninstallerIcon": "electron/app-icon.ico",
+    "installerHeaderIcon": "electron/app-icon.ico",
+    "artifactName": "Alkozamok-SMART-Setup-${version}-${arch}.${ext}",
+    "uninstallDisplayName": "Информационная система «Алкозамок-М СМАРТ»",
+    "runAfterFinish": true,
+    "include": "build/installer.nsh"
   },
   "portable": {
-    "artifactName": "${productName}-${version}-portable-${arch}.${ext}"
+    "artifactName": "Alkozamok-SMART-${version}-portable-${arch}.exe"
   }
 }

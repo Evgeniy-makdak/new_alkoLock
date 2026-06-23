@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -18,11 +18,20 @@ import { getFirstAvailableRouter } from '@widgets/nav_bar';
 
 import i18n from '../../../i18n';
 import { useAuthApi } from '../api/authApi';
+import {
+  clearRememberMePreference,
+  findRememberedPassword,
+  getLastRememberedAccount,
+  loadRememberedAccounts,
+  saveRememberedAccount,
+} from '../lib/rememberedCredentials';
 import { schema } from '../lib/validate';
 
 export const useAuthorization = () => {
   const setState = appStore.setState;
   const [authSuccess, setAuthSuccess] = useState(false);
+  const [rememberedUsernames, setRememberedUsernames] = useState<string[]>([]);
+  const lastLoginAttemptRef = useRef<UserDataLogin | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { state } = location;
@@ -67,10 +76,21 @@ export const useAuthorization = () => {
         localStorage.removeItem(StorageKeys.OFFICE);
         cookieManager.removeAll();
 
-        cookieManager.set('bearer', idToken);
+        const loginAttempt = lastLoginAttemptRef.current;
+        const rememberMe = loginAttempt?.rememberMe === true;
+        const tokenDays = rememberMe ? 30 : null;
+
+        cookieManager.set('bearer', idToken, tokenDays);
         const refreshToken = data.data?.refreshToken;
         if (refreshToken) {
-          cookieManager.set('refresh', refreshToken);
+          cookieManager.set('refresh', refreshToken, tokenDays);
+        }
+
+        if (rememberMe && loginAttempt?.username) {
+          saveRememberedAccount(loginAttempt.username, loginAttempt.password ?? '');
+          setRememberedUsernames(loadRememberedAccounts().map((account) => account.username));
+        } else if (!rememberMe) {
+          clearRememberMePreference();
         }
 
         if (needChangePassword === true) {
@@ -111,6 +131,40 @@ export const useAuthorization = () => {
     },
     resolver: yupResolver(schema),
   });
+
+  const watchedUsername = watch('username');
+
+  useEffect(() => {
+    try {
+      const lastAccount = getLastRememberedAccount();
+      if (lastAccount) {
+        setValue('username', lastAccount.username);
+        setValue('password', lastAccount.password);
+        setValue('rememberMe', true);
+      }
+      setRememberedUsernames(loadRememberedAccounts().map((account) => account.username));
+    } catch {
+      /* ignore */
+    }
+  }, [setValue]);
+
+  useEffect(() => {
+    const username = typeof watchedUsername === 'string' ? watchedUsername.trim() : '';
+    if (!username) return;
+
+    const savedPassword = findRememberedPassword(username);
+    if (savedPassword) {
+      setValue('password', savedPassword);
+    }
+  }, [watchedUsername, setValue]);
+
+  const handleUsernameChange = (username: string) => {
+    setValue('username', username, { shouldDirty: true, shouldValidate: true });
+    const savedPassword = findRememberedPassword(username);
+    if (savedPassword) {
+      setValue('password', savedPassword, { shouldDirty: true, shouldValidate: true });
+    }
+  };
 
   const handleChangeRemember = (value: boolean) => {
     setValue('rememberMe', value);
@@ -153,6 +207,7 @@ export const useAuthorization = () => {
   }, [authSuccess, accountData]);
 
   const handleAuthorization = (data: UserDataLogin) => {
+    lastLoginAttemptRef.current = data;
     setAuthSuccess(false);
     enter(data);
   };
@@ -169,5 +224,8 @@ export const useAuthorization = () => {
     control,
     rememberMe: watch('rememberMe'),
     handleChangeRemember,
+    rememberedUsernames,
+    handleUsernameChange,
+    usernameValue: watch('username') ?? '',
   };
 };
