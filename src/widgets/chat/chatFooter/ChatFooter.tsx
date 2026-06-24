@@ -61,6 +61,7 @@ import { SocketProvider, useSocket } from '../contexts/SocketContext';
 import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDebugLog';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
+import { getLayoutViewportSize } from './chatDockViewport';
 import { type ChatFooterPanelSize, ChatFooterResizableFrame } from './ChatFooterResizableFrame';
 
 /** Должно совпадать с медиазапросом скрытия `.minimizedChats` в ChatFooter.module.scss */
@@ -116,16 +117,20 @@ function readSavedDockMargins(isOperatorChatPopup: boolean): { r: number; b: num
   }
 }
 
+function readInitialDockMargins(isOperatorChatPopup: boolean): { r: number; b: number } {
+  const defaults = defaultDockMargins(isOperatorChatPopup);
+  const saved = readSavedDockMargins(isOperatorChatPopup);
+  if (saved) {
+    return saved;
+  }
+  return defaults;
+}
+
 function clampPanelSize(size: ChatFooterPanelSize): ChatFooterPanelSize {
   if (typeof window === 'undefined') return size;
-  const maxW = Math.max(
-    MIN_CHAT_PANEL.w,
-    window.innerWidth - CHAT_FOOTER_RIGHT - PANEL_VIEW_MARGIN_PX,
-  );
-  const maxH = Math.max(
-    MIN_CHAT_PANEL.h,
-    window.innerHeight - CHAT_FOOTER_BOTTOM - PANEL_VIEW_MARGIN_PX,
-  );
+  const { width: vw, height: vh } = getLayoutViewportSize();
+  const maxW = Math.max(MIN_CHAT_PANEL.w, vw - CHAT_FOOTER_RIGHT - PANEL_VIEW_MARGIN_PX);
+  const maxH = Math.max(MIN_CHAT_PANEL.h, vh - CHAT_FOOTER_BOTTOM - PANEL_VIEW_MARGIN_PX);
   return {
     w: Math.min(maxW, Math.max(MIN_CHAT_PANEL.w, size.w)),
     h: Math.min(maxH, Math.max(MIN_CHAT_PANEL.h, size.h)),
@@ -148,17 +153,12 @@ function clampPanelSizeForFloatingDock(
   },
 ): ChatFooterPanelSize {
   if (typeof window === 'undefined') return size;
+  const { width: vw, height: vh } = getLayoutViewportSize();
   const { previewCount, expandedCount, dockRightPx, dockBottomPx } = args;
   const nonPanelW = dockNonPanelWidthPx(previewCount);
-  const maxW = Math.max(
-    MIN_CHAT_PANEL.w,
-    window.innerWidth - dockRightPx - PANEL_VIEW_MARGIN_PX - nonPanelW,
-  );
+  const maxW = Math.max(MIN_CHAT_PANEL.w, vw - dockRightPx - PANEL_VIEW_MARGIN_PX - nonPanelW);
 
-  const maxDockH = Math.max(
-    MIN_CHAT_PANEL.h,
-    window.innerHeight - dockBottomPx - PANEL_VIEW_MARGIN_PX,
-  );
+  const maxDockH = Math.max(MIN_CHAT_PANEL.h, vh - dockBottomPx - PANEL_VIEW_MARGIN_PX);
   const previewStackH =
     previewCount > 0 ? previewCount * DOCK_PREVIEW_ROW_APPROX_PX + (previewCount - 1) * 8 : 0;
 
@@ -194,11 +194,10 @@ function clampDockMargins(
   dockH: number,
 ): { r: number; b: number } {
   if (typeof window === 'undefined') return { r, b };
-  // Координаты относительно viewport окна браузера: блок не может оказаться «на другом мониторе»,
-  // пока само окно браузера там не находится (перетащите окно — чат уедет вместе с ним).
+  const { width: vw, height: vh } = getLayoutViewportSize();
   const strip = DOCK_VISIBILITY_STRIP_PX;
-  const maxR = window.innerWidth - strip;
-  const maxB = window.innerHeight - strip;
+  const maxR = vw - strip;
+  const maxB = vh - strip;
   const minR = -dockW + strip;
   const minB = -dockH + strip;
   return {
@@ -1020,10 +1019,10 @@ const ChatContainer = () => {
   );
   const popupDockDefaults = defaultDockMargins(isOperatorChatPopupWindow);
   const [dockRightPx, setDockRightPx] = useState(
-    () => readSavedDockMargins(isOperatorChatPopupWindow)?.r ?? popupDockDefaults.r,
+    () => readInitialDockMargins(isOperatorChatPopupWindow).r,
   );
   const [dockBottomPx, setDockBottomPx] = useState(
-    () => readSavedDockMargins(isOperatorChatPopupWindow)?.b ?? popupDockDefaults.b,
+    () => readInitialDockMargins(isOperatorChatPopupWindow).b,
   );
   const [isDockDragging, setIsDockDragging] = useState(false);
 
@@ -1064,9 +1063,18 @@ const ChatContainer = () => {
       });
     }
     if (dock) {
-      setDockRightPx(dock.r);
-      setDockBottomPx(dock.b);
-      dockPosRef.current = { r: dock.r, b: dock.b };
+      const { dockW, dockH } = dockDimensionsRef.current;
+      const clamped = clampDockMargins(dock.r, dock.b, dockW, dockH);
+      setDockRightPx(clamped.r);
+      setDockBottomPx(clamped.b);
+      dockPosRef.current = { r: clamped.r, b: clamped.b };
+      try {
+        const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+        localStorage.setItem(k.dockR, String(clamped.r));
+        localStorage.setItem(k.dockB, String(clamped.b));
+      } catch {
+        /* ignore */
+      }
     }
   }, [isBrowserDetachedChatPopup, isOperatorChatPopupWindow]);
 
@@ -1076,32 +1084,51 @@ const ChatContainer = () => {
   }, [isBrowserDetachedChatPopup]);
 
   const handleToggleChatLayoutPin = useCallback(() => {
-    setIsChatLayoutPinned((prev) => {
-      const next = !prev;
-      if (next) {
-        persistChatLayoutGeometry();
-        if (isOperatorChatPopupWindow) {
-          try {
-            writeOperatorChatPopupFrameLock({
-              outerW: window.outerWidth,
-              outerH: window.outerHeight,
-              left: window.screenX,
-              top: window.screenY,
-            });
-          } catch {
-            /* ignore */
-          }
+    const nextPinned = !isChatLayoutPinned;
+    if (nextPinned) {
+      dockPosRef.current = { r: dockRightPx, b: dockBottomPx };
+      try {
+        const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+        localStorage.setItem(k.panelW, String(panelSize.w));
+        localStorage.setItem(k.panelH, String(panelSize.h));
+        localStorage.setItem(k.dockR, String(dockRightPx));
+        localStorage.setItem(k.dockB, String(dockBottomPx));
+      } catch {
+        /* ignore */
+      }
+      if (isOperatorChatPopupWindow) {
+        try {
+          writeOperatorChatPopupFrameLock({
+            outerW: window.outerWidth,
+            outerH: window.outerHeight,
+            left: window.screenX,
+            top: window.screenY,
+          });
+        } catch {
+          /* ignore */
         }
       }
-      writeChatLayoutPinned(isOperatorChatPopupWindow, next);
-      return next;
-    });
-  }, [isOperatorChatPopupWindow, persistChatLayoutGeometry]);
+    }
+    writeChatLayoutPinned(isOperatorChatPopupWindow, nextPinned);
+    setIsChatLayoutPinned(nextPinned);
+  }, [
+    dockBottomPx,
+    dockRightPx,
+    isChatLayoutPinned,
+    isOperatorChatPopupWindow,
+    panelSize.h,
+    panelSize.w,
+  ]);
 
   useLayoutEffect(() => {
     if (!isChatLayoutPinned || !allowDesktopPanelResize) return;
     applyPinnedLayoutFromStorage();
   }, [isChatLayoutPinned, allowDesktopPanelResize, applyPinnedLayoutFromStorage]);
+
+  useEffect(() => {
+    if (!isChatOpen || !readChatLayoutPinned(isOperatorChatPopupWindow)) return;
+    applyPinnedLayoutFromStorage();
+  }, [isChatOpen, isOperatorChatPopupWindow, applyPinnedLayoutFromStorage]);
 
   useEffect(() => {
     if (!isOperatorChatPopupWindow) return;
@@ -1245,15 +1272,13 @@ const ChatContainer = () => {
         window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onUp);
         setIsDockDragging(false);
-        if (!isChatLayoutPinned) {
-          try {
-            const { r, b } = dockPosRef.current;
-            const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
-            localStorage.setItem(k.dockR, String(r));
-            localStorage.setItem(k.dockB, String(b));
-          } catch {
-            /* ignore */
-          }
+        try {
+          const { r, b } = dockPosRef.current;
+          const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+          localStorage.setItem(k.dockR, String(r));
+          localStorage.setItem(k.dockB, String(b));
+        } catch {
+          /* ignore */
         }
       };
 
@@ -1263,36 +1288,6 @@ const ChatContainer = () => {
     },
     [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow],
   );
-
-  useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
-    const onWin = () => {
-      const { dockW, dockH } = dockDimensionsRef.current;
-      const c = clampDockMargins(dockPosRef.current.r, dockPosRef.current.b, dockW, dockH);
-      setDockRightPx(c.r);
-      setDockBottomPx(c.b);
-    };
-    window.addEventListener('resize', onWin);
-    return () => window.removeEventListener('resize', onWin);
-  }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow]);
-
-  useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
-    const { dockW, dockH } = dockDimensions;
-    const curR = dockPosRef.current.r;
-    const curB = dockPosRef.current.b;
-    const c = clampDockMargins(curR, curB, dockW, dockH);
-    if (c.r !== curR || c.b !== curB) {
-      setDockRightPx(c.r);
-      setDockBottomPx(c.b);
-    }
-  }, [
-    allowDesktopPanelResize,
-    isChatLayoutPinned,
-    isOperatorChatPopupWindow,
-    dockDimensions.dockH,
-    dockDimensions.dockW,
-  ]);
 
   const dockPreviewCount = minimizedSessions.length + dedupedUnreadPreviewRows.length;
 
@@ -1370,14 +1365,59 @@ const ChatContainer = () => {
     setPanelSize((prev) => resolvePanelSize(prev));
   }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow, resolvePanelSize]);
 
-  useEffect(() => {
-    if (!allowDesktopPanelResize || isChatLayoutPinned || isOperatorChatPopupWindow) return;
-    const onWinResize = () => {
+  const reclampFloatingDockLayout = useCallback(() => {
+    if (!allowDesktopPanelResize) return;
+    const { dockW, dockH } = dockDimensionsRef.current;
+    const c = clampDockMargins(dockPosRef.current.r, dockPosRef.current.b, dockW, dockH);
+    if (c.r !== dockPosRef.current.r || c.b !== dockPosRef.current.b) {
+      dockPosRef.current = c;
+      setDockRightPx(c.r);
+      setDockBottomPx(c.b);
+      if (isChatLayoutPinned) {
+        try {
+          const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+          localStorage.setItem(k.dockR, String(c.r));
+          localStorage.setItem(k.dockB, String(c.b));
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+    if (!isChatLayoutPinned && !isOperatorChatPopupWindow) {
       setPanelSize((prev) => resolvePanelSize(prev));
+    }
+  }, [
+    allowDesktopPanelResize,
+    isChatLayoutPinned,
+    isOperatorChatPopupWindow,
+    resolvePanelSize,
+  ]);
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    const onViewportChange = () => {
+      reclampFloatingDockLayout();
     };
-    window.addEventListener('resize', onWinResize);
-    return () => window.removeEventListener('resize', onWinResize);
-  }, [allowDesktopPanelResize, isChatLayoutPinned, isOperatorChatPopupWindow, resolvePanelSize]);
+    window.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('resize', onViewportChange);
+    window.visualViewport?.addEventListener('scroll', onViewportChange);
+    return () => {
+      window.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('resize', onViewportChange);
+      window.visualViewport?.removeEventListener('scroll', onViewportChange);
+    };
+  }, [allowDesktopPanelResize, reclampFloatingDockLayout]);
+
+  useEffect(() => {
+    if (!allowDesktopPanelResize) return;
+    reclampFloatingDockLayout();
+  }, [
+    allowDesktopPanelResize,
+    reclampFloatingDockLayout,
+    dockDimensions.dockH,
+    dockDimensions.dockW,
+    chatUiScale,
+  ]);
 
   const dialogIdsToFetch = useMemo(() => {
     const ids = new Set<number>();
@@ -1682,11 +1722,7 @@ const ChatContainer = () => {
       {allowDesktopPanelResize ? (
         <div
           className={`${styles.chatFloatingDock} ${isDockDragging ? styles.chatFloatingDockDragging : ''}`}
-          style={
-            isOperatorChatPopupWindow
-              ? { right: dockRightPx, top: 0 }
-              : { right: dockRightPx, bottom: dockBottomPx }
-          }
+          style={{ right: dockRightPx, bottom: dockBottomPx }}
           {...(isOperatorChatPopupWindow
             ? {
                 'data-operator-chat-dock': '1',

@@ -8,6 +8,25 @@ function isChromeUa(): boolean {
 /** Отступ dock от краёв viewport в отдельном окне (в основной вкладке — 80px). */
 export const OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX = 12;
 
+/** Отступ popup-окна от краёв рабочей области экрана (десктоп). */
+export const OPERATOR_CHAT_POPUP_SCREEN_MARGIN_PX = 16;
+
+/** Дефолтная позиция отдельного окна чата: правый нижний угол рабочей области. */
+export function resolveBottomRightPopupScreenPosition(
+  outerW: number,
+  outerH: number,
+  margin = OPERATOR_CHAT_POPUP_SCREEN_MARGIN_PX,
+): { left: number; top: number } {
+  const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
+  const availLeft = scr.availLeft ?? 0;
+  const availTop = scr.availTop ?? 0;
+
+  return {
+    left: availLeft + Math.max(margin, scr.availWidth - outerW - margin),
+    top: availTop + Math.max(margin, scr.availHeight - outerH - margin),
+  };
+}
+
 export const OPERATOR_CHAT_POPUP_VIEWPORT_PAD_PX = 16;
 
 /** Синхронно с ChatFooter / estimateOperatorChatPopupWindowSize. */

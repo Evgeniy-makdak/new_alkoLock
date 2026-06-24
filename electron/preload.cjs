@@ -10,6 +10,19 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   closeOperatorChatPopup() {
     return ipcRenderer.invoke('operator-chat-popup:close');
   },
+  setPopupBounds(bounds) {
+    return ipcRenderer.invoke('operator-chat-popup:set-bounds', bounds);
+  },
+  onZoomChanged(callback) {
+    const channel = 'operator-chat-popup:zoom-changed';
+    const listener = () => {
+      callback();
+    };
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  },
 });
 
 contextBridge.exposeInMainWorld('alcolockDesktopSetup', {

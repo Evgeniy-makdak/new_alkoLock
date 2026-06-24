@@ -193,11 +193,22 @@ function changeWindowZoom(win, delta) {
   if (!win || win.isDestroyed()) return;
   const webContents = win.webContents;
   webContents.setZoomLevel(clampZoomLevel(webContents.getZoomLevel() + delta));
+  notifyWindowZoomChanged(win);
 }
 
 function resetWindowZoom(win) {
   if (!win || win.isDestroyed()) return;
   win.webContents.setZoomLevel(0);
+  notifyWindowZoomChanged(win);
+}
+
+function notifyWindowZoomChanged(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.webContents.send('operator-chat-popup:zoom-changed');
+  } catch {
+    /* ignore */
+  }
 }
 
 function installZoomShortcuts(win) {
@@ -836,6 +847,9 @@ function createOperatorChatPopupWindow(payload = {}) {
     }
   });
   installZoomShortcuts(operatorChatPopupWindow);
+  operatorChatPopupWindow.webContents.on('zoom-changed', () => {
+    notifyWindowZoomChanged(operatorChatPopupWindow);
+  });
   installOperatorPopupWindowOpenHandler(operatorChatPopupWindow);
   operatorChatPopupWindow.once('ready-to-show', () => {
     if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
@@ -874,6 +888,22 @@ ipcMain.handle('operator-chat-popup:close', () => {
   if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
     operatorChatPopupWindow.close();
   }
+});
+
+ipcMain.handle('operator-chat-popup:set-bounds', (event, bounds = {}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed()) return;
+
+  const current = win.getBounds();
+  win.setBounds(
+    normalizePopupBounds({
+      outerW: bounds.outerW ?? current.width,
+      outerH: bounds.outerH ?? current.height,
+      left: bounds.left ?? current.x,
+      top: bounds.top ?? current.y,
+    }),
+    false,
+  );
 });
 
 ipcMain.handle('server-config:get-default-url', () => readDefaultSetupAppUrl());

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { isPwaDisplayMode } from './chatShellEnvironment';
+import { isElectronChatShell, isPwaDisplayMode } from './chatShellEnvironment';
 import {
   OPERATOR_CHAT_POPUP_DOCK_SELECTOR,
   OPERATOR_CHAT_POPUP_PREVIEW_SELECTOR,
@@ -14,13 +14,14 @@ import {
   getOperatorChatPopupMinOuterSize,
   measureOperatorChatPopupDockOuterSize,
   OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
+  resolveBottomRightPopupScreenPosition,
 } from './operatorChatPopupLayout';
+import { readChatLayoutPinned } from './popupLayoutStorage';
 
 const LOCK_TOLERANCE_PX = 8;
 const OUTER_SAME_TOLERANCE_PX = 6;
 const ZOOM_INNER_RATIO_THRESHOLD = 0.006;
 const ZOOM_FACTOR_MAX = 3;
-const ZOOM_NEAR_ONE = 0.07;
 const ABS_MIN_OUTER_PX = 300;
 const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
@@ -105,16 +106,69 @@ function computeDockOverflowPx(): { growW: number; growH: number } {
 function resolveContentOuterAt100(dock: Element, zoomFactor: number): ContentOuter {
   const includePreview = hasPreviewInDock(dock);
   const minSize = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+  const measured = measureOperatorChatPopupDockOuterSize(dock);
+  const safeZoom = Math.max(zoomFactor, 0.2);
 
-  if (Math.abs(zoomFactor - 1) <= ZOOM_NEAR_ONE) {
-    const measured = measureOperatorChatPopupDockOuterSize(dock);
-    return {
-      w: Math.max(measured.outerW, minSize.outerW),
-      h: Math.max(measured.outerH, minSize.outerH),
-    };
+  return {
+    w: Math.max(Math.round(measured.outerW / safeZoom), minSize.outerW),
+    h: Math.max(Math.round(measured.outerH / safeZoom), minSize.outerH),
+  };
+}
+
+/** Удерживает popup в пределах экрана; при закреплённом layout сохраняет текущую позицию. */
+function resolvePopupScreenPosition(
+  outerW: number,
+  outerH: number,
+  fallback: { left: number; top: number },
+): { left: number; top: number } {
+  if (isElectronChatShell() && !readChatLayoutPinned(true)) {
+    return resolveBottomRightPopupScreenPosition(outerW, outerH);
   }
 
-  return { w: minSize.outerW, h: minSize.outerH };
+  const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
+  const availLeft = scr.availLeft ?? 0;
+  const availTop = scr.availTop ?? 0;
+  const margin = OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX;
+
+  let nextLeft = fallback.left;
+  let nextTop = fallback.top;
+
+  if (nextTop + outerH > availTop + scr.availHeight - margin) {
+    nextTop = Math.max(availTop + margin, availTop + scr.availHeight - outerH - margin);
+  }
+  if (nextLeft + outerW > availLeft + scr.availWidth - margin) {
+    nextLeft = Math.max(availLeft + margin, availLeft + scr.availWidth - outerW - margin);
+  }
+  if (nextTop < availTop + margin) {
+    nextTop = availTop + margin;
+  }
+  if (nextLeft < availLeft + margin) {
+    nextLeft = availLeft + margin;
+  }
+
+  return { left: nextLeft, top: nextTop };
+}
+
+/** В Electron popup `resizable: false` — `window.resizeTo` не меняет окно, нужен IPC setBounds. */
+function resizePopupOuter(outerW: number, outerH: number, left?: number, top?: number): void {
+  const desktop = window.alcolockDesktop;
+  if (desktop?.setPopupBounds) {
+    void desktop.setPopupBounds({
+      outerW: Math.round(outerW),
+      outerH: Math.round(outerH),
+      ...(left !== undefined && top !== undefined ? { left: Math.round(left), top: Math.round(top) } : {}),
+    });
+    return;
+  }
+
+  try {
+    window.resizeTo(outerW, outerH);
+    if (left !== undefined && top !== undefined) {
+      window.moveTo(left, top);
+    }
+  } catch {
+    /* политика браузера */
+  }
 }
 
 /** Браузер (не PWA): фиксированная геометрия popup без ручного/ОС ресайза. */
@@ -200,21 +254,29 @@ function installPwaDynamicPopupFrame(): () => void {
 
   const applyOuterSize = (outerW: number, outerH: number): boolean => {
     const next = clampOuterSize(outerW, outerH, zoomFactor);
-    if (
+    const position = resolvePopupScreenPosition(next.outerW, next.outerH, lockRef.current);
+    const sizeUnchanged =
       Math.abs(window.outerWidth - next.outerW) <= LOCK_TOLERANCE_PX &&
-      Math.abs(window.outerHeight - next.outerH) <= LOCK_TOLERANCE_PX
-    ) {
+      Math.abs(window.outerHeight - next.outerH) <= LOCK_TOLERANCE_PX;
+    const positionUnchanged =
+      Math.abs(window.screenX - position.left) <= LOCK_TOLERANCE_PX &&
+      Math.abs(window.screenY - position.top) <= LOCK_TOLERANCE_PX;
+    if (sizeUnchanged && positionUnchanged) {
       syncViewportSnapshot();
       return false;
     }
 
     isApplyingLock = true;
     selfResizeUntil = Date.now() + SELF_RESIZE_COOLDOWN_MS;
-    try {
-      window.resizeTo(next.outerW, next.outerH);
-    } catch {
-      /* политика браузера */
-    }
+    resizePopupOuter(next.outerW, next.outerH, position.left, position.top);
+    lockRef.current = {
+      ...lockRef.current,
+      outerW: next.outerW,
+      outerH: next.outerH,
+      left: position.left,
+      top: position.top,
+    };
+    writeOperatorChatPopupFrameLock(lockRef.current);
     window.setTimeout(() => {
       isApplyingLock = false;
       syncViewportSnapshot();
@@ -301,7 +363,7 @@ function installPwaDynamicPopupFrame(): () => void {
         zoomFactor = Math.min(ZOOM_FACTOR_MAX, Math.max(0.2, zoomFactor * innerRatio));
 
         const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
-        if (dock && Math.abs(zoomFactor - 1) <= ZOOM_NEAR_ONE) {
+        if (dock) {
           refreshContentOuterAt100(dock);
         }
 
@@ -358,6 +420,13 @@ function installPwaDynamicPopupFrame(): () => void {
   });
 
   const vv = window.visualViewport;
+  const unsubscribeDesktopZoom =
+    isElectronChatShell() && window.alcolockDesktop?.onZoomChanged
+      ? window.alcolockDesktop.onZoomChanged(() => {
+          window.setTimeout(onWindowResize, 50);
+        })
+      : undefined;
+
   vv?.addEventListener('resize', onWindowResize);
   window.addEventListener('resize', onWindowResize);
   window.addEventListener('wheel', onWheel, { passive: true });
@@ -391,15 +460,15 @@ function installPwaDynamicPopupFrame(): () => void {
     window.removeEventListener('wheel', onWheel);
     window.removeEventListener('keydown', onKeyDown);
     previewMutationObserver?.disconnect();
+    unsubscribeDesktopZoom?.();
   };
 }
 
 export function useOperatorChatPopupWindowFrame(): void {
   useEffect(() => {
-    if (window.alcolockDesktop) return;
-    if (!isPwaDisplayMode()) {
-      return installBrowserFixedPopupFrame();
+    if (isElectronChatShell() || isPwaDisplayMode()) {
+      return installPwaDynamicPopupFrame();
     }
-    return installPwaDynamicPopupFrame();
+    return installBrowserFixedPopupFrame();
   }, []);
 }

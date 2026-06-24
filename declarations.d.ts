@@ -41,5 +41,12 @@ interface Window {
     }): Promise<void>;
     closeCurrentWindow(): Promise<void>;
     closeOperatorChatPopup(): Promise<void>;
+    setPopupBounds(bounds: {
+      outerW: number;
+      outerH: number;
+      left?: number;
+      top?: number;
+    }): Promise<void>;
+    onZoomChanged(callback: () => void): () => void;
   };
 }
