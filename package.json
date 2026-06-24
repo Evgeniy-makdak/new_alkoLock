@@ -75,7 +75,8 @@
     "electron:pack:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64",
     "electron:dist": "yarn electron:dist:win",
     "electron:dist:win": "yarn electron:prepare:win && node scripts/clean-release.cjs && electron-builder --config electron-builder.json --win nsis portable --x64",
-    "electron:dist:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64"
+    "electron:dist:mac": "electron-builder --config electron-builder.json --mac dmg --x64 --arm64",
+    "electron:releases:serve": "node scripts/serve-desktop-releases.cjs"
   },
   "husky": {
     "hooks": {

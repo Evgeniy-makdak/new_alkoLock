@@ -1,6 +1,9 @@
 {
   "name": "alcolocks-operator-desktop",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "description": "Алкозамок-М СМАРТ",
-  "main": "main.cjs"
+  "main": "main.cjs",
+  "dependencies": {
+    "electron-updater": "^6.6.1"
+  }
 }

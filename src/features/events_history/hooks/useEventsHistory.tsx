@@ -172,7 +172,13 @@ export const useEventsHistory = (
 
     if (label === 'Тестирование пройдено') color = 'success';
     else if (label === 'Тестирование не пройдено') color = 'error';
-    else if (label === 'Тестирование прервано') color = 'warning';
+    else if (
+      label === 'Тестирование прервано' ||
+      label === 'Переход в аварийный режим' ||
+      label === 'Переход в сервисный режим'
+    ) {
+      color = 'warning';
+    }
 
     const isMobile = window.innerWidth <= 768;
 

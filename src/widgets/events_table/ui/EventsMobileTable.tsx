@@ -9,6 +9,7 @@ import { EventsFilterPanel } from '@features/events_filter_panel';
 import { eventsFilterPanelStore } from '@features/events_filter_panel/model/eventsFilterPanelStore';
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
+import { getEventTypeChipColor, isWarningEventType } from '@shared/lib/eventTypeChipColor';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
@@ -418,26 +419,7 @@ export const EventsMobileTable = ({
     return initiator;
   };
 
-  const getChipColor = (typeOfEvent: string) => {
-    if (!typeOfEvent) return 'default';
-
-    if (
-      typeOfEvent.includes('Ошибка E-') ||
-      typeOfEvent.includes('Неразрешенное движение') ||
-      typeOfEvent.includes('Тестирование не пройдено') ||
-      typeOfEvent.includes('Невозможно заблокировать двигатель, ТС в движении') ||
-      typeOfEvent.includes('Фальсификация выдоха')
-    ) {
-      return 'error';
-    }
-    if (typeOfEvent.includes('Тестирование пройдено')) {
-      return 'success';
-    }
-    if (typeOfEvent.includes('Тестирование прервано')) {
-      return 'warning';
-    }
-    return 'default';
-  };
+  const getChipColor = (typeOfEvent: string) => getEventTypeChipColor(typeOfEvent);
 
   const getTextStyleForEventType = (typeOfEvent: string) => {
     const dark = theme.palette.mode === 'dark';
@@ -470,7 +452,7 @@ export const EventsMobileTable = ({
         fontWeight: '500' as const,
       };
     }
-    if (typeOfEvent.includes('Тестирование прервано')) {
+    if (isWarningEventType(typeOfEvent)) {
       return {
         ...box,
         color: dark ? theme.palette.warning.light : '#ed6c02',

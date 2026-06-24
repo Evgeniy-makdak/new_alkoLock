@@ -9,6 +9,7 @@ import { TableHeaderActions } from '@entities/table_header_actions';
 import { setTestIdsToHeaderColumns } from '@shared/components/Table/Table';
 import { SortTypes } from '@shared/config/queryParamsEnums';
 import { testids } from '@shared/const/testid';
+import { getEventTypeChipColor } from '@shared/lib/eventTypeChipColor';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
@@ -67,25 +68,11 @@ export const useGetColumns = (
         field: ValuesHeader.TYPE_OF_EVENT,
         renderCell: (params) => {
           const typeOfEvent = params.value as string;
-          if (typeOfEvent.includes('Ошибка E-') || typeOfEvent.includes('Неразрешенное движение')) {
-            return <Chip label={typeOfEvent} color="error" />;
+          const color = getEventTypeChipColor(typeOfEvent);
+          if (color === 'default') {
+            return typeOfEvent;
           }
-          if (typeOfEvent.includes('Тестирование пройдено')) {
-            return <Chip label={typeOfEvent} color="success" />;
-          }
-          if (
-            typeOfEvent.includes('Тестирование не пройдено') ||
-            typeOfEvent.includes('Невозможно заблокировать двигатель, ТС в движении')
-          ) {
-            return <Chip label={typeOfEvent} color="error" />;
-          }
-          if (typeOfEvent.includes('Тестирование прервано')) {
-            return <Chip label={typeOfEvent} color="warning" />;
-          }
-          if (typeOfEvent.includes('Фальсификация выдоха')) {
-            return <Chip label={typeOfEvent} color="error" />;
-          }
-          return typeOfEvent;
+          return <Chip label={typeOfEvent} color={color} />;
         },
       },
       {

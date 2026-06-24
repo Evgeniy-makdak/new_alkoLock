@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain, screen, nativeImage } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const { createDesktopAutoUpdater, normalizeUpdateBaseUrl } = require('./autoUpdater.cjs');
 
 const OPERATOR_CHAT_POPUP_PATH = '/operator-chat-popup';
 const AUTH_PATH = '/authorization';
@@ -96,6 +97,7 @@ let mainWindow = null;
 let operatorChatPopupWindow = null;
 let serverSetupWindow = null;
 let serverSetupChangeMode = false;
+let desktopAutoUpdater = null;
 
 function resolveAppIconPath() {
   const candidates = [
@@ -370,6 +372,51 @@ function getAppUrl() {
   return readConfiguredAppUrl() || readDefaultSetupAppUrl();
 }
 
+function readAppConfigCandidates() {
+  return [
+    path.join(process.cwd(), 'electron', 'app.config.json'),
+    path.join(process.cwd(), 'app.config.json'),
+    path.join(path.dirname(process.execPath), 'app.config.json'),
+    path.join(process.resourcesPath || '', 'app.config.json'),
+  ];
+}
+
+function readUpdateUrl() {
+  const fromEnv = normalizeUpdateBaseUrl(process.env.ELECTRON_UPDATE_URL);
+  if (fromEnv) return fromEnv;
+
+  for (const filePath of readAppConfigCandidates()) {
+    const config = readJsonConfig(filePath);
+    const fromConfig = normalizeUpdateBaseUrl(config?.updateUrl);
+    if (fromConfig) return fromConfig;
+  }
+
+  const appUrl = getAppUrl();
+  try {
+    const url = new URL(appUrl);
+    return normalizeUpdateBaseUrl(`${url.protocol}//${url.host}/desktop-releases`);
+  } catch {
+    return '';
+  }
+}
+
+function startDesktopAutoUpdater() {
+  desktopAutoUpdater = createDesktopAutoUpdater({
+    getParentWindow: () => mainWindow,
+    isPackaged: app.isPackaged,
+    updateUrl: readUpdateUrl(),
+    log: (message) => console.log(message),
+  });
+  desktopAutoUpdater.start();
+}
+
+function checkDesktopUpdatesManually() {
+  if (!desktopAutoUpdater) {
+    startDesktopAutoUpdater();
+  }
+  void desktopAutoUpdater.checkForUpdates({ manual: true, reason: 'menu' });
+}
+
 function getHostFromUrl(rawUrl) {
   try {
     return new URL(rawUrl).hostname;
@@ -445,6 +492,11 @@ function installAppMenu() {
         {
           label: 'Сменить сервер',
           click: openServerChangeDialog,
+        },
+        { type: 'separator' },
+        {
+          label: 'Проверить обновления...',
+          click: checkDesktopUpdatesManually,
         },
       ],
     },
@@ -986,6 +1038,7 @@ app.whenReady().then(() => {
   console.log(`[electron] app icon: ${iconPath || 'not found'}`);
   applyAppIcon();
   installAppMenu();
+  startDesktopAutoUpdater();
 
   if (readConfiguredAppUrl()) {
     createMainWindow();

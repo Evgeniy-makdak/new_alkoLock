@@ -1,3 +1,4 @@
 {
-  "appUrl": "http://alcolock-test.lsystems.ru/authorization"
+  "appUrl": "http://alcolock-test.lsystems.ru/authorization",
+  "updateUrl": "https://alcolock-test.lsystems.ru/desktop-releases"
 }

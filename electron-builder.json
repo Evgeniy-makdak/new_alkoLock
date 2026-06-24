@@ -59,6 +59,12 @@
     "guid": "a4e8c2f1-9b3d-4e7a-8c5f-1d2e3f4a5b6c",
     "include": "build/installer.nsh"
   },
+  "publish": [
+    {
+      "provider": "generic",
+      "url": "https://alcolock-test.lsystems.ru/desktop-releases"
+    }
+  ],
   "portable": {
     "artifactName": "Alkozamok-SMART-${version}-portable-${arch}.exe"
   }
