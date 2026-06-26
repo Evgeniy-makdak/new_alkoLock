@@ -128,7 +128,7 @@ export const Popup = ({
         },
       }}
       PaperProps={{
-        ref: setPaperRef,
+        ref: dragResizeEnabled ? setPaperRef : undefined,
         className: paperClassName,
         sx: {
           minWidth: dragResizeEnabled ? undefined : 550,
