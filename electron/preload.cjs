@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
       ipcRenderer.removeListener(channel, listener);
     };
   },
+  /** Получить токен из основного окна для передачи в popup */
+  getAuthToken() {
+    return ipcRenderer.invoke('operator-chat-popup:get-auth-token');
+  },
 });
 
 contextBridge.exposeInMainWorld('alcolockDesktopSetup', {

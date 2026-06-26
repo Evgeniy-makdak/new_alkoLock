@@ -233,6 +233,14 @@ function installZoomShortcuts(win) {
     if (key === '0' || key === 'num0') {
       event.preventDefault();
       resetWindowZoom(win);
+      return;
+    }
+
+    // Ctrl+Shift+I или F12 для открытия DevTools
+    if ((key === 'i' && input.shift) || input.key === 'F12') {
+      event.preventDefault();
+      win.webContents.toggleDevTools();
+      return;
     }
   });
 }
@@ -956,6 +964,26 @@ ipcMain.handle('operator-chat-popup:set-bounds', (event, bounds = {}) => {
     }),
     false,
   );
+});
+
+/** Получить токен авторизации из основного окна для передачи в popup */
+ipcMain.handle('operator-chat-popup:get-auth-token', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  try {
+    const token = await mainWindow.webContents.executeJavaScript(`
+      (function() {
+        try {
+          return localStorage.getItem('authToken') || 
+                 localStorage.getItem('token') || 
+                 localStorage.getItem('access_token') ||
+                 null;
+        } catch { return null; }
+      })()
+    `, true);
+    return token;
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle('server-config:get-default-url', () => readDefaultSetupAppUrl());

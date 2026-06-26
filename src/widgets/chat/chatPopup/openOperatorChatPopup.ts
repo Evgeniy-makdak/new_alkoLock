@@ -14,12 +14,28 @@ import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
  * Отдельное окно с тем же origin (сессия из storage).
  * `popup=yes` — в Chromium открывается не вкладка, а всплывающее окно с урезанным UI (см. window.open features).
  * Размер задаётся здесь; в popup только восстановление lock при сбое ОС (без подгонки по dock).
+ * Для Electron: токен передаётся через URL параметр.
  */
-export function openOperatorChatPopup(): void {
+export async function openOperatorChatPopup(): Promise<void> {
   clearOperatorChatPopupLayoutStorage();
   clearMainRestoreIsChatOpenFromPopup();
-  const url = `${window.location.origin}${RoutePaths.operatorChatPopup}`;
+  
   const desktopBridge = window.alcolockDesktop;
+  let tokenParam = '';
+  
+  // Для Electron: получаем токен через IPC и добавляем в URL
+  if (desktopBridge) {
+    try {
+      const token = await desktopBridge.getAuthToken();
+      if (token) {
+        tokenParam = `?token=${encodeURIComponent(token)}`;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  
+  const url = `${window.location.origin}${RoutePaths.operatorChatPopup}${tokenParam}`;
   const hasPreviewSnapshot = readOperatorPopupPreviewSnapshot().length > 0;
   const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize({
     includePreviewColumn: Boolean(desktopBridge) || hasPreviewSnapshot,

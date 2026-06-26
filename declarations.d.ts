@@ -48,5 +48,6 @@ interface Window {
       top?: number;
     }): Promise<void>;
     onZoomChanged(callback: () => void): () => void;
+    getAuthToken(): Promise<string | null>;
   };
 }

@@ -83,6 +83,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         stompDebugLog('config loaded', {
           apiUrl: config?.apiUrl,
           wsUrl: config?.wsUrl,
+          windowLocationOrigin: window.location.origin,
+          isElectron: typeof (window as any).alcolockDesktop !== 'undefined',
         });
         setApiConfig(config);
       } catch (error) {

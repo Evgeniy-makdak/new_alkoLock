@@ -9,10 +9,26 @@ import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOper
 /**
  * Пульс timestamp в localStorage: основная вкладка скрывает ChatFooter только пока метка «свежая».
  * Синхронизация филиала с OFFICE — как в NavBar, иначе в popup нет selectedBranchState и списки с branchId не грузятся.
+ * Также читает токен из URL параметра (для Electron) и сохраняет в localStorage.
  */
 export default function OperatorChatPopupPage(): null {
   useSelectedBranchOfficeSync();
   useOperatorChatPopupWindowFrame();
+
+  // Читаем токен из URL и сохраняем в localStorage (для Electron popup)
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      if (token) {
+        localStorage.setItem('authToken', token);
+        // Очищаем URL от токена (без перезагрузки)
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     installOperatorChatPopupResizeObserverErrorGuard();
