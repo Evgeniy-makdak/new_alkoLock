@@ -65,8 +65,8 @@ export async function openOperatorChatPopup(): Promise<void> {
     'location=no',
     'status=no',
     'scrollbars=no',
-    /* Без ручного ресайза краёв; maximize у ОС перехватываем в useOperatorChatPopupWindowFrame. */
-    'resizable=no',
+    /* resizable=yes: иначе Chrome даёт сжать окно вручную, но блокирует resizeTo для отката. */
+    'resizable=yes',
   ].join(',');
 
   writeOperatorChatPopupFrameLock({

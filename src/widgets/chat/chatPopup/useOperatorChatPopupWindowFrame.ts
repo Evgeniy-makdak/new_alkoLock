@@ -27,7 +27,6 @@ const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const APPLY_DEBOUNCE_MS = 400;
 const SELF_RESIZE_COOLDOWN_MS = 550;
-const BROWSER_FIXED_FRAME_APPLY_MS = 120;
 
 type ViewportSnapshot = { outerW: number; innerW: number };
 type ContentOuter = { w: number; h: number };
@@ -172,95 +171,198 @@ function resizePopupOuter(outerW: number, outerH: number, left?: number, top?: n
   }
 }
 
+/** Браузер: минимум outer не масштабируется zoom — только полная панель. */
+function clampBrowserOuterSize(
+  outerW: number,
+  outerH: number,
+  includePreviewColumn = false,
+): { outerW: number; outerH: number } {
+  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn });
+  const scr = window.screen;
+  return {
+    outerW: Math.min(Math.max(outerW, min.outerW), scr.availWidth),
+    outerH: Math.min(Math.max(outerH, min.outerH), scr.availHeight),
+  };
+}
+
 /**
- * Обычный браузер (не PWA, не Electron): жёсткий lock геометрии.
- * Ручной ресайз краёв откатывается через resizeTo; ширина растёт при появлении превью.
+ * Обычный браузер: рост оболочки при zoom/превью + откат ручного сжатия ниже min.
  */
 function installBrowserWebPopupFrame(): () => void {
-  const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
-  writeOperatorChatPopupFrameLock(lockRef.current);
-
-  let isApplying = false;
+  let cancelled = false;
+  let isApplyingLock = false;
+  let selfResizeUntil = 0;
+  let initialApplyTimer = 0;
+  let initialAttempts = 0;
+  let initialApplyDone = false;
   let applyTimer = 0;
   let dockWatchTimer = 0;
   let previewMutationObserver: MutationObserver | null = null;
+  let viewportBaselineReady = false;
+  let guardInterval = 0;
+  let isSelfResize = false;
 
-  const resolveMinOuter = () => {
+  let contentOuterAt100: ContentOuter = { w: 0, h: 0 };
+  let zoomFactor = 1;
+  let lastObserved: ViewportSnapshot = { outerW: 0, innerW: 0 };
+
+  const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
+  writeOperatorChatPopupFrameLock(lockRef.current);
+  contentOuterAt100 = { w: lockRef.current.outerW, h: lockRef.current.outerH };
+
+  const syncViewportSnapshot = () => {
+    lastObserved = { outerW: window.outerWidth, innerW: window.innerWidth };
+  };
+
+  const applyOuterSize = (
+    outerW: number,
+    outerH: number,
+    positionOverride?: { left: number; top: number },
+  ): boolean => {
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
     const includePreview = dock ? hasPreviewInDock(dock) : false;
-    return getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+    const next = clampBrowserOuterSize(outerW, outerH, includePreview);
+    const position =
+      positionOverride ?? resolvePopupScreenPosition(next.outerW, next.outerH, lockRef.current);
+    const sizeUnchanged =
+      Math.abs(window.outerWidth - next.outerW) <= LOCK_TOLERANCE_PX &&
+      Math.abs(window.outerHeight - next.outerH) <= LOCK_TOLERANCE_PX;
+    const positionUnchanged =
+      Math.abs(window.screenX - position.left) <= LOCK_TOLERANCE_PX &&
+      Math.abs(window.screenY - position.top) <= LOCK_TOLERANCE_PX;
+    if (sizeUnchanged && positionUnchanged) {
+      syncViewportSnapshot();
+      return false;
+    }
+
+    isApplyingLock = true;
+    selfResizeUntil = Date.now() + SELF_RESIZE_COOLDOWN_MS;
+    isSelfResize = true;
+    resizePopupOuter(next.outerW, next.outerH, position.left, position.top);
+    lockRef.current = {
+      ...lockRef.current,
+      outerW: next.outerW,
+      outerH: next.outerH,
+      left: position.left,
+      top: position.top,
+    };
+    writeOperatorChatPopupFrameLock(lockRef.current);
+    window.setTimeout(() => {
+      isApplyingLock = false;
+      isSelfResize = false;
+      syncViewportSnapshot();
+    }, SELF_RESIZE_COOLDOWN_MS);
+    return true;
   };
 
-  const syncLockToContent = () => {
+  const resolveLockedMinOuterSize = (): { outerW: number; outerH: number } => {
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
-    const min = resolveMinOuter();
-    let nextW = Math.max(lockRef.current.outerW, min.outerW);
-    let nextH = Math.max(lockRef.current.outerH, min.outerH);
-
-    if (dock) {
-      const measured = measureOperatorChatPopupDockOuterSize(dock);
-      nextW = Math.max(nextW, measured.outerW);
-      nextH = Math.max(nextH, min.outerH);
-      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
-        nextW = Math.max(nextW, window.outerWidth + measured.leftOverflowPx);
-      }
-    }
-
-    if (nextW !== lockRef.current.outerW || nextH !== lockRef.current.outerH) {
-      lockRef.current = { ...lockRef.current, outerW: nextW, outerH: nextH };
-      writeOperatorChatPopupFrameLock(lockRef.current);
-    }
+    const includePreview = dock ? hasPreviewInDock(dock) : false;
+    const minOuter = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+    return {
+      outerW: Math.max(minOuter.outerW, lockRef.current.outerW),
+      outerH: Math.max(minOuter.outerH, lockRef.current.outerH),
+    };
   };
 
-  const applyLock = () => {
-    if (isApplying) return;
-    syncLockToContent();
+  const isManuallyTooSmall = (): boolean => {
+    const locked = resolveLockedMinOuterSize();
+    return (
+      window.outerWidth + LOCK_TOLERANCE_PX < locked.outerW ||
+      window.outerHeight + LOCK_TOLERANCE_PX < locked.outerH
+    );
+  };
 
-    const { outerW, outerH, left, top } = lockRef.current;
-    const tooSmallW = window.outerWidth + LOCK_TOLERANCE_PX < outerW;
-    const tooSmallH = window.outerHeight + LOCK_TOLERANCE_PX < outerH;
-    let nextLeft = left;
-    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
-    if (dock && (tooSmallW || tooSmallH)) {
-      const measured = measureOperatorChatPopupDockOuterSize(dock);
-      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
-        nextLeft = left - measured.leftOverflowPx;
-      }
-    }
-    const needsMove =
-      Math.abs(window.screenX - nextLeft) > LOCK_TOLERANCE_PX ||
-      Math.abs(window.screenY - top) > LOCK_TOLERANCE_PX;
-    if (!tooSmallW && !tooSmallH && !needsMove) return;
+  const restoreLockFrame = (): boolean => {
+    if (isSelfResize || isApplyingLock) return false;
+    if (!isManuallyTooSmall()) return false;
 
-    isApplying = true;
+    const locked = resolveLockedMinOuterSize();
+    const { left, top } = lockRef.current;
     try {
-      if (tooSmallW || tooSmallH) {
-        window.resizeTo(outerW, outerH);
-      }
-      if (needsMove) {
-        window.moveTo(nextLeft, top);
-      }
+      isSelfResize = true;
+      window.resizeTo(locked.outerW, locked.outerH);
+      window.moveTo(left, top);
     } catch {
       /* политика браузера */
     }
     window.setTimeout(() => {
-      isApplying = false;
-      if (
-        window.outerWidth + LOCK_TOLERANCE_PX < outerW ||
-        window.outerHeight + LOCK_TOLERANCE_PX < outerH
-      ) {
-        try {
-          window.resizeTo(outerW, outerH);
-        } catch {
-          /* политика браузера */
-        }
-      }
-    }, BROWSER_FIXED_FRAME_APPLY_MS);
+      isSelfResize = false;
+    }, 0);
+    return true;
+  };
+
+  const scheduleRestoreRetries = () => {
+    [0, 16, 50, 120, 250, 500].forEach((ms) => {
+      window.setTimeout(() => {
+        if (!cancelled) restoreLockFrame();
+      }, ms);
+    });
+  };
+
+  const enforceMinOuterFrame = (): boolean => {
+    if (restoreLockFrame()) {
+      scheduleRestoreRetries();
+      return true;
+    }
+    return false;
+  };
+
+  const refreshContentOuterAt100 = (dock: Element) => {
+    contentOuterAt100 = resolveContentOuterAt100(dock, zoomFactor);
+  };
+
+  const applyScaledTarget = () => {
+    if (cancelled || isApplyingLock || Date.now() < selfResizeUntil) return;
+
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (!dock) return;
+
+    const includePreview = hasPreviewInDock(dock);
+    const minOuter = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+    const content = contentOuterAt100;
+    let targetW = Math.max(Math.round(content.w * zoomFactor), minOuter.outerW);
+    let targetH = Math.max(Math.round(content.h * zoomFactor), minOuter.outerH);
+
+    const overflow = computeDockOverflowPx();
+    if (overflow.growW > LOCK_TOLERANCE_PX) {
+      targetW = Math.max(targetW, window.outerWidth + overflow.growW);
+    }
+    if (overflow.growH > LOCK_TOLERANCE_PX) {
+      targetH = Math.max(targetH, window.outerHeight + overflow.growH);
+    }
+
+    const measured = measureOperatorChatPopupDockOuterSize(dock);
+    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+      targetW = Math.max(targetW, window.outerWidth + measured.leftOverflowPx);
+    }
+
+    const target = clampBrowserOuterSize(targetW, targetH, includePreview);
+    if (target.outerW < minOuter.outerW || target.outerW > 2400) return;
+
+    let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
+    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+      position = {
+        ...position,
+        left: position.left - measured.leftOverflowPx,
+      };
+    }
+
+    lockRef.current = { ...lockRef.current, outerW: target.outerW, outerH: target.outerH };
+    writeOperatorChatPopupFrameLock(lockRef.current);
+    applyOuterSize(target.outerW, target.outerH, position);
   };
 
   const scheduleApply = () => {
     window.clearTimeout(applyTimer);
-    applyTimer = window.setTimeout(applyLock, 16);
+    applyTimer = window.setTimeout(() => {
+      if (!cancelled) applyScaledTarget();
+    }, APPLY_DEBOUNCE_MS);
+  };
+
+  const applyLock = () => {
+    if (cancelled || isApplyingLock) return;
+    applyOuterSize(lockRef.current.outerW, lockRef.current.outerH);
   };
 
   const ensurePreviewCountObserver = () => {
@@ -269,8 +371,11 @@ function installBrowserWebPopupFrame(): () => void {
     if (!dock || typeof MutationObserver === 'undefined') return;
 
     previewMutationObserver = new MutationObserver(() => {
-      syncLockToContent();
-      scheduleApply();
+      refreshContentOuterAt100(dock);
+      window.clearTimeout(applyTimer);
+      applyTimer = window.setTimeout(() => {
+        if (!cancelled) applyScaledTarget();
+      }, 60);
     });
     previewMutationObserver.observe(dock, {
       attributes: true,
@@ -280,26 +385,131 @@ function installBrowserWebPopupFrame(): () => void {
     });
   };
 
-  applyLock();
-  requestAnimationFrame(applyLock);
-  window.addEventListener('resize', scheduleApply);
-  window.addEventListener('mouseup', scheduleApply);
+  const onWindowResize = () => {
+    if (cancelled) return;
+
+    if (enforceMinOuterFrame()) {
+      return;
+    }
+
+    if (isApplyingLock || Date.now() < selfResizeUntil) return;
+
+    if (!viewportBaselineReady) {
+      syncViewportSnapshot();
+      return;
+    }
+
+    const outerSame =
+      Math.abs(window.outerWidth - lastObserved.outerW) <= OUTER_SAME_TOLERANCE_PX;
+
+    if (outerSame && lastObserved.innerW > 0 && window.innerWidth > 0) {
+      const innerRatio = lastObserved.innerW / window.innerWidth;
+      if (Math.abs(innerRatio - 1) >= ZOOM_INNER_RATIO_THRESHOLD) {
+        zoomFactor = Math.min(ZOOM_FACTOR_MAX, Math.max(0.2, zoomFactor * innerRatio));
+
+        const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+        if (dock) {
+          refreshContentOuterAt100(dock);
+        }
+
+        scheduleApply();
+      }
+    }
+
+    const overflow = computeDockOverflowPx();
+    if (overflow.growW > LOCK_TOLERANCE_PX || overflow.growH > LOCK_TOLERANCE_PX) {
+      scheduleApply();
+    }
+
+    syncViewportSnapshot();
+  };
+
+  const runInitialApply = () => {
+    if (cancelled || initialApplyDone) return;
+    applyLock();
+    if (isWidthSatisfied(lockRef.current)) {
+      initialApplyDone = true;
+      viewportBaselineReady = true;
+      syncViewportSnapshot();
+      const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+      if (dock) refreshContentOuterAt100(dock);
+      scheduleApply();
+      return;
+    }
+    if (initialAttempts++ >= INITIAL_APPLY_MAX_ATTEMPTS) {
+      initialApplyDone = true;
+      viewportBaselineReady = true;
+      syncViewportSnapshot();
+      scheduleApply();
+      return;
+    }
+    initialApplyTimer = window.setTimeout(runInitialApply, INITIAL_APPLY_INTERVAL_MS);
+  };
+
+  const onWheel = (event: WheelEvent) => {
+    if (event.ctrlKey) window.setTimeout(onWindowResize, 50);
+  };
+
+  const onKeyDown = (event: KeyboardEvent) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    if (event.key === '+' || event.key === '-' || event.key === '=' || event.key === '0') {
+      if (event.key === '0') {
+        zoomFactor = 1;
+        const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+        if (dock) refreshContentOuterAt100(dock);
+      }
+      window.setTimeout(onWindowResize, 50);
+    }
+  };
+
+  const onMouseUp = () => {
+    if (restoreLockFrame()) scheduleRestoreRetries();
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      enforceMinOuterFrame();
+      runInitialApply();
+      ensurePreviewCountObserver();
+    });
+  });
+
+  const vv = window.visualViewport;
+  vv?.addEventListener('resize', onWindowResize);
+  window.addEventListener('resize', onWindowResize);
+  window.addEventListener('mouseup', onMouseUp);
+
+  guardInterval = window.setInterval(() => {
+    if (cancelled) return;
+    if (isManuallyTooSmall()) restoreLockFrame();
+  }, 80);
+
+  window.addEventListener('wheel', onWheel, { passive: true });
+  window.addEventListener('keydown', onKeyDown);
 
   dockWatchTimer = window.setInterval(() => {
-    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
-    if (!dock) return;
+    if (cancelled) return;
     ensurePreviewCountObserver();
-    syncLockToContent();
-    scheduleApply();
-    window.clearInterval(dockWatchTimer);
-    dockWatchTimer = 0;
-  }, 200);
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (dock) {
+      refreshContentOuterAt100(dock);
+      scheduleApply();
+      window.clearInterval(dockWatchTimer);
+      dockWatchTimer = 0;
+    }
+  }, 400);
 
   return () => {
+    cancelled = true;
+    window.clearTimeout(initialApplyTimer);
     window.clearTimeout(applyTimer);
     if (dockWatchTimer) window.clearInterval(dockWatchTimer);
-    window.removeEventListener('resize', scheduleApply);
-    window.removeEventListener('mouseup', scheduleApply);
+    if (guardInterval) window.clearInterval(guardInterval);
+    vv?.removeEventListener('resize', onWindowResize);
+    window.removeEventListener('resize', onWindowResize);
+    window.removeEventListener('mouseup', onMouseUp);
+    window.removeEventListener('wheel', onWheel);
+    window.removeEventListener('keydown', onKeyDown);
     previewMutationObserver?.disconnect();
   };
 }
