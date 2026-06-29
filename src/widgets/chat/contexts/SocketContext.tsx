@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { appStore } from '@shared/model/app_store/AppStore';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import { configLoader } from '../../../config/configLoader';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
@@ -42,6 +43,12 @@ interface SocketContextType {
   incrementDialogUnreadCount: (dialogId: number, amount?: number, dedupeKey?: string) => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
+  /** Отправка через актуальный STOMP-клиент (ref), без гонки с React state. */
+  publishStompMessage: (
+    destination: string,
+    body: string,
+    headers?: Record<string, string>,
+  ) => boolean;
   /** Снимает и очищает очередь входящих сообщений чата (OPERATOR / user queue), чтобы не терять их при перезаписи lastMessage. */
   flushIncomingChatMessages: () => any[];
 }
@@ -57,7 +64,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
 
   const stompClientRef = useRef<any>(null);
+  const [stompClient, setStompClient] = useState<any>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const reconnectAttemptRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
   const isConnectingRef = useRef<boolean>(false);
   const subscriptionsRef = useRef<Set<string>>(new Set());
@@ -102,14 +111,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const getAuthToken = (): string | null => {
+    const tokenFromCookie = getBearerToken();
+    if (tokenFromCookie) return tokenFromCookie;
+
     const tokenFromLocalStorage = localStorage.getItem('authToken');
     const tokenFromSessionStorage = sessionStorage.getItem('authToken');
-    const tokenFromCookie = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith('bearer='))
-      ?.split('=')[1];
 
-    return tokenFromLocalStorage || tokenFromSessionStorage || tokenFromCookie || null;
+    return tokenFromLocalStorage || tokenFromSessionStorage || null;
   };
 
   const getBranchId = (): string | null => {
@@ -411,11 +419,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const disconnectWebSocket = () => {
+  const disconnectWebSocket = (options?: { preserveUnreadCounts?: boolean }) => {
     stompDebugLog('disconnectWebSocket called', {
       hadSocket: Boolean(socketRef.current),
       hadStompClient: Boolean(stompClientRef.current),
       stompConnected: stompClientRef.current?.connected === true,
+      preserveUnreadCounts: Boolean(options?.preserveUnreadCounts),
     });
     if (socketRef.current) {
       sendStompFrame('DISCONNECT');
@@ -427,11 +436,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       stompClientRef.current.connected = false;
       stompClientRef.current = null;
     }
-
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = undefined;
-    }
+    setStompClient(null);
 
     setIsConnected(false);
     setConnectionStatus('disconnected');
@@ -440,10 +445,36 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     processedMessagesRef.current.clear();
     incomingChatMessagesQueueRef.current = [];
     incrementDedupeByMessageRef.current.clear();
-    unreadAggregateRef.current = 0;
-    setUnreadCount(0);
-    resetDialogCounts();
+
+    if (!options?.preserveUnreadCounts) {
+      unreadAggregateRef.current = 0;
+      setUnreadCount(0);
+      resetDialogCounts();
+    }
   };
+
+  const scheduleReconnect = (branchId: string) => {
+    if (!branchId || reconnectTimeoutRef.current || isConnectingRef.current) return;
+
+    const delay = Math.min(30000, 2000 * Math.max(1, reconnectAttemptRef.current));
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectTimeoutRef.current = undefined;
+      reconnectAttemptRef.current += 1;
+      connectWebSocket(branchId);
+    }, delay);
+  };
+
+  const publishStompMessage = useCallback(
+    (destination: string, body: string, headers: Record<string, string> = {}) => {
+      const client = stompClientRef.current;
+      const socket = socketRef.current;
+      if (!client?.connected || !socket || socket.readyState !== WebSocket.OPEN) {
+        return false;
+      }
+      return client.publish({ destination, body, headers });
+    },
+    [],
+  );
 
   const parseStompFrame = (data: string) => {
     const lines = data.split('\n');
@@ -527,8 +558,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const branchIdNorm = String(branchId).trim();
+    const preserveUnreadCounts = currentBranchId === branchIdNorm && currentBranchId !== null;
 
-    disconnectWebSocket();
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = undefined;
+    }
+
+    disconnectWebSocket({ preserveUnreadCounts });
     setConnectionStatus('connecting');
     setCurrentBranchId(branchIdNorm);
     isConnectingRef.current = true;
@@ -594,6 +631,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       };
 
       stompClientRef.current = stompClient;
+      setStompClient(stompClient);
 
       socket.onopen = () => {
         stompDebugLog('WebSocket onopen, sending STOMP CONNECT', {
@@ -618,7 +656,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
             setIsConnected(true);
             setConnectionStatus('connected');
             stompClient.connected = true;
+            reconnectAttemptRef.current = 0;
             isConnectingRef.current = false;
+            setStompClient((prev: any) => (prev ? { ...prev, connected: true } : prev));
 
             setTimeout(() => {
               subscribeToTopics(branchIdNorm);
@@ -828,15 +868,11 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         });
         setIsConnected(false);
         setConnectionStatus('error');
-        stompClient.connected = false;
+        if (stompClientRef.current) {
+          stompClientRef.current.connected = false;
+        }
+        setStompClient((prev: any) => (prev ? { ...prev, connected: false } : null));
         isConnectingRef.current = false;
-        setLastMessage({ type: 'connection_error', data: error });
-
-        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-        reconnectTimeoutRef.current = setTimeout(() => {
-          const currentBranch = getBranchId();
-          if (currentBranch) connectWebSocket(currentBranch);
-        }, 5000);
       };
 
       socket.onclose = (event) => {
@@ -849,23 +885,18 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         });
         setIsConnected(false);
         setConnectionStatus('disconnected');
-        stompClient.connected = false;
+        if (stompClientRef.current) {
+          stompClientRef.current.connected = false;
+        }
+        setStompClient((prev: any) => (prev ? { ...prev, connected: false } : null));
         isConnectingRef.current = false;
         subscriptionsRef.current.clear();
         processedMessagesRef.current.clear();
         incomingChatMessagesQueueRef.current = [];
         incrementDedupeByMessageRef.current.clear();
-        setLastMessage({
-          type: 'connection_closed',
-          data: { code: event.code, reason: event.reason, branchId: branchIdNorm },
-        });
 
         if (event.code !== 1000 && event.reason !== 'Смена филиала') {
-          if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            const currentBranch = getBranchId();
-            if (currentBranch) connectWebSocket(currentBranch);
-          }, 5000);
+          scheduleReconnect(branchIdNorm);
         }
       };
     } catch (error) {
@@ -905,6 +936,10 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
 
     return () => {
       clearTimeout(initTimeout);
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = undefined;
+      }
       unsubscribe();
       disconnectWebSocket();
     };
@@ -914,7 +949,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     <SocketContext.Provider
       value={{
         lastMessage,
-        stompClient: stompClientRef.current,
+        stompClient,
         isConnected,
         connectionStatus,
         currentBranchId,
@@ -927,6 +962,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         incrementDialogUnreadCount,
         calculateTotalUnread,
         resetDialogCounts,
+        publishStompMessage,
         flushIncomingChatMessages,
       }}>
       {children}

@@ -153,12 +153,9 @@ export function measureOperatorChatPopupDockOuterSize(dock: Element): {
       })
     : min;
   const chrome = getOperatorChatPopupChromePadding();
-  const minMeasuredOuterH =
-    Math.max(500, POPUP_DOCK_FAB_STACK_H_PX + 2 * OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX + pad) +
-    chrome.h;
   return {
     outerW: Math.max(minWithPreview.outerW, measuredWidth + chrome.w),
-    outerH: Math.max(minMeasuredOuterH, innerH + chrome.h),
+    outerH: Math.max(minWithPreview.outerH, innerH + chrome.h),
     leftOverflowPx: leftOverflow,
   };
 }

@@ -22,7 +22,7 @@ const LOCK_TOLERANCE_PX = 8;
 const OUTER_SAME_TOLERANCE_PX = 6;
 const ZOOM_INNER_RATIO_THRESHOLD = 0.006;
 const ZOOM_FACTOR_MAX = 3;
-const ABS_MIN_OUTER_PX = 300;
+const ABS_MIN_OUTER_W_PX = 300;
 const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const APPLY_DEBOUNCE_MS = 400;
@@ -52,20 +52,21 @@ function normalizeLock(raw: OperatorChatPopupFrameLock | null): OperatorChatPopu
   };
 }
 
-/** Минимум outer масштабируется с zoom — иначе оболочка «застревает» при 67% и ниже. */
+/** Ширина-min масштабируется с zoom; высота оболочки — всегда не ниже полной панели. */
 function clampOuterSize(
   outerW: number,
   outerH: number,
   zoomFactor = 1,
+  includePreviewColumn = false,
 ): { outerW: number; outerH: number } {
-  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: false });
+  const min = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn });
   const safeZoom = Math.max(zoomFactor, 0.2);
-  const scaledMinW = Math.max(ABS_MIN_OUTER_PX, Math.round(min.outerW * safeZoom));
-  const scaledMinH = Math.max(ABS_MIN_OUTER_PX, Math.round(min.outerH * safeZoom));
+  const scaledMinW = Math.max(ABS_MIN_OUTER_W_PX, Math.round(min.outerW * safeZoom));
+  const minOuterH = min.outerH;
   const scr = window.screen;
   return {
     outerW: Math.min(Math.max(outerW, scaledMinW), scr.availWidth),
-    outerH: Math.min(Math.max(outerH, scaledMinH), scr.availHeight),
+    outerH: Math.min(Math.max(outerH, minOuterH), scr.availHeight),
   };
 }
 
@@ -171,57 +172,135 @@ function resizePopupOuter(outerW: number, outerH: number, left?: number, top?: n
   }
 }
 
-/** Браузер (не PWA): фиксированная геометрия popup без ручного/ОС ресайза. */
-function installBrowserFixedPopupFrame(): () => void {
+/**
+ * Обычный браузер (не PWA, не Electron): жёсткий lock геометрии.
+ * Ручной ресайз краёв откатывается через resizeTo; ширина растёт при появлении превью.
+ */
+function installBrowserWebPopupFrame(): () => void {
   const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
   writeOperatorChatPopupFrameLock(lockRef.current);
 
   let isApplying = false;
   let applyTimer = 0;
+  let dockWatchTimer = 0;
+  let previewMutationObserver: MutationObserver | null = null;
+
+  const resolveMinOuter = () => {
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    const includePreview = dock ? hasPreviewInDock(dock) : false;
+    return getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+  };
+
+  const syncLockToContent = () => {
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    const min = resolveMinOuter();
+    let nextW = Math.max(lockRef.current.outerW, min.outerW);
+    let nextH = Math.max(lockRef.current.outerH, min.outerH);
+
+    if (dock) {
+      const measured = measureOperatorChatPopupDockOuterSize(dock);
+      nextW = Math.max(nextW, measured.outerW);
+      nextH = Math.max(nextH, min.outerH);
+      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+        nextW = Math.max(nextW, window.outerWidth + measured.leftOverflowPx);
+      }
+    }
+
+    if (nextW !== lockRef.current.outerW || nextH !== lockRef.current.outerH) {
+      lockRef.current = { ...lockRef.current, outerW: nextW, outerH: nextH };
+      writeOperatorChatPopupFrameLock(lockRef.current);
+    }
+  };
 
   const applyLock = () => {
     if (isApplying) return;
+    syncLockToContent();
+
     const { outerW, outerH, left, top } = lockRef.current;
-    const needsResize =
-      Math.abs(window.outerWidth - outerW) > LOCK_TOLERANCE_PX ||
-      Math.abs(window.outerHeight - outerH) > LOCK_TOLERANCE_PX;
+    const tooSmallW = window.outerWidth + LOCK_TOLERANCE_PX < outerW;
+    const tooSmallH = window.outerHeight + LOCK_TOLERANCE_PX < outerH;
+    let nextLeft = left;
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (dock && (tooSmallW || tooSmallH)) {
+      const measured = measureOperatorChatPopupDockOuterSize(dock);
+      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+        nextLeft = left - measured.leftOverflowPx;
+      }
+    }
     const needsMove =
-      Math.abs(window.screenX - left) > LOCK_TOLERANCE_PX ||
+      Math.abs(window.screenX - nextLeft) > LOCK_TOLERANCE_PX ||
       Math.abs(window.screenY - top) > LOCK_TOLERANCE_PX;
-    if (!needsResize && !needsMove) return;
+    if (!tooSmallW && !tooSmallH && !needsMove) return;
 
     isApplying = true;
     try {
-      if (needsResize) {
+      if (tooSmallW || tooSmallH) {
         window.resizeTo(outerW, outerH);
       }
       if (needsMove) {
-        window.moveTo(left, top);
+        window.moveTo(nextLeft, top);
       }
     } catch {
       /* политика браузера */
     }
     window.setTimeout(() => {
       isApplying = false;
+      if (
+        window.outerWidth + LOCK_TOLERANCE_PX < outerW ||
+        window.outerHeight + LOCK_TOLERANCE_PX < outerH
+      ) {
+        try {
+          window.resizeTo(outerW, outerH);
+        } catch {
+          /* политика браузера */
+        }
+      }
     }, BROWSER_FIXED_FRAME_APPLY_MS);
   };
 
   const scheduleApply = () => {
     window.clearTimeout(applyTimer);
-    applyTimer = window.setTimeout(applyLock, 40);
+    applyTimer = window.setTimeout(applyLock, 16);
   };
 
-  const onResize = () => {
-    scheduleApply();
+  const ensurePreviewCountObserver = () => {
+    if (previewMutationObserver) return;
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (!dock || typeof MutationObserver === 'undefined') return;
+
+    previewMutationObserver = new MutationObserver(() => {
+      syncLockToContent();
+      scheduleApply();
+    });
+    previewMutationObserver.observe(dock, {
+      attributes: true,
+      attributeFilter: ['data-operator-chat-preview-count'],
+      childList: true,
+      subtree: true,
+    });
   };
 
   applyLock();
   requestAnimationFrame(applyLock);
-  window.addEventListener('resize', onResize);
+  window.addEventListener('resize', scheduleApply);
+  window.addEventListener('mouseup', scheduleApply);
+
+  dockWatchTimer = window.setInterval(() => {
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (!dock) return;
+    ensurePreviewCountObserver();
+    syncLockToContent();
+    scheduleApply();
+    window.clearInterval(dockWatchTimer);
+    dockWatchTimer = 0;
+  }, 200);
 
   return () => {
     window.clearTimeout(applyTimer);
-    window.removeEventListener('resize', onResize);
+    if (dockWatchTimer) window.clearInterval(dockWatchTimer);
+    window.removeEventListener('resize', scheduleApply);
+    window.removeEventListener('mouseup', scheduleApply);
+    previewMutationObserver?.disconnect();
   };
 }
 
@@ -252,9 +331,20 @@ function installPwaDynamicPopupFrame(): () => void {
     lastObserved = { outerW: window.outerWidth, innerW: window.innerWidth };
   };
 
-  const applyOuterSize = (outerW: number, outerH: number): boolean => {
-    const next = clampOuterSize(outerW, outerH, zoomFactor);
-    const position = resolvePopupScreenPosition(next.outerW, next.outerH, lockRef.current);
+  const applyOuterSize = (
+    outerW: number,
+    outerH: number,
+    positionOverride?: { left: number; top: number },
+  ): boolean => {
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    const next = clampOuterSize(
+      outerW,
+      outerH,
+      zoomFactor,
+      dock ? hasPreviewInDock(dock) : false,
+    );
+    const position =
+      positionOverride ?? resolvePopupScreenPosition(next.outerW, next.outerH, lockRef.current);
     const sizeUnchanged =
       Math.abs(window.outerWidth - next.outerW) <= LOCK_TOLERANCE_PX &&
       Math.abs(window.outerHeight - next.outerH) <= LOCK_TOLERANCE_PX;
@@ -284,6 +374,34 @@ function installPwaDynamicPopupFrame(): () => void {
     return true;
   };
 
+  const resolveLockedMinOuterSize = (): { outerW: number; outerH: number } => {
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    const includePreview = dock ? hasPreviewInDock(dock) : false;
+    const minOuter = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
+    return {
+      outerW: Math.max(minOuter.outerW, lockRef.current.outerW),
+      outerH: Math.max(minOuter.outerH, lockRef.current.outerH),
+    };
+  };
+
+  /** Ручной ресайз краёв окна (Chrome игнорирует resizable=no) — возвращаем lock/min. */
+  const enforceMinOuterFrame = (): boolean => {
+    if (isApplyingLock) return false;
+    const locked = resolveLockedMinOuterSize();
+    const tooSmallW = window.outerWidth + LOCK_TOLERANCE_PX < locked.outerW;
+    const tooSmallH = window.outerHeight + LOCK_TOLERANCE_PX < locked.outerH;
+    if (!tooSmallW && !tooSmallH) return false;
+
+    const applied = applyOuterSize(locked.outerW, locked.outerH);
+    if (applied) {
+      contentOuterAt100 = {
+        w: Math.max(contentOuterAt100.w, lockRef.current.outerW),
+        h: Math.max(contentOuterAt100.h, lockRef.current.outerH),
+      };
+    }
+    return applied;
+  };
+
   const refreshContentOuterAt100 = (dock: Element) => {
     contentOuterAt100 = resolveContentOuterAt100(dock, zoomFactor);
   };
@@ -294,9 +412,11 @@ function installPwaDynamicPopupFrame(): () => void {
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
     if (!dock) return;
 
+    const includePreview = hasPreviewInDock(dock);
+    const minOuter = getOperatorChatPopupMinOuterSize(undefined, { includePreviewColumn: includePreview });
     const content = contentOuterAt100;
-    let targetW = Math.round(content.w * zoomFactor);
-    let targetH = Math.round(content.h * zoomFactor);
+    let targetW = Math.max(Math.round(content.w * zoomFactor), minOuter.outerW);
+    let targetH = Math.max(Math.round(content.h * zoomFactor), minOuter.outerH);
 
     const overflow = computeDockOverflowPx();
     if (overflow.growW > LOCK_TOLERANCE_PX) {
@@ -311,12 +431,21 @@ function installPwaDynamicPopupFrame(): () => void {
       targetW = Math.max(targetW, window.outerWidth + measured.leftOverflowPx);
     }
 
-    const target = clampOuterSize(targetW, targetH, zoomFactor);
-    if (target.outerW < ABS_MIN_OUTER_PX || target.outerW > 2400) return;
+    const target = clampOuterSize(targetW, targetH, zoomFactor, includePreview);
+    if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
+
+    let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
+    const electronAutoReposition = isElectronChatShell() && !readChatLayoutPinned(true);
+    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX && !electronAutoReposition) {
+      position = {
+        ...position,
+        left: position.left - measured.leftOverflowPx,
+      };
+    }
 
     lockRef.current = { ...lockRef.current, outerW: target.outerW, outerH: target.outerH };
     writeOperatorChatPopupFrameLock(lockRef.current);
-    applyOuterSize(target.outerW, target.outerH);
+    applyOuterSize(target.outerW, target.outerH, position);
   };
 
   const scheduleApply = () => {
@@ -338,16 +467,27 @@ function installPwaDynamicPopupFrame(): () => void {
 
     previewMutationObserver = new MutationObserver(() => {
       refreshContentOuterAt100(dock);
-      scheduleApply();
+      window.clearTimeout(applyTimer);
+      applyTimer = window.setTimeout(() => {
+        if (!cancelled) applyScaledTarget();
+      }, 60);
     });
     previewMutationObserver.observe(dock, {
       attributes: true,
       attributeFilter: ['data-operator-chat-preview-count'],
+      childList: true,
+      subtree: true,
     });
   };
 
   const onWindowResize = () => {
-    if (cancelled || isApplyingLock || Date.now() < selfResizeUntil) return;
+    if (cancelled) return;
+
+    if (enforceMinOuterFrame()) {
+      return;
+    }
+
+    if (isApplyingLock || Date.now() < selfResizeUntil) return;
 
     if (!viewportBaselineReady) {
       syncViewportSnapshot();
@@ -414,6 +554,7 @@ function installPwaDynamicPopupFrame(): () => void {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      enforceMinOuterFrame();
       runInitialApply();
       ensurePreviewCountObserver();
     });
@@ -429,6 +570,7 @@ function installPwaDynamicPopupFrame(): () => void {
 
   vv?.addEventListener('resize', onWindowResize);
   window.addEventListener('resize', onWindowResize);
+  window.addEventListener('mouseup', enforceMinOuterFrame);
   window.addEventListener('wheel', onWheel, { passive: true });
   window.addEventListener('keydown', onKeyDown);
 
@@ -457,6 +599,7 @@ function installPwaDynamicPopupFrame(): () => void {
     if (dockWatchTimer) window.clearInterval(dockWatchTimer);
     vv?.removeEventListener('resize', onWindowResize);
     window.removeEventListener('resize', onWindowResize);
+    window.removeEventListener('mouseup', enforceMinOuterFrame);
     window.removeEventListener('wheel', onWheel);
     window.removeEventListener('keydown', onKeyDown);
     previewMutationObserver?.disconnect();
@@ -469,6 +612,6 @@ export function useOperatorChatPopupWindowFrame(): void {
     if (isElectronChatShell() || isPwaDisplayMode()) {
       return installPwaDynamicPopupFrame();
     }
-    return installBrowserFixedPopupFrame();
+    return installBrowserWebPopupFrame();
   }, []);
 }

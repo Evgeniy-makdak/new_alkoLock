@@ -26,15 +26,32 @@ class CookieManager {
     this.set(name, value, days);
   }
 
+  remove(name: string | number) {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  }
+
   removeAll() {
     const cookies = document.cookie.split(';');
     for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i];
+      let cookie = cookies[i];
+      while (cookie.charAt(0) === ' ') cookie = cookie.substring(1);
       const eqPos = cookie.indexOf('=');
-      const name = eqPos > -1 ? cookie.substr(0, eqPos) : cookie;
+      const name = eqPos > -1 ? cookie.substring(0, eqPos) : cookie;
+      if (!name) continue;
       document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
     }
   }
+}
+
+export function isValidJwtFormat(token: string | null | undefined): token is string {
+  if (typeof token !== 'string' || !token.trim()) return false;
+  const parts = token.split('.');
+  return parts.length === 3 && parts.every((part) => part.length > 0);
+}
+
+export function getBearerToken(): string | null {
+  const token = cookieManager.get('bearer');
+  return isValidJwtFormat(token) ? token : null;
 }
 
 export const cookieManager = new CookieManager();

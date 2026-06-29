@@ -14,7 +14,7 @@ export const useChatMessages = (
   updateSession: (sessionId: string, updates: any) => void,
   getSession: (sessionId: string) => any,
 ) => {
-  const { stompClient, isConnected, connectionStatus } = useSocket();
+  const { isConnected, connectionStatus, publishStompMessage } = useSocket();
   const [responseTimers, setResponseTimers] = useState<Map<string, NodeJS.Timeout[]>>(new Map());
   const [processedUserMessageIds, setProcessedUserMessageIds] = useState<Map<string, number[]>>(
     new Map(),
@@ -35,18 +35,18 @@ export const useChatMessages = (
 
   const sendMessageStatus = useCallback(
     (uuid: string, status: 'DELIVERED' | 'READ'): boolean => {
-      if (!stompClient || !stompClient.connected) {
-        api.sendDeliveryConfirm(uuid, status).catch(() => {});
+      const published = publishStompMessage(
+        '/app/chat.delivery.confirm',
+        JSON.stringify({ uuidMessage: uuid, status }),
+        { 'content-type': 'application/json' },
+      );
+      if (published) {
         return true;
       }
-
-      const success = api.sendDeliveryConfirmWS(stompClient, uuid, status);
-      if (!success) {
-        api.sendDeliveryConfirm(uuid, status).catch(() => {});
-      }
-      return success;
+      api.sendDeliveryConfirm(uuid, status).catch(() => {});
+      return false;
     },
-    [stompClient],
+    [publishStompMessage],
   );
 
   const scrollToBottom = useCallback((sessionId: string) => {
@@ -207,10 +207,8 @@ export const useChatMessages = (
 
         const cleanStompMessage = JSON.parse(JSON.stringify(stompMessage));
 
-        if (!stompClient || !stompClient.connected) {
+        if (!isConnected) {
           stompDebugLog('sendMessage blocked: STOMP not ready', {
-            hasStompClient: Boolean(stompClient),
-            stompConnected: stompClient?.connected === true,
             contextIsConnected: isConnected,
             connectionStatus,
             dialogId: finalDialogId,
@@ -218,18 +216,18 @@ export const useChatMessages = (
           throw new Error('STOMP клиент не подключен');
         }
 
-        const sendResult = stompClient.publish({
-          destination: '/app/chat.send',
-          body: JSON.stringify(cleanStompMessage),
-          headers: {
+        const sendResult = publishStompMessage(
+          '/app/chat.send',
+          JSON.stringify(cleanStompMessage),
+          {
             'content-type': 'application/json',
           },
-        });
+        );
 
         if (sendResult === false) {
           stompDebugLog('sendMessage blocked: stompClient.publish returned false', {
             destination: '/app/chat.send',
-            stompConnected: stompClient.connected,
+            contextIsConnected: isConnected,
             connectionStatus,
           });
           throw new Error('Не удалось отправить сообщение через STOMP');
@@ -319,9 +317,9 @@ export const useChatMessages = (
     [
       getSession,
       updateSession,
-      stompClient,
       isConnected,
       connectionStatus,
+      publishStompMessage,
       sendTimeouts,
       generateUUID,
       getCurrentUserInfo,

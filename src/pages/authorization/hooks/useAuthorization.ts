@@ -13,7 +13,7 @@ import { StatusCode } from '@shared/const/statusCode';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
-import { cookieManager } from '@shared/utils/cookie_manager';
+import { cookieManager, getBearerToken } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
 
 import i18n from '../../../i18n';
@@ -39,6 +39,13 @@ export const useAuthorization = () => {
   useEffect(() => {
     localStorage.removeItem(StorageKeys.OFFICE);
     setAuthSuccess(false);
+
+    const bearer = cookieManager.get('bearer');
+    if (bearer && !getBearerToken()) {
+      cookieManager.removeAll();
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('authToken');
+    }
   }, []);
 
   useEffect(() => {
@@ -173,8 +180,9 @@ export const useAuthorization = () => {
   useEffect(() => {
     if (!authSuccess || !accountData) return;
 
-    const { firstAvailableRouter } = getFirstAvailableRouter(accountData.permissions);
-    const isGlobalAdmin = accountData.permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
+    const permissions = accountData.permissions ?? [];
+    const { firstAvailableRouter } = getFirstAvailableRouter(permissions);
+    const isGlobalAdmin = permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
     const branchData = accountData.assignment?.branch;
 
     if (!firstAvailableRouter) {
@@ -194,7 +202,7 @@ export const useAuthorization = () => {
       auth: true,
       email: accountData.email,
       isAdmin: isGlobalAdmin,
-      permissions: accountData.permissions,
+      permissions,
       assignmentBranch: branchData,
       selectedBranchState: isGlobalAdmin ? null : branchData,
       authId: accountData.id,

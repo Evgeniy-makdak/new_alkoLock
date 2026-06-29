@@ -2,6 +2,7 @@
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { AccountApi, UsersApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import type { IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
@@ -21,6 +22,8 @@ export const useAuthApi = (
     onSuccess: onAuthSuccess,
   });
 
+  const hasValidBearer = Boolean(getBearerToken());
+
   const {
     data: accountResponse,
     isLoading: isAccountLoading,
@@ -28,7 +31,7 @@ export const useAuthApi = (
     isSuccess: isSuccessGetAccountData,
   } = useConfiguredQuery([QueryKeys.ACCOUNT], AccountApi.getAccountData, {
     settings: {
-      enabled: authSuccess,
+      enabled: authSuccess && hasValidBearer,
     } as any,
   });
 

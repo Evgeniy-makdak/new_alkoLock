@@ -10,7 +10,7 @@ import { StatusCode } from '@shared/const/statusCode';
 // import { appStore } from '@shared/model/app_store/AppStore';
 import type { IError } from '@shared/types/BaseQueryTypes';
 import type { HeaderReq } from '@shared/types/QueryTypes';
-import { cookieManager } from '@shared/utils/cookie_manager';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 
 // import { enqueueSnackbar } from 'notistack';
 import { configLoader } from '../../config/configLoader';
@@ -72,10 +72,11 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
 
 export const returnHeaders = (headers?: HeaderReq): HeaderReq => {
   const isAuth = headers?.isAuth ?? true;
+  const token = isAuth ? getBearerToken() : null;
 
   return new AxiosHeaders({
     ...headers,
-    Authorization: isAuth ? `Bearer ${cookieManager.get('bearer')}` : '',
+    Authorization: token ? `Bearer ${token}` : '',
     Accept: '*/*',
   });
 };
