@@ -169,6 +169,10 @@ export const useAlkozamkiServiceMode = (
     });
   };
 
+  // Сервисный режим, активированный сервисным работником (без таймера от оператора)
+  const isActivatedByServiceWorker =
+    alkolock?.mode === 'Сервисный' && !alkolock?.modeResetAt;
+
   // 👇 проверка совпадения id (преобразуем alkolock.id в число для сравнения)
   const alkolockIdNumber = alkolock?.id ? Number(alkolock.id) : null;
 
@@ -183,7 +187,8 @@ export const useAlkozamkiServiceMode = (
   // Кнопка должна быть ЗАБЛОКИРОВАНА если:
   // 1. Есть активная заявка (ACTIVE) ИЛИ
   // 2. Кнопка уже нажата (isActivateButtonClicked)
-  const shouldDisableActivateButton = hasActiveRequest || isActivateButtonClicked;
+  const shouldDisableActivateButton =
+    hasActiveRequest || isActivateButtonClicked || isActivatedByServiceWorker;
 
   // 👇 Логика для отображения надписи о активной заявке
   const shouldShowRequestMessage = hasActiveRequest;
@@ -192,9 +197,13 @@ export const useAlkozamkiServiceMode = (
   // Кнопка должна быть ЗАБЛОКИРОВАНА если:
   // 1. Есть активная заявка (ACTIVE) ИЛИ
   // 2. Устройство в рабочем режиме (isServiceModeFromAlkolock) ИЛИ
-  // 3. Кнопка уже нажата (isDeactivateButtonClicked)
+  // 3. Кнопка уже нажата (isDeactivateButtonClicked) ИЛИ
+  // 4. Сервисный режим активирован сервисным работником
   const shouldDisableDeactivateButton =
-    hasActiveRequest || isServiceModeFromAlkolock || isDeactivateButtonClicked;
+    hasActiveRequest ||
+    isServiceModeFromAlkolock ||
+    isDeactivateButtonClicked ||
+    isActivatedByServiceWorker;
 
   // 👇 СБРОС СОСТОЯНИЙ КНОПОК ПРИ ИЗМЕНЕНИИ СТАТУСА УСТРОЙСТВА
   useEffect(() => {
