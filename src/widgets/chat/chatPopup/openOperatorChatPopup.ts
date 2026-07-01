@@ -22,13 +22,14 @@ export async function openOperatorChatPopup(): Promise<void> {
   
   const desktopBridge = window.alcolockDesktop;
   let tokenParam = '';
-  
-  // Для Electron: получаем токен через IPC и добавляем в URL
+  let authToken: string | null = null;
+
+  // Для Electron: JWT из основного окна (cookie bearer) → URL + IPC payload
   if (desktopBridge) {
     try {
-      const token = await desktopBridge.getAuthToken();
-      if (token) {
-        tokenParam = `?token=${encodeURIComponent(token)}`;
+      authToken = await desktopBridge.getAuthToken();
+      if (authToken) {
+        tokenParam = `?token=${encodeURIComponent(authToken)}`;
       }
     } catch {
       /* ignore */
@@ -84,6 +85,7 @@ export async function openOperatorChatPopup(): Promise<void> {
     }
     void desktopBridge.openOperatorChatPopup({
       url,
+      authToken: authToken || undefined,
       lock: {
         outerW: Math.round(outerW),
         outerH: Math.round(outerH),

@@ -1,5 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLog';
+import { isElectronChatShell } from '../widgets/chat/chatPopup/chatShellEnvironment';
+
+function isElectronLocalUiHost(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1';
+}
+
+function resolveElectronLocalUiEndpoints(): AppConfig | null {
+  if (typeof window === 'undefined' || !isElectronChatShell()) return null;
+  if (!isElectronLocalUiHost(window.location.hostname)) return null;
+  const origin = window.location.origin.replace(/\/$/, '');
+  const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return {
+    apiUrl: `${origin}/`,
+    wsUrl: `${wsProtocol}//${window.location.host}/ws/websocket`,
+  };
+}
 
 /** Шаблон из config.json: `{DOMAIN}` меняется на этот хост, если в файле не указали свой URL целиком. */
 const DEFAULT_APP_DOMAIN_HOST = 'alcolock-test.lsystems.ru';
@@ -118,8 +134,10 @@ class ConfigLoader {
         // Мержим с дефолтными значениями (externalConfig перезаписывает defaultConfig)
         const merged = { ...this.defaultConfig, ...externalConfig } as AppConfig;
         const resolved = this.resolvePlaceholders(merged);
-        setStompDebugFromRuntimeConfig(resolved.chatStompDebug);
-        return resolved;
+        const electronLocal = resolveElectronLocalUiEndpoints();
+        const finalConfig = electronLocal ? { ...resolved, ...electronLocal } : resolved;
+        setStompDebugFromRuntimeConfig(finalConfig.chatStompDebug);
+        return finalConfig;
       } else {
         setStompDebugFromRuntimeConfig(undefined);
         return this.defaultConfig;

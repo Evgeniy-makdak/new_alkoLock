@@ -15,6 +15,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager, getBearerToken } from '@shared/utils/cookie_manager';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
+import { notifyDesktopAuthReady } from '@widgets/chat/chatPopup/electronPopupAuth';
 
 import i18n from '../../../i18n';
 import { useAuthApi } from '../api/authApi';
@@ -92,6 +93,7 @@ export const useAuthorization = () => {
         if (refreshToken) {
           cookieManager.set('refresh', refreshToken, tokenDays);
         }
+        notifyDesktopAuthReady();
 
         if (rememberMe && loginAttempt?.username) {
           saveRememberedAccount(loginAttempt.username, loginAttempt.password ?? '');

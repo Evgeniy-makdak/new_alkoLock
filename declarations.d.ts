@@ -32,6 +32,7 @@ interface Window {
   alcolockDesktop?: {
     openOperatorChatPopup(payload: {
       url: string;
+      authToken?: string;
       lock: {
         outerW: number;
         outerH: number;

@@ -5,7 +5,7 @@ const { createDesktopAutoUpdater, normalizeUpdateBaseUrl } = require('./autoUpda
 
 const OPERATOR_CHAT_POPUP_PATH = '/operator-chat-popup';
 const AUTH_PATH = '/authorization';
-const FALLBACK_APP_URL = 'http://alcolock-test.lsystems.ru/authorization';
+const FALLBACK_APP_URL = 'https://alcolock-test.lsystems.ru/authorization';
 const APP_DISPLAY_NAME = 'Информационная система «Алкозамок-М СМАРТ»';
 const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY = 'alcolock_desktop_operator_chat_popup_closed_v1';
 const CHAT_CONTROL_LABEL_FIX_CSS = `
@@ -304,11 +304,12 @@ function readLaunchOverrideAppUrl() {
 }
 
 function isBrokenDesktopAppUrl(url) {
+  if (!url) return true;
   try {
-    const { hostname } = new URL(url);
-    return hostname === 'localhost' || hostname === '127.0.0.1';
+    new URL(url);
+    return false;
   } catch {
-    return !url;
+    return true;
   }
 }
 
@@ -683,6 +684,70 @@ function createServerSetupHtml(defaultUrl, options = {}) {
 </html>`;
 }
 
+/** Скрипт в renderer основного окна — тот же приоритет, что getBearerToken + localStorage. */
+const READ_AUTH_TOKEN_IN_RENDERER_SCRIPT = `
+(function() {
+  function isJwt(t) {
+    if (!t || typeof t !== 'string') return false;
+    var parts = t.split('.');
+    return parts.length === 3 && parts.every(function(p) { return p.length > 0; });
+  }
+  function fromCookie() {
+    var rows = document.cookie.split(';');
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i].trim();
+      if (row.indexOf('bearer=') === 0) {
+        return decodeURIComponent(row.substring(7));
+      }
+    }
+    return null;
+  }
+  try {
+    var bearer = fromCookie();
+    if (isJwt(bearer)) return bearer;
+    var keys = ['authToken', 'token', 'access_token'];
+    for (var j = 0; j < keys.length; j++) {
+      var v = localStorage.getItem(keys[j]);
+      if (isJwt(v)) return v;
+    }
+  } catch (e) {}
+  return null;
+})()
+`;
+
+function injectAuthTokenIntoPopup(webContents, token) {
+  if (!webContents || webContents.isDestroyed() || !token || typeof token !== 'string') return;
+  const serialized = JSON.stringify(token);
+  void webContents.executeJavaScript(
+    `
+    (function() {
+      try {
+        var t = ${serialized};
+        localStorage.setItem('authToken', t);
+        document.cookie = 'bearer=' + encodeURIComponent(t) + ';path=/';
+        window.dispatchEvent(new Event(${JSON.stringify('alcolock-desktop-auth-ready')}));
+      } catch (e) {}
+    })();
+  `,
+    true,
+  );
+}
+
+async function injectAuthTokenIntoPopupFromMain(webContents) {
+  if (!webContents || webContents.isDestroyed() || !mainWindow || mainWindow.isDestroyed()) return;
+  try {
+    const token = await mainWindow.webContents.executeJavaScript(
+      READ_AUTH_TOKEN_IN_RENDERER_SCRIPT,
+      true,
+    );
+    if (typeof token === 'string' && token.length > 0) {
+      injectAuthTokenIntoPopup(webContents, token);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function clampToDisplay(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
@@ -864,6 +929,11 @@ function createOperatorChatPopupWindow(payload = {}) {
   if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
     operatorChatPopupWindow.setBounds(bounds, false);
     operatorChatPopupWindow.focus();
+    if (payload.authToken) {
+      injectAuthTokenIntoPopup(operatorChatPopupWindow.webContents, payload.authToken);
+    } else {
+      void injectAuthTokenIntoPopupFromMain(operatorChatPopupWindow.webContents);
+    }
     return;
   }
 
@@ -886,6 +956,10 @@ function createOperatorChatPopupWindow(payload = {}) {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
+      session:
+        mainWindow && !mainWindow.isDestroyed()
+          ? mainWindow.webContents.session
+          : undefined,
     },
   });
 
@@ -904,6 +978,11 @@ function createOperatorChatPopupWindow(payload = {}) {
       void operatorChatPopupWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
       void operatorChatPopupWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
       operatorChatPopupWindow.setBackgroundColor('#00000000');
+      if (payload.authToken) {
+        injectAuthTokenIntoPopup(operatorChatPopupWindow.webContents, payload.authToken);
+      } else {
+        void injectAuthTokenIntoPopupFromMain(operatorChatPopupWindow.webContents);
+      }
     }
   });
   installZoomShortcuts(operatorChatPopupWindow);
@@ -970,17 +1049,11 @@ ipcMain.handle('operator-chat-popup:set-bounds', (event, bounds = {}) => {
 ipcMain.handle('operator-chat-popup:get-auth-token', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return null;
   try {
-    const token = await mainWindow.webContents.executeJavaScript(`
-      (function() {
-        try {
-          return localStorage.getItem('authToken') || 
-                 localStorage.getItem('token') || 
-                 localStorage.getItem('access_token') ||
-                 null;
-        } catch { return null; }
-      })()
-    `, true);
-    return token;
+    const token = await mainWindow.webContents.executeJavaScript(
+      READ_AUTH_TOKEN_IN_RENDERER_SCRIPT,
+      true,
+    );
+    return typeof token === 'string' && token.length > 0 ? token : null;
   } catch {
     return null;
   }

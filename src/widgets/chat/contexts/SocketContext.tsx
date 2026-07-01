@@ -11,6 +11,14 @@ import {
 import { appStore } from '@shared/model/app_store/AppStore';
 import { getBearerToken } from '@shared/utils/cookie_manager';
 
+import {
+  DESKTOP_AUTH_READY_EVENT,
+  isElectronOperatorChatPopup,
+  notifyDesktopAuthReady,
+  syncElectronOperatorChatPopupAuthFromUrl,
+} from '../chatPopup/electronPopupAuth';
+import { resolveChatWebSocketUrl } from '../chatPopup/electronWebSocketUrl';
+import { isElectronChatShell } from '../chatPopup/chatShellEnvironment';
 import { configLoader } from '../../../config/configLoader';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -55,7 +63,14 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
-export const SocketProvider = ({ children }: { children: ReactNode }) => {
+export const SocketProvider = ({
+  children,
+  stompConnect = true,
+}: {
+  children: ReactNode;
+  /** false — только контекст без WebSocket (внешний провайдер в index.tsx). */
+  stompConnect?: boolean;
+}) => {
   const [lastMessage, setLastMessage] = useState<any>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
@@ -69,6 +84,8 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   const reconnectAttemptRef = useRef(0);
   const socketRef = useRef<WebSocket | null>(null);
   const isConnectingRef = useRef<boolean>(false);
+  const currentBranchIdRef = useRef<string | null>(null);
+  const activeWsBaseUrlRef = useRef<string | null>(null);
   const subscriptionsRef = useRef<Set<string>>(new Set());
   const processedMessagesRef = useRef<Set<string>>(new Set());
   const useDetailedCountsRef = useRef<boolean>(false);
@@ -92,6 +109,7 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
         stompDebugLog('config loaded', {
           apiUrl: config?.apiUrl,
           wsUrl: config?.wsUrl,
+          resolvedWsUrl: config ? resolveChatWebSocketUrl(config) : undefined,
           windowLocationOrigin: window.location.origin,
           isElectron: typeof (window as any).alcolockDesktop !== 'undefined',
         });
@@ -427,10 +445,16 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       preserveUnreadCounts: Boolean(options?.preserveUnreadCounts),
     });
     if (socketRef.current) {
-      sendStompFrame('DISCONNECT');
-      socketRef.current.close(1000, 'Смена филиала');
+      const socket = socketRef.current;
+      if (socket.readyState === WebSocket.OPEN) {
+        sendStompFrame('DISCONNECT');
+        socket.close(1000, 'Смена филиала');
+      } else if (socket.readyState === WebSocket.CONNECTING) {
+        socket.close();
+      }
       socketRef.current = null;
     }
+    activeWsBaseUrlRef.current = null;
 
     if (stompClientRef.current) {
       stompClientRef.current.connected = false;
@@ -549,16 +573,31 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const connectWebSocket = (branchId: string) => {
-    if (isConnectingRef.current || !apiConfig) {
-      stompDebugLog('connectWebSocket bail', {
-        isConnecting: isConnectingRef.current,
-        hasApiConfig: Boolean(apiConfig),
-      });
+    if (!apiConfig) {
+      stompDebugLog('connectWebSocket bail', { hasApiConfig: false });
       return;
     }
 
     const branchIdNorm = String(branchId).trim();
-    const preserveUnreadCounts = currentBranchId === branchIdNorm && currentBranchId !== null;
+    const { apiUrl, wsUrl: configWsUrl } = apiConfig;
+    const wsUrl = resolveChatWebSocketUrl({ apiUrl, wsUrl: configWsUrl });
+
+    const socket = socketRef.current;
+    const sameBranch = currentBranchIdRef.current === branchIdNorm;
+    const sameWsTarget = activeWsBaseUrlRef.current === wsUrl;
+    const socketLive =
+      socket &&
+      (socket.readyState === WebSocket.CONNECTING || socket.readyState === WebSocket.OPEN);
+
+    if (stompClientRef.current?.connected && sameBranch && sameWsTarget) {
+      return;
+    }
+    if (isConnectingRef.current && sameBranch && sameWsTarget && socketLive) {
+      stompDebugLog('connectWebSocket skip — already connecting', { branchId: branchIdNorm });
+      return;
+    }
+
+    const preserveUnreadCounts = currentBranchIdRef.current === branchIdNorm;
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
@@ -568,14 +607,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     disconnectWebSocket({ preserveUnreadCounts });
     setConnectionStatus('connecting');
     setCurrentBranchId(branchIdNorm);
+    currentBranchIdRef.current = branchIdNorm;
+    activeWsBaseUrlRef.current = wsUrl;
     isConnectingRef.current = true;
-
-    const { apiUrl, wsUrl: configWsUrl } = apiConfig;
-    let wsUrl = configWsUrl;
-
-    if (!wsUrl && apiUrl) {
-      wsUrl = apiUrl.replace('http', 'ws').replace('https', 'wss') + 'ws/websocket';
-    }
 
     if (!wsUrl) {
       stompDebugLog('connectWebSocket no wsUrl after config', { apiUrl, configWsUrl });
@@ -589,6 +623,14 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       stompDebugLog('connectWebSocket no auth token', { branchId: branchIdNorm });
       setConnectionStatus('error');
       isConnectingRef.current = false;
+      if (typeof window !== 'undefined' && window.alcolockDesktop) {
+        window.setTimeout(() => {
+          const retryBranchId = getBranchId();
+          if (retryBranchId && getAuthToken() && apiConfig) {
+            connectWebSocket(retryBranchId);
+          }
+        }, 2000);
+      }
       return;
     }
 
@@ -911,18 +953,23 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    if (!stompConnect) return undefined;
+
     const unsubscribe = appStore.subscribe(() => {
       const newBranchId = getBranchId();
-      if (newBranchId && newBranchId !== currentBranchId && apiConfig) {
+      if (newBranchId && newBranchId !== currentBranchIdRef.current && apiConfig) {
         connectWebSocket(newBranchId);
       }
     });
 
     const initializeWithRetry = (attempt = 0) => {
-      if (attempt > 5) return;
+      const maxAttempts = typeof window !== 'undefined' && window.alcolockDesktop ? 24 : 5;
+      if (attempt > maxAttempts) return;
       const initialBranchId = getBranchId();
       if (initialBranchId && apiConfig) {
-        connectWebSocket(initialBranchId);
+        if (!isConnectingRef.current && !stompClientRef.current?.connected) {
+          connectWebSocket(initialBranchId);
+        }
       } else if (!apiConfig) {
         setTimeout(() => initializeWithRetry(attempt), 500);
       } else {
@@ -931,8 +978,13 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const initTimeout = setTimeout(() => {
-      if (apiConfig) initializeWithRetry();
-    }, 1000);
+      if (!apiConfig) return;
+      if (isElectronOperatorChatPopup() && !getAuthToken()) {
+        stompDebugLog('electron popup: defer STOMP init until auth token');
+        return;
+      }
+      initializeWithRetry();
+    }, isElectronOperatorChatPopup() ? 400 : 1000);
 
     return () => {
       clearTimeout(initTimeout);
@@ -943,7 +995,46 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       unsubscribe();
       disconnectWebSocket();
     };
-  }, [apiConfig]);
+  }, [apiConfig, stompConnect]);
+
+  /** Electron (основное окно и popup): STOMP после JWT/филиала. */
+  useEffect(() => {
+    if (!stompConnect || !isElectronChatShell()) return undefined;
+
+    if (getAuthToken()) {
+      notifyDesktopAuthReady();
+    }
+
+    const tryConnectWhenReady = () => {
+      if (!apiConfig) return;
+      if (isConnectingRef.current) return;
+      if (stompClientRef.current?.connected) return;
+      const branchId = getBranchId();
+      const token = getAuthToken();
+      if (!branchId || !token) {
+        if (isElectronOperatorChatPopup()) {
+          stompDebugLog('electron popup: STOMP wait', {
+            hasBranchId: Boolean(branchId),
+            hasToken: Boolean(token),
+          });
+        }
+        return;
+      }
+      stompDebugLog('electron STOMP tryConnect', {
+        isPopup: isElectronOperatorChatPopup(),
+        branchId,
+        wsUrl: resolveChatWebSocketUrl(apiConfig),
+      });
+      connectWebSocket(branchId);
+    };
+
+    window.addEventListener(DESKTOP_AUTH_READY_EVENT, tryConnectWhenReady);
+    tryConnectWhenReady();
+
+    return () => {
+      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, tryConnectWhenReady);
+    };
+  }, [apiConfig, stompConnect]);
 
   return (
     <SocketContext.Provider

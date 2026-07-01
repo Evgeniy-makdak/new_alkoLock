@@ -1,33 +1,55 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 import { useSelectedBranchOfficeSync } from '@features/nav_bar_branch_select/hooks/useSelectedBranchOfficeSync';
+import { cookieManager, getBearerToken, isValidJwtFormat } from '@shared/utils/cookie_manager';
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY } from '@widgets/chat/chatPopup/constants';
+import {
+  isElectronOperatorChatPopup,
+  notifyDesktopAuthReady,
+  syncElectronOperatorChatPopupAuthFromUrl,
+} from '@widgets/chat/chatPopup/electronPopupAuth';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
 
 /**
- * Пульс timestamp в localStorage: основная вкладка скрывает ChatFooter только пока метка «свежая».
  * Синхронизация филиала с OFFICE — как в NavBar, иначе в popup нет selectedBranchState и списки с branchId не грузятся.
- * Также читает токен из URL параметра (для Electron) и сохраняет в localStorage.
+ * Electron: JWT из URL/IPC → cookie bearer + localStorage для STOMP и REST.
  */
 export default function OperatorChatPopupPage(): null {
   useSelectedBranchOfficeSync();
   useOperatorChatPopupWindowFrame();
 
-  // Читаем токен из URL и сохраняем в localStorage (для Electron popup)
-  useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      if (token) {
-        localStorage.setItem('authToken', token);
-        // Очищаем URL от токена (без перезагрузки)
-        window.history.replaceState({}, '', window.location.pathname);
-      }
-    } catch {
-      /* ignore */
+  useLayoutEffect(() => {
+    if (syncElectronOperatorChatPopupAuthFromUrl() && isElectronOperatorChatPopup()) {
+      notifyDesktopAuthReady();
     }
+  }, []);
+
+  useEffect(() => {
+    if (!isElectronOperatorChatPopup()) return;
+
+    let cancelled = false;
+    const ensureDesktopAuth = async () => {
+      if (getBearerToken()) {
+        notifyDesktopAuthReady();
+        return;
+      }
+      try {
+        const token = await window.alcolockDesktop?.getAuthToken();
+        if (cancelled || !token || !isValidJwtFormat(token)) return;
+        localStorage.setItem('authToken', token);
+        cookieManager.set('bearer', token);
+        notifyDesktopAuthReady();
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void ensureDesktopAuth();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

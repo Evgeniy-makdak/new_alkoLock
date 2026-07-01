@@ -1974,7 +1974,7 @@ const ChatContainer = () => {
 
 const ChatFooter = () => {
   return (
-    <SocketProvider>
+    <SocketProvider stompConnect>
       <ChatProvider>
         <ChatContainer />
       </ChatProvider>
