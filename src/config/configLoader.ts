@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLog';
 import { isElectronChatShell } from '../widgets/chat/chatPopup/chatShellEnvironment';
+import { resolveElectronRemoteUiEndpoints } from '../widgets/chat/chatPopup/electronWebSocketUrl';
 
 function isElectronLocalUiHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1';
@@ -135,7 +136,13 @@ class ConfigLoader {
         const merged = { ...this.defaultConfig, ...externalConfig } as AppConfig;
         const resolved = this.resolvePlaceholders(merged);
         const electronLocal = resolveElectronLocalUiEndpoints();
-        const finalConfig = electronLocal ? { ...resolved, ...electronLocal } : resolved;
+        const electronRemote = resolveElectronRemoteUiEndpoints(resolved);
+        let finalConfig = resolved;
+        if (electronLocal) {
+          finalConfig = { ...resolved, ...electronLocal };
+        } else if (electronRemote) {
+          finalConfig = { ...resolved, ...electronRemote };
+        }
         setStompDebugFromRuntimeConfig(finalConfig.chatStompDebug);
         return finalConfig;
       } else {

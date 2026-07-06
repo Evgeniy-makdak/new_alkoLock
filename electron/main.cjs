@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, screen, nativeImage } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, screen, nativeImage, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const { createDesktopAutoUpdater, normalizeUpdateBaseUrl } = require('./autoUpdater.cjs');
@@ -8,6 +8,9 @@ const AUTH_PATH = '/authorization';
 const FALLBACK_APP_URL = 'https://alcolock-test.lsystems.ru/authorization';
 const APP_DISPLAY_NAME = 'Информационная система «Алкозамок-М СМАРТ»';
 const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY = 'alcolock_desktop_operator_chat_popup_closed_v1';
+/** Как в Chrome: без суффикса Electron — иначе nginx/WAF может резать WS-handshake. */
+const DESKTOP_BROWSER_USER_AGENT =
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.6723.191 Safari/537.36';
 const CHAT_CONTROL_LABEL_FIX_CSS = `
   [class*="usersSelectContainer"] .MuiFormControl-root > .MuiBox-root,
   [class*="transferRow"] .MuiFormControl-root > .MuiBox-root {
@@ -211,6 +214,26 @@ function notifyWindowZoomChanged(win) {
   } catch {
     /* ignore */
   }
+}
+
+function applyDesktopBrowserUserAgent(win) {
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.webContents.setUserAgent(DESKTOP_BROWSER_USER_AGENT);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Только логирование — не трогаем заголовки WS (иначе DevTools: provisional headers, handshake падает). */
+function installDesktopWebSocketDiagnostics() {
+  const ses = session.defaultSession;
+  if (!ses || ses.__alkoWsDiag) return;
+  ses.__alkoWsDiag = true;
+
+  ses.webRequest.onErrorOccurred({ urls: ['wss://*/*', 'ws://*/*'] }, (details) => {
+    console.error(`[electron][ws] ${details.error} — ${details.url}`);
+  });
 }
 
 function installZoomShortcuts(win) {
@@ -895,6 +918,7 @@ function createMainWindow() {
       sandbox: false,
     },
   });
+  applyDesktopBrowserUserAgent(mainWindow);
 
   mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
     console.error(`[electron] failed to load ${validatedURL}: ${errorCode} ${errorDescription}`);
@@ -1032,6 +1056,7 @@ function createOperatorChatPopupWindow(payload = {}) {
     },
   });
 
+  applyDesktopBrowserUserAgent(operatorChatPopupWindow);
   operatorChatPopupWindow.setMenuBarVisibility(false);
   operatorChatPopupWindow.webContents.on(
     'did-fail-load',
@@ -1216,6 +1241,8 @@ app.whenReady().then(() => {
   if (process.platform === 'win32') {
     app.setAppUserModelId('ru.alcolocks.operator');
   }
+  installDesktopWebSocketDiagnostics();
+  session.defaultSession.setUserAgent(DESKTOP_BROWSER_USER_AGENT);
   sanitizeSavedAppConfigs();
   const iconPath = resolveAppIconPath();
   console.log(`[electron] app icon: ${iconPath || 'not found'}`);
