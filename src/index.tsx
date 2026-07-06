@@ -22,6 +22,10 @@ import { DeviceStatusProvider } from '@widgets/alkozamki_info/DeviceStatusContex
 import { AutoServiceInfoProvider } from '@widgets/auto_service_info/AutoServiceInfoContext';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { primeElectronOperatorChatPopupAuth } from '@widgets/chat/chatPopup/electronPopupAuth';
+import {
+  ensureElectronPopupBearerCookie,
+  syncElectronPopupBranchFromStorage,
+} from '@widgets/chat/chatPopup/electronPopupSessionBootstrap';
 import { SocketProvider } from '@widgets/chat/contexts/SocketContext';
 import { CountProvider } from '@widgets/nav_bar/api/CountContext';
 import { UserContextProvider } from '@widgets/users_info/UserContext';
@@ -35,6 +39,8 @@ import * as serviceWorker from './serviceWorker';
 if (typeof window !== 'undefined' && window.location.pathname.includes('/operator-chat-popup')) {
   installOperatorChatPopupResizeObserverErrorGuard();
   primeElectronOperatorChatPopupAuth();
+  ensureElectronPopupBearerCookie();
+  syncElectronPopupBranchFromStorage();
 }
 
 const queryClient = new QueryClient();

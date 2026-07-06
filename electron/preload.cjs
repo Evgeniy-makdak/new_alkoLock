@@ -27,6 +27,10 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   getAuthToken() {
     return ipcRenderer.invoke('operator-chat-popup:get-auth-token');
   },
+  /** Выбранный филиал из основного окна (localStorage OFFICE) */
+  getSelectedBranchState() {
+    return ipcRenderer.invoke('operator-chat-popup:get-selected-branch');
+  },
 });
 
 contextBridge.exposeInMainWorld('alcolockDesktopSetup', {

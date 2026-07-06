@@ -17,6 +17,7 @@ import {
   notifyDesktopAuthReady,
   syncElectronOperatorChatPopupAuthFromUrl,
 } from '../chatPopup/electronPopupAuth';
+import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
 import { resolveChatWebSocketUrl } from '../chatPopup/electronWebSocketUrl';
 import { isElectronChatShell } from '../chatPopup/chatShellEnvironment';
 import { configLoader } from '../../../config/configLoader';
@@ -957,7 +958,16 @@ export const SocketProvider = ({
 
     const unsubscribe = appStore.subscribe(() => {
       const newBranchId = getBranchId();
-      if (newBranchId && newBranchId !== currentBranchIdRef.current && apiConfig) {
+      if (!newBranchId || !apiConfig) return;
+
+      const branchChanged = newBranchId !== currentBranchIdRef.current;
+      const electronPopupNeedsConnect =
+        isElectronOperatorChatPopup() &&
+        Boolean(getAuthToken()) &&
+        !stompClientRef.current?.connected &&
+        !isConnectingRef.current;
+
+      if (branchChanged || electronPopupNeedsConnect) {
         connectWebSocket(newBranchId);
       }
     });
@@ -1029,10 +1039,31 @@ export const SocketProvider = ({
     };
 
     window.addEventListener(DESKTOP_AUTH_READY_EVENT, tryConnectWhenReady);
+    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, tryConnectWhenReady);
     tryConnectWhenReady();
+
+    let pollId: number | undefined;
+    let pollAttempts = 0;
+    if (isElectronOperatorChatPopup()) {
+      pollId = window.setInterval(() => {
+        pollAttempts += 1;
+        if (stompClientRef.current?.connected || pollAttempts > 120) {
+          if (pollId !== undefined) {
+            window.clearInterval(pollId);
+            pollId = undefined;
+          }
+          return;
+        }
+        tryConnectWhenReady();
+      }, 500);
+    }
 
     return () => {
       window.removeEventListener(DESKTOP_AUTH_READY_EVENT, tryConnectWhenReady);
+      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, tryConnectWhenReady);
+      if (pollId !== undefined) {
+        window.clearInterval(pollId);
+      }
     };
   }, [apiConfig, stompConnect]);
 

@@ -1,4 +1,5 @@
 import { RoutePaths } from '@shared/config/routePathsEnum';
+import { appStore } from '@shared/model/app_store/AppStore';
 
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
 import { estimateOperatorChatPopupOuterSize } from './estimateOperatorChatPopupWindowSize';
@@ -78,6 +79,12 @@ export async function openOperatorChatPopup(): Promise<void> {
   });
 
   if (desktopBridge) {
+    const selectedBranch = appStore.getState().selectedBranchState;
+    const branchState =
+      selectedBranch?.id != null
+        ? { id: selectedBranch.id, name: selectedBranch.name || '' }
+        : undefined;
+
     try {
       localStorage.setItem(CHAT_POPUP_ACTIVE_STORAGE_KEY, String(Date.now()));
     } catch {
@@ -86,6 +93,7 @@ export async function openOperatorChatPopup(): Promise<void> {
     void desktopBridge.openOperatorChatPopup({
       url,
       authToken: authToken || undefined,
+      branchState,
       lock: {
         outerW: Math.round(outerW),
         outerH: Math.round(outerH),

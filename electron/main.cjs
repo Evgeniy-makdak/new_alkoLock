@@ -215,8 +215,23 @@ function notifyWindowZoomChanged(win) {
 
 function installZoomShortcuts(win) {
   win.webContents.on('before-input-event', (event, input) => {
-    if (!input.control && !input.meta) return;
     const key = String(input.key || '').toLowerCase();
+    const rawKey = String(input.key || '');
+
+    // DevTools: F12 (без модификаторов), Ctrl/Cmd+Shift+I или Ctrl/Cmd+Shift+J
+    if (rawKey === 'F12') {
+      event.preventDefault();
+      win.webContents.toggleDevTools();
+      return;
+    }
+
+    if (!input.control && !input.meta) return;
+
+    if (input.shift && (key === 'i' || key === 'j')) {
+      event.preventDefault();
+      win.webContents.toggleDevTools();
+      return;
+    }
 
     if (key === '+' || key === '=' || key === 'numadd') {
       event.preventDefault();
@@ -233,14 +248,6 @@ function installZoomShortcuts(win) {
     if (key === '0' || key === 'num0') {
       event.preventDefault();
       resetWindowZoom(win);
-      return;
-    }
-
-    // Ctrl+Shift+I или F12 для открытия DevTools
-    if ((key === 'i' && input.shift) || input.key === 'F12') {
-      event.preventDefault();
-      win.webContents.toggleDevTools();
-      return;
     }
   });
 }
@@ -715,17 +722,52 @@ const READ_AUTH_TOKEN_IN_RENDERER_SCRIPT = `
 })()
 `;
 
-function injectAuthTokenIntoPopup(webContents, token) {
-  if (!webContents || webContents.isDestroyed() || !token || typeof token !== 'string') return;
-  const serialized = JSON.stringify(token);
+/** Выбранный филиал из localStorage OFFICE основного окна. */
+const READ_SELECTED_BRANCH_IN_RENDERER_SCRIPT = `
+(function() {
+  try {
+    var raw = localStorage.getItem('OFFICE');
+    if (!raw) return null;
+    var office = JSON.parse(raw);
+    if (office && office.id != null) {
+      return { id: office.id, name: office.name || '' };
+    }
+  } catch (e) {}
+  return null;
+})()
+`;
+
+function injectAuthTokenIntoPopup(webContents, session = {}) {
+  if (!webContents || webContents.isDestroyed()) return;
+
+  const token = typeof session.token === 'string' ? session.token : null;
+  const branchState =
+    session.branchState && session.branchState.id != null ? session.branchState : null;
+
+  if (!token && !branchState) return;
+
+  const tokenLiteral = token ? JSON.stringify(token) : 'null';
+  const officeLiteral = branchState
+    ? JSON.stringify(JSON.stringify({ id: branchState.id, name: branchState.name || '' }))
+    : 'null';
+
   void webContents.executeJavaScript(
     `
     (function() {
       try {
-        var t = ${serialized};
-        localStorage.setItem('authToken', t);
-        document.cookie = 'bearer=' + encodeURIComponent(t) + ';path=/';
+        var t = ${tokenLiteral};
+        var officeJson = ${officeLiteral};
+        if (t) {
+          localStorage.setItem('authToken', t);
+          document.cookie = 'bearer=' + t + ';path=/';
+        }
+        if (officeJson) {
+          localStorage.setItem('OFFICE', officeJson);
+        }
         window.dispatchEvent(new Event(${JSON.stringify('alcolock-desktop-auth-ready')}));
+        if (officeJson) {
+          window.dispatchEvent(new Event(${JSON.stringify('alcolock-desktop-branch-ready')}));
+        }
       } catch (e) {}
     })();
   `,
@@ -736,16 +778,47 @@ function injectAuthTokenIntoPopup(webContents, token) {
 async function injectAuthTokenIntoPopupFromMain(webContents) {
   if (!webContents || webContents.isDestroyed() || !mainWindow || mainWindow.isDestroyed()) return;
   try {
-    const token = await mainWindow.webContents.executeJavaScript(
-      READ_AUTH_TOKEN_IN_RENDERER_SCRIPT,
-      true,
-    );
+    const [token, branchState] = await Promise.all([
+      mainWindow.webContents.executeJavaScript(READ_AUTH_TOKEN_IN_RENDERER_SCRIPT, true),
+      mainWindow.webContents.executeJavaScript(READ_SELECTED_BRANCH_IN_RENDERER_SCRIPT, true),
+    ]);
+    const session = {};
     if (typeof token === 'string' && token.length > 0) {
-      injectAuthTokenIntoPopup(webContents, token);
+      session.token = token;
     }
+    if (branchState && branchState.id != null) {
+      session.branchState = {
+        id: branchState.id,
+        name: branchState.name || '',
+      };
+    }
+    injectAuthTokenIntoPopup(webContents, session);
   } catch {
     /* ignore */
   }
+}
+
+function buildPopupSessionPayload(payload = {}) {
+  const session = {};
+  if (payload.authToken && typeof payload.authToken === 'string') {
+    session.token = payload.authToken;
+  }
+  if (payload.branchState && payload.branchState.id != null) {
+    session.branchState = {
+      id: payload.branchState.id,
+      name: payload.branchState.name || '',
+    };
+  }
+  return session;
+}
+
+function injectPopupSessionFromPayload(webContents, payload = {}) {
+  const session = buildPopupSessionPayload(payload);
+  if (session.token || session.branchState) {
+    injectAuthTokenIntoPopup(webContents, session);
+    return;
+  }
+  void injectAuthTokenIntoPopupFromMain(webContents);
 }
 
 function clampToDisplay(value, min, max) {
@@ -929,11 +1002,7 @@ function createOperatorChatPopupWindow(payload = {}) {
   if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
     operatorChatPopupWindow.setBounds(bounds, false);
     operatorChatPopupWindow.focus();
-    if (payload.authToken) {
-      injectAuthTokenIntoPopup(operatorChatPopupWindow.webContents, payload.authToken);
-    } else {
-      void injectAuthTokenIntoPopupFromMain(operatorChatPopupWindow.webContents);
-    }
+    injectPopupSessionFromPayload(operatorChatPopupWindow.webContents, payload);
     return;
   }
 
@@ -978,11 +1047,7 @@ function createOperatorChatPopupWindow(payload = {}) {
       void operatorChatPopupWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
       void operatorChatPopupWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
       operatorChatPopupWindow.setBackgroundColor('#00000000');
-      if (payload.authToken) {
-        injectAuthTokenIntoPopup(operatorChatPopupWindow.webContents, payload.authToken);
-      } else {
-        void injectAuthTokenIntoPopupFromMain(operatorChatPopupWindow.webContents);
-      }
+      injectPopupSessionFromPayload(operatorChatPopupWindow.webContents, payload);
     }
   });
   installZoomShortcuts(operatorChatPopupWindow);
@@ -1054,6 +1119,23 @@ ipcMain.handle('operator-chat-popup:get-auth-token', async () => {
       true,
     );
     return typeof token === 'string' && token.length > 0 ? token : null;
+  } catch {
+    return null;
+  }
+});
+
+ipcMain.handle('operator-chat-popup:get-selected-branch', async () => {
+  if (!mainWindow || mainWindow.isDestroyed()) return null;
+  try {
+    const branchState = await mainWindow.webContents.executeJavaScript(
+      READ_SELECTED_BRANCH_IN_RENDERER_SCRIPT,
+      true,
+    );
+    if (!branchState || branchState.id == null) return null;
+    return {
+      id: branchState.id,
+      name: branchState.name || '',
+    };
   } catch {
     return null;
   }

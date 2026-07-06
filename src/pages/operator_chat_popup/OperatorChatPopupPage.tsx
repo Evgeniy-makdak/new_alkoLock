@@ -8,6 +8,11 @@ import {
   notifyDesktopAuthReady,
   syncElectronOperatorChatPopupAuthFromUrl,
 } from '@widgets/chat/chatPopup/electronPopupAuth';
+import {
+  bootstrapElectronOperatorChatPopupSession,
+  ensureElectronPopupBearerCookie,
+  syncElectronPopupBranchFromStorage,
+} from '@widgets/chat/chatPopup/electronPopupSessionBootstrap';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
@@ -21,13 +26,19 @@ export default function OperatorChatPopupPage(): null {
   useOperatorChatPopupWindowFrame();
 
   useLayoutEffect(() => {
-    if (syncElectronOperatorChatPopupAuthFromUrl() && isElectronOperatorChatPopup()) {
+    if (!isElectronOperatorChatPopup()) return;
+
+    if (syncElectronOperatorChatPopupAuthFromUrl()) {
       notifyDesktopAuthReady();
     }
+    ensureElectronPopupBearerCookie();
+    syncElectronPopupBranchFromStorage();
   }, []);
 
   useEffect(() => {
     if (!isElectronOperatorChatPopup()) return;
+
+    void bootstrapElectronOperatorChatPopupSession();
 
     let cancelled = false;
     const ensureDesktopAuth = async () => {

@@ -33,6 +33,10 @@ interface Window {
     openOperatorChatPopup(payload: {
       url: string;
       authToken?: string;
+      branchState?: {
+        id: number | string;
+        name: string;
+      };
       lock: {
         outerW: number;
         outerH: number;
@@ -50,5 +54,6 @@ interface Window {
     }): Promise<void>;
     onZoomChanged(callback: () => void): () => void;
     getAuthToken(): Promise<string | null>;
+    getSelectedBranchState(): Promise<{ id: number | string; name: string } | null>;
   };
 }
