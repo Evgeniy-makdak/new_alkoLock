@@ -1,0 +1,1 @@
+[electron] removing broken saved server url: http://localhost/authorization (C:\Users\Volkov\AppData\Roaming\alcolocks-operator-desktop\app.config.json)

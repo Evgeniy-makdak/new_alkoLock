@@ -12,7 +12,7 @@
 
 # production
 /build
-/release
+# /release — артефакты Electron хранятся в репозитории (крупные .exe через Git LFS)
 
 # misc
 .DS_Store
