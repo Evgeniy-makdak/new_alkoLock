@@ -1,5 +1,6 @@
 import type { ChatSession } from '../contexts/types/ChatTypes';
 import {
+  CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY,
   CHAT_MAIN_POPUP_RETURN_HANDOFF_SESSION_KEY,
   CHAT_MAIN_POPUP_RETURN_V2_LOCAL_STORAGE_KEY,
   CHAT_MAIN_RESTORE_IS_CHAT_OPEN_FROM_POPUP_KEY,
@@ -292,13 +293,80 @@ export type InitialSessionsHydration = {
   fromMainToPopup: boolean;
 };
 
+export type DesktopSocketUnreadHandoff = {
+  v: 1;
+  aggregateUnread: number;
+  dialogs: Record<string, number>;
+};
+
+export function persistDesktopSocketUnreadHandoff(args: {
+  aggregateUnread: number;
+  dialogsUnreadCounts: Map<number, number>;
+}): void {
+  if (typeof window === 'undefined') return;
+  const dialogs: Record<string, number> = {};
+  args.dialogsUnreadCounts.forEach((count, dialogId) => {
+    if (dialogId > 0 && count > 0) {
+      dialogs[String(dialogId)] = count;
+    }
+  });
+  const payload: DesktopSocketUnreadHandoff = {
+    v: 1,
+    aggregateUnread: Math.max(0, args.aggregateUnread),
+    dialogs,
+  };
+  try {
+    localStorage.setItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function peekDesktopSocketUnreadHandoff(): {
+  aggregateUnread: number;
+  dialogsUnreadCounts: Map<number, number>;
+} | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as DesktopSocketUnreadHandoff;
+    if (!parsed || parsed.v !== 1 || typeof parsed.dialogs !== 'object') return null;
+    const map = new Map<number, number>();
+    Object.entries(parsed.dialogs).forEach(([id, count]) => {
+      const dialogId = Number(id);
+      const n = Number(count);
+      if (Number.isFinite(dialogId) && dialogId > 0 && Number.isFinite(n) && n > 0) {
+        map.set(dialogId, n);
+      }
+    });
+    return {
+      aggregateUnread: Math.max(0, Number(parsed.aggregateUnread) || 0),
+      dialogsUnreadCounts: map,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearDesktopSocketUnreadHandoffMarker(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function persistMainToOperatorPopupHandoff(args: {
   isChatOpen: boolean;
   sessions: ChatSession[];
   activeSessionId: string | null;
+  aggregateUnread?: number;
+  dialogsUnreadCounts?: Map<number, number>;
 }): void {
   if (typeof window === 'undefined') return;
-  const { isChatOpen, sessions, activeSessionId } = args;
+  const { isChatOpen, sessions, activeSessionId, aggregateUnread, dialogsUnreadCounts } = args;
   const ser = serializeSessionsForPopupHandoff(sessions);
   const payload: PopupReturnHandoffPayload = {
     v: 2,
@@ -312,6 +380,12 @@ export function persistMainToOperatorPopupHandoff(args: {
       CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY,
       JSON.stringify(buildOperatorPopupPreviewSnapshot(sessions)),
     );
+    if (dialogsUnreadCounts) {
+      persistDesktopSocketUnreadHandoff({
+        aggregateUnread: aggregateUnread ?? 0,
+        dialogsUnreadCounts,
+      });
+    }
   } catch {
     /* ignore */
   }
@@ -391,6 +465,7 @@ export function clearMainToOperatorPopupHandoffMarker(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(CHAT_MAIN_TO_OPERATOR_POPUP_HANDOFF_LOCAL_KEY);
+    clearDesktopSocketUnreadHandoffMarker();
   } catch {
     /* ignore */
   }

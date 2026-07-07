@@ -20,6 +20,10 @@ import {
 import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
 import { resolveChatWebSocketUrl } from '../chatPopup/electronWebSocketUrl';
 import { isElectronChatShell } from '../chatPopup/chatShellEnvironment';
+import {
+  clearDesktopSocketUnreadHandoffMarker,
+  peekDesktopSocketUnreadHandoff,
+} from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { configLoader } from '../../../config/configLoader';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -64,6 +68,25 @@ interface SocketContextType {
 
 const SocketContext = createContext<SocketContextType | null>(null);
 
+function readInitialElectronPopupUnreadState(): {
+  unreadCount: number;
+  dialogsUnreadCounts: Map<number, number>;
+  hasHandoff: boolean;
+} {
+  if (!isElectronOperatorChatPopup()) {
+    return { unreadCount: 0, dialogsUnreadCounts: new Map(), hasHandoff: false };
+  }
+  const handoff = peekDesktopSocketUnreadHandoff();
+  if (!handoff || handoff.dialogsUnreadCounts.size === 0) {
+    return { unreadCount: 0, dialogsUnreadCounts: new Map(), hasHandoff: false };
+  }
+  return {
+    unreadCount: handoff.aggregateUnread,
+    dialogsUnreadCounts: handoff.dialogsUnreadCounts,
+    hasHandoff: true,
+  };
+}
+
 export const SocketProvider = ({
   children,
   stompConnect = true,
@@ -72,12 +95,15 @@ export const SocketProvider = ({
   /** false — только контекст без WebSocket (внешний провайдер в index.tsx). */
   stompConnect?: boolean;
 }) => {
+  const initialUnreadState = readInitialElectronPopupUnreadState();
   const [lastMessage, setLastMessage] = useState<any>(null);
   const [isConnected, setIsConnected] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
   const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(new Map());
+  const [unreadCount, setUnreadCount] = useState<number>(() => initialUnreadState.unreadCount);
+  const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(
+    () => initialUnreadState.dialogsUnreadCounts,
+  );
 
   const stompClientRef = useRef<any>(null);
   const [stompClient, setStompClient] = useState<any>(null);
@@ -98,6 +124,15 @@ export const SocketProvider = ({
   const incrementDedupeByMessageRef = useRef<Set<string>>(new Set());
 
   const [apiConfig, setApiConfig] = useState<{ apiUrl: string; wsUrl: string } | null>(null);
+
+  useEffect(() => {
+    if (!initialUnreadState.hasHandoff) return;
+    useDetailedCountsRef.current = true;
+    hasDetailedDataRef.current = true;
+    unreadAggregateRef.current = initialUnreadState.unreadCount;
+    const id = window.setTimeout(() => clearDesktopSocketUnreadHandoffMarker(), 0);
+    return () => window.clearTimeout(id);
+  }, []);
 
   useEffect(() => {
     unreadAggregateRef.current = unreadCount;

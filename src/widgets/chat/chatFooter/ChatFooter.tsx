@@ -527,7 +527,13 @@ const ChatToggleButton = ({
         setIsDesktopPopupOpen(false);
         return;
       }
-      persistMainToOperatorPopupHandoff({ isChatOpen: true, sessions, activeSessionId });
+      persistMainToOperatorPopupHandoff({
+        isChatOpen: true,
+        sessions,
+        activeSessionId,
+        aggregateUnread: calculateTotalUnread(),
+        dialogsUnreadCounts,
+      });
       openOperatorChatPopup();
       setIsDesktopPopupOpen(true);
     } else if (isChatOpen) {
@@ -801,9 +807,10 @@ const ChatContainer = () => {
     operatorChatSessionRestoreFingerprint,
   ]);
 
-  // В popup-окне после появления сессии — загружаем список диалогов для превью
+  // В popup-окне после появления сессии — загружаем список диалогов для превью (не Electron: там handoff по STOMP).
   useEffect(() => {
     if (!isOperatorChatPopupWindow) return;
+    if (isDesktopShell) return;
     if (sessions.length === 0) return;
 
     sessions.forEach((session) => {
@@ -890,10 +897,16 @@ const ChatContainer = () => {
       persistMainRestoreFromPopupState({ isChatOpen, sessions, activeSessionId });
       closeOperatorChatPopupAndRestoreMain();
     } else {
-      persistMainToOperatorPopupHandoff({ isChatOpen, sessions, activeSessionId });
+      persistMainToOperatorPopupHandoff({
+        isChatOpen,
+        sessions,
+        activeSessionId,
+        aggregateUnread: calculateTotalUnread(),
+        dialogsUnreadCounts,
+      });
       openOperatorChatPopup();
     }
-  }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId]);
+  }, [isOperatorChatPopupWindow, isChatOpen, sessions, activeSessionId, calculateTotalUnread, dialogsUnreadCounts]);
 
   const operatorChatWindowButtonLabel = useMemo(() => {
     if (isOperatorChatPopupWindow) {

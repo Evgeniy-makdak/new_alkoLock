@@ -21,6 +21,7 @@ import {
   peekMainReturnHandoffPayload,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY } from '../chatPopup/constants';
+import { isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
 import { ChatConfig } from '../contexts/chatConfig';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -407,6 +408,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     if (skipFetch) return;
+
+    // Electron popup: превью и счётчики уже пришли по STOMP в основном окне — без REST при handoff.
+    if (isElectronChatShell()) return;
 
     for (const s of sessions) {
       const hasDid =
@@ -1026,7 +1030,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
 
-        if (dialogIdStr) {
+        if (dialogIdStr && !isElectronMainChatHost()) {
           await forceLoadUnreadDialogs(newSessionId);
           await dialogHandlers.loadDialogHistory(newSessionId, dialogIdStr, true, 0, true);
         }
@@ -1058,7 +1062,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         const fetchUserIdRaw =
           incomingUserIdRaw ?? messageData.dialog?.owner?.id ?? messageData?.createdBy?.id;
-        if (fetchUserIdRaw != null && fetchUserIdRaw !== '') {
+        if (fetchUserIdRaw != null && fetchUserIdRaw !== '' && !isElectronMainChatHost()) {
           fetchUserInfo(parseInt(String(fetchUserIdRaw), 10)).then((userData: any) => {
             if (userData) {
               updateSession(newSessionId, {

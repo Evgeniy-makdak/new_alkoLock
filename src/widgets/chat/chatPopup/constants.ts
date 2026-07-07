@@ -43,6 +43,10 @@ export const CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY =
 export const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY =
   'alcolock_desktop_operator_chat_popup_closed_v1';
 
+/** Electron: карта непрочитанных по dialogId при handoff основное окно → popup (STOMP без REST). */
+export const CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY =
+  'alcolock_desktop_socket_unread_handoff_v1';
+
 export const OPERATOR_CHAT_POPUP_WINDOW_NAME = 'alcolock-operator-chat';
 
 /** Маркер на `.chatFloatingDock` в окне operator-chat-popup — подгонка размера окна под чат. */

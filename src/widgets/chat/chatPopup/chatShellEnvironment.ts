@@ -17,3 +17,12 @@ export function isElectronChatShell(): boolean {
 export function isBrowserWebChatShell(): boolean {
   return !isElectronChatShell() && !isPwaDisplayMode();
 }
+
+/** Electron: основное окно (чат в отдельном popup, не /operator-chat-popup). */
+export function isElectronMainChatHost(): boolean {
+  return (
+    isElectronChatShell() &&
+    typeof window !== 'undefined' &&
+    !window.location.pathname.includes('/operator-chat-popup')
+  );
+}
