@@ -59,6 +59,11 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
   getMinuteWord,
 }) => {
   const { t } = useTranslation();
+  const isPwa =
+    typeof window !== 'undefined' &&
+    ((window.navigator as Navigator & { standalone?: boolean }).standalone === true ||
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: minimal-ui)').matches);
   if (!open || !editingField) return null;
 
   const unitLabel =
@@ -69,6 +74,9 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
         : editingField.unit === 'SECONDS'
           ? getSecondWord(editValue)
           : getAttemptWord(editValue);
+
+  const dialogMaxWidth = isPwa ? 720 : 360;
+  const dialogMinWidth = isPwa ? { xs: 280, sm: 550 } : { xs: 280, sm: 275 };
 
   return (
     <Backdrop
@@ -84,8 +92,8 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
         sx={{
           p: 3.5,
           width: '100%',
-          maxWidth: 720,
-          minWidth: { xs: 280, sm: 550 },
+          maxWidth: dialogMaxWidth,
+          minWidth: dialogMinWidth,
           display: 'flex',
           flexDirection: 'column',
           bgcolor: 'background.paper',
@@ -125,7 +133,13 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
         </Box>
 
         <Stack gap={3}>
-          <Typography gutterBottom sx={{ mb: 0 }}>
+          <Typography
+            gutterBottom
+            sx={{
+              mb: 0,
+              wordBreak: isPwa ? 'normal' : 'break-word',
+              overflowWrap: isPwa ? 'normal' : 'anywhere',
+            }}>
             {editingField.label}
           </Typography>
           <TextField
