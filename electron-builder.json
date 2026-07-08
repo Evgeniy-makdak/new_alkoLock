@@ -1,8 +1,8 @@
 {
   "extends": null,
   "appId": "ru.alcolocks.operator",
-  "productName": "Alkozamok-SMART",
-  "executableName": "Alkozamok-SMART",
+  "productName": "Алкозамок-М СМАРТ",
+  "executableName": "Алкозамок-М СМАРТ",
   "icon": "electron/app-icon.ico",
   "afterPack": "scripts/after-pack.cjs",
   "directories": {
@@ -46,13 +46,17 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
+    "installerLanguages": [
+      "ru"
+    ],
+    "warningsAsErrors": false,
     "createDesktopShortcut": "always",
     "createStartMenuShortcut": true,
     "shortcutName": "Алкозамок-М СМАРТ",
     "installerIcon": "electron/app-icon.ico",
     "uninstallerIcon": "electron/app-icon.ico",
     "installerHeaderIcon": "electron/app-icon.ico",
-    "artifactName": "Alkozamok-SMART-Setup-${version}-${arch}.${ext}",
+    "artifactName": "Алкозамок-М СМАРТ-Setup-${version}-${arch}.${ext}",
     "uninstallDisplayName": "Информационная система «Алкозамок-М СМАРТ»",
     "runAfterFinish": true,
     "deleteAppDataOnUninstall": false,
@@ -66,6 +70,6 @@
     }
   ],
   "portable": {
-    "artifactName": "Alkozamok-SMART-${version}-portable-${arch}.exe"
+    "artifactName": "Алкозамок-М СМАРТ-${version}-portable-${arch}.exe"
   }
 }
