@@ -37,6 +37,7 @@ import { breakpoints } from '../breakpoints';
 import { NAV_LINKS, frontendVersion } from '../config/const';
 import { tooltipStyle } from '../config/styles';
 import { useNavBar } from '../hooks/useNavBar';
+import { NavBarItemHint } from './NavBarItemHint';
 import style from './NavBar.module.scss';
 
 // Один «слот» пункта: min-height 44px + margin-bottom 17px (у последнего пункта margin 0 — это учтено в формуле ниже)
@@ -74,6 +75,8 @@ export const NavBar = () => {
   const backendVersion = data?.data as string;
   const isAdmin = appStore().isAdmin;
   const isCollapsed = state || isMobile || isTablet;
+  const isDesktopCollapsed = state && !isMobile && !isTablet;
+  const navItemTooltipProps = { slotProps: tooltipStyle, placement: 'right' as const };
 
   // Фильтрация ссылок
   const getFilteredLinks = useCallback(() => {
@@ -266,22 +269,20 @@ export const NavBar = () => {
 
   const renderNavLink = (link: (typeof NAV_LINKS)[0], index: number) => {
     const notification = link.path === RoutePaths.servicemode;
-    const isMapTab = link.path === RoutePaths.map;
 
     return (
-      <Tooltip
-        placement="right"
-        slotProps={tooltipStyle}
-        disableHoverListener={isCollapsed}
-        title={isMapTab ? t('nav.mapShortcut') : t(link.nameKey)}
-        key={link.path}>
+      <NavBarItemHint
+        key={link.path}
+        title={t(link.nameKey)}
+        showHint={isCollapsed}
+        tooltipProps={navItemTooltipProps}>
         <NavLink
           key={`${link.path}-${forceUpdate}`}
           data-testid={testids.widget_navbar.NAVBAR_LINK[index]}
           className={({ isActive }) =>
             `${isCollapsed ? style.center : style.between} ${style.navLink} ${
-              isActive ? style.active : ''
-            } ${isMapTab ? style.secretTab : ''}`
+              isActive ? `${style.active} active` : ''
+            }`
           }
           to={link.path}
           onClick={isMobile ? () => resetStatusFilter() : undefined}
@@ -294,7 +295,7 @@ export const NavBar = () => {
             )}
           </div>
         </NavLink>
-      </Tooltip>
+      </NavBarItemHint>
     );
   };
 
@@ -306,9 +307,14 @@ export const NavBar = () => {
         } ${theme.palette.mode === 'dark' ? style.rootDark : ''}`}>
         {!(isMobile || isTablet) && (
           <div className={`${style.logo} ${!isCollapsed && style.between}`}>
-            <Link to={RoutePaths.events} onClick={handleLogoClick} className={style.logoLink}>
-              <Logo className={style.img} />
-            </Link>
+            <NavBarItemHint
+              title={brandNameLabel(t, i18n.language)}
+              showHint={isDesktopCollapsed}
+              tooltipProps={navItemTooltipProps}>
+              <Link to={RoutePaths.events} onClick={handleLogoClick} className={style.logoLink}>
+                <Logo className={style.img} />
+              </Link>
+            </NavBarItemHint>
             {!isCollapsed && (
               <span className={style.logoText}>{brandNameLabel(t, i18n.language)}</span>
             )}
@@ -319,7 +325,7 @@ export const NavBar = () => {
           <div className={style.navBarWrapper}>
             <div className={style.branchSelectWrap}>
               <NavbarBranchSelect
-                tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
+                tooltipProps={navItemTooltipProps}
                 isCollops={isCollapsed}
               />
             </div>
@@ -383,11 +389,10 @@ export const NavBar = () => {
             {/* Параметры / назад (админ) + переключатель темы (десктопная колонка навбара) */}
             <div className={style.postLinksToolbar}>
               {isAdmin && (
-                <Tooltip
+                <NavBarItemHint
                   title={sliderState ? t('nav.parameters') : t('nav.back')}
-                  placement="right"
-                  slotProps={tooltipStyle}
-                  disableHoverListener={isCollapsed || isMobile || isTablet}>
+                  showHint={isCollapsed}
+                  tooltipProps={navItemTooltipProps}>
                   <Button
                     onClick={handleSwitchChange}
                     className={style.settingsLink}
@@ -396,7 +401,7 @@ export const NavBar = () => {
                       !(isMobile || isTablet) &&
                       (sliderState ? t('nav.parameters') : t('nav.back'))}
                   </Button>
-                </Tooltip>
+                </NavBarItemHint>
               )}
             </div>
 
@@ -420,7 +425,7 @@ export const NavBar = () => {
           <div className={style.navBarBottom}>
             <Stack gap={1}>
               <MenuButton
-                tooltipProps={{ slotProps: tooltipStyle, placement: 'right' }}
+                tooltipProps={navItemTooltipProps}
                 collops={isCollapsed}
                 email={email}
                 close={close}
@@ -437,11 +442,14 @@ export const NavBar = () => {
                     </span>
                   )}
                   <span className={`${isCollapsed && style.collops} ${style.openedCollops}`}>
-                    <Tooltip title={isCollapsed ? t('nav.expand') : t('nav.collapse')}>
+                    <NavBarItemHint
+                      title={isCollapsed ? t('nav.expand') : t('nav.collapse')}
+                      showHint={isCollapsed}
+                      tooltipProps={navItemTooltipProps}>
                       <ArrowBackIosNewOutlinedIcon
                         className={isCollapsed ? style.rotateIcon : ''}
                       />
-                    </Tooltip>
+                    </NavBarItemHint>
                   </span>
                 </Button>
               )}

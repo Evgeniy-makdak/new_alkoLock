@@ -28,36 +28,51 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
+  const showIconPicker = isMobile || isTablet || isCollops;
+  const isDesktopCollapsed = isCollops && !isMobile && !isTablet;
+  const branchLabel = value[0]?.label ?? '';
+
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
-    if (isMobile || isTablet) {
-      setAnchorEl(event.currentTarget);
-    }
+    if (!showIconPicker || !isGlobalAdmin) return;
+    setAnchorEl(event.currentTarget);
   };
 
   const handleClose = () => {
     setAnchorEl(null);
   };
 
+  const handleChangeBranch: typeof onChangeBranch = (type, nextValue) => {
+    onChangeBranch(type, nextValue);
+    handleClose();
+  };
+
   const open = Boolean(anchorEl);
 
-  if (isMobile || isTablet) {
+  if (showIconPicker) {
     return (
       <>
-        <Tooltip {...tooltipProps} title={value[0].label}>
-          <Chip icon={<ApartmentOutlinedIcon />} onClick={handleClick} clickable variant="filled" />
+        <Tooltip {...tooltipProps} title={branchLabel}>
+          <Chip
+            icon={<ApartmentOutlinedIcon />}
+            onClick={handleClick}
+            clickable={isGlobalAdmin}
+            variant="filled"
+          />
         </Tooltip>
         <Popover
           open={open}
           anchorEl={anchorEl}
           onClose={handleClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'left',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'left',
-          }}
+          anchorOrigin={
+            isDesktopCollapsed
+              ? { vertical: 'top', horizontal: 'right' }
+              : { vertical: 'bottom', horizontal: 'left' }
+          }
+          transformOrigin={
+            isDesktopCollapsed
+              ? { vertical: 'top', horizontal: 'left' }
+              : { vertical: 'top', horizontal: 'left' }
+          }
           PaperProps={{
             sx: {
               width: '280px',
@@ -69,10 +84,12 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
             <BranchSelect
               value={value}
               disabled={!isGlobalAdmin}
-              setValueStore={onChangeBranch}
+              setValueStore={handleChangeBranch}
               allowCustomEvents={allowCustomEvents}
               label={label}
-              name="navbarBranchSelectMobile"
+              name={
+                isMobile || isTablet ? 'navbarBranchSelectMobile' : 'navbarBranchSelectCollapsed'
+              }
               testid={testids.widget_navbar.NAVBAR_INPUT_CHOOSE_FILIAL_OPEN_LIST_ITEM}
             />
           </div>
@@ -82,22 +99,15 @@ export const NavbarBranchSelect: FC<NavbarBranchSelectProps> = ({
   }
 
   return (
-    <>
-      {isCollops ? (
-        <Tooltip {...tooltipProps} title={value[0].label}>
-          <Chip icon={<ApartmentOutlinedIcon />} variant="filled" />
-        </Tooltip>
-      ) : (
-        <BranchSelect
-          value={value}
-          disabled={!isGlobalAdmin}
-          setValueStore={onChangeBranch}
-          allowCustomEvents={allowCustomEvents}
-          label={''}
-          name="navbarBranchSelect"
-          testid={testids.widget_navbar.NAVBAR_INPUT_CHOOSE_FILIAL_OPEN_LIST_ITEM}
-        />
-      )}
-    </>
+    <BranchSelect
+      value={value}
+      disabled={!isGlobalAdmin}
+      setValueStore={onChangeBranch}
+      allowCustomEvents={allowCustomEvents}
+      label={''}
+      name="navbarBranchSelect"
+      overflowTooltip
+      testid={testids.widget_navbar.NAVBAR_INPUT_CHOOSE_FILIAL_OPEN_LIST_ITEM}
+    />
   );
 };

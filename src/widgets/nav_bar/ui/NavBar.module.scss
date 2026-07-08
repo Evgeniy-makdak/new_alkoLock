@@ -463,6 +463,29 @@
   }
 }
 
+/* Свёрнутая колонка: иконка филиала по центру */
+.navBarCollops .branchSelectWrap {
+  display: flex;
+  justify-content: center;
+
+  :global(.MuiChip-root) {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 16px;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  :global(.MuiChip-label) {
+    display: none;
+  }
+
+  :global(.MuiChip-icon) {
+    margin: 0 !important;
+  }
+}
+
 .versionContainer {
   display: flex;
   flex-direction: column;
@@ -682,6 +705,16 @@
     }
   }
 
+  .linksCompact a.navLink.active {
+    background: #667a8a;
+    color: #fff;
+
+    svg,
+    .MuiSvgIcon-root {
+      color: #fff;
+    }
+  }
+
   .settingsLink {
     color: #b0bec5;
 
@@ -835,6 +868,18 @@
       color: white;
     }
   }
+
+  /* NavLink вешает module-класс .active, а не глобальный — выше специфичность, чем у & a */
+  & a.navLink.active {
+    background: #667a8a;
+    color: white;
+    font-weight: 600;
+
+    svg,
+    .MuiSvgIcon-root {
+      color: white;
+    }
+  }
 }
 
 /* Мобильный компакт: фиксируем единое выравнивание иконок по левому краю */
@@ -861,23 +906,6 @@
   padding-left: 12px;
   padding-right: 8px;
   box-sizing: border-box;
-
-  :global(.MuiChip-root) {
-    width: 32px;
-    min-width: 32px;
-    height: 32px;
-    border-radius: 16px;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  :global(.MuiChip-label) {
-    display: none;
-  }
-
-  :global(.MuiChip-icon) {
-    margin: 0 !important;
-  }
 }
 
 .mobileNav .postLinksToolbar {
