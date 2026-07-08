@@ -21,6 +21,8 @@ export type PopupReturnSerializedSession = {
   unreadDialogs?: ChatSession['unreadDialogs'];
   unreadCount?: number;
   totalUnreadCount?: number;
+  /** Electron main→popup: лента для бейджа превью (в popup иначе messages: []). */
+  minimizedMessages?: ChatSession['messages'];
 };
 
 export type PopupReturnHandoffPayload =
@@ -113,6 +115,7 @@ function buildOperatorPopupPreviewSnapshot(
 export function serializeSessionsForPopupHandoff(
   sessions: ChatSession[],
 ): PopupReturnSerializedSession[] {
+  const includeMinimizedMessages = isElectronMainWindowForHandoff();
   return sessions.map((s) => ({
     id: s.id,
     isMinimized: Boolean(s.isMinimized),
@@ -135,6 +138,9 @@ export function serializeSessionsForPopupHandoff(
     unreadDialogs: Array.isArray(s.unreadDialogs) ? s.unreadDialogs : [],
     unreadCount: s.unreadCount,
     totalUnreadCount: s.totalUnreadCount,
+    ...(includeMinimizedMessages && s.isMinimized && Array.isArray(s.messages) && s.messages.length > 0
+      ? { minimizedMessages: s.messages.slice(-30) }
+      : {}),
   }));
 }
 
@@ -169,10 +175,15 @@ function deserializeOne(row: PopupReturnSerializedSession): ChatSession {
         }
       : null;
 
+  const handoffMessages =
+    Array.isArray(row.minimizedMessages) && row.minimizedMessages.length > 0
+      ? row.minimizedMessages
+      : [];
+
   return {
     id: row.id,
     dialogs: [],
-    messages: [],
+    messages: handoffMessages,
     selectedDialog,
     isMinimized: Boolean(row.isMinimized),
     selectedUsers: Array.isArray(row.selectedUsers) ? [...row.selectedUsers] : [],
@@ -297,39 +308,31 @@ export type DesktopSocketUnreadHandoff = {
   v: 1;
   aggregateUnread: number;
   dialogs: Record<string, number>;
+  /** sessionId → unreadCount на момент handoff (если WS-карта ещё не успела). */
+  sessionUnread?: Record<string, number>;
 };
 
-export function persistDesktopSocketUnreadHandoff(args: {
+let desktopUnreadHandoffMem: {
   aggregateUnread: number;
   dialogsUnreadCounts: Map<number, number>;
-}): void {
-  if (typeof window === 'undefined') return;
-  const dialogs: Record<string, number> = {};
-  args.dialogsUnreadCounts.forEach((count, dialogId) => {
-    if (dialogId > 0 && count > 0) {
-      dialogs[String(dialogId)] = count;
-    }
-  });
-  const payload: DesktopSocketUnreadHandoff = {
-    v: 1,
-    aggregateUnread: Math.max(0, args.aggregateUnread),
-    dialogs,
-  };
-  try {
-    localStorage.setItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY, JSON.stringify(payload));
-  } catch {
-    /* ignore */
-  }
+  sessionUnread: Map<string, number>;
+} | null = null;
+
+function isElectronMainWindowForHandoff(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    Boolean((window as { alcolockDesktop?: unknown }).alcolockDesktop) &&
+    !window.location.pathname.includes('/operator-chat-popup')
+  );
 }
 
-export function peekDesktopSocketUnreadHandoff(): {
+function parseDesktopSocketUnreadHandoffRaw(raw: string | null): {
   aggregateUnread: number;
   dialogsUnreadCounts: Map<number, number>;
+  sessionUnread: Map<string, number>;
 } | null {
-  if (typeof window === 'undefined') return null;
+  if (!raw) return null;
   try {
-    const raw = localStorage.getItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as DesktopSocketUnreadHandoff;
     if (!parsed || parsed.v !== 1 || typeof parsed.dialogs !== 'object') return null;
     const map = new Map<number, number>();
@@ -340,16 +343,84 @@ export function peekDesktopSocketUnreadHandoff(): {
         map.set(dialogId, n);
       }
     });
+    const sessionUnread = new Map<string, number>();
+    if (parsed.sessionUnread && typeof parsed.sessionUnread === 'object') {
+      Object.entries(parsed.sessionUnread).forEach(([sessionId, count]) => {
+        const n = Number(count);
+        if (sessionId && Number.isFinite(n) && n > 0) {
+          sessionUnread.set(sessionId, n);
+        }
+      });
+    }
     return {
       aggregateUnread: Math.max(0, Number(parsed.aggregateUnread) || 0),
       dialogsUnreadCounts: map,
+      sessionUnread,
     };
   } catch {
     return null;
   }
 }
 
+export function persistDesktopSocketUnreadHandoff(args: {
+  aggregateUnread: number;
+  dialogsUnreadCounts: Map<number, number>;
+  sessions?: ChatSession[];
+}): void {
+  if (typeof window === 'undefined') return;
+  const dialogs: Record<string, number> = {};
+  args.dialogsUnreadCounts.forEach((count, dialogId) => {
+    if (dialogId > 0 && count > 0) {
+      dialogs[String(dialogId)] = count;
+    }
+  });
+  const sessionUnread: Record<string, number> = {};
+  (args.sessions ?? []).forEach((session) => {
+    const n = Number(session.unreadCount ?? session.totalUnreadCount ?? 0);
+    if (session.isMinimized && Number.isFinite(n) && n > 0) {
+      sessionUnread[session.id] = n;
+    }
+  });
+  const payload: DesktopSocketUnreadHandoff = {
+    v: 1,
+    aggregateUnread: Math.max(0, args.aggregateUnread),
+    dialogs,
+    sessionUnread,
+  };
+  const parsed = parseDesktopSocketUnreadHandoffRaw(JSON.stringify(payload));
+  if (parsed) {
+    desktopUnreadHandoffMem = parsed;
+  }
+  try {
+    localStorage.setItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY, JSON.stringify(payload));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function peekDesktopSocketUnreadHandoff(): {
+  aggregateUnread: number;
+  dialogsUnreadCounts: Map<number, number>;
+  sessionUnread: Map<string, number>;
+} | null {
+  if (desktopUnreadHandoffMem) {
+    return desktopUnreadHandoffMem;
+  }
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY);
+    const parsed = parseDesktopSocketUnreadHandoffRaw(raw);
+    if (parsed) {
+      desktopUnreadHandoffMem = parsed;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 export function clearDesktopSocketUnreadHandoffMarker(): void {
+  desktopUnreadHandoffMem = null;
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(CHAT_DESKTOP_SOCKET_UNREAD_HANDOFF_KEY);
@@ -384,6 +455,7 @@ export function persistMainToOperatorPopupHandoff(args: {
       persistDesktopSocketUnreadHandoff({
         aggregateUnread: aggregateUnread ?? 0,
         dialogsUnreadCounts,
+        sessions,
       });
     }
   } catch {

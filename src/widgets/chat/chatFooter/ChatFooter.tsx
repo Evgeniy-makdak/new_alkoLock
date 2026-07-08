@@ -37,7 +37,7 @@ import {
   persistMainRestoreFromPopupState,
   persistMainToOperatorPopupHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
-import { isBrowserWebChatShell } from '../chatPopup/chatShellEnvironment';
+import { isBrowserWebChatShell, isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
 import {
   closeOperatorChatPopupAndRestoreMain,
   openOperatorChatPopup,
@@ -361,6 +361,10 @@ function unreadCountForPreviewEntry(
   // solePreviewSocketTotalHint = общий агрегат и «чужой» +1 заливает бейдж другого dialogId).
   if (map.has(dialog.id)) {
     const fromMap = map.get(dialog.id)!;
+    // Electron: нулевой per-dialog в карте не должен гасить превью при живом агрегате/единственной строке.
+    if (isElectronChatShell() && fromMap === 0 && solePreviewSocketTotalHint > 0) {
+      return Math.max(apiSafe, solePreviewSocketTotalHint);
+    }
     // Для CLOSED backend snapshot по непрочитанным может быть свежее детальной карты WS.
     // Не даём занижать бейдж превью (кейс: map=1, фактически/API=7).
     return isClosed ? Math.max(fromMap, apiSafe) : fromMap;
@@ -409,7 +413,12 @@ function effectiveMinimizedSessionUnread(
   const apiSafe = Number.isFinite(fromUnreadDialogsApi) ? fromUnreadDialogsApi : 0;
   const map = dialogsUnreadCounts;
   if (dialogId != null && map != null && map.has(dialogId)) {
-    return Math.max(map.get(dialogId)!, local, apiSafe, fromMessages);
+    const fromMap = map.get(dialogId)!;
+    // Electron: WS-карта в popup может кратковременно содержать 0 при живом session.unreadCount / ленте.
+    if (isElectronChatShell() && fromMap === 0 && Math.max(local, apiSafe, fromMessages) > 0) {
+      return Math.max(local, apiSafe, fromMessages);
+    }
+    return Math.max(fromMap, local, apiSafe, fromMessages);
   }
   return Math.max(local, apiSafe, fromMessages);
 }
@@ -685,6 +694,26 @@ const ChatContainer = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
   const hasChatPermissions = useOperatorPermissions();
+
+  /** Electron main: держим handoff в LS актуальным до открытия popup. */
+  useEffect(() => {
+    if (!isDesktopMainChatHost) return;
+    if (sessions.length === 0) return;
+    persistMainToOperatorPopupHandoff({
+      isChatOpen,
+      sessions,
+      activeSessionId,
+      aggregateUnread: calculateTotalUnread(),
+      dialogsUnreadCounts,
+    });
+  }, [
+    isDesktopMainChatHost,
+    sessions,
+    isChatOpen,
+    activeSessionId,
+    dialogsUnreadCounts,
+    calculateTotalUnread,
+  ]);
 
   // Агрегат и карта по диалогам ведёт только SocketContext (кадры WS). Ранее здесь
   // вызывался setUnreadCount по любому lastMessage с countUnMessages — в том числе
@@ -1026,6 +1055,14 @@ const ChatContainer = () => {
       ],
     [desktopPopupExtraExpandedPreviewSessions, sessions],
   );
+
+  /** Electron: одна строка превью-сессии — подтянуть агрегат, если per-dialog карта ещё пуста. */
+  const electronSingleMinimizedUnreadHint = useMemo(() => {
+    if (!isElectronChatShell()) return 0;
+    if (dedupedUnreadPreviewRows.length > 0) return 0;
+    if (minimizedSessions.length !== 1) return 0;
+    return calculateTotalUnread();
+  }, [dedupedUnreadPreviewRows.length, minimizedSessions.length, calculateTotalUnread]);
 
   const [isChatLayoutPinned, setIsChatLayoutPinned] = useState(() =>
     readChatLayoutPinned(isOperatorChatPopupWindow),
@@ -1501,7 +1538,10 @@ const ChatContainer = () => {
           session.selectedDialog?.client_name ||
           t('chat.newChatFallback'),
         subtitle: subtitle || undefined,
-        unread: effectiveMinimizedSessionUnread(session, dialogsUnreadCounts),
+        unread: Math.max(
+          effectiveMinimizedSessionUnread(session, dialogsUnreadCounts),
+          electronSingleMinimizedUnreadHint,
+        ),
       });
     });
 
@@ -1539,6 +1579,7 @@ const ChatContainer = () => {
     attachmentLabel,
     t,
     solePreviewSocketUnreadHint,
+    electronSingleMinimizedUnreadHint,
   ]);
   useEffect(() => {
     const previewUnreadBadges = compactMinimizedEntries
@@ -1810,7 +1851,10 @@ const ChatContainer = () => {
                 minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
                 30,
               );
-              const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
+              const minimizedUnread = Math.max(
+                effectiveMinimizedSessionUnread(session, dialogsUnreadCounts),
+                electronSingleMinimizedUnreadHint,
+              );
               return (
                 <div
                   key={`minimized-${session.id}`}
@@ -1879,7 +1923,10 @@ const ChatContainer = () => {
                 minimizedSessionPreviewRaw(session, dialogPreviewLines, attachmentLabel),
                 30,
               );
-              const minimizedUnread = effectiveMinimizedSessionUnread(session, dialogsUnreadCounts);
+              const minimizedUnread = Math.max(
+                effectiveMinimizedSessionUnread(session, dialogsUnreadCounts),
+                electronSingleMinimizedUnreadHint,
+              );
               return (
                 <div
                   key={`minimized-${session.id}`}

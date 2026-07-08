@@ -71,18 +71,35 @@ const SocketContext = createContext<SocketContextType | null>(null);
 function readInitialElectronPopupUnreadState(): {
   unreadCount: number;
   dialogsUnreadCounts: Map<number, number>;
+  sessionUnread: Map<string, number>;
   hasHandoff: boolean;
 } {
   if (!isElectronOperatorChatPopup()) {
-    return { unreadCount: 0, dialogsUnreadCounts: new Map(), hasHandoff: false };
+    return {
+      unreadCount: 0,
+      dialogsUnreadCounts: new Map(),
+      sessionUnread: new Map(),
+      hasHandoff: false,
+    };
   }
   const handoff = peekDesktopSocketUnreadHandoff();
-  if (!handoff || handoff.dialogsUnreadCounts.size === 0) {
-    return { unreadCount: 0, dialogsUnreadCounts: new Map(), hasHandoff: false };
+  if (
+    !handoff ||
+    (handoff.dialogsUnreadCounts.size === 0 &&
+      handoff.aggregateUnread <= 0 &&
+      handoff.sessionUnread.size === 0)
+  ) {
+    return {
+      unreadCount: 0,
+      dialogsUnreadCounts: new Map(),
+      sessionUnread: new Map(),
+      hasHandoff: false,
+    };
   }
   return {
     unreadCount: handoff.aggregateUnread,
     dialogsUnreadCounts: handoff.dialogsUnreadCounts,
+    sessionUnread: handoff.sessionUnread,
     hasHandoff: true,
   };
 }
@@ -130,8 +147,6 @@ export const SocketProvider = ({
     useDetailedCountsRef.current = true;
     hasDetailedDataRef.current = true;
     unreadAggregateRef.current = initialUnreadState.unreadCount;
-    const id = window.setTimeout(() => clearDesktopSocketUnreadHandoffMarker(), 0);
-    return () => window.clearTimeout(id);
   }, []);
 
   useEffect(() => {

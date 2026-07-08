@@ -17,6 +17,8 @@ import {
   getChatProviderInitialSessionsHydration,
   hasPendingMainRestoreHandoff,
   hasPendingMainToOperatorPopupHandoff,
+  peekDesktopSocketUnreadHandoff,
+  clearDesktopSocketUnreadHandoffMarker,
   peekMainRestoreIsChatOpenForMainWindow,
   peekMainReturnHandoffPayload,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
@@ -388,6 +390,55 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   }, [dialogHandlers, forceLoadUnreadDialogs]);
 
   const popupFromMainHydratedRef = useRef(false);
+  const electronDesktopUnreadHandoffRef = useRef(peekDesktopSocketUnreadHandoff());
+  const electronHandoffUnreadSyncedRef = useRef(false);
+  useLayoutEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!window.location.pathname.includes('/operator-chat-popup')) return;
+    if (!mainSessionsInit.fromMainToPopup) return;
+    if (!isElectronChatShell()) return;
+    if (electronHandoffUnreadSyncedRef.current) return;
+    if (sessions.length === 0) return;
+
+    const handoff = electronDesktopUnreadHandoffRef.current;
+    if (!handoff) {
+      electronHandoffUnreadSyncedRef.current = true;
+      return;
+    }
+
+    electronHandoffUnreadSyncedRef.current = true;
+
+    for (const session of sessions) {
+      const fromSessionHandoff = handoff.sessionUnread.get(session.id) ?? 0;
+      const dialogId = resolveSessionDialogIdForUnread(session);
+      const fromMap =
+        dialogId != null ? (handoff.dialogsUnreadCounts.get(dialogId) ?? 0) : 0;
+      const fromMessages =
+        dialogId != null
+          ? (session.messages ?? []).reduce((acc: number, msg: any) => {
+              const mid = Number(msg.dialogId ?? msg.dialog?.id ?? NaN);
+              if (mid !== Number(dialogId)) return acc;
+              if (msg.messageStatus !== 'TO_OPERATOR') return acc;
+              if (msg.is_read) return acc;
+              if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
+              return acc + 1;
+            }, 0)
+          : 0;
+      const nextUnread = Math.max(
+        session.unreadCount ?? 0,
+        fromSessionHandoff,
+        fromMap,
+        fromMessages,
+      );
+      if (nextUnread > (session.unreadCount ?? 0)) {
+        updateSession(session.id, { unreadCount: nextUnread });
+      }
+    }
+
+    const id = window.setTimeout(() => clearDesktopSocketUnreadHandoffMarker(), 500);
+    return () => window.clearTimeout(id);
+  }, [mainSessionsInit.fromMainToPopup, sessions, updateSession]);
+
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.location.pathname.includes('/operator-chat-popup')) return;
@@ -970,6 +1021,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           existingSession.selectedDialog?.id || existingSession.assignedDialogId;
 
         setTimeout(() => {
+          if (isElectronChatShell()) return;
           if (messageDialogIdForUnread) {
             updateSessionUnreadCount(existingSession.id, messageDialogIdForUnread.toString());
           } else if (sessionDialogIdFallback && sessionDialogIdFallback !== '0') {
@@ -1088,7 +1140,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           });
         }
 
-        if (dialogId) {
+        if (dialogId && !isElectronChatShell()) {
           updateSessionUnreadCount(newSessionId, String(dialogId));
         }
 
