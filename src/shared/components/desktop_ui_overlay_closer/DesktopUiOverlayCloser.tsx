@@ -8,7 +8,7 @@ import {
 } from '@shared/lib/desktopCloseUiOverlays';
 
 /** Electron: закрытие выпадающих списков при клике вне popper (в т.ч. шапка/меню через IPC). */
-export function DesktopUiOverlayCloser() {
+export function DesktopUiOverlayCloser(): null {
   useEffect(() => {
     if (!isElectronDesktopShell()) return;
 
