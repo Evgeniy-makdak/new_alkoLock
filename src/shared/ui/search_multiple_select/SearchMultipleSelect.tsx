@@ -33,6 +33,10 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { useTheme } from '@mui/material/styles';
 
 import { debounce } from '@shared/lib/debounce';
+import {
+  DESKTOP_CLOSE_UI_OVERLAYS_EVENT,
+  isElectronDesktopShell,
+} from '@shared/lib/desktopCloseUiOverlays';
 import { Button, ButtonsType } from '@shared/ui/button';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
@@ -525,10 +529,8 @@ export function SearchMultipleSelect<T>({
   const atMaxCapacity =
     maxValues != null && maxValues > 0 && (value?.length ?? 0) >= maxValues;
   const singleChipLocked = atMaxCapacity && maxValues === 1;
-  // Electron: дополнительное закрытие popup (в т.ч. по IPC из main при клике по заголовку/меню).
-  const isElectronDesktop = typeof window !== 'undefined' && Boolean((window as any).alcolockDesktop);
-  const autocompleteRootRef = useRef<HTMLDivElement | null>(null);
-  const popperRef = useRef<HTMLDivElement | null>(null);
+  // Electron: управляемое состояние open + закрытие по глобальному событию (DesktopUiOverlayCloser / IPC).
+  const isElectronDesktop = isElectronDesktopShell();
 
   if (mobileModalPicker && isMultipleMode) {
     return (
@@ -566,33 +568,12 @@ export function SearchMultipleSelect<T>({
     if (!isElectronDesktop) return;
 
     const closePopup = () => setPopupOpen(false);
-
-    const unsubscribeDesktop = window.alcolockDesktop?.onCloseUiOverlays?.(closePopup);
+    window.addEventListener(DESKTOP_CLOSE_UI_OVERLAYS_EVENT, closePopup);
 
     return () => {
-      unsubscribeDesktop?.();
+      window.removeEventListener(DESKTOP_CLOSE_UI_OVERLAYS_EVENT, closePopup);
     };
   }, [isElectronDesktop]);
-
-  useEffect(() => {
-    if (!isElectronDesktop) return;
-    if (!popupOpen) return;
-
-    const onPointerDownCapture = (e: PointerEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-
-      if (autocompleteRootRef.current?.contains(target)) return;
-      if (popperRef.current?.contains(target)) return;
-
-      setPopupOpen(false);
-    };
-
-    document.addEventListener('pointerdown', onPointerDownCapture, true);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDownCapture, true);
-    };
-  }, [isElectronDesktop, popupOpen]);
   const renderInput = (params: AutocompleteRenderInputParams) => {
     const { InputProps = {}, ...restParams } = params;
     const inputProps = InputProps as {
@@ -829,11 +810,6 @@ export function SearchMultipleSelect<T>({
       title: clearLabel,
       'aria-label': clearLabel,
     },
-    ...(isElectronDesktop
-      ? ({
-          popper: { ref: popperRef },
-        } as any)
-      : {}),
   };
 
   const mergedAutocompleteSx: SearchMultipleSelectProps<T>['sx'] = singleChipLocked
@@ -844,7 +820,6 @@ export function SearchMultipleSelect<T>({
 
   const autocompleteNode = (
     <div
-      ref={autocompleteRootRef}
       className={[style.searchSelect, singleChipLocked ? style.singleChipLocked : '']
         .filter(Boolean)
         .join(' ')}>

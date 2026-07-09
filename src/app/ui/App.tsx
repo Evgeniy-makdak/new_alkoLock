@@ -7,6 +7,7 @@ import { EventsGhostPrank } from '@pages/events/ui/EventsGhostPrank';
 import { TableHeaderMobileTrailingProvider } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
+import { DesktopUiOverlayCloser } from '@shared/components/desktop_ui_overlay_closer/DesktopUiOverlayCloser';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
 import ChatFooter from '@widgets/chat/chatFooter/ChatFooter';
 import { useSuppressMainChatFooterForPopup } from '@widgets/chat/chatPopup/useSuppressMainChatFooterForPopup';
@@ -52,6 +53,7 @@ export function App() {
       className={`${style.app} ${mode === 'dark' ? style.appDark : ''} ${
         isOperatorChatPopupRoute ? style.appOperatorChatPopup : ''
       }`}>
+      <DesktopUiOverlayCloser />
       {isLoading ? (
         <div className={style.loadingPage}>
           <CircularProgress />

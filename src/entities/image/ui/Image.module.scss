@@ -19,7 +19,12 @@
 }
 
 .imgFull {
-  height: 90dvh;
+  display: block;
+  max-height: 90dvh;
+  max-width: min(90vw, 1200px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
 }
 
 .dialog {

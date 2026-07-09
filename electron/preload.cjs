@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   onCloseUiOverlays(callback) {
     const channel = 'desktop:close-ui-overlays';
     const listener = () => {
+      window.dispatchEvent(new CustomEvent('desktop:close-ui-overlays'));
       callback();
     };
     ipcRenderer.on(channel, listener);

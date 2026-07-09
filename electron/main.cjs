@@ -529,8 +529,22 @@ function installMainWindowUiOverlayCloser(win) {
     sendCloseUiOverlaysToWindow(win);
   };
 
-  win.hookWindowMessage(0x00a1, notifyCloseOverlays); // WM_NCLBUTTONDOWN
-  win.hookWindowMessage(0x00a4, notifyCloseOverlays); // WM_NCRBUTTONDOWN
+  const nonClientMouseMessages = [
+    0x00a1, // WM_NCLBUTTONDOWN
+    0x00a2, // WM_NCLBUTTONUP
+    0x00a3, // WM_NCLBUTTONDBLCLK
+    0x00a4, // WM_NCRBUTTONDOWN
+    0x00a5, // WM_NCRBUTTONUP
+  ];
+  const menuMessages = [
+    0x0116, // WM_INITMENU
+    0x0117, // WM_INITMENUPOPUP
+    0x0211, // WM_ENTERMENULOOP
+  ];
+
+  for (const message of [...nonClientMouseMessages, ...menuMessages]) {
+    win.hookWindowMessage(message, notifyCloseOverlays);
+  }
 }
 
 function openServerChangeDialog() {
@@ -555,6 +569,11 @@ function installAppMenu() {
   const template = [
     {
       label: 'Сменить сервер',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          sendCloseUiOverlaysToWindow(mainWindow);
+        }
+      },
       submenu: [
         {
           label: 'Сменить сервер',
@@ -569,6 +588,11 @@ function installAppMenu() {
     },
     {
       label: 'Вид',
+      click: () => {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          sendCloseUiOverlaysToWindow(mainWindow);
+        }
+      },
       submenu: [
         {
           label: 'Сбросить масштаб',
