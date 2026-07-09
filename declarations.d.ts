@@ -53,6 +53,7 @@ interface Window {
       top?: number;
     }): Promise<void>;
     onZoomChanged(callback: () => void): () => void;
+    onCloseUiOverlays(callback: () => void): () => void;
     getAuthToken(): Promise<string | null>;
     getSelectedBranchState(): Promise<{ id: number | string; name: string } | null>;
   };

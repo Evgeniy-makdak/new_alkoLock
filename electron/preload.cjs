@@ -23,6 +23,17 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
       ipcRenderer.removeListener(channel, listener);
     };
   },
+  /** Закрыть выпадающие списки при клике по заголовку/меню окна (вне DOM). */
+  onCloseUiOverlays(callback) {
+    const channel = 'desktop:close-ui-overlays';
+    const listener = () => {
+      callback();
+    };
+    ipcRenderer.on(channel, listener);
+    return () => {
+      ipcRenderer.removeListener(channel, listener);
+    };
+  },
   /** Получить токен из основного окна для передачи в popup */
   getAuthToken() {
     return ipcRenderer.invoke('operator-chat-popup:get-auth-token');

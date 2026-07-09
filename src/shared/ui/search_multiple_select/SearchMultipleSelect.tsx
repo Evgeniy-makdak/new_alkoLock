@@ -525,11 +525,10 @@ export function SearchMultipleSelect<T>({
   const atMaxCapacity =
     maxValues != null && maxValues > 0 && (value?.length ?? 0) >= maxValues;
   const singleChipLocked = atMaxCapacity && maxValues === 1;
-  // В Electron баг с закрытием popup по клику "сверху" — поэтому для desktop shell
-  // добавляем более надёжный click-away, не трогая web/PWA.
+  // Electron: дополнительное закрытие popup (в т.ч. по IPC из main при клике по заголовку/меню).
   const isElectronDesktop = typeof window !== 'undefined' && Boolean((window as any).alcolockDesktop);
   const autocompleteRootRef = useRef<HTMLDivElement | null>(null);
-  const listboxRef = useRef<HTMLUListElement | null>(null);
+  const popperRef = useRef<HTMLDivElement | null>(null);
 
   if (mobileModalPicker && isMultipleMode) {
     return (
@@ -565,16 +564,26 @@ export function SearchMultipleSelect<T>({
 
   useEffect(() => {
     if (!isElectronDesktop) return;
+
+    const closePopup = () => setPopupOpen(false);
+
+    const unsubscribeDesktop = window.alcolockDesktop?.onCloseUiOverlays?.(closePopup);
+
+    return () => {
+      unsubscribeDesktop?.();
+    };
+  }, [isElectronDesktop]);
+
+  useEffect(() => {
+    if (!isElectronDesktop) return;
     if (!popupOpen) return;
 
     const onPointerDownCapture = (e: PointerEvent) => {
       const target = e.target as Node | null;
       if (!target) return;
 
-      // Клик внутри поля (корневого контейнера) — не закрываем
       if (autocompleteRootRef.current?.contains(target)) return;
-      // Клик по списку опций — не закрываем (там должно происходить выбор/закрытие штатно)
-      if (listboxRef.current?.contains(target)) return;
+      if (popperRef.current?.contains(target)) return;
 
       setPopupOpen(false);
     };
@@ -820,7 +829,11 @@ export function SearchMultipleSelect<T>({
       title: clearLabel,
       'aria-label': clearLabel,
     },
-    ...(isElectronDesktop ? ({ listbox: { ref: listboxRef } } as any) : {}),
+    ...(isElectronDesktop
+      ? ({
+          popper: { ref: popperRef },
+        } as any)
+      : {}),
   };
 
   const mergedAutocompleteSx: SearchMultipleSelectProps<T>['sx'] = singleChipLocked

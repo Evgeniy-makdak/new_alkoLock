@@ -505,6 +505,34 @@ function getConfiguredServerBaseUrl() {
   return getActiveServerBaseUrl();
 }
 
+function sendCloseUiOverlaysToWindow(win) {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('desktop:close-ui-overlays');
+}
+
+function withCloseUiOverlays(handler) {
+  return (...args) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      sendCloseUiOverlaysToWindow(mainWindow);
+    }
+    if (typeof handler === 'function') {
+      handler(...args);
+    }
+  };
+}
+
+/** Клики по заголовку/меню Windows не попадают в DOM — закрываем оверлеи через IPC. */
+function installMainWindowUiOverlayCloser(win) {
+  if (!win || process.platform !== 'win32') return;
+
+  const notifyCloseOverlays = () => {
+    sendCloseUiOverlaysToWindow(win);
+  };
+
+  win.hookWindowMessage(0x00a1, notifyCloseOverlays); // WM_NCLBUTTONDOWN
+  win.hookWindowMessage(0x00a4, notifyCloseOverlays); // WM_NCRBUTTONDOWN
+}
+
 function openServerChangeDialog() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     createMainWindow();
@@ -530,23 +558,53 @@ function installAppMenu() {
       submenu: [
         {
           label: 'Сменить сервер',
-          click: openServerChangeDialog,
+          click: withCloseUiOverlays(openServerChangeDialog),
         },
         { type: 'separator' },
         {
           label: 'Проверить обновления...',
-          click: checkDesktopUpdatesManually,
+          click: withCloseUiOverlays(checkDesktopUpdatesManually),
         },
       ],
     },
     {
       label: 'Вид',
       submenu: [
-        { role: 'resetZoom', label: 'Сбросить масштаб' },
-        { role: 'zoomIn', label: 'Увеличить масштаб' },
-        { role: 'zoomOut', label: 'Уменьшить масштаб' },
+        {
+          label: 'Сбросить масштаб',
+          click: withCloseUiOverlays(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.setZoomLevel(0);
+            }
+          }),
+        },
+        {
+          label: 'Увеличить масштаб',
+          click: withCloseUiOverlays(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              const current = mainWindow.webContents.getZoomLevel();
+              mainWindow.webContents.setZoomLevel(current + 0.5);
+            }
+          }),
+        },
+        {
+          label: 'Уменьшить масштаб',
+          click: withCloseUiOverlays(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              const current = mainWindow.webContents.getZoomLevel();
+              mainWindow.webContents.setZoomLevel(current - 0.5);
+            }
+          }),
+        },
         { type: 'separator' },
-        { role: 'reload', label: 'Обновить' },
+        {
+          label: 'Обновить',
+          click: withCloseUiOverlays(() => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.reload();
+            }
+          }),
+        },
       ],
     },
   ];
@@ -955,6 +1013,7 @@ function createMainWindow() {
   installZoomShortcuts(mainWindow);
   installOperatorPopupWindowOpenHandler(mainWindow);
   installWindowIcon(mainWindow);
+  installMainWindowUiOverlayCloser(mainWindow);
   mainWindow.once('ready-to-show', () => {
     if (!mainWindow || mainWindow.isDestroyed()) return;
     mainWindow.maximize();
