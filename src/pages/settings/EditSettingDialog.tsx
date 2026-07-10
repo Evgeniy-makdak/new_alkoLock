@@ -111,7 +111,11 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             gap: 1,
             mb: 2,
           }}>
-          <Typography fontWeight={600} variant="h6" color="text.primary" sx={{ flex: 1, pr: 1 }}>
+          <Typography
+            fontWeight={600}
+            variant="h6"
+            color="text.primary"
+            sx={{ flex: 1, pr: 1, whiteSpace: 'nowrap' }}>
             {t('modals.editParameter')}
           </Typography>
           <Tooltip title={t('common.closeWindow')}>
