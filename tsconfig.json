@@ -1,7 +1,7 @@
 {
   "compileOnSave": true,
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2015",
     "module": "commonjs",
     "jsx": "react-jsx",
     "rootDir": "./src",
@@ -13,7 +13,6 @@
     "allowJs": true,
     "checkJs": false,
     "skipLibCheck": true,
-    "baseUrl": ".",
     "typeRoots": ["./node_modules/@types"],
     "types": ["node", "babel__traverse"],
     "paths": {
