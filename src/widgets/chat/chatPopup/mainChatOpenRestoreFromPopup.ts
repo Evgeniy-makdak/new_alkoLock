@@ -367,7 +367,7 @@ export function persistDesktopSocketUnreadHandoff(args: {
   dialogsUnreadCounts: Map<number, number>;
   sessions?: ChatSession[];
 }): void {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || !window.alcolockDesktop) return;
   const dialogs: Record<string, number> = {};
   args.dialogsUnreadCounts.forEach((count, dialogId) => {
     if (dialogId > 0 && count > 0) {
@@ -377,7 +377,7 @@ export function persistDesktopSocketUnreadHandoff(args: {
   const sessionUnread: Record<string, number> = {};
   (args.sessions ?? []).forEach((session) => {
     const n = Number(session.unreadCount ?? session.totalUnreadCount ?? 0);
-    if (session.isMinimized && Number.isFinite(n) && n > 0) {
+    if (Number.isFinite(n) && n > 0) {
       sessionUnread[session.id] = n;
     }
   });

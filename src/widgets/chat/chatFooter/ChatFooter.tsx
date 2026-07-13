@@ -513,7 +513,7 @@ const ChatToggleButton = ({
   // при уже нулевой per-dialog карте (см. calculateTotalUnread в SocketContext).
   const iconUnreadTotal =
     electronSessionsUnreadSum != null
-      ? electronSessionsUnreadSum
+      ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase)
       : iconUnreadTotalBase > 0
         ? iconUnreadTotalBase
         : maxSessionUnreadFallback > 0

@@ -648,7 +648,10 @@ export const SocketProvider = ({
       return;
     }
 
-    const preserveUnreadCounts = currentBranchIdRef.current === branchIdNorm;
+    const preserveUnreadCounts =
+      currentBranchIdRef.current === branchIdNorm ||
+      (isElectronOperatorChatPopup() &&
+        (hasDetailedDataRef.current || unreadAggregateRef.current > 0));
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
