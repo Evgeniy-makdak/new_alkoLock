@@ -77,6 +77,13 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
 
   const dialogMaxWidth = isPwa ? 720 : 360;
   const dialogMinWidth = isPwa ? { xs: 280, sm: 550 } : { xs: 280, sm: 275 };
+  const firefoxDialogSx = isPwa
+    ? { overflowX: 'hidden' as const }
+    : {
+        maxWidth: 400,
+        minWidth: { xs: 280, sm: 320 },
+        overflowX: 'hidden' as const,
+      };
 
   return (
     <Backdrop
@@ -102,6 +109,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
           boxShadow: 3,
           maxHeight: '99vh',
           overflow: 'auto',
+          '@supports (-moz-appearance: none)': firefoxDialogSx,
         }}>
         <Box
           sx={{
@@ -110,12 +118,22 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             alignItems: 'flex-start',
             gap: 1,
             mb: 2,
+            '@supports (-moz-appearance: none)': {
+              minWidth: 0,
+            },
           }}>
           <Typography
             fontWeight={600}
             variant="h6"
             color="text.primary"
-            sx={{ flex: 1, pr: 1, whiteSpace: 'nowrap' }}>
+            sx={{
+              flex: 1,
+              pr: 1,
+              whiteSpace: 'nowrap',
+              '@supports (-moz-appearance: none)': {
+                minWidth: 0,
+              },
+            }}>
             {t('modals.editParameter')}
           </Typography>
           <Tooltip title={t('common.closeWindow')}>
@@ -136,7 +154,13 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
           </Tooltip>
         </Box>
 
-        <Stack gap={3}>
+        <Stack
+          gap={3}
+          sx={{
+            '@supports (-moz-appearance: none)': {
+              minWidth: 0,
+            },
+          }}>
           <Typography
             gutterBottom
             sx={{
@@ -152,6 +176,14 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
             type="number"
             fullWidth
             variant="outlined"
+            sx={{
+              '@supports (-moz-appearance: none)': {
+                minWidth: 0,
+                '& input[type=number]': {
+                  MozAppearance: 'textfield',
+                },
+              },
+            }}
             value={editValue === 0 ? '' : editValue}
             onChange={handleEditValueChange}
             onPaste={handlePaste}
