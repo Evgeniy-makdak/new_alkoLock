@@ -1,8 +1,8 @@
-version: 0.1.19
+version: 0.1.20
 files:
-  - url: Алкозамок-М СМАРТ-Setup-0.1.19-x64.exe
-    sha512: Ux6s901J43P79Ud4NowxdPQkwV+dCCd8jTOxKAGTG4XHiI3FfC/WI4lJFFjZXEWzZK2ra+3Vx57MkG7YIUVbAA==
-    size: 82172484
-path: Алкозамок-М СМАРТ-Setup-0.1.19-x64.exe
-sha512: Ux6s901J43P79Ud4NowxdPQkwV+dCCd8jTOxKAGTG4XHiI3FfC/WI4lJFFjZXEWzZK2ra+3Vx57MkG7YIUVbAA==
-releaseDate: '2026-07-09T06:18:17.231Z'
+  - url: Алкозамок-М СМАРТ-Setup-0.1.20-x64.exe
+    sha512: Fu1ZT6morArdws2z+xFqMPVRwfnRTp0SzF9MqK7++OADL5c4QX8Pj3rxtot2mbxxhxhVIN4jy9ejiL/szTSAXA==
+    size: 82172499
+path: Алкозамок-М СМАРТ-Setup-0.1.20-x64.exe
+sha512: Fu1ZT6morArdws2z+xFqMPVRwfnRTp0SzF9MqK7++OADL5c4QX8Pj3rxtot2mbxxhxhVIN4jy9ejiL/szTSAXA==
+releaseDate: '2026-07-13T10:59:11.396Z'

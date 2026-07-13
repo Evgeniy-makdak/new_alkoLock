@@ -565,6 +565,22 @@ function openServerChangeDialog() {
   createServerSetupWindow({ mode: 'change' });
 }
 
+function attachMenuOverlayCloser(menu) {
+  if (!menu || process.platform !== 'win32') return;
+
+  menu.on('menu-will-show', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      sendCloseUiOverlaysToWindow(mainWindow);
+    }
+  });
+
+  for (const item of menu.items) {
+    if (item.submenu) {
+      attachMenuOverlayCloser(item.submenu);
+    }
+  }
+}
+
 function installAppMenu() {
   const template = [
     {
@@ -632,7 +648,9 @@ function installAppMenu() {
       ],
     },
   ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  const appMenu = Menu.buildFromTemplate(template);
+  attachMenuOverlayCloser(appMenu);
+  Menu.setApplicationMenu(appMenu);
 }
 
 function escapeHtml(value) {

@@ -2,7 +2,7 @@
   "extends": null,
   "appId": "ru.alcolocks.operator",
   "productName": "Алкозамок-М СМАРТ",
-  "executableName": "Алкозамок-М СМАРТ",
+  "executableName": "Alkozamok-SMART",
   "icon": "electron/app-icon.ico",
   "afterPack": "scripts/after-pack.cjs",
   "directories": {
