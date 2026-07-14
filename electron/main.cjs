@@ -1125,9 +1125,34 @@ function createOperatorChatPopupWindow(payload = {}) {
   const bounds = normalizePopupBounds(payload.lock || {});
 
   if (operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed()) {
+    // Всегда reloadURL: иначе React не перемонтируется и REST countMessages
+    // на «Открыть диалоговое окно» не уходит (остаётся только focus старого окна).
     operatorChatPopupWindow.setBounds(bounds, false);
+    const onFinish = () => {
+      if (!operatorChatPopupWindow || operatorChatPopupWindow.isDestroyed()) return;
+      operatorChatPopupWindow.webContents.removeListener('did-finish-load', onFinish);
+      void operatorChatPopupWindow.webContents.insertCSS(OPERATOR_CHAT_POPUP_TRANSPARENCY_CSS);
+      void operatorChatPopupWindow.webContents.insertCSS(CHAT_CONTROL_LABEL_FIX_CSS);
+      void operatorChatPopupWindow.webContents.insertCSS(DESKTOP_SHELL_CHAT_CSS);
+      operatorChatPopupWindow.setBackgroundColor('#00000000');
+      injectPopupSessionFromPayload(operatorChatPopupWindow.webContents, payload);
+      try {
+        void operatorChatPopupWindow.webContents.executeJavaScript(
+          `window.dispatchEvent(new CustomEvent(${JSON.stringify(
+            'alcolock-electron-popup-request-unread-rest',
+          )}));`,
+          true,
+        );
+      } catch {
+        /* ignore */
+      }
+    };
+    operatorChatPopupWindow.webContents.on('did-finish-load', onFinish);
+    void operatorChatPopupWindow.loadURL(appUrl);
+    if (!operatorChatPopupWindow.isVisible()) {
+      operatorChatPopupWindow.show();
+    }
     operatorChatPopupWindow.focus();
-    injectPopupSessionFromPayload(operatorChatPopupWindow.webContents, payload);
     return;
   }
 

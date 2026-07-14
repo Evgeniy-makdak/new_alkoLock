@@ -23,7 +23,7 @@ import {
   peekMainRestoreIsChatOpenForMainWindow,
   peekMainReturnHandoffPayload,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
-import { CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY } from '../chatPopup/constants';
+import { CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY, CHAT_POPUP_OPEN_REST_GENERATION_KEY } from '../chatPopup/constants';
 import { isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
 import {
   DESKTOP_AUTH_READY_EVENT,
@@ -154,9 +154,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     mainSessionsInit.sessions.length > 0 ? mainSessionsInit.activeSessionId : null,
   );
 
-  useEffect(() => {
-    sessionsRef.current = sessions;
-  }, [sessions]);
+  // Синхронно в render (как useChatSessions): иначе Electron REST на открытии popup
+  // в useLayoutEffect видит пустой sessionsRef и пропускает countMessages.
+  sessionsRef.current = sessions;
 
   /** После peek в useState init — убираем handoff из storage (не в init: иначе Strict Mode съедает значение). */
   useEffect(() => {
@@ -376,6 +376,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.location.pathname.includes('/operator-chat-popup')) return;
+    // Electron: чат только в popup; REST countMessages на main при закрытии popup не нужен
+    // (именно он давал ложный запрос «при закрытии» в Network основного окна).
+    if (isElectronMainChatHost()) return;
     if (popupHandoffHydratedRef.current) return;
     const p = peekMainReturnHandoffPayload();
     if (!p || p.v !== 2) return;
@@ -463,9 +466,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       electronPopupUnreadHydratedSessionIdsRef.current.clear();
     }
 
-    const pending = sessionsRef.current.filter(
-      (s) => !electronPopupUnreadHydratedSessionIdsRef.current.has(s.id),
-    );
+    const list = sessionsRef.current;
+    const pending = list.filter((s) => !electronPopupUnreadHydratedSessionIdsRef.current.has(s.id));
     if (pending.length === 0) return;
 
     for (const s of pending) {
@@ -495,21 +497,29 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const pollId = window.setInterval(() => {
       attempts += 1;
       runElectronPopupUnreadRest();
-      if (attempts >= 30) {
+      if (attempts >= 50) {
         window.clearInterval(pollId);
       }
     }, 200);
 
     const onSignal = () => runElectronPopupUnreadRest();
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== CHAT_POPUP_OPEN_REST_GENERATION_KEY) return;
+      electronPopupRestGenerationRef.current = null;
+      electronPopupUnreadHydratedSessionIdsRef.current.clear();
+      runElectronPopupUnreadRest();
+    };
     window.addEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
     window.addEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
     window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+    window.addEventListener('storage', onStorage);
 
     return () => {
       window.clearInterval(pollId);
       window.removeEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
       window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
       window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+      window.removeEventListener('storage', onStorage);
     };
   }, [runElectronPopupUnreadRest]);
 

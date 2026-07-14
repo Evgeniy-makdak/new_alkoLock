@@ -25,6 +25,7 @@ import {
 
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
 import {
@@ -32,12 +33,21 @@ import {
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
   CHAT_POPUP_ACTIVE_STORAGE_KEY,
+  CHAT_POPUP_OPEN_REST_GENERATION_KEY,
 } from '../chatPopup/constants';
 import {
   persistMainRestoreFromPopupState,
   persistMainToOperatorPopupHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { isBrowserWebChatShell, isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
+import {
+  DESKTOP_AUTH_READY_EVENT,
+} from '../chatPopup/electronPopupAuth';
+import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
+import {
+  ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT,
+  readElectronPopupOpenRestGeneration,
+} from '../chatPopup/electronPopupUnreadRest';
 import {
   closeOperatorChatPopupAndRestoreMain,
   openOperatorChatPopup,
@@ -833,19 +843,65 @@ const ChatContainer = () => {
     operatorChatSessionRestoreFingerprint,
   ]);
 
-  // Web/PWA popup: список диалогов для превью. Electron — в ChatContext (REST на открытии окна).
+  // Web/PWA popup: список диалогов для превью (без изменений).
+  // Electron popup: тот же REST countMessages на каждое открытие окна (как web).
+  // Electron main host: skip — UI чата только в откреплённом окне.
+  const electronPopupFooterRestGenRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!isOperatorChatPopupWindow) return;
     if (isDesktopMainChatHost) return;
-    if (isDesktopShell) return;
     if (sessions.length === 0) return;
 
-    sessions.forEach((session) => {
-      if (session.unreadDialogs.length === 0 && !session.isLoadingUnreadDialogs) {
-        forceLoadUnreadDialogs(session.id);
-      }
-    });
-  }, [isOperatorChatPopupWindow, isDesktopMainChatHost, isDesktopShell, sessions, forceLoadUnreadDialogs]);
+    if (!isDesktopShell) {
+      sessions.forEach((session) => {
+        if (session.unreadDialogs.length === 0 && !session.isLoadingUnreadDialogs) {
+          forceLoadUnreadDialogs(session.id);
+        }
+      });
+      return;
+    }
+
+    // Electron popup only below.
+    const runElectronFooterUnreadRest = () => {
+      if (!getBearerToken()) return;
+      if (sessions.length === 0) return;
+      const generation = readElectronPopupOpenRestGeneration() ?? 'default';
+      if (electronPopupFooterRestGenRef.current === generation) return;
+      electronPopupFooterRestGenRef.current = generation;
+      sessions.forEach((session) => {
+        void forceLoadUnreadDialogs(session.id);
+      });
+    };
+
+    runElectronFooterUnreadRest();
+
+    const onSignal = () => {
+      runElectronFooterUnreadRest();
+    };
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== CHAT_POPUP_OPEN_REST_GENERATION_KEY) return;
+      electronPopupFooterRestGenRef.current = null;
+      runElectronFooterUnreadRest();
+    };
+
+    window.addEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
+    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
+    window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
+      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
+      window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [
+    isOperatorChatPopupWindow,
+    isDesktopMainChatHost,
+    isDesktopShell,
+    sessions,
+    forceLoadUnreadDialogs,
+  ]);
 
   /** Только при смене филиала. Подписка монтируется один раз: иначе [sessions, closeSession] пересоздаёт
    * closeSession на каждом обновлении сессий → бесконечный resubscribe и гонки с «дёрганьем» после handoff. */
