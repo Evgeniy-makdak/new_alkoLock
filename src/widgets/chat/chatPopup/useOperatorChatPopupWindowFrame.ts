@@ -14,9 +14,7 @@ import {
   getOperatorChatPopupMinOuterSize,
   measureOperatorChatPopupDockOuterSize,
   OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
-  resolveBottomRightPopupScreenPosition,
 } from './operatorChatPopupLayout';
-import { readChatLayoutPinned } from './popupLayoutStorage';
 
 const LOCK_TOLERANCE_PX = 8;
 const OUTER_SAME_TOLERANCE_PX = 6;
@@ -115,14 +113,17 @@ function resolveContentOuterAt100(dock: Element, zoomFactor: number): ContentOut
   };
 }
 
-/** Удерживает popup в пределах экрана; при закреплённом layout сохраняет текущую позицию. */
+/** Удерживает popup в пределах экрана; позицию пользователя не сбрасывает. */
 function resolvePopupScreenPosition(
   outerW: number,
   outerH: number,
   fallback: { left: number; top: number },
 ): { left: number; top: number } {
-  if (isElectronChatShell() && !readChatLayoutPinned(true)) {
-    return resolveBottomRightPopupScreenPosition(outerW, outerH);
+  // Electron: не пересчитывать в bottom-right и не clamp'ить по primary screen —
+  // иначе окно «прилипает» к дефолту / основному монитору после drag.
+  // Дефолт (правый низ) задаётся только при openOperatorChatPopup.
+  if (isElectronChatShell()) {
+    return { left: window.screenX, top: window.screenY };
   }
 
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
@@ -645,8 +646,8 @@ function installPwaDynamicPopupFrame(): () => void {
     if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
 
     let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
-    const electronAutoReposition = isElectronChatShell() && !readChatLayoutPinned(true);
-    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX && !electronAutoReposition) {
+    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+      // Расширение влево без сброса пользовательской позиции в дефолтный угол.
       position = {
         ...position,
         left: position.left - measured.leftOverflowPx,
