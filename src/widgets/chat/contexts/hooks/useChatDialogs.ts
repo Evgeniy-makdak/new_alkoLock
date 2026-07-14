@@ -94,6 +94,16 @@ export const useChatDialogs = (
 
   const loadUnreadDialogsCommon = useCallback(
     async (sessionId: string, force: boolean = false) => {
+      // Electron: основное окно НЕ должно ходить в dialogs?countMessages —
+      // это даёт «запросы при закрытии popup» в Network main (handoff/deps).
+      if (
+        typeof window !== 'undefined' &&
+        Boolean(window.alcolockDesktop) &&
+        !window.location.pathname.includes('/operator-chat-popup')
+      ) {
+        return;
+      }
+
       const session = getSession(sessionId);
       if (!session || (!force && loadDialogInProgressRef.current.has(sessionId))) return;
 

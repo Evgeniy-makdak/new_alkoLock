@@ -33,7 +33,6 @@ import {
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_LOCAL_KEY,
   CHAT_MAIN_RESTORE_SKIP_EMPTY_CLOSE_ONCE_SESSION_KEY,
   CHAT_POPUP_ACTIVE_STORAGE_KEY,
-  CHAT_POPUP_OPEN_REST_GENERATION_KEY,
 } from '../chatPopup/constants';
 import {
   persistMainRestoreFromPopupState,
@@ -46,7 +45,6 @@ import {
 import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
 import {
   ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT,
-  readElectronPopupOpenRestGeneration,
 } from '../chatPopup/electronPopupUnreadRest';
 import {
   closeOperatorChatPopupAndRestoreMain,
@@ -768,6 +766,11 @@ const ChatContainer = () => {
         /* ignore */
       }
       if (skipEmptyClose) {
+        // Electron main не восстанавливает чат UI — skip REST.
+        if (isDesktopShell && !isOperatorChatPopupWindow) {
+          setIsChatOpen(false);
+          return;
+        }
         const newSessionId = createNewSession();
         if (newSessionId) {
           void forceLoadUnreadDialogs(newSessionId);
@@ -843,57 +846,32 @@ const ChatContainer = () => {
     operatorChatSessionRestoreFingerprint,
   ]);
 
-  // Web/PWA popup: список диалогов для превью (без изменений).
-  // Electron popup: тот же REST countMessages на каждое открытие окна (как web).
-  // Electron main host: skip — UI чата только в откреплённом окне.
-  const electronPopupFooterRestGenRef = useRef<string | null>(null);
-
+  // Popup (web и Electron): список диалогов для превью — как в браузерной версии.
   useEffect(() => {
     if (!isOperatorChatPopupWindow) return;
     if (isDesktopMainChatHost) return;
     if (sessions.length === 0) return;
 
-    if (!isDesktopShell) {
+    const loadForSessions = () => {
+      if (!getBearerToken()) return;
       sessions.forEach((session) => {
         if (session.unreadDialogs.length === 0 && !session.isLoadingUnreadDialogs) {
-          forceLoadUnreadDialogs(session.id);
+          void forceLoadUnreadDialogs(session.id);
         }
       });
-      return;
-    }
-
-    // Electron popup only below.
-    const runElectronFooterUnreadRest = () => {
-      if (!getBearerToken()) return;
-      if (sessions.length === 0) return;
-      const generation = readElectronPopupOpenRestGeneration() ?? 'default';
-      if (electronPopupFooterRestGenRef.current === generation) return;
-      electronPopupFooterRestGenRef.current = generation;
-      sessions.forEach((session) => {
-        void forceLoadUnreadDialogs(session.id);
-      });
     };
 
-    runElectronFooterUnreadRest();
+    loadForSessions();
 
-    const onSignal = () => {
-      runElectronFooterUnreadRest();
-    };
-    const onStorage = (event: StorageEvent) => {
-      if (event.key !== CHAT_POPUP_OPEN_REST_GENERATION_KEY) return;
-      electronPopupFooterRestGenRef.current = null;
-      runElectronFooterUnreadRest();
-    };
+    if (!isDesktopShell) return;
 
-    window.addEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
-    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
-    window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
-    window.addEventListener('storage', onStorage);
+    window.addEventListener(DESKTOP_AUTH_READY_EVENT, loadForSessions);
+    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, loadForSessions);
+    window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, loadForSessions);
     return () => {
-      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
-      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
-      window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
-      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, loadForSessions);
+      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, loadForSessions);
+      window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, loadForSessions);
     };
   }, [
     isOperatorChatPopupWindow,
@@ -1526,6 +1504,8 @@ const ChatContainer = () => {
   const dialogFetchKey = dialogIdsToFetch.join(',');
 
   useEffect(() => {
+    // Electron main: превью сообщений только в popup-окне.
+    if (isDesktopMainChatHost) return;
     if (dialogIdsToFetch.length === 0) {
       setDialogPreviewLines({});
       return;
@@ -1559,7 +1539,7 @@ const ChatContainer = () => {
     return () => {
       cancelled = true;
     };
-  }, [dialogFetchKey, t]);
+  }, [dialogFetchKey, t, isDesktopMainChatHost]);
 
   const attachmentLabel = t('chat.previewAttachment');
 

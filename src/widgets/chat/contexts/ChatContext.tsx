@@ -32,9 +32,14 @@ import {
 import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
 import {
   ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT,
+  ELECTRON_POPUP_UNREAD_DIALOGS_LOADED_EVENT,
+  fetchElectronPopupUnreadDialogs,
+  peekLastElectronPopupUnreadDialogs,
+  peekLastElectronPopupUnreadDialogsGeneration,
   readElectronPopupOpenRestGeneration,
 } from '../chatPopup/electronPopupUnreadRest';
 import { ChatConfig } from '../contexts/chatConfig';
+import { UnreadDialog } from '../api/dialogsApi';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
@@ -376,9 +381,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     if (window.location.pathname.includes('/operator-chat-popup')) return;
-    // Electron: чат только в popup; REST countMessages на main при закрытии popup не нужен
-    // (именно он давал ложный запрос «при закрытии» в Network основного окна).
-    if (isElectronMainChatHost()) return;
+    // Electron main: отдельное popup-окно; здесь REST countMessages запрещён.
+    // Иначе при закрытии popup handoff в LS + смена deps эффекта шлёт запросы в Network main.
+    if (isElectronMainChatHost()) {
+      popupHandoffHydratedRef.current = true;
+      return;
+    }
     if (popupHandoffHydratedRef.current) return;
     const p = peekMainReturnHandoffPayload();
     if (!p || p.v !== 2) return;
@@ -454,39 +462,68 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   /** Electron popup: REST dialogs?countMessages на каждое открытие окна (как web). */
   const electronPopupRestGenerationRef = useRef<string | null>(null);
-  const electronPopupUnreadHydratedSessionIdsRef = useRef<Set<string>>(new Set());
+  const electronPopupUnreadAppliedGenerationRef = useRef<string | null>(null);
+  const electronPopupUnreadFetchInflightRef = useRef(false);
 
-  const runElectronPopupUnreadRest = useCallback(() => {
+  const applyElectronPopupUnreadList = useCallback(
+    (list: UnreadDialog[]) => {
+      const generation = readElectronPopupOpenRestGeneration() ?? 'default';
+      if (electronPopupUnreadAppliedGenerationRef.current === generation) return;
+
+      const current = sessionsRef.current;
+      if (current.length === 0) return;
+
+      electronPopupUnreadAppliedGenerationRef.current = generation;
+
+      current.forEach((s: { id: string }) => {
+        updateSession(s.id, {
+          unreadDialogs: list,
+          isLoadingUnreadDialogs: false,
+        });
+      });
+      onUnreadDialogsLoaded(list);
+    },
+    [onUnreadDialogsLoaded, updateSession],
+  );
+
+  const runElectronPopupUnreadRest = useCallback(async () => {
     if (!isElectronOperatorChatPopup()) return;
     if (!getBearerToken()) return;
 
     const generation = readElectronPopupOpenRestGeneration() ?? 'default';
     if (generation !== electronPopupRestGenerationRef.current) {
       electronPopupRestGenerationRef.current = generation;
-      electronPopupUnreadHydratedSessionIdsRef.current.clear();
+      electronPopupUnreadAppliedGenerationRef.current = null;
     }
 
-    const list = sessionsRef.current;
-    const pending = list.filter((s) => !electronPopupUnreadHydratedSessionIdsRef.current.has(s.id));
-    if (pending.length === 0) return;
+    if (electronPopupUnreadAppliedGenerationRef.current === generation) return;
+    if (sessionsRef.current.length === 0) return;
+    if (electronPopupUnreadFetchInflightRef.current) return;
 
-    for (const s of pending) {
-      electronPopupUnreadHydratedSessionIdsRef.current.add(s.id);
-      const hasDid =
-        (s.selectedDialog?.id != null &&
-          String(s.selectedDialog.id) !== '' &&
-          String(s.selectedDialog.id) !== '0' &&
-          String(s.selectedDialog.id) !== 'assigned') ||
-        (s.assignedDialogId != null &&
-          String(s.assignedDialogId) !== '' &&
-          String(s.assignedDialogId) !== '0' &&
-          String(s.assignedDialogId) !== 'assigned');
-      if (hasDid) {
-        void dialogHandlers.forceRefreshSessionMessages(s.id);
+    electronPopupUnreadFetchInflightRef.current = true;
+    try {
+      const list = await fetchElectronPopupUnreadDialogs();
+      if (list !== null) {
+        applyElectronPopupUnreadList(list);
+        for (const s of sessionsRef.current) {
+          const hasDid =
+            (s.selectedDialog?.id != null &&
+              String(s.selectedDialog.id) !== '' &&
+              String(s.selectedDialog.id) !== '0' &&
+              String(s.selectedDialog.id) !== 'assigned') ||
+            (s.assignedDialogId != null &&
+              String(s.assignedDialogId) !== '' &&
+              String(s.assignedDialogId) !== '0' &&
+              String(s.assignedDialogId) !== 'assigned');
+          if (hasDid) {
+            void dialogHandlers.forceRefreshSessionMessages(s.id);
+          }
+        }
       }
-      void forceLoadUnreadDialogs(s.id);
+    } finally {
+      electronPopupUnreadFetchInflightRef.current = false;
     }
-  }, [dialogHandlers, forceLoadUnreadDialogs]);
+  }, [applyElectronPopupUnreadList, dialogHandlers]);
 
   useLayoutEffect(() => {
     if (!isElectronOperatorChatPopup()) return;
@@ -506,8 +543,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const onStorage = (event: StorageEvent) => {
       if (event.key !== CHAT_POPUP_OPEN_REST_GENERATION_KEY) return;
       electronPopupRestGenerationRef.current = null;
-      electronPopupUnreadHydratedSessionIdsRef.current.clear();
-      runElectronPopupUnreadRest();
+      electronPopupUnreadAppliedGenerationRef.current = null;
+      void runElectronPopupUnreadRest();
     };
     window.addEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
     window.addEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
@@ -527,6 +564,29 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     if (!isElectronOperatorChatPopup()) return;
     runElectronPopupUnreadRest();
   }, [sessions, runElectronPopupUnreadRest]);
+
+  /** Событие fetch из OperatorChatPopupPage — применить, когда сессии уже есть. */
+  useEffect(() => {
+    if (!isElectronOperatorChatPopup()) return;
+
+    const onLoaded = (event: Event) => {
+      const list = (event as CustomEvent).detail;
+      if (!Array.isArray(list)) return;
+      applyElectronPopupUnreadList(list as UnreadDialog[]);
+    };
+
+    const buffered = peekLastElectronPopupUnreadDialogs();
+    const bufferedGen = peekLastElectronPopupUnreadDialogsGeneration();
+    const currentGen = readElectronPopupOpenRestGeneration() ?? 'default';
+    if (buffered && bufferedGen === currentGen) {
+      applyElectronPopupUnreadList(buffered);
+    }
+
+    window.addEventListener(ELECTRON_POPUP_UNREAD_DIALOGS_LOADED_EVENT, onLoaded);
+    return () => {
+      window.removeEventListener(ELECTRON_POPUP_UNREAD_DIALOGS_LOADED_EVENT, onLoaded);
+    };
+  }, [applyElectronPopupUnreadList, sessions]);
 
   useLayoutEffect(() => {
     if (!isElectronOperatorChatPopup()) return;
@@ -1623,6 +1683,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   }, [socketDialogsUnreadCounts, updateSession]);
 
   useEffect(() => {
+    // Electron main: чат UI только в popup — не дергать countMessages здесь.
+    if (isElectronMainChatHost()) return;
     if (isChatOpen && sessions.length > 0 && activeSessionId) {
       const session = getSession(activeSessionId);
       if (session && !session.isLoadingUnreadDialogs && session.unreadDialogs.length === 0) {

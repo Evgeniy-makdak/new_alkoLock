@@ -1,19 +1,25 @@
-import { useEffect, useLayoutEffect } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 import { useSelectedBranchOfficeSync } from '@features/nav_bar_branch_select/hooks/useSelectedBranchOfficeSync';
 import { cookieManager, getBearerToken, isValidJwtFormat } from '@shared/utils/cookie_manager';
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY } from '@widgets/chat/chatPopup/constants';
 import {
+  DESKTOP_AUTH_READY_EVENT,
   isElectronOperatorChatPopup,
   notifyDesktopAuthReady,
   syncElectronOperatorChatPopupAuthFromUrl,
 } from '@widgets/chat/chatPopup/electronPopupAuth';
 import {
   bootstrapElectronOperatorChatPopupSession,
+  DESKTOP_BRANCH_READY_EVENT,
   ensureElectronPopupBearerCookie,
   syncElectronPopupBranchFromStorage,
 } from '@widgets/chat/chatPopup/electronPopupSessionBootstrap';
-import { requestElectronPopupUnreadRest } from '@widgets/chat/chatPopup/electronPopupUnreadRest';
+import {
+  ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT,
+  fetchElectronPopupUnreadDialogs,
+  requestElectronPopupUnreadRest,
+} from '@widgets/chat/chatPopup/electronPopupUnreadRest';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
@@ -39,32 +45,60 @@ export default function OperatorChatPopupPage(): null {
   useEffect(() => {
     if (!isElectronOperatorChatPopup()) return;
 
-    void bootstrapElectronOperatorChatPopupSession().then(() => {
-      requestElectronPopupUnreadRest();
-    });
+    const mountedRef = { current: true };
+    let inflight = false;
 
-    let cancelled = false;
+    const triggerUnreadRest = () => {
+      if (!mountedRef.current || inflight) return;
+      if (!getBearerToken()) return;
+      inflight = true;
+      requestElectronPopupUnreadRest();
+      void fetchElectronPopupUnreadDialogs().finally(() => {
+        inflight = false;
+      });
+    };
+
+    void bootstrapElectronOperatorChatPopupSession().then(triggerUnreadRest);
+
     const ensureDesktopAuth = async () => {
       if (getBearerToken()) {
         notifyDesktopAuthReady();
-        requestElectronPopupUnreadRest();
+        triggerUnreadRest();
         return;
       }
       try {
         const token = await window.alcolockDesktop?.getAuthToken();
-        if (cancelled || !token || !isValidJwtFormat(token)) return;
+        if (!mountedRef.current || !token || !isValidJwtFormat(token)) return;
         localStorage.setItem('authToken', token);
         cookieManager.set('bearer', token);
         notifyDesktopAuthReady();
-        requestElectronPopupUnreadRest();
+        triggerUnreadRest();
       } catch {
         /* ignore */
       }
     };
 
     void ensureDesktopAuth();
+
+    window.addEventListener(DESKTOP_AUTH_READY_EVENT, triggerUnreadRest);
+    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, triggerUnreadRest);
+    window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, triggerUnreadRest);
+
+    let attempts = 0;
+    const pollId = window.setInterval(() => {
+      attempts += 1;
+      triggerUnreadRest();
+      if (attempts >= 40) {
+        window.clearInterval(pollId);
+      }
+    }, 250);
+
     return () => {
-      cancelled = true;
+      mountedRef.current = false;
+      window.clearInterval(pollId);
+      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, triggerUnreadRest);
+      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, triggerUnreadRest);
+      window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, triggerUnreadRest);
     };
   }, []);
 
