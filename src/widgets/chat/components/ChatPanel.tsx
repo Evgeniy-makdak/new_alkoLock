@@ -1243,26 +1243,6 @@ function ChatPanel({
     activeDialogNumericId,
   ]);
 
-  if (!session) return null;
-
-  const {
-    selectedDialog,
-    messages,
-    isMinimized,
-    selectedUsers,
-    selectedUserName,
-    messageText,
-    usersCache,
-    isDialogEnded,
-    isSendingMessage,
-    lastSendError,
-    assignedDialogId,
-    transferRecipientFullName = null,
-  } = session;
-
-  // Скролл к первому непрочитанному в MessageFeed: флаг scrollToBottomOnExpand.
-  // ChatFooter передаёт true только когда панель только что развернули из минимизации;
-  // в остальных случаях автоскролл по новым входящим не должен запускаться.
   const shouldScrollToFirstUnreadOnExpand = useMemo(() => {
     return Boolean(scrollToBottomOnExpand);
   }, [scrollToBottomOnExpand]);
@@ -1276,30 +1256,18 @@ function ChatPanel({
     });
   }, [sessionId, shouldScrollToFirstUnreadOnExpand, displayUnreadCount, scrollToBottomOnExpand]);
 
-  if (isMinimized) {
-    return (
-      <div className={styles.minimizedPanel}>
-        <div className={styles.minimizedHeader} onClick={() => toggleSessionMinimize(sessionId)}>
-          <h3>
-            {selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}
-          </h3>
-          {displayUnreadCount > 0 && (
-            <span className={styles.unreadBadgeMinimized}>
-              {displayUnreadCount > 99 ? '99+' : displayUnreadCount}
-            </span>
-          )}
-          <IconButton
-            title={t('chat.minimizeDialog')}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleSessionMinimize(sessionId);
-            }}>
-            <Minimize />
-          </IconButton>
-        </div>
-      </div>
-    );
-  }
+  const selectedDialog = session?.selectedDialog;
+  const messages = session?.messages;
+  const isMinimized = session?.isMinimized;
+  const selectedUsers = session?.selectedUsers ?? [];
+  const selectedUserName = session?.selectedUserName;
+  const messageText = session?.messageText;
+  const usersCache = session?.usersCache;
+  const isDialogEnded = session?.isDialogEnded;
+  const isSendingMessage = session?.isSendingMessage;
+  const lastSendError = session?.lastSendError;
+  const assignedDialogId = session?.assignedDialogId;
+  const transferRecipientFullName = session?.transferRecipientFullName ?? null;
 
   const hasExistingDialog =
     (selectedDialog?.id != null && String(selectedDialog.id) !== '0') ||
@@ -1407,6 +1375,33 @@ function ChatPanel({
       setLocalTransferBannerName(null);
     }
   }, [dialogStatusEffective, isTransferBannerPinned]);
+
+  if (!session) return null;
+
+  if (isMinimized) {
+    return (
+      <div className={styles.minimizedPanel}>
+        <div className={styles.minimizedHeader} onClick={() => toggleSessionMinimize(sessionId)}>
+          <h3>
+            {selectedUserName || selectedDialog?.client_name || t('chat.dialogTitleFallback')}
+          </h3>
+          {displayUnreadCount > 0 && (
+            <span className={styles.unreadBadgeMinimized}>
+              {displayUnreadCount > 99 ? '99+' : displayUnreadCount}
+            </span>
+          )}
+          <IconButton
+            title={t('chat.minimizeDialog')}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleSessionMinimize(sessionId);
+            }}>
+            <Minimize />
+          </IconButton>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { appStore } from '@shared/model/app_store/AppStore';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import i18n from '../../../i18n';
 import {
@@ -24,6 +25,15 @@ import {
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY } from '../chatPopup/constants';
 import { isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
+import {
+  DESKTOP_AUTH_READY_EVENT,
+  isElectronOperatorChatPopup,
+} from '../chatPopup/electronPopupAuth';
+import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
+import {
+  ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT,
+  readElectronPopupOpenRestGeneration,
+} from '../chatPopup/electronPopupUnreadRest';
 import { ChatConfig } from '../contexts/chatConfig';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -439,10 +449,90 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     return () => window.clearTimeout(id);
   }, [mainSessionsInit.fromMainToPopup, sessions, updateSession]);
 
+  /** Electron popup: REST dialogs?countMessages на каждое открытие окна (как web). */
+  const electronPopupRestGenerationRef = useRef<string | null>(null);
+  const electronPopupUnreadHydratedSessionIdsRef = useRef<Set<string>>(new Set());
+
+  const runElectronPopupUnreadRest = useCallback(() => {
+    if (!isElectronOperatorChatPopup()) return;
+    if (!getBearerToken()) return;
+
+    const generation = readElectronPopupOpenRestGeneration() ?? 'default';
+    if (generation !== electronPopupRestGenerationRef.current) {
+      electronPopupRestGenerationRef.current = generation;
+      electronPopupUnreadHydratedSessionIdsRef.current.clear();
+    }
+
+    const pending = sessionsRef.current.filter(
+      (s) => !electronPopupUnreadHydratedSessionIdsRef.current.has(s.id),
+    );
+    if (pending.length === 0) return;
+
+    for (const s of pending) {
+      electronPopupUnreadHydratedSessionIdsRef.current.add(s.id);
+      const hasDid =
+        (s.selectedDialog?.id != null &&
+          String(s.selectedDialog.id) !== '' &&
+          String(s.selectedDialog.id) !== '0' &&
+          String(s.selectedDialog.id) !== 'assigned') ||
+        (s.assignedDialogId != null &&
+          String(s.assignedDialogId) !== '' &&
+          String(s.assignedDialogId) !== '0' &&
+          String(s.assignedDialogId) !== 'assigned');
+      if (hasDid) {
+        void dialogHandlers.forceRefreshSessionMessages(s.id);
+      }
+      void forceLoadUnreadDialogs(s.id);
+    }
+  }, [dialogHandlers, forceLoadUnreadDialogs]);
+
+  useLayoutEffect(() => {
+    if (!isElectronOperatorChatPopup()) return;
+
+    runElectronPopupUnreadRest();
+
+    let attempts = 0;
+    const pollId = window.setInterval(() => {
+      attempts += 1;
+      runElectronPopupUnreadRest();
+      if (attempts >= 30) {
+        window.clearInterval(pollId);
+      }
+    }, 200);
+
+    const onSignal = () => runElectronPopupUnreadRest();
+    window.addEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
+    window.addEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
+    window.addEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+
+    return () => {
+      window.clearInterval(pollId);
+      window.removeEventListener(DESKTOP_AUTH_READY_EVENT, onSignal);
+      window.removeEventListener(DESKTOP_BRANCH_READY_EVENT, onSignal);
+      window.removeEventListener(ELECTRON_POPUP_REQUEST_UNREAD_REST_EVENT, onSignal);
+    };
+  }, [runElectronPopupUnreadRest]);
+
+  useEffect(() => {
+    if (!isElectronOperatorChatPopup()) return;
+    runElectronPopupUnreadRest();
+  }, [sessions, runElectronPopupUnreadRest]);
+
+  useLayoutEffect(() => {
+    if (!isElectronOperatorChatPopup()) return;
+    try {
+      sessionStorage.removeItem(CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     if (!window.location.pathname.includes('/operator-chat-popup')) return;
+    if (isElectronOperatorChatPopup()) return;
     if (!mainSessionsInit.fromMainToPopup) return;
+    if (sessions.length === 0) return;
 
     let skipFetch = false;
     try {
@@ -460,8 +550,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }
     if (skipFetch) return;
 
-    // Electron popup: превью и счётчики уже пришли по STOMP в основном окне — без REST при handoff.
-    if (isElectronChatShell()) return;
+    // Electron popup: та же REST-гидратация, что в web/PWA popup.
+    if (isElectronMainChatHost()) return;
 
     for (const s of sessions) {
       const hasDid =

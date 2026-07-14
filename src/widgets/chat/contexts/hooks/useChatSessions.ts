@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { chatSessionTrace } from '../chatUnreadTrace';
 import { ChatSession } from '../types/ChatTypes';
@@ -47,6 +47,10 @@ export const useChatSessions = (
   initialActiveSessionId?: string | null,
 ) => {
   const [sessions, setSessions] = useState<ChatSession[]>(() => initialSessions ?? []);
+  const sessionsRef = useRef<ChatSession[]>(initialSessions ?? []);
+  // Синхронно в рендере: иначе getSession после createNewSession на 1 кадр видит
+  // устаревший ref → ChatPanel `#310` (хуки после `if (!session) return`).
+  sessionsRef.current = sessions;
   const [activeSessionId, setActiveSessionId] = useState<string | null>(() => {
     const list = initialSessions ?? [];
     if (list.length === 0) return null;
@@ -65,9 +69,9 @@ export const useChatSessions = (
 
   const getSession = useCallback(
     (sessionId: string): ChatSession | undefined => {
-      return sessions.find((session) => session.id === sessionId);
+      return sessionsRef.current.find((session) => session.id === sessionId);
     },
-    [sessions],
+    [],
   );
 
   const createNewSession = useCallback(

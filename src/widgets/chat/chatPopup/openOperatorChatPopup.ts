@@ -1,7 +1,8 @@
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
 
-import { CHAT_POPUP_ACTIVE_STORAGE_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
+import { CHAT_POPUP_ACTIVE_STORAGE_KEY, CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY, OPERATOR_CHAT_POPUP_WINDOW_NAME } from './constants';
+import { markElectronPopupOpenRestGeneration } from './electronPopupUnreadRest';
 import { estimateOperatorChatPopupOuterSize } from './estimateOperatorChatPopupWindowSize';
 import {
   clearMainRestoreIsChatOpenFromPopup,
@@ -20,6 +21,11 @@ import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
 export async function openOperatorChatPopup(): Promise<void> {
   clearOperatorChatPopupLayoutStorage();
   clearMainRestoreIsChatOpenFromPopup();
+  try {
+    sessionStorage.removeItem(CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
   
   const desktopBridge = window.alcolockDesktop;
   let tokenParam = '';
@@ -87,6 +93,7 @@ export async function openOperatorChatPopup(): Promise<void> {
 
     try {
       localStorage.setItem(CHAT_POPUP_ACTIVE_STORAGE_KEY, String(Date.now()));
+      markElectronPopupOpenRestGeneration();
     } catch {
       /* ignore */
     }

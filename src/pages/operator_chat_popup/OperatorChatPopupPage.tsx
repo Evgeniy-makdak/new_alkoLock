@@ -13,6 +13,7 @@ import {
   ensureElectronPopupBearerCookie,
   syncElectronPopupBranchFromStorage,
 } from '@widgets/chat/chatPopup/electronPopupSessionBootstrap';
+import { requestElectronPopupUnreadRest } from '@widgets/chat/chatPopup/electronPopupUnreadRest';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
@@ -38,12 +39,15 @@ export default function OperatorChatPopupPage(): null {
   useEffect(() => {
     if (!isElectronOperatorChatPopup()) return;
 
-    void bootstrapElectronOperatorChatPopupSession();
+    void bootstrapElectronOperatorChatPopupSession().then(() => {
+      requestElectronPopupUnreadRest();
+    });
 
     let cancelled = false;
     const ensureDesktopAuth = async () => {
       if (getBearerToken()) {
         notifyDesktopAuthReady();
+        requestElectronPopupUnreadRest();
         return;
       }
       try {
@@ -52,6 +56,7 @@ export default function OperatorChatPopupPage(): null {
         localStorage.setItem('authToken', token);
         cookieManager.set('bearer', token);
         notifyDesktopAuthReady();
+        requestElectronPopupUnreadRest();
       } catch {
         /* ignore */
       }

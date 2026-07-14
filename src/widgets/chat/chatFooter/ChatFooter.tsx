@@ -739,10 +739,7 @@ const ChatContainer = () => {
   useEffect(() => {
     if (sessions.length === 0 && isChatOpen) {
       if (isOperatorChatPopupWindow) {
-        const newSessionId = createNewSession();
-        if (newSessionId) {
-          void forceLoadUnreadDialogs(newSessionId);
-        }
+        createNewSession();
         return;
       }
       let skipEmptyClose = false;
@@ -836,9 +833,10 @@ const ChatContainer = () => {
     operatorChatSessionRestoreFingerprint,
   ]);
 
-  // В popup-окне после появления сессии — загружаем список диалогов для превью (не Electron: там handoff по STOMP).
+  // Web/PWA popup: список диалогов для превью. Electron — в ChatContext (REST на открытии окна).
   useEffect(() => {
     if (!isOperatorChatPopupWindow) return;
+    if (isDesktopMainChatHost) return;
     if (isDesktopShell) return;
     if (sessions.length === 0) return;
 
@@ -847,7 +845,7 @@ const ChatContainer = () => {
         forceLoadUnreadDialogs(session.id);
       }
     });
-  }, [isOperatorChatPopupWindow, sessions, forceLoadUnreadDialogs]);
+  }, [isOperatorChatPopupWindow, isDesktopMainChatHost, isDesktopShell, sessions, forceLoadUnreadDialogs]);
 
   /** Только при смене филиала. Подписка монтируется один раз: иначе [sessions, closeSession] пересоздаёт
    * closeSession на каждом обновлении сессий → бесконечный resubscribe и гонки с «дёрганьем» после handoff. */

@@ -39,6 +39,10 @@ export const CHAT_OPERATOR_POPUP_PREVIEW_SNAPSHOT_KEY =
 export const CHAT_POPUP_FROM_MAIN_FETCH_ONCE_SESSION_KEY =
   'alcolock_chat_popup_from_main_fetch_once_v1';
 
+/** Electron: каждое «Открыть диалоговое окно» из main — новый generation для REST unread. */
+export const CHAT_POPUP_OPEN_REST_GENERATION_KEY =
+  'alcolock_chat_popup_open_rest_generation_v1';
+
 /** Electron desktop: popup закрылся, основное окно должно сбросить состояние чата. */
 export const CHAT_DESKTOP_POPUP_CLOSED_EVENT_KEY =
   'alcolock_desktop_operator_chat_popup_closed_v1';
