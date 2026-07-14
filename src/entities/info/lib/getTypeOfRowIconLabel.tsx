@@ -29,6 +29,8 @@ import ThermostatOutlinedIcon from '@mui/icons-material/ThermostatOutlined';
 import VpnKeyOutlinedIcon from '@mui/icons-material/VpnKeyOutlined';
 import { Chip, type ChipProps } from '@mui/material';
 
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
+
 import style from '../ui/Info.module.scss';
 import type { GetTypeOfRowIconValueProps } from './getTypeOfRowIconValue';
 
@@ -127,7 +129,25 @@ const ExhaleResultChip = ({ color, label }: { color: string; label: string }) =>
     return <MobileText label={label} color={color} />;
   }
 
-  return <Chip className={style.labelText} variant="filled" color={color as any} label={label} />;
+  return (
+    <OverflowTooltip title={label}>
+      <Chip
+        className={style.labelText}
+        variant="filled"
+        color={color as any}
+        label={label}
+        sx={{
+          maxWidth: '100%',
+          minWidth: 0,
+          '& .MuiChip-label': {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          },
+        }}
+      />
+    </OverflowTooltip>
+  );
 };
 
 ExhaleResultChip.propTypes = {
@@ -201,34 +221,61 @@ type TypeOfRowIconsType = {
 const TypeOfRowChip = ({
   type,
   label,
+  tooltipTitle,
+  sx,
   ...chipProps
 }: {
   type: TypeOfRows;
   label: ReactNode;
-  color?: ChipProps['color'];
-}) => {
+  /** Полный текст для OverflowTooltip (если label — ReactNode). */
+  tooltipTitle?: string;
+} & Omit<ChipProps, 'label' | 'type' | 'icon'>) => {
   const isMobile = window.innerWidth <= 768;
   const ReadyIcon = TypeOfRowIcons[type];
-  const color = chipProps.color as string;
+  const color = chipProps.color as string | undefined;
 
   if (isMobile) {
     return <MobileText label={label} color={color} />;
   }
 
-  return (
+  const title =
+    tooltipTitle?.trim() ||
+    (typeof label === 'string' || typeof label === 'number' ? String(label) : '');
+
+  const chip = (
     <Chip
-      className={style.title}
       variant="outlined"
       icon={ReadyIcon ? <>{ReadyIcon}</> : undefined}
       label={label}
       {...chipProps}
+      className={style.title}
+      sx={[
+        {
+          maxWidth: '100%',
+          minWidth: 0,
+          '& .MuiChip-label': {
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            display: 'block',
+          },
+        },
+        ...(sx ? (Array.isArray(sx) ? sx : [sx]) : []),
+      ]}
     />
   );
+
+  if (!title) {
+    return chip;
+  }
+
+  return <OverflowTooltip title={title}>{chip}</OverflowTooltip>;
 };
 
 TypeOfRowChip.propTypes = {
   type: PropTypes.oneOf(Object.values(TypeOfRows)).isRequired,
   label: PropTypes.node.isRequired,
+  tooltipTitle: PropTypes.string,
   color: PropTypes.string,
 };
 
@@ -236,8 +283,9 @@ export const getTypeOfRowIconLabel = (
   type: TypeOfRows,
   label: string | ReactNode | number,
   props?: ChipProps,
+  tooltipTitle?: string,
 ) => {
-  return <TypeOfRowChip type={type} label={label} {...props} />;
+  return <TypeOfRowChip type={type} label={label} tooltipTitle={tooltipTitle} {...props} />;
 };
 
 // Добавляем prop-types для функции
@@ -245,4 +293,5 @@ getTypeOfRowIconLabel.propTypes = {
   type: PropTypes.oneOf(Object.values(TypeOfRows)).isRequired,
   label: PropTypes.oneOfType([PropTypes.string, PropTypes.node, PropTypes.number]).isRequired,
   props: PropTypes.object,
+  tooltipTitle: PropTypes.string,
 };

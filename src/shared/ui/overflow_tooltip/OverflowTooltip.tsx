@@ -2,6 +2,7 @@ import {
   cloneElement,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent,
@@ -34,7 +35,7 @@ export type OverflowTooltipProps = Omit<TooltipProps, 'title' | 'children'> & {
   children: ReactElement;
 };
 
-/** Десктоп: tooltip при ellipsis. Мобильный (≤768px): тап → диалог с полным текстом и «Закрыть». */
+/** Десктоп / Electron: tooltip только при ellipsis. Мобильный / PWA (≤768px): тап → диалог снизу. */
 export function OverflowTooltip({ title, children, ...tooltipProps }: OverflowTooltipProps) {
   const isMobile = useMediaQuery('(max-width:768px)');
   const rootRef = useRef<HTMLElement | null>(null);
@@ -47,12 +48,21 @@ export function OverflowTooltip({ title, children, ...tooltipProps }: OverflowTo
     setOverflows(isElementOverflowing(findOverflowTarget(root)));
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     measure();
+    // Повтор после layout/шрифтов — иначе scrollWidth может ещё не отражать ellipsis.
+    const id = window.requestAnimationFrame(() => {
+      measure();
+      window.requestAnimationFrame(measure);
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [measure, title]);
+
+  useEffect(() => {
     const root = rootRef.current;
     if (!root || typeof ResizeObserver === 'undefined') return undefined;
 
-    const ro = new ResizeObserver(measure);
+    const ro = new ResizeObserver(() => measure());
     ro.observe(root);
     const target = findOverflowTarget(root);
     if (target !== root) {
@@ -63,6 +73,11 @@ export function OverflowTooltip({ title, children, ...tooltipProps }: OverflowTo
 
   const child = cloneElement(children, {
     ref: mergeRefs(rootRef, (children as ReactElement & { ref?: Ref<HTMLElement> }).ref),
+    onMouseEnter: (event: MouseEvent) => {
+      measure();
+      const prev = (children.props as { onMouseEnter?: (e: MouseEvent) => void }).onMouseEnter;
+      prev?.(event);
+    },
   });
 
   const trimmedTitle = title.trim();
@@ -103,7 +118,7 @@ export function OverflowTooltip({ title, children, ...tooltipProps }: OverflowTo
       arrow
       placement="top"
       {...tooltipProps}
-      title={trimmedTitle}
+      title={canExpand ? trimmedTitle : ''}
       disableHoverListener={!canExpand}>
       {child}
     </Tooltip>

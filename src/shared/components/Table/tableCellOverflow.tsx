@@ -1,6 +1,8 @@
 import type { ReactElement, ReactNode } from 'react';
 
-import { Box, Chip, Tooltip } from '@mui/material';
+import { Box, Chip } from '@mui/material';
+
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import style from './Table.module.scss';
 
@@ -17,7 +19,7 @@ function formatTableCellTooltipTitle(value: unknown): string {
   return String(value).trim();
 }
 
-function shouldShowCellOverflowTooltip(title: string): boolean {
+function shouldOfferOverflowTooltip(title: string): boolean {
   return Boolean(title) && !EMPTY_CELL_MARKERS.has(title);
 }
 
@@ -31,14 +33,10 @@ const ellipsisBoxSx = {
 } as const;
 
 function wrapWithOverflowTooltip(title: string, content: ReactElement): ReactNode {
-  if (!shouldShowCellOverflowTooltip(title)) {
+  if (!shouldOfferOverflowTooltip(title)) {
     return content;
   }
-  return (
-    <Tooltip title={title} arrow placement="top">
-      {content}
-    </Tooltip>
-  );
+  return <OverflowTooltip title={title}>{content}</OverflowTooltip>;
 }
 
 export function renderTableCellValue(value: unknown): ReactNode {
@@ -78,7 +76,7 @@ export function renderTableCellValue(value: unknown): ReactNode {
             />
           );
 
-          if (!shouldShowCellOverflowTooltip(chipTitle)) {
+          if (!shouldOfferOverflowTooltip(chipTitle)) {
             return chip;
           }
 

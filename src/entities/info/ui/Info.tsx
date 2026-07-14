@@ -48,7 +48,16 @@ export const Info = ({ fields, headerCard, compactValueChips = false }: InfoProp
                   {isSectionTitle ? (
                     <span className={style.sectionTitle}>{field.label}</span>
                   ) : field?.type ? (
-                    getTypeOfRowIconLabel(field?.type, field?.label)
+                    getTypeOfRowIconLabel(
+                      field?.type,
+                      field?.label,
+                      undefined,
+                      typeof field.tooltip === 'string'
+                        ? field.tooltip
+                        : typeof field.label === 'string' || typeof field.label === 'number'
+                          ? String(field.label)
+                          : undefined,
+                    )
                   ) : (
                     field?.label
                   )}

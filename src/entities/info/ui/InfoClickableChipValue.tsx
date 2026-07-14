@@ -11,6 +11,7 @@ import {
 } from '../lib/getInfoLinkChipSx';
 import { findOverflowTarget, isElementOverflowing } from '@shared/ui/overflow_tooltip/overflowMeasure';
 import { MobileOverflowTextDialog } from '@shared/ui/overflow_tooltip/MobileOverflowTextDialog';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import styles from '@shared/ui/overflow_tooltip/OverflowTooltip.module.scss';
 import style from './Info.module.scss';
 
@@ -136,23 +137,39 @@ export function InfoClickableChipValue({
               ? { flex: '0 1 auto', minWidth: 0, maxWidth: '100%' }
               : { flex: 1, minWidth: 0 }
           }>
-          <Chip
-            clickable
-            label={label}
-            onClick={handleChipClick}
-            onPointerDown={handleChipPointerDown}
-            onPointerUp={handleChipPointerEnd}
-            onPointerCancel={handleChipPointerEnd}
-            onPointerLeave={handleChipPointerEnd}
-            aria-label={
-              canExpandOnMobile
-                ? `${label}. ${t('info.tapToSeeFullText')}. ${t('info.holdToNavigate')}`
-                : label
-            }
-            sx={
-              compact ? getReportTableCoordinateChipSx(theme) : getInfoClickableValueChipSx(theme)
-            }
-          />
+          {isMobile ? (
+            <Chip
+              clickable
+              label={label}
+              onClick={handleChipClick}
+              onPointerDown={handleChipPointerDown}
+              onPointerUp={handleChipPointerEnd}
+              onPointerCancel={handleChipPointerEnd}
+              onPointerLeave={handleChipPointerEnd}
+              aria-label={
+                canExpandOnMobile
+                  ? `${label}. ${t('info.tapToSeeFullText')}. ${t('info.holdToNavigate')}`
+                  : label
+              }
+              sx={
+                compact ? getReportTableCoordinateChipSx(theme) : getInfoClickableValueChipSx(theme)
+              }
+            />
+          ) : (
+            <OverflowTooltip title={label}>
+              <Chip
+                clickable
+                label={label}
+                onClick={handleChipClick}
+                aria-label={label}
+                sx={
+                  compact
+                    ? getReportTableCoordinateChipSx(theme)
+                    : getInfoClickableValueChipSx(theme)
+                }
+              />
+            </OverflowTooltip>
+          )}
         </div>
       </div>
       <MobileOverflowTextDialog

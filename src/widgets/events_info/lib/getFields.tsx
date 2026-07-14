@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { TFunction } from 'i18next';
 
-import { Chip, Tooltip } from '@mui/material';
+import { Chip } from '@mui/material';
 
 import type { Field, TypeSummaryExhaleResult } from '@entities/info';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
@@ -11,6 +11,7 @@ import { testids } from '@shared/const/testid';
 import { getEventTypeChipColor } from '@shared/lib/eventTypeChipColor';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { MapLink } from '@shared/ui/map_link';
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import { Formatters } from '@shared/utils/formatters';
 
 export const getFields = (
@@ -154,7 +155,7 @@ export const getFields = (
   const eventTypeChipColor = getEventTypeChipColor(eventType);
 
   const eventTypeElement = (
-    <Tooltip title={eventType || ''} arrow>
+    <OverflowTooltip title={eventType || ''}>
       <Chip
         label={eventType}
         color={eventTypeChipColor}
@@ -179,7 +180,7 @@ export const getFields = (
           }),
         })}
       />
-    </Tooltip>
+    </OverflowTooltip>
   );
 
   const fields: (Field | null)[] = [

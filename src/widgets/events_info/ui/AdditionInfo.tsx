@@ -3,12 +3,9 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useEffect } from 'react';
 
-import { Tooltip } from '@mui/material';
-
 import { Info } from '@entities/info';
 import { Loader } from '@shared/ui/loader';
 
-// Добавляем импорт Tooltip
 import { useAdditionInfo } from '../hooks/useAdditionInfo';
 
 interface EventInfo {
@@ -32,19 +29,11 @@ export const AdditionInfo = ({
     onHasTemperatureSensor?.(hasSensor);
   }, [hasDeviceError, fields]);
 
-  // Модифицируем fields, чтобы добавить Tooltip к label
-  const enhancedFields = fields.map((field) => ({
-    ...field,
-    label: (
-      <Tooltip title={field.tooltip || field.label} arrow placement="top-start">
-        <span>{field.label}</span>
-      </Tooltip>
-    ),
-  }));
-
+  // OverflowTooltip на label-чипах (Info / getTypeOfRowIconLabel) —
+  // тултип только при обрезке текста, без постоянного Tooltip.
   return (
     <Loader isLoading={isLoading}>
-      <Info fields={enhancedFields} />
+      <Info fields={fields} />
     </Loader>
   );
 };

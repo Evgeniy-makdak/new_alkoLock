@@ -8,6 +8,8 @@ import {
   TextField,
 } from '@mui/material';
 
+import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
+
 interface MultiSelectWithChipsProps {
   value: string[];
   onChange: (value: string[]) => void;
@@ -39,16 +41,26 @@ export const MultiSelectWithChips: React.FC<MultiSelectWithChipsProps> = ({
         [...value].sort().map((option: string, index: number) => {
           const { key: tagKey, ...tagProps } = getTagProps({ index });
           return (
-            <Chip
-              key={tagKey}
-              label={option}
-              {...tagProps}
-              onDelete={() => {
-                const newValue = [...value];
-                newValue.splice(index, 1);
-                onChange(newValue);
-              }}
-            />
+            <OverflowTooltip key={option} title={option}>
+              <Chip
+                key={tagKey}
+                label={option}
+                {...tagProps}
+                onDelete={() => {
+                  const newValue = [...value];
+                  newValue.splice(index, 1);
+                  onChange(newValue);
+                }}
+                sx={{
+                  maxWidth: '100%',
+                  '& .MuiChip-label': {
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  },
+                }}
+              />
+            </OverflowTooltip>
           );
         })
       }

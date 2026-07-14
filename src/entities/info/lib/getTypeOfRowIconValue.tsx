@@ -3,17 +3,7 @@ import { type JSX, type ReactNode } from 'react';
 
 import PropTypes from 'prop-types';
 
-import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
-import {
-  Box,
-  Button,
-  Chip,
-  type ChipOwnProps,
-  Dialog,
-  Snackbar,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Chip, type ChipOwnProps } from '@mui/material';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 import { ChipCopyTextIcon } from '@shared/ui/copy_text_icon/ChipCopyTextIcon';
@@ -29,6 +19,7 @@ export type GetTypeOfRowIconValueOptions = {
 
 export interface GetTypeOfRowIconValueProps extends ChipOwnProps {
   copyble?: boolean;
+  /** @deprecated Туллтип только при обрезке текста; флаг игнорируется (обратная совместимость). */
   tooltip?: boolean;
   element?: string | number | ReactNode | JSX.Element;
   copyText?: string | number;
@@ -72,7 +63,7 @@ const buildCommonChipStyles = (
 export const getTypeOfRowIconValue = (
   {
     copyble = false,
-    tooltip = false,
+    tooltip: _tooltip = false,
     element = null,
     copyText,
     customStyled = false,
@@ -81,13 +72,9 @@ export const getTypeOfRowIconValue = (
   theme?: Theme,
   options?: GetTypeOfRowIconValueOptions,
 ) => {
-  const isMobile = options?.isMobile ?? false;
   const compact = options?.compact ?? false;
   if (element) return element;
-  const label = { ...rest }?.label || '';
   const hasSemanticColor = Boolean(rest?.color && rest.color !== 'default');
-  const count =
-    typeof label === 'string' || typeof label === 'number' ? label?.toString().length : 33;
 
   const { sx: customChipSx, ...chipRest } = rest;
   const commonChipStyles = buildCommonChipStyles(hasSemanticColor, theme, compact);
@@ -137,25 +124,15 @@ export const getTypeOfRowIconValue = (
   const wrapperClass = `${style.wrapperText}${copyble ? ` ${style.wrapperTextCopyble}` : ''}${
     compact ? ` ${style.wrapperTextCompact}` : ''
   }`;
-  const fullText = String(tooltipTitle);
-  const inner = <div className={wrapperClass}>{customStyled && shouldApplyCustomChip ? castomChip : chip}</div>;
+  const fullText = String(tooltipTitle ?? '');
+  const inner = (
+    <div className={wrapperClass}>{customStyled && shouldApplyCustomChip ? castomChip : chip}</div>
+  );
 
-  if (isMobile) {
-    return <OverflowTooltip title={fullText}>{inner}</OverflowTooltip>;
-  }
-
-  if (tooltip || count >= 33) {
-    return (
-      <Tooltip title={fullText}>
-        <div className={wrapperClass}>{castomChip}</div>
-      </Tooltip>
-    );
-  }
-
-  return inner;
+  // Единое правило: tooltip / PWA-модалка только если текст не помещается в чип.
+  return <OverflowTooltip title={fullText}>{inner}</OverflowTooltip>;
 };
 
-// Добавляем prop-types для валидации
 getTypeOfRowIconValue.propTypes = {
   copyble: PropTypes.bool,
   tooltip: PropTypes.bool,

@@ -372,11 +372,7 @@ function SearchMultipleSelectMobileModal<T>({
               </Typography>
             ) : (
               (value || []).map((v) => (
-                <Tooltip
-                  key={String(v.value)}
-                  title={v.label}
-                  arrow
-                  disableTouchListener={!v.label || v.label.length < 40}>
+                <OverflowTooltip key={String(v.value)} title={v.label || ''}>
                   <Chip
                     size="small"
                     variant="outlined"
@@ -387,9 +383,14 @@ function SearchMultipleSelectMobileModal<T>({
                       ...chipSx,
                       width: 'fit-content',
                       maxWidth: '100%',
+                      '& .MuiChip-label': {
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      },
                     }}
                   />
-                </Tooltip>
+                </OverflowTooltip>
               ))
             )}
           </Box>
@@ -706,7 +707,7 @@ export function SearchMultipleSelect<T>({
         />
       );
 
-      if (overflowTooltip) {
+      if (overflowTooltip || getTooltipTitle) {
         return (
           <OverflowTooltip key={option.value} title={chipTitle}>
             <span className={style.chipWrapper}>{chip}</span>
@@ -714,18 +715,10 @@ export function SearchMultipleSelect<T>({
         );
       }
 
-      if (getTooltipTitle) {
-        return (
-          <Tooltip key={option.value} title={chipTitle}>
-            <span className={style.chipWrapper}>{chip}</span>
-          </Tooltip>
-        );
-      }
-
       return (
-        <span key={option.value} className={style.chipWrapper}>
-          {chip}
-        </span>
+        <OverflowTooltip key={option.value} title={option.label || ''}>
+          <span className={style.chipWrapper}>{chip}</span>
+        </OverflowTooltip>
       );
     });
   };
