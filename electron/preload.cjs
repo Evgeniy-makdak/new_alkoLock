@@ -10,6 +10,16 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   closeOperatorChatPopup() {
     return ipcRenderer.invoke('operator-chat-popup:close');
   },
+  /** Показать существующий popup поверх main (без перезагрузки). */
+  focusOperatorChatPopup() {
+    return ipcRenderer.invoke('operator-chat-popup:focus');
+  },
+  isOperatorChatPopupOpen() {
+    return ipcRenderer.invoke('operator-chat-popup:is-open');
+  },
+  isOperatorChatPopupFocused() {
+    return ipcRenderer.invoke('operator-chat-popup:is-focused');
+  },
   setPopupBounds(bounds) {
     return ipcRenderer.invoke('operator-chat-popup:set-bounds', bounds);
   },

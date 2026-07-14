@@ -46,6 +46,10 @@ interface Window {
     }): Promise<void>;
     closeCurrentWindow(): Promise<void>;
     closeOperatorChatPopup(): Promise<void>;
+    /** Electron: поднять уже открытый popup поверх main. */
+    focusOperatorChatPopup(): Promise<boolean>;
+    isOperatorChatPopupOpen(): Promise<boolean>;
+    isOperatorChatPopupFocused(): Promise<boolean>;
     setPopupBounds(bounds: {
       outerW: number;
       outerH: number;

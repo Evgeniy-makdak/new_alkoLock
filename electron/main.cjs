@@ -1119,6 +1119,23 @@ function createServerSetupWindow(options = {}) {
   );
 }
 
+function isOperatorChatPopupAlive() {
+  return Boolean(operatorChatPopupWindow && !operatorChatPopupWindow.isDestroyed());
+}
+
+function focusOperatorChatPopupWindow() {
+  if (!isOperatorChatPopupAlive()) return false;
+  if (!operatorChatPopupWindow.isVisible()) {
+    operatorChatPopupWindow.show();
+  }
+  if (operatorChatPopupWindow.isMinimized()) {
+    operatorChatPopupWindow.restore();
+  }
+  operatorChatPopupWindow.moveTop();
+  operatorChatPopupWindow.focus();
+  return true;
+}
+
 function createOperatorChatPopupWindow(payload = {}) {
   const appUrl = payload.url || routeUrlFromAppUrl(getAppUrl(), OPERATOR_CHAT_POPUP_PATH);
   console.log(`[electron] loading operator chat popup: ${appUrl}`);
@@ -1156,9 +1173,14 @@ function createOperatorChatPopupWindow(payload = {}) {
     return;
   }
 
+  const parentWindow =
+    mainWindow && !mainWindow.isDestroyed() ? mainWindow : undefined;
+
   operatorChatPopupWindow = new BrowserWindow({
     ...getWindowIconOptions(),
     ...bounds,
+    parent: parentWindow,
+    modal: false,
     frame: false,
     transparent: true,
     backgroundColor: '#00000000',
@@ -1168,7 +1190,8 @@ function createOperatorChatPopupWindow(payload = {}) {
     maximizable: false,
     minimizable: false,
     fullscreenable: false,
-    skipTaskbar: false,
+    // Не дублировать иконку в панели задач — доступ из FAB основного окна.
+    skipTaskbar: true,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -1230,6 +1253,18 @@ function createOperatorChatPopupWindow(payload = {}) {
 
 ipcMain.handle('operator-chat-popup:open', (_event, payload) => {
   createOperatorChatPopupWindow(payload);
+});
+
+ipcMain.handle('operator-chat-popup:focus', () => {
+  return focusOperatorChatPopupWindow();
+});
+
+ipcMain.handle('operator-chat-popup:is-open', () => {
+  return isOperatorChatPopupAlive();
+});
+
+ipcMain.handle('operator-chat-popup:is-focused', () => {
+  return Boolean(isOperatorChatPopupAlive() && operatorChatPopupWindow.isFocused());
 });
 
 ipcMain.handle('operator-chat-popup:close-current', (event) => {

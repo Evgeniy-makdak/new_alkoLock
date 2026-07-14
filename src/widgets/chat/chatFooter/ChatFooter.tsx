@@ -540,8 +540,31 @@ const ChatToggleButton = ({
       }
     } else if (isDesktopShell) {
       if (isDesktopPopupOpen) {
-        void window.alcolockDesktop?.closeOperatorChatPopup();
-        setIsDesktopPopupOpen(false);
+        void (async () => {
+          const desktop = window.alcolockDesktop;
+          if (!desktop) return;
+          // Popup уже открыт: если не в фокусе (ушёл «под» main) — только поднять;
+          // если уже в фокусе — закрыть (как раньше).
+          const focused = await desktop.isOperatorChatPopupFocused?.();
+          if (focused) {
+            await desktop.closeOperatorChatPopup();
+            setIsDesktopPopupOpen(false);
+            return;
+          }
+          const raised = await desktop.focusOperatorChatPopup?.();
+          if (!raised) {
+            // Окно пропало, а heartbeat ещё жив — откроем заново.
+            persistMainToOperatorPopupHandoff({
+              isChatOpen: true,
+              sessions,
+              activeSessionId,
+              aggregateUnread: calculateTotalUnread(),
+              dialogsUnreadCounts,
+            });
+            openOperatorChatPopup();
+            setIsDesktopPopupOpen(true);
+          }
+        })();
         return;
       }
       persistMainToOperatorPopupHandoff({
