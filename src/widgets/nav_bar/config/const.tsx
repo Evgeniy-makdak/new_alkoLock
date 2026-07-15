@@ -11,13 +11,14 @@ import HomeWorkOutlinedIcon from '@mui/icons-material/HomeWorkOutlined';
 import InsertInvitationOutlinedIcon from '@mui/icons-material/InsertInvitationOutlined';
 import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
 import MapIcon from '@mui/icons-material/Map';
+import PhoneAndroidOutlinedIcon from '@mui/icons-material/PhoneAndroidOutlined';
 import SettingsRemoteOutlinedIcon from '@mui/icons-material/SettingsRemoteOutlined';
 import TimeToLeaveOutlinedIcon from '@mui/icons-material/TimeToLeaveOutlined';
 
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { ExtractTypeFromArray } from '@shared/types/utility';
 
-export const frontendVersion = '1.140.8';
+export const frontendVersion = '1.141.0';
 
 export const NAV_LINKS = [
   { path: RoutePaths.events, nameKey: 'nav.events', icon: <InsertInvitationOutlinedIcon /> },
@@ -37,6 +38,7 @@ export const NAV_LINKS = [
   { path: RoutePaths.templates, nameKey: 'nav.messageTemplates', icon: <AttachmentIcon /> },
   { path: RoutePaths.settings, nameKey: 'nav.settings', icon: <HandymanIcon /> },
   { path: RoutePaths.reports, nameKey: 'nav.reports', icon: <AssessmentOutlinedIcon /> },
+  { path: RoutePaths.mpoConfig, nameKey: 'nav.mpoConfig', icon: <PhoneAndroidOutlinedIcon /> },
   { path: RoutePaths.map, nameKey: 'nav.map', icon: <MapIcon /> },
 ];
 

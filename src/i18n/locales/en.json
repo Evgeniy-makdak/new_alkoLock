@@ -15,6 +15,7 @@
     "mailings": "Mailings",
     "messageTemplates": "Message Templates",
     "settings": "Settings",
+    "mpoConfig": "MPO Configuration",
     "map": "Map",
     "parameters": "Parameters",
     "back": "Back",
@@ -631,6 +632,21 @@
     "parameterChangedSuccess": "Parameter \"{{name}}\" value has been changed.",
     "parameterChangeError": "Error changing parameter \"{{name}}\"",
     "loadError": "Error loading settings"
+  },
+  "mpoConfigPage": {
+    "role": "Role",
+    "chat": "Chat",
+    "serviceModeDriver": "Service mode requests (driver)",
+    "serviceModeServiceWorker": "Service mode requests (service worker)",
+    "driver": "Driver",
+    "serviceWorker": "Service worker",
+    "testingInterval": "Testing interval",
+    "energyFull": "100 percent energy consumption interval",
+    "energyLow": "Reduced energy consumption interval",
+    "createBinding": "Create binding",
+    "loadError": "Failed to load MPO configuration",
+    "updateError": "Failed to update parameter",
+    "updateSuccess": "Parameter updated"
   },
   "aside": {
     "collapseWindow": "Collapse panel"

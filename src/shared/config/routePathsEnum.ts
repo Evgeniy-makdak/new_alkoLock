@@ -19,6 +19,7 @@ export enum RoutePaths {
   resetPassword = '/resetPassword',
   templates = '/templates',
   settings = '/settings',
+  mpoConfig = '/mpo-config',
   map = '/map',
   /** Отдельное окно чата оператора (window.open); см. OperatorChatPopupPage */
   operatorChatPopup = '/operator-chat-popup',

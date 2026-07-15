@@ -1,0 +1,167 @@
+@use '../../../shared/styles/mobile-table-dark' as *;
+
+.tableWrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.globalToggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px 28px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--mui-palette-background-paper, #fff);
+  flex-shrink: 0;
+}
+
+.scrollableTable {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.featureSwitch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  user-select: none;
+}
+
+.featureSwitchTrack {
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  position: relative;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.featureSwitchTrackOn {
+  background-color: #1976d2;
+}
+
+.featureSwitchTrackOff {
+  background-color: #ccc;
+}
+
+.featureSwitchThumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+}
+
+.featureSwitchThumbChecked {
+  left: 18px;
+}
+
+.featureSwitchLabel {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.cellEmpty {
+  color: rgba(0, 0, 0, 0.38);
+  font-size: 14px;
+}
+
+.mobileHeader {
+  flex-shrink: 0;
+}
+
+.mobileFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.mobileList {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 16px 24px;
+}
+
+.mobileRoleCard {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: var(--mui-palette-background-paper, #fff);
+}
+
+.mobileRoleTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.mobileFeatureRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+  &:first-of-type {
+    border-top: none;
+  }
+}
+
+.mobileFeatureLabel {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.75);
+  flex: 1;
+  min-width: 0;
+}
+
+:global(html[data-theme='dark']) {
+  .globalToggles {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .featureSwitchLabel {
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .featureSwitchTrackOff {
+    background-color: rgba(255, 255, 255, 0.28);
+  }
+
+  .cellEmpty {
+    color: rgba(255, 255, 255, 0.38);
+  }
+
+  .mobileFilters {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .mobileRoleCard {
+    border-color: rgba(255, 255, 255, 0.16);
+  }
+
+  .mobileRoleTitle {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .mobileFeatureRow {
+    border-top-color: rgba(255, 255, 255, 0.08);
+  }
+
+  .mobileFeatureLabel {
+    color: rgba(255, 255, 255, 0.75);
+  }
+}
+
+@include mobile-table-dark;

@@ -15,6 +15,7 @@
     "mailings": "Рассылки",
     "messageTemplates": "Шаблоны сообщений",
     "settings": "Настройки",
+    "mpoConfig": "Конфигурация МПО",
     "map": "Карта",
     "parameters": "Параметры",
     "back": "Назад",
@@ -631,6 +632,21 @@
     "parameterChangedSuccess": "Значение параметра \"{{name}}\" изменено.",
     "parameterChangeError": "Ошибка при изменении параметра \"{{name}}\"",
     "loadError": "Ошибка при загрузке настроек"
+  },
+  "mpoConfigPage": {
+    "role": "Роль",
+    "chat": "Чат",
+    "serviceModeDriver": "Заявки на сервисный режим (водитель)",
+    "serviceModeServiceWorker": "Заявки на сервисный режим (сервисный работник)",
+    "driver": "Водитель",
+    "serviceWorker": "Сервисный работник",
+    "testingInterval": "Интервал тестирования",
+    "energyFull": "Интервал сто процентов энергопотребления",
+    "energyLow": "Интервал пониженного энергопотребления",
+    "createBinding": "Создать привязку",
+    "loadError": "Ошибка при загрузке конфигурации МПО",
+    "updateError": "Ошибка при изменении параметра",
+    "updateSuccess": "Параметр обновлён"
   },
   "aside": {
     "collapseWindow": "Свернуть окно"

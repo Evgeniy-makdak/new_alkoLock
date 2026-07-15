@@ -14,6 +14,7 @@
     "mailings": "Хабарламалар",
     "messageTemplates": "Хабарлама үлгілері",
     "settings": "Баптаулар",
+    "mpoConfig": "МПО конфигурациясы",
     "map": "Карта",
     "parameters": "Параметрлер",
     "back": "Артқа",
@@ -628,6 +629,21 @@
     "parameterChangedSuccess": "\"{{name}}\" параметрінің мәні өзгертілді.",
     "parameterChangeError": "\"{{name}}\" параметрін өзгерту кезінде қате",
     "loadError": "Баптауларды жүктеу кезінде қате"
+  },
+  "mpoConfigPage": {
+    "role": "Рөл",
+    "chat": "Чат",
+    "serviceModeDriver": "Сервистік режим өтінімдері (жүргізуші)",
+    "serviceModeServiceWorker": "Сервистік режим өтінімдері (сервистік қызметкер)",
+    "driver": "Жүргізуші",
+    "serviceWorker": "Сервистік қызметкер",
+    "testingInterval": "Тестілеу интервалы",
+    "energyFull": "Жүз пайыз энергия тұтыну интервалы",
+    "energyLow": "Төмен энергия тұтыну интервалы",
+    "createBinding": "Байланыс жасау",
+    "loadError": "МПО конфигурациясын жүктеу қатесі",
+    "updateError": "Параметрді өзгерту қатесі",
+    "updateSuccess": "Параметр жаңартылды"
   },
   "aside": {
     "collapseWindow": "Терезені жию"

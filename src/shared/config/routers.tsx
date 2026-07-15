@@ -18,6 +18,7 @@ import OperatorChatPopupPage from '@pages/operator_chat_popup/OperatorChatPopupP
 import { NotFound } from '@pages/not_found';
 import { ReportsPage } from '@pages/reports/ui/ReportsPage';
 import { Roles } from '@pages/roles';
+import { MpoConfig } from '@pages/mpo_config/ui/MpoConfig';
 import { SettingsPage } from '@pages/settings/SettingsPage';
 import EmailTemplatesPage from '@pages/templates/EmailTemplatesPage';
 import { Users } from '@pages/users';
@@ -83,6 +84,10 @@ export const routers = createBrowserRouter([
       {
         path: RoutePaths.reports,
         element: <ReportsPage />,
+      },
+      {
+        path: RoutePaths.mpoConfig,
+        element: <MpoConfig />,
       },
       {
         path: RoutePaths.map,

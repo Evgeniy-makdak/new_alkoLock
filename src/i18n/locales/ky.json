@@ -14,6 +14,7 @@
     "mailings": "Кабарламалар",
     "messageTemplates": "Кабар үлгүлөрү",
     "settings": "Тууралоолор",
+    "mpoConfig": "МПО конфигурациясы",
     "map": "Карта",
     "parameters": "Параметрлер",
     "back": "Артка",
@@ -628,6 +629,21 @@
     "parameterChangedSuccess": "\"{{name}}\" параметринин мааниси өзгөртүлдү.",
     "parameterChangeError": "\"{{name}}\" параметрин өзгөртүүдө ката",
     "loadError": "Тууралоолорду жүктөөдө ката"
+  },
+  "mpoConfigPage": {
+    "role": "Роль",
+    "chat": "Чат",
+    "serviceModeDriver": "Сервистик режимге өтүнмөлөр (айдоочу)",
+    "serviceModeServiceWorker": "Сервистик режимге өтүнмөлөр (сервистик кызматкер)",
+    "driver": "Айдоочу",
+    "serviceWorker": "Сервистик кызматкер",
+    "testingInterval": "Тесттөө интервалы",
+    "energyFull": "Жүз пайыз энергия керектөө интервалы",
+    "energyLow": "Төмөн энергия керектөө интервалы",
+    "createBinding": "Байлоо түзүү",
+    "loadError": "МПО конфигурациясын жүктөө катасы",
+    "updateError": "Параметрди өзгөртүү катасы",
+    "updateSuccess": "Параметр жаңыртылды"
   },
   "aside": {
     "collapseWindow": "Терезени жыйноо"

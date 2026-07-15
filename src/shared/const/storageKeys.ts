@@ -78,4 +78,5 @@ export enum QueryKeys {
   MAILINGS_TABLE = 'mailings_table',
   MAILING_ITEM = 'mailing_item',
   MAILINGS_EVENTS_TYPE_LIST = 'MAILINGS_EVENTS_TYPE_LIST',
+  MOBILE_FEATURES_LIST = 'MOBILE_FEATURES_LIST',
 }

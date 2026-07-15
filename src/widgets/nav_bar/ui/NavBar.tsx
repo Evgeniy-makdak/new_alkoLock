@@ -91,7 +91,8 @@ export const NavBar = () => {
         sliderState &&
         (link.path === RoutePaths.templates ||
           link.path === RoutePaths.settings ||
-          link.path === RoutePaths.reports)
+          link.path === RoutePaths.reports ||
+          link.path === RoutePaths.mpoConfig)
       ) {
         return false;
       }
@@ -100,7 +101,8 @@ export const NavBar = () => {
         !sliderState &&
         link.path !== RoutePaths.templates &&
         link.path !== RoutePaths.settings &&
-        link.path !== RoutePaths.reports
+        link.path !== RoutePaths.reports &&
+        link.path !== RoutePaths.mpoConfig
       ) {
         return false;
       }
@@ -186,7 +188,9 @@ export const NavBar = () => {
           ? RoutePaths.settings
           : location.pathname === RoutePaths.reports
             ? RoutePaths.reports
-            : RoutePaths.templates,
+            : location.pathname === RoutePaths.mpoConfig
+              ? RoutePaths.mpoConfig
+              : RoutePaths.templates,
     );
   };
 
@@ -196,6 +200,8 @@ export const NavBar = () => {
     } else if (location.pathname === RoutePaths.settings) {
       setSliderState(false);
     } else if (location.pathname === RoutePaths.reports) {
+      setSliderState(false);
+    } else if (location.pathname === RoutePaths.mpoConfig) {
       setSliderState(false);
     }
   }, [location.pathname, setSliderState]);

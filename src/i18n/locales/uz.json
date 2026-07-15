@@ -14,6 +14,7 @@
     "mailings": "Xabar yuborishlar",
     "messageTemplates": "Xabar shablonlari",
     "settings": "Sozlamalar",
+    "mpoConfig": "MPO konfiguratsiyasi",
     "map": "Xarita",
     "parameters": "Parametrlar",
     "back": "Orqaga",
@@ -628,6 +629,21 @@
     "parameterChangedSuccess": "\"{{name}}\" parametrining qiymati o'zgartirildi.",
     "parameterChangeError": "\"{{name}}\" parametrini o'zgartirishda xato",
     "loadError": "Sozlamalarni yuklashda xato"
+  },
+  "mpoConfigPage": {
+    "role": "Rol",
+    "chat": "Chat",
+    "serviceModeDriver": "Servis rejimi so‘rovlari (haydovchi)",
+    "serviceModeServiceWorker": "Servis rejimi so‘rovlari (servis xodimi)",
+    "driver": "Haydovchi",
+    "serviceWorker": "Servis xodimi",
+    "testingInterval": "Testlash intervali",
+    "energyFull": "Yuz foiz energiya sarfi intervali",
+    "energyLow": "Past energiya sarfi intervali",
+    "createBinding": "Bog‘lash yaratish",
+    "loadError": "MPO konfiguratsiyasini yuklashda xato",
+    "updateError": "Parametrni o‘zgartirishda xato",
+    "updateSuccess": "Parametr yangilandi"
   },
   "aside": {
     "collapseWindow": "Oynani yig'ish"

@@ -14,6 +14,7 @@
     "mailings": "Рассылкі",
     "messageTemplates": "Шаблоны паведамленняў",
     "settings": "Налады",
+    "mpoConfig": "Канфігурацыя МПА",
     "map": "Карта",
     "parameters": "Параметры",
     "back": "Назад",
@@ -629,6 +630,21 @@
     "parameterChangedSuccess": "Значэнне параметра \"{{name}}\" зменена.",
     "parameterChangeError": "Памылка пры змене параметра \"{{name}}\"",
     "loadError": "Памылка пры загрузцы налад"
+  },
+  "mpoConfigPage": {
+    "role": "Роля",
+    "chat": "Чат",
+    "serviceModeDriver": "Заяўкі на сэрвісны рэжым (вадзіцель)",
+    "serviceModeServiceWorker": "Заяўкі на сэрвісны рэжым (сэрвісны работнік)",
+    "driver": "Ваджыцель",
+    "serviceWorker": "Сэрвісны работнік",
+    "testingInterval": "Інтэрвал тэсціравання",
+    "energyFull": "Інтэрвал сто адсоткаў энергаспажывання",
+    "energyLow": "Інтэрвал паніжанага энергаспажывання",
+    "createBinding": "Стварыць прывязку",
+    "loadError": "Памылка пры загрузцы канфігурацыі МПА",
+    "updateError": "Памылка пры змене параметра",
+    "updateSuccess": "Параметр абноўлены"
   },
   "aside": {
     "collapseWindow": "Згарнуць акно"

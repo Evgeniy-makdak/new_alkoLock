@@ -15,6 +15,7 @@ const INLINE_TABLE_TOOLBAR_PREFIXES: readonly string[] = [
   RoutePaths.servicemodehistory,
   RoutePaths.settings,
   RoutePaths.templates,
+  RoutePaths.mpoConfig,
 ];
 
 export function pathHasInlineTableToolbar(pathname: string): boolean {

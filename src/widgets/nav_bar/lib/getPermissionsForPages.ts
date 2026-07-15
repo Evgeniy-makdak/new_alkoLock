@@ -24,6 +24,10 @@ const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
     Permissions.PERMISSION_EVENTS_READ,
     Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE,
   ],
+  [RoutePaths.mpoConfig]: [
+    Permissions.PERMISSION_EVENTS_READ,
+    Permissions.PERMISSION_EVENTS_READ_ONLY_ROLE,
+  ],
   [RoutePaths.users]: [
     Permissions.PERMISSION_USER_READ,
     Permissions.PERMISSION_USER_CREATE,
