@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
 
 import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 
 import { useMpoConfigTable } from '../hooks/useMpoConfigTable';
 import { MPO_ROLE_FEATURE_ORDER } from '../lib/featureMapping';
 import { FeatureSwitch } from './FeatureSwitch';
 import styles from './MpoConfigTable.module.scss';
+import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
 
 export const MpoConfigMobileTable: FC = () => {
   const { t } = useTranslation();
@@ -22,6 +24,11 @@ export const MpoConfigMobileTable: FC = () => {
     toggleFeature,
     featureColumnLabel,
     globalLabel,
+    isResetting,
+    resetDialogOpen,
+    openResetDialog,
+    closeResetDialog,
+    resetToDefaults,
   } = useMpoConfigTable();
 
   return (
@@ -31,11 +38,16 @@ export const MpoConfigMobileTable: FC = () => {
       </div>
 
       <div className={styles.mobileFilters}>
+        <div className={styles.mobileToolbar}>
+          <Box sx={{ flex: 1 }} />
+          <ResetFilters reset={openResetDialog} title={t('mpoConfigPage.resetToDefaults')} />
+        </div>
         <div className={styles.globalToggles}>
           {globalCells.map((cell) => {
             const feature = cell.feature;
             const checked = !!feature?.isEnabled;
-            const disabled = !feature || pendingIds.has(String(feature.id));
+            const disabled =
+              !feature || pendingIds.has(String(feature.id)) || isResetting;
             return (
               <FeatureSwitch
                 key={cell.key}
@@ -64,7 +76,8 @@ export const MpoConfigMobileTable: FC = () => {
 
                 const feature = cell.feature;
                 const checked = !!feature?.isEnabled;
-                const disabled = !feature || pendingIds.has(String(feature.id));
+                const disabled =
+                  !feature || pendingIds.has(String(feature.id)) || isResetting;
 
                 return (
                   <div key={featureKey} className={styles.mobileFeatureRow}>
@@ -83,6 +96,13 @@ export const MpoConfigMobileTable: FC = () => {
           ))
         )}
       </div>
+
+      <MpoResetConfirmationDialog
+        open={resetDialogOpen}
+        onClose={closeResetDialog}
+        onConfirm={resetToDefaults}
+        isResetting={isResetting}
+      />
 
       <Snackbar
         open={notification.open}

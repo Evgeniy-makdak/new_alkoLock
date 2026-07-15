@@ -12,6 +12,10 @@ import { testids } from '@shared/const/testid';
 import { useToggle } from '@shared/hooks/useToggle';
 import { appStore } from '@shared/model/app_store/AppStore';
 import {
+  mobileFeaturesStore,
+  selectMobileFeatureFlags,
+} from '@shared/model/mobile_features_store/mobileFeaturesStore';
+import {
   EventType,
   type IAlcolock,
   type ID,
@@ -82,6 +86,7 @@ export const useAlkozamkiServiceMode = (
   const hasCreatePermission = appStore((state) =>
     state.permissions?.includes('PERMISSION_SERVICE_MODE_CREATE'),
   );
+  const { serviceModeRequestsEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
 
   const [openActivatePopup, toggleActivatePopup] = useToggle();
   const [openDeactivatePopup, toggleDeactivatePopup] = useToggle();
@@ -434,6 +439,7 @@ export const useAlkozamkiServiceMode = (
         }
       } else {
         const disableButtons = !hasCreatePermission;
+        const disableEnableByFeature = !serviceModeRequestsEnabled;
         // const disableOffButton = !hasTime || disableButtons;
 
         return (
@@ -449,6 +455,7 @@ export const useAlkozamkiServiceMode = (
                 className={
                   isServiceModeFromAlkolock &&
                   !disableButtons &&
+                  !disableEnableByFeature &&
                   !shouldDisableActivateButton &&
                   !isCrushModeFromAlkolock
                     ? style.active
@@ -457,6 +464,7 @@ export const useAlkozamkiServiceMode = (
                 onClick={
                   isServiceModeFromAlkolock &&
                   !disableButtons &&
+                  !disableEnableByFeature &&
                   !shouldDisableActivateButton &&
                   !isCrushModeFromAlkolock
                     ? () => {
@@ -464,7 +472,12 @@ export const useAlkozamkiServiceMode = (
                       }
                     : null
                 }
-                disabled={disableButtons || shouldDisableActivateButton || isCrushModeFromAlkolock}>
+                disabled={
+                  disableButtons ||
+                  disableEnableByFeature ||
+                  shouldDisableActivateButton ||
+                  isCrushModeFromAlkolock
+                }>
                 {t('serviceMode.enable')}
               </button>
               <button

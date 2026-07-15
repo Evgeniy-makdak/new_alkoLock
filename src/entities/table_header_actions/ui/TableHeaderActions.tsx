@@ -20,6 +20,9 @@ type TableHeaderActionsProps = {
   onClickAddIcon?: () => void;
   newRefetch?: () => void;
   hasCreatePermission?: boolean;
+  /** Показать «+», но сделать неактивным (например, CREATE_BINDING выключен) */
+  addDisabled?: boolean;
+  addDisabledTitle?: string;
 };
 
 export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
@@ -27,6 +30,8 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
   testidAddIcon,
   newRefetch,
   hasCreatePermission = true,
+  addDisabled = false,
+  addDisabledTitle,
 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -37,6 +42,9 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
   const showAddAction = !!onClickAddIcon && hasCreatePermission;
   const relocateAddToEndToolbar = showAddAction && hasInlineToolbarRoute && !isMobile;
   const setTrailing = useTableHeaderMobileTrailing()?.setTrailing;
+  const addTooltip = addDisabled
+    ? addDisabledTitle || t('common.add')
+    : t('common.add');
 
   useEffect(() => {
     if (!setTrailing) {
@@ -47,22 +55,35 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
       return;
     }
     setTrailing(
-      <Tooltip title={t('common.add')}>
-        <IconButton
-          aria-label={t('common.add')}
-          data-testid={testidAddIcon}
-          onClick={() => {
-            onClickAddIcon();
-          }}
-          sx={addCircleSx}>
-          <AddIcon fontSize="small" />
-        </IconButton>
+      <Tooltip title={addTooltip}>
+        <span>
+          <IconButton
+            aria-label={t('common.add')}
+            data-testid={testidAddIcon}
+            disabled={addDisabled}
+            onClick={() => {
+              if (addDisabled) return;
+              onClickAddIcon();
+            }}
+            sx={addCircleSx}>
+            <AddIcon fontSize="small" />
+          </IconButton>
+        </span>
       </Tooltip>,
     );
     return () => {
       setTrailing(null);
     };
-  }, [setTrailing, relocateAddToEndToolbar, onClickAddIcon, t, testidAddIcon, addCircleSx]);
+  }, [
+    setTrailing,
+    relocateAddToEndToolbar,
+    onClickAddIcon,
+    t,
+    testidAddIcon,
+    addCircleSx,
+    addDisabled,
+    addTooltip,
+  ]);
 
   return (
     <div
@@ -71,14 +92,17 @@ export const TableHeaderActions: FC<TableHeaderActionsProps> = ({
       }>
       <Refetch testId={testids.TABLE_REFETCH_TABLE_DATA_BUTTON} onClick={newRefetch} />
       {showAddAction && !relocateAddToEndToolbar ? (
-        <Tooltip title={t('common.add')}>
-          <IconButton
-            aria-label={t('common.add')}
-            data-testid={testidAddIcon}
-            onClick={onClickAddIcon}
-            sx={addCircleSx}>
-            <AddIcon fontSize="small" />
-          </IconButton>
+        <Tooltip title={addTooltip}>
+          <span>
+            <IconButton
+              aria-label={t('common.add')}
+              data-testid={testidAddIcon}
+              disabled={addDisabled}
+              onClick={addDisabled ? undefined : onClickAddIcon}
+              sx={addCircleSx}>
+              <AddIcon fontSize="small" />
+            </IconButton>
+          </span>
         </Tooltip>
       ) : null}
     </div>

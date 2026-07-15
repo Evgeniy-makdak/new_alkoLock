@@ -6,11 +6,13 @@ import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 
 import { useMpoConfigTable } from '../hooks/useMpoConfigTable';
 import { useGetColumns } from '../lib/getColumns';
 import { FeatureSwitch } from './FeatureSwitch';
 import styles from './MpoConfigTable.module.scss';
+import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
 
 export const MpoConfigDesktopTable: FC = () => {
   const { t } = useTranslation();
@@ -24,11 +26,17 @@ export const MpoConfigDesktopTable: FC = () => {
     toggleFeature,
     featureColumnLabel,
     globalLabel,
+    isResetting,
+    resetDialogOpen,
+    openResetDialog,
+    closeResetDialog,
+    resetToDefaults,
   } = useMpoConfigTable();
 
   const columns = useGetColumns({
     featureColumnLabel,
     pendingIds,
+    isResetting,
     onToggle: toggleFeature,
   });
 
@@ -37,7 +45,12 @@ export const MpoConfigDesktopTable: FC = () => {
       <TableHeaderWrapper>
         <Box sx={{ flex: 1 }} />
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', minWidth: 0 }}>
-          <TableHeaderEndToolbar />
+          <TableHeaderEndToolbar>
+            <ResetFilters
+              reset={openResetDialog}
+              title={t('mpoConfigPage.resetToDefaults')}
+            />
+          </TableHeaderEndToolbar>
         </div>
       </TableHeaderWrapper>
 
@@ -45,7 +58,8 @@ export const MpoConfigDesktopTable: FC = () => {
         {globalCells.map((cell) => {
           const feature = cell.feature;
           const checked = !!feature?.isEnabled;
-          const disabled = !feature || pendingIds.has(String(feature.id));
+          const disabled =
+            !feature || pendingIds.has(String(feature.id)) || isResetting;
           return (
             <FeatureSwitch
               key={cell.key}
@@ -67,7 +81,7 @@ export const MpoConfigDesktopTable: FC = () => {
           <Table
             rows={rows}
             columns={columns}
-            loading={isLoading}
+            loading={isLoading || isResetting}
             hideFooter
             disableColumnMenu
             disableRowSelectionOnClick
@@ -90,6 +104,13 @@ export const MpoConfigDesktopTable: FC = () => {
           />
         )}
       </div>
+
+      <MpoResetConfirmationDialog
+        open={resetDialogOpen}
+        onClose={closeResetDialog}
+        onConfirm={resetToDefaults}
+        isResetting={isResetting}
+      />
 
       <Snackbar
         open={notification.open}

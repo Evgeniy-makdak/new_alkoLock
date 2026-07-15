@@ -7,6 +7,7 @@ import { writeGhostPrankRuntimeEnabled } from '@pages/events/config/eventsGhostP
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { routers } from '@shared/config/routers';
 import { StorageKeys } from '@shared/const/storageKeys';
+import { mobileFeaturesStore } from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
 
@@ -103,6 +104,8 @@ export const appStore = create<AppStore>()((set, get) => ({
       permissions: [],
       fullName: null,
     });
+
+    mobileFeaturesStore.getState().reset();
 
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);

@@ -12,6 +12,10 @@ import { setTestIdsToHeaderColumns } from '@shared/components/Table/Table';
 import { SortTypes } from '@shared/config/queryParamsEnums';
 import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
+import {
+  mobileFeaturesStore,
+  selectMobileFeatureFlags,
+} from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { IAttachmentItems } from '@shared/types/BaseQueryTypes';
 import type { RefetchType } from '@shared/types/QueryTypes';
 
@@ -42,6 +46,7 @@ export const useGetColumns = (
 ): GridColDef[] => {
   const { t } = useTranslation();
   const { permissions: storePermissionsFromAttachments } = appStore();
+  const { createBindingEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
   const attachmentsPermissions =
     storePermissionsFromAttachments?.filter((p) => p.includes('BINDINGS')) || [];
   const hasAttachmentsCreate = attachmentsPermissions.includes('PERMISSION_BINDINGS_CREATE');
@@ -124,6 +129,7 @@ export const useGetColumns = (
                     }
                     onClickAddIcon={toggle}
                     hasCreatePermission={hasAttachmentsCreate}
+                    addDisabled={!createBindingEnabled}
                   />
                 );
               },
@@ -134,6 +140,17 @@ export const useGetColumns = (
           ]
         : []),
     ],
-    [refetch, toggleDelete, toggle, isVisibleActionsColumn, storePermissionsFromAttachments, t],
+    [
+      refetch,
+      toggleDelete,
+      toggle,
+      isVisibleActionsColumn,
+      storePermissionsFromAttachments,
+      t,
+      createBindingEnabled,
+      hasAttachmentsCreate,
+      shouldShowActionsColumn,
+      newRefetch,
+    ],
   );
 };

@@ -8,6 +8,11 @@ import { TableHeaderMobileTrailingProvider } from '@shared/components/table_head
 import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { DesktopUiOverlayCloser } from '@shared/components/desktop_ui_overlay_closer/DesktopUiOverlayCloser';
+import { useMobileFeaturesBootstrap } from '@shared/hooks/useMobileFeaturesBootstrap';
+import {
+  mobileFeaturesStore,
+  selectMobileFeatureFlags,
+} from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import { ThemeToggleControl, useColorMode } from '@shared/theme/colorMode';
 import ChatFooter from '@widgets/chat/chatFooter/ChatFooter';
 import { useSuppressMainChatFooterForPopup } from '@widgets/chat/chatPopup/useSuppressMainChatFooterForPopup';
@@ -20,6 +25,7 @@ import style from './app.module.scss';
 
 export function App() {
   const { isLoading } = useApp();
+  useMobileFeaturesBootstrap();
   const { mode } = useColorMode();
   const location = useLocation();
   const isMobile = useMediaQuery(breakpoints.mobile, { noSsr: true });
@@ -34,7 +40,9 @@ export function App() {
     location.pathname.startsWith(`${RoutePaths.settings}/`);
   const isOperatorChatPopupRoute = location.pathname === RoutePaths.operatorChatPopup;
   const suppressMainChatFooter = useSuppressMainChatFooterForPopup(isOperatorChatPopupRoute);
-  const showChatFooter = isOperatorChatPopupRoute || !suppressMainChatFooter;
+  const { chatEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
+  const showChatFooter =
+    chatEnabled && (isOperatorChatPopupRoute || !suppressMainChatFooter);
   const hideLanguageOnMap = location.pathname === RoutePaths.map;
   const themeSlotMapMobile = hideLanguageOnMap && isNarrowViewport;
   /** На широкой карте переключатель темы в MapControls, не в плавающем слоте */

@@ -646,7 +646,11 @@
     "createBinding": "Create binding",
     "loadError": "Failed to load MPO configuration",
     "updateError": "Failed to update parameter",
-    "updateSuccess": "Parameter updated"
+    "updateSuccess": "Parameter updated",
+    "resetToDefaults": "Reset to default values",
+    "resetConfirm": "Reset all MPO configuration settings to default values?",
+    "resetSuccess": "Settings have been reset to defaults",
+    "resetError": "Failed to reset settings"
   },
   "aside": {
     "collapseWindow": "Collapse panel"
@@ -794,7 +798,6 @@
     "filterFunctionLabel": "Function",
     "filterFunctionLabelOptional": "Function (optional)",
     "filterFunctionOptionalBadge": "(opt.)",
-    "filterFunctionOptionalHint": "Optional field",
     "filterFunctionOptionalHint": "Optional",
     "filterFunctionPlaceholder": "Not selected",
     "dateRangeStartDate": "Start date",

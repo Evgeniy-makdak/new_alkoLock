@@ -86,6 +86,13 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.mobileToolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
 .mobileList {
   flex: 1;
   overflow: auto;

@@ -25,16 +25,35 @@ export type MpoConfigRow = {
   cells: Record<MpoRoleFeatureKey, RoleFeatureCell>;
 };
 
+const mergePutResponse = (
+  previous: MobileFeature,
+  responseData: unknown,
+  nextEnabled: boolean,
+): MobileFeature => {
+  if (responseData && typeof responseData === 'object') {
+    const data = responseData as Partial<MobileFeature>;
+    return {
+      ...previous,
+      ...data,
+      isEnabled: typeof data.isEnabled === 'boolean' ? data.isEnabled : nextEnabled,
+    };
+  }
+  return { ...previous, isEnabled: nextEnabled };
+};
+
 export const useMpoConfigTable = () => {
   const { t } = useTranslation();
-  const { branchId, features, isLoading, refetch, error } = useMpoConfigApi();
+  const { branchId, features, setFeatures, upsertFeature, upsertFeatures, isLoading, error } =
+    useMpoConfigApi();
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
-  const [localOverrides, setLocalOverrides] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<{
     open: boolean;
     message: string;
     severity: 'success' | 'error';
   }>({ open: false, message: '', severity: 'success' });
+
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
 
   const roleLabel = useCallback(
     (roleKey: MpoRoleKey) =>
@@ -51,7 +70,6 @@ export const useMpoConfigTable = () => {
 
   const globalLabel = useCallback(
     (cell: GlobalFeatureCell) => {
-      // Предпочитаем label с бэка; для одинаковых «Заявки...» уточняем по featureType
       if (cell.feature?.label) {
         if (
           cell.key === MpoGlobalFeatureKey.SERVICE_MODE_DRIVER ||
@@ -66,23 +84,12 @@ export const useMpoConfigTable = () => {
     [t],
   );
 
-  const effectiveFeatures = useMemo(() => {
-    return features.map((feature) => {
-      const override = localOverrides[String(feature.id)];
-      if (override === undefined) return feature;
-      return { ...feature, isEnabled: override };
-    });
-  }, [features, localOverrides]);
-
   const globalCells: GlobalFeatureCell[] = useMemo(
-    () => mapGlobalFeatures(effectiveFeatures),
-    [effectiveFeatures],
+    () => mapGlobalFeatures(features),
+    [features],
   );
 
-  const matrixCells = useMemo(
-    () => mapRoleFeatureMatrix(effectiveFeatures),
-    [effectiveFeatures],
-  );
+  const matrixCells = useMemo(() => mapRoleFeatureMatrix(features), [features]);
 
   const rows: MpoConfigRow[] = useMemo(() => {
     return MPO_ROLE_ORDER.map((roleKey) => {
@@ -119,11 +126,10 @@ export const useMpoConfigTable = () => {
     async (feature: MobileFeature | null | undefined, nextEnabled: boolean) => {
       if (!feature || branchId == null) return;
 
-      const idKey = String(feature.id);
-      const prevEnabled = feature.isEnabled;
-
-      setLocalOverrides((prev) => ({ ...prev, [idKey]: nextEnabled }));
+      const snapshot = { ...feature };
       setPending(feature.id, true);
+      // оптимистичное обновление — без повторного GET
+      upsertFeature({ ...feature, isEnabled: nextEnabled });
 
       try {
         const response = await MobileFeaturesApi.updateFeature(feature.id, {
@@ -135,14 +141,9 @@ export const useMpoConfigTable = () => {
           throw new Error(response.message || 'update failed');
         }
 
-        await refetch();
-        setLocalOverrides((prev) => {
-          const next = { ...prev };
-          delete next[idKey];
-          return next;
-        });
+        upsertFeature(mergePutResponse(snapshot, response?.data as unknown, nextEnabled));
       } catch {
-        setLocalOverrides((prev) => ({ ...prev, [idKey]: prevEnabled }));
+        upsertFeature(snapshot);
         setNotification({
           open: true,
           message: t('mpoConfigPage.updateError'),
@@ -152,12 +153,100 @@ export const useMpoConfigTable = () => {
         setPending(feature.id, false);
       }
     },
-    [branchId, refetch, t],
+    [branchId, t, upsertFeature],
   );
 
   const closeNotification = () => {
     setNotification((prev) => ({ ...prev, open: false }));
   };
+
+  const openResetDialog = useCallback(() => {
+    if (!branchId || features.length === 0 || isResetting) return;
+    setResetDialogOpen(true);
+  }, [branchId, features.length, isResetting]);
+
+  const closeResetDialog = useCallback(() => {
+    setResetDialogOpen(false);
+  }, []);
+
+  const resetToDefaults = useCallback(async () => {
+    if (!branchId || features.length === 0) return;
+
+    const snapshot = features.map((feature) => ({ ...feature }));
+    const toEnable = features.filter((feature) => !feature.isEnabled);
+
+    setIsResetting(true);
+    setResetDialogOpen(false);
+
+    // все параметры → isEnabled: true (оптимистично)
+    setFeatures(features.map((feature) => ({ ...feature, isEnabled: true })));
+
+    if (toEnable.length === 0) {
+      setIsResetting(false);
+      setNotification({
+        open: true,
+        message: t('mpoConfigPage.resetSuccess'),
+        severity: 'success',
+      });
+      return;
+    }
+
+    try {
+      const results = await Promise.all(
+        toEnable.map((feature) =>
+          MobileFeaturesApi.updateFeature(feature.id, {
+            branchId,
+            isEnabled: true,
+          }).then((response) => ({ feature, response })),
+        ),
+      );
+
+      const failed = results.filter(({ response }) => response?.isError);
+      if (failed.length === results.length) {
+        throw new Error('all resets failed');
+      }
+
+      const updated: MobileFeature[] = results
+        .filter(({ response }) => !response?.isError)
+        .map(({ feature, response }) =>
+          mergePutResponse(feature, response?.data as unknown, true),
+        );
+
+      upsertFeatures(updated);
+
+      if (failed.length > 0) {
+        // частичный откат неудачных
+        const failedIds = new Set(failed.map(({ feature }) => String(feature.id)));
+        setFeatures((prev) =>
+          prev.map((item) => {
+            if (!failedIds.has(String(item.id))) return item;
+            const original = snapshot.find((s) => String(s.id) === String(item.id));
+            return original ?? item;
+          }),
+        );
+        setNotification({
+          open: true,
+          message: t('mpoConfigPage.resetError'),
+          severity: 'error',
+        });
+      } else {
+        setNotification({
+          open: true,
+          message: t('mpoConfigPage.resetSuccess'),
+          severity: 'success',
+        });
+      }
+    } catch {
+      setFeatures(snapshot);
+      setNotification({
+        open: true,
+        message: t('mpoConfigPage.resetError'),
+        severity: 'error',
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  }, [branchId, features, setFeatures, t, upsertFeatures]);
 
   return {
     branchId,
@@ -173,5 +262,10 @@ export const useMpoConfigTable = () => {
     featureColumnLabel,
     globalLabel,
     featureColumns: MPO_ROLE_FEATURE_ORDER,
+    isResetting,
+    resetDialogOpen,
+    openResetDialog,
+    closeResetDialog,
+    resetToDefaults,
   };
 };

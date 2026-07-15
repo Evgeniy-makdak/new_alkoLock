@@ -643,7 +643,11 @@
     "createBinding": "Bog‘lash yaratish",
     "loadError": "MPO konfiguratsiyasini yuklashda xato",
     "updateError": "Parametrni o‘zgartirishda xato",
-    "updateSuccess": "Parametr yangilandi"
+    "updateSuccess": "Parametr yangilandi",
+    "resetToDefaults": "Standart qiymatlarga qaytarish",
+    "resetConfirm": "MPO konfiguratsiyasining barcha sozlamalarini standart qiymatlarga qaytarilsinmi?",
+    "resetSuccess": "Sozlamalar standart qiymatlarga qaytarildi",
+    "resetError": "Sozlamalarni qaytarishda xato"
   },
   "aside": {
     "collapseWindow": "Oynani yig'ish"

@@ -17,12 +17,14 @@ import styles from '../ui/MpoConfigTable.module.scss';
 type UseGetColumnsParams = {
   featureColumnLabel: (key: MpoRoleFeatureKey) => string;
   pendingIds: Set<string>;
+  isResetting?: boolean;
   onToggle: (feature: MobileFeature | null | undefined, nextEnabled: boolean) => void;
 };
 
 export const useGetColumns = ({
   featureColumnLabel,
   pendingIds,
+  isResetting = false,
   onToggle,
 }: UseGetColumnsParams): GridColDef<MpoConfigRow>[] => {
   const { t } = useTranslation();
@@ -54,7 +56,7 @@ export const useGetColumns = ({
 
           const feature = cell.feature;
           const checked = !!feature?.isEnabled;
-          const disabled = !feature || pendingIds.has(String(feature.id));
+          const disabled = !feature || isResetting || pendingIds.has(String(feature.id));
 
           return (
             <FeatureSwitch
@@ -68,5 +70,5 @@ export const useGetColumns = ({
     );
 
     return [roleColumn, ...featureColumns];
-  }, [featureColumnLabel, onToggle, pendingIds, t]);
+  }, [featureColumnLabel, isResetting, onToggle, pendingIds, t]);
 };
