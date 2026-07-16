@@ -6,6 +6,7 @@ import { Lock, LockOpen } from '@mui/icons-material';
 import { Box, Button, Tooltip } from '@mui/material';
 
 import { UsersApi } from '@shared/api/baseQuerys';
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../api';
@@ -275,6 +276,16 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
     } catch (error: any) {
       setForceShowCompleteButton(false);
       justAssignedRef.current = false;
+
+      if (
+        handleChatBlockedByAdminResponse({
+          status: error?.status,
+          detail: error?.detail ?? error?.message,
+          message: error?.message,
+        })
+      ) {
+        return;
+      }
 
       if (error?.status === 409) {
         try {

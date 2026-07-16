@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 
 import { UsersApi } from '@shared/api/baseQuerys';
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../../api';
@@ -286,6 +287,19 @@ export const useChatMessages = (
 
         onSuccess();
       } catch (err) {
+        if (
+          handleChatBlockedByAdminResponse(err as any) ||
+          handleChatBlockedByAdminResponse({
+            status: (err as any)?.status,
+            detail: (err as any)?.detail ?? (err instanceof Error ? err.message : undefined),
+            message: err instanceof Error ? err.message : String(err),
+          })
+        ) {
+          updateSession(sessionId, { isSendingMessage: false, lastSendError: null });
+          onError(err);
+          return;
+        }
+
         if (localMessageAdded) {
           const currentSession = getSession(sessionId);
           if (currentSession) {

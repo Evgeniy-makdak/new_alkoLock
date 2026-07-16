@@ -9,6 +9,7 @@ import {
 } from 'react';
 
 import { appStore } from '@shared/model/app_store/AppStore';
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import i18n from '../../../i18n';
@@ -1435,6 +1436,20 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (lastMessage.type === 'error' || lastMessage.destination === '/user/queue/errors') {
         const errorData = lastMessage.data;
+        if (
+          handleChatBlockedByAdminResponse({
+            status: errorData?.status ?? errorData?.statusCode ?? 409,
+            detail: errorData?.detail ?? errorData?.message,
+            message: errorData?.message ?? errorData?.detail,
+            title: errorData?.title,
+            path: errorData?.path ?? errorData?.instance,
+          }) ||
+          handleChatBlockedByAdminResponse(
+            typeof lastMessage.rawBody === 'string' ? lastMessage.rawBody : undefined,
+          )
+        ) {
+          return;
+        }
         if (activeSessionId) {
           const sessionCreationTime = refs.sessionCreationTimeRef.current.get(activeSessionId);
           const currentTime = Date.now();

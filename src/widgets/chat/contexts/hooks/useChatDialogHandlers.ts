@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { ChatsApi } from '@shared/api/baseQuerys';
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 
 import api from '../../api';
 import { operatorUnreadDebug } from '../../lib/operatorUnreadDebugLog';
@@ -1145,6 +1146,16 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
           return response.id.toString();
         }
       } catch (error: any) {
+        if (
+          handleChatBlockedByAdminResponse({
+            status: error?.status,
+            detail: error?.detail ?? error?.message,
+            message: error?.message,
+          })
+        ) {
+          return null;
+        }
+
         if (error?.status === 409) {
           try {
             const dialogs = await api.getAllDialogs();

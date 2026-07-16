@@ -47,6 +47,19 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
   const isAuthError = status === StatusCode.UNAUTHORIZED;
   const currentPath = window.location.pathname;
 
+  // 409 «Функция Чат заблокирована…» — сразу скрыть чат у оператора без перезагрузки
+  if (status === StatusCode.CONFLICT) {
+    void import('@shared/lib/handleChatBlockedByAdmin').then(({ handleChatBlockedByAdminResponse }) => {
+      handleChatBlockedByAdminResponse({
+        status,
+        detail: data?.detail,
+        message: typeof data === 'object' && data ? (data as IError).message ?? message : message,
+        title: typeof data === 'object' && data ? (data as { title?: string }).title : undefined,
+        path: typeof data === 'object' && data ? (data as { path?: string }).path : undefined,
+      });
+    });
+  }
+
   const excludedPaths = [
     RoutePaths.resetPassword,
     RoutePaths.confirmPassword,

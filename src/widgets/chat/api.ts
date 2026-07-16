@@ -2,6 +2,7 @@
 import CryptoJS from 'crypto-js';
 
 import { ChatsApi } from '@shared/api/baseQuerys';
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import { configLoader } from '../../config/configLoader';
@@ -74,6 +75,30 @@ const createRequest = async (url: string, options: RequestInit = {}, useCredenti
       }
 
       const errorText = await response.text();
+      let parsed: Record<string, unknown> | null = null;
+      try {
+        parsed = errorText ? (JSON.parse(errorText) as Record<string, unknown>) : null;
+      } catch {
+        parsed = null;
+      }
+
+      if (
+        handleChatBlockedByAdminResponse({
+          status: response.status,
+          detail: parsed?.detail ?? errorText,
+          message: parsed?.message ?? errorText,
+          title: parsed?.title,
+          path: parsed?.path ?? parsed?.instance,
+        })
+      ) {
+        const err: Error & { status?: number; detail?: unknown } = new Error(
+          String(parsed?.detail || errorText || 'Chat blocked'),
+        );
+        err.status = response.status;
+        err.detail = parsed?.detail ?? errorText;
+        throw err;
+      }
+
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
@@ -219,11 +244,34 @@ const getUserMessages = async (userId: number, page = 0, size = 20): Promise<any
 
 const assignDialog = async (userId: string) => {
   const response = await DialogsApi.assignDialog(userId);
+  if (response?.isError) {
+    if (
+      handleChatBlockedByAdminResponse({
+        status: response.status,
+        detail: response.detail,
+        message: response.message,
+      })
+    ) {
+      const err: Error & { status?: number; detail?: string } = new Error(
+        response.detail || response.message || 'Chat blocked',
+      );
+      err.status = response.status;
+      err.detail = response.detail;
+      throw err;
+    }
+  }
   return response?.data;
 };
 
 const completeDialog = async (dialogId: string) => {
   const response = await DialogsApi.completeDialog(dialogId);
+  if (response?.isError) {
+    handleChatBlockedByAdminResponse({
+      status: response.status,
+      detail: response.detail,
+      message: response.message,
+    });
+  }
   return response?.data;
 };
 // TODO: transferDialog не используется
@@ -263,11 +311,34 @@ const getAllDialogs = async () => {
 
 const createDialog = async (dialogData: any) => {
   const response = await DialogsApi.createDialog(dialogData);
+  if (response?.isError) {
+    if (
+      handleChatBlockedByAdminResponse({
+        status: response.status,
+        detail: response.detail,
+        message: response.message,
+      })
+    ) {
+      const err: Error & { status?: number; detail?: string } = new Error(
+        response.detail || response.message || 'Chat blocked',
+      );
+      err.status = response.status;
+      err.detail = response.detail;
+      throw err;
+    }
+  }
   return response?.data;
 };
 
 const getDialogById = async (dialogId: string) => {
   const response = await DialogsApi.getDialogById(dialogId);
+  if (response?.isError) {
+    handleChatBlockedByAdminResponse({
+      status: response.status,
+      detail: response.detail,
+      message: response.message,
+    });
+  }
   return response?.data;
 };
 

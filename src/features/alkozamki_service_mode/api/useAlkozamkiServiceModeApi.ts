@@ -5,6 +5,7 @@ import { EventsApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
+import { mobileFeaturesStore } from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { ActivateServiceModeOptions, ID, IError } from '@shared/types/BaseQueryTypes';
 import { useMutation } from '@tanstack/react-query';
 
@@ -49,6 +50,12 @@ export const useAlkozamkiServiceModeApi = () => {
         // Проверяем проблемные статусы
         if (response.status === 400 || response.status === StatusCode.CONFLICT) {
           enqueueSnackbar(response.detail, { variant: 'error' });
+
+          // 409: админ отключил заявки на сервисный режим — сразу блокируем UI
+          if (response.status === StatusCode.CONFLICT && !options.isDeactivate) {
+            mobileFeaturesStore.getState().disableServiceModeRequests();
+          }
+
           throw new Error(response.detail);
         }
 

@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 
+import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { UnreadDialog } from '@widgets/chat/api/dialogsApi';
 
@@ -53,6 +54,16 @@ export const useChatDialogs = (
         return normalized;
       } catch (error: any) {
         console.error('Ошибка блокировки диалога:', error);
+
+        if (
+          handleChatBlockedByAdminResponse({
+            status: error?.status,
+            detail: error?.detail ?? error?.message,
+            message: error?.message,
+          })
+        ) {
+          return null;
+        }
 
         if (error?.status === 409) {
           try {

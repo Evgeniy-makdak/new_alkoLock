@@ -86,7 +86,17 @@ export const AlkozamkiServiceMode = ({
             </Typography>
           )}
           {!serviceModeRequestsEnabled && (
-            <Typography fontSize={22} fontWeight={400} color="error">
+            <Typography
+              fontSize={22}
+              fontWeight={400}
+              color="error"
+              sx={{
+                maxWidth: 346,
+                px: 2,
+                boxSizing: 'border-box',
+                textAlign: 'center',
+                whiteSpace: 'pre-line',
+              }}>
               {t('serviceMode.featureTemporarilyBlocked')}
             </Typography>
           )}

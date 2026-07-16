@@ -22,6 +22,10 @@ type MobileFeaturesStore = {
   isLoading: boolean;
   setFeatures: (features: MobileFeature[]) => void;
   upsertFeature: (feature: MobileFeature) => void;
+  /** Мгновенно скрыть чат (иконка + окна) без ожидания повторного GET mobile-features */
+  disableChat: () => void;
+  /** Мгновенно заблокировать «Включить» сервисный режим + показать надпись о блокировке */
+  disableServiceModeRequests: () => void;
   loadFeatures: () => Promise<void>;
   reset: () => void;
 };
@@ -80,6 +84,34 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
     set({
       features: next,
       flags: computeFlags(next),
+    });
+  },
+
+  disableChat: () => {
+    const prev = get().features;
+    const next = prev.map((feature) =>
+      String(feature.featureType || '').toUpperCase() === 'CHAT'
+        ? { ...feature, isEnabled: false }
+        : feature,
+    );
+    set({
+      features: next,
+      flags: { ...get().flags, chatEnabled: false },
+    });
+  },
+
+  disableServiceModeRequests: () => {
+    const prev = get().features;
+    const next = prev.map((feature) => {
+      const type = String(feature.featureType || '').toUpperCase();
+      if (type === 'SERVICE_MODE_DRIVER' || type === 'SERVICE_MODE_SERVICE_WORKER') {
+        return { ...feature, isEnabled: false };
+      }
+      return feature;
+    });
+    set({
+      features: next,
+      flags: { ...get().flags, serviceModeRequestsEnabled: false },
     });
   },
 

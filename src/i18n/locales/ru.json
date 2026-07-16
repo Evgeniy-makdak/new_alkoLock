@@ -496,7 +496,7 @@
     "turnOffIn": "Выключение через",
     "emergencyModeActivated": "Активирован аварийный режим",
     "activatedByServiceWorker": "Активирован сервисным работником",
-    "featureTemporarilyBlocked": "Функционал временно заблокирован",
+    "featureTemporarilyBlocked": "Обработка заявок на сервисный режим\nвременно отключена",
     "activatePrompt": "Включить сервисный режим?",
     "deactivatePrompt": "Выключить сервисный режим?",
     "activationPeriodHours": "Период активации, ч",
