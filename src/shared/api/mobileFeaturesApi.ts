@@ -40,7 +40,6 @@ export type UpdateMobileFeatureBody = {
 };
 
 export type GetMobileFeaturesParams = {
-  branchId: ID;
   page?: number;
   size?: number;
   sort?: string | string[];
@@ -48,12 +47,11 @@ export type GetMobileFeaturesParams = {
 };
 
 export class MobileFeaturesApi {
-  static getList({ branchId, page = 0, size = 100, sort, distinct }: GetMobileFeaturesParams) {
+  static getList({ page = 0, size = 100, sort, distinct }: GetMobileFeaturesParams = {}) {
     return getQuery<MobileFeaturesPage>({
       url: 'api/mobile-features',
       config: {
         params: {
-          branchId,
           page,
           size,
           ...(sort != null ? { sort } : {}),

@@ -496,6 +496,7 @@
     "turnOffIn": "Выключение через",
     "emergencyModeActivated": "Активирован аварийный режим",
     "activatedByServiceWorker": "Активирован сервисным работником",
+    "featureTemporarilyBlocked": "Функционал временно заблокирован",
     "activatePrompt": "Включить сервисный режим?",
     "deactivatePrompt": "Выключить сервисный режим?",
     "activationPeriodHours": "Период активации, ч",
@@ -650,7 +651,13 @@
     "resetToDefaults": "Сброс до дефолтных значений",
     "resetConfirm": "Сбросить все настройки конфигурации МПО до значений по умолчанию?",
     "resetSuccess": "Настройки сброшены до значений по умолчанию",
-    "resetError": "Ошибка при сбросе настроек"
+    "resetError": "Ошибка при сбросе настроек",
+    "toggleEnableTitle": "Включить {{name}}",
+    "toggleDisableTitle": "Выключить {{name}}",
+    "toggleEnable": "Включить",
+    "toggleDisable": "Выключить",
+    "globalParameters": "Глобальные параметры",
+    "localParameters": "Локальные параметры"
   },
   "aside": {
     "collapseWindow": "Свернуть окно"

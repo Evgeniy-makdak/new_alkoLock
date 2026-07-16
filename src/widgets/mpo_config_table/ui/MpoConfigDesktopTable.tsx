@@ -2,10 +2,10 @@ import { type FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
+import { Typography } from '@mui/material';
 
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
-import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 
 import { useMpoConfigTable } from '../hooks/useMpoConfigTable';
@@ -13,18 +13,22 @@ import { useGetColumns } from '../lib/getColumns';
 import { FeatureSwitch } from './FeatureSwitch';
 import styles from './MpoConfigTable.module.scss';
 import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
+import { MpoToggleConfirmationDialog } from './MpoToggleConfirmationDialog';
 
 export const MpoConfigDesktopTable: FC = () => {
   const { t } = useTranslation();
   const {
     isLoading,
-    rows,
+    localFeatureRows,
     globalCells,
     pendingIds,
     notification,
     closeNotification,
-    toggleFeature,
-    featureColumnLabel,
+    requestToggleFeature,
+    toggleDialogOpen,
+    pendingToggle,
+    closeToggleDialog,
+    confirmToggleFeature,
     globalLabel,
     isResetting,
     resetDialogOpen,
@@ -34,25 +38,40 @@ export const MpoConfigDesktopTable: FC = () => {
   } = useMpoConfigTable();
 
   const columns = useGetColumns({
-    featureColumnLabel,
     pendingIds,
     isResetting,
-    onToggle: toggleFeature,
+    onToggle: requestToggleFeature,
   });
 
   return (
     <div className={styles.tableWrapper}>
-      <TableHeaderWrapper>
-        <Box sx={{ flex: 1 }} />
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', minWidth: 0 }}>
-          <TableHeaderEndToolbar>
-            <ResetFilters
-              reset={openResetDialog}
-              title={t('mpoConfigPage.resetToDefaults')}
-            />
-          </TableHeaderEndToolbar>
-        </div>
-      </TableHeaderWrapper>
+      <Box
+        sx={{
+          width: '100%',
+          px: 2,
+          pt: 0,
+          pb: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 1,
+          minWidth: 0,
+        }}>
+        <Typography
+          variant="subtitle2"
+          sx={{
+            fontWeight: 700,
+            color: 'text.secondary',
+          }}>
+          {t('mpoConfigPage.globalParameters')}
+        </Typography>
+        <TableHeaderEndToolbar>
+          <ResetFilters
+            reset={openResetDialog}
+            title={t('mpoConfigPage.resetToDefaults')}
+          />
+        </TableHeaderEndToolbar>
+      </Box>
 
       <div className={styles.globalToggles}>
         {globalCells.map((cell) => {
@@ -66,30 +85,42 @@ export const MpoConfigDesktopTable: FC = () => {
               checked={checked}
               disabled={disabled}
               label={globalLabel(cell)}
-              onChange={(next) => toggleFeature(feature, next)}
+              onChange={(next) => requestToggleFeature(feature, next)}
             />
           );
         })}
       </div>
 
+      <Typography
+        variant="subtitle2"
+        sx={{
+          px: 2,
+          pt: 1,
+          pb: 1,
+          fontWeight: 700,
+          color: 'text.secondary',
+        }}>
+        {t('mpoConfigPage.localParameters')}
+      </Typography>
+
       <div className={styles.scrollableTable}>
-        {isLoading && rows.length === 0 ? (
+        {isLoading && localFeatureRows.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress />
           </Box>
         ) : (
           <Table
-            rows={rows}
+            rows={localFeatureRows}
             columns={columns}
             loading={isLoading || isResetting}
             hideFooter
             disableColumnMenu
             disableRowSelectionOnClick
-            rowCount={rows.length}
+            rowCount={localFeatureRows.length}
             paginationMode="client"
             sortingMode="client"
             pageNumber={0}
-            pageSize={rows.length || 2}
+            pageSize={localFeatureRows.length || 2}
             sx={{
               '& .MuiDataGrid-cell': {
                 outline: 'none !important',
@@ -110,6 +141,17 @@ export const MpoConfigDesktopTable: FC = () => {
         onClose={closeResetDialog}
         onConfirm={resetToDefaults}
         isResetting={isResetting}
+      />
+
+      <MpoToggleConfirmationDialog
+        open={toggleDialogOpen}
+        featureName={pendingToggle?.featureName ?? ''}
+        nextEnabled={pendingToggle?.nextEnabled ?? false}
+        onClose={closeToggleDialog}
+        onConfirm={confirmToggleFeature}
+        isSubmitting={
+          pendingToggle != null && pendingIds.has(String(pendingToggle.feature.id))
+        }
       />
 
       <Snackbar

@@ -14,10 +14,6 @@ import {
 import { MobilePaginationWithJump } from '@shared/components/Pagination';
 import { testids } from '@shared/const/testid';
 import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDatePickerFromHiddenInput';
-import {
-  mobileFeaturesStore,
-  selectMobileFeatureFlags,
-} from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import { ID } from '@shared/types/BaseQueryTypes';
 import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
 import { Popup } from '@shared/ui/popup';
@@ -402,10 +398,7 @@ export const AttachmentsMobileTable = ({
     }
   };
 
-  const { createBindingEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
-
   const handleAddAttachmentClick = () => {
-    if (!createBindingEnabled) return;
     addModalData.toggleAddAttachModal();
   };
 
@@ -417,7 +410,6 @@ export const AttachmentsMobileTable = ({
           className={styles.addButton}
           onClick={handleAddAttachmentClick}
           color="default"
-          disabled={!createBindingEnabled}
           aria-label="Добавить привязку">
           <Add />
         </IconButton>

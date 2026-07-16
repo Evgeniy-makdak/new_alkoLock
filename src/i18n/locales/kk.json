@@ -494,6 +494,7 @@
     "turnOffIn": "Өшу уақыты",
     "emergencyModeActivated": "Авариялық режим белсенді",
     "activatedByServiceWorker": "Сервис жұмысшысы белсендірді",
+    "featureTemporarilyBlocked": "Функционал уақытша бұғатталған",
     "activatePrompt": "Сервистік режимді қосу керек пе?",
     "deactivatePrompt": "Сервистік режимді өшіру керек пе?",
     "activationPeriodHours": "Белсендіру кезеңі, сағ",
@@ -647,7 +648,13 @@
     "resetToDefaults": "Әдепкі мәндерге қайтару",
     "resetConfirm": "МПО конфигурациясының барлық баптауларын әдепкі мәндерге қайтару керек пе?",
     "resetSuccess": "Баптаулар әдепкі мәндерге қайтарылды",
-    "resetError": "Баптауларды қайтару кезінде қате"
+    "resetError": "Баптауларды қайтару кезінде қате",
+    "toggleEnableTitle": "{{name}} қосу",
+    "toggleDisableTitle": "{{name}} өшіру",
+    "toggleEnable": "Қосу",
+    "toggleDisable": "Өшіру",
+    "globalParameters": "Жалпы параметрлер",
+    "localParameters": "Жергілікті параметрлер"
   },
   "aside": {
     "collapseWindow": "Терезені жию"

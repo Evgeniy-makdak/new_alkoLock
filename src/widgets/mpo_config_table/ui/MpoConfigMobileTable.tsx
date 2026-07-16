@@ -1,7 +1,7 @@
 import { type FC } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
+import { Alert, Box, CircularProgress, Snackbar, Typography } from '@mui/material';
 
 import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
@@ -11,6 +11,7 @@ import { MPO_ROLE_FEATURE_ORDER } from '../lib/featureMapping';
 import { FeatureSwitch } from './FeatureSwitch';
 import styles from './MpoConfigTable.module.scss';
 import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
+import { MpoToggleConfirmationDialog } from './MpoToggleConfirmationDialog';
 
 export const MpoConfigMobileTable: FC = () => {
   const { t } = useTranslation();
@@ -21,7 +22,11 @@ export const MpoConfigMobileTable: FC = () => {
     pendingIds,
     notification,
     closeNotification,
-    toggleFeature,
+    requestToggleFeature,
+    toggleDialogOpen,
+    pendingToggle,
+    closeToggleDialog,
+    confirmToggleFeature,
     featureColumnLabel,
     globalLabel,
     isResetting,
@@ -42,6 +47,11 @@ export const MpoConfigMobileTable: FC = () => {
           <Box sx={{ flex: 1 }} />
           <ResetFilters reset={openResetDialog} title={t('mpoConfigPage.resetToDefaults')} />
         </div>
+        <Typography
+          variant="subtitle2"
+          sx={{ fontWeight: 700, color: 'text.secondary', mb: 1, mt: 0.5 }}>
+          {t('mpoConfigPage.globalParameters')}
+        </Typography>
         <div className={styles.globalToggles}>
           {globalCells.map((cell) => {
             const feature = cell.feature;
@@ -54,12 +64,18 @@ export const MpoConfigMobileTable: FC = () => {
                 checked={checked}
                 disabled={disabled}
                 label={globalLabel(cell)}
-                onChange={(next) => toggleFeature(feature, next)}
+                onChange={(next) => requestToggleFeature(feature, next)}
               />
             );
           })}
         </div>
       </div>
+
+      <Typography
+        variant="subtitle2"
+        sx={{ fontWeight: 700, color: 'text.secondary', px: 2, mb: 1, mt: 1 }}>
+        {t('mpoConfigPage.localParameters')}
+      </Typography>
 
       <div className={styles.mobileList}>
         {isLoading && rows.length === 0 ? (
@@ -87,7 +103,7 @@ export const MpoConfigMobileTable: FC = () => {
                     <FeatureSwitch
                       checked={checked}
                       disabled={disabled}
-                      onChange={(next) => toggleFeature(feature, next)}
+                      onChange={(next) => requestToggleFeature(feature, next)}
                     />
                   </div>
                 );
@@ -102,6 +118,17 @@ export const MpoConfigMobileTable: FC = () => {
         onClose={closeResetDialog}
         onConfirm={resetToDefaults}
         isResetting={isResetting}
+      />
+
+      <MpoToggleConfirmationDialog
+        open={toggleDialogOpen}
+        featureName={pendingToggle?.featureName ?? ''}
+        nextEnabled={pendingToggle?.nextEnabled ?? false}
+        onClose={closeToggleDialog}
+        onConfirm={confirmToggleFeature}
+        isSubmitting={
+          pendingToggle != null && pendingIds.has(String(pendingToggle.feature.id))
+        }
       />
 
       <Snackbar

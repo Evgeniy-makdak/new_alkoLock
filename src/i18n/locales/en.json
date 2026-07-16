@@ -496,6 +496,7 @@
     "turnOffIn": "Turn off in",
     "emergencyModeActivated": "Emergency mode activated",
     "activatedByServiceWorker": "Activated by service worker",
+    "featureTemporarilyBlocked": "Functionality is temporarily blocked",
     "activatePrompt": "Enable service mode?",
     "deactivatePrompt": "Disable service mode?",
     "activationPeriodHours": "Activation period, h",
@@ -650,7 +651,13 @@
     "resetToDefaults": "Reset to default values",
     "resetConfirm": "Reset all MPO configuration settings to default values?",
     "resetSuccess": "Settings have been reset to defaults",
-    "resetError": "Failed to reset settings"
+    "resetError": "Failed to reset settings",
+    "toggleEnableTitle": "Enable {{name}}",
+    "toggleDisableTitle": "Disable {{name}}",
+    "toggleEnable": "Enable",
+    "toggleDisable": "Disable",
+    "globalParameters": "Global parameters",
+    "localParameters": "Local parameters"
   },
   "aside": {
     "collapseWindow": "Collapse panel"

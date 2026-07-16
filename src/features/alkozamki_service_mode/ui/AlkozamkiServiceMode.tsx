@@ -5,6 +5,10 @@ import { Stack, Typography } from '@mui/material';
 
 import { ActivateForm } from '@entities/alkozamki_activate_form';
 import { TimeCell } from '@entities/time_cell';
+import {
+  mobileFeaturesStore,
+  selectMobileFeatureFlags,
+} from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { IAlcolock, IDeviceAction } from '@shared/types/BaseQueryTypes';
 import { Button, ButtonsType } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
@@ -45,6 +49,7 @@ export const AlkozamkiServiceMode = ({
     hasTime,
   } = useAlkozamkiServiceMode(deviceAction, alkolock, handleCloseAside);
   const { isServiceModeFromAlkolock } = useServiceMode();
+  const { serviceModeRequestsEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
   const initialTime = modeResetAt ? new Date(modeResetAt) : new Date();
 
   // Определяем, нужно ли показывать таймер (если есть modeResetAt, даже если режим "Сервисный")
@@ -78,6 +83,11 @@ export const AlkozamkiServiceMode = ({
           {alkolock.mode === 'Сервисный' && !shouldShowTimer && (
             <Typography fontSize={22} fontWeight={400} color="primary">
               {t('serviceMode.activatedByServiceWorker')}
+            </Typography>
+          )}
+          {!serviceModeRequestsEnabled && (
+            <Typography fontSize={22} fontWeight={400} color="error">
+              {t('serviceMode.featureTemporarilyBlocked')}
             </Typography>
           )}
           {getButtons()}

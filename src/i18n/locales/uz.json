@@ -494,6 +494,7 @@
     "turnOffIn": "O'chirish orqali",
     "emergencyModeActivated": "Favqulodda rejimi yoqildi",
     "activatedByServiceWorker": "Xizmat ko'rsatuvchi tomonidan yoqildi",
+    "featureTemporarilyBlocked": "Funksional vaqtincha bloklangan",
     "activatePrompt": "Xizmat rejimini yoqasizmi?",
     "deactivatePrompt": "Xizmat rejimini o'chirasizmi?",
     "activationPeriodHours": "Faollashtirish davri, soat",
@@ -647,7 +648,13 @@
     "resetToDefaults": "Standart qiymatlarga qaytarish",
     "resetConfirm": "MPO konfiguratsiyasining barcha sozlamalarini standart qiymatlarga qaytarilsinmi?",
     "resetSuccess": "Sozlamalar standart qiymatlarga qaytarildi",
-    "resetError": "Sozlamalarni qaytarishda xato"
+    "resetError": "Sozlamalarni qaytarishda xato",
+    "toggleEnableTitle": "{{name}} yoqish",
+    "toggleDisableTitle": "{{name}} o'chirish",
+    "toggleEnable": "Yoqish",
+    "toggleDisable": "O'chirish",
+    "globalParameters": "Global parametrlar",
+    "localParameters": "Lokal parametrlar"
   },
   "aside": {
     "collapseWindow": "Oynani yig'ish"

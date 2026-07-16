@@ -495,6 +495,7 @@
     "turnOffIn": "Выключэнне праз",
     "emergencyModeActivated": "Актываваны аварыйны рэжым",
     "activatedByServiceWorker": "Актывавана сэрвісным работнікам",
+    "featureTemporarilyBlocked": "Функцыянал часова заблакаваны",
     "activatePrompt": "Уключыць сэрвісны рэжым?",
     "deactivatePrompt": "Выключыць сэрвісны рэжым?",
     "activationPeriodHours": "Перыяд актывацыі, г",
@@ -648,7 +649,13 @@
     "resetToDefaults": "Скід да дэфолтных значэнняў",
     "resetConfirm": "Скінуць усе налады канфігурацыі МПА да значэнняў па змаўчанні?",
     "resetSuccess": "Налады скінуты да значэнняў па змаўчанні",
-    "resetError": "Памылка пры скіданні налад"
+    "resetError": "Памылка пры скіданні налад",
+    "toggleEnableTitle": "Уключыць {{name}}",
+    "toggleDisableTitle": "Выключыць {{name}}",
+    "toggleEnable": "Уключыць",
+    "toggleDisable": "Выключыць",
+    "globalParameters": "Глабальныя параметры",
+    "localParameters": "Лакальныя параметры"
   },
   "aside": {
     "collapseWindow": "Згарнуць акно"

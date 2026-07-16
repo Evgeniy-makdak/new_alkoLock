@@ -2,12 +2,11 @@ import { create } from 'zustand';
 
 import type { MobileFeature } from '@shared/api/mobileFeaturesApi';
 import { MobileFeaturesApi } from '@shared/api/mobileFeaturesApi';
-import type { ID } from '@shared/types/BaseQueryTypes';
 
 export type MobileFeatureFlags = {
   /** CHAT isEnabled — если false, иконка чата не рендерится */
   chatEnabled: boolean;
-  /** CREATE_BINDING isEnabled — если false, «+» на Привязках неактивен для всех */
+  /** CREATE_BINDING isEnabled */
   createBindingEnabled: boolean;
   /**
    * Заявки на сервисный режим (SERVICE_MODE_DRIVER / SERVICE_MODE_SERVICE_WORKER).
@@ -19,11 +18,11 @@ export type MobileFeatureFlags = {
 type MobileFeaturesStore = {
   features: MobileFeature[];
   flags: MobileFeatureFlags;
-  loadedBranchId: ID | null;
+  isLoaded: boolean;
   isLoading: boolean;
-  setFeatures: (features: MobileFeature[], branchId?: ID | null) => void;
+  setFeatures: (features: MobileFeature[]) => void;
   upsertFeature: (feature: MobileFeature) => void;
-  loadForBranch: (branchId: ID) => Promise<void>;
+  loadFeatures: () => Promise<void>;
   reset: () => void;
 };
 
@@ -45,7 +44,6 @@ const computeFlags = (features: MobileFeature[]): MobileFeatureFlags => {
   const isEnabledOrAbsent = (items: MobileFeature[]) =>
     items.length === 0 ? true : items.every((f) => f.isEnabled === true);
 
-  // если хотя бы одна из «Заявки на сервисный режим» выключена — запрет для всех
   const serviceModeItems = [...serviceModeDriver, ...serviceModeWorker];
   const serviceModeRequestsEnabled =
     serviceModeItems.length === 0
@@ -62,14 +60,14 @@ const computeFlags = (features: MobileFeature[]): MobileFeatureFlags => {
 export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => ({
   features: [],
   flags: { ...DEFAULT_FLAGS },
-  loadedBranchId: null,
+  isLoaded: false,
   isLoading: false,
 
-  setFeatures: (features, branchId) => {
+  setFeatures: (features) => {
     set({
       features,
       flags: computeFlags(features),
-      loadedBranchId: branchId ?? get().loadedBranchId,
+      isLoaded: true,
     });
   },
 
@@ -85,17 +83,13 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
     });
   },
 
-  loadForBranch: async (branchId) => {
-    if (branchId == null || branchId === '') return;
-
+  loadFeatures: async () => {
     const current = get();
-    // не дергаем повторно тот же филиал без нужды, пока уже грузится
-    if (current.isLoading && String(current.loadedBranchId) === String(branchId)) return;
+    if (current.isLoading) return;
 
     set({ isLoading: true });
     try {
       const response = await MobileFeaturesApi.getList({
-        branchId,
         page: 0,
         size: 100,
       });
@@ -107,7 +101,7 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
       set({
         features: content,
         flags: computeFlags(content),
-        loadedBranchId: branchId,
+        isLoaded: true,
         isLoading: false,
       });
     } catch {
@@ -119,7 +113,7 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
     set({
       features: [],
       flags: { ...DEFAULT_FLAGS },
-      loadedBranchId: null,
+      isLoaded: false,
       isLoading: false,
     }),
 }));

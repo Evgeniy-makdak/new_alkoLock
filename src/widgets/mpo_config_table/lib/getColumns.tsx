@@ -6,69 +6,64 @@ import { type GridColDef } from '@mui/x-data-grid';
 
 import type { MobileFeature } from '@shared/api/mobileFeaturesApi';
 
-import {
-  type MpoRoleFeatureKey,
-  MPO_ROLE_FEATURE_ORDER,
-} from '../lib/featureMapping';
-import type { MpoConfigRow } from '../hooks/useMpoConfigTable';
+import { type MpoRoleKey, MPO_ROLE_ORDER } from '../lib/featureMapping';
+import type { MpoConfigLocalFeatureRow } from '../hooks/useMpoConfigTable';
 import { FeatureSwitch } from '../ui/FeatureSwitch';
 import styles from '../ui/MpoConfigTable.module.scss';
 
 type UseGetColumnsParams = {
-  featureColumnLabel: (key: MpoRoleFeatureKey) => string;
   pendingIds: Set<string>;
   isResetting?: boolean;
   onToggle: (feature: MobileFeature | null | undefined, nextEnabled: boolean) => void;
 };
 
 export const useGetColumns = ({
-  featureColumnLabel,
   pendingIds,
   isResetting = false,
   onToggle,
-}: UseGetColumnsParams): GridColDef<MpoConfigRow>[] => {
+}: UseGetColumnsParams): GridColDef<MpoConfigLocalFeatureRow>[] => {
   const { t } = useTranslation();
 
   return useMemo(() => {
-    const roleColumn: GridColDef<MpoConfigRow> = {
-      field: 'roleLabel',
-      headerName: t('mpoConfigPage.role'),
-      width: 200,
+    const featureNameColumn: GridColDef<MpoConfigLocalFeatureRow> = {
+      field: 'featureLabel',
+      headerName: '',
+      width: 260,
       sortable: false,
       filterable: false,
+      renderCell: (params) => <span>{params.row.featureLabel}</span>,
     };
 
-    const featureColumns: GridColDef<MpoConfigRow>[] = MPO_ROLE_FEATURE_ORDER.map(
-      (featureKey) => ({
-        field: featureKey,
-        headerName: featureColumnLabel(featureKey),
-        minWidth: 180,
-        flex: 1,
-        sortable: false,
-        filterable: false,
-        align: 'center',
-        headerAlign: 'center',
-        renderCell: (params) => {
-          const cell = params.row.cells[featureKey];
-          if (!cell?.applicable) {
-            return <span className={styles.cellEmpty}>—</span>;
-          }
+    const roleColumns: GridColDef<MpoConfigLocalFeatureRow>[] = MPO_ROLE_ORDER.map((roleKey) => ({
+      field: roleKey,
+      headerName:
+        roleKey === 'driver' ? t('mpoConfigPage.driver') : t('mpoConfigPage.serviceWorker'),
+      minWidth: 180,
+      flex: 1,
+      sortable: false,
+      filterable: false,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => {
+        const cell = params.row.cells[roleKey as MpoRoleKey];
+        if (!cell?.applicable) {
+          return <span className={styles.cellEmpty}>—</span>;
+        }
 
-          const feature = cell.feature;
-          const checked = !!feature?.isEnabled;
-          const disabled = !feature || isResetting || pendingIds.has(String(feature.id));
+        const feature = cell.feature;
+        const checked = !!feature?.isEnabled;
+        const disabled = !feature || isResetting || pendingIds.has(String(feature.id));
 
-          return (
-            <FeatureSwitch
-              checked={checked}
-              disabled={disabled}
-              onChange={(next: boolean) => onToggle(feature, next)}
-            />
-          );
-        },
-      }),
-    );
+        return (
+          <FeatureSwitch
+            checked={checked}
+            disabled={disabled}
+            onChange={(next: boolean) => onToggle(feature, next)}
+          />
+        );
+      },
+    }));
 
-    return [roleColumn, ...featureColumns];
-  }, [featureColumnLabel, isResetting, onToggle, pendingIds, t]);
+    return [featureNameColumn, ...roleColumns];
+  }, [isResetting, onToggle, pendingIds, t]);
 };

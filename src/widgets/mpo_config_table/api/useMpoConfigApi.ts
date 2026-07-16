@@ -7,22 +7,15 @@ import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { mobileFeaturesStore } from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
-import type { QueryOptions } from '@shared/types/QueryTypes';
 
-const fetchMobileFeatures = (options?: QueryOptions | ID) => {
-  const branchId =
-    typeof options === 'object' && options && 'filterOptions' in options
-      ? (options.filterOptions?.branchId as ID)
-      : (options as ID);
-
-  return MobileFeaturesApi.getList({
-    branchId,
+const fetchMobileFeatures = () =>
+  MobileFeaturesApi.getList({
     page: 0,
     size: 100,
   });
-};
 
 export const useMpoConfigApi = () => {
+  const auth = appStore((state) => state.auth);
   const branchId = appStore((state) => state.selectedBranchState?.id) as ID | undefined;
   const [features, setFeaturesState] = useState<MobileFeature[]>([]);
 
@@ -30,12 +23,8 @@ export const useMpoConfigApi = () => {
     [QueryKeys.MOBILE_FEATURES_LIST],
     fetchMobileFeatures,
     {
-      options: {
-        filterOptions: { branchId },
-      },
       settings: {
-        enabled: !!branchId,
-        // GET только при открытии вкладки / смене филиала (queryKey), не после PUT
+        enabled: !!auth,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
         refetchInterval: false,
@@ -48,7 +37,7 @@ export const useMpoConfigApi = () => {
   ) => {
     setFeaturesState((prev) => {
       const resolved = typeof next === 'function' ? next(prev) : next;
-      mobileFeaturesStore.getState().setFeatures(resolved, branchId);
+      mobileFeaturesStore.getState().setFeatures(resolved);
       return resolved;
     });
   };
@@ -57,13 +46,9 @@ export const useMpoConfigApi = () => {
     const content = data?.data?.content;
     if (content) {
       setFeaturesState(content);
-      mobileFeaturesStore.getState().setFeatures(content, branchId);
+      mobileFeaturesStore.getState().setFeatures(content);
     }
-  }, [data, branchId]);
-
-  useEffect(() => {
-    setFeaturesState([]);
-  }, [branchId]);
+  }, [data]);
 
   const upsertFeature = (updated: MobileFeature) => {
     setFeaturesState((prev) => {
@@ -72,7 +57,7 @@ export const useMpoConfigApi = () => {
       const next = !exists
         ? [...prev, updated]
         : prev.map((item) => (String(item.id) === id ? { ...item, ...updated } : item));
-      mobileFeaturesStore.getState().setFeatures(next, branchId);
+      mobileFeaturesStore.getState().setFeatures(next);
       return next;
     });
   };
@@ -85,7 +70,7 @@ export const useMpoConfigApi = () => {
         const patch = byId.get(String(item.id));
         return patch ? { ...item, ...patch } : item;
       });
-      mobileFeaturesStore.getState().setFeatures(next, branchId);
+      mobileFeaturesStore.getState().setFeatures(next);
       return next;
     });
   };
