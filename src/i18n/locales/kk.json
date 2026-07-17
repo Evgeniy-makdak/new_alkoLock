@@ -651,10 +651,14 @@
     "resetError": "Баптауларды қайтару кезінде қате",
     "toggleEnableTitle": "{{name}} қосу",
     "toggleDisableTitle": "{{name}} өшіру",
+    "toggleManageTitle": "Жүйелік функция қолжетімділігін басқару",
+    "toggleEnableBody": "\"{{name}}\" функциясын қосу?",
+    "toggleDisableBody": "\"{{name}}\" функциясын өшіру?",
     "toggleEnable": "Қосу",
     "toggleDisable": "Өшіру",
     "globalParameters": "Жалпы параметрлер",
-    "localParameters": "Жергілікті параметрлер"
+    "localParameters": "Жергілікті параметрлер",
+    "functions": "Функциялар"
   },
   "aside": {
     "collapseWindow": "Терезені жию"

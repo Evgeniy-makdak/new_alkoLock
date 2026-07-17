@@ -102,28 +102,19 @@ export const useMpoConfigTable = () => {
     [t],
   );
 
+  /** Имя для модалки — приоритетно label с бэка */
   const getFeatureDisplayLabel = useCallback(
     (feature: MobileFeature | null | undefined) => {
       if (!feature) return '';
+      if (feature.label?.trim()) return feature.label.trim();
 
       const globalKey = resolveGlobalFeatureKey(feature);
-      if (globalKey) {
-        if (
-          globalKey === MpoGlobalFeatureKey.SERVICE_MODE_DRIVER ||
-          globalKey === MpoGlobalFeatureKey.SERVICE_MODE_SERVICE_WORKER
-        ) {
-          return t(`mpoConfigPage.${globalKey}`);
-        }
-        if (feature.label) return feature.label;
-        return t(`mpoConfigPage.${globalKey}`);
-      }
+      if (globalKey) return t(`mpoConfigPage.${globalKey}`);
 
       const roleKey = resolveRoleFeatureKey(feature);
-      if (roleKey) {
-        return t(`mpoConfigPage.${roleKey}`);
-      }
+      if (roleKey) return t(`mpoConfigPage.${roleKey}`);
 
-      return feature.label || String(feature.featureType || feature.id);
+      return String(feature.featureType || feature.id);
     },
     [t],
   );

@@ -654,10 +654,14 @@
     "resetError": "Failed to reset settings",
     "toggleEnableTitle": "Enable {{name}}",
     "toggleDisableTitle": "Disable {{name}}",
+    "toggleManageTitle": "System feature availability management",
+    "toggleEnableBody": "Enable function \"{{name}}\"?",
+    "toggleDisableBody": "Disable function \"{{name}}\"?",
     "toggleEnable": "Enable",
     "toggleDisable": "Disable",
     "globalParameters": "Global parameters",
-    "localParameters": "Local parameters"
+    "localParameters": "Local parameters",
+    "functions": "Functions"
   },
   "aside": {
     "collapseWindow": "Collapse panel"

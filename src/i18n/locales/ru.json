@@ -15,7 +15,7 @@
     "mailings": "Рассылки",
     "messageTemplates": "Шаблоны сообщений",
     "settings": "Настройки",
-    "mpoConfig": "Конфигурация МПО",
+    "mpoConfig": "Системные функции",
     "map": "Карта",
     "parameters": "Параметры",
     "back": "Назад",
@@ -654,10 +654,14 @@
     "resetError": "Ошибка при сбросе настроек",
     "toggleEnableTitle": "Включить {{name}}",
     "toggleDisableTitle": "Выключить {{name}}",
+    "toggleManageTitle": "Управление доступностью системной функции",
+    "toggleEnableBody": "Включить функцию \"{{name}}\"?",
+    "toggleDisableBody": "Выключить функцию \"{{name}}\"?",
     "toggleEnable": "Включить",
     "toggleDisable": "Выключить",
-    "globalParameters": "Глобальные параметры",
-    "localParameters": "Локальные параметры"
+    "globalParameters": "Глобальные функции",
+    "localParameters": "Локальные функции",
+    "functions": "Функции"
   },
   "aside": {
     "collapseWindow": "Свернуть окно"

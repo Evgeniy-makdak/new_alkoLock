@@ -651,10 +651,14 @@
     "resetError": "Тууралоолорду кайтарууда ката",
     "toggleEnableTitle": "{{name}} күйгүзүү",
     "toggleDisableTitle": "{{name}} өчүрүү",
+    "toggleManageTitle": "Системалык функциянын жеткиликтүүлүгүн башкаруу",
+    "toggleEnableBody": "\"{{name}}\" функциясын күйгүзүү?",
+    "toggleDisableBody": "\"{{name}}\" функциясын өчүрүү?",
     "toggleEnable": "Күйгүзүү",
     "toggleDisable": "Өчүрүү",
     "globalParameters": "Жалпы параметрлер",
-    "localParameters": "Жергиликтүү параметрлер"
+    "localParameters": "Жергиликтүү параметрлер",
+    "functions": "Функциялар"
   },
   "aside": {
     "collapseWindow": "Терезени жыйноо"

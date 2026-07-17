@@ -27,7 +27,7 @@ export const useGetColumns = ({
   return useMemo(() => {
     const featureNameColumn: GridColDef<MpoConfigLocalFeatureRow> = {
       field: 'featureLabel',
-      headerName: '',
+      headerName: t('mpoConfigPage.functions'),
       width: 260,
       sortable: false,
       filterable: false,

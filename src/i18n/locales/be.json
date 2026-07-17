@@ -652,10 +652,14 @@
     "resetError": "Памылка пры скіданні налад",
     "toggleEnableTitle": "Уключыць {{name}}",
     "toggleDisableTitle": "Выключыць {{name}}",
+    "toggleManageTitle": "Кіраванне даступнасцю сістэмнай функцыі",
+    "toggleEnableBody": "Уключыць функцыю \"{{name}}\"?",
+    "toggleDisableBody": "Выключыць функцыю \"{{name}}\"?",
     "toggleEnable": "Уключыць",
     "toggleDisable": "Выключыць",
     "globalParameters": "Глабальныя параметры",
-    "localParameters": "Лакальныя параметры"
+    "localParameters": "Лакальныя параметры",
+    "functions": "Функцыі"
   },
   "aside": {
     "collapseWindow": "Згарнуць акно"

@@ -651,10 +651,14 @@
     "resetError": "Sozlamalarni qaytarishda xato",
     "toggleEnableTitle": "{{name}} yoqish",
     "toggleDisableTitle": "{{name}} o'chirish",
+    "toggleManageTitle": "Tizim funksiyasi mavjudligini boshqarish",
+    "toggleEnableBody": "\"{{name}}\" funksiyasini yoqish?",
+    "toggleDisableBody": "\"{{name}}\" funksiyasini o'chirish?",
     "toggleEnable": "Yoqish",
     "toggleDisable": "O'chirish",
     "globalParameters": "Global parametrlar",
-    "localParameters": "Lokal parametrlar"
+    "localParameters": "Lokal parametrlar",
+    "functions": "Funksiyalar"
   },
   "aside": {
     "collapseWindow": "Oynani yig'ish"

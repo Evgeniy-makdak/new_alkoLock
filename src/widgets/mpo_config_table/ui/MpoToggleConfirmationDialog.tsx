@@ -29,7 +29,7 @@ export const MpoToggleConfirmationDialog = ({
 }: MpoToggleConfirmationDialogProps) => {
   const { t } = useTranslation();
 
-  const titleKey = nextEnabled ? 'mpoConfigPage.toggleEnableTitle' : 'mpoConfigPage.toggleDisableTitle';
+  const bodyKey = nextEnabled ? 'mpoConfigPage.toggleEnableBody' : 'mpoConfigPage.toggleDisableBody';
   const confirmKey = nextEnabled ? 'mpoConfigPage.toggleEnable' : 'mpoConfigPage.toggleDisable';
 
   return (
@@ -48,10 +48,10 @@ export const MpoToggleConfirmationDialog = ({
           },
         }}>
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-          {t(titleKey, { name: featureName })}
+          {t('mpoConfigPage.toggleManageTitle')}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText>{t(titleKey, { name: featureName })}</DialogContentText>
+          <DialogContentText>{t(bodyKey, { name: featureName })}</DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button
