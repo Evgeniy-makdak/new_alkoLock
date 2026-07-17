@@ -1,4 +1,4 @@
 {
-  "apiUrl": "https://{DOMAIN}/",
-  "wsUrl": "wss://{DOMAIN}/ws/websocket"
+  "apiUrl": "https://{DOMAIN}:{EXTERNAL_HTTPS_PORT}/",
+  "wsUrl": "wss://{DOMAIN}:{EXTERNAL_HTTPS_PORT}/ws/websocket"
 }
