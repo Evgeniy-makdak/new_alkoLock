@@ -46,7 +46,7 @@ export const Popup = ({
   body,
   toggleModal,
   buttons = [],
-  closeonClickSpace = true,
+  closeonClickSpace = false,
   closeOnEscapeKey = true,
   onCloseModal,
   styles = null,

@@ -124,10 +124,8 @@ export const DriversTransferModal: FC<DriversTransferModalProps> = ({
     <Dialog
       open={open}
       onClose={(_, reason) => {
-        // Запрещаем закрытие при клике вне модального окна или нажатии ESC
-        if (reason !== 'backdropClick') {
-          onClose();
-        }
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+        onClose();
       }}
       maxWidth="md"
       fullWidth

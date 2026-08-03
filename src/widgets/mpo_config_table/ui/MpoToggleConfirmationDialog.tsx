@@ -38,6 +38,11 @@ export const MpoToggleConfirmationDialog = ({
         open={open}
         maxWidth="sm"
         fullWidth
+        onClose={(_, reason) => {
+          if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+          onClose();
+        }}
+        disableEscapeKeyDown
         onClick={(e) => e.stopPropagation()}
         sx={{
           '& .MuiDialog-paper': {

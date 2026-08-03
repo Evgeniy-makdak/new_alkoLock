@@ -21,7 +21,15 @@ const EmailTemplateEditor: React.FC<EmailTemplateEditorProps> = ({
   onClose,
 }) => {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
+    <Dialog
+      open={open}
+      onClose={(_, reason) => {
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+        onClose();
+      }}
+      disableEscapeKeyDown
+      maxWidth="lg"
+      fullWidth>
       <EmailTemplateForm template={template} onSave={onSave} onClose={onClose} />
     </Dialog>
   );

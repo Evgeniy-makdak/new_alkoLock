@@ -66,7 +66,11 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
   return (
     <Dialog
       open={open}
-      onClose={handleCloseModal}
+      onClose={(_, reason) => {
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+        handleCloseModal({}, 'buttonClick');
+      }}
+      disableEscapeKeyDown
       PaperProps={{
         sx: {
           padding: '20px',

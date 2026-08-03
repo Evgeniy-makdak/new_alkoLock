@@ -92,8 +92,7 @@ export const EditSettingDialog: React.FC<EditSettingDialogProps> = ({
         zIndex: 1300,
         backgroundColor: (theme) =>
           theme.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.72)' : 'rgba(0, 0, 0, 0.5)',
-      }}
-      onClick={() => handleCloseModal({}, 'buttonClick')}>
+      }}>
       <Box
         onClick={(e) => e.stopPropagation()}
         sx={{

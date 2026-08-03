@@ -253,7 +253,15 @@ export const TimeIntervalDialog: React.FC<TimeIntervalDialogProps> = ({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={(_, reason) => {
+        if (reason === 'backdropClick' || reason === 'escapeKeyDown') return;
+        onClose();
+      }}
+      disableEscapeKeyDown
+      maxWidth="sm"
+      fullWidth>
       <DialogTitle>{interval ? 'Редактировать интервал' : 'Добавить интервал'}</DialogTitle>
       <DialogContent>
         <Box sx={{ pt: 2 }}>
