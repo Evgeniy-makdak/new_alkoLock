@@ -18,6 +18,7 @@ export interface MobileFeature {
   label: string;
   group: MobileFeatureGroup | null;
   isEnabled: boolean;
+  defaultValue?: boolean;
   isActive?: boolean;
   inactiveSince?: string | null;
   createdAt?: string;
@@ -65,6 +66,14 @@ export class MobileFeaturesApi {
     return putQuery<MobileFeature, UpdateMobileFeatureBody>({
       url: `api/mobile-features/${id}`,
       data,
+    });
+  }
+
+  /** Сброс фич к значениям по умолчанию одним запросом. */
+  static resetToDefaults(branchId: ID, ids: ID[]) {
+    return putQuery<MobileFeature[], { branchId: ID; ids: ID[] }>({
+      url: 'api/mobile-features/reset',
+      data: { branchId, ids },
     });
   }
 }

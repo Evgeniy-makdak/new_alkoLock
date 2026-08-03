@@ -10,9 +10,15 @@ export type MobileFeatureFlags = {
   createBindingEnabled: boolean;
   /**
    * Заявки на сервисный режим (SERVICE_MODE_DRIVER / SERVICE_MODE_SERVICE_WORKER).
-   * Если любой из них isEnabled=false — кнопка «Включить» неактивна для всех.
+   * Если любой из них isEnabled=false — кнопка «Включить» неактивна.
    */
   serviceModeRequestsEnabled: boolean;
+  /**
+   * Только SERVICE_MODE_DRIVER.
+   * Баннер «обработка заявок временно отключена» — только при запрете для водителя.
+   * Запрет SERVICE_MODE_SERVICE_WORKER баннер не показывает.
+   */
+  serviceModeDriverRequestsEnabled: boolean;
 };
 
 type MobileFeaturesStore = {
@@ -34,6 +40,7 @@ const DEFAULT_FLAGS: MobileFeatureFlags = {
   chatEnabled: true,
   createBindingEnabled: true,
   serviceModeRequestsEnabled: true,
+  serviceModeDriverRequestsEnabled: true,
 };
 
 const computeFlags = (features: MobileFeature[]): MobileFeatureFlags => {
@@ -58,6 +65,7 @@ const computeFlags = (features: MobileFeature[]): MobileFeatureFlags => {
     chatEnabled: isEnabledOrAbsent(chat),
     createBindingEnabled: isEnabledOrAbsent(createBinding),
     serviceModeRequestsEnabled,
+    serviceModeDriverRequestsEnabled: isEnabledOrAbsent(serviceModeDriver),
   };
 };
 
@@ -111,7 +119,11 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
     });
     set({
       features: next,
-      flags: { ...get().flags, serviceModeRequestsEnabled: false },
+      flags: {
+        ...get().flags,
+        serviceModeRequestsEnabled: false,
+        serviceModeDriverRequestsEnabled: false,
+      },
     });
   },
 

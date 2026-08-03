@@ -49,11 +49,12 @@ export const AlkozamkiServiceMode = ({
     hasTime,
   } = useAlkozamkiServiceMode(deviceAction, alkolock, handleCloseAside);
   const { isServiceModeFromAlkolock } = useServiceMode();
-  const { serviceModeRequestsEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
+  const { serviceModeDriverRequestsEnabled } = mobileFeaturesStore(selectMobileFeatureFlags);
   const initialTime = modeResetAt ? new Date(modeResetAt) : new Date();
 
   // Определяем, нужно ли показывать таймер (если есть modeResetAt, даже если режим "Сервисный")
   const shouldShowTimer = Boolean(modeResetAt) && alkolock.mode === 'Сервисный';
+  const timerId = alkolock.id ?? 0;
 
   return (
     <>
@@ -71,7 +72,7 @@ export const AlkozamkiServiceMode = ({
                 {t('serviceMode.turnOffIn')}
               </Typography>
               <Typography fontSize={22} fontWeight={400}>
-                <TimeCell refetch={refetch} time={initialTime} id={alkolock.id} />
+                <TimeCell refetch={refetch} time={initialTime} id={timerId} />
               </Typography>
             </Stack>
           )}
@@ -85,7 +86,7 @@ export const AlkozamkiServiceMode = ({
               {t('serviceMode.activatedByServiceWorker')}
             </Typography>
           )}
-          {!serviceModeRequestsEnabled && (
+          {!serviceModeDriverRequestsEnabled && (
             <Typography
               fontSize={22}
               fontWeight={400}

@@ -1,8 +1,8 @@
-import { type FC } from 'react';
+import { type FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Alert, Box, CircularProgress, Snackbar } from '@mui/material';
-import { Typography } from '@mui/material';
+import { Alert, Box, CircularProgress, Snackbar, Typography } from '@mui/material';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import { Table } from '@shared/components/Table/Table';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
@@ -15,10 +15,13 @@ import styles from './MpoConfigTable.module.scss';
 import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
 import { MpoToggleConfirmationDialog } from './MpoToggleConfirmationDialog';
 
+const DEFAULT_PAGE_SIZE = 25;
+
 export const MpoConfigDesktopTable: FC = () => {
   const { t } = useTranslation();
   const {
     isLoading,
+    roles,
     localFeatureRows,
     globalCells,
     pendingIds,
@@ -29,7 +32,6 @@ export const MpoConfigDesktopTable: FC = () => {
     pendingToggle,
     closeToggleDialog,
     confirmToggleFeature,
-    globalLabel,
     isResetting,
     resetDialogOpen,
     openResetDialog,
@@ -37,7 +39,13 @@ export const MpoConfigDesktopTable: FC = () => {
     resetToDefaults,
   } = useMpoConfigTable();
 
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
+
   const columns = useGetColumns({
+    roles,
     pendingIds,
     isResetting,
     onToggle: requestToggleFeature,
@@ -81,10 +89,10 @@ export const MpoConfigDesktopTable: FC = () => {
             !feature || pendingIds.has(String(feature.id)) || isResetting;
           return (
             <FeatureSwitch
-              key={cell.key}
+              key={cell.id}
               checked={checked}
               disabled={disabled}
-              label={globalLabel(cell)}
+              label={cell.label}
               onChange={(next) => requestToggleFeature(feature, next)}
             />
           );
@@ -99,6 +107,7 @@ export const MpoConfigDesktopTable: FC = () => {
           pb: 1,
           fontWeight: 700,
           color: 'text.secondary',
+          flexShrink: 0,
         }}>
         {t('mpoConfigPage.localParameters')}
       </Typography>
@@ -110,17 +119,21 @@ export const MpoConfigDesktopTable: FC = () => {
           </Box>
         ) : (
           <Table
+            key={`mpo-local-${localFeatureRows.map((row) => row.id).join('|')}`}
             rows={localFeatureRows}
             columns={columns}
             loading={isLoading || isResetting}
-            hideFooter
             disableColumnMenu
             disableRowSelectionOnClick
+            hideFooterSelectedRowCount
             rowCount={localFeatureRows.length}
             paginationMode="client"
             sortingMode="client"
-            pageNumber={0}
-            pageSize={localFeatureRows.length || 2}
+            pageNumber={paginationModel.page}
+            pageSize={paginationModel.pageSize}
+            pageSizeOptions={[25, 50, 75, 100]}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
             sx={{
               '& .MuiDataGrid-cell': {
                 outline: 'none !important',

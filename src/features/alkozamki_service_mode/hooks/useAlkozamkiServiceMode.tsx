@@ -32,7 +32,7 @@ import style from '../ui/AlkozamkiServiceMode.module.scss';
 import { useServiceMode } from './ServiceModeContext';
 
 export const useAlkozamkiServiceMode = (
-  deviceAction: IDeviceAction,
+  deviceAction: IDeviceAction | undefined,
   alkolock: IAlcolock,
   handleCloseAside: () => void,
 ) => {

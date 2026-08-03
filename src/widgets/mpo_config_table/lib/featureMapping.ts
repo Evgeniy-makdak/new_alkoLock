@@ -1,88 +1,43 @@
 import type { MobileFeature } from '@shared/api/mobileFeaturesApi';
 
-/** Ключи ролей матрицы */
-export const MpoRoleKey = {
-  DRIVER: 'driver',
-  SERVICE_WORKER: 'serviceWorker',
-} as const;
-
-export type MpoRoleKey = (typeof MpoRoleKey)[keyof typeof MpoRoleKey];
-
-/**
- * Локальные (ROLE) фичи из ответа бэка:
- * TEST_INTERVAL, INTERVAL_100_ENERGY, INTERVAL_LOW_ENERGY, CREATE_BINDING
- */
-export const MpoRoleFeatureKey = {
-  TESTING_INTERVAL: 'testingInterval',
-  ENERGY_FULL: 'energyFull',
-  ENERGY_LOW: 'energyLow',
-  CREATE_BINDING: 'createBinding',
-} as const;
-
-export type MpoRoleFeatureKey = (typeof MpoRoleFeatureKey)[keyof typeof MpoRoleFeatureKey];
-
-/**
- * Глобальные (GLOBAL) фичи из ответа бэка:
- * CHAT, SERVICE_MODE_DRIVER, SERVICE_MODE_SERVICE_WORKER
- */
-export const MpoGlobalFeatureKey = {
-  CHAT: 'chat',
-  SERVICE_MODE_DRIVER: 'serviceModeDriver',
-  SERVICE_MODE_SERVICE_WORKER: 'serviceModeServiceWorker',
-} as const;
-
-export type MpoGlobalFeatureKey = (typeof MpoGlobalFeatureKey)[keyof typeof MpoGlobalFeatureKey];
-
-export const MPO_ROLE_ORDER: MpoRoleKey[] = [MpoRoleKey.DRIVER, MpoRoleKey.SERVICE_WORKER];
-
-export const MPO_ROLE_FEATURE_ORDER: MpoRoleFeatureKey[] = [
-  MpoRoleFeatureKey.TESTING_INTERVAL,
-  MpoRoleFeatureKey.ENERGY_FULL,
-  MpoRoleFeatureKey.ENERGY_LOW,
-  MpoRoleFeatureKey.CREATE_BINDING,
-];
-
-export const MPO_GLOBAL_FEATURE_ORDER: MpoGlobalFeatureKey[] = [
-  MpoGlobalFeatureKey.CHAT,
-  MpoGlobalFeatureKey.SERVICE_MODE_DRIVER,
-  MpoGlobalFeatureKey.SERVICE_MODE_SERVICE_WORKER,
-];
-
-/** Какие фичи доступны какой роли (по фактическому ответу бэка) */
-export const MPO_ROLE_FEATURES: Record<MpoRoleKey, readonly MpoRoleFeatureKey[]> = {
-  [MpoRoleKey.DRIVER]: [
-    MpoRoleFeatureKey.TESTING_INTERVAL,
-    MpoRoleFeatureKey.ENERGY_FULL,
-    MpoRoleFeatureKey.ENERGY_LOW,
-  ],
-  [MpoRoleKey.SERVICE_WORKER]: [
-    MpoRoleFeatureKey.TESTING_INTERVAL,
-    MpoRoleFeatureKey.ENERGY_FULL,
-    MpoRoleFeatureKey.ENERGY_LOW,
-    MpoRoleFeatureKey.CREATE_BINDING,
-  ],
+export type MpoRoleColumn = {
+  roleKey: string;
+  roleLabel: string;
 };
 
-const ROLE_NAME_BY_GROUP: Record<string, MpoRoleKey> = {
-  водитель: MpoRoleKey.DRIVER,
-  driver: MpoRoleKey.DRIVER,
-  'сервисный работник': MpoRoleKey.SERVICE_WORKER,
-  'service worker': MpoRoleKey.SERVICE_WORKER,
+export type GlobalFeatureCell = {
+  id: string;
+  featureType: string;
+  feature: MobileFeature;
+  label: string;
 };
 
-/** Точный маппинг featureType → глобальный ключ */
-const GLOBAL_FEATURE_TYPE_MAP: Record<string, MpoGlobalFeatureKey> = {
-  CHAT: MpoGlobalFeatureKey.CHAT,
-  SERVICE_MODE_DRIVER: MpoGlobalFeatureKey.SERVICE_MODE_DRIVER,
-  SERVICE_MODE_SERVICE_WORKER: MpoGlobalFeatureKey.SERVICE_MODE_SERVICE_WORKER,
+export type RoleFeatureCell = {
+  roleKey: string;
+  roleLabel: string;
+  featureType: string;
+  feature: MobileFeature | null;
+  applicable: boolean;
 };
 
-/** Точный маппинг featureType → локальный ключ */
-const ROLE_FEATURE_TYPE_MAP: Record<string, MpoRoleFeatureKey> = {
-  TEST_INTERVAL: MpoRoleFeatureKey.TESTING_INTERVAL,
-  INTERVAL_100_ENERGY: MpoRoleFeatureKey.ENERGY_FULL,
-  INTERVAL_LOW_ENERGY: MpoRoleFeatureKey.ENERGY_LOW,
-  CREATE_BINDING: MpoRoleFeatureKey.CREATE_BINDING,
+export type MpoConfigLocalFeatureRow = {
+  id: string;
+  featureType: string;
+  featureLabel: string;
+  cells: Record<string, RoleFeatureCell>;
+};
+
+export type MpoConfigRoleRow = {
+  id: string;
+  roleKey: string;
+  roleLabel: string;
+  cells: Record<string, RoleFeatureCell>;
+};
+
+export type RoleFeatureMatrix = {
+  roles: MpoRoleColumn[];
+  localFeatureRows: MpoConfigLocalFeatureRow[];
+  roleRows: MpoConfigRoleRow[];
 };
 
 const normalize = (value?: string | null) => (value ?? '').trim();
@@ -94,66 +49,93 @@ export const isGlobalFeature = (feature: MobileFeature): boolean =>
 export const isRoleFeature = (feature: MobileFeature): boolean =>
   normalizeType(feature.featureLevel) === 'ROLE';
 
-export const resolveRoleKey = (feature: MobileFeature): MpoRoleKey | null => {
-  const groupName = normalize(feature.group?.name).toLowerCase();
-  if (!groupName) return null;
-  return ROLE_NAME_BY_GROUP[groupName] ?? null;
-};
+/** Глобальные фичи — порядок и подписи из ответа mobile-features. */
+export const mapGlobalFeatures = (features: MobileFeature[]): GlobalFeatureCell[] =>
+  features.filter(isGlobalFeature).map((feature) => ({
+    id: String(feature.id),
+    featureType: normalizeType(feature.featureType),
+    feature,
+    label: normalize(feature.label) || normalizeType(feature.featureType),
+  }));
 
-export const resolveGlobalFeatureKey = (feature: MobileFeature): MpoGlobalFeatureKey | null => {
-  const type = normalizeType(feature.featureType);
-  return GLOBAL_FEATURE_TYPE_MAP[type] ?? null;
-};
-
-export const resolveRoleFeatureKey = (feature: MobileFeature): MpoRoleFeatureKey | null => {
-  const type = normalizeType(feature.featureType);
-  return ROLE_FEATURE_TYPE_MAP[type] ?? null;
-};
-
-export type GlobalFeatureCell = {
-  key: MpoGlobalFeatureKey;
-  feature: MobileFeature | null;
-};
-
-export type RoleFeatureCell = {
-  roleKey: MpoRoleKey;
-  featureKey: MpoRoleFeatureKey;
-  feature: MobileFeature | null;
-  applicable: boolean;
-};
-
-export const mapGlobalFeatures = (features: MobileFeature[]): GlobalFeatureCell[] => {
-  const globalFeatures = features.filter(isGlobalFeature);
-
-  return MPO_GLOBAL_FEATURE_ORDER.map((key) => {
-    const feature = globalFeatures.find((item) => resolveGlobalFeatureKey(item) === key) ?? null;
-    return { key, feature };
-  });
-};
-
-/** Строит матрицу роль × фича по featureType + group.name роли. */
-export const mapRoleFeatureMatrix = (features: MobileFeature[]): RoleFeatureCell[] => {
+/**
+ * Локальные (ROLE) фичи: строки = featureType, столбцы = group из бэка.
+ * Нет записи для пары роль×тип → applicable: false (прочерк в UI).
+ */
+export const mapRoleFeatureMatrix = (features: MobileFeature[]): RoleFeatureMatrix => {
   const roleFeatures = features.filter(isRoleFeature);
-  const result: RoleFeatureCell[] = [];
 
-  for (const roleKey of MPO_ROLE_ORDER) {
-    for (const featureKey of MPO_ROLE_FEATURE_ORDER) {
-      const applicable = MPO_ROLE_FEATURES[roleKey].includes(featureKey);
+  const rolesMap = new Map<string, MpoRoleColumn>();
+  const featureTypesOrder: string[] = [];
+  const featureTypeLabels = new Map<string, string>();
+  const featureByRoleAndType = new Map<string, MobileFeature>();
 
-      if (!applicable) {
-        result.push({ roleKey, featureKey, feature: null, applicable: false });
-        continue;
-      }
+  for (const feature of roleFeatures) {
+    const group = feature.group;
+    if (!group?.id) continue;
 
-      const feature =
-        roleFeatures.find(
-          (item) =>
-            resolveRoleFeatureKey(item) === featureKey && resolveRoleKey(item) === roleKey,
-        ) ?? null;
-
-      result.push({ roleKey, featureKey, feature, applicable: true });
+    const roleKey = String(group.id);
+    if (!rolesMap.has(roleKey)) {
+      rolesMap.set(roleKey, {
+        roleKey,
+        roleLabel: normalize(group.name) || roleKey,
+      });
     }
+
+    const featureType = normalizeType(feature.featureType);
+    if (!featureTypesOrder.includes(featureType)) {
+      featureTypesOrder.push(featureType);
+    }
+
+    const label = normalize(feature.label);
+    if (label && !featureTypeLabels.has(featureType)) {
+      featureTypeLabels.set(featureType, label);
+    }
+
+    featureByRoleAndType.set(`${roleKey}:${featureType}`, feature);
   }
 
-  return result;
+  const roles = Array.from(rolesMap.values());
+
+  const localFeatureRows: MpoConfigLocalFeatureRow[] = featureTypesOrder.map((featureType) => {
+    const cells: Record<string, RoleFeatureCell> = {};
+    for (const role of roles) {
+      const feature = featureByRoleAndType.get(`${role.roleKey}:${featureType}`) ?? null;
+      cells[role.roleKey] = {
+        roleKey: role.roleKey,
+        roleLabel: role.roleLabel,
+        featureType,
+        feature,
+        applicable: feature != null,
+      };
+    }
+    return {
+      id: featureType,
+      featureType,
+      featureLabel: featureTypeLabels.get(featureType) || featureType,
+      cells,
+    };
+  });
+
+  const roleRows: MpoConfigRoleRow[] = roles.map((role) => {
+    const cells: Record<string, RoleFeatureCell> = {};
+    for (const row of localFeatureRows) {
+      cells[row.featureType] = row.cells[role.roleKey];
+    }
+    return {
+      id: role.roleKey,
+      roleKey: role.roleKey,
+      roleLabel: role.roleLabel,
+      cells,
+    };
+  });
+
+  return { roles, localFeatureRows, roleRows };
+};
+
+export const getFeatureDisplayLabel = (feature: MobileFeature | null | undefined): string => {
+  if (!feature) return '';
+  const label = normalize(feature.label);
+  if (label) return label;
+  return normalizeType(feature.featureType) || String(feature.id);
 };

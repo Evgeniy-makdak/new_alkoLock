@@ -7,7 +7,6 @@ import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePa
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 
 import { useMpoConfigTable } from '../hooks/useMpoConfigTable';
-import { MPO_ROLE_FEATURE_ORDER } from '../lib/featureMapping';
 import { FeatureSwitch } from './FeatureSwitch';
 import styles from './MpoConfigTable.module.scss';
 import { MpoResetConfirmationDialog } from './MpoResetConfirmationDialog';
@@ -17,7 +16,8 @@ export const MpoConfigMobileTable: FC = () => {
   const { t } = useTranslation();
   const {
     isLoading,
-    rows,
+    roleRows,
+    localFeatureRows,
     globalCells,
     pendingIds,
     notification,
@@ -27,8 +27,6 @@ export const MpoConfigMobileTable: FC = () => {
     pendingToggle,
     closeToggleDialog,
     confirmToggleFeature,
-    featureColumnLabel,
-    globalLabel,
     isResetting,
     resetDialogOpen,
     openResetDialog,
@@ -60,10 +58,10 @@ export const MpoConfigMobileTable: FC = () => {
               !feature || pendingIds.has(String(feature.id)) || isResetting;
             return (
               <FeatureSwitch
-                key={cell.key}
+                key={cell.id}
                 checked={checked}
                 disabled={disabled}
-                label={globalLabel(cell)}
+                label={cell.label}
                 onChange={(next) => requestToggleFeature(feature, next)}
               />
             );
@@ -78,17 +76,24 @@ export const MpoConfigMobileTable: FC = () => {
       </Typography>
 
       <div className={styles.mobileList}>
-        {isLoading && rows.length === 0 ? (
+        {isLoading && roleRows.length === 0 ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
             <CircularProgress />
           </Box>
         ) : (
-          rows.map((row) => (
+          roleRows.map((row) => (
             <div key={row.id} className={styles.mobileRoleCard}>
               <h3 className={styles.mobileRoleTitle}>{row.roleLabel}</h3>
-              {MPO_ROLE_FEATURE_ORDER.map((featureKey) => {
-                const cell = row.cells[featureKey];
-                if (!cell?.applicable) return null;
+              {localFeatureRows.map((featureRow) => {
+                const cell = row.cells[featureRow.featureType];
+                if (!cell?.applicable) {
+                  return (
+                    <div key={featureRow.featureType} className={styles.mobileFeatureRow}>
+                      <span className={styles.mobileFeatureLabel}>{featureRow.featureLabel}</span>
+                      <span className={styles.cellEmpty}>—</span>
+                    </div>
+                  );
+                }
 
                 const feature = cell.feature;
                 const checked = !!feature?.isEnabled;
@@ -96,10 +101,8 @@ export const MpoConfigMobileTable: FC = () => {
                   !feature || pendingIds.has(String(feature.id)) || isResetting;
 
                 return (
-                  <div key={featureKey} className={styles.mobileFeatureRow}>
-                    <span className={styles.mobileFeatureLabel}>
-                      {featureColumnLabel(featureKey)}
-                    </span>
+                  <div key={featureRow.featureType} className={styles.mobileFeatureRow}>
+                    <span className={styles.mobileFeatureLabel}>{featureRow.featureLabel}</span>
                     <FeatureSwitch
                       checked={checked}
                       disabled={disabled}
