@@ -3,11 +3,19 @@ import { setStompDebugFromRuntimeConfig } from '../widgets/chat/lib/stompDebugLo
 import { isElectronChatShell } from '../widgets/chat/chatPopup/chatShellEnvironment';
 import { resolveElectronRemoteUiEndpoints } from '../widgets/chat/chatPopup/electronWebSocketUrl';
 
+/**
+ * Electron-специфика (подмена apiUrl/wsUrl) включается ТОЛЬКО в Electron-сборке.
+ * Обычный `yarn build` / Docker этого флага не ставит → config.json используется как есть.
+ */
+const isElectronShellBuildEnabled = (): boolean =>
+  process.env.REACT_APP_ELECTRON_SHELL === 'true';
+
 function isElectronLocalUiHost(hostname: string): boolean {
   return hostname === 'localhost' || hostname === '127.0.0.1';
 }
 
 function resolveElectronLocalUiEndpoints(): AppConfig | null {
+  if (!isElectronShellBuildEnabled()) return null;
   if (typeof window === 'undefined' || !isElectronChatShell()) return null;
   if (!isElectronLocalUiHost(window.location.hostname)) return null;
   const origin = window.location.origin.replace(/\/$/, '');
@@ -25,6 +33,8 @@ const DEFAULT_APP_DOMAIN_HOST = 'alcolock-test.lsystems.ru';
 export const CONFIG_DOMAIN_PLACEHOLDER = '{DOMAIN}';
 /** @deprecated совместимость со старым шаблоном */
 export const CONFIG_URL_PLACEHOLDER = 'YOUR_SERVER_HOST';
+/** Порт из бэкенд-шаблона; фронт его не использует (HTTPS идёт через nginx без явного порта). */
+export const CONFIG_HTTPS_PORT_PLACEHOLDER = '{EXTERNAL_HTTPS_PORT}';
 
 export interface AppConfig {
   /** Базовый URL приложения (без /api). Пример: https://domain.com/ */
@@ -85,6 +95,11 @@ class ConfigLoader {
     const resolveOne = (value: string | undefined, fallback: string): string => {
       if (typeof value !== 'string' || value.trim() === '') return fallback;
       let v = value;
+      // Незакрытый :{EXTERNAL_HTTPS_PORT} даёт Invalid URL → axios не шлёт запрос вообще
+      if (v.includes(CONFIG_HTTPS_PORT_PLACEHOLDER)) {
+        v = v.split(`:${CONFIG_HTTPS_PORT_PLACEHOLDER}`).join('');
+        v = v.split(CONFIG_HTTPS_PORT_PLACEHOLDER).join('');
+      }
       if (v.includes(CONFIG_DOMAIN_PLACEHOLDER)) {
         v = v.split(CONFIG_DOMAIN_PLACEHOLDER).join(host);
       }
@@ -135,14 +150,20 @@ class ConfigLoader {
         // Мержим с дефолтными значениями (externalConfig перезаписывает defaultConfig)
         const merged = { ...this.defaultConfig, ...externalConfig } as AppConfig;
         const resolved = this.resolvePlaceholders(merged);
-        const electronLocal = resolveElectronLocalUiEndpoints();
-        const electronRemote = resolveElectronRemoteUiEndpoints(resolved);
+
+        // Electron URL-overrides — только в Electron-сборке (REACT_APP_ELECTRON_SHELL=true).
+        // Docker / обычный web-build всегда идут строго по config.json.
         let finalConfig = resolved;
-        if (electronLocal) {
-          finalConfig = { ...resolved, ...electronLocal };
-        } else if (electronRemote) {
-          finalConfig = { ...resolved, ...electronRemote };
+        if (isElectronShellBuildEnabled()) {
+          const electronLocal = resolveElectronLocalUiEndpoints();
+          const electronRemote = resolveElectronRemoteUiEndpoints(resolved);
+          if (electronLocal) {
+            finalConfig = { ...resolved, ...electronLocal };
+          } else if (electronRemote) {
+            finalConfig = { ...resolved, ...electronRemote };
+          }
         }
+
         setStompDebugFromRuntimeConfig(finalConfig.chatStompDebug);
         return finalConfig;
       } else {

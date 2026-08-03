@@ -14,6 +14,9 @@ function readDevWsProxyTarget() {
     const configPath = path.join(__dirname, '../public/config.json');
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     let apiUrl = String(config.apiUrl || '').trim();
+    // Только yarn start / Electron local WS. Docker этот код не выполняет.
+    apiUrl = apiUrl.split(':{EXTERNAL_HTTPS_PORT}').join('');
+    apiUrl = apiUrl.split('{EXTERNAL_HTTPS_PORT}').join('');
     apiUrl = apiUrl.split('{DOMAIN}').join(DEFAULT_DOMAIN);
     apiUrl = apiUrl.split('YOUR_SERVER_HOST').join(DEFAULT_DOMAIN);
     if (apiUrl.startsWith('http://') || apiUrl.startsWith('https://')) {
