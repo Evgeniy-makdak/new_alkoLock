@@ -737,6 +737,8 @@
     "jumpToQuotedMessage": "Click to jump to the quoted message",
     "replyAction": "Reply",
     "editMessage": "Edit message",
+    "addAttachment": "Add image",
+    "removeAttachment": "Remove attachment",
     "deleteMessage": "Delete message",
     "scrollToLastMessage": "Go to latest message",
     "newMessagesCount": "New messages: {{count}}",

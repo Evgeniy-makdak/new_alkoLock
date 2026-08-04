@@ -734,6 +734,8 @@
     "jumpToQuotedMessage": "Дәйексөз хабарына өту үшін басыңыз",
     "replyAction": "Жауап беру",
     "editMessage": "Хабарды өңдеу",
+    "addAttachment": "Сурет қосу",
+    "removeAttachment": "Қосымшаны жою",
     "deleteMessage": "Хабарды жою",
     "scrollToLastMessage": "Соңғы хабарға өту",
     "newMessagesCount": "Жаңа хабарлар: {{count}}",

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { deleteQuery, getQuery, postQuery } from '@shared/api/baseQueryTypes';
+import { deleteQuery, getQuery, postQuery, putQuery } from '@shared/api/baseQueryTypes';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { ID } from '@shared/types/BaseQueryTypes';
 
@@ -217,6 +217,26 @@ export class DialogsApi {
   static deleteMessage(messageId: string | number) {
     return deleteQuery({
       url: `api/v1/messages/${messageId}`,
+    });
+  }
+
+  /**
+   * PUT /api/v1/messages — тело JSON { uuid, text, pathsToAttaches }
+   * (UUID не в path, в отличие от DELETE).
+   */
+  static updateMessage(message: {
+    uuid: string;
+    text: string;
+    pathsToAttaches?: string[];
+  }) {
+    return putQuery({
+      url: 'api/v1/messages',
+      data: {
+        uuid: message.uuid,
+        text: message.text,
+        pathsToAttaches: message.pathsToAttaches ?? [],
+      },
+      headers: { 'Content-Type': 'application/json' },
     });
   }
 }

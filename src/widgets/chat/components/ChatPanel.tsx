@@ -14,6 +14,10 @@ import {
   findChatMessageByKey,
   resolveServerMessageId,
 } from '../lib/resolveServerMessageId';
+import {
+  EditableAttachment,
+  canEditOrDeleteMessage,
+} from '../lib/canEditOrDeleteMessage';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './ChatPanel.module.scss';
 import { DialogActions } from './DialogActions';
@@ -820,6 +824,10 @@ function ChatPanel({
       const messages = liveSession?.messages || [];
       const message = findChatMessageByKey(messages, messageId);
 
+      if (!canEditOrDeleteMessage(message)) {
+        throw new Error('Сообщение нельзя удалить: доступны статусы SENT и DELIVERED');
+      }
+
       let serverMessageId = resolveServerMessageId(message);
 
       if (!serverMessageId && message?.uuid) {
@@ -886,23 +894,112 @@ function ChatPanel({
   );
 
   const handleEditMessage = useCallback(
-    async (messageId: string, newText: string) => {
-      try {
-        const updatedMessages = (session?.messages || []).map((msg: any) =>
-          msg.id === messageId
+    async (messageId: string, newText: string, attachmentDraft: EditableAttachment[] = []) => {
+      const liveSession = getSession(sessionId);
+      const messages = liveSession?.messages || [];
+      const message = findChatMessageByKey(messages, messageId);
+
+      if (!canEditOrDeleteMessage(message)) {
+        throw new Error('Сообщение нельзя редактировать: доступны статусы SENT и DELIVERED');
+      }
+
+      const messageUuid = message?.uuid ? String(message.uuid) : null;
+      if (!messageUuid) {
+        throw new Error('Не удалось определить UUID сообщения на сервере');
+      }
+
+      const trimmedText = newText.trim();
+      const snapshotText = message.text;
+      const snapshotAttachments = message.attachments;
+      const snapshotRawAttaches = message.rawAttaches;
+      const snapshotEditedAt = message.edited_at;
+
+      const newFiles = attachmentDraft
+        .map((item) => item.file)
+        .filter((file): file is File => Boolean(file));
+
+      let uploadedPaths: string[] = [];
+      if (newFiles.length > 0) {
+        const uploadResponse = await api.uploadAttachments(newFiles);
+        uploadedPaths = uploadResponse.attachmentIds || [];
+        if (uploadedPaths.length !== newFiles.length) {
+          throw new Error('Не удалось загрузить все новые вложения');
+        }
+      }
+
+      // Сохраняем порядок: существующие path и новые file в порядке draft
+      const pathsToAttaches: string[] = [];
+      let uploadIndex = 0;
+      for (const item of attachmentDraft) {
+        if (item.path) {
+          pathsToAttaches.push(String(item.path).trim());
+        } else if (item.file) {
+          const uploaded = uploadedPaths[uploadIndex++];
+          if (uploaded) pathsToAttaches.push(uploaded);
+        }
+      }
+
+      const optimisticAttachments = attachmentDraft.map((item, index) => {
+        const path = pathsToAttaches[index] || item.path || item.name;
+        return {
+          id: path,
+          type: item.type || 'image',
+          name: item.name || path,
+          fileName: path,
+          url: item.url,
+          size: item.size,
+        };
+      });
+
+      updateSession(sessionId, {
+        messages: messages.map((msg: any) => {
+          const isTarget =
+            String(msg.id) === String(messageId) ||
+            String(msg.uuid) === String(messageId) ||
+            String(msg.uuid) === messageUuid;
+          return isTarget
             ? {
                 ...msg,
-                text: newText,
+                text: trimmedText,
                 edited_at: new Date().toISOString(),
+                attachments: optimisticAttachments,
+                rawAttaches: pathsToAttaches,
+                pathsToAttaches,
               }
-            : msg,
-        );
-        updateSession(sessionId, { messages: updatedMessages });
+            : msg;
+        }),
+      });
+
+      try {
+        await api.updateMessage({
+          uuid: messageUuid,
+          text: trimmedText,
+          pathsToAttaches,
+        });
       } catch (error) {
+        const current = getSession(sessionId)?.messages || messages;
+        updateSession(sessionId, {
+          messages: current.map((msg: any) => {
+            const isTarget =
+              String(msg.id) === String(messageId) ||
+              String(msg.uuid) === String(messageId) ||
+              String(msg.uuid) === messageUuid;
+            return isTarget
+              ? {
+                  ...msg,
+                  text: snapshotText,
+                  edited_at: snapshotEditedAt,
+                  attachments: snapshotAttachments,
+                  rawAttaches: snapshotRawAttaches,
+                }
+              : msg;
+          }),
+        });
         console.error('Error editing message:', error);
+        throw error;
       }
     },
-    [sessionId, session?.messages, updateSession],
+    [sessionId, getSession, updateSession],
   );
 
   const handleAttachmentsChange = useCallback(

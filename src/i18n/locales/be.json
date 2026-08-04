@@ -735,6 +735,8 @@
     "jumpToQuotedMessage": "Націсніце, каб перайсці да цытаванага паведамлення",
     "replyAction": "Адказаць",
     "editMessage": "Рэдагаваць паведамленне",
+    "addAttachment": "Дадаць выяву",
+    "removeAttachment": "Выдаліць укладанне",
     "deleteMessage": "Выдаліць паведамленне",
     "scrollToLastMessage": "Перайсці да апошняга паведамлення",
     "newMessagesCount": "Новыя паведамленні: {{count}}",

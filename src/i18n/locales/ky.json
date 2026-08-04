@@ -734,6 +734,8 @@
     "jumpToQuotedMessage": "Цитаталанган билдирүүгө өтүү үчүн баасыңыз",
     "replyAction": "Жооп берүү",
     "editMessage": "Билдирүүнү өзгөртүү",
+    "addAttachment": "Сүрөт кошуу",
+    "removeAttachment": "Тиркемени өчүрүү",
     "deleteMessage": "Билдирүүнү өчүрүү",
     "scrollToLastMessage": "Акыркы билдирүүгө өтүү",
     "newMessagesCount": "Жаңы билдирүүлөр: {{count}}",

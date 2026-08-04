@@ -734,6 +734,8 @@
     "jumpToQuotedMessage": "Iqtiboslangan xabarga o'tish uchun bosing",
     "replyAction": "Javob berish",
     "editMessage": "Xabarni tahrirlash",
+    "addAttachment": "Rasm qo'shish",
+    "removeAttachment": "Ilovani o'chirish",
     "deleteMessage": "Xabarni o'chirish",
     "scrollToLastMessage": "So'nggi xabarga o'tish",
     "newMessagesCount": "Yangi xabarlar: {{count}}",

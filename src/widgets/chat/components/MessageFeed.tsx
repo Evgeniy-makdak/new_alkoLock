@@ -2,12 +2,27 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { useTranslation } from 'react-i18next';
 import { BsArrowDown, BsCheck2, BsCheck2All, BsPencil } from 'react-icons/bs';
 import { FaReply, FaTimes, FaTrash } from 'react-icons/fa';
+import { FiPaperclip } from 'react-icons/fi';
 
 import dayjs from 'dayjs';
 
 import { CircularProgress } from '@mui/material';
 
 import { useChat } from '../contexts/ChatContext';
+import {
+  MAX_FILE_SIZE_MB,
+  checkFileSize,
+  formatFileSize,
+  isAllowedImageType,
+  processImageBeforeUpload,
+} from '../contexts/ImageUtils';
+import {
+  EditableAttachment,
+  MAX_MESSAGE_ATTACHMENTS,
+  buildEditableAttachmentsFromMessage,
+  canEditOrDeleteMessage,
+  revokeEditableAttachmentPreviews,
+} from '../lib/canEditOrDeleteMessage';
 import { isOperatorUnreadDebugEnabled, operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './MessageFeed.module.scss';
 
@@ -16,7 +31,11 @@ interface MessageFeedProps {
   messages: any[];
   onReplyToMessage?: (message: any) => void;
   onDeleteMessage?: (messageId: string) => void | Promise<void>;
-  onEditMessage?: (messageId: string, newText: string) => void;
+  onEditMessage?: (
+    messageId: string,
+    newText: string,
+    attachments: EditableAttachment[],
+  ) => void | Promise<void>;
   currentUserId?: number;
   attachments?: File[];
   onRemoveAttachment?: (index: number) => void;
@@ -164,6 +183,10 @@ function MessageFeed({
   const [deletedMessages, setDeletedMessages] = useState<Set<string>>(new Set());
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
+  const [editAttachments, setEditAttachments] = useState<EditableAttachment[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editCompressionInProgress, setEditCompressionInProgress] = useState(false);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const [internalUnreadCount, setInternalUnreadCount] = useState<number>(0);
   const [lastSeenMessageId, setLastSeenMessageId] = useState<string | null>(null);
   const visibleMessagesIds = useRef<Set<string>>(new Set());
@@ -1267,25 +1290,141 @@ function MessageFeed({
   const handleEditClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
     if (message.id && message.sender === 'user' && canEditOrDelete(message)) {
+      revokeEditableAttachmentPreviews(editAttachments);
       setEditingMessageId(message.id);
       setEditText(message.text || '');
+      setEditAttachments(buildEditableAttachmentsFromMessage(message));
     }
   };
 
-  const handleSaveEdit = (messageId: string, e?: React.MouseEvent) => {
+  const handleRemoveEditAttachment = (attachmentId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setEditAttachments((prev) => {
+      const target = prev.find((item) => item.id === attachmentId);
+      if (target) revokeEditableAttachmentPreviews([target]);
+      return prev.filter((item) => item.id !== attachmentId);
+    });
+  };
+
+  const handleAddEditAttachments = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = Array.from(e.target.files || []);
+      e.target.value = '';
+      if (files.length === 0) return;
+
+      const totalFiles = editAttachments.length + files.length;
+      if (totalFiles > MAX_MESSAGE_ATTACHMENTS) {
+        alert(t('chat.alertMaxFiles', { max: MAX_MESSAGE_ATTACHMENTS }));
+        return;
+      }
+
+      const validItems: EditableAttachment[] = [];
+      const invalidFiles: string[] = [];
+
+      for (const file of files) {
+        try {
+          if (!isAllowedImageType(file)) {
+            invalidFiles.push(t('chat.invalidFormat', { name: file.name }));
+            continue;
+          }
+
+          let fileToAdd: File | null = file;
+
+          if (!checkFileSize(file)) {
+            const shouldCompress = window.confirm(
+              t('chat.confirmOversize', {
+                name: file.name,
+                size: formatFileSize(file.size),
+                mb: MAX_FILE_SIZE_MB,
+              }),
+            );
+
+            if (!shouldCompress) {
+              invalidFiles.push(t('chat.exceedsMax', { name: file.name, mb: MAX_FILE_SIZE_MB }));
+              continue;
+            }
+
+            setEditCompressionInProgress(true);
+            try {
+              fileToAdd = await processImageBeforeUpload(file, {
+                maxSizeMB: MAX_FILE_SIZE_MB,
+                compressIfNeeded: true,
+                maxWidth: 1920,
+                maxHeight: 1080,
+                quality: 0.7,
+              });
+              if (!fileToAdd) {
+                invalidFiles.push(t('chat.couldNotCompress', { name: file.name }));
+                continue;
+              }
+            } catch {
+              invalidFiles.push(t('chat.compressionFailed', { name: file.name }));
+              continue;
+            } finally {
+              setEditCompressionInProgress(false);
+            }
+          }
+
+          if (!fileToAdd) continue;
+
+          const previewUrl = URL.createObjectURL(fileToAdd);
+          validItems.push({
+            id: `new-${fileToAdd.name}-${fileToAdd.size}-${Date.now()}-${Math.random()}`,
+            path: null,
+            file: fileToAdd,
+            name: fileToAdd.name,
+            url: previewUrl,
+            size: fileToAdd.size,
+            type: 'image',
+          });
+        } catch {
+          invalidFiles.push(t('chat.processingFailed', { name: file.name }));
+        }
+      }
+
+      if (invalidFiles.length > 0) {
+        alert(invalidFiles.join('\n'));
+      }
+
+      if (validItems.length > 0) {
+        setEditAttachments((prev) => [...prev, ...validItems].slice(0, MAX_MESSAGE_ATTACHMENTS));
+      }
+    },
+    [editAttachments.length, t],
+  );
+
+  const handleSaveEdit = async (messageId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const message = messages.find((m) => m.id === messageId);
-    if (onEditMessage && editText.trim() && message && canEditOrDelete(message)) {
-      onEditMessage(messageId, editText.trim());
+    const canSave =
+      Boolean(onEditMessage) &&
+      Boolean(editText.trim()) &&
+      Boolean(message) &&
+      canEditOrDelete(message) &&
+      !editSaving &&
+      !editCompressionInProgress;
+
+    if (!canSave || !onEditMessage) return;
+
+    setEditSaving(true);
+    try {
+      await onEditMessage(messageId, editText.trim(), editAttachments);
       setEditingMessageId(null);
       setEditText('');
+      setEditAttachments([]);
+    } catch (error) {
+      console.error('Error editing message:', error);
+    } finally {
+      setEditSaving(false);
     }
   };
 
   const handleCancelEdit = (e?: React.MouseEvent) => {
     e?.stopPropagation();
+    revokeEditableAttachmentPreviews(editAttachments);
     setEditingMessageId(null);
     setEditText('');
+    setEditAttachments([]);
   };
 
   const findOriginalMessage = (replyToId: string) => {
@@ -1325,17 +1464,7 @@ function MessageFeed({
     [sessionId, getSession, navigateToQuotedMessage],
   );
 
-  const canEditOrDelete = (message: any): boolean => {
-    if (!message.created_at) return false;
-    try {
-      const messageTime = dayjs(message.created_at);
-      const now = dayjs();
-      const minutesDiff = now.diff(messageTime, 'minute');
-      return minutesDiff < 1;
-    } catch (error) {
-      return false;
-    }
-  };
+  const canEditOrDelete = (message: any): boolean => canEditOrDeleteMessage(message);
 
   const handleRemoveAttachment = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1581,6 +1710,7 @@ function MessageFeed({
                   <textarea
                     value={editText}
                     onChange={(e) => setEditText(e.target.value)}
+                    disabled={editSaving || editCompressionInProgress}
                     style={{
                       width: '100%',
                       minHeight: '60px',
@@ -1592,36 +1722,151 @@ function MessageFeed({
                     }}
                     autoFocus
                   />
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                     <button
+                      type="button"
                       onClick={(e) => handleSaveEdit(msg.id, e)}
+                      disabled={editSaving || editCompressionInProgress || !editText.trim()}
                       style={{
                         padding: '4px 8px',
                         backgroundColor: '#1976d2',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer',
+                        cursor:
+                          editSaving || editCompressionInProgress || !editText.trim()
+                            ? 'not-allowed'
+                            : 'pointer',
+                        opacity:
+                          editSaving || editCompressionInProgress || !editText.trim() ? 0.7 : 1,
                       }}>
-                      {t('common.save')}
+                      {editSaving || editCompressionInProgress
+                        ? t('chat.sendSending')
+                        : t('common.save')}
                     </button>
                     <button
+                      type="button"
                       onClick={handleCancelEdit}
+                      disabled={editSaving}
                       style={{
                         padding: '4px 8px',
                         backgroundColor: '#999',
                         color: 'white',
                         border: 'none',
                         borderRadius: '4px',
-                        cursor: 'pointer',
+                        cursor: editSaving ? 'not-allowed' : 'pointer',
                       }}>
                       {t('common.cancel')}
                     </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        editFileInputRef.current?.click();
+                      }}
+                      disabled={
+                        editSaving ||
+                        editCompressionInProgress ||
+                        editAttachments.length >= MAX_MESSAGE_ATTACHMENTS
+                      }
+                      title={t('chat.addAttachment')}
+                      style={{
+                        padding: '4px 8px',
+                        backgroundColor: '#eceff1',
+                        color: '#37474f',
+                        border: '1px solid #cfd8dc',
+                        borderRadius: '4px',
+                        cursor:
+                          editSaving ||
+                          editCompressionInProgress ||
+                          editAttachments.length >= MAX_MESSAGE_ATTACHMENTS
+                            ? 'not-allowed'
+                            : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}>
+                      <FiPaperclip size={14} />
+                      {t('chat.addAttachment')}
+                    </button>
                   </div>
+                  <div style={{ marginTop: '8px', fontSize: '0.85em', opacity: 0.8 }}>
+                    {t('chat.attachedFiles', {
+                      current: editAttachments.length,
+                      max: MAX_MESSAGE_ATTACHMENTS,
+                    })}
+                  </div>
+                  {editAttachments.length > 0 && (
+                    <div style={{ margin: '4px 0' }}>
+                      {editAttachments.map((attachment) => {
+                        const isImage =
+                          attachment.type === 'image' ||
+                          /\.(jpg|jpeg|png|bmp|gif)$/i.test(attachment.name);
+                        return (
+                          <div key={attachment.id} style={{ marginBottom: '8px' }}>
+                            {isImage && attachment.url ? (
+                              <div className={styles.attachmentPreview}>
+                                <img
+                                  src={attachment.url}
+                                  alt={attachment.name || 'Attachment'}
+                                  onClick={() => {
+                                    if (attachment.url) window.open(attachment.url, '_blank');
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  className={styles.removeAttachment}
+                                  title={t('chat.removeAttachment')}
+                                  style={{ opacity: 1 }}
+                                  onClick={(e) => handleRemoveEditAttachment(attachment.id, e)}>
+                                  <FaTimes size={10} />
+                                </button>
+                                <div className={styles.attachmentCaption}>
+                                  {attachment.name}
+                                  {attachment.size
+                                    ? ` (${Math.round(attachment.size / 1024)} KB)`
+                                    : ''}
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                className={styles.attachmentPlaceholder}
+                                style={{ position: 'relative' }}>
+                                <button
+                                  type="button"
+                                  className={styles.removeAttachment}
+                                  title={t('chat.removeAttachment')}
+                                  style={{ opacity: 1 }}
+                                  onClick={(e) => handleRemoveEditAttachment(attachment.id, e)}>
+                                  <FaTimes size={10} />
+                                </button>
+                                <p style={{ margin: '0 0 4px 0', fontWeight: 'bold' }}>
+                                  {attachment.name}
+                                </p>
+                                {attachment.size != null && (
+                                  <p className={styles.attachmentCaption} style={{ margin: 0 }}>
+                                    {Math.round(attachment.size / 1024)} KB
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <input
+                    ref={editFileInputRef}
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.bmp,image/jpeg,image/png,image/bmp"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleAddEditAttachments}
+                  />
                 </div>
               )}
 
-              {!isDeleted && msg.attachments && msg.attachments.length > 0 && (
+              {!isDeleted && !isEditing && msg.attachments && msg.attachments.length > 0 && (
                 <div style={{ margin: '4px 0' }}>
                   {msg.attachments.map((attachment: any, attIndex: number) => {
                     const isImage =

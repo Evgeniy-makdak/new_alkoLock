@@ -737,6 +737,8 @@
     "jumpToQuotedMessage": "Нажмите для перехода к цитируемому сообщению",
     "replyAction": "Ответить",
     "editMessage": "Редактировать сообщение",
+    "addAttachment": "Добавить изображение",
+    "removeAttachment": "Удалить вложение",
     "deleteMessage": "Удалить сообщение",
     "scrollToLastMessage": "Перейти к последнему сообщению",
     "newMessagesCount": "Новые сообщения: {{count}}",

@@ -304,6 +304,23 @@ const deleteMessage = async (messageId: string | number) => {
   return response?.data;
 };
 
+const updateMessage = async (message: {
+  uuid: string;
+  text: string;
+  pathsToAttaches?: string[];
+}) => {
+  const response = await DialogsApi.updateMessage(message);
+  if (response?.isError) {
+    const err: Error & { status?: number; detail?: string; message?: string } = new Error(
+      response.detail || response.message || 'Failed to update message',
+    );
+    err.status = response.status;
+    err.detail = response.detail;
+    throw err;
+  }
+  return response?.data;
+};
+
 const getAllDialogs = async () => {
   const response = await DialogsApi.getAllDialogs();
   return response?.data;
@@ -583,6 +600,7 @@ const api = {
   transferDialog,
   deleteDialog,
   deleteMessage,
+  updateMessage,
   uploadAttachments,
   uploadFile,
   getAllDialogs,

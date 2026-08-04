@@ -142,6 +142,7 @@ export function putQuery<T, D>({
   headers,
   url,
   data,
+  config,
 }: {
   headers?: HeaderReq;
   url: string;
@@ -151,6 +152,7 @@ export function putQuery<T, D>({
   const requestUrl = `${getApiUrl()}${url}`;
   return axios
     .put<IError, AppAxiosResponse<T>>(requestUrl, data, {
+      ...config,
       headers: returnHeaders(headers),
     })
     .catch((e) => {
