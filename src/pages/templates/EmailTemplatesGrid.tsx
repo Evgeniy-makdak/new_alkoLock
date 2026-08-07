@@ -4,7 +4,6 @@ import { Box, useMediaQuery } from '@mui/material';
 
 import { EmailTemplate } from '../templates/types';
 import EmailTemplatesTable from './EmailTemplatesTable';
-import PaginationControls from './PaginationControls';
 import { TemplatesMobilePagination } from './TemplatesMobilePagination';
 
 interface EmailTemplatesGridProps {
@@ -44,19 +43,12 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
 }) => {
   const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
-  const handleRowsPerPageChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    onRowsPerPageChange(event);
-    onPageChange(null, 0);
-  };
-
   return (
     <div
       style={{
         display: 'flex',
         flexDirection: 'column',
-        height: isMobile ? '100%' : '100vh',
+        height: '100%',
         minHeight: 0,
       }}>
       <EmailTemplatesTable
@@ -70,39 +62,37 @@ export const EmailTemplatesGrid: React.FC<EmailTemplatesGridProps> = ({
         onEditSave={onEditSave}
         searchQuery={searchQuery}
         onSearchChange={onSearchChange}
+        totalCount={totalCount}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        onPaginationModelChange={(model) => {
+          if (model.pageSize !== rowsPerPage) {
+            onRowsPerPageChange({
+              target: { value: String(model.pageSize) },
+            } as React.ChangeEvent<HTMLInputElement>);
+            onPageChange(null, 0);
+            return;
+          }
+          onPageChange(null, model.page);
+        }}
       />
 
-      <Box
-        sx={{
-          position: isMobile ? 'relative' : 'sticky',
-          bottom: isMobile ? 'auto' : 0,
-          left: isMobile ? 'auto' : 0,
-          right: isMobile ? 'auto' : 0,
-          flexShrink: 0,
-          bgcolor: 'background.paper',
-          color: 'text.primary',
-          borderTop: 1,
-          borderColor: 'divider',
-          pb: 0,
-        }}>
-        {isMobile ? (
+      {isMobile && (
+        <Box
+          sx={{
+            flexShrink: 0,
+            bgcolor: 'background.paper',
+            color: 'text.primary',
+            pb: 0,
+          }}>
           <TemplatesMobilePagination
             totalCount={totalCount}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={(newPage) => onPageChange(null, newPage)}
           />
-        ) : (
-          <PaginationControls
-            hideTopBorder
-            totalCount={totalCount}
-            rowsPerPage={rowsPerPage}
-            page={page}
-            onPageChange={onPageChange}
-            onRowsPerPageChange={handleRowsPerPageChange}
-          />
-        )}
-      </Box>
+        </Box>
+      )}
     </div>
   );
 };

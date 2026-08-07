@@ -12,7 +12,9 @@ import type { TablePaginationProps } from '@mui/material/TablePagination';
 import { PaginationJumpField } from './PaginationJumpField';
 
 export interface TablePaginationJumpActionsProps
-  extends Pick<TablePaginationProps, 'page' | 'count' | 'rowsPerPage' | 'onPageChange'> {}
+  extends Pick<TablePaginationProps, 'page' | 'count' | 'rowsPerPage' | 'onPageChange'> {
+  className?: string;
+}
 
 /**
  * Кнопки первый/пред/след/последний + поле перехода к странице для `TablePagination` (`ActionsComponent`).
@@ -22,6 +24,7 @@ export const TablePaginationJumpActions: React.FC<TablePaginationJumpActionsProp
   count,
   rowsPerPage,
   onPageChange,
+  className,
 }) => {
   const { t } = useTranslation();
   const pageCount = Math.max(1, Math.ceil(count / rowsPerPage) || 1);
@@ -49,13 +52,16 @@ export const TablePaginationJumpActions: React.FC<TablePaginationJumpActionsProp
 
   return (
     <Box
+      className={className}
       sx={{
         display: 'flex',
         alignItems: 'center',
         flexWrap: 'nowrap',
         justifyContent: 'flex-end',
-        gap: 0.25,
+        // Как у CustomPagination: mx={2} у блока «строк на странице / N из M»
+        gap: 0.5,
         flexShrink: 0,
+        ml: 2,
       }}>
       <PaginationJumpField page={page} pageCount={pageCount} onJump={emitPage} />
 
@@ -111,4 +117,5 @@ TablePaginationJumpActions.propTypes = {
   count: PropTypes.number.isRequired,
   rowsPerPage: PropTypes.number.isRequired,
   onPageChange: PropTypes.func.isRequired,
+  className: PropTypes.string,
 };

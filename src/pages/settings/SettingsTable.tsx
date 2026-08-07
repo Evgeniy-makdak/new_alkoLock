@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useMediaQuery } from '@mui/material';
+import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import { SettingsDesktopTable } from './SettingsDesktopTable';
 import { SettingsMobileTable } from './SettingsMobileTable';
@@ -24,13 +25,15 @@ interface SettingsTableProps {
   getUnitDisplay: (unit: string, value: number) => string;
   handleEditClick: (row: SettingRow) => void;
   handleResetToDefault: (row: SettingRow) => void;
+  onPaginationModelChange: (model: GridPaginationModel) => void;
 }
 
 export const SettingsTable: React.FC<SettingsTableProps> = (props) => {
   const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   if (isMobile) {
-    return <SettingsMobileTable {...props} />;
+    const { onPaginationModelChange: _ignored, ...mobileProps } = props;
+    return <SettingsMobileTable {...mobileProps} />;
   }
 
   return <SettingsDesktopTable {...props} />;

@@ -1,20 +1,17 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ModeEditIcon from '@mui/icons-material/ModeEdit';
-import {
-  CircularProgress,
-  IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-} from '@mui/material';
+import { Box, IconButton, Tooltip } from '@mui/material';
+import type {
+  GridColDef,
+  GridPaginationModel,
+  GridRenderCellParams,
+  GridValueGetterParams,
+} from '@mui/x-data-grid';
+
+import { Table } from '@shared/components/Table/Table';
 
 interface SettingRow {
   id: number;
@@ -35,6 +32,7 @@ interface SettingsDesktopTableProps {
   getUnitDisplay: (unit: string, value: number) => string;
   handleEditClick: (row: SettingRow) => void;
   handleResetToDefault: (row: SettingRow) => void;
+  onPaginationModelChange: (model: GridPaginationModel) => void;
 }
 
 export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
@@ -45,110 +43,91 @@ export const SettingsDesktopTable: React.FC<SettingsDesktopTableProps> = ({
   getUnitDisplay,
   handleEditClick,
   handleResetToDefault,
+  onPaginationModelChange,
 }) => {
   const { t } = useTranslation();
-  return (
-    <TableContainer
-      component={Paper}
-      sx={{
-        flexGrow: 1,
-        maxHeight: '96vh',
-        overflow: 'auto',
-        marginTop: 0,
-        outline: 'none',
-        border: 'none',
-        boxShadow: 'none',
-      }}>
-      <Table
-        size="small"
-        stickyHeader
-        sx={{
-          tableLayout: 'fixed',
-          minWidth: '1000px',
-          border: 'none',
-          borderCollapse: 'separate',
-          borderSpacing: 0,
-        }}>
-        <TableHead sx={{ height: '54px' }}>
-          <TableRow
-            sx={{
-              backgroundColor: '#dad8d8',
-              position: 'sticky',
-              top: 0,
-              zIndex: 2,
-              border: 'none',
-            }}>
-            <TableCell
-              sx={{
-                fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
-                width: '60%',
-                border: 'none',
-                borderBottom: 'none',
-              }}>
-              {t('tables.changeableParam')}
-            </TableCell>
-            <TableCell
-              sx={{
-                fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
-                width: '20%',
-                border: 'none',
-                borderBottom: 'none',
-              }}>
-              {t('tables.currentValue')}
-            </TableCell>
-            <TableCell
-              sx={{
-                width: '20%',
-                textAlign: 'center',
-                fontWeight: 'bold',
-                backgroundColor: '#dad8d8',
-                border: 'none',
-                borderBottom: 'none',
-              }}>
-              {t('tables.actions')}
-            </TableCell>
-          </TableRow>
-        </TableHead>
 
-        <TableBody>
-          {loading ? (
-            <TableRow>
-              <TableCell colSpan={3} align="center" sx={{ border: 'none', borderBottom: 'none' }}>
-                <CircularProgress />
-              </TableCell>
-            </TableRow>
-          ) : (
-            settingsRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((row) => (
-              <TableRow key={row.id} hover sx={{ border: 'none', borderBottom: 'none' }}>
-                <TableCell sx={{ border: 'none', borderBottom: 'none' }}>{row.label}</TableCell>
-                <TableCell sx={{ border: 'none', borderBottom: 'none' }}>
-                  {row.value} {getUnitDisplay(row.unit, row.value)}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    whiteSpace: 'nowrap',
-                    textAlign: 'center',
-                    border: 'none',
-                    borderBottom: 'none',
-                  }}>
-                  <Tooltip title={t('common.edit')}>
-                    <IconButton onClick={() => handleEditClick(row)}>
-                      <ModeEditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={t('common.resetToDefault')}>
-                    <IconButton onClick={() => handleResetToDefault(row)}>
-                      <AutorenewIcon />
-                    </IconButton>
-                  </Tooltip>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </TableContainer>
+  const columns: GridColDef[] = useMemo(
+    () => [
+      {
+        field: 'label',
+        headerName: t('tables.changeableParam'),
+        flex: 1.2,
+        minWidth: 280,
+        sortable: false,
+      },
+      {
+        field: 'value',
+        headerName: t('tables.currentValue'),
+        flex: 0.5,
+        minWidth: 140,
+        sortable: false,
+        valueGetter: (params: GridValueGetterParams<SettingRow>) =>
+          `${params.row.value} ${getUnitDisplay(params.row.unit, params.row.value)}`,
+      },
+      {
+        field: 'actions',
+        headerName: t('tables.actions'),
+        width: 140,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: (params: GridRenderCellParams<SettingRow>) => (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+            <Tooltip title={t('common.edit')}>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditClick(params.row);
+                }}>
+                <ModeEditIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('common.resetToDefault')}>
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleResetToDefault(params.row);
+                }}>
+                <AutorenewIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [t, getUnitDisplay, handleEditClick, handleResetToDefault],
+  );
+
+  return (
+    <Box sx={{ flex: 1, minHeight: 0, width: '100%', height: '100%' }}>
+      <Table
+        rows={settingsRows}
+        columns={columns}
+        loading={loading}
+        getRowId={(row) => row.id}
+        disableColumnMenu
+        disableRowSelectionOnClick
+        hideFooterSelectedRowCount
+        paginationMode="client"
+        sortingMode="client"
+        rowCount={settingsRows.length}
+        pageNumber={page}
+        pageSize={rowsPerPage}
+        pageSizeOptions={[25, 50, 75, 100]}
+        paginationModel={{ page, pageSize: rowsPerPage }}
+        onPaginationModelChange={onPaginationModelChange}
+        sx={{
+          '& .MuiDataGrid-cell': {
+            outline: 'none !important',
+          },
+          '& .MuiDataGrid-cell:focus, & .MuiDataGrid-cell:focus-within': {
+            outline: 'none !important',
+          },
+        }}
+      />
+    </Box>
   );
 };

@@ -8,7 +8,6 @@ import { Alert, Box, Snackbar } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
 
 import { PageWrapper } from '@layout/page_wrapper';
-import PaginationControls from '@pages/templates/PaginationControls';
 import { SettingsApi } from '@shared/api/settingsApi';
 import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
@@ -329,8 +328,7 @@ export const SettingsTableWidget = () => {
         height: '100%',
         overflow: 'hidden',
       }}>
-      <div
-        style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100%' : '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
         {isMobile ? (
           <>
             <MobilePageHeader title={t('nav.settings')} />
@@ -382,42 +380,32 @@ export const SettingsTableWidget = () => {
           getUnitDisplay={getUnitDisplay}
           handleEditClick={handleEditClick}
           handleResetToDefault={handleResetToDefault}
+          onPaginationModelChange={(model) => {
+            if (model.pageSize !== rowsPerPage) {
+              setRowsPerPage(model.pageSize);
+              setPage(0);
+              return;
+            }
+            setPage(model.page);
+          }}
         />
 
-        <Box
-          sx={{
-            position: isMobile ? 'relative' : 'sticky',
-            bottom: isMobile ? 'auto' : 0,
-            left: isMobile ? 'auto' : 0,
-            right: isMobile ? 'auto' : 0,
-            flexShrink: 0,
-            bgcolor: 'background.paper',
-            color: 'text.primary',
-            borderTop: 1,
-            borderColor: 'divider',
-            pb: 0,
-          }}>
-          {isMobile ? (
+        {isMobile && (
+          <Box
+            sx={{
+              flexShrink: 0,
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              pb: 0,
+            }}>
             <SettingsMobilePagination
               totalCount={filteredSettingsRows.length}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={(newPage) => setPage(newPage)}
             />
-          ) : (
-            <PaginationControls
-              hideTopBorder
-              totalCount={filteredSettingsRows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(event) => {
-                setRowsPerPage(+event.target.value);
-                setPage(0);
-              }}
-            />
-          )}
-        </Box>
+          </Box>
+        )}
       </div>
 
       <EditSettingDialog

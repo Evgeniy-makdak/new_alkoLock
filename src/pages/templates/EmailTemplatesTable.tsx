@@ -34,6 +34,10 @@ interface EmailTemplatesTableProps {
   onEditSave: (template: Partial<EmailTemplate>) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  totalCount: number;
+  page: number;
+  rowsPerPage: number;
+  onPaginationModelChange: (model: { page: number; pageSize: number }) => void;
 }
 
 const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
@@ -47,6 +51,10 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   onEditSave,
   searchQuery,
   onSearchChange,
+  totalCount,
+  page,
+  rowsPerPage,
+  onPaginationModelChange,
 }) => {
   const { t, i18n } = useTranslation();
   const theme = useTheme();
@@ -57,8 +65,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   const relocateAddToEndToolbar = hasInlineToolbarRoute && !isMobile;
   const setTrailing = useTableHeaderMobileTrailing()?.setTrailing;
 
-  const [hoveredColumn, setHoveredColumn] = useState<keyof EmailTemplate | null>(null);
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [isViewing, setIsViewing] = useState(false);
@@ -71,9 +77,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   const mobileTitle = i18n.language?.startsWith('ru') ? 'Шаблоны' : t('nav.messageTemplates');
 
   const shouldBlockNavigation = isEditing || isAdding || isDeleting;
-
-  const handleTooltipOpen = (key: string) => setActiveTooltip(key);
-  const handleTooltipClose = () => setActiveTooltip(null);
 
   const handleSortClick = (field: keyof EmailTemplate) => {
     onRequestSort(field);
@@ -136,7 +139,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
     setIsViewing(false);
     setIsEditing(false);
     setIsAdding(false);
-    setActiveTooltip(null);
     setIsDeleting(false);
 
     setTimeout(() => {
@@ -312,7 +314,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       {templatesTableHeader}
 
       <TemplatesDesktopTable
@@ -321,17 +323,15 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
         sortField={sortField}
         sortOrder={sortOrder}
         selectedRowId={selectedRowId}
-        activeTooltip={activeTooltip}
-        hoveredColumn={hoveredColumn}
+        totalCount={totalCount}
+        page={page}
+        rowsPerPage={rowsPerPage}
         onRequestSort={handleSortClick}
         onToggleStatus={onToggleStatus}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
         onViewClick={openView}
-        onMouseEnterColumn={setHoveredColumn}
-        onMouseLeaveColumn={() => setHoveredColumn(null)}
-        onTooltipOpen={handleTooltipOpen}
-        onTooltipClose={handleTooltipClose}
+        onPaginationModelChange={onPaginationModelChange}
       />
 
       {isViewing && selectedTemplate && (

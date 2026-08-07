@@ -54,50 +54,56 @@ export const MpoConfigDesktopTable: FC = () => {
   return (
     <div className={styles.tableWrapper}>
       <Box
+        className={styles.globalSection}
         sx={{
           width: '100%',
-          px: 2,
-          pt: 0,
-          pb: 1,
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
           gap: 1,
           minWidth: 0,
+          flexShrink: 0,
         }}>
-        <Typography
-          variant="subtitle2"
-          sx={{
-            fontWeight: 700,
-            color: 'text.secondary',
-          }}>
-          {t('mpoConfigPage.globalParameters')}
-        </Typography>
-        <TableHeaderEndToolbar>
-          <ResetFilters
-            reset={openResetDialog}
-            title={t('mpoConfigPage.resetToDefaults')}
-          />
-        </TableHeaderEndToolbar>
-      </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            variant="subtitle2"
+            sx={{
+              px: 2,
+              pt: 0,
+              pb: 1,
+              fontWeight: 700,
+              color: 'text.secondary',
+            }}>
+            {t('mpoConfigPage.globalParameters')}
+          </Typography>
 
-      <div className={styles.globalToggles}>
-        {globalCells.map((cell) => {
-          const feature = cell.feature;
-          const checked = !!feature?.isEnabled;
-          const disabled =
-            !feature || pendingIds.has(String(feature.id)) || isResetting;
-          return (
-            <FeatureSwitch
-              key={cell.id}
-              checked={checked}
-              disabled={disabled}
-              label={cell.label}
-              onChange={(next) => requestToggleFeature(feature, next)}
+          <div className={styles.globalToggles}>
+            {globalCells.map((cell) => {
+              const feature = cell.feature;
+              const checked = !!feature?.isEnabled;
+              const disabled =
+                !feature || pendingIds.has(String(feature.id)) || isResetting;
+              return (
+                <FeatureSwitch
+                  key={cell.id}
+                  checked={checked}
+                  disabled={disabled}
+                  label={cell.label}
+                  onChange={(next) => requestToggleFeature(feature, next)}
+                />
+              );
+            })}
+          </div>
+        </Box>
+
+        <Box sx={{ flexShrink: 0, pr: 2, display: 'flex', alignItems: 'center' }}>
+          <TableHeaderEndToolbar>
+            <ResetFilters
+              reset={openResetDialog}
+              title={t('mpoConfigPage.resetToDefaults')}
             />
-          );
-        })}
-      </div>
+          </TableHeaderEndToolbar>
+        </Box>
+      </Box>
 
       <Typography
         variant="subtitle2"

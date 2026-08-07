@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Paper, TablePagination, useTheme } from '@mui/material';
+import { Box, TablePagination, useTheme } from '@mui/material';
 import { beBY as coreBeBY, enUS as coreEnUS, ruRU as coreRuRU } from '@mui/material/locale';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 
@@ -13,7 +13,7 @@ interface PaginationControlsProps {
   page: number;
   onPageChange: (event: unknown, newPage: number) => void;
   onRowsPerPageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  /** Убрать верхнюю линию у панели (напр. «Шаблоны сообщений» — как у вкладок с DataGrid) */
+  /** @deprecated Всегда без верхней линии — как у DataGrid footerContainer */
   hideTopBorder?: boolean;
 }
 
@@ -23,7 +23,6 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
   page,
   onPageChange,
   onRowsPerPageChange,
-  hideTopBorder = false,
 }) => {
   const { t, i18n } = useTranslation();
   const outerTheme = useTheme();
@@ -45,29 +44,47 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
 
   return (
     <ThemeProvider theme={theme}>
-      <Paper
-        elevation={hideTopBorder ? 0 : undefined}
+      {/* Box вместо Paper — без elevation/тени, как футер DataGrid */}
+      <Box
         sx={{
-          position: 'sticky',
-          bottom: 0,
           width: '100%',
-          borderTop: hideTopBorder ? 'none' : `1px solid ${outerTheme.palette.divider}`,
+          border: 'none !important',
+          borderTop: 'none !important',
+          boxShadow: 'none !important',
           bgcolor: 'background.paper',
           color: 'text.primary',
-          zIndex: 10,
-          boxShadow: hideTopBorder ? 'none' : undefined,
         }}>
         <TablePagination
           sx={{
             marginTop: 'auto',
             color: 'text.primary',
             backgroundColor: 'transparent',
-            borderTop: 'none',
+            border: 'none !important',
+            borderTop: 'none !important',
+            borderBottom: 'none !important',
+            overflow: 'visible',
+            '&:last-child': {
+              padding: 0,
+              border: 'none !important',
+            },
+            '& .MuiToolbar-root': {
+              border: 'none !important',
+              borderTop: 'none !important',
+            },
             '& .MuiTablePagination-toolbar': {
               flexWrap: 'nowrap',
-              gap: 1,
-              minHeight: 48,
+              gap: 0,
+              minHeight: 52,
               boxSizing: 'border-box',
+              border: 'none !important',
+              borderTop: 'none !important',
+            },
+            // Интервал между «1–N из N» и блоком страницы/стрелок — как у CustomPagination
+            '& .MuiTablePagination-actions': {
+              marginLeft: (theme) => theme.spacing(2),
+            },
+            '& .MuiTablePagination-displayedRows': {
+              marginRight: 0,
             },
             '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
               color: 'text.primary',
@@ -90,7 +107,7 @@ const PaginationControls: React.FC<PaginationControlsProps> = ({
           labelRowsPerPage={t('tables.rowsPerPage')}
           labelDisplayedRows={({ from, to, count }) => t('pagination.rowsOf', { from, to, count })}
         />
-      </Paper>
+      </Box>
     </ThemeProvider>
   );
 };

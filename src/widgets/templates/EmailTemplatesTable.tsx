@@ -1,13 +1,25 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 
-import { useMediaQuery } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import { IconButton, Tooltip, useMediaQuery, useTheme } from '@mui/material';
+
+import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
+import { useTableHeaderMobileTrailing } from '@shared/components/table_header_wrapper/model/TableHeaderMobileTrailingContext';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
+import { pathHasInlineTableToolbar } from '@shared/config/pathHasInlineTableToolbar';
+import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
+import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { EmailTemplate } from '../templates/types';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import { EmailTemplateForm } from './EmailTemplateForm';
 import { EmailTemplateView } from './EmailTemplateView';
-import EmailTemplatesSearch from './EmailTemplatesSearch';
+import mobileStyles from './EmailTemplatesMobileLayout.module.scss';
 import { TemplatesDesktopTable } from './TemplatesDesktopTable';
 import { TemplatesMobileTable } from './TemplatesMobileTable';
 
@@ -22,6 +34,10 @@ interface EmailTemplatesTableProps {
   onEditSave: (template: Partial<EmailTemplate>) => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  totalCount: number;
+  page: number;
+  rowsPerPage: number;
+  onPaginationModelChange: (model: { page: number; pageSize: number }) => void;
 }
 
 const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
@@ -35,9 +51,20 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   onEditSave,
   searchQuery,
   onSearchChange,
+  totalCount,
+  page,
+  rowsPerPage,
+  onPaginationModelChange,
 }) => {
-  const [hoveredColumn, setHoveredColumn] = useState<keyof EmailTemplate | null>(null);
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const { t, i18n } = useTranslation();
+  const theme = useTheme();
+  const location = useLocation();
+  const addCircleSx = useMemo(() => getToolbarCircleIconButtonSx(theme), [theme]);
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
+  const hasInlineToolbarRoute = pathHasInlineTableToolbar(location.pathname);
+  const relocateAddToEndToolbar = hasInlineToolbarRoute && !isMobile;
+  const setTrailing = useTableHeaderMobileTrailing()?.setTrailing;
+
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [isViewing, setIsViewing] = useState(false);
@@ -47,12 +74,9 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState<EmailTemplate | null>(null);
+  const mobileTitle = i18n.language?.startsWith('ru') ? 'Шаблоны' : t('nav.messageTemplates');
 
-  const isMobile = useMediaQuery('(max-width:768px)');
   const shouldBlockNavigation = isEditing || isAdding || isDeleting;
-
-  const handleTooltipOpen = (key: string) => setActiveTooltip(key);
-  const handleTooltipClose = () => setActiveTooltip(null);
 
   const handleSortClick = (field: keyof EmailTemplate) => {
     onRequestSort(field);
@@ -67,7 +91,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
     setIsDeleting(false);
   };
 
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setIsAdding(true);
     setIsViewing(false);
     setIsEditing(false);
@@ -82,7 +106,7 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
       templateType: { id: 0, type: '', name: '' },
       lastModifiedAt: '',
     });
-  };
+  }, []);
 
   const handleEditClick = (template: EmailTemplate) => {
     setIsEditing(true);
@@ -115,7 +139,6 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
     setIsViewing(false);
     setIsEditing(false);
     setIsAdding(false);
-    setActiveTooltip(null);
     setIsDeleting(false);
 
     setTimeout(() => {
@@ -134,6 +157,46 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
     }
     handleCloseModal();
   };
+
+  useEffect(() => {
+    if (isMobile) {
+      setTrailing?.(null);
+      return;
+    }
+    if (!setTrailing) {
+      return;
+    }
+    if (!relocateAddToEndToolbar) {
+      setTrailing(null);
+      return;
+    }
+    setTrailing(
+      <Tooltip title={t('common.addTemplate')}>
+        <IconButton aria-label={t('common.addTemplate')} onClick={handleAddClick} sx={addCircleSx}>
+          <AddIcon fontSize="small" />
+        </IconButton>
+      </Tooltip>,
+    );
+    return () => {
+      setTrailing(null);
+    };
+  }, [setTrailing, relocateAddToEndToolbar, handleAddClick, t, addCircleSx, isMobile]);
+
+  const templatesTableHeader = (
+    <TableHeaderWrapper>
+      <SearchInput
+        value={searchQuery}
+        setState={(value) => {
+          const next = typeof value === 'function' ? value(searchQuery) : value;
+          onSearchChange(next);
+        }}
+        onClear={() => onSearchChange('')}
+      />
+      <TableHeaderEndToolbar>
+        <ResetFilters reset={() => onSearchChange('')} />
+      </TableHeaderEndToolbar>
+    </TableHeaderWrapper>
+  );
 
   useEffect(() => {
     if (isMobile) return;
@@ -198,12 +261,22 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
 
   if (isMobile) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
-        <EmailTemplatesSearch
-          searchQuery={searchQuery}
-          onSearchChange={onSearchChange}
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <MobilePageHeader
+          title={mobileTitle}
           onAddClick={handleAddClick}
+          addAriaLabel={t('common.addTemplate')}
         />
+        <div className={mobileStyles.mobileFilters}>
+          <SearchInput
+            value={searchQuery}
+            setState={(value) => {
+              const next = typeof value === 'function' ? value(searchQuery) : value;
+              onSearchChange(next);
+            }}
+            onClear={() => onSearchChange('')}
+          />
+        </div>
 
         <TemplatesMobileTable
           templates={templates}
@@ -241,12 +314,8 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '92vh' }}>
-      <EmailTemplatesSearch
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onAddClick={handleAddClick}
-      />
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+      {templatesTableHeader}
 
       <TemplatesDesktopTable
         templates={templates}
@@ -254,18 +323,15 @@ const EmailTemplatesTable: React.FC<EmailTemplatesTableProps> = ({
         sortField={sortField}
         sortOrder={sortOrder}
         selectedRowId={selectedRowId}
-        activeTooltip={activeTooltip}
-        hoveredColumn={hoveredColumn}
+        totalCount={totalCount}
+        page={page}
+        rowsPerPage={rowsPerPage}
         onRequestSort={handleSortClick}
         onToggleStatus={onToggleStatus}
         onEditClick={handleEditClick}
         onDeleteClick={handleDeleteClick}
-        onAddClick={handleAddClick}
         onViewClick={openView}
-        onMouseEnterColumn={setHoveredColumn}
-        onMouseLeaveColumn={() => setHoveredColumn(null)}
-        onTooltipOpen={handleTooltipOpen}
-        onTooltipClose={handleTooltipClose}
+        onPaginationModelChange={onPaginationModelChange}
       />
 
       {isViewing && selectedTemplate && (

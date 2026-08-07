@@ -7,7 +7,6 @@ import React, { useEffect, useState } from 'react';
 import { enqueueSnackbar } from 'notistack';
 
 import { Box } from '@mui/material';
-import { useMediaQuery } from '@mui/material';
 
 import { PageWrapper } from '@layout/page_wrapper';
 import { TemplatesApi } from '@shared/api/baseQuerys';
@@ -42,7 +41,6 @@ interface EmailTemplatesResponse {
 }
 
 export const EmailTemplatesTableWidget: React.FC = () => {
-  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [totalCount, setTotalCount] = useState<number>();
   const [page, setPage] = useState(() => {
@@ -213,7 +211,7 @@ export const EmailTemplatesTableWidget: React.FC = () => {
       sx={{
         px: 0,
         pt: 0,
-        pb: isMobile ? 0 : 3,
+        pb: 0,
         bgcolor: 'background.default',
         color: 'text.primary',
         minHeight: 1,

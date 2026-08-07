@@ -7,14 +7,19 @@ import { useTranslation } from 'react-i18next';
 import { Alert, Box, Snackbar } from '@mui/material';
 import { useMediaQuery } from '@mui/material';
 
-import PaginationControls from '@pages/templates/PaginationControls';
+import { PageWrapper } from '@layout/page_wrapper';
 import { SettingsApi } from '@shared/api/settingsApi';
+import { MobilePageHeader } from '@shared/components/mobile_page_header/MobilePageHeader';
+import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
+import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
+import { SearchInput } from '@shared/ui/search_input/SearchInput';
 
 import { EditSettingDialog } from './EditSettingDialog';
 import ResetConfirmationDialog from './ResetConfirmationDialog';
+import mobileStyles from './SettingsMobileLayout.module.scss';
 import { SettingsMobilePagination } from './SettingsMobilePagination';
-import { SettingsSearch } from './SettingsSearch';
 import { SettingsTable } from './SettingsTable';
 
 interface Setting {
@@ -38,7 +43,7 @@ interface SettingRow {
   defaultValue: number;
 }
 
-const getUnitForm = (count: number): 'one' | 'few' | 'many' => {
+const getUnitForm = (count: number) => {
   const lastDigit = count % 10;
   const lastTwoDigits = count % 100;
   if (lastDigit === 1 && lastTwoDigits !== 11) return 'one';
@@ -46,9 +51,13 @@ const getUnitForm = (count: number): 'one' | 'few' | 'many' => {
   return 'many';
 };
 
-export const SettingsPage = () => {
+export const SettingsTableWidget = () => {
   const { t } = useTranslation();
-  const [notification, setNotification] = useState<{ open: boolean; message: string }>({
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity?: 'success' | 'error';
+  }>({
     open: false,
     message: '',
   });
@@ -67,14 +76,13 @@ export const SettingsPage = () => {
   const [initialEditValue, setInitialEditValue] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [settingToReset, setSettingToReset] = useState<SettingRow | null>(null);
 
   // Пагинация
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(25);
-  const isMobile = useMediaQuery('(max-width:768px)');
+  const isMobile = useMediaQuery('(max-width:768px)', { noSsr: true });
 
   const selectedBranchId = appStore((state) => state.selectedBranchState?.id);
 
@@ -103,11 +111,12 @@ export const SettingsPage = () => {
     try {
       setLoading(true);
       const settingsData = await SettingsApi.getAllSettings(selectedBranchId);
-      setSettings(settingsData);
+      setSettings(settingsData ?? []);
     } catch (error) {
       setNotification({
         open: true,
-        message: 'Ошибка при загрузке настроек',
+        message: t('settingsPage.loadError'),
+        severity: 'error',
       });
     } finally {
       setLoading(false);
@@ -227,16 +236,20 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === updatedSetting.id ? updatedSetting : s)));
 
+      const displayName = editingField.label;
       setNotification({
         open: true,
-        message: `Значение параметра "${editingField.label}" изменено.`,
+        message: t('settingsPage.parameterChangedSuccess', { name: displayName }),
+        severity: 'success',
       });
 
       handleCloseModal({}, 'buttonClick');
     } catch (error) {
+      const displayName = editingField.label;
       setNotification({
         open: true,
-        message: `Ошибка при изменении параметра "${editingField.label}"`,
+        message: t('settingsPage.parameterChangeError', { name: displayName }),
+        severity: 'error',
       });
     } finally {
       setIsSaving(false);
@@ -262,14 +275,18 @@ export const SettingsPage = () => {
 
       setSettings((prev) => prev.map((s) => (s.id === resetSetting.id ? resetSetting : s)));
 
+      const displayName = settingToReset.label;
       setNotification({
         open: true,
-        message: `Параметр "${settingToReset.label}" сброшен к значению по умолчанию.`,
+        message: t('settingsPage.parameterResetSuccess', { name: displayName }),
+        severity: 'success',
       });
     } catch (error) {
+      const displayName = settingToReset.label;
       setNotification({
         open: true,
-        message: `Ошибка при сбросе параметра "${settingToReset.label}"`,
+        message: t('settingsPage.parameterResetError', { name: displayName }),
+        severity: 'error',
       });
     } finally {
       setResetDialogOpen(false);
@@ -281,9 +298,6 @@ export const SettingsPage = () => {
     setResetDialogOpen(false);
     setSettingToReset(null);
   };
-
-  const handleTooltipOpen = (key: string) => setActiveTooltip(key);
-  const handleTooltipClose = () => setActiveTooltip(null);
 
   const settingsRows: SettingRow[] = settings.map((setting) => ({
     id: setting.id,
@@ -299,18 +313,64 @@ export const SettingsPage = () => {
   const filteredSettingsRows = settingsRows.filter((row) =>
     row.label.toLowerCase().includes(searchQuery.toLowerCase()),
   );
+  const isSaveEnabled =
+    initialEditValue !== null &&
+    editValue !== initialEditValue &&
+    (!editingField || errors[editingField.name]?.length === 0);
 
   return (
-    <Box sx={{ p: 0 }}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-        <SettingsSearch
-          searchQuery={searchQuery}
-          activeTooltip={activeTooltip}
-          setSearchQuery={setSearchQuery}
-          setPage={setPage}
-          handleTooltipOpen={handleTooltipOpen}
-          handleTooltipClose={handleTooltipClose}
-        />
+    <Box
+      sx={{
+        p: 0,
+        bgcolor: 'background.default',
+        color: 'text.primary',
+        minHeight: 1,
+        height: '100%',
+        overflow: 'hidden',
+      }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+        {isMobile ? (
+          <>
+            <MobilePageHeader title={t('nav.settings')} />
+            <div className={mobileStyles.mobileFilters}>
+              <SearchInput
+                value={searchQuery}
+                setState={(value) => {
+                  const next = typeof value === 'function' ? value(searchQuery) : value;
+                  setSearchQuery(next);
+                  setPage(0);
+                }}
+                onClear={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <TableHeaderWrapper>
+            <SearchInput
+              value={searchQuery}
+              setState={(value) => {
+                const next = typeof value === 'function' ? value(searchQuery) : value;
+                setSearchQuery(next);
+                setPage(0);
+              }}
+              onClear={() => {
+                setSearchQuery('');
+                setPage(0);
+              }}
+            />
+            <TableHeaderEndToolbar>
+              <ResetFilters
+                reset={() => {
+                  setSearchQuery('');
+                  setPage(0);
+                }}
+              />
+            </TableHeaderEndToolbar>
+          </TableHeaderWrapper>
+        )}
 
         <SettingsTable
           loading={loading}
@@ -320,38 +380,32 @@ export const SettingsPage = () => {
           getUnitDisplay={getUnitDisplay}
           handleEditClick={handleEditClick}
           handleResetToDefault={handleResetToDefault}
+          onPaginationModelChange={(model) => {
+            if (model.pageSize !== rowsPerPage) {
+              setRowsPerPage(model.pageSize);
+              setPage(0);
+              return;
+            }
+            setPage(model.page);
+          }}
         />
 
-        <Box
-          sx={{
-            position: 'sticky',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backgroundColor: 'background.paper',
-            pb: 0,
-          }}>
-          {isMobile ? (
+        {isMobile && (
+          <Box
+            sx={{
+              flexShrink: 0,
+              bgcolor: 'background.paper',
+              color: 'text.primary',
+              pb: 0,
+            }}>
             <SettingsMobilePagination
               totalCount={filteredSettingsRows.length}
               rowsPerPage={rowsPerPage}
               page={page}
               onPageChange={(newPage) => setPage(newPage)}
             />
-          ) : (
-            <PaginationControls
-              hideTopBorder
-              totalCount={filteredSettingsRows.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={(_, newPage) => setPage(newPage)}
-              onRowsPerPageChange={(event) => {
-                setRowsPerPage(+event.target.value);
-                setPage(0);
-              }}
-            />
-          )}
-        </Box>
+          </Box>
+        )}
       </div>
 
       <EditSettingDialog
@@ -364,7 +418,7 @@ export const SettingsPage = () => {
         handleEditValueChange={handleEditValueChange}
         handlePaste={handlePaste}
         handleSave={handleSave}
-        isSaveEnabled={initialEditValue !== null && editValue !== initialEditValue}
+        isSaveEnabled={isSaveEnabled}
         getDayWord={getDayWord}
         getAttemptWord={getAttemptWord}
         getSecondWord={getSecondWord}
@@ -373,7 +427,7 @@ export const SettingsPage = () => {
 
       <ResetConfirmationDialog
         open={resetDialogOpen}
-        settingName={settingToReset?.label}
+        settingName={settingToReset?.label ?? ''}
         onClose={handleResetCancel}
         onConfirm={handleResetConfirm}
       />
@@ -385,11 +439,19 @@ export const SettingsPage = () => {
         anchorOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <Alert
           onClose={handleCloseNotification}
-          severity={notification.message.includes('Ошибка') ? 'error' : 'success'}
+          severity={notification.severity ?? 'success'}
           sx={{ width: '100%' }}>
           {notification.message}
         </Alert>
       </Snackbar>
     </Box>
+  );
+};
+
+export const SettingsPage = () => {
+  return (
+    <PageWrapper>
+      <SettingsTableWidget />
+    </PageWrapper>
   );
 };

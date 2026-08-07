@@ -8,14 +8,17 @@
   min-height: 0;
 }
 
+.globalSection {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--mui-palette-background-paper, #fff);
+}
+
 .globalToggles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 20px 28px;
   padding: 12px 16px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-  background: var(--mui-palette-background-paper, #fff);
   flex-shrink: 0;
 }
 
@@ -134,7 +137,7 @@
 }
 
 :global(html[data-theme='dark']) {
-  .globalToggles {
+  .globalSection {
     border-bottom-color: rgba(255, 255, 255, 0.12);
   }
 
