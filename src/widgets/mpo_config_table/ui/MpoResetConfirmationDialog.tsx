@@ -46,7 +46,7 @@ export const MpoResetConfirmationDialog = ({
           },
         }}>
         <DialogTitle sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-          {t('mpoConfigPage.resetToDefaults')}
+          {t('mpoConfigPage.resetDialogTitle')}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>{t('mpoConfigPage.resetConfirm')}</DialogContentText>
