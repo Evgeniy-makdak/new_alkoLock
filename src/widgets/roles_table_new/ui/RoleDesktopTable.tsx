@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { RoleAddChangeForm_new } from '@features/role_add_change_form_new';
 import { RoleDeleteForm } from '@features/role_delete_form';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -84,7 +85,7 @@ export const RoleDesktopTable: FC<RoleDesktopTableProps> = ({ prevBranch }) => {
           if (newRow) {
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           }
         }
 
@@ -156,7 +157,10 @@ export const RoleDesktopTable: FC<RoleDesktopTableProps> = ({ prevBranch }) => {
           onRowClick={handleRowClick}
           onCellClick={handleRowClick} // Добавляем обработчик клика по ячейке
           getRowClassName={(params) =>
-            params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
+            selectedRowIndex != null &&
+            params.id === tableData.rows[selectedRowIndex]?.id
+              ? 'selected-row'
+              : ''
           }
           sx={{
             '& .MuiDataGrid-root': {

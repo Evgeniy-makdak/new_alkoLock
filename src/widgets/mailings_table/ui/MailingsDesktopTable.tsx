@@ -6,6 +6,7 @@ import { MailingsAddChangeForm } from '@features/mailings_add_change_form';
 import { RecoverMailingsForm } from '@features/recover_mailings_form/ui';
 import { TrueDeleteMailingsForm } from '@features/true_delete_mailings_form';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes as scrollGridToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
@@ -55,9 +56,7 @@ export const MailingsDesktopTable: FC<MailingsDesktopTableProps> = ({
     trueDeleteMailingModalData.isOpen;
 
   const safeScrollToIndexes = (rowIndex: number) => {
-    if (tableData.apiRef?.current?.scrollToIndexes) {
-      tableData.apiRef.current.scrollToIndexes({ rowIndex });
-    }
+    scrollGridToIndexes(tableData.apiRef, { rowIndex });
   };
 
   const selectGroup = (rowId: string) => {

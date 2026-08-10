@@ -104,8 +104,8 @@ interface InputsDatesProps {
   minDate?: Dayjs;
   onChangeStartDate?: (value: Dayjs) => void;
   onChangeEndDate?: (value: Dayjs) => void;
-  valueStartDatePicker?: Dayjs;
-  valueEndDatePicker?: Dayjs;
+  valueStartDatePicker?: Dayjs | null;
+  valueEndDatePicker?: Dayjs | null;
   onClear?: () => void;
 }
 

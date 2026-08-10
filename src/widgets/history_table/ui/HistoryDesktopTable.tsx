@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { HistoryFilterPanel } from '@features/history_filter_panel';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -97,7 +98,7 @@ export const HistoryDesktopTable = ({ prevBranch }: HistoryDesktopTableProps) =>
         if (newRow) {
           setSelectedRowId(newRow.id);
           tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-          tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+          safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
 
           const rowElement = document.querySelector(`[data-id="${newRow.id}"]`);
           if (rowElement) {

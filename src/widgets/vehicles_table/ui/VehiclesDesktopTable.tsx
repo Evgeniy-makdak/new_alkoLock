@@ -8,6 +8,7 @@ import { DeleteCarForm } from '@features/delete_car_form';
 import { DeleteTrueCarForm } from '@features/delete_true_car_form/ui/DeleteTrueCarForm';
 import { RecoverCarForm } from '@features/recover_car_form/ui';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -199,7 +200,7 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
             onClickRow(newRow.id);
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           }
         }
 
@@ -302,7 +303,10 @@ export const VehiclesDesktopTable: FC<VehiclesDesktopTableProps> = ({
         onRowClick={handleRowClick}
         onCellClick={handleRowClick} // Добавляем обработчик клика по ячейке
         getRowClassName={(params) =>
-          params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
+          selectedRowIndex != null &&
+          params.id === tableData.rows[selectedRowIndex]?.id
+            ? 'selected-row'
+            : ''
         }
         sx={{
           '& .MuiDataGrid-root': {

@@ -19,7 +19,8 @@ import { StatusFilter } from '@shared/ui/search_multiple_select/StatusFilter';
 import style from './SearchInput.module.scss';
 
 type SearchInputProps = TextFieldProps & {
-  setState: React.Dispatch<React.SetStateAction<string>>;
+  /** Как у useState: строка или updater. Простые `(value: string) => void` тоже ок. */
+  setState: (value: React.SetStateAction<string>) => void;
   onClear: () => void;
   testId?: string;
   showStatusFilter?: boolean; // Управляет отображением фильтра на нужной вкладке (странице)

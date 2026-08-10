@@ -4,6 +4,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { GroupAddForm } from '@features/group_add_form';
 import { GroupDeleteForm } from '@features/group_delete_form';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -104,7 +105,7 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
             handleClickRow(newRow.id);
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           }
         }
 
@@ -203,7 +204,10 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
         onCellClick={handleRowClick} // Добавляем обработчик клика по ячейке
         sortingMode="server"
         getRowClassName={(params) =>
-          params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : ''
+          selectedRowIndex != null &&
+          params.id === tableData.rows[selectedRowIndex]?.id
+            ? 'selected-row'
+            : ''
         }
         sx={{
           '& .MuiDataGrid-root': {
@@ -247,7 +251,7 @@ export const GroupDesktopTable: FC<GroupDesktopTableProps> = ({
       <Popup
         body={
           <GroupAddForm
-            branch={addModalData.changeBranch}
+            branch={addModalData.changeBranch ?? undefined}
             close={addModalData.closeAddBranchModal}
           />
         }

@@ -8,6 +8,7 @@ import { RecoverUserForm } from '@features/recover_user_form/ui';
 import { TrueDeleteUserForm } from '@features/true_delete_user_form';
 import { UserAddChangeForm } from '@features/user_add_change_form';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -264,7 +265,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
             onRowClick(newRow.id, newRow.isActive);
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           }
         }
 
@@ -351,7 +352,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
 
       <div className={styles.scrollableTable}>
         <Table
-          rowCount={tableData.totalCount}
+          rowCount={tableData.totalCount ?? undefined}
           getRowHeight={() => 'auto'}
           sortingMode="server"
           paginationMode="server"
@@ -367,7 +368,10 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
           onCellClick={handleRowClick} // Добавляем обработчик клика по ячейке
           getRowClassName={(params) => {
             const classes: string[] = [];
-            if (params.id === tableData.rows[selectedRowIndex]?.id) {
+            if (
+              selectedRowIndex != null &&
+              params.id === tableData.rows[selectedRowIndex]?.id
+            ) {
               classes.push('selected-row');
             }
             const licenseRowClass = getLicenseExpirationRowClassName(
@@ -411,7 +415,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
       <Popup
         body={
           <UserAddChangeForm
-            id={addModalData.changeUserId}
+            id={addModalData.changeUserId ?? undefined}
             closeModal={addModalData.closeAddUserModal}
           />
         }

@@ -8,6 +8,7 @@ import { AlkolockTrueDeleteForm } from '@features/alkolock_true_delete_form/ui/A
 import { AlkozamkiForm } from '@features/alkozamki_add_change_form';
 import { RecoverAlcolockForm } from '@features/recover_alkolock_form';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -95,7 +96,7 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
       const rowIndex = tableData.rows.findIndex((row) => row.id === selectedAlcolockId);
       if (rowIndex !== -1) {
         setSelectedRowIndex(rowIndex);
-        tableData.apiRef.current.scrollToIndexes({ rowIndex });
+        safeScrollToIndexes(tableData.apiRef, { rowIndex });
         tableData.apiRef.current.setRowSelectionModel([selectedAlcolockId]);
       }
     };
@@ -215,7 +216,7 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
             handleClickRow(newRow.id);
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           }
         }
 
@@ -364,7 +365,10 @@ export const AlkolocksDesktopTable: FC<AlkolocksDesktopTableProps> = ({
                   ? 'row-mode-service'
                   : '';
             const selectedClass =
-              params.id === tableData.rows[selectedRowIndex]?.id ? 'selected-row' : '';
+              selectedRowIndex != null &&
+              params.id === tableData.rows[selectedRowIndex]?.id
+                ? 'selected-row'
+                : '';
             return [modeClass, selectedClass].filter(Boolean).join(' ');
           }}
           sx={{

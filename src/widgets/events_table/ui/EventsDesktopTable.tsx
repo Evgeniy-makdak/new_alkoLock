@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { EventsFilterPanel } from '@features/events_filter_panel';
 import { Table } from '@shared/components/Table/Table';
+import { safeScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { TableHeaderWrapper } from '@shared/components/table_header_wrapper/ui/TableHeaderWrapper';
 import { testids } from '@shared/const/testid';
@@ -121,11 +122,11 @@ export const EventsDesktopTable = ({
 
         if (newIndex !== prev && newIndex >= 0 && newIndex < tableData.rows.length) {
           const newRow = tableData.rows[newIndex];
-          if (newRow && !newRow.isProcessing) {
+          if (newRow && !newRow.isProcessing && newRow.actionId != null) {
             handleClickRow(newRow.actionId);
             tableData.apiRef.current.selectRow(newRow.id, true);
             tableData.apiRef.current.setRowSelectionModel([newRow.id]);
-            tableData.apiRef.current.scrollToIndexes({ rowIndex: newIndex });
+            safeScrollToIndexes(tableData.apiRef, { rowIndex: newIndex });
           } else {
             return prev;
           }
@@ -136,7 +137,7 @@ export const EventsDesktopTable = ({
 
       if (event.key === 'Enter' && selectedRowIndex !== null) {
         const currentRow = tableData.rows[selectedRowIndex];
-        if (currentRow && !currentRow.isProcessing) {
+        if (currentRow && !currentRow.isProcessing && currentRow.actionId != null) {
           handleClickRow(currentRow.actionId);
         }
       }
@@ -176,7 +177,7 @@ export const EventsDesktopTable = ({
     const rowId = tableData.rows[rowIndex]?.id;
     if (tableData.apiRef.current && rowId != null) {
       tableData.apiRef.current.setRowSelectionModel([rowId]);
-      tableData.apiRef.current.scrollToIndexes({ rowIndex });
+      safeScrollToIndexes(tableData.apiRef, { rowIndex });
     }
   }, [selectedEventId, tableData.rows, tableData.apiRef]);
 
@@ -254,7 +255,10 @@ export const EventsDesktopTable = ({
           getRowClassName={(params) => {
             const idStr = String(params.id);
             const classes: string[] = [];
-            if (idStr === tableData.rows[selectedRowIndex]?.id) {
+            if (
+              selectedRowIndex != null &&
+              idStr === tableData.rows[selectedRowIndex]?.id
+            ) {
               classes.push('selected-row');
             }
             if (tableData.highlightedEventIds?.has(idStr)) {
