@@ -29,6 +29,10 @@ const mergePutResponse = (
     return {
       ...previous,
       ...data,
+      // Не даём ответу PUT затереть тип/подпись — иначе worker может попасть в флаги.
+      featureType: data.featureType || previous.featureType,
+      label: data.label || previous.label,
+      featureLevel: data.featureLevel || previous.featureLevel,
       isEnabled: typeof data.isEnabled === 'boolean' ? data.isEnabled : nextEnabled,
     };
   }

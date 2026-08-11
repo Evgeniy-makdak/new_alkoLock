@@ -2,6 +2,7 @@ import { create } from 'zustand';
 
 import type { MobileFeature } from '@shared/api/mobileFeaturesApi';
 import { MobileFeaturesApi } from '@shared/api/mobileFeaturesApi';
+import { isServiceModeRequestsFeature } from '@shared/lib/mobileFeatureKinds';
 
 export type MobileFeatureFlags = {
   /** CHAT isEnabled — если false, иконка чата не рендерится */
@@ -9,14 +10,12 @@ export type MobileFeatureFlags = {
   /** CREATE_BINDING isEnabled */
   createBindingEnabled: boolean;
   /**
-   * Заявки на сервисный режим (SERVICE_MODE_DRIVER / SERVICE_MODE_SERVICE_WORKER).
-   * Если любой из них isEnabled=false — кнопка «Включить» неактивна.
+   * Заявки на сервисный режим — только featureType SERVICE_MODE_DRIVER.
+   * SERVICE_MODE_SERVICE_WORKER и прочие фичи не влияют.
    */
   serviceModeRequestsEnabled: boolean;
   /**
-   * Только SERVICE_MODE_DRIVER.
-   * Баннер «обработка заявок временно отключена» — только при запрете для водителя.
-   * Запрет SERVICE_MODE_SERVICE_WORKER баннер не показывает.
+   * То же условие, что serviceModeRequestsEnabled (баннер на алкозамках).
    */
   serviceModeDriverRequestsEnabled: boolean;
 };
@@ -49,23 +48,18 @@ const computeFlags = (features: MobileFeature[]): MobileFeatureFlags => {
 
   const chat = byType('CHAT');
   const createBinding = byType('CREATE_BINDING');
-  const serviceModeDriver = byType('SERVICE_MODE_DRIVER');
-  const serviceModeWorker = byType('SERVICE_MODE_SERVICE_WORKER');
+  const serviceModeRequests = features.filter(isServiceModeRequestsFeature);
 
   const isEnabledOrAbsent = (items: MobileFeature[]) =>
     items.length === 0 ? true : items.every((f) => f.isEnabled === true);
 
-  const serviceModeItems = [...serviceModeDriver, ...serviceModeWorker];
-  const serviceModeRequestsEnabled =
-    serviceModeItems.length === 0
-      ? true
-      : serviceModeItems.every((f) => f.isEnabled === true);
+  const serviceModeRequestsEnabled = isEnabledOrAbsent(serviceModeRequests);
 
   return {
     chatEnabled: isEnabledOrAbsent(chat),
     createBindingEnabled: isEnabledOrAbsent(createBinding),
     serviceModeRequestsEnabled,
-    serviceModeDriverRequestsEnabled: isEnabledOrAbsent(serviceModeDriver),
+    serviceModeDriverRequestsEnabled: serviceModeRequestsEnabled,
   };
 };
 
@@ -110,13 +104,9 @@ export const mobileFeaturesStore = create<MobileFeaturesStore>()((set, get) => (
 
   disableServiceModeRequests: () => {
     const prev = get().features;
-    const next = prev.map((feature) => {
-      const type = String(feature.featureType || '').toUpperCase();
-      if (type === 'SERVICE_MODE_DRIVER' || type === 'SERVICE_MODE_SERVICE_WORKER') {
-        return { ...feature, isEnabled: false };
-      }
-      return feature;
-    });
+    const next = prev.map((feature) =>
+      isServiceModeRequestsFeature(feature) ? { ...feature, isEnabled: false } : feature,
+    );
     set({
       features: next,
       flags: {
