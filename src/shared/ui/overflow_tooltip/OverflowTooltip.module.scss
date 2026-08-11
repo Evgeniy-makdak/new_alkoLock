@@ -49,6 +49,24 @@
   color: var(--mui-palette-text-primary, rgba(0, 0, 0, 0.87));
 }
 
+/* Кликабельный чип в мобильном bottom-sheet: полный текст без обрезки */
+.mobileValueDialogChip {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 28px;
+
+  :global(.MuiChip-label) {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    word-break: break-word;
+    display: block;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+}
+
 .mobileValueDialogActions {
   display: flex;
   justify-content: flex-end;

@@ -176,6 +176,21 @@ export function InfoClickableChipValue({
         open={dialogOpen}
         text={label}
         onClose={() => setDialogOpen(false)}
+        content={
+          <Chip
+            clickable
+            label={label}
+            className={styles.mobileValueDialogChip}
+            onClick={() => {
+              setDialogOpen(false);
+              onNavigate();
+            }}
+            aria-label={label}
+            sx={
+              compact ? getReportTableCoordinateChipSx(theme) : getInfoClickableValueChipSx(theme)
+            }
+          />
+        }
       />
     </>
   );
