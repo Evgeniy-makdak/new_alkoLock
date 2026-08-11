@@ -34,6 +34,7 @@ interface UsersMobileTableProps {
   selectedUserId: ID | null;
   targetPageFromNavigation?: number | null;
   onTargetPageApplied?: () => void;
+  preserveAsideFromMapReturn?: boolean;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   onAddUser: () => void;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -66,6 +67,7 @@ export const UsersMobileTable = ({
   selectedUserId,
   targetPageFromNavigation,
   onTargetPageApplied,
+  preserveAsideFromMapReturn = false,
 }: UsersMobileTableProps) => {
   const { t } = useTranslation();
   const {
@@ -75,7 +77,12 @@ export const UsersMobileTable = ({
     deleteUserModalData,
     recoverUserModalData,
     trueDeleteUserModalData,
-  } = useUsersTable(handleCloseAside, selectedUserId, targetPageFromNavigation);
+  } = useUsersTable(
+    handleCloseAside,
+    selectedUserId,
+    targetPageFromNavigation,
+    !preserveAsideFromMapReturn,
+  );
 
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);

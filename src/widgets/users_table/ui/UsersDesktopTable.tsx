@@ -31,6 +31,7 @@ type UsersDesktopTableProps = {
   selectedUserId: ID | null;
   targetPageFromNavigation?: number | null;
   onTargetPageApplied?: () => void;
+  preserveAsideFromMapReturn?: boolean;
   onAddUser?: () => void; // Добавляем опциональные пропсы для совместимости
   onEditUser?: (id: ID) => void;
   onDeleteUser?: (id: ID) => void;
@@ -43,6 +44,7 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
   selectedUserId,
   targetPageFromNavigation,
   onTargetPageApplied,
+  preserveAsideFromMapReturn = false,
   onAddUser,
   onEditUser,
   onDeleteUser,
@@ -54,7 +56,12 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
     deleteUserModalData,
     recoverUserModalData,
     trueDeleteUserModalData,
-  } = useUsersTable(handleCloseAside, selectedUserId, targetPageFromNavigation);
+  } = useUsersTable(
+    handleCloseAside,
+    selectedUserId,
+    targetPageFromNavigation,
+    !preserveAsideFromMapReturn,
+  );
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
@@ -108,20 +115,29 @@ export const UsersDesktopTable: FC<UsersDesktopTableProps> = ({
   // Функция проверки, находится ли пользователь в текущих строках
   const isUserInCurrentRows = () => {
     if (!selectedUserId || tableData.rows.length === 0) return false;
-    return tableData.rows.some((row) => row.id === selectedUserId);
+    return tableData.rows.some((row) => String(row.id) === String(selectedUserId));
   };
 
   // Проверяем видимость пользователя
   useEffect(() => {
+    if (preserveAsideFromMapReturn) return;
     if (targetPageFromNavigation != null) return;
-    if (selectedUserId && !isUserInCurrentRows()) {
+    // Пока строки ещё не загрузились — не закрываем aside (иначе сброс при возврате с карты).
+    if (!selectedUserId || tableData.rows.length === 0) return;
+    if (!isUserInCurrentRows()) {
       handleCloseAside();
       if (tableData.apiRef.current) {
         tableData.apiRef.current.setRowSelectionModel([]);
       }
       setSelectedRowIndex(null);
     }
-  }, [tableData.rows, selectedUserId, handleCloseAside, targetPageFromNavigation]);
+  }, [
+    tableData.rows,
+    selectedUserId,
+    handleCloseAside,
+    targetPageFromNavigation,
+    preserveAsideFromMapReturn,
+  ]);
 
   // Отслеживаем закрытие модального окна восстановления
   useEffect(() => {

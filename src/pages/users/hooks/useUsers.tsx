@@ -29,6 +29,10 @@ export const useUsers = () => {
         hash?: string;
         state?: unknown;
       };
+      mapReturnContext?: {
+        sourceTab?: 'info' | 'history';
+        expandedEventId?: ID | null;
+      };
     };
   };
   const [selectedUserId, setSelectedUserId] = useState<ID | null>(state?.selectedId ?? null);
@@ -37,7 +41,16 @@ export const useUsers = () => {
   );
   const [returnNavigation, setReturnNavigation] = useState(state?.returnNavigation ?? null);
   const [selectedUserActive, setSelectedUserActive] = useState(false);
-  const [activeTab, setActiveTab] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<number>(
+    state?.mapReturnContext?.sourceTab === 'history' ? 1 : 0,
+  );
+  const [initialExpandedHistoryEventId, setInitialExpandedHistoryEventId] = useState<ID | null>(
+    state?.mapReturnContext?.expandedEventId ?? null,
+  );
+  /** Пока идёт возврат с карты — не даём таблице авто-закрыть aside. */
+  const [preserveAsideFromMapReturn, setPreserveAsideFromMapReturn] = useState(
+    () => Boolean(state?.selectedId != null && state?.mapReturnContext),
+  );
 
   useEffect(() => {
     if (state?.selectedId != null) {
@@ -49,7 +62,23 @@ export const useUsers = () => {
     if (state?.returnNavigation) {
       setReturnNavigation(state.returnNavigation);
     }
-  }, [state?.selectedId, state?.targetPage, state?.returnNavigation]);
+    if (state?.mapReturnContext?.sourceTab === 'history') {
+      setActiveTab(1);
+    }
+    if (state?.mapReturnContext?.expandedEventId != null) {
+      setInitialExpandedHistoryEventId(state.mapReturnContext.expandedEventId);
+    }
+    if (state?.selectedId != null && state?.mapReturnContext) {
+      setPreserveAsideFromMapReturn(true);
+    }
+  }, [
+    state?.selectedId,
+    state?.targetPage,
+    state?.returnNavigation,
+    state?.mapReturnContext?.expandedEventId,
+    state?.mapReturnContext?.sourceTab,
+    state?.mapReturnContext,
+  ]);
 
   // Состояние фильтров для вкладки истории
   const [historyFilters, setHistoryFilters] = useState<{
@@ -67,6 +96,9 @@ export const useUsers = () => {
     setSelectedUserActive(isActive);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
+    setActiveTab(0);
+    setInitialExpandedHistoryEventId(null);
+    setPreserveAsideFromMapReturn(false);
   };
 
   const handleCloseAside = () => {
@@ -75,6 +107,8 @@ export const useUsers = () => {
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
     setActiveTab(0); // Сбрасываем активную вкладку при закрытии
+    setInitialExpandedHistoryEventId(null);
+    setPreserveAsideFromMapReturn(false);
     // Сбрасываем фильтры при закрытии aside
     setHistoryFilters({
       typeEventFilters: [],
@@ -142,6 +176,7 @@ export const useUsers = () => {
           userId={selectedUserId}
           savedFilters={historyFilters}
           onFiltersChange={updateHistoryFilters}
+          initialExpandedRowId={initialExpandedHistoryEventId}
           sidePanelMobileFilterUx
         />
       ),
@@ -170,5 +205,6 @@ export const useUsers = () => {
     deleteUserModalData,
     recoverUserModalData,
     trueDeleteUserModalData,
+    preserveAsideFromMapReturn,
   };
 };

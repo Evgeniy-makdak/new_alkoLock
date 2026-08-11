@@ -95,7 +95,7 @@ export const useUsersTable = (
 
     // Проверяем, находится ли выбранный пользователь на текущей странице
     const userExistsOnCurrentPage = users.content.some(
-      (user: { id: ID }) => user.id === selectedUserId,
+      (user: { id: ID }) => String(user.id) === String(selectedUserId),
     );
 
     // Если пользователя нет на текущей странице И мы не в процессе закрытия

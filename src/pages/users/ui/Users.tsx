@@ -10,6 +10,7 @@ import { useUsers } from '../hooks/useUsers';
 
 const Users = () => {
   const prevBranch = useRef(null);
+  const prevBranchForFilters = useRef<string | number | null | undefined>(null);
   const {
     tabs,
     onClickRow,
@@ -21,6 +22,7 @@ const Users = () => {
     activeTab,
     handleTabChange,
     handleCloseAside,
+    preserveAsideFromMapReturn,
     // Получаем данные модальных окон из хука useUsersTable через useUsers
     addModalData,
     deleteUserModalData,
@@ -54,14 +56,25 @@ const Users = () => {
     deleteUserModalData.handleClickDeletetUser(id, user.text);
   };
 
-  if (prevBranch.current !== selectedBranchState?.id) {
+  if (prevBranch.current === null) {
+    // Первый рендер: фиксируем филиал без сброса aside,
+    // чтобы не потерять selectedId / History при возврате с карты.
+    prevBranch.current = selectedBranchState?.id;
+  } else if (prevBranch.current !== selectedBranchState?.id) {
     prevBranch.current = selectedBranchState?.id;
     handleCloseAside();
   }
 
+  // Сброс фильтров только при реальной смене филиала (не на mount / возврате с карты)
   useEffect(() => {
-    // Очистка фильтров при изменении выбранного филиала
-    handleResetFilters();
+    if (prevBranchForFilters.current == null) {
+      prevBranchForFilters.current = selectedBranchState?.id;
+      return;
+    }
+    if (prevBranchForFilters.current !== selectedBranchState?.id) {
+      prevBranchForFilters.current = selectedBranchState?.id;
+      handleResetFilters();
+    }
   }, [selectedBranchState?.id]);
 
   return (
@@ -74,6 +87,7 @@ const Users = () => {
           selectedUserId={selectedUserId}
           targetPageFromNavigation={targetPageFromNavigation}
           onTargetPageApplied={onTargetPageApplied}
+          preserveAsideFromMapReturn={preserveAsideFromMapReturn}
           onAddUser={handleAddUser}
           onEditUser={handleEditUser}
           onDeleteUser={handleDeleteUser}

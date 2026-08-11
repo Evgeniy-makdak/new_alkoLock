@@ -11,6 +11,8 @@ interface UsersTableProps {
   selectedUserId: string | number | null;
   targetPageFromNavigation?: number | null;
   onTargetPageApplied?: () => void;
+  /** Не авто-закрывать aside при возврате с карты по координатам. */
+  preserveAsideFromMapReturn?: boolean;
   onAddUser: () => void;
   onEditUser: (id: string | number) => void;
   onDeleteUser: (id: string | number, isActive: boolean) => void; // Добавляем isActive
@@ -23,6 +25,7 @@ export const UsersTable = ({
   selectedUserId,
   targetPageFromNavigation,
   onTargetPageApplied,
+  preserveAsideFromMapReturn = false,
   onAddUser,
   onEditUser,
   onDeleteUser,
@@ -37,6 +40,7 @@ export const UsersTable = ({
         selectedUserId={selectedUserId}
         targetPageFromNavigation={targetPageFromNavigation}
         onTargetPageApplied={onTargetPageApplied}
+        preserveAsideFromMapReturn={preserveAsideFromMapReturn}
         onAddUser={onAddUser}
         onEditUser={onEditUser}
         onDeleteUser={onDeleteUser}
@@ -52,6 +56,7 @@ export const UsersTable = ({
       selectedUserId={selectedUserId}
       targetPageFromNavigation={targetPageFromNavigation}
       onTargetPageApplied={onTargetPageApplied}
+      preserveAsideFromMapReturn={preserveAsideFromMapReturn}
     />
   );
 };
