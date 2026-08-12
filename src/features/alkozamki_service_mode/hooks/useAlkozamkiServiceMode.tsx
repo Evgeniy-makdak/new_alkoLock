@@ -203,12 +203,14 @@ export const useAlkozamkiServiceMode = (
   // 1. Есть активная заявка (ACTIVE) ИЛИ
   // 2. Устройство в рабочем режиме (isServiceModeFromAlkolock) ИЛИ
   // 3. Кнопка уже нажата (isDeactivateButtonClicked) ИЛИ
-  // 4. Сервисный режим активирован сервисным работником
+  // 4. Сервисный режим активирован сервисным работником ИЛИ
+  // 5. «Заявки на сервисный режим» отключены в системных функциях
   const shouldDisableDeactivateButton =
     hasActiveRequest ||
     isServiceModeFromAlkolock ||
     isDeactivateButtonClicked ||
-    isActivatedByServiceWorker;
+    isActivatedByServiceWorker ||
+    !serviceModeRequestsEnabled;
 
   // 👇 СБРОС СОСТОЯНИЙ КНОПОК ПРИ ИЗМЕНЕНИИ СТАТУСА УСТРОЙСТВА
   useEffect(() => {
@@ -486,18 +488,26 @@ export const useAlkozamkiServiceMode = (
                     .ALCOLOCKS_WIDGET_INFO_AVTOSERVISE_BUTTON_OFF
                 }
                 className={
-                  !shouldDisableDeactivateButton && !isCrushModeFromAlkolock
+                  !shouldDisableDeactivateButton &&
+                  !isCrushModeFromAlkolock &&
+                  !disableEnableByFeature
                     ? style.active
                     : style.disabled
                 }
                 onClick={
-                  !shouldDisableDeactivateButton && !isCrushModeFromAlkolock
+                  !shouldDisableDeactivateButton &&
+                  !isCrushModeFromAlkolock &&
+                  !disableEnableByFeature
                     ? () => {
                         toggleDeactivatePopup();
                       }
                     : null
                 }
-                disabled={shouldDisableDeactivateButton}>
+                disabled={
+                  shouldDisableDeactivateButton ||
+                  disableEnableByFeature ||
+                  isCrushModeFromAlkolock
+                }>
                 {t('serviceMode.disable')}
               </button>
             </div>

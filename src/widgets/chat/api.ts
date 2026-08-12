@@ -2,8 +2,10 @@
 import CryptoJS from 'crypto-js';
 
 import { ChatsApi } from '@shared/api/baseQuerys';
+import { getQuery } from '@shared/api/baseQueryTypes';
 import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import { configLoader } from '../../config/configLoader';
 import { DialogsApi, UnreadDialog } from './api/dialogsApi';
@@ -29,6 +31,9 @@ const getChatApiBaseUrl = async (): Promise<string> => {
 };
 
 const getToken = (): string | null => {
+  const bearer = getBearerToken();
+  if (bearer) return bearer;
+
   const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
   if (token) return token;
 
@@ -484,12 +489,123 @@ const getMessagePositionInDialog = async (
   try {
     const encodedDate = encodeURIComponent(messageCreatedAt);
     const url = `api/v1/messages/count?all.dialog.id.equals=${dialogId}&all.createdAt.greaterThan=${encodedDate}&sort=${sort}`;
-    const response = await simpleRequest(url);
-    return response || 0;
+    // Через axios/getQuery — тот же CORS/auth путь, что у getMessages.
+    // fetch+credentials:'include' с localhost даёт Access-Control-Allow-Credentials: true, true.
+    const response = await getQuery<number | { count?: number }>({ url });
+    const raw = response?.data;
+    if (typeof raw === 'number' && Number.isFinite(raw)) return raw;
+    if (raw && typeof raw === 'object' && typeof (raw as { count?: number }).count === 'number') {
+      return (raw as { count: number }).count;
+    }
+    const asNum = Number(raw);
+    return Number.isFinite(asNum) ? asNum : 0;
   } catch (error) {
     console.error('Ошибка получения позиции сообщения:', error);
     return 0;
   }
+};
+
+const messageMatchesQuote = (
+  msg: any,
+  quoteId: string,
+  quoteUuid: string,
+): boolean => {
+  const mid = msg?.id != null ? String(msg.id) : '';
+  const muuid = msg?.uuid != null ? String(msg.uuid) : '';
+  return (
+    (!!quoteId && (mid === quoteId || muuid === quoteId)) ||
+    (!!quoteUuid && (mid === quoteUuid || muuid === quoteUuid))
+  );
+};
+
+/** Страница с цитируемым сообщением: count API, иначе бинарный/линейный поиск по пагинации. */
+const findPageOfQuotedMessage = async (
+  dialogId: string,
+  quotedMessage: {
+    id?: unknown;
+    uuid?: unknown;
+    createdAt?: string;
+    created_at?: string;
+  },
+  pageSize = 50,
+): Promise<number | null> => {
+  const quoteId = quotedMessage?.id != null ? String(quotedMessage.id) : '';
+  const quoteUuid = quotedMessage?.uuid != null ? String(quotedMessage.uuid) : '';
+  const createdAt = quotedMessage?.createdAt || quotedMessage?.created_at;
+
+  if (createdAt) {
+    const position = await getMessagePositionInDialog(dialogId, String(createdAt));
+    if (position > 0) return Math.floor(position / pageSize);
+  }
+
+  try {
+    const info = await getDialogInfo(dialogId);
+    const totalElements = info.totalElements || 0;
+    if (totalElements <= 0) return null;
+
+    const totalPages = Math.max(1, Math.ceil(totalElements / pageSize));
+    const targetMs = createdAt ? new Date(createdAt).getTime() : Number.NaN;
+    const pageHasQuote = async (page: number): Promise<boolean> => {
+      const pageData = await getDialogMessagesWithPagination(
+        dialogId,
+        page,
+        pageSize,
+        'createdAt,desc',
+      );
+      const content = pageData?.content || [];
+      return content.some((m: any) => messageMatchesQuote(m, quoteId, quoteUuid));
+    };
+
+    if (Number.isFinite(targetMs)) {
+      let lo = 0;
+      let hi = totalPages - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const pageData = await getDialogMessagesWithPagination(
+          dialogId,
+          mid,
+          pageSize,
+          'createdAt,desc',
+        );
+        const content = pageData?.content || [];
+        if (content.some((m: any) => messageMatchesQuote(m, quoteId, quoteUuid))) {
+          return mid;
+        }
+        if (!content.length) {
+          hi = mid - 1;
+          continue;
+        }
+        const times = content
+          .map((m: any) => new Date(m.createdAt || m.created_at).getTime())
+          .filter((t: number) => Number.isFinite(t));
+        if (!times.length) {
+          break;
+        }
+        const newest = Math.max(...times);
+        const oldest = Math.min(...times);
+        if (targetMs > newest) {
+          hi = mid - 1;
+        } else if (targetMs < oldest) {
+          lo = mid + 1;
+        } else {
+          for (const p of [mid - 1, mid + 1, mid - 2, mid + 2]) {
+            if (p < 0 || p >= totalPages) continue;
+            if (await pageHasQuote(p)) return p;
+          }
+          break;
+        }
+      }
+    }
+
+    const maxScan = Math.min(totalPages, 40);
+    for (let page = 0; page < maxScan; page++) {
+      if (await pageHasQuote(page)) return page;
+    }
+  } catch (error) {
+    console.error('Ошибка поиска страницы цитируемого сообщения:', error);
+  }
+
+  return null;
 };
 
 const getMessagePageByPosition = async (
@@ -616,6 +732,7 @@ const api = {
   loadPreviousPage,
   getFirstPageMessages,
   getMessagePositionInDialog,
+  findPageOfQuotedMessage,
   getMessagePageByPosition,
   sendDeliveryConfirm,
   requestMessageStatus,

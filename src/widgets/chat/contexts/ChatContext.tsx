@@ -1456,7 +1456,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           if (sessionCreationTime && currentTime - sessionCreationTime < 2000) return;
         }
 
-        const errorId = `${errorData.type}_${errorData.message}_${Date.now()}`;
+        // Без Date.now(): эффект зависит от sessions, и после updateSession
+        // тот же lastMessage обрабатывался бы снова → Maximum update depth.
+        const errorId = `${activeSessionId || 'none'}_${errorData?.type}_${String(
+          errorData?.message ?? '',
+        )}`;
         if (refs.processedErrorsRef.current.has(errorId)) return;
         refs.processedErrorsRef.current.add(errorId);
         setTimeout(() => refs.processedErrorsRef.current.delete(errorId), 5000);

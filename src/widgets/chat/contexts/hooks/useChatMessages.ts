@@ -6,6 +6,11 @@ import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedB
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../../api';
+import {
+  findChatMessageByKey,
+  isNumericServerMessageId,
+  resolveServerMessageId,
+} from '../../lib/resolveServerMessageId';
 import { stompDebugLog } from '../../lib/stompDebugLog';
 import { useSocket } from '../SocketContext';
 
@@ -197,13 +202,80 @@ export const useChatMessages = (
 
         const finalDialogId = dialogId || '0';
 
+        // replyTarget часто снимается до WS-ack: id ещё UUID. Бэкенд ждёт числовой id.
+        let resolvedReplyToMessageId: string | undefined;
+        let resolvedReplyToMessage: any = null;
+        if (value.replyTo != null && String(value.replyTo).trim() !== '') {
+          const replyKey = String(value.replyTo);
+          const liveSession = getSession(sessionId) || session;
+          const quoted = findChatMessageByKey(liveSession.messages || [], replyKey);
+          let serverReplyId =
+            resolveServerMessageId(quoted) ??
+            (isNumericServerMessageId(replyKey) ? Number(replyKey) : null);
+
+          if (!serverReplyId && quoted?.uuid) {
+            const quoteDialogId =
+              quoted.dialogId ??
+              liveSession.selectedDialog?.id ??
+              liveSession.assignedDialogId ??
+              finalDialogId;
+            if (quoteDialogId && String(quoteDialogId) !== '0') {
+              try {
+                const response = await api.getDialogMessagesWithPagination(
+                  String(quoteDialogId),
+                  0,
+                  50,
+                  'createdAt,desc',
+                );
+                const fromServer = (response?.content || []).find(
+                  (item: any) => String(item.uuid) === String(quoted.uuid),
+                );
+                if (fromServer?.id != null && isNumericServerMessageId(fromServer.id)) {
+                  serverReplyId = Number(fromServer.id);
+                  updateSession(sessionId, {
+                    messages: (liveSession.messages || []).map((msg: any) =>
+                      String(msg.uuid) === String(quoted.uuid)
+                        ? { ...msg, id: String(serverReplyId), isPending: false }
+                        : msg,
+                    ),
+                  });
+                }
+              } catch (lookupError) {
+                console.error('Error resolving replyTo message id:', lookupError);
+              }
+            }
+          }
+
+          if (!serverReplyId) {
+            throw new Error(
+              'Не удалось определить id сообщения для ответа. Подождите подтверждения отправки и повторите.',
+            );
+          }
+          resolvedReplyToMessageId = String(serverReplyId);
+          if (quoted) {
+            resolvedReplyToMessage = {
+              id: resolvedReplyToMessageId,
+              uuid: quoted.uuid,
+              text: quoted.text,
+              sender: quoted.sender,
+              messageStatus: quoted.messageStatus,
+              confirmStatus: quoted.confirmStatus,
+              createdBy: quoted.createdBy,
+              senderInfo: quoted.senderInfo,
+              created_at: quoted.created_at || quoted.createdAt,
+              createdAt: quoted.created_at || quoted.createdAt,
+              attachments: quoted.attachments,
+            };
+          }
+        }
+
         const stompMessage = {
           recipientId: session.selectedUsers[0].toString(),
           uuid: messageUuid,
           text: value.text || '',
           dialogId: finalDialogId,
           pathsToAttaches: pathsToAttaches.length > 0 ? pathsToAttaches : undefined,
-          replyToMessageId: value.replyTo || undefined,
+          replyToMessageId: resolvedReplyToMessageId,
         };
 
         const cleanStompMessage = JSON.parse(JSON.stringify(stompMessage));
@@ -235,6 +307,7 @@ export const useChatMessages = (
         }
 
         const currentUserInfo = getCurrentUserInfo();
+        const sessionForLocal = getSession(sessionId) || session;
 
         const localMessage = {
           id: messageUuid,
@@ -259,7 +332,8 @@ export const useChatMessages = (
                   };
                 })
               : [],
-          replyTo: value.replyTo || null,
+          replyTo: resolvedReplyToMessageId || null,
+          replyToMessage: resolvedReplyToMessage,
           recipientId: session.selectedUsers[0],
           isPending: true,
           senderInfo: {
@@ -277,7 +351,7 @@ export const useChatMessages = (
           dialogId: finalDialogId,
         };
         updateSession(sessionId, {
-          messages: [...session.messages, localMessage],
+          messages: [...(sessionForLocal.messages || []), localMessage],
           hasSentMessage: true,
           isSendingMessage: false,
         });

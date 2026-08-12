@@ -71,6 +71,17 @@ function isInboundUnread(msg: any): boolean {
   return true;
 }
 
+/** Только что отправленное оператором — не историческое TO_USER из подгруженной страницы. */
+function isFreshOperatorOutbound(msg: any): boolean {
+  if (msg?.messageStatus !== 'TO_USER') return false;
+  if (String(msg?.confirmStatus ?? '').trim().toUpperCase() !== 'SENT') return false;
+  if (msg?.isPending) return true;
+  const raw = msg?.created_at ?? msg?.createdAt;
+  if (!raw) return false;
+  const ageMs = Date.now() - new Date(raw).getTime();
+  return ageMs >= 0 && ageMs < 20000;
+}
+
 /** Совпадает с id строки сообщения в DOM: `message-${id ?? uuid ?? index}` (без index здесь). */
 function messageRowDomSuffix(msg: any): string {
   const raw = msg?.id ?? msg?.uuid;
@@ -1428,12 +1439,16 @@ function MessageFeed({
   };
 
   const findOriginalMessage = (replyToId: string) => {
-    const message = messages.find((m) => m.id === replyToId || m.uuid === replyToId);
+    const key = String(replyToId);
+    const message = messages.find(
+      (m) => String(m.id) === key || String(m.uuid ?? '') === key,
+    );
     if (!message) {
       for (const msg of messages) {
         if (
           msg.replyToMessage &&
-          (msg.replyToMessage.id === replyToId || msg.replyToMessage.uuid === replyToId)
+          (String(msg.replyToMessage.id) === key ||
+            String(msg.replyToMessage.uuid ?? '') === key)
         ) {
           return msg.replyToMessage;
         }
@@ -1572,10 +1587,23 @@ function MessageFeed({
         lastMessagesRef.current = [...currentMessages];
         return;
       }
-      const hasNewOperatorMessage = newMessages.some(
-        (msg) => msg.messageStatus === 'TO_USER' && msg.confirmStatus === 'SENT',
-      );
-      if (hasNewOperatorMessage) {
+      // Пагинация вниз: в подгруженной странице есть старые TO_USER/SENT — не сбрасываем на page 0.
+      const skipOperatorFirstPageDueToPagination =
+        loadingNextRef.current || pagination?.isLoadingNext;
+
+      const prevLastMessage =
+        prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
+      const prevLastKey = prevLastMessage
+        ? String(prevLastMessage.id ?? prevLastMessage.uuid ?? '')
+        : '';
+      const tailChanged =
+        !!currentLastMessageKey && currentLastMessageKey !== prevLastKey;
+      const tailIsFreshOperatorSend =
+        tailChanged &&
+        !!currentLastMessage &&
+        isFreshOperatorOutbound(currentLastMessage);
+
+      if (!skipOperatorFirstPageDueToPagination && tailIsFreshOperatorSend) {
         if (currentPage > 0) {
           handleLoadFirstPage();
         } else {
@@ -1646,7 +1674,7 @@ function MessageFeed({
 
         {messagesInActiveDialog.map((msg, index) => {
           const originalMessage = msg.replyTo
-            ? findOriginalMessage(msg.replyTo)
+            ? findOriginalMessage(msg.replyTo) || msg.replyToMessage
             : msg.replyToMessage;
           const isDeleted =
             Boolean(msg.isDeleted) ||

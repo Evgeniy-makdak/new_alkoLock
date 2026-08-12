@@ -309,7 +309,12 @@ export const useChatMessageHandlers = (refs: ChatRefs, deps: MessageHandlersDeps
       if (existingMessage) {
         const updatedMessages = session.messages.map((msg: any) => {
           if (msg.uuid !== messageData.uuid && msg.id !== messageData.id) return msg;
-          let next = { ...msg, ...newMessage };
+          let next = { ...msg, ...newMessage, isPending: false };
+          // WS-ack часто без replyTo* — не затираем цитату из оптимистичного сообщения.
+          if (!next.replyTo && msg.replyTo) next.replyTo = msg.replyTo;
+          if (!next.replyToMessage && msg.replyToMessage) {
+            next.replyToMessage = msg.replyToMessage;
+          }
           if (messageData.id != null) {
             next.id = String(messageData.id);
           } else if (isNumericServerMessageId(msg.id)) {

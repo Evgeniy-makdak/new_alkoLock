@@ -599,42 +599,85 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
   const navigateToQuotedMessage = useCallback(
     async (sessionId: string, dialogId: string, quotedMessage: any, pageSize = 50) => {
       const session = getSession(sessionId);
-      if (!session) return false;
+      if (!session || !quotedMessage) return false;
+
+      const quoteId = quotedMessage.id != null ? String(quotedMessage.id) : '';
+      const quoteUuid = quotedMessage.uuid != null ? String(quotedMessage.uuid) : '';
+
+      const matchesQuoted = (msg: any) => {
+        const mid = msg?.id != null ? String(msg.id) : '';
+        const muuid = msg?.uuid != null ? String(msg.uuid) : '';
+        return (
+          (!!quoteId && (mid === quoteId || muuid === quoteId)) ||
+          (!!quoteUuid && (mid === quoteUuid || muuid === quoteUuid))
+        );
+      };
+
+      const findDomElement = (): HTMLElement | null => {
+        if (quoteId) {
+          const byId = document.getElementById(`message-${quoteId}`);
+          if (byId) return byId;
+        }
+        if (quoteUuid) {
+          const byUuid = document.getElementById(`message-${quoteUuid}`);
+          if (byUuid) return byUuid;
+        }
+        const byData =
+          (quoteId &&
+            (document.querySelector(`[data-message-id="${quoteId}"]`) as HTMLElement | null)) ||
+          (quoteUuid &&
+            (document.querySelector(`[data-message-uuid="${quoteUuid}"]`) as HTMLElement | null));
+        return byData || null;
+      };
+
+      const highlightAndScroll = (element: HTMLElement) => {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        element.classList.add('replyTarget');
+        setTimeout(() => element.classList.remove('replyTarget'), 2000);
+      };
+
+      // Сообщение уже в ленте — сразу скролл, без count API (и без побочной перезагрузки истории).
+      const localEl = findDomElement();
+      if (localEl) {
+        highlightAndScroll(localEl);
+        return true;
+      }
+
+      const existingInSession = (session.messages || []).find(matchesQuoted);
+      if (existingInSession) {
+        await new Promise((r) => setTimeout(r, 50));
+        const retryEl = findDomElement();
+        if (retryEl) {
+          highlightAndScroll(retryEl);
+          return true;
+        }
+      }
 
       try {
         const messageCreatedAt = quotedMessage.createdAt || quotedMessage.created_at;
-        if (!messageCreatedAt) return false;
+        const targetPage = await api.findPageOfQuotedMessage(
+          dialogId,
+          quotedMessage,
+          pageSize,
+        );
 
-        const position = await api.getMessagePositionInDialog(dialogId, messageCreatedAt);
-        if (position === 0) {
-          const existingMessage = session.messages?.find(
-            (msg: any) =>
-              msg.id === quotedMessage.id.toString() || msg.uuid === quotedMessage.id.toString(),
-          );
-
-          if (existingMessage) {
-            const element = document.getElementById(`message-${quotedMessage.id}`);
-            if (element) {
-              element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              element.classList.add('replyTarget');
-              setTimeout(() => element.classList.remove('replyTarget'), 2000);
-            }
-            return true;
+        if (targetPage == null) {
+          // Не нашли страницу — хотя бы обновим первую; без CORS/count-ошибок в цикле.
+          if (!messageCreatedAt) {
+            await loadDialogHistory(sessionId, dialogId, true, 0, false);
           }
-          await loadDialogHistory(sessionId, dialogId, true, 0, false);
-          return true;
+          setTimeout(() => {
+            const el = findDomElement();
+            if (el) highlightAndScroll(el);
+          }, 500);
+          return false;
         }
 
-        const targetPage = Math.floor(position / pageSize);
         await loadDialogHistory(sessionId, dialogId, true, targetPage, false);
 
         setTimeout(() => {
-          const element = document.getElementById(`message-${quotedMessage.id}`);
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            element.classList.add('replyTarget');
-            setTimeout(() => element.classList.remove('replyTarget'), 2000);
-          }
+          const element = findDomElement();
+          if (element) highlightAndScroll(element);
         }, 500);
 
         return true;
@@ -643,7 +686,7 @@ export const useChatDialogHandlers = (refs: ChatRefs, deps: DialogHandlersDeps) 
         return false;
       }
     },
-    [getSession, updateSession, loadDialogHistory],
+    [getSession, loadDialogHistory],
   );
 
   const loadPreviousMessages = useCallback(
