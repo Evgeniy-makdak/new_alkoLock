@@ -114,12 +114,14 @@ export const useAlkozamkiServiceMode = (
       (event) => event.eventType === EventType.ACCEPTED,
     );
 
+    const lastEventType = lastEvent?.eventType;
+
     if (
-      [EventType.OFFLINE_DEACTIVATION, EventType.OFFLINE_ACTIVATION].includes(
-        lastEvent?.eventType,
-      ) ||
+      (lastEventType != null &&
+        [EventType.OFFLINE_DEACTIVATION, EventType.OFFLINE_ACTIVATION].includes(lastEventType)) ||
       isAcknowledged ||
-      ([EventType.REJECTED, EventType.ACCEPTED].includes(lastEvent?.eventType) &&
+      (lastEventType != null &&
+        [EventType.REJECTED, EventType.ACCEPTED].includes(lastEventType) &&
         requestType === EventType.SERVER_REQUEST)
     ) {
       seenMutate(deviceAction?.id);
@@ -259,7 +261,9 @@ export const useAlkozamkiServiceMode = (
       const serviceModeInfo = serviceModeInfoMapper(deviceAction, alkolock);
 
       if (serviceModeInfo.action) {
-        const time = Formatters.parseISO8601Duration(serviceModeInfo.duration);
+        const time = serviceModeInfo.duration
+          ? Formatters.parseISO8601Duration(serviceModeInfo.duration)
+          : null;
         const timeFormat = time ? `${time.hours}:${time.minutes}:${time.seconds}` : '-';
 
         switch (serviceModeInfo.type) {
@@ -472,7 +476,7 @@ export const useAlkozamkiServiceMode = (
                     ? () => {
                         toggleActivatePopup();
                       }
-                    : null
+                    : undefined
                 }
                 disabled={
                   disableButtons ||
@@ -501,7 +505,7 @@ export const useAlkozamkiServiceMode = (
                     ? () => {
                         toggleDeactivatePopup();
                       }
-                    : null
+                    : undefined
                 }
                 disabled={
                   shouldDisableDeactivateButton ||
