@@ -1,6 +1,7 @@
 import { getBearerToken } from '@shared/utils/cookie_manager';
 
 import { DialogsApi, type UnreadDialog } from '../api/dialogsApi';
+import { filterDialogsByOwnerInCurrentOperatorBranch } from '../lib/chatBranchGuard';
 import { CHAT_POPUP_OPEN_REST_GENERATION_KEY } from './constants';
 import { isElectronOperatorChatPopup } from './electronPopupAuth';
 import { syncElectronPopupBranchFromStorage } from './electronPopupSessionBootstrap';
@@ -80,7 +81,9 @@ export async function fetchElectronPopupUnreadDialogs(): Promise<UnreadDialog[] 
   try {
     const response = await DialogsApi.getUnreadDialogs();
     if (response?.isError) return null;
-    const list = (response?.data?.content ?? []) as UnreadDialog[];
+    const list = await filterDialogsByOwnerInCurrentOperatorBranch(
+      (response?.data?.content ?? []) as UnreadDialog[],
+    );
     broadcastElectronPopupUnreadDialogs(list);
     return list;
   } catch {

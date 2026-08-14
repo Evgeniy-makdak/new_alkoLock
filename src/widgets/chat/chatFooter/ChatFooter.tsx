@@ -67,6 +67,10 @@ import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
 import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDebugLog';
+import {
+  isPayloadForCurrentOperatorBranch,
+  sessionBelongsToCurrentOperatorBranch,
+} from '../lib/chatBranchGuard';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 import { getLayoutViewportSize } from './chatDockViewport';
@@ -268,7 +272,9 @@ function shouldShowSessionInSidePreview(session: {
   assignedDialogId?: unknown;
   messages?: unknown[];
   isMinimized?: boolean;
+  usersCache?: Map<unknown, unknown>;
 }): boolean {
+  if (!sessionBelongsToCurrentOperatorBranch(session)) return false;
   return hasRenderableMinimizedContent(session) && hasConcreteUserForSidePreview(session);
 }
 
@@ -311,6 +317,7 @@ function collectDedupedUnreadDialogsForPreview(
   for (const session of orderedSessions) {
     const unreadList =
       session.unreadDialogs?.filter((dialog) => {
+        if (!isPayloadForCurrentOperatorBranch(dialog)) return false;
         const dialogUserId = dialog.owner?.id;
         if (dialogUserId && hasSessionWithUser(dialogUserId)) return false;
         if (sessionListAlreadyCoversDialog(sessions, dialog.id)) return false;
@@ -497,7 +504,7 @@ const ChatToggleButton = ({
   const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId } =
     useChat();
-  const { calculateTotalUnread, dialogsUnreadCounts, unreadCount: socketUnreadTotal } = useSocket();
+  const { calculateTotalUnread, dialogsUnreadCounts } = useSocket();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
     isDesktopShell ? readMainChatFooterSuppressedByPopup() : false,
@@ -505,28 +512,23 @@ const ChatToggleButton = ({
   const iconUnreadTotalBase = calculateTotalUnread();
   const electronSessionsUnreadSum =
     isElectronChatShell() && sessions.length > 0
-      ? sessions.reduce(
-          (acc, s) => acc + effectiveMinimizedSessionUnread(s, dialogsUnreadCounts),
-          0,
-        )
+      ? sessions.reduce((acc, s) => {
+          if (!sessionBelongsToCurrentOperatorBranch(s)) return acc;
+          return acc + effectiveMinimizedSessionUnread(s, dialogsUnreadCounts);
+        }, 0)
       : null;
   // Редкий кейс сразу после жёсткой перезагрузки: общий бейдж может кратковременно быть 0,
   // пока WS-карта/агрегат не синхронизировались, но в сессии уже есть непрочитанные по ленте.
   // Не даём показывать 0, если хоть где-то в сессиях вычисляется unread>0.
   const maxSessionUnreadFallback = sessions.reduce((acc: number, s: any) => {
+    if (!sessionBelongsToCurrentOperatorBranch(s)) return acc;
     return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
   }, 0);
-  // Если и карта/агрегат через calculateTotalUnread, и сессии дают 0, не поднимаем бейдж
-  // устаревшим socketUnreadTotal (/user/queue/unread): он нередко отстаёт после READ/STATUS_UPDATE
-  // при уже нулевой per-dialog карте (см. calculateTotalUnread в SocketContext).
+  // Бейдж иконки — только диалоги текущего филиала (allowlist после REST), без агрегата всех филиалов.
   const iconUnreadTotal =
     electronSessionsUnreadSum != null
       ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase)
-      : iconUnreadTotalBase > 0
-        ? iconUnreadTotalBase
-        : maxSessionUnreadFallback > 0
-          ? Math.max(socketUnreadTotal ?? 0, maxSessionUnreadFallback)
-          : 0;
+      : Math.max(iconUnreadTotalBase, maxSessionUnreadFallback);
 
   const handleToggle = () => {
     if (isOperatorChatPopupWindow) {

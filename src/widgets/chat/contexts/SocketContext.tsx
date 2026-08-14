@@ -25,6 +25,7 @@ import {
   peekDesktopSocketUnreadHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { configLoader } from '../../../config/configLoader';
+import { isPayloadForCurrentOperatorBranch } from '../lib/chatBranchGuard';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   setStompDebugFromRuntimeConfig,
@@ -54,6 +55,8 @@ interface SocketContextType {
   /** Слияние снимка из REST: не затираем локальный счётчик нулём, пока агрегат по WS больше нуля (устаревший API). */
   mergeDialogUnreadFromApi: (dialogId: number, apiCount: number) => void;
   incrementDialogUnreadCount: (dialogId: number, amount?: number, dedupeKey?: string) => void;
+  /** REST непрочитанных текущего филиала: бейдж только по этим dialogId (WS-топик филиала часто шире). */
+  restrictUnreadCountsToDialogIds: (dialogIds: number[]) => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
   /** Отправка через актуальный STOMP-клиент (ref), без гонки с React state. */
@@ -139,6 +142,9 @@ export const SocketProvider = ({
   const lastAbsoluteDialogUpdateAtRef = useRef<Map<number, number>>(new Map());
   /** Предотвращает повторный +1 при двойном вызове handleIncomingMessage на одно сообщение. */
   const incrementDedupeByMessageRef = useRef<Set<string>>(new Set());
+  /** dialogId, проверенные как пользователи текущего филиала (REST / live). */
+  const allowedUnreadDialogIdsRef = useRef<Set<number>>(new Set());
+  const unreadAllowlistReadyRef = useRef(false);
 
   const [apiConfig, setApiConfig] = useState<{ apiUrl: string; wsUrl: string } | null>(null);
 
@@ -200,6 +206,8 @@ export const SocketProvider = ({
     hasDetailedDataRef.current = false;
     incrementDedupeByMessageRef.current.clear();
     lastAbsoluteDialogUpdateAtRef.current.clear();
+    allowedUnreadDialogIdsRef.current = new Set();
+    unreadAllowlistReadyRef.current = false;
   }, []);
 
   const flushIncomingChatMessages = useCallback((): any[] => {
@@ -210,34 +218,32 @@ export const SocketProvider = ({
 
   const calculateTotalUnread = useCallback((): number => {
     let mapSum = 0;
-    let mapDialogEntryCount = 0;
     dialogsUnreadCounts.forEach((count, dialogId) => {
-      if (dialogId > 0) {
-        mapDialogEntryCount++;
-        if (count > 0) {
-          mapSum += count;
-        }
+      if (dialogId <= 0 || count <= 0) return;
+      if (unreadAllowlistReadyRef.current && !allowedUnreadDialogIdsRef.current.has(dialogId)) {
+        return;
       }
+      if (!unreadAllowlistReadyRef.current) return;
+      mapSum += count;
     });
+    return mapSum;
+  }, [dialogsUnreadCounts]);
 
-    if (!useDetailedCountsRef.current || !hasDetailedDataRef.current) {
-      return unreadCount;
-    }
-
-    // Кадры /queue/unread/{branch}: сумма по карте совпадает с бейджами превью. Агрегат /user/queue/unread
-    // нередко выше и не успевает уменьшиться — Math.max оставлял «9» при сумме превью «6».
-    if (mapSum > 0) {
-      return mapSum;
-    }
-
-    // В карте уже есть диалоги (в т.ч. с count=0 после READ) — не держим общий бейдж на устаревшем queue.
-    if (mapDialogEntryCount > 0) {
-      return 0;
-    }
-
-    // Per-dialog режим включён, но карта ещё пуста (между кадрами) — ориентируемся на пользовательский агрегат.
-    return unreadCount;
-  }, [dialogsUnreadCounts, unreadCount]);
+  const restrictUnreadCountsToDialogIds = useCallback((dialogIds: number[]) => {
+    unreadAllowlistReadyRef.current = true;
+    allowedUnreadDialogIdsRef.current = new Set(
+      dialogIds.filter((id) => typeof id === 'number' && id > 0),
+    );
+    setDialogsUnreadCounts((prev) => {
+      const next = new Map<number, number>();
+      prev.forEach((count, dialogId) => {
+        if (allowedUnreadDialogIdsRef.current.has(dialogId)) {
+          next.set(dialogId, count);
+        }
+      });
+      return next;
+    });
+  }, []);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
     operatorUnreadDebug('WS: абсолютное значение непрочитанных по dialogId', {
@@ -303,6 +309,10 @@ export const SocketProvider = ({
 
   const incrementDialogUnreadCount = useCallback(
     (dialogId: number, amount = 1, dedupeKey?: string) => {
+      if (dialogId > 0) {
+        allowedUnreadDialogIdsRef.current.add(dialogId);
+        unreadAllowlistReadyRef.current = true;
+      }
       if (dedupeKey) {
         if (incrementDedupeByMessageRef.current.has(dedupeKey)) {
           chatUnreadTrace('socket.incrementDialogUnread (skip duplicate)', { dialogId, dedupeKey });
@@ -358,6 +368,10 @@ export const SocketProvider = ({
   );
 
   const mergeDialogUnreadFromApi = useCallback((dialogId: number, apiCount: number) => {
+    if (dialogId > 0) {
+      allowedUnreadDialogIdsRef.current.add(dialogId);
+      unreadAllowlistReadyRef.current = true;
+    }
     setDialogsUnreadCounts((prev) => {
       const prevCount = prev.get(dialogId) ?? 0;
       // REST-список «непрочитанных» часто отстаёт от WS; в detailed-режиме не затирать уже известный >0 нулём с API
@@ -791,16 +805,11 @@ export const SocketProvider = ({
               }
 
               if (destination === '/user/queue/unread') {
-                chatUnreadTrace('socket.frame /user/queue/unread', {
+                chatUnreadTrace('socket.frame /user/queue/unread (skip badge — очередь по всем филиалам)', {
                   countUnMessages: parsedBody?.countUnMessages,
-                  rawKeys:
-                    parsedBody && typeof parsedBody === 'object' ? Object.keys(parsedBody) : [],
                 });
-                // Всегда применяем агрегат по пользователю — иначе при hasDetailedData глобальный бейдж
-                // залипает на 0 (раньше пропускали кадр из‑за per-dialog режима).
-                if (parsedBody && typeof parsedBody.countUnMessages === 'number') {
-                  updateUnreadCountDirect(parsedBody.countUnMessages);
-                }
+                // Не пишем в бейдж: countUnMessages здесь — сумма по оператору во всех филиалах.
+                // Иконка и превью только из /queue/unread/{branchId}.
               } else if (destination === `/queue/unread/${branchIdNorm}`) {
                 if (Array.isArray(parsedBody)) {
                   const hasRealDialogs = parsedBody.some(
@@ -883,6 +892,9 @@ export const SocketProvider = ({
                   forceRefresh: true,
                 });
               } else if (destination === '/user/queue/messages') {
+                if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
+                  return;
+                }
                 if (parsedBody?.dialog?.id && parsedBody.messageStatus === 'TO_OPERATOR') {
                   useDetailedCountsRef.current = true;
                   hasDetailedDataRef.current = true;
@@ -910,6 +922,9 @@ export const SocketProvider = ({
                   destination: destination,
                 });
               } else if (destination === `/topic/operator/messages/${branchIdNorm}`) {
+                if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
+                  return;
+                }
                 incomingChatMessagesQueueRef.current.push(parsedBody);
                 setLastMessage({
                   data: parsedBody,
@@ -1135,6 +1150,7 @@ export const SocketProvider = ({
         reconcileDialogUnreadFromSessionFeed,
         mergeDialogUnreadFromApi,
         incrementDialogUnreadCount,
+        restrictUnreadCountsToDialogIds,
         calculateTotalUnread,
         resetDialogCounts,
         publishStompMessage,

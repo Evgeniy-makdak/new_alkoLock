@@ -10,6 +10,7 @@ import { getBearerToken } from '@shared/utils/cookie_manager';
 import { configLoader } from '../../config/configLoader';
 import { DialogsApi, UnreadDialog } from './api/dialogsApi';
 import { processMultipleImages, validateMultipleImages } from './contexts/ImageUtils';
+import { filterDialogsByOwnerInCurrentOperatorBranch } from './lib/chatBranchGuard';
 
 interface PhotoResponseItem {
   id: number;
@@ -372,7 +373,8 @@ const getDialogsCount = async () => {
 const getUnreadDialogs = async (): Promise<UnreadDialog[]> => {
   try {
     const response = await DialogsApi.getUnreadDialogs();
-    return response?.data?.content || [];
+    const list = response?.data?.content || [];
+    return filterDialogsByOwnerInCurrentOperatorBranch(list);
   } catch (error) {
     return [];
   }

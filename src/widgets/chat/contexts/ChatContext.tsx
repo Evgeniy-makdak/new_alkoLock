@@ -41,6 +41,12 @@ import {
 } from '../chatPopup/electronPopupUnreadRest';
 import { ChatConfig } from '../contexts/chatConfig';
 import { UnreadDialog } from '../api/dialogsApi';
+import {
+  extractChatPayloadBranchId,
+  getCurrentOperatorBranchId,
+  isPayloadForCurrentOperatorBranch,
+  loadUserIfInCurrentOperatorBranch,
+} from '../lib/chatBranchGuard';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
@@ -205,10 +211,19 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     mergeDialogUnreadFromApi: socketMergeDialogUnreadFromApi,
     incrementDialogUnreadCount: socketIncrementDialogUnreadCount,
     flushIncomingChatMessages,
+    restrictUnreadCountsToDialogIds: socketRestrictUnreadCountsToDialogIds,
   } = useSocket();
 
   const onUnreadDialogsLoaded = useCallback(
     (dialogs: { id: number; countUnreadMess?: number; countUnMessages?: number }[]) => {
+      const currentSessions = sessionsRef.current;
+      const allowedIds = [
+        ...dialogs.map((d) => Number(d.id)).filter((id) => id > 0),
+        ...currentSessions
+          .map((s: any) => resolveSessionDialogIdForUnread(s))
+          .filter((id): id is number => id != null && id > 0),
+      ];
+      socketRestrictUnreadCountsToDialogIds(allowedIds);
       chatUnreadTrace('context.onUnreadDialogsLoaded (API → mergeDialogUnreadFromApi)', {
         dialogCount: dialogs.length,
         rows: dialogs.map((d) => ({
@@ -216,7 +231,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           count: d.countUnMessages ?? d.countUnreadMess ?? 0,
         })),
       });
-      const currentSessions = sessionsRef.current;
       dialogs.forEach((d) => {
         const count = d.countUnMessages ?? d.countUnreadMess ?? 0;
         const fromSocket = socketDialogsUnreadCounts.get(d.id) ?? 0;
@@ -230,7 +244,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         socketMergeDialogUnreadFromApi(d.id, count);
       });
     },
-    [socketMergeDialogUnreadFromApi, socketDialogsUnreadCounts],
+    [
+      socketMergeDialogUnreadFromApi,
+      socketDialogsUnreadCounts,
+      socketRestrictUnreadCountsToDialogIds,
+    ],
   );
 
   const hasOtherExpandedSession = useCallback(
@@ -1014,6 +1032,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleIncomingMessage = useCallback(
     async (messageData: any) => {
+      // /user/queue/messages — очередь оператора по всем филиалам; чужие не показываем.
+      if (!isPayloadForCurrentOperatorBranch(messageData)) {
+        return;
+      }
+
       const messageDialogId = messageData.dialog?.id ?? messageData.dialogId;
       const dialogIdStr = messageDialogId != null ? String(messageDialogId) : null;
 
@@ -1221,6 +1244,24 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         const dialogId = messageData.dialog?.id ?? messageData.dialogId;
         const dialogIdStr = dialogId != null ? String(dialogId) : null;
+        const fetchUserIdRaw =
+          messageData.dialog?.owner?.id ??
+          incomingUserIdRaw ??
+          messageData?.createdBy?.id;
+
+        let verifiedUser: any = null;
+        if (fetchUserIdRaw != null && fetchUserIdRaw !== '' && !isElectronMainChatHost()) {
+          verifiedUser = await loadUserIfInCurrentOperatorBranch(parseInt(String(fetchUserIdRaw), 10));
+          if (!verifiedUser) {
+            return;
+          }
+        } else {
+          const payloadBranch = extractChatPayloadBranchId(messageData);
+          const currentBranch = getCurrentOperatorBranchId();
+          if (!payloadBranch || !currentBranch || payloadBranch !== currentBranch) {
+            return;
+          }
+        }
 
         // Вход по WS при пустых сессиях: не разворачивать главное окно — только мини-превью (как у «только иконка чата»).
         const newSessionId = enhancedCreateNewSession({ asMinimized: true });
@@ -1273,32 +1314,26 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         setActiveSessionId(newSessionId);
 
-        const fetchUserIdRaw =
-          incomingUserIdRaw ?? messageData.dialog?.owner?.id ?? messageData?.createdBy?.id;
-        if (fetchUserIdRaw != null && fetchUserIdRaw !== '' && !isElectronMainChatHost()) {
-          fetchUserInfo(parseInt(String(fetchUserIdRaw), 10)).then((userData: any) => {
-            if (userData) {
-              updateSession(newSessionId, {
-                selectedUsers: [userData.id],
-                selectedUserName: getUserFullName(userData),
-                usersCache: new Map([[userData.id, userData]]),
-                hasLoadedDialogs: true,
-              });
-
-              if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
-                const dId = messageData.dialog?.id ?? dialogId;
-                if (dId) {
-                  dialogHandlers
-                    .loadDialogHistory(newSessionId, String(dId), true, 0, true)
-                    .catch(console.error);
-                } else {
-                  dialogHandlers
-                    .refreshMessagesForUserId(newSessionId, userData.id)
-                    .catch(console.error);
-                }
-              }
-            }
+        if (verifiedUser) {
+          updateSession(newSessionId, {
+            selectedUsers: [verifiedUser.id],
+            selectedUserName: getUserFullName(verifiedUser),
+            usersCache: new Map([[verifiedUser.id, verifiedUser]]),
+            hasLoadedDialogs: true,
           });
+
+          if (messageData.messageStatus === 'TO_OPERATOR' && !dialogIdStr) {
+            const dId = messageData.dialog?.id ?? dialogId;
+            if (dId) {
+              dialogHandlers
+                .loadDialogHistory(newSessionId, String(dId), true, 0, true)
+                .catch(console.error);
+            } else {
+              dialogHandlers
+                .refreshMessagesForUserId(newSessionId, verifiedUser.id)
+                .catch(console.error);
+            }
+          }
         }
 
         if (dialogId && !isElectronChatShell()) {

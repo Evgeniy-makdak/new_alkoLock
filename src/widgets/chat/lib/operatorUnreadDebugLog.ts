@@ -4,8 +4,7 @@
  * В MessageFeed при скролле к первому непрочитанному смотрите поля «лентаСообщений», «якорь…», «первоеВидимоеСообщениеId».
  *
  * localStorage.CHAT_UNREAD_DEBUG:
- *   не задано — в development логи включены;
- *   '1' — включить явно; '0' — выключить полностью.
+ *   '1' — включить логи; иначе выключены (в т.ч. в development).
  */
 
 export const CHAT_UNREAD_DEBUG_TAG = '[Чат:непрочитанные]';
@@ -14,10 +13,7 @@ const TAG = CHAT_UNREAD_DEBUG_TAG;
 
 export function isOperatorUnreadDebugEnabled(): boolean {
   if (typeof window === 'undefined') return false;
-  const v = localStorage.getItem('CHAT_UNREAD_DEBUG');
-  if (v === '0') return false;
-  if (v === '1') return true;
-  return process.env.NODE_ENV === 'development';
+  return localStorage.getItem('CHAT_UNREAD_DEBUG') === '1';
 }
 
 export function operatorUnreadDebug(message: string, payload?: Record<string, unknown>): void {

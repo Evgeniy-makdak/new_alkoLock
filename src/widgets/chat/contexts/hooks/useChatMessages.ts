@@ -428,12 +428,14 @@ export const useChatMessages = (
     try {
       const currentUserId = appStore.getState().authId;
       const isAdmin = currentUserId === 1;
+      const branchId = appStore.getState().selectedBranchState?.id;
 
       const options = {
         searchQuery: userId.toString(),
         limit: 1,
         filterOptions: {
           forChat: true,
+          ...(branchId != null ? { branchId } : {}),
           ...(isAdmin ? { isAdmin: true } : {}),
         },
         excludeDisabledUsers: true,

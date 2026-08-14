@@ -240,7 +240,7 @@ export const EventsDesktopTable = ({
       <div className={styles.scrollableTable}>
         <Table
           sortingMode="server"
-          rowCount={tableData.totalCount}
+          rowCount={tableData.totalCount ?? 0}
           paginationMode="server"
           onSortModelChange={tableData.changeTableSorts}
           apiRef={tableData.apiRef}
