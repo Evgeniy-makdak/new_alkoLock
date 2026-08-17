@@ -826,7 +826,7 @@ function ChatPanel({
       const message = findChatMessageByKey(messages, messageId);
 
       if (!canEditOrDeleteMessage(message)) {
-        throw new Error('Сообщение нельзя удалить: доступны статусы SENT и DELIVERED');
+        throw new Error('Сообщение нельзя удалить: доступен только статус SENT');
       }
 
       let serverMessageId = resolveServerMessageId(message);
