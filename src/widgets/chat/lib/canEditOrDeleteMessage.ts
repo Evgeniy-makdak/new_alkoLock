@@ -6,8 +6,7 @@ export const OPERATOR_MESSAGE_EDIT_DELETE_WINDOW_MINUTES = 1;
 export const MAX_MESSAGE_ATTACHMENTS = 5;
 
 /**
- * Редактирование и удаление доступны только пока сообщение не прочитано:
- * confirmStatus = SENT или DELIVERED (не READ).
+ * Удаление доступно, пока сообщение не прочитано: confirmStatus = SENT или DELIVERED.
  */
 export function canEditOrDeleteMessage(message: {
   created_at?: string;
@@ -19,9 +18,25 @@ export function canEditOrDeleteMessage(message: {
   const status = String(message.confirmStatus ?? '').toUpperCase();
   if (status !== 'SENT' && status !== 'DELIVERED') return false;
 
+  return isWithinOperatorEditDeleteWindow(message.created_at);
+}
+
+/**
+ * Редактирование — только пока сообщение в статусе SENT (не DELIVERED и не READ).
+ */
+export function canEditMessage(message: {
+  created_at?: string;
+  isDeleted?: boolean;
+  confirmStatus?: string | null;
+} | null | undefined): boolean {
+  if (!message?.created_at || message.isDeleted) return false;
+  if (String(message.confirmStatus ?? '').toUpperCase() !== 'SENT') return false;
+  return isWithinOperatorEditDeleteWindow(message.created_at);
+}
+
+function isWithinOperatorEditDeleteWindow(createdAt: string): boolean {
   try {
-    const minutesDiff = dayjs().diff(dayjs(message.created_at), 'minute');
-    return minutesDiff < OPERATOR_MESSAGE_EDIT_DELETE_WINDOW_MINUTES;
+    return dayjs().diff(dayjs(createdAt), 'minute') < OPERATOR_MESSAGE_EDIT_DELETE_WINDOW_MINUTES;
   } catch {
     return false;
   }

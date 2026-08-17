@@ -16,6 +16,7 @@ import {
 } from '../lib/resolveServerMessageId';
 import {
   EditableAttachment,
+  canEditMessage,
   canEditOrDeleteMessage,
 } from '../lib/canEditOrDeleteMessage';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
@@ -899,8 +900,8 @@ function ChatPanel({
       const messages = liveSession?.messages || [];
       const message = findChatMessageByKey(messages, messageId);
 
-      if (!canEditOrDeleteMessage(message)) {
-        throw new Error('Сообщение нельзя редактировать: доступны статусы SENT и DELIVERED');
+      if (!canEditMessage(message)) {
+        throw new Error('Сообщение нельзя редактировать: доступен только статус SENT');
       }
 
       const messageUuid = message?.uuid ? String(message.uuid) : null;

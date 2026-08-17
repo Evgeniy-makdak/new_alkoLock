@@ -20,6 +20,7 @@ import {
   EditableAttachment,
   MAX_MESSAGE_ATTACHMENTS,
   buildEditableAttachmentsFromMessage,
+  canEditMessage,
   canEditOrDeleteMessage,
   revokeEditableAttachmentPreviews,
 } from '../lib/canEditOrDeleteMessage';
@@ -1300,7 +1301,7 @@ function MessageFeed({
 
   const handleEditClick = (message: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (message.id && message.sender === 'user' && canEditOrDelete(message)) {
+    if (message.id && message.sender === 'user' && canEdit(message)) {
       revokeEditableAttachmentPreviews(editAttachments);
       setEditingMessageId(message.id);
       setEditText(message.text || '');
@@ -1411,7 +1412,7 @@ function MessageFeed({
       Boolean(onEditMessage) &&
       Boolean(editText.trim()) &&
       Boolean(message) &&
-      canEditOrDelete(message) &&
+      canEdit(message) &&
       !editSaving &&
       !editCompressionInProgress;
 
@@ -1480,6 +1481,7 @@ function MessageFeed({
   );
 
   const canEditOrDelete = (message: any): boolean => canEditOrDeleteMessage(message);
+  const canEdit = (message: any): boolean => canEditMessage(message);
 
   const handleRemoveAttachment = (index: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -1683,8 +1685,9 @@ function MessageFeed({
           const isEditing = msg.id === editingMessageId;
           const isOperatorMessage = msg.messageStatus === 'TO_USER';
           const canEditDelete = canEditOrDelete(msg) && canInteractWithMessages;
+          const canEditThis = canEdit(msg) && canInteractWithMessages;
           const showReplyControl = canInteractWithMessages && !!onReplyToMessage;
-          const showEditDeleteBar = canEditDelete;
+          const showEditDeleteBar = canEditDelete || canEditThis;
           const showMessageActionsRow = showReplyControl || showEditDeleteBar;
           const senderName = getSenderName(msg);
           const messageStyle = getMessageStyle(msg);
@@ -2008,20 +2011,20 @@ function MessageFeed({
                   )}
                   {showEditDeleteBar && (
                     <>
-                      {isOperatorMessage && (
+                      {isOperatorMessage && canEditThis && (
                         <button
                           onClick={(e) => handleEditClick(msg, e)}
-                          title={t('common.edit')}
-                          disabled={!canEditDelete}>
+                          title={t('common.edit')}>
                           <BsPencil size={12} />
                         </button>
                       )}
-                      <button
-                        onClick={(e) => handleDeleteClick(msg, e)}
-                        title={t('chat.deleteMessage')}
-                        disabled={!canEditDelete}>
-                        <FaTrash size={12} />
-                      </button>
+                      {canEditDelete && (
+                        <button
+                          onClick={(e) => handleDeleteClick(msg, e)}
+                          title={t('chat.deleteMessage')}>
+                          <FaTrash size={12} />
+                        </button>
+                      )}
                     </>
                   )}
                 </div>
