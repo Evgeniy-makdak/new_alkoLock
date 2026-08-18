@@ -14,6 +14,7 @@ import { ErrorBoundary } from '@layout/error_boundary';
 import { UserProvider } from '@pages/users/UserContext';
 import { LocaleThemeProvider } from '@shared/components/locale_theme_provider';
 import { routers } from '@shared/config/routers';
+import { AuthSessionSync } from '@shared/ui/auth_session_sync/AuthSessionSync';
 import { ColorModeProvider } from '@shared/theme/colorMode';
 import { UserStatusProvider } from '@shared/ui/refetch/UserStatusContext';
 import { StatusFilterProvider } from '@shared/ui/search_multiple_select/StatusFilterContext';
@@ -62,7 +63,7 @@ const AppContent = (
                             <StatusFilterProvider>
                               <DeviceStatusProvider>
                                 <SocketProvider stompConnect={false}>
-                                  <SnackbarProvider
+                                    <SnackbarProvider
                                     action={(snackbarId) => (
                                       <CloseIcon
                                         className="CloseIcon"
@@ -72,6 +73,7 @@ const AppContent = (
                                     maxSnack={3}
                                     anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
                                     autoHideDuration={null}>
+                                    <AuthSessionSync />
                                     <RouterProvider router={routers} />
                                   </SnackbarProvider>
                                 </SocketProvider>

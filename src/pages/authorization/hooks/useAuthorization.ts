@@ -14,6 +14,7 @@ import { StorageKeys } from '@shared/const/storageKeys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { AuthError, IAuthenticate, UserDataLogin } from '@shared/types/BaseQueryTypes';
 import { cookieManager, getBearerToken } from '@shared/utils/cookie_manager';
+import { publishAuthSessionFromBearer } from '@shared/lib/authSessionSync';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
 import { notifyDesktopAuthReady } from '@widgets/chat/chatPopup/electronPopupAuth';
 
@@ -93,6 +94,7 @@ export const useAuthorization = () => {
         if (refreshToken) {
           cookieManager.set('refresh', refreshToken, tokenDays);
         }
+        publishAuthSessionFromBearer();
         notifyDesktopAuthReady();
 
         if (rememberMe && loginAttempt?.username) {

@@ -10,6 +10,7 @@ import { StorageKeys } from '@shared/const/storageKeys';
 import { mobileFeaturesStore } from '@shared/model/mobile_features_store/mobileFeaturesStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { cookieManager } from '@shared/utils/cookie_manager';
+import { clearAuthSessionStamp } from '@shared/lib/authSessionSync';
 
 export type SelectedBranchState = {
   id: ID;
@@ -110,6 +111,7 @@ export const appStore = create<AppStore>()((set, get) => ({
     cookieManager.removeAll();
     routers.navigate(RoutePaths.auth);
     localStorage.removeItem(StorageKeys.OFFICE);
+    clearAuthSessionStamp();
     /* Следующая сессия: призрак на «События» включён (`alcolock.eventsGhostPrank.enabled`). */
     writeGhostPrankRuntimeEnabled(true);
   },

@@ -6,6 +6,7 @@ import { Permissions } from '@shared/config/permissionsEnums';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { SelectedBranchState } from '@shared/model/app_store/AppStore';
 import type { IAccount, ID, IError } from '@shared/types/BaseQueryTypes';
+import { publishAuthSessionFromBearer } from '@shared/lib/authSessionSync';
 
 type OnFetchDataHandlingArgs = {
   error: AxiosError<IError>;
@@ -50,9 +51,10 @@ export const onFetchDataHandling = ({
     if (user.fullName) {
       localStorage.setItem('userFullName', user.fullName);
     }
+    publishAuthSessionFromBearer();
   }
   if (location?.pathname === '/' && !error && user) {
-    navigate(route);
+    navigate(route, { replace: true });
   } else if (error || (!auth && !user)) {
     navigate(RoutePaths.auth);
   }

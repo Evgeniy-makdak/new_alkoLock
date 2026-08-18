@@ -44,7 +44,7 @@ export const useApp = () => {
         logout(true);
         return;
       }
-      navigate(firstAvailableRouter);
+      navigate(firstAvailableRouter, { replace: true });
     }
   }, [pathName, user, isLoading]);
 

@@ -27,6 +27,8 @@ export enum StorageKeys {
   AUTH_REMEMBER_USERNAME = 'auth_remember_username',
   /** Флаг «Запомнить меня» */
   AUTH_REMEMBER_ME = 'auth_remember_me',
+  /** Отпечаток текущей сессии для синхронизации вкладок (не сам JWT) */
+  AUTH_SESSION = 'alcolock_auth_session_v1',
 }
 
 /**
