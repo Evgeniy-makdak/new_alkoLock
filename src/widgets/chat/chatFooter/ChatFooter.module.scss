@@ -317,6 +317,8 @@
   min-height: 0;
   flex: 1 1 auto;
   transition: none !important;
+  /* Иначе scale(1) с overflow:hidden даёт неверный первый layout (селект/инпут «приплюснуты»). */
+  transform: none !important;
 }
 
 .chatFooterResizeRoot {

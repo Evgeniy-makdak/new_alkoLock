@@ -81,6 +81,10 @@
   font-family: inherit;
   font-size: chat-s(14px);
   line-height: 1.4;
+  box-sizing: border-box;
+  /* Пока TextareaAutosize не посчитал высоту, не даём полю схлопнуться на первом кадре. */
+  min-height: calc(1.4em + 16px);
+  min-height: calc(1.4em + chat-s(16px));
   
   &:focus {
     outline: none;

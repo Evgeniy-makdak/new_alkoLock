@@ -1857,7 +1857,7 @@ const ChatContainer = () => {
                 <Card
                   className={`${styles.chatFooter} ${styles.expanded} ${styles.chatFooterFluid}`}
                   sx={{
-                    '--chat-ui-scale': chatUiScale,
+                    '--chat-ui-scale': String(chatUiScale),
                     display: 'flex',
                     flexDirection: 'column',
                     minHeight: 0,
