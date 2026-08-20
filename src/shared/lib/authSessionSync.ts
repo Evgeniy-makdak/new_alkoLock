@@ -78,6 +78,15 @@ function scheduleReplace(target: string): void {
  */
 function handleForeignStamp(nextFp: string | null, needChangePassword?: boolean): void {
   const path = window.location.pathname;
+  // Шаги восстановления пароля не должны уезжать на /authorization при focus/visibility.
+  if (
+    path === RoutePaths.resetPassword ||
+    path === RoutePaths.confirmPassword ||
+    path === RoutePaths.forgetPassword
+  ) {
+    return;
+  }
+
   const foreign = isForeignSession(nextFp);
 
   if (nextFp == null) {
