@@ -1,21 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useChangePasswordApi } from '@pages/authorization/api/useChangePasswordApi';
-import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
+import { appStore } from '@shared/model/app_store/AppStore';
 import { ValidationMessages } from '@shared/validations/validation_messages';
 
 import i18n from '../../../i18n';
 import { Form, schema } from '../lib/validateChange';
 
 export const useChangePassword = () => {
-  const navigate = useNavigate();
-
   const {
     handleSubmit,
     register,
@@ -70,7 +67,7 @@ export const useChangePassword = () => {
       onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
-          navigate(RoutePaths.auth);
+          appStore.getState().logout(false);
         } else {
           const errorMessage = response?.detail || ValidationMessages.defaultError;
           setError('currentPassword', {

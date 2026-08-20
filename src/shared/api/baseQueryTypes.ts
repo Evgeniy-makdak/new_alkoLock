@@ -10,7 +10,8 @@ import { StatusCode } from '@shared/const/statusCode';
 // import { appStore } from '@shared/model/app_store/AppStore';
 import type { IError } from '@shared/types/BaseQueryTypes';
 import type { HeaderReq } from '@shared/types/QueryTypes';
-import { getBearerToken } from '@shared/utils/cookie_manager';
+import { getBearerToken, cookieManager } from '@shared/utils/cookie_manager';
+import { clearAuthSessionStamp } from '@shared/lib/authSessionSync';
 
 // import { enqueueSnackbar } from 'notistack';
 import { configLoader } from '../../config/configLoader';
@@ -67,6 +68,8 @@ export function viewResErrors<T>(error: AxiosError<IError>): AppAxiosResponse<T>
     RoutePaths.auth,
   ];
   if (isAuthError && !excludedPaths.some((path) => currentPath.includes(path))) {
+    cookieManager.removeAll();
+    clearAuthSessionStamp();
     localStorage.setItem('authError', 'Сессия авторизации закончена, авторизуйтесь заново');
     window.location.href = `${window.location.origin}${RoutePaths.auth}`;
   }

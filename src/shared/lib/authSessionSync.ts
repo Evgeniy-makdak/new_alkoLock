@@ -66,20 +66,34 @@ function isForeignSession(nextFp: string | null): boolean {
   return ensureThisTabFingerprint() !== nextFp;
 }
 
-function scheduleOpenStartPage(loggedOut: boolean, needChangePassword?: boolean): void {
+function scheduleReplace(target: string): void {
   if (reloadScheduled) return;
   reloadScheduled = true;
-  const target = loggedOut
-    ? RoutePaths.auth
-    : needChangePassword
-      ? RoutePaths.changePassword
-      : RoutePaths.root;
   window.location.replace(target);
 }
 
+/**
+ * Любая вкладка следует фазе сессии: логин / обязательная смена пароля / приложение.
+ * Смена раздела внутри приложения (события ↔ настройки) не синхронизируется.
+ */
 function handleForeignStamp(nextFp: string | null, needChangePassword?: boolean): void {
-  if (!isForeignSession(nextFp)) return;
-  scheduleOpenStartPage(nextFp == null, needChangePassword === true);
+  const path = window.location.pathname;
+  const foreign = isForeignSession(nextFp);
+
+  if (nextFp == null) {
+    if (!foreign && path === RoutePaths.auth) return;
+    scheduleReplace(RoutePaths.auth);
+    return;
+  }
+
+  if (needChangePassword) {
+    if (!foreign && path === RoutePaths.changePassword) return;
+    scheduleReplace(RoutePaths.changePassword);
+    return;
+  }
+
+  if (!foreign) return;
+  scheduleReplace(RoutePaths.root);
 }
 
 /** Зафиксировать сессию этой вкладки по текущему cookie (после своего login). */
