@@ -232,7 +232,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         })),
       });
       dialogs.forEach((d) => {
-        const count = d.countUnMessages ?? d.countUnreadMess ?? 0;
+        const count =
+          d.countUnMessages ?? d.countUnreadMess ?? (d as { countMessages?: number }).countMessages ?? 0;
         const fromSocket = socketDialogsUnreadCounts.get(d.id) ?? 0;
         const isBoundToSession = currentSessions.some(
           (s: any) =>

@@ -663,6 +663,7 @@ export const SocketProvider = ({
     }
 
     const preserveUnreadCounts =
+      currentBranchIdRef.current == null ||
       currentBranchIdRef.current === branchIdNorm ||
       (isElectronOperatorChatPopup() &&
         (hasDetailedDataRef.current || unreadAggregateRef.current > 0));
@@ -1071,7 +1072,7 @@ export const SocketProvider = ({
         reconnectTimeoutRef.current = undefined;
       }
       unsubscribe();
-      disconnectWebSocket();
+      disconnectWebSocket({ preserveUnreadCounts: true });
     };
   }, [apiConfig, stompConnect]);
 

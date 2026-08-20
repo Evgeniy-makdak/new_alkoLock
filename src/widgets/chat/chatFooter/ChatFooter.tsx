@@ -68,6 +68,7 @@ import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
 import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDebugLog';
 import {
+  getCurrentOperatorBranchId,
   isPayloadForCurrentOperatorBranch,
   sessionBelongsToCurrentOperatorBranch,
 } from '../lib/chatBranchGuard';
@@ -485,6 +486,33 @@ function minimizedSessionPreviewRaw(
   return '';
 }
 
+function unreadCountFromDialogRecord(dialog: UnreadDialog | Record<string, unknown>): number {
+  const rec = dialog as Record<string, unknown>;
+  const preferred = [
+    rec.countUnMessages,
+    rec.countUnreadMess,
+    rec.countMessages,
+    rec.countUnreadMessages,
+    rec.unreadCount,
+    rec.unread,
+  ];
+  for (const value of preferred) {
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  for (const [key, value] of Object.entries(rec)) {
+    if (typeof value !== 'number' && typeof value !== 'string') continue;
+    if (!/count|unread/i.test(key)) continue;
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 0;
+}
+
+function sumUnreadDialogCounts(dialogs: UnreadDialog[]): number {
+  return (dialogs || []).reduce((acc, dialog) => acc + unreadCountFromDialogRecord(dialog), 0);
+}
+
 const UnreadMessagesBadge = ({ count }: { count: number }) => {
   return <span className={styles.notifications}>{count > 99 ? '99+' : count}</span>;
 };
@@ -523,11 +551,76 @@ const ChatToggleButton = ({
   const { t } = useTranslation();
   const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId } =
     useChat();
-  const { calculateTotalUnread, dialogsUnreadCounts } = useSocket();
+  const {
+    calculateTotalUnread,
+    dialogsUnreadCounts,
+    mergeDialogUnreadFromApi,
+    restrictUnreadCountsToDialogIds,
+  } = useSocket();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
     isDesktopShell ? readMainChatFooterSuppressedByPopup() : false,
   );
+  const [restBadgeTotal, setRestBadgeTotal] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let cancelled = false;
+    let timer: number | undefined;
+    let lastBranchId: string | null = null;
+
+    const applyList = (list: UnreadDialog[]) => {
+      setRestBadgeTotal(sumUnreadDialogCounts(list));
+      const ids = list.map((d) => Number(d.id)).filter((id) => id > 0);
+      if (ids.length > 0) {
+        restrictUnreadCountsToDialogIds(ids);
+        list.forEach((dialog) => {
+          mergeDialogUnreadFromApi(Number(dialog.id), unreadCountFromDialogRecord(dialog));
+        });
+      }
+    };
+
+    const loadClosedChatBadge = (attempt = 0) => {
+      if (cancelled) return;
+      if (!getBearerToken()) return;
+      const branchId = getCurrentOperatorBranchId();
+      if (!branchId) return;
+
+      void (async () => {
+        try {
+          const response = await DialogsApi.getUnreadDialogs();
+          if (cancelled) return;
+          const list = (response?.data?.content ?? []) as UnreadDialog[];
+          applyList(list);
+          const sum = sumUnreadDialogCounts(list);
+          if (sum === 0 && attempt < 4) {
+            timer = window.setTimeout(() => loadClosedChatBadge(attempt + 1), 500);
+          }
+        } catch {
+          if (!cancelled && attempt < 4) {
+            timer = window.setTimeout(() => loadClosedChatBadge(attempt + 1), 500);
+          }
+        }
+      })();
+    };
+
+    const onStore = () => {
+      if (!getBearerToken()) return;
+      const branchId = getCurrentOperatorBranchId();
+      if (!branchId || branchId === lastBranchId) return;
+      lastBranchId = branchId;
+      loadClosedChatBadge(0);
+    };
+
+    onStore();
+    const unsubscribe = appStore.subscribe(onStore);
+    return () => {
+      cancelled = true;
+      if (timer) window.clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [isChatOpen, mergeDialogUnreadFromApi, restrictUnreadCountsToDialogIds]);
   const iconUnreadTotalBase = calculateTotalUnread();
   const electronSessionsUnreadSum =
     isElectronChatShell() && sessions.length > 0
@@ -547,7 +640,7 @@ const ChatToggleButton = ({
   const iconUnreadTotal =
     electronSessionsUnreadSum != null
       ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase)
-      : Math.max(iconUnreadTotalBase, maxSessionUnreadFallback);
+      : Math.max(iconUnreadTotalBase, maxSessionUnreadFallback, isChatOpen ? 0 : restBadgeTotal);
 
   const handleToggle = () => {
     if (isOperatorChatPopupWindow) {
