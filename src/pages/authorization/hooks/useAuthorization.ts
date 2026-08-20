@@ -94,7 +94,9 @@ export const useAuthorization = () => {
         if (refreshToken) {
           cookieManager.set('refresh', refreshToken, tokenDays);
         }
-        publishAuthSessionFromBearer();
+        publishAuthSessionFromBearer(
+          needChangePassword === true ? { needChangePassword: true } : undefined,
+        );
         notifyDesktopAuthReady();
 
         if (rememberMe && loginAttempt?.username) {

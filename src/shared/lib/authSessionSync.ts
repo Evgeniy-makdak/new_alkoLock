@@ -5,6 +5,8 @@ import { getBearerToken } from '@shared/utils/cookie_manager';
 type AuthSessionStamp = {
   fp: string;
   ts: number;
+  /** Вход с обязательной сменой пароля — другие вкладки должны открыть /changePassword. */
+  needChangePassword?: boolean;
 };
 
 const CHANNEL_NAME = 'alcolock-auth-session';
@@ -64,16 +66,20 @@ function isForeignSession(nextFp: string | null): boolean {
   return ensureThisTabFingerprint() !== nextFp;
 }
 
-function scheduleOpenStartPage(loggedOut: boolean): void {
+function scheduleOpenStartPage(loggedOut: boolean, needChangePassword?: boolean): void {
   if (reloadScheduled) return;
   reloadScheduled = true;
-  const target = loggedOut ? RoutePaths.auth : RoutePaths.root;
+  const target = loggedOut
+    ? RoutePaths.auth
+    : needChangePassword
+      ? RoutePaths.changePassword
+      : RoutePaths.root;
   window.location.replace(target);
 }
 
-function handleForeignStamp(nextFp: string | null): void {
+function handleForeignStamp(nextFp: string | null, needChangePassword?: boolean): void {
   if (!isForeignSession(nextFp)) return;
-  scheduleOpenStartPage(nextFp == null);
+  scheduleOpenStartPage(nextFp == null, needChangePassword === true);
 }
 
 /** Зафиксировать сессию этой вкладки по текущему cookie (после своего login). */
@@ -86,16 +92,21 @@ export function bindLocalAuthSessionLoggedOut(): void {
 }
 
 /** Сообщить другим вкладкам, что cookie/сессия сменились. */
-export function publishAuthSessionFromBearer(): void {
+export function publishAuthSessionFromBearer(options?: { needChangePassword?: boolean }): void {
   bindLocalAuthSessionFromCurrentBearer();
   const fp = thisTabFingerprint;
   if (!fp) {
     clearAuthSessionStamp();
     return;
   }
+  const needChangePassword = options?.needChangePassword === true;
   const current = readStamp();
-  if (current?.fp === fp) return;
-  const stamp: AuthSessionStamp = { fp, ts: Date.now() };
+  if (current?.fp === fp && Boolean(current.needChangePassword) === needChangePassword) return;
+  const stamp: AuthSessionStamp = {
+    fp,
+    ts: Date.now(),
+    ...(needChangePassword ? { needChangePassword: true } : {}),
+  };
   try {
     localStorage.setItem(StorageKeys.AUTH_SESSION, JSON.stringify(stamp));
   } catch {
@@ -131,19 +142,22 @@ export function subscribeAuthSessionSync(): () => void {
   const onStorage = (event: StorageEvent) => {
     if (event.key !== StorageKeys.AUTH_SESSION) return;
     let nextFp: string | null = null;
+    let needChangePassword = false;
     if (event.newValue) {
       try {
         const parsed = JSON.parse(event.newValue) as AuthSessionStamp;
         nextFp = parsed?.fp ?? null;
+        needChangePassword = parsed?.needChangePassword === true;
       } catch {
         nextFp = null;
       }
     }
-    handleForeignStamp(nextFp);
+    handleForeignStamp(nextFp, needChangePassword);
   };
 
   const onFocus = () => {
-    handleForeignStamp(readStamp()?.fp ?? null);
+    const stamp = readStamp();
+    handleForeignStamp(stamp?.fp ?? null, stamp?.needChangePassword === true);
   };
 
   const onVisibility = () => {
@@ -155,9 +169,9 @@ export function subscribeAuthSessionSync(): () => void {
   document.addEventListener('visibilitychange', onVisibility);
 
   const channel = getChannel();
-  const onBroadcast = (event: MessageEvent<{ fp?: string | null }>) => {
+  const onBroadcast = (event: MessageEvent<{ fp?: string | null; needChangePassword?: boolean }>) => {
     try {
-      handleForeignStamp(event.data?.fp ?? null);
+      handleForeignStamp(event.data?.fp ?? null, event.data?.needChangePassword === true);
     } catch {
       /* ignore */
     }
