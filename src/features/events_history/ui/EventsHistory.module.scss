@@ -65,12 +65,15 @@
 }
 
 .minWidthWrapper {
-  height: 100%;
-  max-height: 100%;
+  /* Абсолютно заполняем .content — внутренний скролл таблицы при любом zoom */
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
 }

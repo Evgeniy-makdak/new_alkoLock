@@ -1,27 +1,20 @@
 .alcolockInfo {
   display: flex;
-  height: 100%;
+  width: 100%;
   padding: 10px;
+  padding-bottom: 16px;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
   box-sizing: border-box;
-  min-height: 0;
-  max-height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
   gap: 12px;
+  /* Высота по контенту — скроллит родитель .content (RowTableInfo), в т.ч. при zoom 175%+ */
 }
 
 .alcolockInfoBody {
   width: 100%;
   display: flex;
   justify-content: center;
-  flex: 1 1 auto;
-  min-width: 0;
-  min-height: min(12rem, 50%);
-  overflow-x: hidden;
-  overflow-y: auto;
 
   :global(.MuiCard-root) {
     width: 580px;
@@ -34,32 +27,23 @@
   display: flex;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: auto;
 }
 
 /*
- * Реальный телефон (touch), не browser zoom на десктопе:
- * zoom 400% даёт CSS width < 768px при pointer:fine — там оставляем flex/scroll выше.
+ * Реальный телефон (touch): прежнее распределение блоков.
+ * Browser zoom на десктопе (pointer:fine) сюда не попадает.
  */
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .alcolockInfo {
     justify-content: space-between;
     gap: 0;
-    overflow: visible;
+    min-height: 100%;
   }
 
   .alcolockInfoBody {
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow: visible;
-
     :global(.MuiCard-root) {
       width: 100%;
       max-width: 100%;
     }
-  }
-
-  .alcolockInfoService {
-    margin-top: 0;
   }
 }

@@ -33,7 +33,7 @@ export const Aside = ({
     <div
       data-testid={testid}
       className={`${style.aside} ${shouldUseMobileFullscreen ? style.asideFullscreenMobile : ''}`}>
-      {children}
+      <div className={style.asideBody}>{children}</div>
 
       <Tooltip title={t('aside.collapseWindow')}>
         <IconButton
