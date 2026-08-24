@@ -1,6 +1,8 @@
 .aside {
   position: relative;
   width: auto;
+  /* Как карточка Info (580px): на вкладке «История» контент absolute и не растягивает панель */
+  min-width: 580px;
   border-left: 1px solid #d8d8d8;
   /* Не 100vh: при browser zoom 100vh выше contentWrapper → низ панели клипается без скролла */
   height: 100%;
@@ -37,6 +39,7 @@
   inset: 0;
   z-index: 1200;
   width: 100vw;
+  min-width: 0;
   height: 100dvh;
   max-height: 100dvh;
   border-left: 0;
