@@ -4,6 +4,10 @@
   border-left: 1px solid #d8d8d8;
   height: 100vh;
   max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .asideFullscreenMobile {

@@ -290,16 +290,20 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
   return (
     <Loader isLoading={isLoading}>
       <div className={style.alcolockInfo}>
-        <Info fields={preparedFields} />
+        <div className={style.alcolockInfoBody}>
+          <Info fields={preparedFields} />
+        </div>
 
         {alkolock && !!alkolock.vehicleBind && (
-          <AlkozamkiServiceMode
-            key={selectedAlcolockId}
-            alkolock={alkolock}
-            handleCloseAside={closeTab} // 👈 передаем функцию закрытия
-            activeDeviceIds={activeDeviceIds}
-            autoServiceType={autoServiceType} // 👈 передаем autoServiceType
-          />
+          <div className={style.alcolockInfoService}>
+            <AlkozamkiServiceMode
+              key={selectedAlcolockId}
+              alkolock={alkolock}
+              handleCloseAside={closeTab} // 👈 передаем функцию закрытия
+              activeDeviceIds={activeDeviceIds}
+              autoServiceType={autoServiceType} // 👈 передаем autoServiceType
+            />
+          </div>
         )}
       </div>
     </Loader>

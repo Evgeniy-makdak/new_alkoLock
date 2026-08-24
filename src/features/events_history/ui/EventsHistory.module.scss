@@ -40,24 +40,46 @@
 }
 
 .fixedHeader {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  position: relative;
+  top: auto;
+  z-index: auto;
   background: white;
   padding: 0 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  /* Не больше ~1/3 панели — иначе на zoom 400% шапка съедает всю высоту */
+  flex: 0 1 auto;
+  max-height: 38%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .scrollableContent {
-  height: calc(100vh - 180px);
+  /* height:0 + flex:1 — таблица всегда занимает оставшуюся видимую часть панели
+     (в т.ч. при zoom, когда CSS width < 769px и срабатывают «мобильные» media). */
+  flex: 1 1 0%;
+  height: 0;
+  min-height: 50%;
+  overflow-x: auto;
   overflow-y: auto;
 }
 
 .minWidthWrapper {
+  height: 100%;
   max-height: 100%;
   width: 100%;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* StyledTable.HeaderRow задаёт sticky — на узком/zoom viewport шапка перекрывает строки */
+.headerTitleRow,
+.filterRow {
+  position: static !important;
+  top: auto !important;
 }
 
 .typeOfEvent {
@@ -183,7 +205,10 @@
   }
   
   .scrollableContent {
-    height: calc(100vh - 220px);
+    /* Не calc(100vh): при browser zoom 100vh+шапка выталкивают таблицу за край панели */
+    flex: 1 1 0%;
+    height: 0;
+    min-height: 50%;
     overflow-x: auto;
     width: 90%;
     
@@ -526,7 +551,9 @@
   }
   
   .scrollableContent {
-    height: calc(100vh - 220px);
+    flex: 1 1 0%;
+    height: 0;
+    min-height: 50%;
     width: 100%;
   }
   
@@ -874,7 +901,9 @@
 // Для экранов меньше 360px (самые маленькие мобильные)
 @media (max-width: 360px) {
   .scrollableContent {
-    height: calc(100vh - 240px);
+    flex: 1 1 0%;
+    height: 0;
+    min-height: 50%;
     width: 100%;
   }
   
