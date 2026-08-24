@@ -1139,6 +1139,17 @@ export const MapPage = () => {
     map.on('moveend', updateBounds);
     updateBounds();
 
+    // ALK-1525: Leaflet глотает Ctrl/⌘+колёсико (preventDefault) и меняет zoom тайлов,
+    // из‑за этого UI/маркеры остаются при прежнем browser zoom. На реальном телефоне
+    // Ctrl+wheel нет — жест pinch по-прежнему зумит карту.
+    const mapEl = map.getContainer();
+    const passCtrlWheelToBrowser = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey) {
+        event.stopImmediatePropagation();
+      }
+    };
+    mapEl.addEventListener('wheel', passCtrlWheelToBrowser, { capture: true, passive: true });
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -1157,6 +1168,7 @@ export const MapPage = () => {
     }
 
     return () => {
+      mapEl.removeEventListener('wheel', passCtrlWheelToBrowser, true);
       basemapSwapChainRef.current = Promise.resolve();
       basemapRef.current = null;
       map.off('moveend', updateBounds);
@@ -1621,6 +1633,8 @@ export const MapPage = () => {
               : {
                   position: 'absolute',
                   right: 0,
+                  top: 0,
+                  bottom: 0,
                   zIndex: 900,
                   backgroundColor: asidePanelBackground,
                   boxShadow: asidePanelShadow,
