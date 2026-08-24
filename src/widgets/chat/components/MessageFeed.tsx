@@ -346,12 +346,19 @@ function MessageFeed({
     return count;
   }, [messagesInActiveDialog, lastSeenMessageId]);
 
-  const sendReadStatusForVisibleMessages = useCallback(() => {
+  const sendReadStatusForVisibleMessages = useCallback((options?: { ignoreScrollGuards?: boolean }) => {
     if (!onMarkMessagesAsRead) return;
+    // Пока диалог не CLOSED («Забрать» ещё не нажата), ChatPanel READ не отправит.
+    // Нельзя писать TTL alreadySent: иначе после «Забрать» видимое сообщение
+    // останется непрочитанным до ручного скролла.
+    if (String(dialogStatus ?? '').toUpperCase() !== 'CLOSED') {
+      return;
+    }
     if (
-      expandScrollPendingRef.current ||
-      needsScrollToFirstUnreadRef.current ||
-      freezeAutoBottomUntilUserScrollRef.current
+      !options?.ignoreScrollGuards &&
+      (expandScrollPendingRef.current ||
+        needsScrollToFirstUnreadRef.current ||
+        freezeAutoBottomUntilUserScrollRef.current)
     ) {
       return;
     }
@@ -407,7 +414,14 @@ function MessageFeed({
         }, index * 500);
       });
     }
-  }, [messagesInActiveDialog, onMarkMessagesAsRead, sessionId, feedDialogId, readSentTrackingKeys]);
+  }, [
+    messagesInActiveDialog,
+    onMarkMessagesAsRead,
+    sessionId,
+    feedDialogId,
+    readSentTrackingKeys,
+    dialogStatus,
+  ]);
 
   useEffect(() => {
     const count = calculateUnreadMessages();
@@ -895,6 +909,21 @@ function MessageFeed({
     }, 150);
     return () => clearTimeout(t);
   }, [messages.length, sessionId, updateVisibleMessages, sendReadStatusForVisibleMessages]);
+
+  // После «Забрать» статус становится CLOSED: те же видимые непрочитанные, что уже на экране,
+  // должны уйти в READ без дополнительного скролла. Другие статусы не трогаем.
+  const prevDialogStatusForVisibleReadRef = useRef(dialogStatus);
+  useEffect(() => {
+    const prev = String(prevDialogStatusForVisibleReadRef.current ?? '').toUpperCase();
+    const next = String(dialogStatus ?? '').toUpperCase();
+    prevDialogStatusForVisibleReadRef.current = dialogStatus;
+    if (next !== 'CLOSED' || prev === 'CLOSED') return;
+    const t = window.setTimeout(() => {
+      updateVisibleMessages();
+      sendReadStatusForVisibleMessages({ ignoreScrollGuards: true });
+    }, 50);
+    return () => window.clearTimeout(t);
+  }, [dialogStatus, updateVisibleMessages, sendReadStatusForVisibleMessages]);
 
   useEffect(() => {
     if (hasUnreadOnExpandHint) return;
