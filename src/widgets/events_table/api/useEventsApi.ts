@@ -52,7 +52,7 @@ export const useEventsApi = (
     ? [QueryKeys.EVENTS_LIST as QueryKeys, options.startDate, options.endDate]
     : [QueryKeys.EVENTS_LIST_TABLE as QueryKeys, options.startDate, options.endDate];
 
-  const { data, isLoading, refetch } = useConfiguredQuery(
+  const { data, isLoading, isPlaceholderData, refetch } = useConfiguredQuery(
     //@ts-expect-error: Временное решение
     queryKey,
     EventsApi.getList,
@@ -72,5 +72,5 @@ export const useEventsApi = (
     },
   );
 
-  return { isLoading, data, refetch };
+  return { isLoading, isPlaceholderData: Boolean(isPlaceholderData), data, refetch };
 };

@@ -11,11 +11,15 @@ const EMPTY_TO_FULL_GRACE_MS = 1000;
 /**
  * Сравнивает текущую страницу результатов с предыдущим снимком при авто-рефетче (refetchInterval).
  * Первый успешный ответ после смены фильтров/страницы/филиала — только базовая линия, без подсветки.
+ *
+ * isPlaceholderData: при keepPreviousData на смене page/фильтров React Query отдаёт content
+ * предыдущего запроса — нельзя брать его в baseline, иначе все id новой страницы станут «новыми».
  */
 export function useDeviceEventsNewRowsHighlight(
   content: IDeviceAction[] | undefined,
   baselineKey: string,
   isLoading: boolean,
+  isPlaceholderData = false,
 ) {
   const prevBaselineKeyRef = useRef<string | null>(null);
   const prevIdsRef = useRef<Set<string> | null>(null);
@@ -35,9 +39,6 @@ export function useDeviceEventsNewRowsHighlight(
     if (isLoading) return;
     if (!content || !Array.isArray(content)) return;
 
-    const ids = content.map((item) => String(item.id));
-    const idSet = new Set(ids);
-
     if (prevBaselineKeyRef.current !== baselineKey) {
       prevBaselineKeyRef.current = baselineKey;
       prevIdsRef.current = null;
@@ -46,6 +47,12 @@ export function useDeviceEventsNewRowsHighlight(
       timersRef.current.clear();
       setHighlightedIds(new Set());
     }
+
+    // Ждём реальный ответ по текущему queryKey — не фиксируем baseline на «старой» странице.
+    if (isPlaceholderData) return;
+
+    const ids = content.map((item) => String(item.id));
+    const idSet = new Set(ids);
 
     if (prevIdsRef.current === null) {
       prevIdsRef.current = new Set(idSet);
@@ -91,7 +98,7 @@ export function useDeviceEventsNewRowsHighlight(
       }, NEW_DEVICE_EVENT_HIGHLIGHT_MS);
       timersRef.current.set(id, timer);
     }
-  }, [content, baselineKey, isLoading]);
+  }, [content, baselineKey, isLoading, isPlaceholderData]);
 
   return highlightedIds;
 }

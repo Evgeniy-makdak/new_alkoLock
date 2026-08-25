@@ -89,7 +89,7 @@ export const useEventsTable = () => {
     refetch();
   };
 
-  const { isLoading, data, refetch } = useEventsApi(queryOptions);
+  const { isLoading, isPlaceholderData, data, refetch } = useEventsApi(queryOptions);
 
   const highlightBaselineKey = useMemo(
     () =>
@@ -133,6 +133,7 @@ export const useEventsTable = () => {
     data?.data?.content,
     highlightBaselineKey,
     isLoading,
+    isPlaceholderData,
   );
 
   const rows = useGetRows(data?.data?.content);
