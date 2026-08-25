@@ -167,40 +167,48 @@ const CustomPagination = () => {
         onJump={onJump}
       />
 
-      <Tooltip title={t('pagination.firstPage')}>
-        <IconButton
-          onClick={handleFirstPageButtonClick}
-          disabled={page === 0}
-          aria-label="first page">
-          <FirstPageIcon />
-        </IconButton>
+      <Tooltip title={page === 0 ? '' : t('pagination.firstPage')}>
+        <span>
+          <IconButton
+            onClick={handleFirstPageButtonClick}
+            disabled={page === 0}
+            aria-label="first page">
+            <FirstPageIcon />
+          </IconButton>
+        </span>
       </Tooltip>
 
-      <Tooltip title={t('pagination.prevPage')}>
-        <IconButton
-          onClick={handlePreviousPageButtonClick}
-          disabled={page === 0}
-          aria-label="previous page">
-          <KeyboardArrowLeftIcon />
-        </IconButton>
+      <Tooltip title={page === 0 ? '' : t('pagination.prevPage')}>
+        <span>
+          <IconButton
+            onClick={handlePreviousPageButtonClick}
+            disabled={page === 0}
+            aria-label="previous page">
+            <KeyboardArrowLeftIcon />
+          </IconButton>
+        </span>
       </Tooltip>
 
-      <Tooltip title={t('pagination.nextPage')}>
-        <IconButton
-          onClick={handleNextPageButtonClick}
-          disabled={page >= maxPageIndex}
-          aria-label="next page">
-          <KeyboardArrowRightIcon />
-        </IconButton>
+      <Tooltip title={page >= maxPageIndex ? '' : t('pagination.nextPage')}>
+        <span>
+          <IconButton
+            onClick={handleNextPageButtonClick}
+            disabled={page >= maxPageIndex}
+            aria-label="next page">
+            <KeyboardArrowRightIcon />
+          </IconButton>
+        </span>
       </Tooltip>
 
-      <Tooltip title={t('pagination.lastPage')}>
-        <IconButton
-          onClick={handleLastPageButtonClick}
-          disabled={page >= maxPageIndex}
-          aria-label="last page">
-          <LastPageIcon />
-        </IconButton>
+      <Tooltip title={page >= maxPageIndex ? '' : t('pagination.lastPage')}>
+        <span>
+          <IconButton
+            onClick={handleLastPageButtonClick}
+            disabled={page >= maxPageIndex}
+            aria-label="last page">
+            <LastPageIcon />
+          </IconButton>
+        </span>
       </Tooltip>
     </Box>
   );

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import { keepPreviousData } from '@tanstack/react-query';
+
 import { EventsApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
@@ -61,6 +63,11 @@ export const useEventsApi = (
         retry: 1,
         staleTime: isMapPage ? 30000 : 0,
         enabled: !isMapPage || !!totalLimit,
+        // Таблица «События»: при смене page queryKey меняется и без placeholder
+        // data/totalElements на кадр становятся undefined → rowCount=0 → DataGrid
+        // сбрасывает пагинацию на 1-ю страницу (только на ещё не кэшированной page).
+        // Карта (isMapPage) не затрагивается.
+        ...(isMapPage ? {} : { placeholderData: keepPreviousData }),
       },
     },
   );

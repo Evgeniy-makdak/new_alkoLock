@@ -92,6 +92,29 @@ export function LocaleThemeProvider({ children }: LocaleThemeProviderProps) {
                 : {},
           },
         },
+        // absolute-popper у края viewport раздувает scrollWidth/Height документа →
+        // появляется скроллбар → сдвиг layout → курсор срывается с кнопки (hover-loop на части zoom).
+        MuiTooltip: {
+          defaultProps: {
+            disableInteractive: true,
+            slotProps: {
+              popper: {
+                strategy: 'fixed',
+                modifiers: [
+                  {
+                    name: 'preventOverflow',
+                    options: {
+                      boundary: 'viewport',
+                      altAxis: true,
+                      tether: true,
+                      padding: 8,
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
         MuiPaper: {
           styleOverrides: {
             root: {

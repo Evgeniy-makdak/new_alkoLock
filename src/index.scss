@@ -9,7 +9,15 @@
   &::after {
     box-sizing: border-box;
   }
-} /* Links*/
+}
+
+/* SPA: горизонтальный скролл только внутри контейнеров (.content и т.п.).
+   Иначе тултип у правого края на части zoom даёт hover↔scrollbar дёрганье. */
+html {
+  overflow-x: hidden;
+}
+
+/* Links*/
 
 html.operator-chat-popup-transparent,
 html.operator-chat-popup-transparent body,

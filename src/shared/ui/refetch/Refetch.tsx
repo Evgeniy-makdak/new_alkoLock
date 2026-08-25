@@ -37,13 +37,14 @@ export const Refetch = ({
   const debounced = debounce({ time: 800, eventHandler: onClickAnimate });
 
   return (
-    <button
-      data-testid={testId}
-      className={`${style.button} ${styles}`}
-      onClick={() => debounced()}>
-      <Tooltip title={t('common.refreshList')}>
+    <Tooltip title={t('common.refreshList')}>
+      <button
+        type="button"
+        data-testid={testId}
+        className={`${style.button} ${styles}`}
+        onClick={() => debounced()}>
         <ReplayIcon className={animate || ''} {...rest} />
-      </Tooltip>
-    </button>
+      </button>
+    </Tooltip>
   );
 };
