@@ -1,22 +1,27 @@
 .alcolockInfo {
   display: flex;
   width: 100%;
-  height: 100%;
-  min-height: 0;
+  box-sizing: border-box;
+  /* Заполняем панель при обычном zoom; при 400%+ можем вырасти — скролл у asideInfoFillPanel */
+  min-height: 100%;
+  height: auto;
   padding: 10px;
   padding-bottom: 16px;
   flex-direction: column;
-  /* Сервисный режим у нижнего края панели; карточка Info — сверху */
+  /* Сервисный режим у нижнего края, когда места хватает */
   justify-content: space-between;
   align-items: center;
-  box-sizing: border-box;
   gap: 12px;
 }
 
 .alcolockInfoBody {
   width: 100%;
   flex: 1 1 auto;
-  min-height: 0;
+  /*
+   * ALK-1526: при browser zoom 400%+ flex иначе сжимал блок до 0 —
+   * оставался только «Сервисный режим». Минимум + внутренний скролл.
+   */
+  min-height: 140px;
   overflow-x: hidden;
   overflow-y: auto;
   display: flex;
@@ -33,6 +38,7 @@
   width: 100%;
   display: flex;
   justify-content: center;
+  flex: 0 0 auto;
   flex-shrink: 0;
   margin-top: auto;
 }

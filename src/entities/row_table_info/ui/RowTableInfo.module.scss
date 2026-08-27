@@ -57,15 +57,16 @@
   }
 
   /*
-   * Info алкозамка: Loader должен занимать высоту вкладки,
-   * иначе блок «Сервисный режим» прилипает к карточке сверху.
+   * Info алкозамка: Loader занимает высоту вкладки (сервисный режим снизу),
+   * но overflow-y: auto — при 400%+ zoom параметры не клипаются (ALK-1526).
    */
   > :global(.asideInfoFillPanel) {
     flex: 1 1 auto !important;
     height: 100% !important;
     max-height: 100% !important;
     min-height: 0 !important;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
   }
