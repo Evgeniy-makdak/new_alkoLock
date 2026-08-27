@@ -9,7 +9,8 @@ import { AvtoServiceTable } from '@widgets/auto_service_table';
 import { useAutoService } from '../hooks/useAutoService';
 
 const AutoService = () => {
-  const { selectedItemId, tabs, onClickRow, handleCloseAside } = useAutoService();
+  const { selectedItemId, tabs, onClickRow, handleCloseAside, activeTabIndex, setActiveTabIndex } =
+    useAutoService();
   const prevBranchId = useRef<unknown>(undefined);
   const { selectedBranchState } = appStore((state) => state);
 
@@ -39,7 +40,11 @@ const AutoService = () => {
 
       {selectedItemId && (
         <Aside onClose={handleCloseAside}>
-          <RowTableInfo tabs={tabs} />
+          <RowTableInfo
+            tabs={tabs}
+            activeTab={activeTabIndex}
+            onTabChange={setActiveTabIndex}
+          />
         </Aside>
       )}
     </>

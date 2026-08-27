@@ -12,11 +12,14 @@ import { useGroupsApi } from '../api/useGroupsApi';
 export const useGroups = () => {
   const { t } = useTranslation();
   const [selectedGroupId, setSelectedGroupId] = useState<null | ID>(null);
+  /** Подвкладка Aside: сохраняется при смене группы; сброс только при закрытии панели. */
+  const [asideTabIndex, setAsideTabIndex] = useState(0);
   const { branch, isLoading } = useGroupsApi(selectedGroupId);
   const onClickRow = (id: string) => setSelectedGroupId(id);
 
   const onCloseAside = () => {
     setSelectedGroupId(null);
+    setAsideTabIndex(0);
   };
 
   useEffect(() => {
@@ -51,5 +54,7 @@ export const useGroups = () => {
     onCloseAside,
     tabs,
     isLoading,
+    asideTabIndex,
+    setAsideTabIndex,
   };
 };

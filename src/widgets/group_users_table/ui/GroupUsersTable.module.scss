@@ -26,6 +26,30 @@
   min-width: 0;
 }
 
+/* Десктоп в Aside: высота панели = область вкладок, скролл внутри DataGrid, футер закреплён */
+.asideTablePanel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.asideTableBody {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+
+  > * {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+  }
+}
+
 .mobileToolbar {
   display: flex;
   align-items: center;

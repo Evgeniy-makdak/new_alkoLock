@@ -5,7 +5,8 @@
   overflow: hidden;
   height: 100%;
   max-height: 100%;
-  min-width: 580px;
+  /* Синхронно с Aside: History absolute не растягивает панель — держим ширину как у Info */
+  min-width: 640px;
   width: 100%;
   min-height: 0;
   box-sizing: border-box;
@@ -38,6 +39,40 @@
     height: auto !important;
     max-height: none !important;
     min-height: 0;
+  }
+
+  /*
+   * Таблицы во вкладках Aside (Группы → Пользователи/Алкозамки/Транспорт):
+   * фиксируем высоту панели, иначе DataGrid растёт по строкам → скролл у .content
+   * мигает и футер пагинации уезжает вместе со строками.
+   */
+  > :global(.asideTablePanel) {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /*
+   * Info алкозамка: Loader должен занимать высоту вкладки,
+   * иначе блок «Сервисный режим» прилипает к карточке сверху.
+   */
+  > :global(.asideInfoFillPanel) {
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  &:has(> :global(.asideTablePanel)),
+  &:has(> :global(.asideInfoFillPanel)) {
+    overflow: hidden;
   }
 }
 

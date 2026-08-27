@@ -124,8 +124,9 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* Не 660px: Aside/Info ~580px — иначе «Дата»/«Фильтр» клипаются справа */
   width: 100%;
-  width: 660px;
+  max-width: 100%;
   padding: 8px 20px 8px 8px;
   box-sizing: border-box;
 }
@@ -141,23 +142,55 @@
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  width: 660px;
+  max-width: 100%;
   padding: 0 8px;
   box-sizing: border-box;
 }
 
-/* Только шапка с заголовками и кнопкой «Фильтр», и строка раскрытых фильтров — отступ справа */
+/* Раскрытый фильтр: «Тип события» не сжимать; даты делят оставшуюся ширину */
 .tr.filterRow {
-  padding: 0 20px 0 8px;
-}
+  padding: 0 8px;
+  gap: 8px;
+  min-width: 0;
 
-/* Десктоп: «Дата» ближе к «Тип события», «Фильтр» — с большим зазором от правого края (мобильные @media max-width:768 не затрагиваются) */
-@media (min-width: 769px) {
-  .headerTitleRow {
-    padding-right: 28px;
+  .typeOfEvent {
+    flex: 0 0 160px;
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
   }
 
-  .tr.filterRow {
+  .headerCellDate {
+    flex: 1 1 auto;
+    min-width: 0 !important;
+    width: auto;
+    max-width: none;
+  }
+
+  .headerCell {
+    display: none;
+  }
+}
+
+.filterResetSlot {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  margin-right: 0;
+}
+
+.datePickerContainer {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+}
+
+/* Десктоп: «Дата» ближе к «Тип события», «Фильтр» — с запасом от правого края (мобильные @media max-width:768 не затрагиваются) */
+@media (min-width: 769px) {
+  .headerTitleRow {
     padding-right: 28px;
   }
 
@@ -182,13 +215,6 @@
     display: flex;
     flex-direction: column;
   }
-}
-
-.datePickerContainer {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  width: 370px;
 }
 
 // === АДАПТИВНЫЕ СТИЛИ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ ===

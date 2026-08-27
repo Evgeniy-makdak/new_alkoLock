@@ -19,7 +19,7 @@ export const useAutoService = () => {
 
   const onClickRow = useCallback((id: string | number, deviceId: string | number) => {
     setSelectedItemId({ id, deviceId });
-    setActiveTabIndex(0); // При открытии всегда вкладка "ИНФО"
+    // Подвкладку (Инфо/История) не сбрасываем при смене строки — только при закрытии Aside.
   }, []);
 
   const handleCloseAside = useCallback(() => {

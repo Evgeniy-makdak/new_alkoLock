@@ -288,7 +288,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
   ]);
 
   return (
-    <Loader isLoading={isLoading}>
+    <Loader isLoading={isLoading} props={{ className: 'asideInfoFillPanel' }}>
       <div className={style.alcolockInfo}>
         <div className={style.alcolockInfoBody}>
           <Info fields={preparedFields} />

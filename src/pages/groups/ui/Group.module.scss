@@ -16,6 +16,11 @@
   max-width: 900px;
 }
 
+/* Только Группы: пагинация таблиц у нижнего края (на уровне стрелки Aside), без запасного 48px */
+.groupAsideTabs {
+  padding-bottom: 0 !important;
+}
+
 @media (max-width: 768px) {
   .infoTab {
     min-width: 0;

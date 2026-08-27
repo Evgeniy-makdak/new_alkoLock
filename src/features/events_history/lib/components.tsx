@@ -416,7 +416,7 @@ export const TableHeader = ({
             <StyledTable.HeaderRow className={`${style.tr} ${style.filterRow}`}>
               <StyledTable.HeaderCell
                 className={style.typeOfEvent}
-                style={{ paddingRight: '5px', width: '160px' }}>
+                style={{ paddingRight: '5px' }}>
                 {/* Добавляем key для принудительного сброса */}
                 <TypeEventSelect
                   key={`type-event-select-${typeEventSelectKey}`} // Ключ для принудительного сброса
@@ -433,19 +433,26 @@ export const TableHeader = ({
 
               <StyledTable.HeaderCell
                 className={style.headerCellDate}
-                style={{ paddingLeft: '5px', position: 'relative', width: 'auto' }}>
-                <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '5px' }}>
-                  <div
-                    className={style.datePickerContainer}
-                    style={{ display: 'flex', gap: '50px', flexShrink: 0 }}>
+                style={{ paddingLeft: '5px', position: 'relative', width: 'auto', minWidth: 0 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    width: '100%',
+                    gap: '8px',
+                    minWidth: 0,
+                  }}>
+                  <div className={style.datePickerContainer}>
                     <InputDate
                       value={localStartDate}
                       onChange={handleStartDateChange}
                       tooltipTitle={t('history.startDate')}
                       sx={{
+                        flex: '1 1 0',
+                        minWidth: 140,
                         '& .MuiInputBase-root': {
                           height: '56px',
-                          width: '200px',
+                          width: '100%',
                         },
                       }}
                     />
@@ -454,15 +461,17 @@ export const TableHeader = ({
                       onChange={handleEndDateChange}
                       tooltipTitle={t('history.endDate')}
                       sx={{
+                        flex: '1 1 0',
+                        minWidth: 140,
                         '& .MuiInputBase-root': {
                           height: '56px',
-                          width: '200px',
+                          width: '100%',
                         },
                       }}
                     />
                   </div>
                   {/* Десктопная версия - кнопка справа от полей дат */}
-                  <div style={{ marginLeft: '50px', marginRight: '20px' }}>
+                  <div className={style.filterResetSlot}>
                     <ResetFilters reset={resetAllFilters} />
                   </div>
                 </div>

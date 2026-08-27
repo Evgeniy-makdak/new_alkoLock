@@ -96,7 +96,7 @@ export const useUsers = () => {
     setSelectedUserActive(isActive);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
-    setActiveTab(0);
+    // Подвкладку (Инфо/История) не сбрасываем при смене строки — только при закрытии Aside.
     setInitialExpandedHistoryEventId(null);
     setPreserveAsideFromMapReturn(false);
   };

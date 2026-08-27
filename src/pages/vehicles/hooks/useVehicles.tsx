@@ -87,7 +87,7 @@ export const useVehicles = () => {
     setSelectedCarId(id);
     setTargetPageFromNavigation(null);
     setReturnNavigation(null);
-    setActiveTab('info');
+    // Подвкладку (Инфо/История) не сбрасываем при смене строки — только при закрытии Aside.
     setInitialExpandedHistoryEventId(null);
   };
   const onTargetPageApplied = () => {

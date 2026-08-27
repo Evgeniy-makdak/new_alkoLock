@@ -140,35 +140,39 @@ export const GroupCarTable: FC<GroupCarTableProps> = ({ groupInfo }) => {
 
   return (
     <>
-      <TableHeaderWrapper>
-        <SearchInput
-          testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_CARS_TABLE}
-          value={filtersData.input}
-          onClear={() => {
-            filtersData.setInput('');
-            tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
-          }}
-          setState={(value) => {
-            filtersData.setInput(value);
-            tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
-          }}
-        />
-        <TableHeaderEndToolbar showThemeToggle={false} />
-      </TableHeaderWrapper>
-      <Table
-        rowCount={tableData.totalCount}
-        paginationMode="server"
-        onSortModelChange={tableData.changeTableSorts}
-        apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState} // Навигация по страницам
-        pageNumber={tableData.page}
-        loading={tableData.isLoading}
-        columns={tableData.headers}
-        rows={tableData.rows}
-        disableColumnSelector
-        disableRowSelectionOnClick
-        sortingMode="server"
-      />
+      <div className={`asideTablePanel ${style.asideTablePanel}`}>
+        <TableHeaderWrapper>
+          <SearchInput
+            testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_CARS_TABLE}
+            value={filtersData.input}
+            onClear={() => {
+              filtersData.setInput('');
+              tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
+            }}
+            setState={(value) => {
+              filtersData.setInput(value);
+              tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
+            }}
+          />
+          <TableHeaderEndToolbar showThemeToggle={false} />
+        </TableHeaderWrapper>
+        <div className={style.asideTableBody}>
+          <Table
+            rowCount={tableData.totalCount}
+            paginationMode="server"
+            onSortModelChange={tableData.changeTableSorts}
+            apiRef={tableData.apiRef}
+            onPaginationModelChange={tableData.changeTableState} // Навигация по страницам
+            pageNumber={tableData.page}
+            loading={tableData.isLoading}
+            columns={tableData.headers}
+            rows={tableData.rows}
+            disableColumnSelector
+            disableRowSelectionOnClick
+            sortingMode="server"
+          />
+        </div>
+      </div>
       <Popup
         body={<GroupCarAddForm branchId={groupInfo?.id} close={addModalData.closeAddCarModal} />}
         onCloseModal={addModalData.closeAddCarModal}

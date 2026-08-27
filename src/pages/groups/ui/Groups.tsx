@@ -13,8 +13,17 @@ import style from './Group.module.scss';
 
 const Groups = () => {
   const prevBranch = useRef<ID | null>(null);
-  const { selectedGroupId, onCloseAside, onClickRow, tabs, groupName, isLoading, branch } =
-    useGroups();
+  const {
+    selectedGroupId,
+    onCloseAside,
+    onClickRow,
+    tabs,
+    groupName,
+    isLoading,
+    branch,
+    asideTabIndex,
+    setAsideTabIndex,
+  } = useGroups();
   const { selectedBranchState, setState } = appStore((state) => state);
 
   const handleBranchChange = () => {
@@ -50,7 +59,12 @@ const Groups = () => {
                 <div className={style.name}>
                   <span>{groupName}</span>
                 </div>
-                <RowTableInfo tabs={tabs} />
+                <RowTableInfo
+                  className={style.groupAsideTabs}
+                  tabs={tabs}
+                  activeTab={asideTabIndex}
+                  onTabChange={setAsideTabIndex}
+                />
               </div>
             ) : null}
           </Aside>

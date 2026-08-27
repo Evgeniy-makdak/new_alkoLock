@@ -141,36 +141,40 @@ export const GroupUsersTable: FC<GroupUsersTableProps> = ({ groupInfo }) => {
 
   return (
     <TableHeaderMobileTrailingProvider>
-      <TableHeaderWrapper>
-        <SearchInput
-          testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_TABLE}
-          value={filtersData.input}
-          onClear={() => {
-            filtersData.setInput('');
-            tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
-          }}
-          setState={(value) => {
-            filtersData.setInput(value);
-            tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
-          }}
-        />
-        <TableHeaderEndToolbar showThemeToggle={false} />
-      </TableHeaderWrapper>
-      <Table
-        rowCount={tableData.totalCount}
-        getRowHeight={() => 'auto'}
-        paginationMode="server"
-        sortingMode="server"
-        onSortModelChange={tableData.changeTableSorts}
-        apiRef={tableData.apiRef}
-        onPaginationModelChange={tableData.changeTableState} // Пагинация сохраняется при навигации
-        pageNumber={tableData.page}
-        loading={tableData.isLoading}
-        columns={tableData.headers}
-        rows={filteredRows}
-        disableColumnSelector
-        disableRowSelectionOnClick
-      />
+      <div className={`asideTablePanel ${style.asideTablePanel}`}>
+        <TableHeaderWrapper>
+          <SearchInput
+            testId={testids.page_groups.groups_widget_info.GROUPS_WIDGET_INFO_TAB_USERS_TABLE}
+            value={filtersData.input}
+            onClear={() => {
+              filtersData.setInput('');
+              tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
+            }}
+            setState={(value) => {
+              filtersData.setInput(value);
+              tableData.changeTableState({ page: 0, pageSize: tableData.pageSize });
+            }}
+          />
+          <TableHeaderEndToolbar showThemeToggle={false} />
+        </TableHeaderWrapper>
+        <div className={style.asideTableBody}>
+          <Table
+            rowCount={tableData.totalCount}
+            getRowHeight={() => 'auto'}
+            paginationMode="server"
+            sortingMode="server"
+            onSortModelChange={tableData.changeTableSorts}
+            apiRef={tableData.apiRef}
+            onPaginationModelChange={tableData.changeTableState} // Пагинация сохраняется при навигации
+            pageNumber={tableData.page}
+            loading={tableData.isLoading}
+            columns={tableData.headers}
+            rows={filteredRows}
+            disableColumnSelector
+            disableRowSelectionOnClick
+          />
+        </div>
+      </div>
       <Popup
         isOpen={addModalData.openAddCarModal}
         toggleModal={addModalData.closeAddCarModal}
