@@ -86,6 +86,11 @@ const routePermissionsMap: Record<RoutePaths, Permissions[]> = {
   [RoutePaths.groups]: [],
 };
 
+/** Не используются как стартовая страница после входа (служебные маршруты). */
+const ROUTES_EXCLUDED_FROM_DEFAULT_LANDING = new Set<RoutePaths>([
+  RoutePaths.operatorChatPopup,
+]);
+
 export const hasPermissionForThisPage = (
   permissionsList: Permissions[],
 ): HasPermissionForThisPageReturn => {
@@ -117,7 +122,8 @@ export const getFirstAvailableRouter = (permissionsList: Permissions[]) => {
   const permissionsPath = hasPermissionForThisPage(permissionsList);
 
   const firstAvailableRouter = Object.entries(permissionsPath).find(
-    ([, hasAccess]) => hasAccess,
+    ([route, hasAccess]) =>
+      hasAccess && !ROUTES_EXCLUDED_FROM_DEFAULT_LANDING.has(route as RoutePaths),
   )?.[0];
 
   return { permissionsPath, firstAvailableRouter };

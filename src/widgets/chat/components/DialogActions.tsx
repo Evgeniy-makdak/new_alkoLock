@@ -6,6 +6,7 @@ import { Lock, LockOpen } from '@mui/icons-material';
 import { Box, Button, Tooltip } from '@mui/material';
 
 import { UsersApi } from '@shared/api/baseQuerys';
+import { Permissions } from '@shared/config/permissionsEnums';
 import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 
@@ -41,6 +42,10 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
 }) => {
   const { t } = useTranslation();
   const { getSession, updateSession } = useChat();
+  const permissions = appStore((state) => state.permissions);
+  const canManageChatDialogs =
+    permissions.includes(Permissions.PERMISSION_OPERATOR_CHATS_CREATE) &&
+    permissions.includes(Permissions.PERMISSION_OPERATOR_CHATS_EDIT);
   const getInitialCurrentUserId = () => {
     const authId = appStore.getState().authId;
     const normalizedId = Number(authId);
@@ -225,7 +230,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   // const isAssigned = dialogStatus === 'CLOSED' || !!session?.assignedDialogId;
 
   const handleAssignDialog = async () => {
-    if (isLoading || currentUserId == null) {
+    if (isLoading || currentUserId == null || !canManageChatDialogs) {
       return;
     }
 
@@ -341,7 +346,8 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const handleCompleteDialog = async () => {
     // Кнопка "Завершить" уже отрисована только при валидном owner-состоянии.
     // Повторные строгие проверки здесь иногда отбрасывали клик в гонках состояния.
-    if (isLoading || !resolvedCompleteDialogId || currentUserId == null) return;
+    if (isLoading || !resolvedCompleteDialogId || currentUserId == null || !canManageChatDialogs)
+      return;
 
     setIsLoading(true);
     try {
@@ -471,7 +477,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               size="small"
               startIcon={<Lock />}
               onClick={handleAssignDialog}
-              disabled={isLoading}
+              disabled={isLoading || !canManageChatDialogs}
               sx={{ fontSize: '0.75rem' }}>
               {t('chat.take')}
             </Button>
@@ -565,7 +571,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
                   size="small"
                   startIcon={<LockOpen />}
                   onClick={handleCompleteDialog}
-                  disabled={isLoading}
+                  disabled={isLoading || !canManageChatDialogs}
                   sx={{ fontSize: '0.75rem' }}>
                   {t('chat.completeDialog')}
                 </Button>
@@ -583,7 +589,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
               size="small"
               startIcon={<LockOpen />}
               onClick={handleCompleteDialog}
-              disabled={isLoading}
+              disabled={isLoading || !canManageChatDialogs}
               sx={{ fontSize: '0.75rem' }}>
               {t('chat.unlockDialog')}
             </Button>

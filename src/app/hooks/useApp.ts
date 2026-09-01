@@ -6,7 +6,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import { onFetchDataHandling } from '@app/lib/onFetchDataHandling';
 import { Permissions } from '@shared/config/permissionsEnums';
-import type { RoutePaths } from '@shared/config/routePathsEnum';
+import { RoutePaths } from '@shared/config/routePathsEnum';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { setStore } from '@shared/model/store/localStorage';
 import { getFirstAvailableRouter } from '@widgets/nav_bar';
@@ -30,6 +30,24 @@ export const useApp = () => {
   useEffect(() => {
     if (isLoading || !user) return;
     if (user?.permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN)) return;
+
+    // /operator-chat-popup — только окно Electron, не точка входа в браузере
+    if (
+      pathName === RoutePaths.operatorChatPopup &&
+      typeof window !== 'undefined' &&
+      !window.alcolockDesktop
+    ) {
+      if (firstAvailableRouter) {
+        navigate(firstAvailableRouter, { replace: true });
+        return;
+      }
+      enqueueSnackbar(`У вас нет доступа к Админ панели`, {
+        variant: 'error',
+      });
+      logout(true);
+      return;
+    }
+
     const hasAccess = pathName in permissionsPath && permissionsPath[pathName];
     if (hasAccess) return;
     if (!hasAccess) {
