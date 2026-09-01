@@ -69,6 +69,15 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+
+    /* Loader: min-height 100% — блок снизу при обычном zoom; height auto — рост и скролл панели при 400%+ */
+    > div {
+      flex: 1 0 auto;
+      min-height: 100%;
+      height: auto;
+      display: flex;
+      flex-direction: column;
+    }
   }
 
   &:has(> :global(.asideTablePanel)),

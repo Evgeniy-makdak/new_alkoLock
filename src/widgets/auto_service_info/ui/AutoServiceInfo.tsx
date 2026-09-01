@@ -23,18 +23,24 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
   );
 
   return (
-    <Loader isLoading={isLoading}>
-      <div className={style.autoServiceInfo}>
-        <Info fields={fields} />
+    <Loader isLoading={isLoading} props={{ className: 'asideInfoFillPanel' }}>
+      <div className={style.autoServiceInfoFill}>
+        <div className={style.autoServiceInfo}>
+          <div className={style.autoServiceInfoBody}>
+            <Info fields={fields} />
+          </div>
 
-        {deviceAction?.device && (
-          <AlkozamkiServiceMode
-            alkolock={deviceAction?.device}
-            deviceAction={deviceAction}
-            handleCloseAside={handleCloseAside}
-            activeDeviceIds={activeDeviceIds}
-          />
-        )}
+          {deviceAction?.device && (
+            <div className={style.autoServiceInfoService}>
+              <AlkozamkiServiceMode
+                alkolock={deviceAction?.device}
+                deviceAction={deviceAction}
+                handleCloseAside={handleCloseAside}
+                activeDeviceIds={activeDeviceIds}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </Loader>
   );

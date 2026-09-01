@@ -1,8 +1,62 @@
+.autoServiceInfoFill {
+  flex: 1 0 auto;
+  min-height: 100%;
+  height: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
 .autoServiceInfo {
   display: flex;
-  height: 100%;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1 0 auto;
+  min-height: 100%;
+  height: auto;
   padding: 10px;
+  padding-bottom: 16px;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+}
+
+.autoServiceInfoBody {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 140px;
+  overflow-x: hidden;
+  overflow-y: visible;
+  display: flex;
+  justify-content: center;
+
+  :global(.MuiCard-root) {
+    width: 580px;
+    max-width: 100%;
+  }
+}
+
+.autoServiceInfoService {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+@media (max-width: 768px) and (hover: none) and (pointer: coarse) {
+  .autoServiceInfo {
+    justify-content: space-between;
+    gap: 0;
+  }
+
+  .autoServiceInfoBody {
+    :global(.MuiCard-root) {
+      width: 100%;
+      max-width: 100%;
+    }
+  }
 }

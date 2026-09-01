@@ -1,15 +1,24 @@
+.alcolockInfoFill {
+  flex: 1 0 auto;
+  min-height: 100%;
+  height: auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
 .alcolockInfo {
   display: flex;
   width: 100%;
   box-sizing: border-box;
-  /* Заполняем панель при обычном zoom; при 400%+ можем вырасти — скролл у asideInfoFillPanel */
+  flex: 1 0 auto;
   min-height: 100%;
   height: auto;
   padding: 10px;
   padding-bottom: 16px;
   flex-direction: column;
-  /* Сервисный режим у нижнего края, когда места хватает */
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   gap: 12px;
 }
@@ -18,15 +27,14 @@
   width: 100%;
   flex: 1 1 auto;
   /*
-   * ALK-1526: при browser zoom 400%+ flex иначе сжимал блок до 0 —
-   * оставался только «Сервисный режим». Минимум + внутренний скролл.
+   * ALK-1526: при browser zoom 400%+ flex иначе сжимал блок до 0.
+   * Скролл — у asideInfoFillPanel, не здесь: иначе нижний блок недоступен.
    */
   min-height: 140px;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   display: flex;
   justify-content: center;
-  -webkit-overflow-scrolling: touch;
 
   :global(.MuiCard-root) {
     width: 580px;
@@ -43,10 +51,6 @@
   margin-top: auto;
 }
 
-/*
- * Реальный телефон (touch): прежнее распределение блоков.
- * Browser zoom на десктопе (pointer:fine) сюда не попадает.
- */
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .alcolockInfo {
     justify-content: space-between;
