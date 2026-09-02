@@ -19,6 +19,8 @@ import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 
+import { filterOutCurrentOperatorUsers } from '../lib/chatOperatorPermissions';
+
 interface IUser {
   id: number;
   firstName?: string;
@@ -87,7 +89,6 @@ function UsersSelect({
   const branchId = appStore(
     (state) => state.selectedBranchState?.id ?? state.assignmentBranch?.id,
   );
-  const currentUsedId = appStore((state) => state.authId);
 
   useEffect(() => {
     usersCacheRef.current = new Map(usersCache);
@@ -119,7 +120,9 @@ function UsersSelect({
             ? payload.content
             : [];
 
-        usersData = rawList.filter((user) => user.id !== 2 && user.id !== currentUsedId);
+        usersData = filterOutCurrentOperatorUsers(
+          rawList.filter((user) => user.id !== 2),
+        );
         onUpdateUsersCacheRef.current(usersData);
 
         setUsers(usersData);
@@ -134,7 +137,7 @@ function UsersSelect({
         }
       }
     },
-    [branchId, t, currentUsedId],
+    [branchId, t],
   );
 
   useEffect(() => {

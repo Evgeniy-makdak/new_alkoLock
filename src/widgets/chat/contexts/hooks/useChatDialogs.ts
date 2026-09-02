@@ -6,6 +6,7 @@ import { UnreadDialog } from '@widgets/chat/api/dialogsApi';
 
 import api from '../../api';
 import { chatSessionTrace } from '../chatUnreadTrace';
+import { filterUnreadDialogsForCurrentOperator } from '../../lib/chatOperatorPermissions';
 
 /** После assign текущий оператор — локер; бэкенд иногда отдаёт только last_operator или без поля. */
 function normalizeAssignedDialogResponse(response: any): any {
@@ -124,8 +125,10 @@ export const useChatDialogs = (
       updateSession(sessionId, { isLoadingUnreadDialogs: true });
 
       try {
-        const unreadDialogs = await api.getUnreadDialogs();
-        const list = unreadDialogs || [];
+        const unreadDialogs = filterUnreadDialogsForCurrentOperator(
+          (await api.getUnreadDialogs()) || [],
+        );
+        const list = unreadDialogs;
         updateSession(sessionId, {
           unreadDialogs: list,
           isLoadingUnreadDialogs: false,

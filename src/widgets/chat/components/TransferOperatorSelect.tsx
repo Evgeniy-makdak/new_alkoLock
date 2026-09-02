@@ -18,6 +18,10 @@ import { useTheme } from '@mui/material/styles';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 
+import {
+  shouldExcludeUserFromChatTransfer,
+} from '../lib/chatOperatorPermissions';
+
 interface IUser {
   id: number;
   firstName?: string;
@@ -30,6 +34,8 @@ interface TransferOperatorSelectProps {
   disabled?: boolean;
   /** Смена диалога / пользователя — сбрасывает отображаемое имя в поле. */
   selectionResetKey?: string;
+  /** Пользователь мобильного приложения в текущем диалоге — нельзя передать ему же. */
+  dialogOwnerUserId?: number | null;
   onOperatorSelected: (operatorId: number, operatorLabel: string) => void;
   onSelectionCleared?: () => void;
 }
@@ -37,6 +43,7 @@ interface TransferOperatorSelectProps {
 export function TransferOperatorSelect({
   disabled = false,
   selectionResetKey = '',
+  dialogOwnerUserId = null,
   onOperatorSelected,
   onSelectionCleared,
 }: TransferOperatorSelectProps) {
@@ -100,8 +107,12 @@ export function TransferOperatorSelect({
             ? payload.content
             : [];
 
-        const uid = currentUserId != null ? Number(currentUserId) : NaN;
-        const list = rawList.filter((u) => u.id !== 1 && u.id !== 2 && u.id !== uid);
+        const list = rawList.filter(
+          (user) =>
+            user.id !== 1 &&
+            user.id !== 2 &&
+            !shouldExcludeUserFromChatTransfer(user.id, [currentUserId, dialogOwnerUserId]),
+        );
 
         setOperators(list);
         setError('');
@@ -115,7 +126,7 @@ export function TransferOperatorSelect({
         }
       }
     },
-    [branchId, currentUserId, t],
+    [branchId, currentUserId, dialogOwnerUserId, t],
   );
 
   useEffect(() => {

@@ -1598,6 +1598,7 @@ function ChatPanel({
           <div className={styles.transferRow}>
             <TransferOperatorSelect
               disabled={isTransferLoading || !canTransferDialog}
+              dialogOwnerUserId={selectedUsers[0] ?? null}
               selectionResetKey={`${resolvedDialogIdForActions}-${selectedUsers[0] ?? ''}-${transferSelectionResetTick}`}
               onOperatorSelected={(id, label) => setPendingTransferOperator({ id, label })}
               onSelectionCleared={() => {

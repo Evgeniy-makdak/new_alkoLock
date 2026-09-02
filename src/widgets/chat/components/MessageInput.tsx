@@ -6,7 +6,10 @@ import { RxPaperPlane } from 'react-icons/rx';
 
 import { Button, TextareaAutosize, Tooltip } from '@mui/material';
 
+import { appStore } from '@shared/model/app_store/AppStore';
+
 import { useChat } from '../contexts/ChatContext';
+import { hasChatCreateAndEditPermissions } from '../lib/chatOperatorPermissions';
 import {
   MAX_FILE_SIZE_MB,
   checkFileSize,
@@ -67,6 +70,8 @@ function MessageInput({
 }: MessageInputProps) {
   const { t } = useTranslation();
   const { sendMessage } = useChat();
+  const permissions = appStore((state) => state.permissions);
+  const canManageChatDialogs = hasChatCreateAndEditPermissions(permissions);
   const [text, setText] = useState(initialText);
   const [compressionInProgress, setCompressionInProgress] = useState(false);
   const [showBlockedSendTooltip, setShowBlockedSendTooltip] = useState(false);
@@ -106,6 +111,10 @@ function MessageInput({
   }, [showBlockedWarning, blockingOperatorLabel]);
 
   const canSendMessage = useCallback(() => {
+    if (!canManageChatDialogs) {
+      return false;
+    }
+
     if (isDialogBlockedByOtherOperator) {
       return false;
     }
@@ -137,6 +146,7 @@ function MessageInput({
     }
     return true;
   }, [
+    canManageChatDialogs,
     isDialogBlockedByOtherOperator,
     dialogStatus,
     lastSendError,
@@ -149,6 +159,10 @@ function MessageInput({
   const onSubmit = useCallback(
     async (e?: React.FormEvent) => {
       e?.preventDefault();
+
+      if (!canManageChatDialogs) {
+        return;
+      }
 
       if (isDialogBlockedByOtherOperator) {
         return;
@@ -208,6 +222,7 @@ function MessageInput({
       );
     },
     [
+      canManageChatDialogs,
       isDialogBlockedByOtherOperator,
       dialogStatus,
       text,
@@ -230,6 +245,11 @@ function MessageInput({
     async (e) => {
       const files = Array.from(e.target.files || []);
       if (files.length === 0) return;
+
+      if (!canManageChatDialogs) {
+        e.target.value = '';
+        return;
+      }
 
       if (isDialogBlockedByOtherOperator) {
         e.target.value = '';
@@ -329,6 +349,7 @@ function MessageInput({
       e.target.value = '';
     },
     [
+      canManageChatDialogs,
       isDialogBlockedByOtherOperator,
       dialogStatus,
       attachments,
@@ -375,6 +396,7 @@ function MessageInput({
   const isSendDisabled = !canSendMessage() || isSendingMessage || compressionInProgress;
 
   const isFileButtonDisabled =
+    !canManageChatDialogs ||
     isDialogBlockedByOtherOperator ||
     dialogStatus !== 'CLOSED' ||
     attachments.length >= MAX_ATTACHMENTS ||
@@ -384,6 +406,9 @@ function MessageInput({
     compressionInProgress;
 
   const getSendButtonTooltip = () => {
+    if (!canManageChatDialogs) {
+      return t('chat.sendReadOnly');
+    }
     if (isDialogBlockedByOtherOperator) {
       if (!showBlockedSendTooltip) return '';
       return blockingOperatorLabel
@@ -417,6 +442,9 @@ function MessageInput({
   };
 
   const getFileButtonTooltip = () => {
+    if (!canManageChatDialogs) {
+      return t('chat.fileReadOnly');
+    }
     if (compressionInProgress) {
       return t('chat.fileCompressing');
     }
@@ -443,6 +471,9 @@ function MessageInput({
   };
 
   const getTextareaPlaceholder = () => {
+    if (!canManageChatDialogs) {
+      return t('chat.phReadOnly');
+    }
     if (isDialogBlockedByOtherOperator) {
       return t('chat.phSendImpossible');
     }
@@ -462,6 +493,7 @@ function MessageInput({
   };
 
   const textareaDisabled =
+    !canManageChatDialogs ||
     isDialogBlockedByOtherOperator ||
     isDialogEnded ||
     isSendingMessage ||

@@ -8,6 +8,8 @@ import dayjs from 'dayjs';
 
 import { CircularProgress } from '@mui/material';
 
+import { appStore } from '@shared/model/app_store/AppStore';
+
 import { useChat } from '../contexts/ChatContext';
 import {
   MAX_FILE_SIZE_MB,
@@ -24,6 +26,7 @@ import {
   canEditOrDeleteMessage,
   revokeEditableAttachmentPreviews,
 } from '../lib/canEditOrDeleteMessage';
+import { hasChatCreateAndEditPermissions } from '../lib/chatOperatorPermissions';
 import { isOperatorUnreadDebugEnabled, operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import styles from './MessageFeed.module.scss';
 
@@ -260,6 +263,8 @@ function MessageFeed({
 
   const session = getSession(sessionId);
   const pagination = session?.pagination;
+  const permissions = appStore((state) => state.permissions);
+  const canManageChatDialogs = hasChatCreateAndEditPermissions(permissions);
 
   const canInteractWithMessages =
     dialogStatus === 'CLOSED' && !isDialogBlockedByOtherOperator && !isDialogEnded;
@@ -1715,7 +1720,8 @@ function MessageFeed({
           const isOperatorMessage = msg.messageStatus === 'TO_USER';
           const canEditDelete = canEditOrDelete(msg) && canInteractWithMessages;
           const canEditThis = canEdit(msg) && canInteractWithMessages;
-          const showReplyControl = canInteractWithMessages && !!onReplyToMessage;
+          const showReplyControl =
+            canManageChatDialogs && canInteractWithMessages && !!onReplyToMessage;
           const showEditDeleteBar = canEditDelete || canEditThis;
           const showMessageActionsRow = showReplyControl || showEditDeleteBar;
           const senderName = getSenderName(msg);

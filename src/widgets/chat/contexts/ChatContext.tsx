@@ -47,6 +47,7 @@ import {
   isPayloadForCurrentOperatorBranch,
   loadUserIfInCurrentOperatorBranch,
 } from '../lib/chatBranchGuard';
+import { filterUnreadDialogsForCurrentOperator } from '../lib/chatOperatorPermissions';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
@@ -215,23 +216,24 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   } = useSocket();
 
   const onUnreadDialogsLoaded = useCallback(
-    (dialogs: { id: number; countUnreadMess?: number; countUnMessages?: number }[]) => {
+    (dialogs: UnreadDialog[]) => {
+      const filteredDialogs = filterUnreadDialogsForCurrentOperator(dialogs);
       const currentSessions = sessionsRef.current;
       const allowedIds = [
-        ...dialogs.map((d) => Number(d.id)).filter((id) => id > 0),
+        ...filteredDialogs.map((d) => Number(d.id)).filter((id) => id > 0),
         ...currentSessions
           .map((s: any) => resolveSessionDialogIdForUnread(s))
           .filter((id): id is number => id != null && id > 0),
       ];
       socketRestrictUnreadCountsToDialogIds(allowedIds);
       chatUnreadTrace('context.onUnreadDialogsLoaded (API → mergeDialogUnreadFromApi)', {
-        dialogCount: dialogs.length,
-        rows: dialogs.map((d) => ({
+        dialogCount: filteredDialogs.length,
+        rows: filteredDialogs.map((d) => ({
           id: d.id,
           count: d.countUnMessages ?? d.countUnreadMess ?? 0,
         })),
       });
-      dialogs.forEach((d) => {
+      filteredDialogs.forEach((d) => {
         const count =
           d.countUnMessages ?? d.countUnreadMess ?? (d as { countMessages?: number }).countMessages ?? 0;
         const fromSocket = socketDialogsUnreadCounts.get(d.id) ?? 0;

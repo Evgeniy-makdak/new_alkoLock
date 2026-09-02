@@ -72,6 +72,10 @@ import {
   isPayloadForCurrentOperatorBranch,
   sessionBelongsToCurrentOperatorBranch,
 } from '../lib/chatBranchGuard';
+import {
+  filterUnreadDialogsForCurrentOperator,
+  isCurrentOperatorUser,
+} from '../lib/chatOperatorPermissions';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
 import { getLayoutViewportSize } from './chatDockViewport';
@@ -338,6 +342,7 @@ function collectDedupedUnreadDialogsForPreview(
     const unreadList =
       session.unreadDialogs?.filter((dialog) => {
         if (!isPayloadForCurrentOperatorBranch(dialog)) return false;
+        if (isCurrentOperatorUser(dialog.owner?.id)) return false;
         const dialogUserId = dialog.owner?.id;
         if (dialogUserId && hasSessionWithUser(dialogUserId)) return false;
         if (sessionListAlreadyCoversDialog(sessions, dialog.id)) return false;
@@ -571,11 +576,12 @@ const ChatToggleButton = ({
     let lastBranchId: string | null = null;
 
     const applyList = (list: UnreadDialog[]) => {
-      setRestBadgeTotal(sumUnreadDialogCounts(list));
-      const ids = list.map((d) => Number(d.id)).filter((id) => id > 0);
+      const filteredList = filterUnreadDialogsForCurrentOperator(list);
+      setRestBadgeTotal(sumUnreadDialogCounts(filteredList));
+      const ids = filteredList.map((d) => Number(d.id)).filter((id) => id > 0);
       if (ids.length > 0) {
         restrictUnreadCountsToDialogIds(ids);
-        list.forEach((dialog) => {
+        filteredList.forEach((dialog) => {
           mergeDialogUnreadFromApi(Number(dialog.id), unreadCountFromDialogRecord(dialog));
         });
       }

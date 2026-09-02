@@ -6,12 +6,12 @@ import { Lock, LockOpen } from '@mui/icons-material';
 import { Box, Button, Tooltip } from '@mui/material';
 
 import { UsersApi } from '@shared/api/baseQuerys';
-import { Permissions } from '@shared/config/permissionsEnums';
 import { handleChatBlockedByAdminResponse } from '@shared/lib/handleChatBlockedByAdmin';
 import { appStore } from '@shared/model/app_store/AppStore';
 
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
+import { hasChatCreateAndEditPermissions } from '../lib/chatOperatorPermissions';
 
 interface DialogActionsProps {
   sessionId: string;
@@ -43,9 +43,7 @@ export const DialogActions: React.FC<DialogActionsProps> = ({
   const { t } = useTranslation();
   const { getSession, updateSession } = useChat();
   const permissions = appStore((state) => state.permissions);
-  const canManageChatDialogs =
-    permissions.includes(Permissions.PERMISSION_OPERATOR_CHATS_CREATE) &&
-    permissions.includes(Permissions.PERMISSION_OPERATOR_CHATS_EDIT);
+  const canManageChatDialogs = hasChatCreateAndEditPermissions(permissions);
   const getInitialCurrentUserId = () => {
     const authId = appStore.getState().authId;
     const normalizedId = Number(authId);
