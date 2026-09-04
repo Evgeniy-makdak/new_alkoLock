@@ -28,6 +28,13 @@ export function isCurrentOperatorUser(userId: unknown): boolean {
   return isSameUserId(userId, getCurrentOperatorUserId());
 }
 
+/** Диспетчер видит все диалоги, включая чужие CLOSED — фильтр claimer на него не действует. */
+export function hasDispatcherAccountPermission(
+  permissions: string[] | undefined = appStore.getState().permissions,
+): boolean {
+  return (permissions ?? []).includes(Permissions.SYSTEM_DISPATCHER_ACCOUNT);
+}
+
 export function filterOutCurrentOperatorUsers<T extends { id?: unknown }>(users: T[]): T[] {
   const currentUserId = getCurrentOperatorUserId();
   if (currentUserId == null) return users;
@@ -57,6 +64,7 @@ export function getDialogClaimOperatorId(dialog: {
  * CLOSED в превью/REST-счётчике — только если забран текущим оператором.
  * Не-CLOSED (ACTIVE/OPEN и т.п.) — видимы как раньше.
  * CLOSED без lastOperator — скрываем (нельзя подтвердить «забран мной»).
+ * Диспетчер (SYSTEM_DISPATCHER_ACCOUNT) — всегда true.
  */
 export function isClosedDialogVisibleToCurrentOperator(dialog: {
   status?: unknown;
@@ -68,6 +76,7 @@ export function isClosedDialogVisibleToCurrentOperator(dialog: {
     last_operator?: { id?: unknown } | null;
   } | null;
 } | null | undefined): boolean {
+  if (hasDispatcherAccountPermission()) return true;
   const status = String(dialog?.status ?? dialog?.dialog?.status ?? '').toUpperCase();
   if (status !== 'CLOSED') return true;
   const claimerId = getDialogClaimOperatorId(dialog);
@@ -79,6 +88,7 @@ export function isClosedDialogVisibleToCurrentOperator(dialog: {
 /**
  * Точно известно, что CLOSED забран другим оператором.
  * Если lastOperator нет — false (не режем WS +1 по своим диалогам без claimer в кадре).
+ * Диспетчер — всегда false (чужие CLOSED для него не скрываем).
  */
 export function isClosedDialogClaimedByOtherOperator(dialog: {
   status?: unknown;
@@ -90,6 +100,7 @@ export function isClosedDialogClaimedByOtherOperator(dialog: {
     last_operator?: { id?: unknown } | null;
   } | null;
 } | null | undefined): boolean {
+  if (hasDispatcherAccountPermission()) return false;
   const status = String(dialog?.status ?? dialog?.dialog?.status ?? '').toUpperCase();
   if (status !== 'CLOSED') return false;
   const claimerId = getDialogClaimOperatorId(dialog);
