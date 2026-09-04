@@ -47,7 +47,10 @@ import {
   isPayloadForCurrentOperatorBranch,
   loadUserIfInCurrentOperatorBranch,
 } from '../lib/chatBranchGuard';
-import { filterUnreadDialogsForCurrentOperator } from '../lib/chatOperatorPermissions';
+import {
+  filterUnreadDialogsForCurrentOperator,
+  isClosedDialogClaimedByOtherOperator,
+} from '../lib/chatOperatorPermissions';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
@@ -1179,7 +1182,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         const messageDialogId = messageData.dialog?.id ?? messageData.dialogId;
-        if (messageDialogId != null && isOperatorUnreadForCounters(messageData)) {
+        const dialogForClaimCheck = messageData.dialog ?? existingSession.selectedDialog ?? messageData;
+        if (
+          messageDialogId != null &&
+          isOperatorUnreadForCounters(messageData) &&
+          !isClosedDialogClaimedByOtherOperator(dialogForClaimCheck)
+        ) {
           socketIncrementDialogUnreadCount(Number(messageDialogId), 1, processingKey);
         }
 
@@ -1197,7 +1205,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
 
         if (existingSession.isMinimized && !didExpand) {
-          if (isOperatorUnreadForCounters(messageData)) {
+          if (
+            isOperatorUnreadForCounters(messageData) &&
+            !isClosedDialogClaimedByOtherOperator(
+              messageData.dialog ?? existingSession.selectedDialog ?? messageData,
+            )
+          ) {
             incrementUnreadCount(existingSession.id, 1);
           }
         }
@@ -1266,6 +1279,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
 
+        // Чужой CLOSED — не создаём превью-сессию и не учитываем в счётчике.
+        if (isClosedDialogClaimedByOtherOperator(messageData.dialog ?? messageData)) {
+          return;
+        }
+
         // Вход по WS при пустых сессиях: не разворачивать главное окно — только мини-превью (как у «только иконка чата»).
         const newSessionId = enhancedCreateNewSession({ asMinimized: true });
 
@@ -1310,7 +1328,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         await messageHandlers.addMessageFromWebSocket(newSessionId, messageData);
 
-        if (dialogId != null && isOperatorUnreadForCounters(messageData)) {
+        if (
+          dialogId != null &&
+          isOperatorUnreadForCounters(messageData) &&
+          !isClosedDialogClaimedByOtherOperator(messageData.dialog ?? messageData)
+        ) {
           socketIncrementDialogUnreadCount(Number(dialogId), 1, processingKey);
           incrementUnreadCount(newSessionId, 1);
         }

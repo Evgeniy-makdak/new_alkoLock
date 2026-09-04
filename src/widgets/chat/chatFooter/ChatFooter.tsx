@@ -74,7 +74,9 @@ import {
 } from '../lib/chatBranchGuard';
 import {
   filterUnreadDialogsForCurrentOperator,
+  isClosedDialogVisibleToCurrentOperator,
   isCurrentOperatorUser,
+  isSessionClosedClaimedByOtherOperator,
 } from '../lib/chatOperatorPermissions';
 import { resolveSessionDialogIdForUnread } from '../lib/resolveSessionDialogIdForUnread';
 import styles from './ChatFooter.module.scss';
@@ -292,13 +294,21 @@ function hasConcreteUserForSidePreview(session: {
 function shouldShowSessionInSidePreview(session: {
   selectedUsers?: unknown[];
   selectedUserName?: unknown;
-  selectedDialog?: { id?: unknown; client_name?: unknown; clientName?: unknown } | null;
+  selectedDialog?: {
+    id?: unknown;
+    client_name?: unknown;
+    clientName?: unknown;
+    status?: unknown;
+    lastOperator?: { id?: unknown } | null;
+    last_operator?: { id?: unknown } | null;
+  } | null;
   assignedDialogId?: unknown;
   messages?: unknown[];
   isMinimized?: boolean;
   usersCache?: Map<unknown, unknown>;
 }): boolean {
   if (!sessionBelongsToCurrentOperatorBranch(session)) return false;
+  if (isSessionClosedClaimedByOtherOperator(session)) return false;
   return hasRenderableMinimizedContent(session) && hasConcreteUserForSidePreview(session);
 }
 
@@ -343,6 +353,7 @@ function collectDedupedUnreadDialogsForPreview(
       session.unreadDialogs?.filter((dialog) => {
         if (!isPayloadForCurrentOperatorBranch(dialog)) return false;
         if (isCurrentOperatorUser(dialog.owner?.id)) return false;
+        if (!isClosedDialogVisibleToCurrentOperator(dialog)) return false;
         const dialogUserId = dialog.owner?.id;
         if (dialogUserId && hasSessionWithUser(dialogUserId)) return false;
         if (sessionListAlreadyCoversDialog(sessions, dialog.id)) return false;
@@ -632,6 +643,7 @@ const ChatToggleButton = ({
     isElectronChatShell() && sessions.length > 0
       ? sessions.reduce((acc, s) => {
           if (!sessionBelongsToCurrentOperatorBranch(s)) return acc;
+          if (isSessionClosedClaimedByOtherOperator(s)) return acc;
           return acc + effectiveMinimizedSessionUnread(s, dialogsUnreadCounts);
         }, 0)
       : null;
@@ -640,6 +652,7 @@ const ChatToggleButton = ({
   // Не даём показывать 0, если хоть где-то в сессиях вычисляется unread>0.
   const maxSessionUnreadFallback = sessions.reduce((acc: number, s: any) => {
     if (!sessionBelongsToCurrentOperatorBranch(s)) return acc;
+    if (isSessionClosedClaimedByOtherOperator(s)) return acc;
     return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
   }, 0);
   // Бейдж иконки — только диалоги текущего филиала (allowlist после REST), без агрегата всех филиалов.
@@ -1682,7 +1695,12 @@ const ChatContainer = () => {
   const attachmentLabel = t('chat.previewAttachment');
 
   const compactMinimizedEntries = useMemo((): CompactMinimizedEntry[] => {
-    const minimized = sessions.filter((s) => s.isMinimized && hasRenderableMinimizedContent(s));
+    const minimized = sessions.filter(
+      (s) =>
+        s.isMinimized &&
+        hasRenderableMinimizedContent(s) &&
+        !isSessionClosedClaimedByOtherOperator(s),
+    );
     const items: CompactMinimizedEntry[] = [];
 
     minimized.forEach((session) => {
@@ -1702,6 +1720,7 @@ const ChatContainer = () => {
     });
 
     dedupedUnreadPreviewRows.forEach(({ dialog, sessionId }) => {
+      if (!isClosedDialogVisibleToCurrentOperator(dialog)) return;
       const sessionForDialog = sessions.find((s) => s.id === sessionId);
       const unreadFromSessionMessages = unreadInSessionMessagesByDialog(
         sessionForDialog,

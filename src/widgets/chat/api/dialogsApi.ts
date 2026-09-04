@@ -46,6 +46,9 @@ export interface UnreadDialog {
   branch: DialogBranch;
   status: string;
   owner: DialogOwner;
+  /** Оператор, забравший диалог (для CLOSED). */
+  lastOperator?: DialogOwner | null;
+  last_operator?: DialogOwner | null;
   createdAt: string;
   isActive: boolean;
   inactiveSince?: string;
