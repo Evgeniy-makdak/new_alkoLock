@@ -11,6 +11,7 @@ import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
 import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
+import { Permissions } from '@shared/config/permissionsEnums';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { copyContent } from '@shared/lib/copyText';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -40,6 +41,9 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
     selectedId,
     stableHandleClose,
   );
+
+  const permissions = appStore((state) => state.permissions);
+  const isGlobalAdmin = permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
   const isPlaceholderValue = (value: unknown) => {
     const normalized = String(value ?? '')
@@ -94,11 +98,14 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
       const normalizedRegNumber = String(registrationNumber || '').trim();
       if (!normalizedRegNumber) return;
       try {
-        const baseOptions = {
+        const baseOptions: any = {
           limit: pageSize,
-          filterOptions: { branchId: selectedBranchId },
           query: '&all.isActive.in=true',
         };
+        // Для глобального администратора не используем фильтрацию по филиалу
+        if (!isGlobalAdmin && selectedBranchId) {
+          baseOptions.filterOptions = { branchId: selectedBranchId };
+        }
         const first = await CarsApi.getCarsList({ ...baseOptions, page: 0 });
         if (isErrorResponse(first)) {
           return showNavigateError(first);
@@ -148,7 +155,7 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
         return showNavigateError(error);
       }
     },
-    [ensureVehicleAccess, navigate, returnNavigation],
+    [ensureVehicleAccess, navigate, returnNavigation, isGlobalAdmin],
   );
 
   const ensureUserAccess = useCallback(
@@ -169,10 +176,13 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
       const pageSize = 25;
       if (!userId) return;
       try {
-        const baseOptions = {
+        const baseOptions: any = {
           limit: pageSize,
-          filterOptions: { branchId: selectedBranchId },
         };
+        // Для глобального администратора не используем фильтрацию по филиалу
+        if (!isGlobalAdmin && selectedBranchId) {
+          baseOptions.filterOptions = { branchId: selectedBranchId };
+        }
         const first = await UsersApi.getList({ ...baseOptions, page: 0 });
         if (isErrorResponse(first)) {
           return showNavigateError(first);
@@ -219,7 +229,7 @@ export const AutoServiceInfo = ({ selectedId, handleCloseAside }: AutoServiceInf
       if (!hasAccess) return;
       navigate(RoutePaths.users, { state: { selectedId: userId, returnNavigation } });
     },
-    [ensureUserAccess, navigate, returnNavigation],
+    [ensureUserAccess, navigate, returnNavigation, isGlobalAdmin],
   );
 
   const preparedFields = useMemo(() => {

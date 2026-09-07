@@ -11,6 +11,7 @@ import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
 import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
 import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
+import { Permissions } from '@shared/config/permissionsEnums';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { copyContent } from '@shared/lib/copyText';
 import { appStore } from '@shared/model/app_store/AppStore';
@@ -37,6 +38,9 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
     selectedAlcolockId,
     closeTab,
   );
+
+  const permissions = appStore((state) => state.permissions);
+  const isGlobalAdmin = permissions.includes(Permissions.SYSTEM_GLOBAL_ADMIN);
 
   // 👇 получаем autoServiceType из useAlkozamkiInfoApi
   const { autoServiceType } = useAlkozamkiInfoApi(selectedAlcolockId);
@@ -102,11 +106,14 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       const selectedBranchId = appStore.getState().selectedBranchState?.id;
       const pageSize = 25;
       try {
-        const baseOptions = {
+        const baseOptions: any = {
           limit: pageSize,
-          filterOptions: { branchId: selectedBranchId },
           query: '&all.isActive.in=true',
         };
+        // Для глобального администратора не используем фильтрацию по филиалу
+        if (!isGlobalAdmin && selectedBranchId) {
+          baseOptions.filterOptions = { branchId: selectedBranchId };
+        }
         const first = await CarsApi.getCarsList({ ...baseOptions, page: 0 });
         if (isErrorResponse(first)) {
           return showNavigateError(first);
@@ -147,7 +154,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       if (!hasAccess) return;
       navigate(RoutePaths.transport, { state: { selectedId: vehicleId, returnNavigation } });
     },
-    [ensureVehicleAccess, navigate, returnNavigation],
+    [ensureVehicleAccess, navigate, returnNavigation, isGlobalAdmin],
   );
 
   const handleNavigateToUser = useCallback(
@@ -157,10 +164,13 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       if (!userId) return;
 
       try {
-        const baseOptions = {
+        const baseOptions: any = {
           limit: pageSize,
-          filterOptions: { branchId: selectedBranchId },
         };
+        // Для глобального администратора не используем фильтрацию по филиалу
+        if (!isGlobalAdmin && selectedBranchId) {
+          baseOptions.filterOptions = { branchId: selectedBranchId };
+        }
         const first = await UsersApi.getList({ ...baseOptions, page: 0 });
         if (isErrorResponse(first)) {
           return showNavigateError(first);
@@ -207,7 +217,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
       if (!hasAccess) return;
       navigate(RoutePaths.users, { state: { selectedId: userId, returnNavigation } });
     },
-    [ensureUserAccess, navigate, returnNavigation],
+    [ensureUserAccess, navigate, returnNavigation, isGlobalAdmin],
   );
 
   const preparedFields = useMemo(() => {
