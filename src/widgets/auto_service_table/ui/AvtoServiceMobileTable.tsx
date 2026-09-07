@@ -342,12 +342,14 @@ export const AvtoServiceMobileTable = ({
   const renderFieldValue = (field: string, value: any) => {
     if (field === 'STATE' || field === 'STATUS') {
       return (
-        <Chip
-          label={value}
-          color={getStatusColor(value)}
-          size="small"
-          className={styles.eventChip}
-        />
+        <span className={styles.chipContainer}>
+          <Chip
+            label={value}
+            color={getStatusColor(value)}
+            size="small"
+            className={styles.eventChip}
+          />
+        </span>
       );
     }
     return value;

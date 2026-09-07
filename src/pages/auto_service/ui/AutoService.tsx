@@ -39,7 +39,7 @@ const AutoService = () => {
       </PageWrapper>
 
       {selectedItemId && (
-        <Aside onClose={handleCloseAside}>
+        <Aside onClose={handleCloseAside} fullScreenOnMobile>
           <RowTableInfo
             tabs={tabs}
             activeTab={activeTabIndex}

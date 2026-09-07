@@ -305,6 +305,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
+  min-width: 0;
 }
 
 .detailLabel {
@@ -312,6 +313,7 @@
   color: #777;
   flex-shrink: 0;
   min-width: 120px;
+  max-width: 42%;
 }
 
 .detailValue {
@@ -320,20 +322,33 @@
   font-weight: 500;
   text-align: right;
   flex: 1;
+  min-width: 0;
   word-break: break-word;
 }
 
 .chipContainer {
   display: flex;
   justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .eventChip {
   font-size: 12px !important;
-  height: 24px !important;
+  height: auto !important;
+  min-height: 24px;
+  max-width: 100%;
+  white-space: normal;
 
   :global(.MuiChip-label) {
-    padding: 0 8px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    white-space: normal;
+    line-height: 1.25;
+    padding: 4px 8px;
+    text-align: center;
   }
 }
 

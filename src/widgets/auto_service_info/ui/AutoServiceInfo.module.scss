@@ -50,13 +50,26 @@
 @media (max-width: 768px) and (hover: none) and (pointer: coarse) {
   .autoServiceInfo {
     justify-content: space-between;
+    align-items: stretch;
     gap: 0;
+    padding: 8px;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .autoServiceInfoBody {
+    width: 100%;
+    justify-content: stretch;
+
     :global(.MuiCard-root) {
-      width: 100%;
+      width: 100% !important;
       max-width: 100%;
+      box-sizing: border-box;
     }
+  }
+
+  .autoServiceInfoService {
+    width: 100%;
+    box-sizing: border-box;
   }
 }
