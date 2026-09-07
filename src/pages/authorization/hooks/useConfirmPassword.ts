@@ -98,31 +98,46 @@ export const useConfirmPassword = () => {
 
     const cleanedVerificationCode = data.verificationCode.trim().replace(/\s/g, '');
 
-    // Функция для преобразования русской GMT даты в локальное время
-    const convertGMTToLocal = (message: string): string => {
-      const months = {
-        'янв.': 'Jan',
-        'фев.': 'Feb',
-        'мар.': 'Mar',
-        'апр.': 'Apr',
-        'мая.': 'May',
-        'июн.': 'Jun',
-        'июл.': 'Jul',
-        'авг.': 'Aug',
-        'сен.': 'Sep',
-        'окт.': 'Oct',
-        'ноя.': 'Nov',
-        'дек.': 'Dec',
-      };
+  // Функция для преобразования русской GMT даты в локальное время
+  const convertGMTToLocal = (message: string): string => {
+    const months = {
+      'янв.': 'Jan',
+      'янв': 'Jan',
+      'фев.': 'Feb',
+      'фев': 'Feb',
+      'мар.': 'Mar',
+      'мар': 'Mar',
+      'апр.': 'Apr',
+      'апр': 'Apr',
+      'мая.': 'May',
+      'мая': 'May',
+      'мая г.': 'May',
+      'июн.': 'Jun',
+      'июн': 'Jun',
+      'июл.': 'Jul',
+      'июл': 'Jul',
+      'авг.': 'Aug',
+      'авг': 'Aug',
+      'сен.': 'Sep',
+      'сен': 'Sep',
+      'сент.': 'Sep',
+      'сент': 'Sep',
+      'окт.': 'Oct',
+      'окт': 'Oct',
+      'ноя.': 'Nov',
+      'ноя': 'Nov',
+      'дек.': 'Dec',
+      'дек': 'Dec',
+    };
 
       try {
         // Ищем дату в формате "16 июн. 2025 г., 08:18:04"
-        const dateMatch = message.match(/(\d{1,2}) ([а-яё]+\.) (\d{4}) г\., (\d{2}:\d{2}:\d{2})/);
+        const dateMatch = message.match(/(\d{1,2}) ([а-яё]+\.) (\d{4}) г\., (\d{2}:\d{2}:\d{2})/i);
         if (!dateMatch) return message;
 
         const [dateStr] = dateMatch;
         const [day, monthRus, year, , time] = dateStr.split(/[ ,]+/);
-        const monthEng = months[monthRus as keyof typeof months];
+        const monthEng = months[monthRus.toLowerCase() as keyof typeof months];
         if (!monthEng) return message;
 
         // Создаем строку в формате "Jun 16 2025 08:18:04 GMT"
@@ -151,17 +166,32 @@ export const useConfirmPassword = () => {
     const extractLockUntilLocal = (message: string): string | null => {
       const months = {
         'янв.': 'Jan',
+        'янв': 'Jan',
         'фев.': 'Feb',
+        'фев': 'Feb',
         'мар.': 'Mar',
+        'мар': 'Mar',
         'апр.': 'Apr',
+        'апр': 'Apr',
         'мая.': 'May',
+        'мая': 'May',
+        'мая г.': 'May',
         'июн.': 'Jun',
+        'июн': 'Jun',
         'июл.': 'Jul',
+        'июл': 'Jul',
         'авг.': 'Aug',
+        'авг': 'Aug',
         'сен.': 'Sep',
+        'сен': 'Sep',
+        'сент.': 'Sep',
+        'сент': 'Sep',
         'окт.': 'Oct',
+        'окт': 'Oct',
         'ноя.': 'Nov',
+        'ноя': 'Nov',
         'дек.': 'Dec',
+        'дек': 'Dec',
       };
 
       try {
