@@ -7,8 +7,8 @@ import { enqueueSnackbar } from 'notistack';
 import { useTheme } from '@mui/material/styles';
 
 import { Info } from '@entities/info';
-import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { TypeOfRows } from '@entities/info/lib/getTypeOfRowIconLabel';
+import { InfoClickableChipValue } from '@entities/info/ui/InfoClickableChipValue';
 import { AlkozamkiServiceMode } from '@features/alkozamki_service_mode';
 import { CarsApi, UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
@@ -214,10 +214,12 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
     const vehicle = alkolock?.vehicleBind?.vehicle;
     const vehicleId = vehicle?.id;
 
-    const car = Formatters.carNameFormatter(vehicle);
-    const carForCopy = Formatters.carNameFormatter(vehicle, false, false);
+    const car = vehicle ? Formatters.carNameFormatter(vehicle) : '';
+    const carForCopy = vehicle ? Formatters.carNameFormatter(vehicle, false, false) : '';
     const linkedByUserId = alkolock?.vehicleBind?.createdBy?.id;
-    const linkedByName = Formatters.nameFormatter(alkolock?.vehicleBind?.createdBy);
+    const linkedByName = alkolock?.vehicleBind?.createdBy
+      ? Formatters.nameFormatter(alkolock?.vehicleBind?.createdBy)
+      : '';
     const canNavigateVehicle = Boolean(vehicleId && !isPlaceholderValue(car));
     const canNavigateUser = Boolean(linkedByUserId && !isPlaceholderValue(linkedByName));
 
@@ -237,13 +239,13 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           value: {
             ...value,
             copyble: false,
-                        element: (
+            element: (
               <InfoClickableChipValue
-                label={car}
+                label={String(car)}
                 onNavigate={() => {
                   void handleNavigateToVehicle(vehicleId);
                 }}
-                onCopy={() => copyContent(carForCopy || car, () => {})}
+                onCopy={() => copyContent(String(carForCopy || car), () => {})}
                 theme={theme}
               />
             ),
@@ -261,7 +263,7 @@ export const AlkozamkiInfo: FC<AlkozamkiInfoProps> = ({ selectedAlcolockId, clos
           value: {
             ...value,
             copyble: false,
-                        element: (
+            element: (
               <InfoClickableChipValue
                 label={linkedByName}
                 onNavigate={() => {
