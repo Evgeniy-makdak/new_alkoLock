@@ -247,11 +247,6 @@ export const SocketProvider = ({
       count,
       perDialogРежим: useDetailedCountsRef.current,
     });
-    // WS-детализация сама формирует allowlist текущего филиала (без ожидания REST).
-    if (dialogId > 0) {
-      allowedUnreadDialogIdsRef.current.add(dialogId);
-      unreadAllowlistReadyRef.current = true;
-    }
     setDialogsUnreadCounts((prev) => {
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
@@ -807,48 +802,87 @@ export const SocketProvider = ({
               }
 
               if (destination === '/user/queue/unread') {
-                // Детализация по диалогам (CLOSED/ACTIVE, те же правила вычитания CLOSED у текущего
-                // оператора). Приходит, когда окно диалога открыто. Заполняем карту
-                // dialogsUnreadCounts — из неё рендерятся бейджи превью (живое обновление без fetch).
-                const rows = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
-                const dialogRows = rows.filter(
-                  (d: any) => d && Number(d.dialogId) > 0 && typeof d.countUnMessages === 'number',
+                chatUnreadTrace(
+                  'socket.frame /user/queue/unread (skip badge — очередь по всем филиалам)',
+                  {
+                    countUnMessages: parsedBody?.countUnMessages,
+                  },
                 );
-                if (dialogRows.length > 0) {
-                  useDetailedCountsRef.current = true;
-                  hasDetailedDataRef.current = true;
-                  dialogRows.forEach((d: any) => {
-                    updateDialogUnreadCount(Number(d.dialogId), Number(d.countUnMessages));
-                  });
+                // Не пишем в бейдж: countUnMessages здесь — сумма по оператору во всех филиалах.
+                // Иконка и превью только из /queue/unread/{branchId}.
+              } else if (destination === `/queue/unread/${branchIdNorm}`) {
+                if (Array.isArray(parsedBody)) {
+                  const hasRealDialogs = parsedBody.some(
+                    (item: any) =>
+                      item.dialogId && item.dialogId > 0 && item.countUnMessages !== undefined,
+                  );
+
+                  if (hasRealDialogs) {
+                    useDetailedCountsRef.current = true;
+                    hasDetailedDataRef.current = true;
+                    const dialogCount = parsedBody.filter(
+                      (d: any) => d.dialogId && typeof d.countUnMessages === 'number',
+                    ).length;
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} array(per-dialog)', {
+                      branchId: branchIdNorm,
+                      dialogRows: dialogCount,
+                      snapshot: parsedBody.map((d: any) => ({
+                        dialogId: d.dialogId,
+                        countUnMessages: d.countUnMessages,
+                      })),
+                    });
+                    parsedBody.forEach((dialogData: any) => {
+                      if (dialogData.dialogId && typeof dialogData.countUnMessages === 'number') {
+                        updateDialogUnreadCount(dialogData.dialogId, dialogData.countUnMessages);
+                      }
+                    });
+                  } else {
+                    const firstItem = parsedBody[0];
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} array(fallback total)', {
+                      branchId: branchIdNorm,
+                      length: parsedBody.length,
+                      firstCountUnMessages: firstItem?.countUnMessages,
+                    });
+                    if (firstItem && typeof firstItem.countUnMessages === 'number') {
+                      useDetailedCountsRef.current = false;
+                      hasDetailedDataRef.current = false;
+                      updateUnreadCountDirect(firstItem.countUnMessages);
+                    }
+                  }
+                } else if (parsedBody?.dialogId && typeof parsedBody.countUnMessages === 'number') {
+                  if (parsedBody.dialogId > 0) {
+                    chatUnreadTrace('socket.frame /queue/unread/{branch} single dialog object', {
+                      branchId: branchIdNorm,
+                      dialogId: parsedBody.dialogId,
+                      countUnMessages: parsedBody.countUnMessages,
+                    });
+                    useDetailedCountsRef.current = true;
+                    hasDetailedDataRef.current = true;
+                    updateDialogUnreadCount(parsedBody.dialogId, parsedBody.countUnMessages);
+                  }
                 } else if (
                   parsedBody &&
                   typeof parsedBody.countUnMessages === 'number' &&
                   !parsedBody.dialogId
                 ) {
-                  // Резерв: агрегатный объект без dialogId — трактуем как общий счётчик.
-                  updateUnreadCountDirect(Number(parsedBody.countUnMessages));
+                  chatUnreadTrace('socket.frame /queue/unread/{branch} aggregate object', {
+                    branchId: branchIdNorm,
+                    countUnMessages: parsedBody.countUnMessages,
+                    skippedBecausePerDialogMode: Boolean(
+                      useDetailedCountsRef.current && hasDetailedDataRef.current,
+                    ),
+                  });
+                  if (!(useDetailedCountsRef.current && hasDetailedDataRef.current)) {
+                    useDetailedCountsRef.current = false;
+                    hasDetailedDataRef.current = false;
+                    updateUnreadCountDirect(parsedBody.countUnMessages);
+                  }
                 }
-                chatUnreadTrace('socket.frame /user/queue/unread (per-dialog breakdown)', {
-                  rows: dialogRows.length,
-                });
-              } else if (destination === `/queue/unread/${branchIdNorm}`) {
-                // ОБЩИЙ агрегат непрочитанных по всем незаблокированным диалогам филиала
-                // (CLOSED+ACTIVE). Безусловно обновляем живой счётчик иконки.
-                let aggregate: number | null = null;
-                if (Array.isArray(parsedBody)) {
-                  aggregate = parsedBody.reduce((acc: number, d: any) => {
-                    const n = Number(d?.countUnMessages ?? d?.countUnreadMess ?? d?.count ?? 0);
-                    return acc + (Number.isFinite(n) ? n : 0);
-                  }, 0);
-                } else if (parsedBody && typeof parsedBody.countUnMessages === 'number') {
-                  aggregate = Number(parsedBody.countUnMessages);
-                }
-                if (aggregate != null) {
-                  updateUnreadCountDirect(aggregate);
-                }
-                chatUnreadTrace('socket.frame /queue/unread/{branch} (aggregate)', {
-                  branchId: branchIdNorm,
-                  aggregate,
+
+                chatUnreadTrace('socket.lastMessage emit', {
+                  type: 'DIALOGS_UPDATE',
+                  destination,
+                  note: 'ChatContext обрабатывает DIALOGS_UPDATE как no-op для счётчиков (см. лог context)',
                 });
                 setLastMessage({
                   data: parsedBody,

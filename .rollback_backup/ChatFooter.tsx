@@ -38,7 +38,7 @@ import {
   persistMainRestoreFromPopupState,
   persistMainToOperatorPopupHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
-import { isBrowserWebChatShell, isElectronChatShell } from '../chatPopup/chatShellEnvironment';
+import { isBrowserWebChatShell, isElectronChatShell, isElectronMainChatHost } from '../chatPopup/chatShellEnvironment';
 import {
   DESKTOP_AUTH_READY_EVENT,
 } from '../chatPopup/electronPopupAuth';
@@ -572,7 +572,6 @@ const ChatToggleButton = ({
     dialogsUnreadCounts,
     mergeDialogUnreadFromApi,
     restrictUnreadCountsToDialogIds,
-    unreadCount: socketAggregateUnread,
   } = useSocket();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
@@ -656,17 +655,11 @@ const ChatToggleButton = ({
     if (isSessionClosedClaimedByOtherOperator(s)) return acc;
     return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
   }, 0);
-  // Бейдж иконки: живой агрегат WS (/queue/unread/{branch}) приоритетен, но не опускаемся ниже
-  // детальной суммы карты и REST-сида (чтобы не показать 0 при «запоздалом» кадре).
+  // Бейдж иконки — только диалоги текущего филиала (allowlist после REST), без агрегата всех филиалов.
   const iconUnreadTotal =
     electronSessionsUnreadSum != null
-      ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase, socketAggregateUnread)
-      : Math.max(
-          iconUnreadTotalBase,
-          socketAggregateUnread,
-          maxSessionUnreadFallback,
-          isChatOpen ? 0 : restBadgeTotal,
-        );
+      ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase)
+      : Math.max(iconUnreadTotalBase, maxSessionUnreadFallback, isChatOpen ? 0 : restBadgeTotal);
 
   const handleToggle = () => {
     if (isOperatorChatPopupWindow) {
@@ -1143,6 +1136,13 @@ const ChatContainer = () => {
     return t('chat.openInSeparateWindow');
   }, [isOperatorChatPopupWindow, sessions, t]);
 
+  const handleCloseAllChats = useCallback(() => {
+    sessions.forEach((session) => {
+      closeSession(session.id);
+    });
+    setIsChatOpen(false);
+  }, [sessions, closeSession, setIsChatOpen]);
+
   const isCompactMinimizedUi = useMediaQuery(CHAT_COMPACT_MINIMIZED_QUERY);
   const [minimizedListOpen, setMinimizedListOpen] = useState(false);
 
@@ -1242,6 +1242,21 @@ const ChatContainer = () => {
   /** Только основная вкладка: свернули последнюю панель — сброс размеров/позиции dock в LS. В попапе не трогаем. */
   const prevAllowDesktopPanelResizeRef = useRef<boolean | null>(null);
   const dockDimensionsRef = useRef({ dockW: DEFAULT_CHAT_PANEL.w, dockH: DEFAULT_CHAT_PANEL.h });
+
+  const persistChatLayoutGeometry = useCallback(() => {
+    try {
+      const k = chatPanelDockStorageKeys(isOperatorChatPopupWindow);
+      const { r, b } = dockPosRef.current;
+      if (!isBrowserDetachedChatPopup) {
+        localStorage.setItem(k.panelW, String(panelSize.w));
+        localStorage.setItem(k.panelH, String(panelSize.h));
+      }
+      localStorage.setItem(k.dockR, String(r));
+      localStorage.setItem(k.dockB, String(b));
+    } catch {
+      /* ignore */
+    }
+  }, [isBrowserDetachedChatPopup, isOperatorChatPopupWindow, panelSize.h, panelSize.w]);
 
   const applyPinnedLayoutFromStorage = useCallback(() => {
     if (isBrowserDetachedChatPopup) {
