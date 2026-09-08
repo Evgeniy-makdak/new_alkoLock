@@ -811,22 +811,32 @@
     box-sizing: border-box;
   }
 
+  // Поднимаем стек FAB-кнопок вверх, чтобы крестик закрытия (toggle) не наезжал
+  // на кнопку отправки сообщения в развёрнутом на весь экран чате. Смещение только
+  // для мобильных — десктоп/браузер не трогаем.
   .toggleButtonWrapper {
-    bottom: 0;
-    right: 0;
-    left: auto;
-  }
-
-  .newChatButtonWrapper {
     bottom: 60px;
     right: 0;
     left: auto;
   }
 
-  .showMinimizedButtonWrapper {
+  .newChatButtonWrapper {
     bottom: 120px;
     right: 0;
     left: auto;
+  }
+
+  .showMinimizedButtonWrapper {
+    // По умолчанию вплотную к toggle: когда «новый чат» не отрисован (уходит из потока),
+    // оставшиеся иконки сближаются, чтобы не было пустого зазора.
+    bottom: 120px;
+    right: 0;
+    left: auto;
+  }
+
+  // Если «новый чат» присутствует (в DOM он перед «свёрнутыми»), освобождаем под него место.
+  .newChatButtonWrapper ~ .showMinimizedButtonWrapper {
+    bottom: 180px;
   }
 }
 
