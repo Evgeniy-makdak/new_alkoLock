@@ -11,20 +11,16 @@ import {
 import { appStore } from '@shared/model/app_store/AppStore';
 import { getBearerToken } from '@shared/utils/cookie_manager';
 
+import { configLoader } from '../../../config/configLoader';
+import { isElectronChatShell } from '../chatPopup/chatShellEnvironment';
 import {
   DESKTOP_AUTH_READY_EVENT,
   isElectronOperatorChatPopup,
   notifyDesktopAuthReady,
-  syncElectronOperatorChatPopupAuthFromUrl,
 } from '../chatPopup/electronPopupAuth';
 import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBootstrap';
 import { resolveChatWebSocketUrl } from '../chatPopup/electronWebSocketUrl';
-import { isElectronChatShell } from '../chatPopup/chatShellEnvironment';
-import {
-  clearDesktopSocketUnreadHandoffMarker,
-  peekDesktopSocketUnreadHandoff,
-} from '../chatPopup/mainChatOpenRestoreFromPopup';
-import { configLoader } from '../../../config/configLoader';
+import { peekDesktopSocketUnreadHandoff } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { isPayloadForCurrentOperatorBranch } from '../lib/chatBranchGuard';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
@@ -389,7 +385,7 @@ export const SocketProvider = ({
         const cap = unreadAggregateRef.current;
         const positiveIds: number[] = [];
         prev.forEach((c, id) => {
-          if (id > 0 && c > 0) positiveIds.push(id); 
+          if (id > 0 && c > 0) positiveIds.push(id);
         });
         const onlyThisDialog = positiveIds.length === 1 && positiveIds[0] === dialogId;
         const nextVal = onlyThisDialog ? Math.min(prevCount, cap) : prevCount;
@@ -806,9 +802,12 @@ export const SocketProvider = ({
               }
 
               if (destination === '/user/queue/unread') {
-                chatUnreadTrace('socket.frame /user/queue/unread (skip badge — очередь по всем филиалам)', {
-                  countUnMessages: parsedBody?.countUnMessages,
-                });
+                chatUnreadTrace(
+                  'socket.frame /user/queue/unread (skip badge — очередь по всем филиалам)',
+                  {
+                    countUnMessages: parsedBody?.countUnMessages,
+                  },
+                );
                 // Не пишем в бейдж: countUnMessages здесь — сумма по оператору во всех филиалах.
                 // Иконка и превью только из /queue/unread/{branchId}.
               } else if (destination === `/queue/unread/${branchIdNorm}`) {
@@ -1056,14 +1055,17 @@ export const SocketProvider = ({
       }
     };
 
-    const initTimeout = setTimeout(() => {
-      if (!apiConfig) return;
-      if (isElectronOperatorChatPopup() && !getAuthToken()) {
-        stompDebugLog('electron popup: defer STOMP init until auth token');
-        return;
-      }
-      initializeWithRetry();
-    }, isElectronOperatorChatPopup() ? 400 : 1000);
+    const initTimeout = setTimeout(
+      () => {
+        if (!apiConfig) return;
+        if (isElectronOperatorChatPopup() && !getAuthToken()) {
+          stompDebugLog('electron popup: defer STOMP init until auth token');
+          return;
+        }
+        initializeWithRetry();
+      },
+      isElectronOperatorChatPopup() ? 400 : 1000,
+    );
 
     return () => {
       clearTimeout(initTimeout);

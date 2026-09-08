@@ -31,7 +31,7 @@ type OtherArgs<T, D> = {
   settings?: Omit<
     UndefinedInitialDataOptions<T, AxiosError<IError>, T, QueryKey>,
     'queryKey' | 'queryFn'
-  >;
+  > & { enabled?: boolean };
   triggerOnBranchChange?: boolean;
   options?: QueryOptions | ID | D;
 };
@@ -48,7 +48,7 @@ type OtherArgs<T, D> = {
  */
 export const useConfiguredQuery = <T, D extends QueryOptions>(
   key: QueryKeys[],
-  fn: (options?: QueryOptions | ID) => Promise<T>,
+  fn: (options?: QueryOptions | ID | any) => Promise<T>,
   { options, settings, triggerOnBranchChange = true }: OtherArgs<T, D>,
 ) => {
   const isOptions = isOptionsValue(options);
@@ -58,7 +58,7 @@ export const useConfiguredQuery = <T, D extends QueryOptions>(
   const queryBranch = branchId ? branchId : selectedBranchState?.id;
   const newOptions = isOptions ? getOptions(options, queryBranch) : options;
 
-  const readyOptions = isOptions ? Object.values(newOptions) : newOptions;
+  const readyOptions = isOptions ? Object.values(newOptions as QueryOptions) : newOptions;
 
   const readyBranch = triggerOnBranchChange ? queryBranch : null;
 

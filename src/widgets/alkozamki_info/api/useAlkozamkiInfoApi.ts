@@ -7,7 +7,7 @@ import { AlcolocksApi, EventsApi } from '@shared/api/baseQuerys';
 import { StatusCode } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { IDeviceAction, ID } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 import { useDeviceStatus } from '@widgets/alkozamki_info/DeviceStatusContext';
 
@@ -55,7 +55,7 @@ export const useAlkozamkiInfoApi = (id: ID) => {
 
   // 👇 ФИЛЬТРУЕМ НА КЛИЕНТЕ - получаем заявки только для текущего устройства
   const activeAutoServiceForCurrentDevice = autoServiceListResponse?.data?.content?.find(
-    (item) => item.device?.id === id,
+    (item: IDeviceAction) => item.device?.id === id,
   );
 
   const autoServiceType = activeAutoServiceForCurrentDevice?.type;

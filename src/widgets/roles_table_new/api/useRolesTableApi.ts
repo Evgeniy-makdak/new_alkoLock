@@ -9,7 +9,7 @@ import {
 import { RolesApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { ID, IRole } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 
 export const useRolesTableApi = (options: QueryOptions) => {
@@ -35,7 +35,12 @@ export const useRolesTableApi = (options: QueryOptions) => {
   }, [data, branchId]);
 
   const cachedData = getRolesCache();
-  const rolesData = cachedData || data?.data;
+  // cachedData хранит полный AppAxiosResponse (данные под .data), а data?.data — уже сам payload.
+  // Приводим к единой «payload»-форме, чтобы доступ к .content/.totalElements был корректен на любых версиях типов.
+  const rolesData = (cachedData || data?.data) as unknown as {
+    content?: IRole[];
+    totalElements?: number;
+  };
 
   return {
     roles: rolesData,

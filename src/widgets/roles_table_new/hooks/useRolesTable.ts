@@ -19,7 +19,7 @@ export const useRolesTable = () => {
   const newRefetch = async () => {
     refetch();
   };
-  const [deleteRole, setDeleteRole] = useState(null);
+  const [deleteRole, setDeleteRole] = useState<{ id: ID; text: ReactNode } | null>(null);
   const [changeRoleId, setChangeRoleId] = useState<ID>(null);
 
   const [openAddRoleModal, toggleAddRoleModal, closeAddRoleModal] = useToggle(false);
@@ -50,9 +50,7 @@ export const useRolesTable = () => {
     setChangeRoleId(id);
     toggleAddRoleModal();
   };
-  //@ts-expect-error: временное решение
-  const rows = useGetRows(roles?.content);
-  //@ts-expect-error: временное решение
+  const rows = useGetRows(roles?.content ?? []);
   const totalCount = roles?.totalElements;
   const headers = useGetColumns(
     refetch,
