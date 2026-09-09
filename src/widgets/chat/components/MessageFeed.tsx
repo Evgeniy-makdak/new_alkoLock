@@ -305,6 +305,25 @@ function MessageFeed({
     !!scrollToBottomOnExpand &&
     (expandUnreadHintCount > 0 || messagesInActiveDialog.some(isInboundUnread));
 
+  /**
+   * Окно редактирования/удаления зависит от текущего времени, но canEditOrDelete вычисляется
+   * только в момент рендера — без обновлений кнопки «залипали» после истечения окна
+   * (клик молча отклонялся повторной проверкой). Пока в ленте есть хотя бы одно сообщение
+   * в окне — тикаем раз в 5 секунд, чтобы лента перерисовалась и кнопки скрылись вовремя.
+   */
+  const [, setEditWindowTick] = useState(0);
+  const hasMessagesInEditWindow = useMemo(
+    () => messagesInActiveDialog.some((msg: any) => canEditOrDeleteMessage(msg)),
+    [messagesInActiveDialog],
+  );
+  useEffect(() => {
+    if (!hasMessagesInEditWindow) return;
+    const intervalId = window.setInterval(() => {
+      setEditWindowTick((tick) => tick + 1);
+    }, 5000);
+    return () => window.clearInterval(intervalId);
+  }, [hasMessagesInEditWindow]);
+
   const feedTapeDebugKey = useMemo(
     () =>
       messagesInActiveDialog
