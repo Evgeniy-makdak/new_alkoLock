@@ -39,6 +39,9 @@ export const useChatRefs = () => {
   // Обработка входящих сообщений
   const processedIncomingMessagesRef = useRef<Set<string>>(new Set());
   const lastUnreadUpdateRef = useRef<number>(0);
+  /** Throttle REST-обновления списка превью по кадру агрегата /queue/unread/{branch}. */
+  const lastUnreadDialogsRestRefreshRef = useRef<number>(0);
+  const unreadDialogsRestRefreshPendingRef = useRef<boolean>(false);
 
   // Обновление диалогов
   const refreshDialogsInProgressRef = useRef<Set<string>>(new Set());
@@ -90,6 +93,8 @@ export const useChatRefs = () => {
     processedDialogStatusesRef,
     failedStatusAttemptsRef,
     lastUnreadUpdateRef,
+    lastUnreadDialogsRestRefreshRef,
+    unreadDialogsRestRefreshPendingRef,
     processedIncomingMessagesRef,
     lastDialogsUpdateRef,
     readStatusesRef,

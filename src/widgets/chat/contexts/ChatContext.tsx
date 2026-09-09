@@ -51,7 +51,6 @@ import {
   filterUnreadDialogsForCurrentOperator,
   isClosedDialogClaimedByOtherOperator,
 } from '../lib/chatOperatorPermissions';
-import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   pickSessionMatchingDialogId,
   resolveSessionDialogIdForUnread,
@@ -333,22 +332,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         dialogIdNum,
         countForSocket,
         hasAnyMessageForDialog,
-        (next, prevSocket) => {
-          operatorUnreadDebug('Пересчёт непрочитанных → сессия и WS-карта', {
-            sessionId,
-            dialogId: dialogIdStr,
-            свёрнута: session.isMinimized,
-            строгоВЛенте: count,
-            расширенныйПодсчёт: relaxedUnread,
-            вКартуПишем: next,
-            былоВКартеWs: prevSocket,
-            естьСообщенияДиалогаВЛенте: hasAnyMessageForDialog,
-            подсчётПоЛентеДляСессии: countForSocket,
-            примечание:
-              !hasAnyMessageForDialog && countForSocket === 0 && prevSocket > 0
-                ? 'лента пуста по dialogId — не затираем prev в Map'
-                : undefined,
-          });
+        (next) => {
           updateSession(sessionId, { unreadCount: next });
         },
       );
@@ -390,9 +374,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const statusHandlers = useChatStatusHandlers(refs, {
     getSession,
     updateSession,
-    sendMessageStatus: (uuid: string, status: 'DELIVERED' | 'READ') => {
-      return sendMessageStatus(uuid, status);
-    },
+    sendMessageStatus,
     recalculateSessionUnreadCount,
   });
 
@@ -668,9 +650,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const messageHandlers = useChatMessageHandlers(refs, {
     getSession,
     updateSession,
-    sendMessageStatus: (uuid: string, status: 'DELIVERED' | 'READ') => {
-      return sendMessageStatus(uuid, status);
-    },
+    sendMessageStatus,
     refreshDialogHistory: dialogHandlers.refreshDialogHistory,
   });
 
@@ -1491,6 +1471,46 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           arrayLength: Array.isArray(lastMessage.data) ? lastMessage.data.length : undefined,
           note: 'Пер-dialog счётчики уже выставлены в SocketContext; ветки lastMessage /user/queue/unread и /queue/unread/{branch} ниже для этого типа не выполняются',
         });
+        // Агрегат /queue/unread/{branch} обновил иконку. Список превью — REST-снимок:
+        // новый диалог (новый водитель) появится в превью только после повторного
+        // запроса списка. REST здесь ДОПОЛНЯЕТ WS (обновляет список превью),
+        // значения бейджей по-прежнему берутся только из WS-карты.
+        // Throttle 2.5s + отложенный (trailing) запуск, чтобы не грузить сервер потоком кадров.
+        if (isChatOpen) {
+          const REFRESH_THROTTLE_MS = 2500;
+          const now = Date.now();
+          const lastRefresh = refs.lastUnreadDialogsRestRefreshRef.current || 0;
+
+          const schedulePreviewListRefresh = () => {
+            const carriers = sessions.filter(
+              (session: any) => (session.unreadDialogs?.length ?? 0) > 0,
+            );
+            const targets = carriers.length
+              ? carriers
+              : sessions.filter((session: any) => session.id === activeSessionId);
+            targets.forEach((session: any) => {
+              const existing = refs.forceLoadUnreadDialogsDebounceRef.current.get(session.id);
+              if (existing) clearTimeout(existing);
+              const newTimeout = setTimeout(() => {
+                refs.forceLoadUnreadDialogsDebounceRef.current.delete(session.id);
+                forceLoadUnreadDialogs(session.id);
+              }, 300);
+              refs.forceLoadUnreadDialogsDebounceRef.current.set(session.id, newTimeout);
+            });
+          };
+
+          if (now - lastRefresh >= REFRESH_THROTTLE_MS) {
+            refs.lastUnreadDialogsRestRefreshRef.current = now;
+            schedulePreviewListRefresh();
+          } else if (!refs.unreadDialogsRestRefreshPendingRef.current) {
+            refs.unreadDialogsRestRefreshPendingRef.current = true;
+            setTimeout(() => {
+              refs.unreadDialogsRestRefreshPendingRef.current = false;
+              refs.lastUnreadDialogsRestRefreshRef.current = Date.now();
+              schedulePreviewListRefresh();
+            }, REFRESH_THROTTLE_MS - (now - lastRefresh) + 100);
+          }
+        }
         return;
       }
 
@@ -1555,8 +1575,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else if (errorData.type === 'INTERNAL_ERROR' && activeSessionId) {
           const session = getSession(activeSessionId);
-          if (session?.messages?.length > 0) {
-            const filteredMessages = session.messages.filter((msg: any) => !msg.isPending);
+          const sessionMessages = session?.messages ?? [];
+          if (sessionMessages.length > 0) {
+            const filteredMessages = sessionMessages.filter((msg: any) => !msg.isPending);
             updateSession(activeSessionId, {
               messages: filteredMessages,
               lastSendError: errorData.message || i18n.t('chat.internalServerError'),
@@ -1702,11 +1723,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     if (isChatOpen && activeSessionId) {
       const session = getSession(activeSessionId);
-      if (session?.messages?.length > 0 && !session.isMinimized) {
+      const sessionMessages = session?.messages ?? [];
+      if (session && sessionMessages.length > 0 && !session.isMinimized) {
         if (!session.selectedDialog?.status) return;
 
         const timerId = setTimeout(() => {
-          const pendingDeliveryMessages = session.messages.filter(
+          const pendingDeliveryMessages = sessionMessages.filter(
             (msg: any) =>
               msg.messageStatus === 'TO_OPERATOR' &&
               !msg.is_read &&
@@ -1791,7 +1813,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
       const targetSessionId = sessionId;
 
-      if (hasOtherDialogOpen) {
+      if (s && hasOtherDialogOpen) {
         const oldDialog = s.selectedDialog;
         const oldSessionData = { ...s };
         delete (oldSessionData as any).id;

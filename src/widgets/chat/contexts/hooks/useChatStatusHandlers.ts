@@ -10,7 +10,7 @@ import { ChatRefs } from './useChatRefs';
 interface StatusHandlersDeps {
   getSession: (sessionId: string) => any;
   updateSession: (sessionId: string, updates: any) => void;
-  sendMessageStatus: (uuid: string, status: string) => boolean;
+  sendMessageStatus: (uuid: string, status: 'DELIVERED' | 'READ') => boolean;
   recalculateSessionUnreadCount?: (sessionId: string, dialogId?: string) => void;
 }
 

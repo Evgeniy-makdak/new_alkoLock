@@ -38,7 +38,7 @@ import {
   persistMainRestoreFromPopupState,
   persistMainToOperatorPopupHandoff,
 } from '../chatPopup/mainChatOpenRestoreFromPopup';
-import { isBrowserWebChatShell, isElectronChatShell } from '../chatPopup/chatShellEnvironment';
+import { isBrowserWebChatShell } from '../chatPopup/chatShellEnvironment';
 import {
   DESKTOP_AUTH_READY_EVENT,
 } from '../chatPopup/electronPopupAuth';
@@ -66,7 +66,7 @@ import {
 import ChatPanel from '../components/ChatPanel';
 import { ChatProvider, useChat } from '../contexts/ChatContext';
 import { SocketProvider, useSocket } from '../contexts/SocketContext';
-import { operatorUnreadDebug, unreadMapSnapshot } from '../lib/operatorUnreadDebugLog';
+import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   getCurrentOperatorBranchId,
   isPayloadForCurrentOperatorBranch,
@@ -402,67 +402,31 @@ function unreadCountForPreviewEntry(
   dialog: UnreadDialog,
   dialogsUnreadCounts: Map<number, number> | undefined,
 ): number {
+  // Бейдж превью: первоисточник — WS-карта (/user/queue/unread и per-dialog строки
+  // /queue/unread/{branch}). Если WS-записи для диалога ещё нет (кадр филиала бывает
+  // неполным, а превью уже отрендерено по REST-списку) — seed из REST-списка.
+  // Как только WS пришлёт значение (в т.ч. 0), оно станет единственным.
   const map = dialogsUnreadCounts || new Map();
+  const wsValue = map.get(dialog.id);
+  if (wsValue !== undefined) return wsValue;
   const fromApi = Number(dialog.countUnMessages ?? dialog.countUnreadMess ?? 0);
-  const apiSafe = Number.isFinite(fromApi) ? fromApi : 0;
-  const isClosed = String((dialog as any)?.status ?? '').toUpperCase() === 'CLOSED';
-  // Есть явная запись по этому диалогу — только она (per-dialog карта авторитетна).
-  if (map.has(dialog.id)) {
-    const fromMap = map.get(dialog.id)!;
-    // Для CLOSED backend snapshot по непрочитанным может быть свежее детальной карты WS.
-    // Не даём занижать бейдж превью (кейс: map=1, фактически/API=7).
-    return isClosed ? Math.max(fromMap, apiSafe) : fromMap;
-  }
-  return apiSafe;
+  return Number.isFinite(fromApi) && fromApi > 0 ? fromApi : 0;
 }
 
 /**
- * Счётчик на превью свёрнутой сессии: dialogId из ленты (если однозначен), иначе метаданные;
- * если в WS-карте есть запись для этого id — она приоритетнее session.unreadCount.
+ * Счётчик на превью свёрнутой сессии: единственный источник — WS-карта dialogsUnreadCounts
+ * (наполняется подпиской /user/queue/unread). Никаких REST-значений и session.unreadCount.
  */
 function effectiveMinimizedSessionUnread(
   session: {
     selectedDialog?: { id?: unknown };
     assignedDialogId?: unknown;
-    unreadCount?: number;
-    messages?: any[];
-    unreadDialogs?: UnreadDialog[];
   },
   dialogsUnreadCounts: Map<number, number> | undefined,
 ): number {
   const dialogId = resolveSessionDialogIdForUnread(session);
-  const local = session.unreadCount ?? 0;
-  const fromMessages =
-    dialogId != null
-      ? (session.messages ?? []).reduce((acc: number, msg: any) => {
-          const mid = Number(msg.dialogId ?? msg.dialog?.id ?? NaN);
-          if (mid !== Number(dialogId)) return acc;
-          if (msg.messageStatus !== 'TO_OPERATOR') return acc;
-          if (msg.is_read) return acc;
-          if (String(msg.confirmStatus ?? '').toUpperCase() === 'READ') return acc;
-          return acc + 1;
-        }, 0)
-      : 0;
-  const fromUnreadDialogsApi =
-    dialogId != null
-      ? Number(
-          session.unreadDialogs?.find((d) => Number(d.id) === Number(dialogId))?.countUnMessages ??
-            session.unreadDialogs?.find((d) => Number(d.id) === Number(dialogId))
-              ?.countUnreadMess ??
-            0,
-        )
-      : 0;
-  const apiSafe = Number.isFinite(fromUnreadDialogsApi) ? fromUnreadDialogsApi : 0;
-  const map = dialogsUnreadCounts;
-  if (dialogId != null && map != null && map.has(dialogId)) {
-    const fromMap = map.get(dialogId)!;
-    // Electron: WS-карта в popup может кратковременно содержать 0 при живом session.unreadCount / ленте.
-    if (isElectronChatShell() && fromMap === 0 && Math.max(local, apiSafe, fromMessages) > 0) {
-      return Math.max(local, apiSafe, fromMessages);
-    }
-    return Math.max(fromMap, local, apiSafe, fromMessages);
-  }
-  return Math.max(local, apiSafe, fromMessages);
+  if (dialogId == null || !dialogsUnreadCounts) return 0;
+  return dialogsUnreadCounts.get(dialogId) ?? 0;
 }
 
 function unreadInSessionMessagesByDialog(
@@ -578,7 +542,8 @@ const ChatToggleButton = ({
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
     isDesktopShell ? readMainChatFooterSuppressedByPopup() : false,
   );
-  const [restBadgeTotal, setRestBadgeTotal] = useState(0);
+  /** Первый REST-снимок получен — дальше иконка считается по allowlist-сумме WS-карты. */
+  const [hasUnreadRestSnapshot, setHasUnreadRestSnapshot] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -588,11 +553,16 @@ const ChatToggleButton = ({
     let lastBranchId: string | null = null;
 
     const applyList = (list: UnreadDialog[]) => {
+      // REST-список непрочитанных используется ТОЛЬКО чтобы открыть превью диалогов
+      // и актуализировать их статусы (ACTIVE/CLOSED). Значения бейджей из него не берём.
+      setHasUnreadRestSnapshot(true);
       const filteredList = filterUnreadDialogsForCurrentOperator(list);
-      setRestBadgeTotal(sumUnreadDialogCounts(filteredList));
       const ids = filteredList.map((d) => Number(d.id)).filter((id) => id > 0);
+      // restrict вызывается ВСЕГДА, в т.ч. с пустым списком: если все диалоги забрал
+      // другой оператор, allowlist должен опустеть, иначе общий счётчик «зависает»
+      // на старом значении. (Карту restrict не чистит — значения сохраняются.)
+      restrictUnreadCountsToDialogIds(ids);
       if (ids.length > 0) {
-        restrictUnreadCountsToDialogIds(ids);
         filteredList.forEach((dialog) => {
           mergeDialogUnreadFromApi(Number(dialog.id), unreadCountFromDialogRecord(dialog));
         });
@@ -640,14 +610,6 @@ const ChatToggleButton = ({
     };
   }, [isChatOpen, mergeDialogUnreadFromApi, restrictUnreadCountsToDialogIds]);
   const iconUnreadTotalBase = calculateTotalUnread();
-  const electronSessionsUnreadSum =
-    isElectronChatShell() && sessions.length > 0
-      ? sessions.reduce((acc, s) => {
-          if (!sessionBelongsToCurrentOperatorBranch(s)) return acc;
-          if (isSessionClosedClaimedByOtherOperator(s)) return acc;
-          return acc + effectiveMinimizedSessionUnread(s, dialogsUnreadCounts);
-        }, 0)
-      : null;
   // Редкий кейс сразу после жёсткой перезагрузки: общий бейдж может кратковременно быть 0,
   // пока WS-карта/агрегат не синхронизировались, но в сессии уже есть непрочитанные по ленте.
   // Не даём показывать 0, если хоть где-то в сессиях вычисляется unread>0.
@@ -656,17 +618,15 @@ const ChatToggleButton = ({
     if (isSessionClosedClaimedByOtherOperator(s)) return acc;
     return Math.max(acc, effectiveMinimizedSessionUnread(s, dialogsUnreadCounts));
   }, 0);
-  // Бейдж иконки: живой агрегат WS (/queue/unread/{branch}) приоритетен, но не опускаемся ниже
-  // детальной суммы карты и REST-сида (чтобы не показать 0 при «запоздалом» кадре).
-  const iconUnreadTotal =
-    electronSessionsUnreadSum != null
-      ? Math.max(electronSessionsUnreadSum, iconUnreadTotalBase, socketAggregateUnread)
-      : Math.max(
-          iconUnreadTotalBase,
-          socketAggregateUnread,
-          maxSessionUnreadFallback,
-          isChatOpen ? 0 : restBadgeTotal,
-        );
+  // Бейдж иконки: после первого REST-снимка считается по WS-карте с фильтром allowlist
+  // (диалоги текущего оператора) — поэтому он мгновенно уменьшается, когда диалог забирает
+  // другой оператор (allowlist опустел), и возвращается, когда диалог вернулся в список.
+  // Агрегат /queue/unread/{branch} используется только до первого снимка: кадры филиала
+  // приходят по событиям сообщений и при transfer/CLOSED остаются устаревшими — max() с ними
+  // «замораживал» счётчик. REST-счётчики в формуле не участвуют.
+  const iconUnreadTotal = hasUnreadRestSnapshot
+    ? Math.max(iconUnreadTotalBase, maxSessionUnreadFallback)
+    : Math.max(socketAggregateUnread, maxSessionUnreadFallback);
 
   const handleToggle = () => {
     if (isOperatorChatPopupWindow) {
@@ -856,12 +816,7 @@ const ChatContainer = () => {
   sessionsForBranchClearRef.current = sessions;
   closeSessionForBranchClearRef.current = closeSession;
 
-  const {
-    lastMessage,
-    dialogsUnreadCounts,
-    unreadCount: socketUnreadTotal,
-    calculateTotalUnread,
-  } = useSocket();
+  const { dialogsUnreadCounts, calculateTotalUnread } = useSocket();
   const [isVisible, setIsVisible] = useState(true);
   const [justExpandedSessionId, setJustExpandedSessionId] = useState<string | null>(null);
   const hasChatPermissions = useOperatorPermissions();
@@ -1734,41 +1689,6 @@ const ChatContainer = () => {
     dialogPreviewLines,
     attachmentLabel,
     t,
-  ]);
-  useEffect(() => {
-    const previewUnreadBadges = compactMinimizedEntries
-      .filter((e): e is Extract<typeof e, { kind: 'unread' }> => e.kind === 'unread')
-      .map((e) => ({
-        dialogId: e.dialog.id,
-        badge: e.unread,
-        title: e.title,
-      }));
-    const listUnreadSum = compactMinimizedEntries.reduce((s, e) => s + e.unread, 0);
-    const minimizedListToggleBadge =
-      listUnreadSum > 0 ? listUnreadSum : compactMinimizedEntries.length;
-    operatorUnreadDebug('Бейджи превью и карта WS по диалогам', {
-      всегоПоИконкеЧата: calculateTotalUnread(),
-      агрегатUserQueueНеТолькоДиалоги: socketUnreadTotal,
-      суммаВКомпактномСписке: minimizedListToggleBadge,
-      картаДиалоговWs: unreadMapSnapshot(dialogsUnreadCounts),
-      строкиПревьюНеизСписка: previewUnreadBadges,
-      свёрнутыеСессии: sessions
-        .filter((s) => s.isMinimized)
-        .map((s) => ({
-          sessionId: s.id,
-          бейдж: effectiveMinimizedSessionUnread(s, dialogsUnreadCounts),
-          sessionUnreadCount: s.unreadCount ?? 0,
-        })),
-      последнийWsТип: lastMessage?.type,
-    });
-  }, [
-    compactMinimizedEntries,
-    dialogsUnreadCounts,
-    socketUnreadTotal,
-    sessions,
-    lastMessage?.type,
-    lastMessage?.destination,
-    calculateTotalUnread,
   ]);
 
   if (!hasChatPermissions) {

@@ -6,6 +6,7 @@ import { Box, IconButton, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { appStore } from '@shared/model/app_store/AppStore';
+import type { ID } from '@shared/types/BaseQueryTypes';
 
 import api from '../api';
 import { useChat } from '../contexts/ChatContext';
@@ -42,6 +43,10 @@ interface ChatPanelProps {
   onCloseAllChats?: () => void;
   closeAllChatsTitle?: string;
 }
+
+/** Стабильные пустые значения (одна ссылка) — чтобы не менять props MessageFeed/UsersSelect каждый рендер. */
+const EMPTY_MESSAGES: any[] = [];
+const EMPTY_USERS_CACHE: Map<number, any> = new Map();
 
 function getLastOperatorIdFromDialog(d: any): number | string | undefined {
   if (!d || typeof d !== 'object') return undefined;
@@ -125,7 +130,6 @@ function ChatPanel({
   const [replyTarget, setReplyTarget] = useState<any>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [dialogStatus, setDialogStatus] = useState<string>('');
-  const [unreadCount, setUnreadCount] = useState<number>(0);
   const [isDialogReallyBlocked, setIsDialogReallyBlocked] = useState(false);
   const [isTransferLoading, setIsTransferLoading] = useState(false);
   const [isCompleteButtonActive, setIsCompleteButtonActive] = useState(false);
@@ -144,7 +148,6 @@ function ChatPanel({
   const lastMessageCountRef = useRef<number>(0);
   const lastStableUnreadCountRef = useRef<number>(0);
   const unreadCountDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const headerUnreadLogRef = useRef<number | null>(null);
   const prevIsMinimizedRef = useRef<boolean>(false);
   const initialLoadDoneRef = useRef(false);
   const historyLoadAttemptedRef = useRef(false);
@@ -155,9 +158,9 @@ function ChatPanel({
 
   const getDisplayUserName = useCallback(() => {
     if (session?.selectedUserName) return session.selectedUserName;
-    if (session?.selectedUsers?.length > 0) {
-      const userId = session.selectedUsers[0];
-      const cachedUser = session.usersCache?.get(userId);
+    const firstUserId = session?.selectedUsers?.[0];
+    if (firstUserId != null) {
+      const cachedUser = session?.usersCache?.get(firstUserId);
       if (cachedUser?.fullName) return cachedUser.fullName;
     }
     return '';
@@ -167,7 +170,6 @@ function ChatPanel({
     if (unreadCountDebounceRef.current) clearTimeout(unreadCountDebounceRef.current);
     if (newCount !== lastStableUnreadCountRef.current) {
       lastStableUnreadCountRef.current = newCount;
-      setUnreadCount(newCount);
     }
   }, []);
 
@@ -567,8 +569,8 @@ function ChatPanel({
   }, [session, sessionId, authId, dialogStatus, loadDialogHistory, getSession, updateSession]);
 
   const handleUsersChange = useCallback(
-    (users: number[]) => {
-      const filteredUsers = users.filter((id) => id !== 0);
+    (users: ID[]) => {
+      const filteredUsers = users.map(Number).filter((id) => id !== 0);
 
       if (filteredUsers.length === 0) {
         updateSession(sessionId, {
@@ -704,7 +706,7 @@ function ChatPanel({
                 assignedDialogId: existingDialogId,
               });
             })
-            .catch((_error: unknown): void => {});
+            .catch((): void => {});
         }
 
         return true;
@@ -1314,53 +1316,22 @@ function ChatPanel({
     updateDialogUnreadCount,
   ]);
 
-  const displayUnreadCount = session
-    ? Math.max(unreadCount, session.unreadCount ?? 0, socketEntry ?? 0, feedUnreadFromMessages)
-    : 0;
-
-  useEffect(() => {
-    if (!session) return;
-    if (headerUnreadLogRef.current === displayUnreadCount) return;
-    headerUnreadLogRef.current = displayUnreadCount;
-    operatorUnreadDebug('Шапка открытого чата: бейдж непрочитанных', {
-      sessionId,
-      dialogId: Number.isFinite(activeDialogNumericId) ? activeDialogNumericId : null,
-      показываем: displayUnreadCount,
-      локальныйСтейтПанели: unreadCount,
-      sessionUnreadCount: session.unreadCount,
-      wsКартаПоДиалогу: socketEntry ?? null,
-      подсчётПоСообщениям: feedUnreadFromMessages,
-    });
-  }, [
-    session,
-    sessionId,
-    displayUnreadCount,
-    unreadCount,
-    socketEntry,
-    feedUnreadFromMessages,
-    activeDialogNumericId,
-  ]);
+  // Бейдж в шапке открытого чата: единственный первоисточник — WS-карта /user/queue/unread
+  // (socketEntry). Если записи для диалога ещё нет — fallback на подсчёт по ленте,
+  // полученной по WS (feedUnreadFromMessages). REST и session.unreadCount не участвуют.
+  const displayUnreadCount = session ? (socketEntry ?? feedUnreadFromMessages) : 0;
 
   const shouldScrollToFirstUnreadOnExpand = useMemo(() => {
     return Boolean(scrollToBottomOnExpand);
   }, [scrollToBottomOnExpand]);
 
-  useEffect(() => {
-    operatorUnreadDebug('ChatPanel → MessageFeed: флаг скролла к непрочитанным', {
-      sessionId,
-      shouldScrollToFirstUnreadOnExpand,
-      displayUnreadCount,
-      пропОтChatFooter: scrollToBottomOnExpand,
-    });
-  }, [sessionId, shouldScrollToFirstUnreadOnExpand, displayUnreadCount, scrollToBottomOnExpand]);
-
   const selectedDialog = session?.selectedDialog;
-  const messages = session?.messages;
+  const messages = session?.messages ?? EMPTY_MESSAGES;
   const isMinimized = session?.isMinimized;
   const selectedUsers = session?.selectedUsers ?? [];
   const selectedUserName = session?.selectedUserName;
   const messageText = session?.messageText;
-  const usersCache = session?.usersCache;
+  const usersCache = session?.usersCache ?? EMPTY_USERS_CACHE;
   const isDialogEnded = session?.isDialogEnded;
   const isSendingMessage = session?.isSendingMessage;
   const lastSendError = session?.lastSendError;

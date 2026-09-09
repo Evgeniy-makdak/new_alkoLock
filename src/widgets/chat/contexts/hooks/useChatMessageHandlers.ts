@@ -9,7 +9,7 @@ import { ChatRefs } from './useChatRefs';
 interface MessageHandlersDeps {
   getSession: (sessionId: string) => any;
   updateSession: (sessionId: string, updates: any) => void;
-  sendMessageStatus: (uuid: string, status: string) => boolean;
+  sendMessageStatus: (uuid: string, status: 'DELIVERED' | 'READ') => boolean;
   refreshDialogHistory: (sessionId: string, dialogId: string) => Promise<boolean>;
 }
 

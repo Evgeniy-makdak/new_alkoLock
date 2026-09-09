@@ -38,6 +38,8 @@ interface SocketContextType {
   connectionStatus: string;
   currentBranchId: string | null;
   unreadCount: number;
+  /** true — агрегат /queue/unread/{branch} уже приходил по WS (бейдж иконки живой). */
+  unreadAggregateIsLive: boolean;
   dialogsUnreadCounts: Map<number, number>;
   setUnreadCount: (count: number) => void;
   updateDialogUnreadCount: (dialogId: number, count: number) => void;
@@ -117,6 +119,7 @@ export const SocketProvider = ({
   const [connectionStatus, setConnectionStatus] = useState<string>('disconnected');
   const [currentBranchId, setCurrentBranchId] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState<number>(() => initialUnreadState.unreadCount);
+  const [unreadAggregateIsLive, setUnreadAggregateIsLive] = useState<boolean>(false);
   const [dialogsUnreadCounts, setDialogsUnreadCounts] = useState<Map<number, number>>(
     () => initialUnreadState.dialogsUnreadCounts,
   );
@@ -230,23 +233,15 @@ export const SocketProvider = ({
     allowedUnreadDialogIdsRef.current = new Set(
       dialogIds.filter((id) => typeof id === 'number' && id > 0),
     );
-    setDialogsUnreadCounts((prev) => {
-      const next = new Map<number, number>();
-      prev.forEach((count, dialogId) => {
-        if (allowedUnreadDialogIdsRef.current.has(dialogId)) {
-          next.set(dialogId, count);
-        }
-      });
-      return next;
-    });
+    // Карту НЕ фильтруем. Значения диалогов, временно исчезнувших из REST-списка
+    // (например, диалог забрал другой оператор), сохраняются: когда диалог вернётся
+    // в список (CLOSED с непрочитанными), бейдж превью сразу покажет сохранённое
+    // WS-значение, а не 0. Лишние записи безвредны: сумма для иконки считается
+    // только по allowlist (calculateTotalUnread), превью рендерится только по
+    // REST-списку диалогов.
   }, []);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
-    operatorUnreadDebug('WS: абсолютное значение непрочитанных по dialogId', {
-      dialogId,
-      count,
-      perDialogРежим: useDetailedCountsRef.current,
-    });
     // WS-детализация сама формирует allowlist текущего филиала (без ожидания REST).
     if (dialogId > 0) {
       allowedUnreadDialogIdsRef.current.add(dialogId);
@@ -287,13 +282,6 @@ export const SocketProvider = ({
         }
         const newMap = new Map(prev);
         newMap.set(dialogId, next);
-        operatorUnreadDebug('WS: согласование карты с пересчётом ленты (из prev Map)', {
-          dialogId,
-          feedUnreadCount,
-          hasAnyMessageForDialog,
-          prevSocket,
-          next,
-        });
         chatUnreadTrace('socket.reconcileDialogUnreadFromSessionFeed', {
           dialogId,
           feedUnreadCount,
@@ -307,6 +295,37 @@ export const SocketProvider = ({
     },
     [],
   );
+
+  /**
+   * Запись per-dialog значения из кадра филиала /queue/unread/{branch}.
+   * В отличие от updateDialogUnreadCount НЕ расширяет allowlist (топик филиала шире
+   * диалогов оператора) и применяется безусловно: значение должно попасть в карту
+   * сразу, даже если превью этого диалога появится позже (REST-ответ придёт после кадра).
+   * Чужие диалоги в карте безопасны: бейджи рендерятся только по REST-списку превью
+   * и сессиям, а calculateTotalUnread фильтрует по allowlist.
+   */
+  const applyDialogUnreadFromBranchFrame = useCallback((dialogId: number, count: number) => {
+    if (!(dialogId > 0) || !Number.isFinite(count)) return;
+    // Нулевое значение из кадра филиала не затирает положительное значение карты:
+    // бэк в переходные моменты (transfer/CLOSED) шлёт 0 по диалогам, переданным
+    // другому оператору. Легитимное обнуление делает локальный READ/лента сессии.
+    if (count === 0) return;
+    useDetailedCountsRef.current = true;
+    hasDetailedDataRef.current = true;
+    lastAbsoluteDialogUpdateAtRef.current.set(dialogId, Date.now());
+    setDialogsUnreadCounts((prev) => {
+      if (prev.get(dialogId) === count) return prev;
+      const newMap = new Map(prev);
+      newMap.set(dialogId, count);
+      chatUnreadTrace('socket.applyDialogUnreadFromBranchFrame', {
+        dialogId,
+        count,
+        prev: prev.get(dialogId) ?? 0,
+        mapAfter: unreadMapToRecord(newMap),
+      });
+      return newMap;
+    });
+  }, []);
 
   const incrementDialogUnreadCount = useCallback(
     (dialogId: number, amount = 1, dedupeKey?: string) => {
@@ -375,50 +394,19 @@ export const SocketProvider = ({
     }
     setDialogsUnreadCounts((prev) => {
       const prevCount = prev.get(dialogId) ?? 0;
-      // REST-список «непрочитанных» часто отстаёт от WS; в detailed-режиме не затирать уже известный >0 нулём с API
-      if (apiCount === 0 && prevCount > 0 && hasDetailedDataRef.current) {
-        chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip stale API zero, hasDetailedData)', {
+      // Защита от «затирания»: если в карте уже есть значение из WS, которое больше или равно
+      // пришедшему из API (в т.ч. нулевой REST-снимок), — WS-значение авторитетно, не трогаем карту.
+      if (prevCount >= apiCount) {
+        chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip, WS value >= api)', {
           dialogId,
           apiCount,
           preserved: prevCount,
-          aggregateUnread: unreadAggregateRef.current,
           mapAfter: unreadMapToRecord(prev),
         });
         return prev;
       }
-      if (apiCount === 0 && prevCount > 0 && unreadAggregateRef.current > 0) {
-        const cap = unreadAggregateRef.current;
-        const positiveIds: number[] = [];
-        prev.forEach((c, id) => {
-          if (id > 0 && c > 0) positiveIds.push(id);
-        });
-        const onlyThisDialog = positiveIds.length === 1 && positiveIds[0] === dialogId;
-        const nextVal = onlyThisDialog ? Math.min(prevCount, cap) : prevCount;
-        if (nextVal === prevCount) {
-          chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip stale API zero)', {
-            dialogId,
-            apiCount,
-            preserved: prevCount,
-            aggregateUnread: cap,
-            mapAfter: unreadMapToRecord(prev),
-          });
-          return prev;
-        }
-        const cappedMap = new Map(prev);
-        cappedMap.set(dialogId, nextVal);
-        chatUnreadTrace('socket.mergeDialogUnreadFromApi (cap to aggregate, stale API zero)', {
-          dialogId,
-          prevCount,
-          nextVal,
-          aggregateUnread: cap,
-          mapAfter: unreadMapToRecord(cappedMap),
-        });
-        return cappedMap;
-      }
       const newMap = new Map(prev);
-      if (useDetailedCountsRef.current || dialogId > 0) {
-        newMap.set(dialogId, apiCount);
-      }
+      newMap.set(dialogId, apiCount);
       chatUnreadTrace('socket.mergeDialogUnreadFromApi (applied)', {
         dialogId,
         apiCount,
@@ -431,15 +419,13 @@ export const SocketProvider = ({
   }, []);
 
   const updateUnreadCountDirect = useCallback((count: number) => {
-    operatorUnreadDebug('WS: общий агрегат непрочитанных (/user/queue/unread и т.п.)', {
-      count,
-      детальныеСчётчикиПоДиалогам: hasDetailedDataRef.current,
-    });
     chatUnreadTrace('socket.setTotalUnread (branch/user aggregate)', {
       count,
       useDetailed: useDetailedCountsRef.current,
       hasDetailedData: hasDetailedDataRef.current,
     });
+    // Первый агрегатный кадр по WS: бейдж иконки считается «живым».
+    setUnreadAggregateIsLive(true);
     unreadAggregateRef.current = count;
     setUnreadCount(count);
     setDialogsUnreadCounts((prev) => {
@@ -536,11 +522,9 @@ export const SocketProvider = ({
     incomingChatMessagesQueueRef.current = [];
     incrementDedupeByMessageRef.current.clear();
 
-    if (!options?.preserveUnreadCounts) {
-      unreadAggregateRef.current = 0;
-      setUnreadCount(0);
-      resetDialogCounts();
-    }
+    // Счётчики (unreadCount / dialogsUnreadCounts) намеренно НЕ сбрасываем ни при переподключении,
+    // ни при смене филиала: ждём первый кадр новой подписки (/queue/unread/{branch} и
+    // /user/queue/unread) — иначе бейджи мигают нулём между disconnect и первым MESSAGE.
   };
 
   const scheduleReconnect = (branchId: string) => {
@@ -630,7 +614,18 @@ export const SocketProvider = ({
     chatUnreadTrace('socket.subscribe.topics', {
       branchId: currentBranchId,
       topics,
-      note: '/user/queue/unread — общий счётчик; /queue/unread/{branchId} — разбивка по dialogId',
+      note: '/user/queue/unread — детально по диалогам; /queue/unread/{branchId} — общий агрегат',
+    });
+    // Временное диагностическое логирование потока непрочитанных (localStorage.CHAT_UNREAD_DEBUG='1').
+    operatorUnreadDebug('WS: подписки оформлены (SUBSCRIBE отправлен)', {
+      branchId: currentBranchId,
+      topics,
+      ключевые: {
+        агрегатИконки: `/queue/unread/${currentBranchId}`,
+        детальноПоДиалогам: '/user/queue/unread',
+        входящиеPersonal: '/user/queue/messages',
+        входящиеФилиала: `/topic/operator/messages/${currentBranchId}`,
+      },
     });
     stompDebugLog('STOMP subscribed to topics', {
       branchId: currentBranchId,
@@ -810,6 +805,11 @@ export const SocketProvider = ({
                 // Детализация по диалогам (CLOSED/ACTIVE, те же правила вычитания CLOSED у текущего
                 // оператора). Приходит, когда окно диалога открыто. Заполняем карту
                 // dialogsUnreadCounts — из неё рендерятся бейджи превью (живое обновление без fetch).
+                operatorUnreadDebug('WS ← /user/queue/unread (детальный счётчик по диалогам)', {
+                  destination,
+                  body: parsedBody,
+                  rawBody: cleanedBody,
+                });
                 const rows = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
                 const dialogRows = rows.filter(
                   (d: any) => d && Number(d.dialogId) > 0 && typeof d.countUnMessages === 'number',
@@ -818,7 +818,14 @@ export const SocketProvider = ({
                   useDetailedCountsRef.current = true;
                   hasDetailedDataRef.current = true;
                   dialogRows.forEach((d: any) => {
-                    updateDialogUnreadCount(Number(d.dialogId), Number(d.countUnMessages));
+                    const rowDialogId = Number(d.dialogId);
+                    const rowCount = Number(d.countUnMessages);
+                    // Нулевой кадр personal-очереди не затирает положительное значение карты:
+                    // бэк шлёт 0 по диалогам, уже переданным другому оператору, а REST-список
+                    // превью этого оператора ещё содержит диалог с реальным количеством.
+                    // Легитимное обнуление делает локальный READ (ChatPanel → updateDialogUnreadCount).
+                    if (rowCount === 0) return;
+                    updateDialogUnreadCount(rowDialogId, rowCount);
                   });
                 } else if (
                   parsedBody &&
@@ -843,9 +850,39 @@ export const SocketProvider = ({
                 } else if (parsedBody && typeof parsedBody.countUnMessages === 'number') {
                   aggregate = Number(parsedBody.countUnMessages);
                 }
+                // Кадр филиала может содержать детализацию по dialogId — обновляем per-dialog карту,
+                // чтобы бейджи превью (в т.ч. свёрнутых диалогов) обновлялись в реальном времени.
+                // Пишем БЕЗОТОВОРАЧНО (без allowlist): WS-кадр часто приходит РАНЬШЕ REST-ответа,
+                // который (пере)создаёт превью. Если отфильтровать по allowlist, значение теряется:
+                // REST-список может исключить диалог (его забрал другой оператор), а вернуть — уже
+                // после кадра, и бейдж «залипает» на 0.
+                if (Array.isArray(parsedBody)) {
+                  const perDialogRows = parsedBody.filter(
+                    (d: any) =>
+                      d && Number(d.dialogId) > 0 && typeof d.countUnMessages === 'number',
+                  );
+                  if (perDialogRows.length > 0) {
+                    perDialogRows.forEach((d: any) => {
+                      applyDialogUnreadFromBranchFrame(
+                        Number(d.dialogId),
+                        Number(d.countUnMessages),
+                      );
+                    });
+                  }
+                }
                 if (aggregate != null) {
                   updateUnreadCountDirect(aggregate);
                 }
+                operatorUnreadDebug(
+                  'WS ← /queue/unread/{branch} (агрегат для бейджа на иконке чата)',
+                  {
+                    destination,
+                    branchId: branchIdNorm,
+                    body: parsedBody,
+                    rawBody: cleanedBody,
+                    вычисленныйАгрегат: aggregate,
+                  },
+                );
                 chatUnreadTrace('socket.frame /queue/unread/{branch} (aggregate)', {
                   branchId: branchIdNorm,
                   aggregate,
@@ -858,6 +895,10 @@ export const SocketProvider = ({
                   forceRefresh: true,
                 });
               } else if (destination === '/user/queue/messages') {
+                operatorUnreadDebug('WS ← /user/queue/messages (входящее сообщение, personal)', {
+                  destination,
+                  body: parsedBody,
+                });
                 if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
                   return;
                 }
@@ -888,6 +929,14 @@ export const SocketProvider = ({
                   destination: destination,
                 });
               } else if (destination === `/topic/operator/messages/${branchIdNorm}`) {
+                operatorUnreadDebug(
+                  'WS ← /topic/operator/messages/{branch} (входящее сообщение филиала)',
+                  {
+                    destination,
+                    branchId: branchIdNorm,
+                    body: parsedBody,
+                  },
+                );
                 if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
                   return;
                 }
@@ -1113,6 +1162,7 @@ export const SocketProvider = ({
         connectionStatus,
         currentBranchId,
         unreadCount,
+        unreadAggregateIsLive,
         dialogsUnreadCounts,
         setUnreadCount: updateUnreadCountDirect,
         updateDialogUnreadCount,
