@@ -86,7 +86,8 @@ function ChatPanel({
 }: ChatPanelProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const { dialogsUnreadCounts, updateDialogUnreadCount } = useSocket();
+  const { dialogsUnreadCounts, updateDialogUnreadCount, excludeDialogFromUnreadTotal } =
+    useSocket();
   const {
     sessions,
     closeSession,
@@ -1142,6 +1143,14 @@ function ChatPanel({
           lastSendError: null,
           transferRecipientFullName: recipientName || null,
         });
+        // Диалог больше не наш: сразу убрать его вклад из основного бейджа
+        // (WS-нули после transfer намеренно игнорируются, REST/сессия иначе держат id в allowlist).
+        const transferredDialogNumericId = Number(
+          mergedDialog.id != null ? mergedDialog.id : effectiveDialogId,
+        );
+        if (Number.isFinite(transferredDialogNumericId) && transferredDialogNumericId > 0) {
+          excludeDialogFromUnreadTotal(transferredDialogNumericId);
+        }
         setLocalTransferBannerName(recipientName || null);
         // Сразу фиксируем локальный статус, чтобы UI не "откатывался" в режим "Забрать".
         setDialogStatus('CLOSED');
@@ -1164,6 +1173,7 @@ function ChatPanel({
       updateSession,
       dialogStatus,
       isCompleteButtonActive,
+      excludeDialogFromUnreadTotal,
     ],
   );
 
@@ -1301,19 +1311,18 @@ function ChatPanel({
       Number(lastOperatorId) !== currentOperatorId;
     if (!isClosedObserverMode) return;
 
-    const nextUnreadFromFeed = feedUnreadFromMessages;
-    const currentUnreadInSocketMap = dialogsUnreadCounts.get(activeDialogNumericId);
-    if (currentUnreadInSocketMap === nextUnreadFromFeed) return;
-
-    updateDialogUnreadCount(activeDialogNumericId, nextUnreadFromFeed);
+    // Чужой CLOSED (в т.ч. после transfer): не возвращать unread из ленты в карту/
+    // allowlist — иначе основной бейдж передающего снова вырастет.
+    const currentUnreadInSocketMap = dialogsUnreadCounts.get(activeDialogNumericId) ?? 0;
+    if (currentUnreadInSocketMap === 0) return;
+    excludeDialogFromUnreadTotal(activeDialogNumericId);
   }, [
     session,
     authId,
     dialogStatus,
     activeDialogNumericId,
-    feedUnreadFromMessages,
     dialogsUnreadCounts,
-    updateDialogUnreadCount,
+    excludeDialogFromUnreadTotal,
   ]);
 
   // Бейдж в шапке открытого чата: единственный первоисточник — WS-карта /user/queue/unread

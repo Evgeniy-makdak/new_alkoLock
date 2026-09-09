@@ -55,6 +55,11 @@ interface SocketContextType {
   incrementDialogUnreadCount: (dialogId: number, amount?: number, dedupeKey?: string) => void;
   /** REST непрочитанных текущего филиала: бейдж только по этим dialogId (WS-топик филиала часто шире). */
   restrictUnreadCountsToDialogIds: (dialogIds: number[]) => void;
+  /**
+   * Убрать диалог из суммы основного бейджа (transfer другому оператору):
+   * обнуляет карту и удаляет id из allowlist. Не трогает остальные диалоги.
+   */
+  excludeDialogFromUnreadTotal: (dialogId: number) => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
   /** Отправка через актуальный STOMP-клиент (ref), без гонки с React state. */
@@ -239,6 +244,30 @@ export const SocketProvider = ({
     // WS-значение, а не 0. Лишние записи безвредны: сумма для иконки считается
     // только по allowlist (calculateTotalUnread), превью рендерится только по
     // REST-списку диалогов.
+  }, []);
+
+  const excludeDialogFromUnreadTotal = useCallback((dialogId: number) => {
+    if (!(dialogId > 0)) return;
+    allowedUnreadDialogIdsRef.current.delete(dialogId);
+    setDialogsUnreadCounts((prev) => {
+      const prevCount = prev.get(dialogId);
+      if (prevCount == null || prevCount === 0) {
+        chatUnreadTrace('socket.excludeDialogFromUnreadTotal (allowlist only)', {
+          dialogId,
+          prevCount: prevCount ?? null,
+          mapAfter: unreadMapToRecord(prev),
+        });
+        return prev;
+      }
+      const newMap = new Map(prev);
+      newMap.set(dialogId, 0);
+      chatUnreadTrace('socket.excludeDialogFromUnreadTotal', {
+        dialogId,
+        prevCount,
+        mapAfter: unreadMapToRecord(newMap),
+      });
+      return newMap;
+    });
   }, []);
 
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
@@ -1170,6 +1199,7 @@ export const SocketProvider = ({
         mergeDialogUnreadFromApi,
         incrementDialogUnreadCount,
         restrictUnreadCountsToDialogIds,
+        excludeDialogFromUnreadTotal,
         calculateTotalUnread,
         resetDialogCounts,
         publishStompMessage,

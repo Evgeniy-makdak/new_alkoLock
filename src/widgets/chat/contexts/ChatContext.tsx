@@ -50,6 +50,7 @@ import {
 import {
   filterUnreadDialogsForCurrentOperator,
   isClosedDialogClaimedByOtherOperator,
+  isSessionClosedClaimedByOtherOperator,
 } from '../lib/chatOperatorPermissions';
 import {
   pickSessionMatchingDialogId,
@@ -221,9 +222,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     (dialogs: UnreadDialog[]) => {
       const filteredDialogs = filterUnreadDialogsForCurrentOperator(dialogs);
       const currentSessions = sessionsRef.current;
+      // Сессии с чужим CLOSED (в т.ч. после transfer) не должны удерживать dialogId
+      // в allowlist — иначе основной бейдж передающего не уменьшается.
       const allowedIds = [
         ...filteredDialogs.map((d) => Number(d.id)).filter((id) => id > 0),
         ...currentSessions
+          .filter((s: any) => !isSessionClosedClaimedByOtherOperator(s))
           .map((s: any) => resolveSessionDialogIdForUnread(s))
           .filter((id): id is number => id != null && id > 0),
       ];
