@@ -22,6 +22,7 @@ import { DESKTOP_BRANCH_READY_EVENT } from '../chatPopup/electronPopupSessionBoo
 import { resolveChatWebSocketUrl } from '../chatPopup/electronWebSocketUrl';
 import { peekDesktopSocketUnreadHandoff } from '../chatPopup/mainChatOpenRestoreFromPopup';
 import { isPayloadForCurrentOperatorBranch } from '../lib/chatBranchGuard';
+import { isClosedDialogVisibleToCurrentOperator } from '../lib/chatOperatorPermissions';
 import { operatorUnreadDebug } from '../lib/operatorUnreadDebugLog';
 import {
   setStompDebugFromRuntimeConfig,
@@ -56,10 +57,23 @@ interface SocketContextType {
   /** REST непрочитанных текущего филиала: бейдж только по этим dialogId (WS-топик филиала часто шире). */
   restrictUnreadCountsToDialogIds: (dialogIds: number[]) => void;
   /**
-   * Убрать диалог из суммы основного бейджа (transfer другому оператору):
-   * обнуляет карту и удаляет id из allowlist. Не трогает остальные диалоги.
+   * Убрать диалог из суммы основного бейджа (чужой CLOSED / transfer):
+   * удаляет id из allowlist, но сохраняет значение в WS-карте (park),
+   * чтобы при возврате в ACTIVE бейдж восстановился без ожидания новых сообщений.
    */
   excludeDialogFromUnreadTotal: (dialogId: number) => void;
+  /**
+   * Вернуть диалог в сумму основного бейджа (CLOSED → ACTIVE/OPEN):
+   * добавляет id в allowlist (+ pin против гонки со stale REST).
+   * Значение берётся из сохранённой WS-карты.
+   */
+  includeDialogInUnreadTotal: (dialogId: number) => void;
+  /**
+   * Принудительно запросить свежий снимок счётчиков из WS-подписок
+   * (/queue/unread/{branch} и /user/queue/unread) — re-SUBSCRIBE.
+   * Нужен после DIALOG_STATUS, когда бэкенд не шлёт кадр сам (нет нового сообщения).
+   */
+  requestUnreadTopicsRefresh: () => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
   /** Отправка через актуальный STOMP-клиент (ref), без гонки с React state. */
@@ -148,6 +162,20 @@ export const SocketProvider = ({
   const incrementDedupeByMessageRef = useRef<Set<string>>(new Set());
   /** dialogId, проверенные как пользователи текущего филиала (REST / live). */
   const allowedUnreadDialogIdsRef = useRef<Set<number>>(new Set());
+  /**
+   * Id, явно возвращённые в сумму бейджа по DIALOG_STATUS (CLOSED→ACTIVE).
+   * Нужны, пока stale REST-снимок ещё не содержит диалог: иначе restrict
+   * затрёт allowlist и бейдж снова станет 0 без новых WS-кадров.
+   */
+  const pinnedUnreadDialogIdsRef = useRef<Set<number>>(new Set());
+  /**
+   * Недавние решения по allowlist из /topic/dialog/status.
+   * Бэкенд-список непрочитанных отстаёт на несколько секунд — без этого
+   * stale REST через restrict возвращает чужой CLOSED в сумму бейджа.
+   */
+  const dialogStatusUnreadOverrideRef = useRef<
+    Map<number, { mode: 'include' | 'exclude'; at: number }>
+  >(new Map());
   const unreadAllowlistReadyRef = useRef(false);
 
   const [apiConfig, setApiConfig] = useState<{ apiUrl: string; wsUrl: string } | null>(null);
@@ -211,6 +239,8 @@ export const SocketProvider = ({
     incrementDedupeByMessageRef.current.clear();
     lastAbsoluteDialogUpdateAtRef.current.clear();
     allowedUnreadDialogIdsRef.current = new Set();
+    pinnedUnreadDialogIdsRef.current = new Set();
+    dialogStatusUnreadOverrideRef.current = new Map();
     unreadAllowlistReadyRef.current = false;
   }, []);
 
@@ -235,44 +265,162 @@ export const SocketProvider = ({
 
   const restrictUnreadCountsToDialogIds = useCallback((dialogIds: number[]) => {
     unreadAllowlistReadyRef.current = true;
-    allowedUnreadDialogIdsRef.current = new Set(
-      dialogIds.filter((id) => typeof id === 'number' && id > 0),
-    );
+    const fromRest = dialogIds.filter((id) => typeof id === 'number' && id > 0);
+    // REST уже подтвердил диалог — pin больше не нужен.
+    fromRest.forEach((id) => pinnedUnreadDialogIdsRef.current.delete(id));
+    const nextAllowed = new Set<number>([
+      ...fromRest,
+      ...pinnedUnreadDialogIdsRef.current,
+    ]);
+    // WS-статус авторитетнее REST несколько секунд (лаг списка непрочитанных).
+    const now = Date.now();
+    const OVERRIDE_TTL_MS = 15_000;
+    dialogStatusUnreadOverrideRef.current.forEach((entry, id) => {
+      if (now - entry.at > OVERRIDE_TTL_MS) {
+        dialogStatusUnreadOverrideRef.current.delete(id);
+        return;
+      }
+      if (entry.mode === 'exclude') {
+        nextAllowed.delete(id);
+        pinnedUnreadDialogIdsRef.current.delete(id);
+      } else {
+        nextAllowed.add(id);
+        pinnedUnreadDialogIdsRef.current.add(id);
+      }
+    });
+    const prevAllowed = allowedUnreadDialogIdsRef.current;
+    let allowlistChanged = prevAllowed.size !== nextAllowed.size;
+    if (!allowlistChanged) {
+      for (const id of nextAllowed) {
+        if (!prevAllowed.has(id)) {
+          allowlistChanged = true;
+          break;
+        }
+      }
+    }
+    allowedUnreadDialogIdsRef.current = nextAllowed;
     // Карту НЕ фильтруем. Значения диалогов, временно исчезнувших из REST-списка
     // (например, диалог забрал другой оператор), сохраняются: когда диалог вернётся
-    // в список (CLOSED с непрочитанными), бейдж превью сразу покажет сохранённое
-    // WS-значение, а не 0. Лишние записи безвредны: сумма для иконки считается
-    // только по allowlist (calculateTotalUnread), превью рендерится только по
-    // REST-списку диалогов.
+    // в очередь (CLOSED→ACTIVE), includeDialogInUnreadTotal / pin вернут id в сумму
+    // без ожидания новых сообщений и без обнуления карты. Лишние записи безвредны:
+    // сумма для иконки считается только по allowlist (calculateTotalUnread), превью
+    // рендерится только по REST-списку диалогов.
+    //
+    // Важно: allowlist хранится в ref. Без setState бейдж на закрытой иконке чата
+    // не перерисуется после DIALOG_STATUS / REST-ресинка (карта могла не измениться).
+    if (allowlistChanged) {
+      chatUnreadTrace('socket.restrictUnreadCountsToDialogIds (allowlist changed → rerender)', {
+        fromRestCount: fromRest.length,
+        pinnedCount: pinnedUnreadDialogIdsRef.current.size,
+        allowedCount: nextAllowed.size,
+      });
+      setDialogsUnreadCounts((prev) => new Map(prev));
+    }
   }, []);
 
   const excludeDialogFromUnreadTotal = useCallback((dialogId: number) => {
     if (!(dialogId > 0)) return;
-    allowedUnreadDialogIdsRef.current.delete(dialogId);
+    pinnedUnreadDialogIdsRef.current.delete(dialogId);
+    dialogStatusUnreadOverrideRef.current.set(dialogId, { mode: 'exclude', at: Date.now() });
+    const wasAllowed = allowedUnreadDialogIdsRef.current.delete(dialogId);
+    // Важно: карту НЕ обнуляем. Иначе при CLOSED→ACTIVE (без новых сообщений и без
+    // кадра /queue/unread/{branch}) восстанавливать будет нечего — бейдж останется 0.
+    // calculateTotalUnread и так игнорирует id вне allowlist.
+    if (!wasAllowed) {
+      chatUnreadTrace('socket.excludeDialogFromUnreadTotal (noop)', { dialogId });
+      // Override всё равно записан — нужен re-render, если REST позже вернёт id.
+      setDialogsUnreadCounts((prev) => new Map(prev));
+      return;
+    }
     setDialogsUnreadCounts((prev) => {
-      const prevCount = prev.get(dialogId);
-      if (prevCount == null || prevCount === 0) {
-        chatUnreadTrace('socket.excludeDialogFromUnreadTotal (allowlist only)', {
-          dialogId,
-          prevCount: prevCount ?? null,
-          mapAfter: unreadMapToRecord(prev),
-        });
-        return prev;
-      }
-      const newMap = new Map(prev);
-      newMap.set(dialogId, 0);
-      chatUnreadTrace('socket.excludeDialogFromUnreadTotal', {
+      chatUnreadTrace('socket.excludeDialogFromUnreadTotal (allowlist park)', {
         dialogId,
-        prevCount,
-        mapAfter: unreadMapToRecord(newMap),
+        preservedCount: prev.get(dialogId) ?? 0,
+        mapAfter: unreadMapToRecord(prev),
       });
-      return newMap;
+      // Новая ссылка — чтобы потребители пересчитали сумму бейджа.
+      return new Map(prev);
     });
   }, []);
 
+  /**
+   * Диалог снова виден оператору (статус перестал быть CLOSED): pin + allowlist,
+   * значение — из сохранённой WS-карты. Pin защищает от последующего stale REST.
+   */
+  const includeDialogInUnreadTotal = useCallback((dialogId: number) => {
+    if (!(dialogId > 0)) return;
+    pinnedUnreadDialogIdsRef.current.add(dialogId);
+    dialogStatusUnreadOverrideRef.current.set(dialogId, { mode: 'include', at: Date.now() });
+    unreadAllowlistReadyRef.current = true;
+    const already = allowedUnreadDialogIdsRef.current.has(dialogId);
+    allowedUnreadDialogIdsRef.current.add(dialogId);
+    // Всегда новая ссылка Map: при серии CLOSED↔ACTIVE lastMessage может схлопнуться,
+    // а бейдж на иконке должен пересчитаться на каждое реальное изменение allowlist.
+    setDialogsUnreadCounts((prev) => {
+      chatUnreadTrace(
+        already
+          ? 'socket.includeDialogInUnreadTotal (pin/refresh)'
+          : 'socket.includeDialogInUnreadTotal',
+        {
+          dialogId,
+          restoredCount: prev.get(dialogId) ?? 0,
+          mapAfter: unreadMapToRecord(prev),
+        },
+      );
+      return new Map(prev);
+    });
+  }, []);
+
+  const excludeDialogFromUnreadTotalRef = useRef(excludeDialogFromUnreadTotal);
+  const includeDialogInUnreadTotalRef = useRef(includeDialogInUnreadTotal);
+  excludeDialogFromUnreadTotalRef.current = excludeDialogFromUnreadTotal;
+  includeDialogInUnreadTotalRef.current = includeDialogInUnreadTotal;
+
+  /**
+   * Синхронно по кадру /topic/dialog/status: не ждём React lastMessage
+   * (при частых «забрать»/«завершить» промежуточные кадры иначе теряются).
+   */
+  const applyUnreadAllowlistForDialogStatusFrame = useCallback((parsedBody: any) => {
+    const dialogId = Number(
+      parsedBody?.dialogId ?? parsedBody?.dialog?.id ?? parsedBody?.id,
+    );
+    const dialogStatus =
+      parsedBody?.dialogStatus ?? parsedBody?.status ?? parsedBody?.dialog?.status;
+    if (!(dialogId > 0) || !dialogStatus) return;
+
+    const statusUpper = String(dialogStatus).toUpperCase();
+    const incomingLastOperator =
+      parsedBody?.lastOperator ??
+      parsedBody?.last_operator ??
+      parsedBody?.dialog?.lastOperator ??
+      parsedBody?.dialog?.last_operator;
+
+    if (statusUpper !== 'CLOSED') {
+      includeDialogInUnreadTotalRef.current(dialogId);
+      return;
+    }
+    if (
+      !isClosedDialogVisibleToCurrentOperator({
+        status: statusUpper,
+        lastOperator: incomingLastOperator,
+        last_operator: incomingLastOperator,
+      })
+    ) {
+      excludeDialogFromUnreadTotalRef.current(dialogId);
+    }
+  }, []);
+  const applyUnreadAllowlistForDialogStatusFrameRef = useRef(
+    applyUnreadAllowlistForDialogStatusFrame,
+  );
+  applyUnreadAllowlistForDialogStatusFrameRef.current = applyUnreadAllowlistForDialogStatusFrame;
+
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
-    // WS-детализация сама формирует allowlist текущего филиала (без ожидания REST).
-    if (dialogId > 0) {
+    const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
+    const excludeActive =
+      override?.mode === 'exclude' && Date.now() - override.at < 15_000;
+    // WS-детализация сама формирует allowlist текущего филиала (без ожидания REST),
+    // НО не после явного exclude по DIALOG_STATUS — иначе кадр снова вернёт чужой CLOSED в сумму.
+    if (dialogId > 0 && !excludeActive) {
       allowedUnreadDialogIdsRef.current.add(dialogId);
       unreadAllowlistReadyRef.current = true;
     }
@@ -285,6 +433,7 @@ export const SocketProvider = ({
       chatUnreadTrace('socket.setDialogUnread (absolute)', {
         dialogId,
         count,
+        excludeActive,
         useDetailed: useDetailedCountsRef.current,
         hasDetailedData: hasDetailedDataRef.current,
         mapAfter: unreadMapToRecord(newMap),
@@ -358,9 +507,19 @@ export const SocketProvider = ({
 
   const incrementDialogUnreadCount = useCallback(
     (dialogId: number, amount = 1, dedupeKey?: string) => {
-      if (dialogId > 0) {
+      const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
+      const excludeActive =
+        override?.mode === 'exclude' && Date.now() - override.at < 15_000;
+      if (dialogId > 0 && !excludeActive) {
         allowedUnreadDialogIdsRef.current.add(dialogId);
         unreadAllowlistReadyRef.current = true;
+      }
+      if (excludeActive) {
+        chatUnreadTrace('socket.incrementDialogUnread (skip allowlist, status exclude override)', {
+          dialogId,
+          dedupeKey,
+        });
+        return;
       }
       if (dedupeKey) {
         if (incrementDedupeByMessageRef.current.has(dedupeKey)) {
@@ -417,6 +576,24 @@ export const SocketProvider = ({
   );
 
   const mergeDialogUnreadFromApi = useCallback((dialogId: number, apiCount: number) => {
+    const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
+    const excludeActive =
+      override?.mode === 'exclude' && Date.now() - override.at < 15_000;
+    if (excludeActive) {
+      chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip allowlist, status exclude override)', {
+        dialogId,
+        apiCount,
+      });
+      // Карту можно обновить, но в сумму бейджа id не возвращаем.
+      setDialogsUnreadCounts((prev) => {
+        const prevCount = prev.get(dialogId) ?? 0;
+        if (prevCount >= apiCount) return prev;
+        const newMap = new Map(prev);
+        newMap.set(dialogId, apiCount);
+        return newMap;
+      });
+      return;
+    }
     if (dialogId > 0) {
       allowedUnreadDialogIdsRef.current.add(dialogId);
       unreadAllowlistReadyRef.current = true;
@@ -620,6 +797,18 @@ export const SocketProvider = ({
     return { command, headers, body };
   };
 
+  /** WebSocket часто склеивает несколько STOMP-кадров в один event.data. */
+  const splitStompFrames = (data: string): string[] => {
+    if (!data) return [];
+    if (!data.includes('\x00')) return [data];
+    return data
+      .split('\x00')
+      .map((chunk) => chunk.replace(/^\n+/, '').trimEnd())
+      .filter((chunk) => chunk.length > 0);
+  };
+
+  const unreadSubscribeIdsRef = useRef<Map<string, string>>(new Map());
+
   const subscribeToTopics = (currentBranchId: string) => {
     const topics = [
       `/topic/operator/messages/${currentBranchId}`,
@@ -632,13 +821,18 @@ export const SocketProvider = ({
     ];
 
     subscriptionsRef.current.clear();
+    unreadSubscribeIdsRef.current.clear();
     topics.forEach((topic) => {
+      const subId = `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const subscribeHeaders = {
-        id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: subId,
         destination: topic,
       };
       sendStompFrame('SUBSCRIBE', subscribeHeaders);
       subscriptionsRef.current.add(topic);
+      if (topic === `/queue/unread/${currentBranchId}` || topic === '/user/queue/unread') {
+        unreadSubscribeIdsRef.current.set(topic, subId);
+      }
     });
     chatUnreadTrace('socket.subscribe.topics', {
       branchId: currentBranchId,
@@ -661,6 +855,43 @@ export const SocketProvider = ({
       count: topics.length,
     });
   };
+
+  const requestUnreadTopicsRefreshRef = useRef<() => void>(() => {});
+  const unreadTopicsRefreshTimerRef = useRef<number | undefined>(undefined);
+  const requestUnreadTopicsRefresh = useCallback(() => {
+    const branchId = currentBranchIdRef.current;
+    if (!branchId) return;
+    if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+
+    // Trailing debounce: серия «забрать»/«завершить» → один refresh подписок.
+    if (unreadTopicsRefreshTimerRef.current !== undefined) {
+      window.clearTimeout(unreadTopicsRefreshTimerRef.current);
+    }
+    unreadTopicsRefreshTimerRef.current = window.setTimeout(() => {
+      unreadTopicsRefreshTimerRef.current = undefined;
+      const liveBranchId = currentBranchIdRef.current;
+      if (!liveBranchId) return;
+      if (!socketRef.current || socketRef.current.readyState !== WebSocket.OPEN) return;
+
+      const topics = [`/queue/unread/${liveBranchId}`, '/user/queue/unread'];
+      topics.forEach((topic) => {
+        const prevId = unreadSubscribeIdsRef.current.get(topic);
+        if (prevId) {
+          sendStompFrame('UNSUBSCRIBE', { id: prevId });
+        }
+        const subId = `sub-unread-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        sendStompFrame('SUBSCRIBE', { id: subId, destination: topic });
+        unreadSubscribeIdsRef.current.set(topic, subId);
+        subscriptionsRef.current.add(topic);
+      });
+      chatUnreadTrace('socket.requestUnreadTopicsRefresh', { branchId: liveBranchId, topics });
+      operatorUnreadDebug('WS: принудительный refresh подписок unread после DIALOG_STATUS', {
+        branchId: liveBranchId,
+        topics,
+      });
+    }, 80);
+  }, []);
+  requestUnreadTopicsRefreshRef.current = requestUnreadTopicsRefresh;
 
   const connectWebSocket = (branchId: string) => {
     if (!apiConfig) {
@@ -782,7 +1013,9 @@ export const SocketProvider = ({
 
       socket.onmessage = (event) => {
         try {
-          const frame = parseStompFrame(event.data);
+          const chunks = splitStompFrames(String(event.data ?? ''));
+          for (const chunk of chunks) {
+          const frame = parseStompFrame(chunk);
 
           if (frame.command === 'CONNECTED') {
             stompDebugLog('STOMP CONNECTED received', {
@@ -804,21 +1037,25 @@ export const SocketProvider = ({
 
           if (frame.command === 'MESSAGE') {
             const cleanedBody = frame.body.replace(/\0/g, '').trim();
-            if (!cleanedBody) return;
+            if (!cleanedBody) continue;
 
-            const messageId = `${frame.headers.destination}_${cleanedBody}`;
-            if (processedMessagesRef.current.has(messageId)) return;
-            processedMessagesRef.current.add(messageId);
-
-            setTimeout(() => {
-              processedMessagesRef.current.delete(messageId);
-            }, 10000);
+            const destination = String(
+              frame.headers.destination || frame.headers.Destination || '',
+            ).trim();
+            const isDialogStatusDest = destination.includes('/topic/dialog/status/');
+            // Статусы диалога НЕ дедуплицируем: CLOSED→ACTIVE→CLOSED с тем же телом
+            // иначе второй CLOSED в окне 10с отбрасывается и бейдж «залипает».
+            const messageId = `${destination}_${cleanedBody}`;
+            if (!isDialogStatusDest) {
+              if (processedMessagesRef.current.has(messageId)) continue;
+              processedMessagesRef.current.add(messageId);
+              setTimeout(() => {
+                processedMessagesRef.current.delete(messageId);
+              }, 10000);
+            }
 
             try {
               const parsedBody = JSON.parse(cleanedBody);
-              const destination = String(
-                frame.headers.destination || frame.headers.Destination || '',
-              ).trim();
 
               if (destination === '/user/queue/errors') {
                 setLastMessage({
@@ -827,7 +1064,7 @@ export const SocketProvider = ({
                   rawBody: cleanedBody,
                   destination: destination,
                 });
-                return;
+                continue;
               }
 
               if (destination === '/user/queue/unread') {
@@ -929,7 +1166,7 @@ export const SocketProvider = ({
                   body: parsedBody,
                 });
                 if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
-                  return;
+                  continue;
                 }
                 if (parsedBody?.dialog?.id && parsedBody.messageStatus === 'TO_OPERATOR') {
                   useDetailedCountsRef.current = true;
@@ -951,6 +1188,11 @@ export const SocketProvider = ({
                   destination: destination,
                 });
               } else if (destination === `/topic/dialog/status/${branchIdNorm}`) {
+                // Allowlist бейджа — сразу по кадру (до setLastMessage).
+                applyUnreadAllowlistForDialogStatusFrameRef.current(parsedBody);
+                // Принудительно запросить свежий кадр счётчиков из WS-подписок
+                // (при смене статуса без нового сообщения бэкенд сам кадр часто не шлёт).
+                requestUnreadTopicsRefreshRef.current();
                 setLastMessage({
                   data: parsedBody,
                   type: 'DIALOG_STATUS_UPDATE',
@@ -967,7 +1209,7 @@ export const SocketProvider = ({
                   },
                 );
                 if (!isPayloadForCurrentOperatorBranch(parsedBody)) {
-                  return;
+                  continue;
                 }
                 incomingChatMessagesQueueRef.current.push(parsedBody);
                 setLastMessage({
@@ -1010,6 +1252,7 @@ export const SocketProvider = ({
             setConnectionStatus('error');
             isConnectingRef.current = false;
           }
+          } // end for chunks
         } catch (error) {
           console.error('Ошибка парсинга сообщения WebSocket:', error);
         }
@@ -1200,6 +1443,8 @@ export const SocketProvider = ({
         incrementDialogUnreadCount,
         restrictUnreadCountsToDialogIds,
         excludeDialogFromUnreadTotal,
+        includeDialogInUnreadTotal,
+        requestUnreadTopicsRefresh,
         calculateTotalUnread,
         resetDialogCounts,
         publishStompMessage,

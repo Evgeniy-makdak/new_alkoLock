@@ -50,6 +50,7 @@ import {
 import {
   filterUnreadDialogsForCurrentOperator,
   isClosedDialogClaimedByOtherOperator,
+  isClosedDialogVisibleToCurrentOperator,
   isSessionClosedClaimedByOtherOperator,
 } from '../lib/chatOperatorPermissions';
 import {
@@ -140,6 +141,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const refs = useChatRefs();
   const prevIsChatOpenRef = refs.prevIsChatOpenRef;
   const sessionsRef = useRef<any[]>([]);
+  const isChatOpenRef = useRef(isChatOpen);
+  isChatOpenRef.current = isChatOpen;
 
   const mainSessionsInitRef = useRef<ReturnType<typeof getChatProviderInitialSessionsHydration> | null>(
     null,
@@ -216,6 +219,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     incrementDialogUnreadCount: socketIncrementDialogUnreadCount,
     flushIncomingChatMessages,
     restrictUnreadCountsToDialogIds: socketRestrictUnreadCountsToDialogIds,
+    excludeDialogFromUnreadTotal: socketExcludeDialogFromUnreadTotal,
+    includeDialogInUnreadTotal: socketIncludeDialogInUnreadTotal,
   } = useSocket();
 
   const onUnreadDialogsLoaded = useCallback(
@@ -822,9 +827,57 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const handleDialogStatusUpdate = useCallback(
     (dialogStatusData: any) => {
-      const { dialogId, dialogStatus } = dialogStatusData;
+      const dialogId =
+        dialogStatusData?.dialogId ??
+        dialogStatusData?.dialog?.id ??
+        dialogStatusData?.id;
+      const dialogStatus =
+        dialogStatusData?.dialogStatus ??
+        dialogStatusData?.status ??
+        dialogStatusData?.dialog?.status;
 
       if (!dialogId || !dialogStatus) return;
+
+      const statusUpper = String(dialogStatus).toUpperCase();
+      const parsedDialogIdForUnread = Number(dialogId);
+      const incomingLastOperator =
+        dialogStatusData?.lastOperator ??
+        dialogStatusData?.last_operator ??
+        dialogStatusData?.dialog?.lastOperator ??
+        dialogStatusData?.dialog?.last_operator;
+
+      // Allowlist: дубль к синхронной обработке кадра в SocketContext.
+      if (Number.isFinite(parsedDialogIdForUnread) && parsedDialogIdForUnread > 0) {
+        if (statusUpper !== 'CLOSED') {
+          socketIncludeDialogInUnreadTotal(parsedDialogIdForUnread);
+        } else if (
+          !isClosedDialogVisibleToCurrentOperator({
+            status: statusUpper,
+            lastOperator: incomingLastOperator,
+            last_operator: incomingLastOperator,
+          })
+        ) {
+          socketExcludeDialogFromUnreadTotal(parsedDialogIdForUnread);
+        }
+      }
+
+      // При ЗАКРЫТОМ окне чата REST здесь запрещён: бэкенд-список отстаёт на несколько
+      // секунд и перетирает уже верный WS-allowlist (бейдж «замирает» при частых
+      // забрать/завершить). Обновление бейджа иконки — только WS park/include.
+      // При открытом окне REST нужен для превью после возврата в очередь — как раньше.
+      if (isChatOpenRef.current && statusUpper !== 'CLOSED') {
+        const carriers = sessionsRef.current.filter(
+          (session: any) => (session.unreadDialogs?.length ?? 0) > 0,
+        );
+        const targets = carriers.length
+          ? carriers
+          : sessionsRef.current.length > 0
+            ? [sessionsRef.current[0]]
+            : [];
+        targets.forEach((session: any) => {
+          if (session?.id) forceLoadUnreadDialogs(session.id);
+        });
+      }
 
       sessions.forEach((session: any) => {
         const liveSession = getSession(session.id);
@@ -832,29 +885,25 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const sessionDialogId = liveSession.selectedDialog?.id || liveSession.assignedDialogId;
 
         if (sessionDialogId && sessionDialogId.toString() === dialogId.toString()) {
-          const incomingLastOperator =
-            dialogStatusData?.lastOperator ??
-            dialogStatusData?.last_operator ??
-            dialogStatusData?.dialog?.lastOperator ??
-            dialogStatusData?.dialog?.last_operator;
-
           updateSession(session.id, {
             selectedDialog: {
               ...liveSession.selectedDialog,
               status: dialogStatus,
-              ...(dialogStatus === 'CLOSED' && incomingLastOperator != null
+              ...(statusUpper === 'CLOSED' && incomingLastOperator != null
                 ? { lastOperator: incomingLastOperator }
                 : {}),
-              ...(dialogStatus !== 'CLOSED' ? { lastOperator: null } : {}),
+              ...(statusUpper !== 'CLOSED' ? { lastOperator: null } : {}),
             },
-            ...(dialogStatus !== 'CLOSED' && { assignedDialogId: null }),
+            ...(statusUpper !== 'CLOSED' && { assignedDialogId: null }),
           });
 
-          if (dialogStatus !== 'CLOSED') {
+          if (statusUpper !== 'CLOSED') {
             updateSession(session.id, {
               lastSendError: null,
               transferRecipientFullName: null,
             });
+            // Открытая сессия: если карта была пуста, восстановить из ленты.
+            recalculateSessionUnreadCount(session.id, String(dialogId));
           }
 
           const parsedDialogId = Number(dialogId);
@@ -885,7 +934,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
       });
     },
-    [sessions, getSession, updateSession, loadDialogDetails],
+    [
+      sessions,
+      getSession,
+      updateSession,
+      loadDialogDetails,
+      socketIncludeDialogInUnreadTotal,
+      socketExcludeDialogFromUnreadTotal,
+      forceLoadUnreadDialogs,
+      recalculateSessionUnreadCount,
+    ],
   );
 
   const handleStatusUpdate = useCallback(

@@ -1311,8 +1311,9 @@ function ChatPanel({
       Number(lastOperatorId) !== currentOperatorId;
     if (!isClosedObserverMode) return;
 
-    // Чужой CLOSED (в т.ч. после transfer): не возвращать unread из ленты в карту/
-    // allowlist — иначе основной бейдж передающего снова вырастет.
+    // Чужой CLOSED (в т.ч. после transfer): убрать id из allowlist основного бейджа.
+    // Значение в WS-карте сохраняется (park) — при возврате диалога в ACTIVE бейдж
+    // восстановится без новых сообщений / кадров филиала.
     const currentUnreadInSocketMap = dialogsUnreadCounts.get(activeDialogNumericId) ?? 0;
     if (currentUnreadInSocketMap === 0) return;
     excludeDialogFromUnreadTotal(activeDialogNumericId);

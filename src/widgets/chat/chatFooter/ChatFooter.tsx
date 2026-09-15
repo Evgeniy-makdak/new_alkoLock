@@ -493,6 +493,41 @@ function sumUnreadDialogCounts(dialogs: UnreadDialog[]): number {
   return (dialogs || []).reduce((acc, dialog) => acc + unreadCountFromDialogRecord(dialog), 0);
 }
 
+/**
+ * Allowlist бейджа иконки при закрытом окне — та же развилка, что у ChatPanel
+ * (чужой CLOSED → exclude, иначе include) после loadDialogDetails при открытом окне.
+ */
+function applyClosedChatIconAllowlistFromDialog(
+  dialogLike: any,
+  includeFn: (dialogId: number) => void,
+  excludeFn: (dialogId: number) => void,
+) {
+  const id = Number(dialogLike?.dialogId ?? dialogLike?.id ?? dialogLike?.dialog?.id);
+  if (!(id > 0)) return;
+  const status = String(
+    dialogLike?.dialogStatus ?? dialogLike?.status ?? dialogLike?.dialog?.status ?? '',
+  ).toUpperCase();
+  if (!status) return;
+
+  const forVisibility = {
+    status,
+    lastOperator:
+      dialogLike?.lastOperator ??
+      dialogLike?.last_operator ??
+      dialogLike?.dialog?.lastOperator ??
+      dialogLike?.dialog?.last_operator ??
+      null,
+  };
+
+  if (status !== 'CLOSED') {
+    includeFn(id);
+    return;
+  }
+  if (!isClosedDialogVisibleToCurrentOperator(forVisibility)) {
+    excludeFn(id);
+  }
+}
+
 const UnreadMessagesBadge = ({ count }: { count: number }) => {
   return <span className={styles.notifications}>{count > 99 ? '99+' : count}</span>;
 };
@@ -537,6 +572,10 @@ const ChatToggleButton = ({
     mergeDialogUnreadFromApi,
     restrictUnreadCountsToDialogIds,
     unreadCount: socketAggregateUnread,
+    lastMessage,
+    includeDialogInUnreadTotal,
+    excludeDialogFromUnreadTotal,
+    requestUnreadTopicsRefresh,
   } = useSocket();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
@@ -544,6 +583,8 @@ const ChatToggleButton = ({
   );
   /** Первый REST-снимок получен — дальше иконка считается по allowlist-сумме WS-карты. */
   const [hasUnreadRestSnapshot, setHasUnreadRestSnapshot] = useState(false);
+  const loadClosedChatBadgeRef = useRef<((attempt?: number) => void) | null>(null);
+  const closedIconStatusSyncTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -603,12 +644,59 @@ const ChatToggleButton = ({
 
     onStore();
     const unsubscribe = appStore.subscribe(onStore);
+    loadClosedChatBadgeRef.current = loadClosedChatBadge;
     return () => {
       cancelled = true;
       if (timer) window.clearTimeout(timer);
+      loadClosedChatBadgeRef.current = null;
       unsubscribe();
     };
   }, [isChatOpen, mergeDialogUnreadFromApi, restrictUnreadCountsToDialogIds]);
+
+  /**
+   * Только закрытое окно чата. Триггер по DIALOG_STATUS (как у пользователя):
+   * 1) park/include allowlist (мгновенно)
+   * 2) requestUnreadTopicsRefresh — принудительно переподписать WS unread
+   * 3) короткий REST-дубль allowlist (override в Socket не даёт stale REST вернуть чужой CLOSED)
+   * При isChatOpen — no-op, открытый чат не трогаем.
+   */
+  useEffect(() => {
+    if (isChatOpen) return;
+    const isDialogStatus =
+      lastMessage?.type === 'DIALOG_STATUS_UPDATE' ||
+      (typeof lastMessage?.type === 'string' &&
+        lastMessage.type.includes('/topic/dialog/status/'));
+    if (!isDialogStatus || !lastMessage?.data) return;
+
+    applyClosedChatIconAllowlistFromDialog(
+      lastMessage.data,
+      includeDialogInUnreadTotal,
+      excludeDialogFromUnreadTotal,
+    );
+    requestUnreadTopicsRefresh();
+
+    if (closedIconStatusSyncTimerRef.current !== undefined) {
+      window.clearTimeout(closedIconStatusSyncTimerRef.current);
+    }
+    closedIconStatusSyncTimerRef.current = window.setTimeout(() => {
+      closedIconStatusSyncTimerRef.current = undefined;
+      loadClosedChatBadgeRef.current?.(0);
+    }, 150);
+
+    return () => {
+      if (closedIconStatusSyncTimerRef.current !== undefined) {
+        window.clearTimeout(closedIconStatusSyncTimerRef.current);
+        closedIconStatusSyncTimerRef.current = undefined;
+      }
+    };
+  }, [
+    isChatOpen,
+    lastMessage,
+    includeDialogInUnreadTotal,
+    excludeDialogFromUnreadTotal,
+    requestUnreadTopicsRefresh,
+  ]);
+
   const iconUnreadTotalBase = calculateTotalUnread();
   // Редкий кейс сразу после жёсткой перезагрузки: общий бейдж может кратковременно быть 0,
   // пока WS-карта/агрегат не синхронизировались, но в сессии уже есть непрочитанные по ленте.

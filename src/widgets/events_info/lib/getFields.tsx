@@ -224,7 +224,7 @@ export const getFields = (
           value: {
             copyText: carForCopy,
             copyble: true,
-            label: carString,
+            label: carString || '-',
           },
         }
       : null,
