@@ -576,6 +576,9 @@ const ChatToggleButton = ({
     includeDialogInUnreadTotal,
     excludeDialogFromUnreadTotal,
     requestUnreadTopicsRefresh,
+    hasParkedForeignClosedDialogs,
+    getParkedForeignClosedDialogIds,
+    subscribeParkedForeignClosedDialogs,
   } = useSocket();
   const isDesktopShell = typeof window !== 'undefined' && Boolean(window.alcolockDesktop);
   const [isDesktopPopupOpen, setIsDesktopPopupOpen] = useState(() =>
@@ -695,6 +698,133 @@ const ChatToggleButton = ({
     includeDialogInUnreadTotal,
     excludeDialogFromUnreadTotal,
     requestUnreadTopicsRefresh,
+  ]);
+
+  /**
+   * Таймаут разблокировки чужого CLOSED при ЗАКРЫТОМ окне:
+   * при открытом окне ChatPanel каждые 10с дергает getDialogById и видит CLOSED→ACTIVE.
+   * При закрытом окне ChatPanel нет — делаем тот же poll только по parked id и include.
+   * REST-список — доп. ресинк allowlist после разблокировки (как backup).
+   */
+  useEffect(() => {
+    let intervalId: number | undefined;
+    let inFlight = false;
+
+    const stop = () => {
+      if (intervalId !== undefined) {
+        window.clearInterval(intervalId);
+        intervalId = undefined;
+      }
+    };
+
+    const pollParkedDialogStatuses = () => {
+      if (!hasParkedForeignClosedDialogs() || inFlight) return;
+      const ids = getParkedForeignClosedDialogIds();
+      if (ids.length === 0) {
+        stop();
+        return;
+      }
+      inFlight = true;
+      void (async () => {
+        try {
+          let anyUnlocked = false;
+          await Promise.all(
+            ids.map(async (dialogId) => {
+              try {
+                const response = await DialogsApi.getDialogById(String(dialogId));
+                const details = (response as any)?.data ?? response;
+                const status = String(details?.status ?? '').toUpperCase();
+                if (!status || status === 'CLOSED') return;
+                includeDialogInUnreadTotal(dialogId);
+                anyUnlocked = true;
+              } catch {
+                // ignore single-id failures
+              }
+            }),
+          );
+          if (anyUnlocked) {
+            loadClosedChatBadgeRef.current?.(0);
+          }
+        } finally {
+          inFlight = false;
+          if (!hasParkedForeignClosedDialogs()) stop();
+        }
+      })();
+    };
+
+    const startOrStop = () => {
+      if (!hasParkedForeignClosedDialogs()) {
+        stop();
+        return;
+      }
+      if (intervalId !== undefined) return;
+      // Как ChatPanel.checkDialogStatusInterval: первый тик через 10с, далее каждые 10с.
+      intervalId = window.setInterval(pollParkedDialogStatuses, 10_000);
+    };
+
+    startOrStop();
+    const unsubscribe = subscribeParkedForeignClosedDialogs(startOrStop);
+    return () => {
+      unsubscribe();
+      stop();
+    };
+  }, [
+    hasParkedForeignClosedDialogs,
+    getParkedForeignClosedDialogIds,
+    subscribeParkedForeignClosedDialogs,
+    includeDialogInUnreadTotal,
+  ]);
+
+  /**
+   * Закрытое окно: кадр непрочитанных филиала часто приходит при таймауте раньше/вместо
+   * DIALOG_STATUS. При открытом окне это даёт forceLoadUnreadDialogs; здесь — тот же
+   * смысл: сразу проверить parked getDialogById + REST allowlist.
+   */
+  useEffect(() => {
+    if (isChatOpen) return;
+    if (!hasParkedForeignClosedDialogs()) return;
+    const isDialogsUpdate =
+      lastMessage?.type === 'DIALOGS_UPDATE' ||
+      (typeof lastMessage?.destination === 'string' &&
+        (lastMessage.destination.includes('/queue/unread/') ||
+          lastMessage.destination.includes('/user/queue/unread')));
+    if (!isDialogsUpdate) return;
+
+    const ids = getParkedForeignClosedDialogIds();
+    if (ids.length === 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      let anyUnlocked = false;
+      await Promise.all(
+        ids.map(async (dialogId) => {
+          try {
+            const response = await DialogsApi.getDialogById(String(dialogId));
+            if (cancelled) return;
+            const details = (response as any)?.data ?? response;
+            const status = String(details?.status ?? '').toUpperCase();
+            if (!status || status === 'CLOSED') return;
+            includeDialogInUnreadTotal(dialogId);
+            anyUnlocked = true;
+          } catch {
+            // ignore
+          }
+        }),
+      );
+      if (!cancelled && anyUnlocked) {
+        loadClosedChatBadgeRef.current?.(0);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isChatOpen,
+    lastMessage,
+    hasParkedForeignClosedDialogs,
+    getParkedForeignClosedDialogIds,
+    includeDialogInUnreadTotal,
   ]);
 
   const iconUnreadTotalBase = calculateTotalUnread();

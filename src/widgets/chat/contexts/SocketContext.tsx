@@ -74,6 +74,12 @@ interface SocketContextType {
    * Нужен после DIALOG_STATUS, когда бэкенд не шлёт кадр сам (нет нового сообщения).
    */
   requestUnreadTopicsRefresh: () => void;
+  /** Есть ли диалоги, убранные из бейджа из‑за чужого CLOSED (ждут таймаут/разблокировку). */
+  hasParkedForeignClosedDialogs: () => boolean;
+  /** Id «припаркованных» чужих CLOSED (для poll статуса при закрытом окне чата). */
+  getParkedForeignClosedDialogIds: () => number[];
+  /** Подписка на изменение набора «припаркованных» чужих CLOSED. */
+  subscribeParkedForeignClosedDialogs: (listener: () => void) => () => void;
   calculateTotalUnread: () => number;
   resetDialogCounts: () => void;
   /** Отправка через актуальный STOMP-клиент (ref), без гонки с React state. */
@@ -176,7 +182,49 @@ export const SocketProvider = ({
   const dialogStatusUnreadOverrideRef = useRef<
     Map<number, { mode: 'include' | 'exclude'; at: number }>
   >(new Map());
+  /**
+   * Диалоги, убранные из бейджа из‑за чужого CLOSED. Живут до include / появления
+   * снова в REST-списке. Нужны для таймаута разблокировки: бэкенд часто не шлёт
+   * Op2 тот же DIALOG_STATUS, что при ручном «Завершить».
+   */
+  const parkedForeignClosedDialogIdsRef = useRef<Set<number>>(new Set());
+  /**
+   * После снятия park (CLOSED→ACTIVE): несколько секунд не даём stale REST/ленте/absolute
+   * переписать live-count, накопленный за время чужого CLOSED (+1 и READ).
+   * incrementDialogUnreadCount (новые сообщения после «Завершить») не блокируется.
+   */
+  const parkReleaseGuardUntilRef = useRef<Map<number, number>>(new Map());
+  const parkedForeignClosedListenersRef = useRef<Set<() => void>>(new Set());
   const unreadAllowlistReadyRef = useRef(false);
+  const requestUnreadTopicsRefreshRef = useRef<() => void>(() => {});
+  const unreadTopicsRefreshTimerRef = useRef<number | undefined>(undefined);
+
+  const notifyParkedForeignClosedDialogsChanged = useCallback(() => {
+    parkedForeignClosedListenersRef.current.forEach((listener) => {
+      try {
+        listener();
+      } catch {
+        // ignore listener errors
+      }
+    });
+  }, []);
+
+  const hasParkedForeignClosedDialogs = useCallback(
+    () => parkedForeignClosedDialogIdsRef.current.size > 0,
+    [],
+  );
+
+  const getParkedForeignClosedDialogIds = useCallback(
+    () => Array.from(parkedForeignClosedDialogIdsRef.current),
+    [],
+  );
+
+  const subscribeParkedForeignClosedDialogs = useCallback((listener: () => void) => {
+    parkedForeignClosedListenersRef.current.add(listener);
+    return () => {
+      parkedForeignClosedListenersRef.current.delete(listener);
+    };
+  }, []);
 
   const [apiConfig, setApiConfig] = useState<{ apiUrl: string; wsUrl: string } | null>(null);
 
@@ -241,6 +289,8 @@ export const SocketProvider = ({
     allowedUnreadDialogIdsRef.current = new Set();
     pinnedUnreadDialogIdsRef.current = new Set();
     dialogStatusUnreadOverrideRef.current = new Map();
+    parkedForeignClosedDialogIdsRef.current = new Set();
+    parkReleaseGuardUntilRef.current = new Map();
     unreadAllowlistReadyRef.current = false;
   }, []);
 
@@ -266,8 +316,23 @@ export const SocketProvider = ({
   const restrictUnreadCountsToDialogIds = useCallback((dialogIds: number[]) => {
     unreadAllowlistReadyRef.current = true;
     const fromRest = dialogIds.filter((id) => typeof id === 'number' && id > 0);
-    // REST уже подтвердил диалог — pin больше не нужен.
-    fromRest.forEach((id) => pinnedUnreadDialogIdsRef.current.delete(id));
+    let parkedReleased = false;
+    // REST уже подтвердил диалог — pin больше не нужен; чужой CLOSED после таймаута
+    // снова в списке → снимаем park/exclude-override.
+    fromRest.forEach((id) => {
+      pinnedUnreadDialogIdsRef.current.delete(id);
+      if (parkedForeignClosedDialogIdsRef.current.delete(id)) {
+        parkedReleased = true;
+      }
+      // park-release guard (в include) не даёт stale REST переписать live-count.
+      const ov = dialogStatusUnreadOverrideRef.current.get(id);
+      if (ov?.mode === 'exclude') {
+        dialogStatusUnreadOverrideRef.current.delete(id);
+      }
+    });
+    if (parkedReleased) {
+      notifyParkedForeignClosedDialogsChanged();
+    }
     const nextAllowed = new Set<number>([
       ...fromRest,
       ...pinnedUnreadDialogIdsRef.current,
@@ -313,22 +378,27 @@ export const SocketProvider = ({
         fromRestCount: fromRest.length,
         pinnedCount: pinnedUnreadDialogIdsRef.current.size,
         allowedCount: nextAllowed.size,
+        parkedReleased,
       });
       setDialogsUnreadCounts((prev) => new Map(prev));
     }
-  }, []);
+  }, [notifyParkedForeignClosedDialogsChanged]);
 
   const excludeDialogFromUnreadTotal = useCallback((dialogId: number) => {
     if (!(dialogId > 0)) return;
     pinnedUnreadDialogIdsRef.current.delete(dialogId);
     dialogStatusUnreadOverrideRef.current.set(dialogId, { mode: 'exclude', at: Date.now() });
+    const wasParked = parkedForeignClosedDialogIdsRef.current.has(dialogId);
+    parkedForeignClosedDialogIdsRef.current.add(dialogId);
+    if (!wasParked) {
+      notifyParkedForeignClosedDialogsChanged();
+    }
     const wasAllowed = allowedUnreadDialogIdsRef.current.delete(dialogId);
     // Важно: карту НЕ обнуляем. Иначе при CLOSED→ACTIVE (без новых сообщений и без
     // кадра /queue/unread/{branch}) восстанавливать будет нечего — бейдж останется 0.
     // calculateTotalUnread и так игнорирует id вне allowlist.
     if (!wasAllowed) {
       chatUnreadTrace('socket.excludeDialogFromUnreadTotal (noop)', { dialogId });
-      // Override всё равно записан — нужен re-render, если REST позже вернёт id.
       setDialogsUnreadCounts((prev) => new Map(prev));
       return;
     }
@@ -338,24 +408,28 @@ export const SocketProvider = ({
         preservedCount: prev.get(dialogId) ?? 0,
         mapAfter: unreadMapToRecord(prev),
       });
-      // Новая ссылка — чтобы потребители пересчитали сумму бейджа.
       return new Map(prev);
     });
-  }, []);
+  }, [notifyParkedForeignClosedDialogsChanged]);
 
   /**
-   * Диалог снова виден оператору (статус перестал быть CLOSED): pin + allowlist,
-   * значение — из сохранённой WS-карты. Pin защищает от последующего stale REST.
+   * Диалог снова виден оператору (CLOSED→ACTIVE): pin + allowlist.
+   * Значение — из live WS-карты (за park она уже обновлялась +1/READ).
+   * Несколько секунд guard: stale REST/лента после «Завершить» не откатывают count.
    */
   const includeDialogInUnreadTotal = useCallback((dialogId: number) => {
     if (!(dialogId > 0)) return;
     pinnedUnreadDialogIdsRef.current.add(dialogId);
     dialogStatusUnreadOverrideRef.current.set(dialogId, { mode: 'include', at: Date.now() });
+    const wasParked = parkedForeignClosedDialogIdsRef.current.delete(dialogId);
+    if (wasParked) {
+      notifyParkedForeignClosedDialogsChanged();
+      parkReleaseGuardUntilRef.current.set(dialogId, Date.now() + 8_000);
+      requestUnreadTopicsRefreshRef.current();
+    }
     unreadAllowlistReadyRef.current = true;
     const already = allowedUnreadDialogIdsRef.current.has(dialogId);
     allowedUnreadDialogIdsRef.current.add(dialogId);
-    // Всегда новая ссылка Map: при серии CLOSED↔ACTIVE lastMessage может схлопнуться,
-    // а бейдж на иконке должен пересчитаться на каждое реальное изменение allowlist.
     setDialogsUnreadCounts((prev) => {
       chatUnreadTrace(
         already
@@ -364,17 +438,28 @@ export const SocketProvider = ({
         {
           dialogId,
           restoredCount: prev.get(dialogId) ?? 0,
+          wasParked,
           mapAfter: unreadMapToRecord(prev),
         },
       );
       return new Map(prev);
     });
-  }, []);
+  }, [notifyParkedForeignClosedDialogsChanged]);
 
   const excludeDialogFromUnreadTotalRef = useRef(excludeDialogFromUnreadTotal);
   const includeDialogInUnreadTotalRef = useRef(includeDialogInUnreadTotal);
   excludeDialogFromUnreadTotalRef.current = excludeDialogFromUnreadTotal;
   includeDialogInUnreadTotalRef.current = includeDialogInUnreadTotal;
+
+  const isParkReleaseGuarded = (dialogId: number): boolean => {
+    const until = parkReleaseGuardUntilRef.current.get(dialogId);
+    if (until == null) return false;
+    if (Date.now() >= until) {
+      parkReleaseGuardUntilRef.current.delete(dialogId);
+      return false;
+    }
+    return true;
+  };
 
   /**
    * Синхронно по кадру /topic/dialog/status: не ждём React lastMessage
@@ -382,20 +467,44 @@ export const SocketProvider = ({
    */
   const applyUnreadAllowlistForDialogStatusFrame = useCallback((parsedBody: any) => {
     const dialogId = Number(
-      parsedBody?.dialogId ?? parsedBody?.dialog?.id ?? parsedBody?.id,
+      parsedBody?.dialogId ??
+        parsedBody?.dialog_id ??
+        parsedBody?.dialog?.id ??
+        parsedBody?.id,
     );
-    const dialogStatus =
-      parsedBody?.dialogStatus ?? parsedBody?.status ?? parsedBody?.dialog?.status;
-    if (!(dialogId > 0) || !dialogStatus) return;
+    const reason = String(
+      parsedBody?.reason ?? parsedBody?.event ?? parsedBody?.eventType ?? parsedBody?.type ?? '',
+    ).toUpperCase();
+    const lockedFlag = parsedBody?.locked ?? parsedBody?.isLocked ?? parsedBody?.dialog?.locked;
+    const dialogStatusRaw =
+      parsedBody?.dialogStatus ??
+      parsedBody?.dialog_status ??
+      parsedBody?.newStatus ??
+      parsedBody?.new_status ??
+      parsedBody?.toStatus ??
+      parsedBody?.status ??
+      parsedBody?.dialog?.status;
+    let statusUpper = dialogStatusRaw != null ? String(dialogStatusRaw).toUpperCase() : '';
 
-    const statusUpper = String(dialogStatus).toUpperCase();
+    // Таймаут/разблокировка: бэкенд иногда шлёт флаг без явного ACTIVE/OPEN.
+    if (
+      !statusUpper &&
+      (reason.includes('TIMEOUT') ||
+        reason.includes('UNLOCK') ||
+        reason.includes('EXPIRE') ||
+        lockedFlag === false)
+    ) {
+      statusUpper = 'ACTIVE';
+    }
+    if (!(dialogId > 0) || !statusUpper) return;
+
     const incomingLastOperator =
       parsedBody?.lastOperator ??
       parsedBody?.last_operator ??
       parsedBody?.dialog?.lastOperator ??
       parsedBody?.dialog?.last_operator;
 
-    if (statusUpper !== 'CLOSED') {
+    if (statusUpper !== 'CLOSED' || lockedFlag === false) {
       includeDialogInUnreadTotalRef.current(dialogId);
       return;
     }
@@ -414,17 +523,32 @@ export const SocketProvider = ({
   );
   applyUnreadAllowlistForDialogStatusFrameRef.current = applyUnreadAllowlistForDialogStatusFrame;
 
+  /**
+   * Сразу после снятия park: не переписывать live-count stale REST/лентой/absolute.
+   * Новые сообщения после «Завершить» идут через incrementDialogUnreadCount — без guard.
+   */
+  const shouldFreezeCountAfterParkRelease = (dialogId: number, prevCount: number, incomingCount: number) =>
+    incomingCount !== prevCount && isParkReleaseGuarded(dialogId);
+
   const updateDialogUnreadCount = useCallback((dialogId: number, count: number) => {
     const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
     const excludeActive =
       override?.mode === 'exclude' && Date.now() - override.at < 15_000;
-    // WS-детализация сама формирует allowlist текущего филиала (без ожидания REST),
-    // НО не после явного exclude по DIALOG_STATUS — иначе кадр снова вернёт чужой CLOSED в сумму.
-    if (dialogId > 0 && !excludeActive) {
+    const isParked = parkedForeignClosedDialogIdsRef.current.has(dialogId);
+    if (dialogId > 0 && !excludeActive && !isParked) {
       allowedUnreadDialogIdsRef.current.add(dialogId);
       unreadAllowlistReadyRef.current = true;
     }
     setDialogsUnreadCounts((prev) => {
+      const prevCount = prev.get(dialogId) ?? 0;
+      if (shouldFreezeCountAfterParkRelease(dialogId, prevCount, count)) {
+        chatUnreadTrace('socket.setDialogUnread (park-release guard)', {
+          dialogId,
+          count,
+          prevCount,
+        });
+        return prev;
+      }
       const newMap = new Map(prev);
       if (useDetailedCountsRef.current || dialogId > 0) {
         newMap.set(dialogId, count);
@@ -434,6 +558,7 @@ export const SocketProvider = ({
         dialogId,
         count,
         excludeActive,
+        isParked,
         useDetailed: useDetailedCountsRef.current,
         hasDetailedData: hasDetailedDataRef.current,
         mapAfter: unreadMapToRecord(newMap),
@@ -451,9 +576,17 @@ export const SocketProvider = ({
     ) => {
       setDialogsUnreadCounts((prev) => {
         const prevSocket = prev.get(dialogId) ?? 0;
-        const next = hasAnyMessageForDialog
+        let next = hasAnyMessageForDialog
           ? feedUnreadCount
           : Math.max(feedUnreadCount, prevSocket);
+        if (shouldFreezeCountAfterParkRelease(dialogId, prevSocket, next)) {
+          next = prevSocket;
+          chatUnreadTrace('socket.reconcileDialogUnreadFromSessionFeed (park-release guard)', {
+            dialogId,
+            feedUnreadCount,
+            prevSocket,
+          });
+        }
         Promise.resolve().then(() => onApplied(next, prevSocket));
         if (prev.get(dialogId) === next) {
           return prev;
@@ -476,29 +609,30 @@ export const SocketProvider = ({
 
   /**
    * Запись per-dialog значения из кадра филиала /queue/unread/{branch}.
-   * В отличие от updateDialogUnreadCount НЕ расширяет allowlist (топик филиала шире
-   * диалогов оператора) и применяется безусловно: значение должно попасть в карту
-   * сразу, даже если превью этого диалога появится позже (REST-ответ придёт после кадра).
-   * Чужие диалоги в карте безопасны: бейджи рендерятся только по REST-списку превью
-   * и сессиям, а calculateTotalUnread фильтрует по allowlist.
    */
   const applyDialogUnreadFromBranchFrame = useCallback((dialogId: number, count: number) => {
     if (!(dialogId > 0) || !Number.isFinite(count)) return;
-    // Нулевое значение из кадра филиала не затирает положительное значение карты:
-    // бэк в переходные моменты (transfer/CLOSED) шлёт 0 по диалогам, переданным
-    // другому оператору. Легитимное обнуление делает локальный READ/лента сессии.
     if (count === 0) return;
     useDetailedCountsRef.current = true;
     hasDetailedDataRef.current = true;
-    lastAbsoluteDialogUpdateAtRef.current.set(dialogId, Date.now());
     setDialogsUnreadCounts((prev) => {
-      if (prev.get(dialogId) === count) return prev;
+      const prevCount = prev.get(dialogId) ?? 0;
+      if (prevCount === count) return prev;
+      if (shouldFreezeCountAfterParkRelease(dialogId, prevCount, count)) {
+        chatUnreadTrace('socket.applyDialogUnreadFromBranchFrame (park-release guard)', {
+          dialogId,
+          count,
+          prevCount,
+        });
+        return prev;
+      }
+      lastAbsoluteDialogUpdateAtRef.current.set(dialogId, Date.now());
       const newMap = new Map(prev);
       newMap.set(dialogId, count);
       chatUnreadTrace('socket.applyDialogUnreadFromBranchFrame', {
         dialogId,
         count,
-        prev: prev.get(dialogId) ?? 0,
+        prev: prevCount,
         mapAfter: unreadMapToRecord(newMap),
       });
       return newMap;
@@ -510,16 +644,12 @@ export const SocketProvider = ({
       const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
       const excludeActive =
         override?.mode === 'exclude' && Date.now() - override.at < 15_000;
-      if (dialogId > 0 && !excludeActive) {
+      const isParked = parkedForeignClosedDialogIdsRef.current.has(dialogId);
+      // Чужой CLOSED: allowlist не трогаем, но карту обновляем — иначе после «Завершить»
+      // include вернёт устаревший park (7 вместо 8).
+      if (dialogId > 0 && !excludeActive && !isParked) {
         allowedUnreadDialogIdsRef.current.add(dialogId);
         unreadAllowlistReadyRef.current = true;
-      }
-      if (excludeActive) {
-        chatUnreadTrace('socket.incrementDialogUnread (skip allowlist, status exclude override)', {
-          dialogId,
-          dedupeKey,
-        });
-        return;
       }
       if (dedupeKey) {
         if (incrementDedupeByMessageRef.current.has(dedupeKey)) {
@@ -540,13 +670,17 @@ export const SocketProvider = ({
         const current = newMap.get(dialogId) || 0;
         const lastAbsoluteAt = lastAbsoluteDialogUpdateAtRef.current.get(dialogId) ?? 0;
         const absoluteIsFresh = Date.now() - lastAbsoluteAt < 2500;
-        if (hasDetailedDataRef.current && absoluteIsFresh) {
+        // Пока id в park/exclude — absolute-кадр часто «заморожен» на старом count;
+        // +1 по живому сообщению всё равно нужен, иначе после «Завершить» будет 7 вместо 8.
+        if (hasDetailedDataRef.current && absoluteIsFresh && !excludeActive && !isParked) {
           chatUnreadTrace(
             'socket.incrementDialogUnread (skip +1, recent absolute per-dialog authoritative)',
             {
               dialogId,
               dedupeKey,
               current,
+              excludeActive,
+              isParked,
               msSinceAbsolute: Date.now() - lastAbsoluteAt,
             },
           );
@@ -557,18 +691,27 @@ export const SocketProvider = ({
             dialogId,
             dedupeKey,
             current,
+            excludeActive,
+            isParked,
             msSinceAbsolute: Date.now() - lastAbsoluteAt,
           });
         }
         const newCount = current + amount;
         newMap.set(dialogId, newCount);
-        chatUnreadTrace('socket.incrementDialogUnread', {
-          dialogId,
-          amount,
-          prev: current,
-          next: newCount,
-          mapAfter: unreadMapToRecord(newMap),
-        });
+        chatUnreadTrace(
+          excludeActive || isParked
+            ? 'socket.incrementDialogUnread (parked map only)'
+            : 'socket.incrementDialogUnread',
+          {
+            dialogId,
+            amount,
+            prev: current,
+            next: newCount,
+            excludeActive,
+            isParked,
+            mapAfter: unreadMapToRecord(newMap),
+          },
+        );
         return newMap;
       });
     },
@@ -579,12 +722,14 @@ export const SocketProvider = ({
     const override = dialogStatusUnreadOverrideRef.current.get(dialogId);
     const excludeActive =
       override?.mode === 'exclude' && Date.now() - override.at < 15_000;
-    if (excludeActive) {
-      chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip allowlist, status exclude override)', {
+    const isParked = parkedForeignClosedDialogIdsRef.current.has(dialogId);
+    if (excludeActive || isParked) {
+      chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip allowlist, parked/exclude)', {
         dialogId,
         apiCount,
+        excludeActive,
+        isParked,
       });
-      // Карту можно обновить, но в сумму бейджа id не возвращаем.
       setDialogsUnreadCounts((prev) => {
         const prevCount = prev.get(dialogId) ?? 0;
         if (prevCount >= apiCount) return prev;
@@ -600,8 +745,15 @@ export const SocketProvider = ({
     }
     setDialogsUnreadCounts((prev) => {
       const prevCount = prev.get(dialogId) ?? 0;
-      // Защита от «затирания»: если в карте уже есть значение из WS, которое больше или равно
-      // пришедшему из API (в т.ч. нулевой REST-снимок), — WS-значение авторитетно, не трогаем карту.
+      if (shouldFreezeCountAfterParkRelease(dialogId, prevCount, apiCount)) {
+        chatUnreadTrace('socket.mergeDialogUnreadFromApi (park-release guard)', {
+          dialogId,
+          apiCount,
+          prevCount,
+        });
+        return prev;
+      }
+      // Не затираем живой WS меньшим/нулевым REST.
       if (prevCount >= apiCount) {
         chatUnreadTrace('socket.mergeDialogUnreadFromApi (skip, WS value >= api)', {
           dialogId,
@@ -856,8 +1008,6 @@ export const SocketProvider = ({
     });
   };
 
-  const requestUnreadTopicsRefreshRef = useRef<() => void>(() => {});
-  const unreadTopicsRefreshTimerRef = useRef<number | undefined>(undefined);
   const requestUnreadTopicsRefresh = useCallback(() => {
     const branchId = currentBranchIdRef.current;
     if (!branchId) return;
@@ -1445,6 +1595,9 @@ export const SocketProvider = ({
         excludeDialogFromUnreadTotal,
         includeDialogInUnreadTotal,
         requestUnreadTopicsRefresh,
+        hasParkedForeignClosedDialogs,
+        getParkedForeignClosedDialogIds,
+        subscribeParkedForeignClosedDialogs,
         calculateTotalUnread,
         resetDialogCounts,
         publishStompMessage,

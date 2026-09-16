@@ -223,6 +223,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     includeDialogInUnreadTotal: socketIncludeDialogInUnreadTotal,
   } = useSocket();
 
+  const socketDialogsUnreadCountsRef = useRef(socketDialogsUnreadCounts);
+  socketDialogsUnreadCountsRef.current = socketDialogsUnreadCounts;
+
   const onUnreadDialogsLoaded = useCallback(
     (dialogs: UnreadDialog[]) => {
       const filteredDialogs = filterUnreadDialogsForCurrentOperator(dialogs);
@@ -864,19 +867,26 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       // При ЗАКРЫТОМ окне чата REST здесь запрещён: бэкенд-список отстаёт на несколько
       // секунд и перетирает уже верный WS-allowlist (бейдж «замирает» при частых
       // забрать/завершить). Обновление бейджа иконки — только WS park/include.
-      // При открытом окне REST нужен для превью после возврата в очередь — как раньше.
+      // При открытом окне REST нужен для превью после возврата в очередь — как раньше,
+      // НО не если live per-dialog count уже в WS-карте (обновлялся за чужой CLOSED):
+      // иначе stale REST/forceLoad откатывает ↑/↓ после «Завершить».
       if (isChatOpenRef.current && statusUpper !== 'CLOSED') {
-        const carriers = sessionsRef.current.filter(
-          (session: any) => (session.unreadDialogs?.length ?? 0) > 0,
-        );
-        const targets = carriers.length
-          ? carriers
-          : sessionsRef.current.length > 0
-            ? [sessionsRef.current[0]]
-            : [];
-        targets.forEach((session: any) => {
-          if (session?.id) forceLoadUnreadDialogs(session.id);
-        });
+        const parsedId = Number(dialogId);
+        const hasLiveSocketCount =
+          Number.isFinite(parsedId) && socketDialogsUnreadCountsRef.current.has(parsedId);
+        if (!hasLiveSocketCount) {
+          const carriers = sessionsRef.current.filter(
+            (session: any) => (session.unreadDialogs?.length ?? 0) > 0,
+          );
+          const targets = carriers.length
+            ? carriers
+            : sessionsRef.current.length > 0
+              ? [sessionsRef.current[0]]
+              : [];
+          targets.forEach((session: any) => {
+            if (session?.id) forceLoadUnreadDialogs(session.id);
+          });
+        }
       }
 
       sessions.forEach((session: any) => {
@@ -902,8 +912,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
               lastSendError: null,
               transferRecipientFullName: null,
             });
-            // Открытая сессия: если карта была пуста, восстановить из ленты.
-            recalculateSessionUnreadCount(session.id, String(dialogId));
+            const parsedId = Number(dialogId);
+            const liveSocketCount = Number.isFinite(parsedId)
+              ? socketDialogsUnreadCountsRef.current.get(parsedId)
+              : undefined;
+            // Лента отстаёт от live-карты за время чужого CLOSED — не перетирать WS.
+            if (liveSocketCount == null) {
+              recalculateSessionUnreadCount(session.id, String(dialogId));
+            } else {
+              updateSession(session.id, { unreadCount: liveSocketCount });
+            }
           }
 
           const parsedDialogId = Number(dialogId);
@@ -1225,12 +1243,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         const messageDialogId = messageData.dialog?.id ?? messageData.dialogId;
         const dialogForClaimCheck = messageData.dialog ?? existingSession.selectedDialog ?? messageData;
-        if (
-          messageDialogId != null &&
-          isOperatorUnreadForCounters(messageData) &&
-          !isClosedDialogClaimedByOtherOperator(dialogForClaimCheck)
-        ) {
-          socketIncrementDialogUnreadCount(Number(messageDialogId), 1, processingKey);
+        if (messageDialogId != null && isOperatorUnreadForCounters(messageData)) {
+          const dialogIdNum = Number(messageDialogId);
+          // Чужой CLOSED: бейдж скрыт (park), но +1 в карту обязателен — иначе после
+          // «Завершить» include вернёт устаревшее значение (7 вместо 8).
+          if (isClosedDialogClaimedByOtherOperator(dialogForClaimCheck)) {
+            socketExcludeDialogFromUnreadTotal(dialogIdNum);
+          }
+          socketIncrementDialogUnreadCount(dialogIdNum, 1, processingKey);
         }
 
         if (!existingSession.isMinimized) {
@@ -1450,6 +1470,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       refreshAllOpenSessions,
       updateSessionUnreadCount,
       socketIncrementDialogUnreadCount,
+      socketExcludeDialogFromUnreadTotal,
       refs,
       isChatOpen,
     ],

@@ -1326,9 +1326,8 @@ function ChatPanel({
     excludeDialogFromUnreadTotal,
   ]);
 
-  // Бейдж в шапке открытого чата: единственный первоисточник — WS-карта /user/queue/unread
-  // (socketEntry). Если записи для диалога ещё нет — fallback на подсчёт по ленте,
-  // полученной по WS (feedUnreadFromMessages). REST и session.unreadCount не участвуют.
+  // Бейдж в шапке и на стрелке «вниз»: один источник — WS-карта (socketEntry),
+  // иначе шапка и стрелка расходятся (на скрине 9 vs 8). Fallback — подсчёт по ленте.
   const displayUnreadCount = session ? (socketEntry ?? feedUnreadFromMessages) : 0;
 
   const shouldScrollToFirstUnreadOnExpand = useMemo(() => {
@@ -1627,7 +1626,7 @@ function ChatPanel({
           userId={selectedUsers[0]}
           selectedUserName={selectedUserName}
           onMarkMessagesAsRead={handleMarkMessagesAsRead}
-          unreadCount={feedUnreadFromMessages}
+          unreadCount={displayUnreadCount}
           expandUnreadHintCount={displayUnreadCount}
           scrollToBottomOnExpand={shouldScrollToFirstUnreadOnExpand}
           onScrollToBottomDone={onScrollToBottomDone}
