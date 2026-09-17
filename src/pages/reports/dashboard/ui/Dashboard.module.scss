@@ -1,0 +1,187 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 320px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.card {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: var(--mui-palette-background-paper, #fff);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 140px;
+}
+
+.cardTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.cardMeta {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.cardActions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.empty {
+  padding: 32px 16px;
+  text-align: center;
+  opacity: 0.8;
+}
+
+.editorRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  min-height: 0;
+}
+
+.editorToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  /* Место под floating InputLabel — иначе подписи «Название»/«Описание»/«Разметка»
+     обрезаются sticky-шапкой и overflow:hidden у .tableArea */
+  padding-top: 10px;
+  overflow: visible;
+
+  :global(.MuiFormControl-root),
+  :global(.MuiTextField-root) {
+    overflow: visible;
+  }
+
+  :global(.MuiInputLabel-root) {
+    z-index: 1;
+    background-color: var(--mui-palette-background-default, #fff);
+    padding: 0 4px;
+    line-height: 1.2;
+  }
+}
+
+:global(html[data-theme='dark']) {
+  .editorToolbar :global(.MuiInputLabel-root) {
+    background-color: var(--mui-palette-background-default, #121212);
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+  min-height: 360px;
+}
+
+.cell {
+  border: 1px dashed rgba(0, 0, 0, 0.22);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.02);
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.cellFilled {
+  border-style: solid;
+  background: var(--mui-palette-background-paper, #fff);
+}
+
+.cellHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.widgetMeta {
+  flex-shrink: 0;
+  padding: 6px 10px 0;
+}
+
+.cellBody {
+  flex: 1;
+  padding: 10px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.cellEmptyHint {
+  margin: auto;
+  text-align: center;
+  opacity: 0.7;
+  font-size: 0.9rem;
+  padding: 12px;
+}
+
+.widgetPreviewTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.widgetPreviewTable th,
+.widgetPreviewTable td {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding: 4px 6px;
+  text-align: left;
+  white-space: nowrap;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accessList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.accessRow {
+  display: grid;
+  grid-template-columns: 1fr 140px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 720px) {
+  .accessRow {
+    grid-template-columns: 1fr;
+  }
+
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}

@@ -9,6 +9,8 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Tab,
+  Tabs,
   Typography,
   useMediaQuery,
   useTheme,
@@ -16,6 +18,8 @@ import {
 
 import { PageWrapper } from '@layout/page_wrapper';
 import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
+import { dashboardStore } from '@pages/reports/dashboard/model/dashboardStore';
+import { ReportsDashboardsPanel } from '@pages/reports/dashboard/ui/ReportsDashboardsPanel';
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
@@ -38,6 +42,10 @@ export function ReportsPage() {
   const createReportButtonSx = useMemo(() => getToolbarSecondaryButtonSx(theme), [theme]);
   const isMobile = useMediaQuery(breakpoints.mobile);
   const isTablet = useMediaQuery(breakpoints.tablet);
+
+  const workspaceTab = dashboardStore((s) => s.workspaceTab);
+  const setWorkspaceTab = dashboardStore((s) => s.setWorkspaceTab);
+  const isDashboardsTab = workspaceTab === 'dashboards';
 
   const loadEntities = reportsStore((s) => s.loadEntities);
   const resetFilters = reportsStore((s) => s.resetFilters);
@@ -124,7 +132,7 @@ export function ReportsPage() {
               <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
                 {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
               </Typography>
-              {!isMobile ? (
+              {!isMobile && !isDashboardsTab ? (
                 <div className={styles.headerActions}>
                   <TableHeaderEndToolbar>
                     <div className={styles.headerExportControls}>{renderExportControls()}</div>
@@ -153,49 +161,75 @@ export function ReportsPage() {
                 </div>
               ) : null}
             </div>
+            <Tabs
+              value={workspaceTab}
+              onChange={(_, value) => setWorkspaceTab(value)}
+              sx={{ px: 2, minHeight: 40 }}
+              variant={isMobile ? 'fullWidth' : 'standard'}>
+              <Tab
+                value="reports"
+                label={t('reports.dashboard.tabReports', 'Отчёты')}
+                sx={{ textTransform: 'none', minHeight: 40 }}
+              />
+              <Tab
+                value="dashboards"
+                label={t('reports.dashboard.tabDashboards', 'Дашборды')}
+                sx={{ textTransform: 'none', minHeight: 40 }}
+              />
+            </Tabs>
           </div>
 
-          {isMobile ? (
-            <div className={styles.mobileCreateBar}>
-              <div className={styles.mobileExportControls}>{renderExportControls()}</div>
-              <div className={styles.mobileCreateActions}>
-                {hasDisplayableReport ? (
-                  <MuiButton
-                    variant="contained"
-                    size="small"
-                    startIcon={<EditOutlinedIcon />}
-                    disabled={isGenerating}
-                    onClick={openComposeModalForEdit}
-                    className={styles.mobileCreateButton}
-                    sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                    {t('reports.editReport')}
-                  </MuiButton>
-                ) : null}
-                <MuiButton
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  disabled={isGenerating}
-                  onClick={openComposeModalForCreate}
-                  className={styles.mobileCreateButton}
-                  sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                  {t('reports.createNewReport')}
-                </MuiButton>
-                <ResetFilters reset={handleResetFilters} />
-              </div>
+          {isDashboardsTab ? (
+            <div
+              className={styles.tableArea}
+              style={{ padding: '8px 16px 16px', overflow: 'auto' }}>
+              <ReportsDashboardsPanel />
             </div>
-          ) : null}
+          ) : (
+            <>
+              {isMobile ? (
+                <div className={styles.mobileCreateBar}>
+                  <div className={styles.mobileExportControls}>{renderExportControls()}</div>
+                  <div className={styles.mobileCreateActions}>
+                    {hasDisplayableReport ? (
+                      <MuiButton
+                        variant="contained"
+                        size="small"
+                        startIcon={<EditOutlinedIcon />}
+                        disabled={isGenerating}
+                        onClick={openComposeModalForEdit}
+                        className={styles.mobileCreateButton}
+                        sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
+                        {t('reports.editReport')}
+                      </MuiButton>
+                    ) : null}
+                    <MuiButton
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      disabled={isGenerating}
+                      onClick={openComposeModalForCreate}
+                      className={styles.mobileCreateButton}
+                      sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
+                      {t('reports.createNewReport')}
+                    </MuiButton>
+                    <ResetFilters reset={handleResetFilters} />
+                  </div>
+                </div>
+              ) : null}
 
-          <div
-            className={[
-              styles.tableArea,
-              isGenerating ? styles.tableAreaGenerating : '',
-            ]
-              .filter(Boolean)
-              .join(' ')}>
-            {isGenerating ? <ReportGeneratingOverlay /> : null}
-            <ReportsResultsView />
-          </div>
+              <div
+                className={[
+                  styles.tableArea,
+                  isGenerating ? styles.tableAreaGenerating : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}>
+                {isGenerating ? <ReportGeneratingOverlay /> : null}
+                <ReportsResultsView />
+              </div>
+            </>
+          )}
         </div>
       </PageWrapper>
 
