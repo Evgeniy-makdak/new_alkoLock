@@ -15,6 +15,7 @@ import { reportsStore } from './reportsStore';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import type { ReportChartSpec } from '../types/chartSpec';
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
 export const DEFAULT_REPORT_PAGE_SIZE = 25;
@@ -28,6 +29,8 @@ export type ReportQueryContext = {
   branchIds?: number[];
   /** Подписи выбранных филиалов для восстановления UI при редактировании. */
   branchOffices?: Values;
+  /** Сохранённые настройки графика (если отчёт смотрели/сохраняли как график). */
+  chartSpec?: ReportChartSpec;
 };
 
 let reportFetchAbortController: AbortController | null = null;

@@ -17,6 +17,8 @@ import {
 import { Button, ButtonsType } from '@shared/ui/button';
 
 import { dashboardStore } from '../model/dashboardStore';
+import type { ReportDashboard } from '../types';
+import { DashboardDeleteDialog } from './DashboardDeleteDialog';
 import { DashboardEditor } from './DashboardEditor';
 
 import styles from './Dashboard.module.scss';
@@ -39,6 +41,8 @@ export function ReportsDashboardsPanel() {
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [creating, setCreating] = useState(false);
+  const [dashboardToDelete, setDashboardToDelete] = useState<ReportDashboard | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     void loadList();
@@ -89,10 +93,7 @@ export function ReportsDashboardsPanel() {
       ) : items.length === 0 ? (
         <div className={styles.empty}>
           <Typography>
-            {t(
-              'reports.dashboard.listEmpty',
-              'Пока нет дашбордов. Создайте первый — сетку виджетов отчётов.',
-            )}
+            {t('reports.dashboard.listEmpty', { defaultValue: 'нет данных' })}
           </Typography>
         </div>
       ) : (
@@ -123,20 +124,9 @@ export function ReportsDashboardsPanel() {
                 </Button>
                 <Button
                   size="small"
-                  typeButton={ButtonsType.delete}
+                  typeButton={ButtonsType.action}
                   startIcon={<DeleteOutlineIcon />}
-                  onClick={() => {
-                    if (
-                      window.confirm(
-                        t('reports.dashboard.confirmDelete', {
-                          defaultValue: 'Удалить дашборд «{{name}}»?',
-                          name: item.name,
-                        }).replace('{{name}}', item.name),
-                      )
-                    ) {
-                      void deleteDashboard(item.id);
-                    }
-                  }}>
+                  onClick={() => setDashboardToDelete(item)}>
                   {t('common.delete', { defaultValue: 'Удалить' })}
                 </Button>
               </div>
@@ -167,9 +157,6 @@ export function ReportsDashboardsPanel() {
           />
         </DialogContent>
         <DialogActions>
-          <Button typeButton={ButtonsType.action} onClick={() => setCreateOpen(false)}>
-            {t('common.cancel', { defaultValue: 'Отмена' })}
-          </Button>
           <Button
             typeButton={ButtonsType.action}
             disabled={creating || !newName.trim()}
@@ -182,8 +169,28 @@ export function ReportsDashboardsPanel() {
             }}>
             {t('common.create', { defaultValue: 'Создать' })}
           </Button>
+          <Button typeButton={ButtonsType.action} onClick={() => setCreateOpen(false)}>
+            {t('common.cancel', { defaultValue: 'Отмена' })}
+          </Button>
         </DialogActions>
       </Dialog>
+
+      <DashboardDeleteDialog
+        open={!!dashboardToDelete}
+        dashboardName={dashboardToDelete?.name ?? ''}
+        isDeleting={deleting}
+        onClose={() => {
+          if (deleting) return;
+          setDashboardToDelete(null);
+        }}
+        onConfirm={() => {
+          if (!dashboardToDelete) return;
+          setDeleting(true);
+          void deleteDashboard(dashboardToDelete.id)
+            .then(() => setDashboardToDelete(null))
+            .finally(() => setDeleting(false));
+        }}
+      />
     </div>
   );
 }

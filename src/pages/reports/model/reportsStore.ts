@@ -30,6 +30,11 @@ import {
   type ReportUiFilterSelections,
   type ReportViewMode,
 } from '../types/reportApiTypes';
+import {
+  createDefaultChartSpec,
+  normalizeChartSpec,
+  type ReportChartSpec,
+} from '../types/chartSpec';
 
 /** Один запрос metadata на referenceEntity — параллельные вызовы ждут тот же Promise. */
 const referenceEntityMetadataInflight = new Map<string, Promise<void>>();
@@ -53,6 +58,7 @@ type ReportsStore = {
   vehicleLabelMaps: ReportVehicleLabelMaps;
   vehicleLabelMapsLoading: boolean;
   viewMode: ReportViewMode;
+  chartSpec: ReportChartSpec;
   loadEntities: () => Promise<void>;
   setSelectedEntityName: (name: string | null) => void;
   loadMetadataForEntity: (entityName: string) => Promise<void>;
@@ -80,6 +86,7 @@ type ReportsStore = {
   loadReferenceEntityRecords: (referenceEntity: string) => Promise<void>;
   loadVehicleLabelMaps: () => Promise<void>;
   setViewMode: (mode: ReportViewMode) => void;
+  setChartSpec: (spec: ReportChartSpec | unknown) => void;
   resetFilters: () => void;
 };
 
@@ -143,6 +150,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   reportTableFieldsMetadataLoadingByRowId: {},
   reportTableFieldsMetadataKeyByRowId: {},
   viewMode: 'table',
+  chartSpec: createDefaultChartSpec(),
 
   async loadEntities() {
     set({ entitiesLoading: true, entitiesError: null });
@@ -572,6 +580,10 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
   setViewMode(mode) {
     set({ viewMode: normalizeReportViewMode(mode) });
+  },
+
+  setChartSpec(spec) {
+    set({ chartSpec: normalizeChartSpec(spec) });
   },
 
   resetFilters() {

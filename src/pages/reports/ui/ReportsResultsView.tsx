@@ -5,7 +5,6 @@ import { useLocation } from 'react-router-dom';
 import { useMediaQuery, Box, CircularProgress, TablePagination, Typography } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
-import { aggregateReportContentForCharts } from '@pages/reports/lib/aggregateReportContentForCharts';
 import {
   buildReportSortFieldMap,
   buildReportSortParams,
@@ -21,6 +20,7 @@ import { shouldLoadVehicleLabelMaps } from '@pages/reports/lib/reportVehicleCont
 import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+import { normalizeChartSpec, type ReportChartSpec } from '@pages/reports/types/chartSpec';
 import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
 import { MobilePaginationWithJump, TablePaginationJumpActions } from '@shared/components/Pagination';
 import { Table } from '@shared/components/Table/Table';
@@ -29,7 +29,8 @@ import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
-import { ReportsCharts } from './ReportsCharts';
+import { ReportChartCanvas } from './ReportChartCanvas';
+import { ReportChartSettingsPanel } from './ReportChartSettingsPanel';
 
 type ReportsRestoreState = {
   page: number;
@@ -56,6 +57,8 @@ export function ReportsResultsView() {
   const setSort = reportGenerationStore((s) => s.setSort);
   const sort = reportGenerationStore((s) => s.sort);
   const viewMode = reportsStore((s) => normalizeReportViewMode(s.viewMode));
+  const chartSpec = reportsStore((s) => s.chartSpec);
+  const setChartSpec = reportsStore((s) => s.setChartSpec);
 
   const [tableState, apiRef, changeTableState, changeTableSorts] = useSavedLocalTableSorts(
     StorageKeys.REPORTS_TABLE_SORTS,
@@ -305,16 +308,46 @@ export function ReportsResultsView() {
 
   const totalElements = lastResult?.totalElements ?? 0;
   const showReportColumnHeaders = Boolean(queryContext && columns.length > 0);
-  const isChartView = viewMode !== 'table';
+  const isChartView = viewMode === 'chart';
 
-  const chartAggregates = useMemo(() => {
-    if (!isChartView || !lastResult?.content?.length) return null;
-    return aggregateReportContentForCharts(lastResult.content, {
-      groupBy: queryContext?.body.groupBy,
-      selectedFields: queryContext?.body.selectedFields,
-      t,
-    });
-  }, [isChartView, lastResult?.content, queryContext?.body.groupBy, queryContext?.body.selectedFields, t]);
+  const chartFieldOptions = useMemo(() => {
+    const labels = queryContext?.columnHeaderLabels ?? {};
+    const keys = new Set<string>();
+    for (const field of queryContext?.body.selectedFields ?? []) {
+      if (field?.fieldName) keys.add(field.fieldName);
+    }
+    for (const field of queryContext?.body.groupBy ?? []) {
+      if (field) keys.add(field);
+    }
+    for (const row of lastResult?.content ?? []) {
+      Object.keys(row as Record<string, unknown>).forEach((key) => keys.add(key));
+    }
+    return Array.from(keys).map((value) => ({
+      value,
+      label: labels[value] || value,
+    }));
+  }, [queryContext, lastResult?.content]);
+
+  const handleChartSpecChange = useCallback(
+    (next: ReportChartSpec) => {
+      setChartSpec(next);
+      const ctx = reportGenerationStore.getState().queryContext;
+      if (ctx) {
+        reportGenerationStore.getState().setQueryContext({
+          ...ctx,
+          chartSpec: normalizeChartSpec(next),
+        });
+      }
+    },
+    [setChartSpec],
+  );
+
+  // Восстановление chartSpec при смене сформированного отчёта.
+  useEffect(() => {
+    if (!queryContext?.chartSpec) return;
+    setChartSpec(queryContext.chartSpec);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- только при смене отчёта
+  }, [reportTableKey, setChartSpec]);
 
   const handleMobilePageChange = useCallback(
     (newPage: number) => {
@@ -338,12 +371,47 @@ export function ReportsResultsView() {
             </Box>
           ) : (
             <>
-              <ReportsCharts
-                data={chartAggregates}
-                viewMode={viewMode as Exclude<typeof viewMode, 'table'>}
-                pageRows={rows.length}
-                reportTotal={totalElements}
-              />
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                {t('reports.chartPageHint', {
+                  defaultValue: 'График по загруженным строкам: {{count}} из {{total}}',
+                  count: rows.length,
+                  total: totalElements,
+                })
+                  .replace('{{count}}', String(rows.length))
+                  .replace('{{total}}', String(totalElements))}
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
+                  gap: 2,
+                  alignItems: 'stretch',
+                }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <ReportChartCanvas
+                    rows={(lastResult?.content as Array<Record<string, unknown>>) ?? []}
+                    spec={chartSpec}
+                    groupBy={queryContext?.body.groupBy}
+                    height={isMobile ? 360 : 440}
+                  />
+                </Box>
+                <Box
+                  sx={{
+                    flexShrink: 0,
+                    borderLeft: { md: 1 },
+                    borderColor: 'divider',
+                    pl: { md: 2 },
+                    maxHeight: { md: 480 },
+                    overflow: 'auto',
+                  }}>
+                  <ReportChartSettingsPanel
+                    spec={chartSpec}
+                    fieldOptions={chartFieldOptions}
+                    onChange={handleChartSpecChange}
+                    disabled={isLoadingPage || isGenerating}
+                  />
+                </Box>
+              </Box>
               {totalElements > storePagination.pageSize ? (
                 isMobile ? (
                   <div className={styles.mobilePagination}>

@@ -15,8 +15,11 @@ import {
   reportGenerationStore,
 } from '../../model/reportGenerationStore';
 import { reportsStore } from '../../model/reportsStore';
+import { normalizeChartSpec } from '../../types/chartSpec';
+import { normalizeReportViewMode } from '../../types/reportApiTypes';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardCell, DashboardWidgetBinding } from '../types';
+import { ReportChartCanvas } from '../../ui/ReportChartCanvas';
 
 import styles from './Dashboard.module.scss';
 
@@ -162,19 +165,32 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
 
   const openFullReport = useCallback(() => {
     if (!widget) return;
-    // Сейчас: восстанавливаем queryContext и открываем вкладку «Отчёты».
-    // Когда появится бэкенд дашбордов — сюда же можно будет подставить GET по id виджета/отчёта.
+    const viewMode = normalizeReportViewMode(widget.preferredViewMode);
+    const chartSpec = widget.chartSpec
+      ? normalizeChartSpec(widget.chartSpec)
+      : reportsStore.getState().chartSpec;
     reportGenerationStore.getState().setQueryContext({
       entityName: widget.entityName,
       body: widget.body,
       branchIds: widget.branchIds,
       columnHeaderLabels: widget.columnHeaderLabels,
       branchOffices: widget.branchOffices,
+      chartSpec: viewMode === 'chart' ? chartSpec : undefined,
     });
-    reportsStore.getState().setViewMode(widget.preferredViewMode);
+    reportsStore.getState().setViewMode(viewMode);
+    if (viewMode === 'chart') {
+      reportsStore.getState().setChartSpec(chartSpec);
+    }
     void reportGenerationStore.getState().loadReportPage(0, DEFAULT_REPORT_PAGE_SIZE);
     dashboardStore.getState().setWorkspaceTab('reports');
   }, [widget]);
+
+  const isChartWidget =
+    !!widget && normalizeReportViewMode(widget.preferredViewMode) === 'chart';
+  const widgetChartSpec = useMemo(
+    () => normalizeChartSpec(widget?.chartSpec),
+    [widget?.chartSpec],
+  );
 
   const empty = !widget;
 
@@ -297,24 +313,34 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
           </Typography>
         ) : (
           <>
-            <table className={styles.widgetPreviewTable}>
-              <thead>
-                <tr>
-                  {columns.map((col) => (
-                    <th key={col}>{col}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {previewRows.map((row, index) => (
-                  <tr key={index}>
+            {isChartWidget ? (
+              <ReportChartCanvas
+                rows={previewRows}
+                spec={widgetChartSpec}
+                groupBy={widget?.body.groupBy}
+                height={Math.max(220, previewRows.length > 12 ? 320 : 260)}
+                compact
+              />
+            ) : (
+              <table className={styles.widgetPreviewTable}>
+                <thead>
+                  <tr>
                     {columns.map((col) => (
-                      <td key={col}>{formatCell(row[col])}</td>
+                      <th key={col}>{col}</th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {previewRows.map((row, index) => (
+                    <tr key={index}>
+                      {columns.map((col) => (
+                        <td key={col}>{formatCell(row[col])}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
             {loadingMore ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
                 <CircularProgress size={20} />

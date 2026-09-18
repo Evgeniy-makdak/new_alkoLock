@@ -1,5 +1,6 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import type { ReportChartSpec } from '../types/chartSpec';
 import type { ReportQueryRequest, ReportViewMode } from '../types/reportApiTypes';
 
 /** Уровень доступа к дашборду (клиентская модель до появления API). */
@@ -23,6 +24,8 @@ export type DashboardWidgetBinding = {
   columnHeaderLabels?: Record<string, string>;
   branchOffices?: Values;
   preferredViewMode: ReportViewMode;
+  /** Настройки графика; нужны, если preferredViewMode === 'chart'. */
+  chartSpec?: ReportChartSpec;
 };
 
 export type DashboardCell = {

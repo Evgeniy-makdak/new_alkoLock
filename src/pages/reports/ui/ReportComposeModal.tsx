@@ -427,6 +427,7 @@ export function ReportComposeModal({
         body: bodyWithGroup,
         branchIds: branchIds.length ? branchIds : undefined,
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
+        chartSpec: reportsStore.getState().chartSpec,
       });
 
       const result = await executeReportQuery(entityName, bodyWithGroup, {

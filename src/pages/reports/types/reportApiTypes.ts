@@ -132,12 +132,23 @@ export type ReportFilterControlDef = {
   referenceEntity?: string;
 };
 
-export type ReportViewMode = 'table' | 'bar' | 'dashboard';
+export type ReportViewMode = 'table' | 'chart';
 
-/** Совместимость со старыми значениями (pictogram, pie, line). */
+/**
+ * Совместимость со старыми значениями (bar, dashboard, pictogram, pie, line).
+ * Всё графическое → 'chart'; таблица и неизвестное → 'table'.
+ */
 export function normalizeReportViewMode(mode: string): ReportViewMode {
-  if (mode === 'bar') return 'bar';
-  if (mode === 'dashboard' || mode === 'pictogram') return 'dashboard';
+  if (
+    mode === 'chart' ||
+    mode === 'bar' ||
+    mode === 'dashboard' ||
+    mode === 'pictogram' ||
+    mode === 'pie' ||
+    mode === 'line'
+  ) {
+    return 'chart';
+  }
   return 'table';
 }
 

@@ -90,6 +90,7 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
       const ctx = reportGenerationStore.getState().queryContext;
       if (!ctx) return;
       const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
+      const chartSpec = reportsStore.getState().chartSpec;
       await setCellWidget(dashboard.id, cellId, {
         title: `${ctx.entityName}`,
         entityName: ctx.entityName,
@@ -98,6 +99,7 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
         columnHeaderLabels: ctx.columnHeaderLabels,
         branchOffices: ctx.branchOffices,
         preferredViewMode: viewMode,
+        chartSpec: viewMode === 'chart' ? (ctx.chartSpec ?? chartSpec) : undefined,
       });
     },
     [canEdit, dashboard.id, setCellWidget],
