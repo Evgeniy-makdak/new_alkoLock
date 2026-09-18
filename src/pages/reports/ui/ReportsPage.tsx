@@ -23,6 +23,7 @@ import { ReportsDashboardsPanel } from '@pages/reports/dashboard/ui/ReportsDashb
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+import { createDefaultChartSpec } from '@pages/reports/types/chartSpec';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { getToolbarSecondaryButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { Button, ButtonsType } from '@shared/ui/button';
@@ -105,6 +106,10 @@ export function ReportsPage() {
     resetFilters();
     setSelectedEntityName(null);
     reportGenerationStore.getState().clearResults();
+    // Сбросить и режим графиков: иначе после очистки результатов остаётся
+    // chartsArea с боковой панелью настроек графика от прежнего отчёта.
+    reportsStore.getState().setViewMode('table');
+    reportsStore.getState().setChartSpec(createDefaultChartSpec());
   };
 
   const openComposeModalForCreate = useCallback(() => {
