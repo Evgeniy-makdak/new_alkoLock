@@ -10,7 +10,10 @@ export type Form = UserDataLogin;
 const PASSWORD_COMPLEXITY =
   /^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/;
 
-const validatePassword = (value: string, ctx: yup.TestContext<Form>) => {
+const validatePassword = (
+  value: string | undefined,
+  ctx: yup.TestContext,
+): true | yup.ValidationError => {
   if (!value) return true;
 
   if (value.length < 8) {
@@ -33,7 +36,6 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
     .required(() => i18n.t('validation.required'))
     .test({
       name: 'passwordValidation',
-      // @ts-expect-error: временное решение
       test: (value, ctx) => validatePassword(value, ctx),
     }),
   username: yup

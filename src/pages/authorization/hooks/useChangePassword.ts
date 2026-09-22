@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import { enqueueSnackbar } from 'notistack';
 
@@ -22,8 +22,7 @@ export const useChangePassword = () => {
       errors: { currentPassword, newPassword, repeatNewPassword },
     },
   } = useForm<Form>({
-    // @ts-expect-error: временное решение
-    resolver: yupResolver(schema),
+    resolver: yupResolver(schema) as Resolver<Form>,
   });
 
   const { mutate, isLoading } = useChangePasswordApi();
@@ -62,8 +61,7 @@ export const useChangePassword = () => {
       return;
     }
 
-    mutate(data, {
-      //@ts-expect-error: временное решение
+    mutate(data as Parameters<typeof mutate>[0], {
       onSuccess: (response: { status: StatusCode; detail: string }) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
@@ -89,7 +87,6 @@ export const useChangePassword = () => {
   };
 
   return {
-    //@ts-expect-error: временное решение
     handleSubmit: handleSubmit(onSubmit),
     isLoading,
     register,

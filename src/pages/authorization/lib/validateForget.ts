@@ -9,7 +9,10 @@ export type Form = ChangePassword;
 const PASSWORD_COMPLEXITY =
   /^(?=.*[a-zA-Zа-яА-Я])(?=.*\d)[a-zA-Zа-яА-Я\d!"№;%:?*()_+\-=@#$%^&*{}[\]\\|",.'<>/?`~]+$/;
 
-const validatePassword = (value: string, ctx: yup.TestContext<Form>) => {
+const validatePassword = (
+  value: string | undefined,
+  ctx: yup.TestContext,
+): true | yup.ValidationError => {
   if (!value) return true;
 
   if (value.length < 8) {
@@ -25,14 +28,13 @@ const validatePassword = (value: string, ctx: yup.TestContext<Form>) => {
   return true;
 };
 
-// @ts-expect-error: временное решение
-export const schema: yup.ObjectSchema<Form> = yup.object({
+// Схема как раньше (только new/repeat); неполная относительно Form — через приведение типа.
+export const schema = yup.object({
   newPassword: yup
     .string()
     .required(() => i18n.t('validation.required'))
     .test({
       name: 'newPasswordValidation',
-      // @ts-expect-error: временное решение
       test: (value, ctx) => validatePassword(value, ctx),
     }),
   repeatNewPassword: yup
@@ -40,8 +42,7 @@ export const schema: yup.ObjectSchema<Form> = yup.object({
     .required(() => i18n.t('validation.required'))
     .test({
       name: 'repeatPasswordValidation',
-      // @ts-expect-error: временное решение
       test: (value, ctx) => validatePassword(value, ctx),
     })
     .oneOf([yup.ref('newPassword'), null], () => i18n.t('validation.passwordsNotMustMatch')),
-});
+}) as yup.ObjectSchema<Form>;

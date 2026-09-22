@@ -31,7 +31,9 @@ import {
 } from '@pages/reports/lib/reportsComposeSnapshot';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { getPrimaryReportOutputRow, reportsStore } from '@pages/reports/model/reportsStore';
+import { CHART_REPORT_PAGE_SIZE } from '@pages/reports/types/chartSpec';
 import type { ReportQueryRequest } from '@pages/reports/types/reportApiTypes';
+import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
 import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
 import popupStyles from '@shared/ui/popup/Popup.module.scss';
@@ -430,9 +432,13 @@ export function ReportComposeModal({
         chartSpec: reportsStore.getState().chartSpec,
       });
 
+      const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
+      const fetchSize =
+        viewMode === 'chart' ? CHART_REPORT_PAGE_SIZE : pagination.pageSize;
+
       const result = await executeReportQuery(entityName, bodyWithGroup, {
         page: 0,
-        size: pagination.pageSize,
+        size: fetchSize,
         sort: sortParams,
         branchIds: branchIds.length ? branchIds : undefined,
       });

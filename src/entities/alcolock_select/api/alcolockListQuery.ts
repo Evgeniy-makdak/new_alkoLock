@@ -4,6 +4,7 @@ import { AlcolocksApi, CarsApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
+import type { IAlcolock, ICar } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 
 export const useAlcolockListQuery = (options: QueryOptions) => {
@@ -114,8 +115,10 @@ export const useAlcolockListQuery = (options: QueryOptions) => {
     },
   );
 
-  const alcolocks = alcolocksQuery.data?.data?.content || [];
-  const vehicles = filterByVehicleBinding ? vehiclesQuery.data?.data?.content || [] : [];
+  const alcolocks: IAlcolock[] = alcolocksQuery.data?.data?.content || [];
+  const vehicles: ICar[] = filterByVehicleBinding
+    ? vehiclesQuery.data?.data?.content || []
+    : [];
   const isLoading =
     alcolocksQuery.isLoading ||
     (filterByVehicleBinding &&
@@ -125,12 +128,14 @@ export const useAlcolockListQuery = (options: QueryOptions) => {
 
   const serialNumbersOnVehicles = new Set(
     vehicles
-      .filter((v) => v?.monitoringDevice?.serialNumber)
-      .map((v) => String(v.monitoringDevice.serialNumber)),
+      .filter((v: ICar) => v?.monitoringDevice?.serialNumber)
+      .map((v: ICar) => String(v.monitoringDevice.serialNumber)),
   );
 
   const filteredAlcolocks = filterByVehicleBinding
-    ? alcolocks.filter((a) => serialNumbersOnVehicles.has(String(a?.serialNumber ?? '')))
+    ? alcolocks.filter((a: IAlcolock) =>
+        serialNumbersOnVehicles.has(String(a?.serialNumber ?? '')),
+      )
     : alcolocks;
 
   // Для Карты: выводим максимум 20 позиций в выпадающий список

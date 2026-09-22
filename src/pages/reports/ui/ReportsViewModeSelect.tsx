@@ -7,6 +7,7 @@ import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
 import { reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsStore } from '../model/reportsStore';
+import { CHART_REPORT_PAGE_SIZE } from '../types/chartSpec';
 import { normalizeReportViewMode, type ReportViewMode } from '../types/reportApiTypes';
 
 const VIEW_MODE_OPTIONS: Array<{
@@ -49,13 +50,36 @@ export function ReportsViewModeSelect({ disabled }: ReportsViewModeSelectProps) 
         onChange={(event) => {
           const mode = event.target.value as ReportViewMode;
           setViewMode(mode);
-          if (mode !== 'chart') return;
-          const ctx = reportGenerationStore.getState().queryContext;
-          if (!ctx) return;
-          reportGenerationStore.getState().setQueryContext({
-            ...ctx,
-            chartSpec: reportsStore.getState().chartSpec,
-          });
+          const gen = reportGenerationStore.getState();
+          const ctx = gen.queryContext;
+          if (mode === 'chart') {
+            if (ctx) {
+              gen.setQueryContext({
+                ...ctx,
+                chartSpec: reportsStore.getState().chartSpec,
+              });
+            }
+            const total = gen.lastResult?.totalElements ?? 0;
+            const loaded = Array.isArray(gen.lastResult?.content)
+              ? gen.lastResult.content.length
+              : 0;
+            // Первая порция для графика — 100 строк (дальше подгрузка по скроллу).
+            if (total > 0 && loaded < Math.min(total, CHART_REPORT_PAGE_SIZE)) {
+              void gen.loadReportPage(0, CHART_REPORT_PAGE_SIZE);
+            } else if (
+              loaded > 0 &&
+              loaded < total &&
+              gen.pagination.pageSize !== CHART_REPORT_PAGE_SIZE
+            ) {
+              // Были на таблице с другим size — выровнять первую страницу графика.
+              void gen.loadReportPage(0, CHART_REPORT_PAGE_SIZE);
+            }
+            return;
+          }
+          // Возврат к таблице — стандартный размер страницы, если график накопил порции.
+          if (ctx && gen.pagination.pageSize >= CHART_REPORT_PAGE_SIZE) {
+            void gen.loadReportPage(0, 25);
+          }
         }}>
         {VIEW_MODE_OPTIONS.map((option) => (
           <MenuItem key={option.value} value={option.value}>

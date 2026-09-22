@@ -20,7 +20,6 @@ export const useTypeEventSelectApi = (
   const finalIsIn = isIn || false;
 
   const { data, isLoading } = useConfiguredQuery(
-    // @ts-expect-error: "Временное решение"
     [QueryKeys.EVENTS_TYPE_LIST, match, finalExcludedIds, levelEvent],
     () =>
       EventsApi.getEventsTypeList(

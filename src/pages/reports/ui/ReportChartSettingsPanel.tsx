@@ -29,7 +29,15 @@ type Props = {
   disabled?: boolean;
 };
 
-const CHART_TYPES: ReportChartType[] = ['bar', 'line', 'area', 'pie', 'stackedBar'];
+const CHART_TYPES: ReportChartType[] = [
+  'bar',
+  'medianBar',
+  'stackedBar',
+  'line',
+  'area',
+  'pie',
+  'funnel',
+];
 const LEGEND_POSITIONS: ReportChartLegendPosition[] = ['top', 'bottom', 'left', 'right'];
 
 export function ReportChartSettingsPanel({
@@ -43,10 +51,14 @@ export function ReportChartSettingsPanel({
   const typeLabels = useMemo(
     (): Record<ReportChartType, string> => ({
       bar: t('reports.chartTypeBar', { defaultValue: 'Столбцы' }),
+      medianBar: t('reports.chartTypeMedianBar', {
+        defaultValue: 'Столбцы относительно медианы',
+      }),
+      stackedBar: t('reports.chartTypeStackedBar', { defaultValue: 'Столбцы (стек)' }),
       line: t('reports.chartTypeLine', { defaultValue: 'Линии' }),
       area: t('reports.chartTypeArea', { defaultValue: 'Площади' }),
       pie: t('reports.chartTypePie', { defaultValue: 'Круговая' }),
-      stackedBar: t('reports.chartTypeStackedBar', { defaultValue: 'Столбцы (стек)' }),
+      funnel: t('reports.chartTypeFunnel', { defaultValue: 'Воронка' }),
     }),
     [t],
   );
@@ -132,7 +144,9 @@ export function ReportChartSettingsPanel({
         </Select>
       </FormControl>
 
-      {spec.type !== 'pie' ? (
+      {spec.type !== 'pie' &&
+      spec.type !== 'funnel' &&
+      spec.type !== 'medianBar' ? (
         <FormControl size="small" fullWidth disabled={disabled}>
           <InputLabel id="chart-series-label">
             {t('reports.chartSeriesField', { defaultValue: 'Серия (опционально)' })}
@@ -201,7 +215,7 @@ export function ReportChartSettingsPanel({
         </FormControl>
       ) : null}
 
-      {spec.type !== 'pie' ? (
+      {spec.type !== 'pie' && spec.type !== 'funnel' ? (
         <>
           <TextField
             size="small"
@@ -243,7 +257,9 @@ export function ReportChartSettingsPanel({
                 }
               />
             }
-            label={t('reports.chartRotateX', { defaultValue: 'Повернуть подписи X' })}
+            label={t('reports.chartVerticalX', {
+              defaultValue: 'Вертикальные подписи оси X',
+            })}
           />
         </>
       ) : null}

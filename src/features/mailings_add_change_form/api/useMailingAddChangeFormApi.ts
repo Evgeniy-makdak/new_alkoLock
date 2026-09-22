@@ -8,7 +8,7 @@ import { StatusCode } from '@shared/const/statusCode';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
 import { useUpdateQueries } from '@shared/hooks/useUpdateQuerys';
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { ID, IEmailNotification } from '@shared/types/BaseQueryTypes';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const updateQueries = [QueryKeys.MAILINGS_TABLE];
@@ -20,14 +20,6 @@ interface MailingDataItem {
   endTime: string;
   email: string;
   branchId: number;
-}
-
-interface MailingDataEdit {
-  email?: string;
-  eventTypeId?: number;
-  startTime?: string;
-  endTime?: string;
-  branchId?: number;
 }
 
 export const useMailingAddChangeFormApi = (id: ID) => {
@@ -56,20 +48,22 @@ export const useMailingAddChangeFormApi = (id: ID) => {
   };
 
   const { data, isLoading } = useConfiguredQuery(
-    //@ts-expect-error: временное решение
     [QueryKeys.MAILING_ITEM, id, currentBranchId],
     EmailNotificationsApi.getList,
     {
       options: id ? { query: getQueryString() } : {},
       settings: {
         enabled: !!id && currentBranchId !== null,
-      } as any,
+      },
     },
   );
 
   const { mutateAsync: changeMailing } = useMutation({
-    mutationFn: async ({ email, data }: { email: string; data: MailingDataEdit }) => {
-      const response = await EmailNotificationsApi.updateNotification(email, data);
+    mutationFn: async ({ email, data }: { email: string; data: MailingDataItem[] }) => {
+      const response = await EmailNotificationsApi.updateNotification(
+        email,
+        data as unknown as Partial<IEmailNotification>,
+      );
       if (response.status === StatusCode.CONFLICT) {
         enqueueSnackbar(response.detail, { variant: 'error' });
         return Promise.reject(response.detail);

@@ -503,7 +503,6 @@ export const useMailingsAddChangeForm = (id: ID, close: () => void, onSuccess?: 
           try {
             await changeMailing({
               email: emailValue,
-              //@ts-expect-error: временное решение
               data: allSubscriptionsData,
             });
           } catch (error) {

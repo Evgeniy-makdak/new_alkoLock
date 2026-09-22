@@ -1,8 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-/* eslint-disable no-console */
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 
 import dayjs, { Dayjs } from 'dayjs';
 
@@ -84,8 +81,8 @@ export const useCarAddChangeForm = (id?: ID, closeModal?: () => void) => {
     setValue,
     watch,
     formState: { errors, isDirty },
-  } = useForm({
-    resolver: yupResolver(schema) as any,
+  } = useForm<Form>({
+    resolver: yupResolver(schema) as Resolver<Form>,
     defaultValues,
   });
 

@@ -20,7 +20,7 @@ import { shouldLoadVehicleLabelMaps } from '@pages/reports/lib/reportVehicleCont
 import { getPrimaryReportOutputRow } from '@pages/reports/model/reportsStore';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
-import { normalizeChartSpec, type ReportChartSpec } from '@pages/reports/types/chartSpec';
+import { normalizeChartSpec, CHART_REPORT_PAGE_SIZE, type ReportChartSpec } from '@pages/reports/types/chartSpec';
 import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
 import { MobilePaginationWithJump, TablePaginationJumpActions } from '@shared/components/Pagination';
 import { Table } from '@shared/components/Table/Table';
@@ -49,6 +49,8 @@ export function ReportsResultsView() {
   const outputRows = reportsStore((s) => s.outputRows);
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const isLoadingPage = reportGenerationStore((s) => s.isLoadingPage);
+  const isAppendingChart = reportGenerationStore((s) => s.isAppendingChart);
+  const appendChartPage = reportGenerationStore((s) => s.appendChartPage);
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const queryContext = reportGenerationStore((s) => s.queryContext);
   const storePagination = reportGenerationStore((s) => s.pagination);
@@ -349,6 +351,32 @@ export function ReportsResultsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- только при смене отчёта
   }, [reportTableKey, setChartSpec]);
 
+  // Режим графика: первая порция 100 строк; дальше — appendChartPage по скроллу вправо.
+  useEffect(() => {
+    if (!isChartView || !queryContext) return;
+    const total = lastResult?.totalElements ?? 0;
+    const loaded = Array.isArray(lastResult?.content) ? lastResult.content.length : 0;
+    if (total <= 0) return;
+    if (loaded >= Math.min(total, CHART_REPORT_PAGE_SIZE)) return;
+    if (isLoadingPage || isGenerating || isAppendingChart) return;
+    void loadReportPage(0, CHART_REPORT_PAGE_SIZE);
+  }, [
+    isChartView,
+    queryContext,
+    lastResult?.totalElements,
+    lastResult?.content,
+    isLoadingPage,
+    isGenerating,
+    isAppendingChart,
+    loadReportPage,
+  ]);
+
+  const chartRows = (lastResult?.content as Array<Record<string, unknown>>) ?? [];
+  const chartHasMore = chartRows.length < totalElements;
+  const handleChartReachEnd = useCallback(() => {
+    void appendChartPage();
+  }, [appendChartPage]);
+
   const handleMobilePageChange = useCallback(
     (newPage: number) => {
       handlePaginationModelChange({
@@ -364,7 +392,7 @@ export function ReportsResultsView() {
       className={`${styles.tableWrapper} ${showReportColumnHeaders && !isChartView ? styles.tableAreaWithReportHeaders : ''}`}>
       {isChartView ? (
         <div className={styles.chartsArea}>
-          {isLoadingPage || isGenerating ? (
+          {(isLoadingPage || isGenerating) && chartRows.length === 0 ? (
             <Box className={styles.chartsLoading}>
               <CircularProgress size={48} />
               <Typography color="text.secondary">{t('reports.chartLoading')}</Typography>
@@ -372,13 +400,17 @@ export function ReportsResultsView() {
           ) : (
             <>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-                {t('reports.chartPageHint', {
-                  defaultValue: 'График по загруженным строкам: {{count}} из {{total}}',
-                  count: rows.length,
-                  total: totalElements,
-                })
-                  .replace('{{count}}', String(rows.length))
-                  .replace('{{total}}', String(totalElements))}
+                {chartHasMore
+                  ? t('reports.chartRowsHintPaged', {
+                      defaultValue:
+                        'Загружено {{count}} из {{total}}. Прокрутите график вправо для подгрузки следующих {{pageSize}}.',
+                    })
+                      .replace('{{count}}', String(chartRows.length))
+                      .replace('{{total}}', String(totalElements))
+                      .replace('{{pageSize}}', String(CHART_REPORT_PAGE_SIZE))
+                  : t('reports.chartRowsHint', {
+                      defaultValue: 'Строк в графике: {{count}}',
+                    }).replace('{{count}}', String(chartRows.length))}
               </Typography>
               <Box
                 sx={{
@@ -389,10 +421,13 @@ export function ReportsResultsView() {
                 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <ReportChartCanvas
-                    rows={(lastResult?.content as Array<Record<string, unknown>>) ?? []}
+                    rows={chartRows}
                     spec={chartSpec}
                     groupBy={queryContext?.body.groupBy}
-                    height={isMobile ? 360 : 440}
+                    height={isMobile ? 360 : 460}
+                    hasMore={chartHasMore}
+                    loadingMore={isAppendingChart}
+                    onReachEnd={handleChartReachEnd}
                   />
                 </Box>
                 <Box
@@ -401,7 +436,7 @@ export function ReportsResultsView() {
                     borderLeft: { md: 1 },
                     borderColor: 'divider',
                     pl: { md: 2 },
-                    maxHeight: { md: 480 },
+                    maxHeight: { md: 520 },
                     overflow: 'auto',
                   }}>
                   <ReportChartSettingsPanel
@@ -412,40 +447,6 @@ export function ReportsResultsView() {
                   />
                 </Box>
               </Box>
-              {totalElements > storePagination.pageSize ? (
-                isMobile ? (
-                  <div className={styles.mobilePagination}>
-                    <MobilePaginationWithJump
-                      page={storePagination.page}
-                      pageSize={storePagination.pageSize}
-                      totalCount={totalElements}
-                      loading={isLoadingPage || isGenerating}
-                      onPageChange={handleMobilePageChange}
-                    />
-                  </div>
-                ) : (
-                  <div className={styles.chartPagination}>
-                    <TablePagination
-                      component="div"
-                      count={totalElements}
-                      page={storePagination.page}
-                      rowsPerPage={storePagination.pageSize}
-                      rowsPerPageOptions={[25, 50, 75, 100]}
-                      onPageChange={(_event, newPage) => {
-                        handlePaginationModelChange({
-                          page: newPage,
-                          pageSize: storePagination.pageSize,
-                        });
-                      }}
-                      onRowsPerPageChange={(event) => {
-                        const pageSize = parseInt(event.target.value, 10);
-                        handlePaginationModelChange({ page: 0, pageSize });
-                      }}
-                      ActionsComponent={TablePaginationJumpActions}
-                    />
-                  </div>
-                )
-              ) : null}
             </>
           )}
         </div>

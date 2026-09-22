@@ -51,7 +51,6 @@ export const ChangePassword = () => {
                 error={!!errorCurrentPassword}
                 {...register('currentPassword')}
                 name="currentPassword"
-                //@ts-expect-error: временное решение
                 control={control}
                 autoComplete="off"
                 fullWidth
@@ -64,7 +63,6 @@ export const ChangePassword = () => {
                 error={!!errorNewPassword}
                 {...register('newPassword')}
                 name="newPassword"
-                //@ts-expect-error: временное решение
                 control={control}
                 autoComplete="off"
                 fullWidth
@@ -77,7 +75,6 @@ export const ChangePassword = () => {
                 error={!!errorRepeatNewPassword}
                 {...register('repeatNewPassword')}
                 name="repeatNewPassword"
-                //@ts-expect-error: временное решение
                 control={control}
                 autoComplete="off"
                 fullWidth

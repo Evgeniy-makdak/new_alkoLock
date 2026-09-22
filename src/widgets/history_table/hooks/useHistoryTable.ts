@@ -48,15 +48,10 @@ export const useHistoryTable = () => {
     limit: state.pageSize,
     page: state.page,
     filterOptions: {
-      //@ts-expect-error: "Временное решение"
       alcolocks: Formatters.getStringForQueryParams(filters.alcolocks),
-      //@ts-expect-error: "Временное решение"
       typeEvent: filters.typeEvent,
-      //@ts-expect-error: "Временное решение"
       driverId: Formatters.getStringForQueryParams(filters.driverId),
-      //@ts-expect-error: "Временное решение"
       handlerId: Formatters.getStringForQueryParams(filters.handlerId),
-      //@ts-expect-error: "Временное решение"
       carId: Formatters.getStringForQueryParams(filters.carId),
     },
     sortBy: state?.sortModel[0]?.field,

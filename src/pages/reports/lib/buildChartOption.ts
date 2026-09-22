@@ -23,6 +23,13 @@ const CHART_COLORS = [
   '#ea7ccc',
 ];
 
+const ABOVE_MEDIAN_COLOR = '#3ba272';
+const BELOW_MEDIAN_COLOR = '#ee6666';
+const MEDIAN_LINE_COLOR = '#5470c6';
+
+/** Ширина одной категории для горизонтального скролла (компактные столбцы/точки). */
+export const CHART_CATEGORY_SLOT_PX = 26;
+
 function legendOrient(position: ReportChartLegendPosition): 'horizontal' | 'vertical' {
   return position === 'left' || position === 'right' ? 'vertical' : 'horizontal';
 }
@@ -42,13 +49,30 @@ function legendOption(spec: ReportChartSpec, textColor: string) {
 
 function gridPadding(spec: ReportChartSpec) {
   const legend = spec.legend.show ? spec.legend.position : null;
+  const bottomForLabels = spec.axes.rotateXLabels ? 110 : 36;
   return {
-    left: legend === 'left' ? 96 : 48,
-    right: legend === 'right' ? 96 : 24,
-    top: legend === 'top' ? 48 : 32,
-    bottom: legend === 'bottom' ? 56 : spec.axes.rotateXLabels ? 72 : 40,
+    left: legend === 'left' ? 88 : 40,
+    right: legend === 'right' ? 88 : 16,
+    top: legend === 'top' ? 40 : 24,
+    bottom: legend === 'bottom' ? bottomForLabels + 28 : bottomForLabels,
     containLabel: true,
   };
+}
+
+function categoryTotals(data: ChartPreparedData): number[] {
+  return data.categories.map((cat) =>
+    Object.values(data.matrix[cat] ?? {}).reduce((sum, value) => sum + value, 0),
+  );
+}
+
+function computeMedian(values: number[]): number {
+  if (!values.length) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
+  }
+  return sorted[mid] ?? 0;
 }
 
 /**
@@ -58,9 +82,18 @@ export function buildChartOption(
   spec: ReportChartSpec,
   data: ChartPreparedData,
   theme: ChartThemeColors,
-  labels?: { countFallback?: string },
+  labels?: {
+    countFallback?: string;
+    medianLabel?: string;
+    aboveMedian?: string;
+    belowMedian?: string;
+  },
 ): EChartsOption {
   const countLabel = labels?.countFallback ?? 'Count';
+  const medianLabel = labels?.medianLabel ?? 'Median';
+  const aboveLabel = labels?.aboveMedian ?? 'Above median';
+  const belowLabel = labels?.belowMedian ?? 'Below median';
+
   const valueSeriesName =
     data.seriesNames.length === 1 && data.seriesNames[0] === 'value' ? countLabel : null;
 
@@ -70,7 +103,7 @@ export function buildChartOption(
 
   const tooltip: EChartsOption['tooltip'] = spec.tooltip.show
     ? {
-        trigger: spec.type === 'pie' ? 'item' : 'axis',
+        trigger: spec.type === 'pie' || spec.type === 'funnel' ? 'item' : 'axis',
         backgroundColor: theme.tooltipBg,
         borderColor: theme.tooltipBorder,
         textStyle: { color: theme.text, fontSize: 12 },
@@ -81,17 +114,41 @@ export function buildChartOption(
           const first = list[0] as {
             name?: string;
             seriesName?: string;
-            value?: number | number[];
+            value?: number | number[] | { value?: number };
             percent?: number;
             marker?: string;
+            data?: { delta?: number; median?: number };
           };
-          if (spec.type === 'pie') {
-            const value = typeof first.value === 'number' ? first.value : Number(first.value);
+          if (spec.type === 'pie' || spec.type === 'funnel') {
+            const raw =
+              typeof first.value === 'number'
+                ? first.value
+                : first.value && typeof first.value === 'object' && 'value' in first.value
+                  ? Number((first.value as { value?: number }).value)
+                  : Number(first.value);
             const pct =
               spec.tooltip.showPercent && typeof first.percent === 'number'
                 ? ` (${first.percent.toFixed(1)}%)`
                 : '';
-            return `${first.marker ?? ''}${first.name ?? ''}: <b>${value}</b>${pct}`;
+            return `${first.marker ?? ''}${first.name ?? ''}: <b>${raw}</b>${pct}`;
+          }
+          if (spec.type === 'medianBar') {
+            const value =
+              typeof first.value === 'number'
+                ? first.value
+                : Number(
+                    Array.isArray(first.value)
+                      ? first.value[first.value.length - 1]
+                      : (first.value as { value?: number })?.value ?? 0,
+                  );
+            const delta = first.data?.delta;
+            const median = first.data?.median;
+            const deltaText =
+              typeof delta === 'number'
+                ? ` · Δ ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}`
+                : '';
+            const medianText = typeof median === 'number' ? ` · ${medianLabel}: ${median}` : '';
+            return `${first.marker ?? ''}${first.name ?? ''}: <b>${value}</b>${medianText}${deltaText}`;
           }
           const title = first.name ?? '';
           const lines = list.map((item) => {
@@ -126,7 +183,6 @@ export function buildChartOption(
       textStyle: { color: theme.text },
       tooltip,
       legend: legendOption(spec, theme.text),
-      // Явно сбрасываем декартовы оси после bar/line — иначе pie «невидим», а tooltip есть.
       xAxis: undefined,
       yAxis: undefined,
       grid: undefined,
@@ -158,6 +214,160 @@ export function buildChartOption(
     };
   }
 
+  if (spec.type === 'funnel') {
+    const funnelData = data.categories
+      .map((cat) => {
+        const value = Object.values(data.matrix[cat] ?? {}).reduce((s, v) => s + v, 0);
+        return { name: cat, value };
+      })
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return {
+      color: CHART_COLORS,
+      textStyle: { color: theme.text },
+      tooltip,
+      legend: legendOption(spec, theme.text),
+      xAxis: undefined,
+      yAxis: undefined,
+      grid: undefined,
+      series: [
+        {
+          type: 'funnel',
+          left: '12%',
+          top: 48,
+          bottom: 24,
+          width: '76%',
+          min: 0,
+          minSize: '8%',
+          maxSize: '100%',
+          sort: 'descending',
+          gap: 2,
+          label: {
+            show: true,
+            position: 'inside',
+            color: '#fff',
+            formatter: spec.tooltip.showPercent ? '{b}\n{c}' : '{b}\n{c}',
+          },
+          labelLine: { show: false },
+          itemStyle: {
+            borderColor: theme.tooltipBg,
+            borderWidth: 1,
+          },
+          emphasis: {
+            label: { fontSize: 13 },
+          },
+          data: funnelData,
+        },
+      ],
+    };
+  }
+
+  if (spec.type === 'medianBar') {
+    const totals = categoryTotals(data);
+    const median = computeMedian(totals);
+    const barData = data.categories.map((cat, index) => {
+      const value = totals[index] ?? 0;
+      return {
+        value,
+        median,
+        delta: value - median,
+        itemStyle: {
+          color: value >= median ? ABOVE_MEDIAN_COLOR : BELOW_MEDIAN_COLOR,
+        },
+      };
+    });
+    const yMax = Math.max(...totals, median, 0);
+
+    return {
+      color: CHART_COLORS,
+      textStyle: { color: theme.text },
+      tooltip,
+      legend: {
+        show: spec.legend.show,
+        data: [aboveLabel, belowLabel, medianLabel],
+        top: 0,
+        textStyle: { color: theme.text, fontSize: 11 },
+      },
+      grid: gridPadding(spec),
+      xAxis: {
+        type: 'category',
+        data: data.categories,
+        name: spec.axes.xTitle || undefined,
+        nameLocation: 'middle',
+        nameGap: spec.axes.rotateXLabels ? 90 : 28,
+        nameTextStyle: { color: theme.axis },
+        axisLabel: {
+          color: theme.axis,
+          rotate: spec.axes.rotateXLabels ? 90 : 0,
+          interval: 0,
+          hideOverlap: false,
+          fontSize: 10,
+          formatter: (value: string) =>
+            value.length > 18 ? `${value.slice(0, 16)}…` : value,
+        },
+        axisLine: { lineStyle: { color: theme.axis } },
+        axisTick: { alignWithLabel: true },
+        boundaryGap: true,
+      },
+      yAxis: {
+        type: 'value',
+        min: 0,
+        max: yMax <= 1 ? 5 : undefined,
+        scale: false,
+        name: spec.axes.yTitle || undefined,
+        nameTextStyle: { color: theme.axis },
+        axisLabel: { color: theme.axis },
+        splitLine: {
+          show: spec.axes.showGrid,
+          lineStyle: { color: theme.grid, type: 'dashed' },
+        },
+        axisLine: { show: false },
+      },
+      series: [
+        {
+          name: countLabel,
+          type: 'bar',
+          data: barData,
+          barMaxWidth: 22,
+          barCategoryGap: '12%',
+          barGap: '0%',
+          markLine: {
+            symbol: 'none',
+            label: {
+              formatter: `${medianLabel}: {c}`,
+              color: theme.text,
+              position: 'end',
+            },
+            lineStyle: { color: MEDIAN_LINE_COLOR, type: 'dashed', width: 2 },
+            data: [{ yAxis: median, name: medianLabel }],
+          },
+          emphasis: { focus: 'series' as const },
+        },
+        // Легенда «выше / ниже» (невидимые серии-маркеры).
+        {
+          name: aboveLabel,
+          type: 'bar',
+          data: [],
+          itemStyle: { color: ABOVE_MEDIAN_COLOR },
+        },
+        {
+          name: belowLabel,
+          type: 'bar',
+          data: [],
+          itemStyle: { color: BELOW_MEDIAN_COLOR },
+        },
+        {
+          name: medianLabel,
+          type: 'line',
+          data: [],
+          itemStyle: { color: MEDIAN_LINE_COLOR },
+          lineStyle: { color: MEDIAN_LINE_COLOR, type: 'dashed' },
+        },
+      ],
+    };
+  }
+
   const isStacked = spec.type === 'stackedBar';
   const isArea = spec.type === 'area';
   const isLine = spec.type === 'line' || isArea;
@@ -172,9 +382,9 @@ export function buildChartOption(
         smooth: true,
         showSymbol: true,
         symbol: 'circle',
-        symbolSize: data.categories.length <= 24 ? 10 : 6,
-        lineStyle: { width: 3 },
-        areaStyle: isArea ? { opacity: 0.28 } : undefined,
+        symbolSize: 5,
+        lineStyle: { width: 2 },
+        areaStyle: isArea ? { opacity: 0.22 } : undefined,
         data: values,
         emphasis: { focus: 'series' as const },
       };
@@ -184,7 +394,9 @@ export function buildChartOption(
       type: 'bar' as const,
       stack: isStacked ? 'total' : undefined,
       data: values,
-      barMaxWidth: 48,
+      barMaxWidth: 22,
+      barCategoryGap: '12%',
+      barGap: '0%',
       emphasis: { focus: 'series' as const },
     };
   });
@@ -203,14 +415,15 @@ export function buildChartOption(
       data: data.categories,
       name: spec.axes.xTitle || undefined,
       nameLocation: 'middle',
-      nameGap: 28,
+      nameGap: spec.axes.rotateXLabels ? 90 : 28,
       nameTextStyle: { color: theme.axis },
       axisLabel: {
         color: theme.axis,
-        rotate: spec.axes.rotateXLabels ? 30 : 0,
+        rotate: spec.axes.rotateXLabels ? 90 : 0,
         interval: 0,
-        hideOverlap: true,
-        formatter: (value: string) => (value.length > 24 ? `${value.slice(0, 22)}…` : value),
+        hideOverlap: false,
+        fontSize: 10,
+        formatter: (value: string) => (value.length > 18 ? `${value.slice(0, 16)}…` : value),
       },
       axisLine: { lineStyle: { color: theme.axis } },
       axisTick: { alignWithLabel: true },
@@ -219,7 +432,6 @@ export function buildChartOption(
     yAxis: {
       type: 'value',
       min: 0,
-      // Чтобы «точки на оси» не выглядели сплюснутыми при малых значениях.
       max: yMax <= 1 ? 5 : undefined,
       scale: false,
       name: spec.axes.yTitle || undefined,
@@ -233,4 +445,14 @@ export function buildChartOption(
     },
     series,
   };
+}
+
+export function getChartCanvasWidthPx(
+  chartType: ReportChartSpec['type'],
+  categoryCount: number,
+  containerMinWidth = 480,
+): number | '100%' {
+  if (chartType === 'pie' || chartType === 'funnel') return '100%';
+  if (categoryCount <= 0) return '100%';
+  return Math.max(containerMinWidth, categoryCount * CHART_CATEGORY_SLOT_PX);
 }

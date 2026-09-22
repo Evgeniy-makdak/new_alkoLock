@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from 'react';
 
-import type { ID } from '@shared/types/BaseQueryTypes';
+import type { ID, IAlcolock } from '@shared/types/BaseQueryTypes';
 import { mapOptions } from '@shared/ui/search_multiple_select';
 
 import { useAlcolockListQuery } from '../api/alcolockListQuery';
@@ -18,8 +18,7 @@ export const useAlcolockSelect = (vieBranch = false, branchId?: ID, notInBranch?
     searchQuery,
     filterOptions: { branchId, notBranchId: notInBranch },
   });
-  //@ts-expect-error: временное решение
-  const filteredAlcolocks = alcolocks.filter((alcolock: { name: string; serialNumber: string }) => {
+  const filteredAlcolocks = alcolocks.filter((alcolock: IAlcolock) => {
     const nameMatch = alcolock?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;
     const serialMatch = String(alcolock?.serialNumber ?? '').includes(searchQuery);
     return nameMatch || serialMatch;
@@ -30,7 +29,7 @@ export const useAlcolockSelect = (vieBranch = false, branchId?: ID, notInBranch?
   };
 
   const alcolockList = mapOptions(filteredAlcolocks, (alcolock) =>
-    adapterMapOptions(alcolock as any, vieBranch),
+    adapterMapOptions(alcolock, vieBranch),
   );
 
   return { onChange, isLoading, onReset, alcolockList };

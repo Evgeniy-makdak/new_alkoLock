@@ -74,7 +74,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
   const { mutateAsync: changeItem } = useMutation<AppAxiosResponse<IUser>, unknown, FormData>({
     mutationFn: (data: FormData) =>
       UsersApi.changeUser(data, id) as Promise<AppAxiosResponse<IUser>>,
-    onSuccess: async (response) => {
+    onSuccess: async (response: AppAxiosResponse<IUser>) => {
       const putUser = response?.data;
       if (putUser?.id) {
         // Сразу подставляем тело ответа PUT в кэш карточки пользователя (превью в сайдбаре, ключ AVATAR).
@@ -122,7 +122,7 @@ export const useUserAddChangeFormApi = (id: ID) => {
     unknown,
     { formData: FormData; userId: ID }
   >({
-    mutationFn: ({ formData, userId }) =>
+    mutationFn: ({ formData, userId }: { formData: FormData; userId: ID }) =>
       UsersApi.addPhoto(formData, userId) as Promise<AppAxiosResponse<AddPhotoResponse>>,
   });
 

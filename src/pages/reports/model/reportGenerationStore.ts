@@ -15,6 +15,7 @@ import { reportsStore } from './reportsStore';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { CHART_REPORT_PAGE_SIZE } from '../types/chartSpec';
 import type { ReportChartSpec } from '../types/chartSpec';
 import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
 
@@ -40,6 +41,8 @@ type ReportGenerationState = {
   isGenerating: boolean;
   isExporting: boolean;
   isLoadingPage: boolean;
+  /** Тихая подгрузка следующей порции для графика (не скрывает уже отрисованный chart). */
+  isAppendingChart: boolean;
   progress: number;
   loaded: number;
   total: number;
@@ -62,6 +65,8 @@ type ReportGenerationState = {
   clearResults: () => void;
   exportDisplayedReport: (format: ReportExportFormat, fileName?: string) => Promise<boolean>;
   loadReportPage: (page: number, pageSize: number) => Promise<void>;
+  /** Следующие CHART_REPORT_PAGE_SIZE строк в конец lastResult (режим графика). */
+  appendChartPage: () => Promise<void>;
 };
 
 const resetRunMetrics = {
@@ -75,6 +80,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
   isGenerating: false,
   isExporting: false,
   isLoadingPage: false,
+  isAppendingChart: false,
   progress: 0,
   loaded: 0,
   total: 0,
@@ -109,6 +115,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       isGenerating: true,
       isLoadingPage: false,
+      isAppendingChart: false,
       lastResult: null,
       progress: 0,
       loaded: 0,
@@ -175,6 +182,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       isGenerating: false,
       isLoadingPage: false,
+      isAppendingChart: false,
       lastResult: visibleData,
       queryContext,
       progress: 100,
@@ -194,6 +202,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       isGenerating: false,
       isLoadingPage: false,
+      isAppendingChart: false,
       ...resetRunMetrics,
     });
   },
@@ -203,6 +212,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({
       isGenerating: false,
       isLoadingPage: false,
+      isAppendingChart: false,
       ...resetRunMetrics,
     });
   },
@@ -260,6 +270,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
 
     set({
       isLoadingPage: true,
+      isAppendingChart: false,
       pagination: { page, pageSize },
     });
 
@@ -291,6 +302,81 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
             ? e.message
             : i18n.t('reports.loadError');
       get().completeError(message);
+    }
+  },
+
+  async appendChartPage() {
+    const {
+      queryContext,
+      lastResult,
+      isGenerating,
+      isLoadingPage,
+      isAppendingChart,
+      sort,
+    } = get();
+    if (!queryContext || !lastResult || isGenerating || isLoadingPage || isAppendingChart) {
+      return;
+    }
+
+    const prevContent = filterReportContentRowsForUi(lastResult.content ?? []);
+    const totalElements = lastResult.totalElements ?? prevContent.length;
+    if (prevContent.length >= totalElements) return;
+
+    const pageSize = CHART_REPORT_PAGE_SIZE;
+    const nextPage = Math.floor(prevContent.length / pageSize);
+
+    // Если пришли из таблицы с иным pageSize (например 25) — сначала выровнять первую порцию.
+    if (prevContent.length > 0 && prevContent.length < pageSize && nextPage === 0) {
+      await get().loadReportPage(0, pageSize);
+      return;
+    }
+
+    const requestSeq = ++reportPageRequestSeq;
+    set({ isAppendingChart: true });
+
+    try {
+      const result = await executeReportQuery(queryContext.entityName, queryContext.body, {
+        page: nextPage,
+        size: pageSize,
+        sort,
+        branchIds: queryContext.branchIds,
+      });
+      if (requestSeq !== reportPageRequestSeq) {
+        set({ isAppendingChart: false });
+        return;
+      }
+
+      const pageContent = filterReportContentRowsForUi(result.content ?? []);
+      const mergedContent = [...prevContent, ...pageContent];
+      const mergedTotal = result.totalElements ?? totalElements;
+
+      set({
+        isAppendingChart: false,
+        lastResult: {
+          ...result,
+          content: mergedContent,
+          totalElements: mergedTotal,
+          number: nextPage,
+          size: pageSize,
+        },
+        loaded: mergedContent.length,
+        total: mergedTotal,
+        pagination: { page: nextPage, pageSize },
+      });
+    } catch (e) {
+      if (requestSeq !== reportPageRequestSeq) return;
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        set({ isAppendingChart: false });
+        return;
+      }
+      set({ isAppendingChart: false });
+      const message =
+        e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR
+          ? i18n.t('reports.queryNetworkError')
+          : e instanceof Error
+            ? e.message
+            : i18n.t('reports.loadError');
+      enqueueSnackbar(message, { variant: 'error' });
     }
   },
 }));

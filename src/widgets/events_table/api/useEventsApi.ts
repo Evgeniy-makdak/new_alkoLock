@@ -15,7 +15,6 @@ export const useEventsApi = (
 
   // Первый запрос для получения общего количества элементов
   const { data: countData } = useConfiguredQuery(
-    //@ts-expect-error: Временное решение
     [QueryKeys.EVENTS_COUNT as QueryKeys, options.startDate, options.endDate],
     EventsApi.getList,
     {
@@ -36,7 +35,7 @@ export const useEventsApi = (
     }
   }, [countData]);
 
-  const queryOptions = isMapPage
+  const queryOptions: QueryOptions = isMapPage
     ? {
         ...options,
         page: 0,
@@ -53,7 +52,6 @@ export const useEventsApi = (
     : [QueryKeys.EVENTS_LIST_TABLE as QueryKeys, options.startDate, options.endDate];
 
   const { data, isLoading, isPlaceholderData, refetch } = useConfiguredQuery(
-    //@ts-expect-error: Временное решение
     queryKey,
     EventsApi.getList,
     {

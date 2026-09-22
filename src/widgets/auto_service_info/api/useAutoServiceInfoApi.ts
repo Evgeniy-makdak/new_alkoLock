@@ -28,7 +28,6 @@ export const useAutoServiceInfoApi = (id: ID, onFinished?: () => void) => {
 
   // Новый запрос для получения событий автоподбора
   const { data: eventsResponse } = useConfiguredQuery(
-    //@ts-expect-error: временное решение
     [QueryKeys.EVENTS_LIST, id],
     EventsApi.getEventListForAutoService,
     {

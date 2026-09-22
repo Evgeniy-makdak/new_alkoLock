@@ -94,11 +94,11 @@ export type QueryOptions = {
     trimmedQuery?: string;
     equalsBranchId?: boolean;
     level?: Values;
-    alcolocks?: Values[];
-    carId?: Values[];
-    driverId?: Values[];
-    handlerId?: Values[];
-    typeEvent?: Values[];
+    alcolocks?: Values[] | string;
+    carId?: Values[] | string | ID;
+    driverId?: Values[] | string | ID;
+    handlerId?: Values[] | string | ID;
+    typeEvent?: Values[] | Values | string | string[];
   };
   id?: ID;
   headers?: HeaderReq;

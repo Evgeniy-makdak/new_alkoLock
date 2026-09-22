@@ -4,7 +4,7 @@ import { QueryKeys } from '@shared/const/storageKeys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { ID, IError } from '@shared/types/BaseQueryTypes';
 import type { QueryOptions } from '@shared/types/QueryTypes';
-import { type QueryKey, type UndefinedInitialDataOptions, useQuery } from '@tanstack/react-query';
+import { type QueryKey, type UseQueryOptions, useQuery } from '@tanstack/react-query';
 
 const isOptionsValue = (options: QueryOptions | ID): options is QueryOptions => {
   if (typeof options === 'object') return true;
@@ -28,10 +28,7 @@ const getOptions = (options: QueryOptions, queryBranch: ID): QueryOptions => {
  * @prop options - обычно это query параметры для запроса, но иногда это может быть ID или что другое в зависимости от требований запроса (смотри в swagger)
  */
 type OtherArgs<T, D> = {
-  settings?: Omit<
-    UndefinedInitialDataOptions<T, AxiosError<IError>, T, QueryKey>,
-    'queryKey' | 'queryFn'
-  > & { enabled?: boolean };
+  settings?: Omit<UseQueryOptions<T, AxiosError<IError>, T, QueryKey>, 'queryKey' | 'queryFn'>;
   triggerOnBranchChange?: boolean;
   options?: QueryOptions | ID | D;
 };
@@ -47,7 +44,7 @@ type OtherArgs<T, D> = {
  * @returns вернет объект UseQueryResult<T, AxiosError<IError>> - можно посмотреть в документации {@link https://tanstack.com/query/v5/docs/framework/react/reference/|useQuery tanstack/react-query}
  */
 export const useConfiguredQuery = <T, D extends QueryOptions>(
-  key: QueryKeys[],
+  key: readonly unknown[],
   fn: (options?: QueryOptions | ID | any) => Promise<T>,
   { options, settings, triggerOnBranchChange = true }: OtherArgs<T, D>,
 ) => {

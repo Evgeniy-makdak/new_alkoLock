@@ -3,12 +3,19 @@
  * Сохраняется в queryContext и в виджетах дашборда.
  */
 
-export type ReportChartType = 'bar' | 'line' | 'area' | 'pie' | 'stackedBar';
+export type ReportChartType =
+  | 'bar'
+  | 'line'
+  | 'area'
+  | 'pie'
+  | 'stackedBar'
+  | 'medianBar'
+  | 'funnel';
 
 export type ReportChartLegendPosition = 'top' | 'bottom' | 'left' | 'right';
 
 export type ReportChartEncoding = {
-  /** Поле категории (ось X / сегменты pie). */
+  /** Поле категории (ось X / сегменты pie / ступени воронки). */
   categoryField: string | null;
   /** Числовое поле меры; null = COUNT строк в группе. */
   valueField: string | null;
@@ -25,6 +32,7 @@ export type ReportChartAxisConfig = {
   xTitle: string;
   yTitle: string;
   showGrid: boolean;
+  /** true = подписи оси X вертикально (90°). */
   rotateXLabels: boolean;
 };
 
@@ -64,7 +72,7 @@ export const DEFAULT_CHART_SPEC: ReportChartSpec = {
     show: true,
     showPercent: true,
   },
-  topN: 20,
+  topN: 0,
 };
 
 export function createDefaultChartSpec(
@@ -91,7 +99,9 @@ export function isReportChartType(value: unknown): value is ReportChartType {
     value === 'line' ||
     value === 'area' ||
     value === 'pie' ||
-    value === 'stackedBar'
+    value === 'stackedBar' ||
+    value === 'medianBar' ||
+    value === 'funnel'
   );
 }
 
@@ -144,6 +154,9 @@ export function normalizeChartSpec(raw: unknown): ReportChartSpec {
       show: typeof tooltip.show === 'boolean' ? tooltip.show : true,
       showPercent: typeof tooltip.showPercent === 'boolean' ? tooltip.showPercent : true,
     },
-    topN: typeof obj.topN === 'number' && obj.topN >= 0 ? Math.floor(obj.topN) : 20,
+    topN: typeof obj.topN === 'number' && obj.topN >= 0 ? Math.floor(obj.topN) : 0,
   });
 }
+
+/** Размер порции данных для графика (подгрузка следующих при скролле вправо). */
+export const CHART_REPORT_PAGE_SIZE = 100;

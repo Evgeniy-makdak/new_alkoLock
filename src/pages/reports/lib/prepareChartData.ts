@@ -140,11 +140,13 @@ export function resolveChartEncoding(
   }
 
   const seriesField =
-    spec.encoding.seriesField &&
-    spec.encoding.seriesField !== categoryField &&
-    rows.some((r) => spec.encoding.seriesField! in r)
-      ? spec.encoding.seriesField
-      : null;
+    spec.type === 'medianBar' || spec.type === 'funnel' || spec.type === 'pie'
+      ? null
+      : spec.encoding.seriesField &&
+          spec.encoding.seriesField !== categoryField &&
+          rows.some((r) => spec.encoding.seriesField! in r)
+        ? spec.encoding.seriesField
+        : null;
 
   return { categoryField, valueField, seriesField };
 }

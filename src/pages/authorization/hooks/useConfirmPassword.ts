@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { enqueueSnackbar } from 'notistack';
@@ -52,7 +52,7 @@ export const useConfirmPassword = () => {
       errors: { verificationCode },
     },
   } = useForm<Form>({
-    resolver: yupResolver<any>(schema),
+    resolver: yupResolver(schema) as Resolver<Form>,
     defaultValues: { email },
   });
 
@@ -69,8 +69,7 @@ export const useConfirmPassword = () => {
       enqueueSnackbar(i18n.t('auth.codeResent'), { variant: 'success' });
 
       // Обновляем время истечения кода из ответа сервера
-      // @ts-expect-error: временное решение
-      setCodeExpiration(response.data.data);
+      setCodeExpiration((response as { data: { data: string } }).data.data);
       setIsResendDisabled(true);
       setSecondsLeft(60);
 
@@ -277,7 +276,6 @@ export const useConfirmPassword = () => {
         verificationCode: cleanedVerificationCode,
       },
       {
-        //@ts-expect-error: временное решение
         onSuccess: (response: {
           status: StatusCode;
           detail: string;
