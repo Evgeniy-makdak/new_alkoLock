@@ -8,6 +8,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useForgetPasswordApi } from '@pages/authorization/api/useForgetPassworApi';
+import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
 import { ValidationMessages } from '@shared/validations/validation_messages';
@@ -75,7 +76,7 @@ export const useForgetPassword = () => {
     };
 
     mutate(requestData, {
-      onSuccess: (response: { status: StatusCode; detail: string }) => {
+      onSuccess: (response: AppAxiosResponse<unknown>) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
           navigate(RoutePaths.auth); // Перенаправление на страницу входа

@@ -9,6 +9,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useConfirmPasswordApi } from '@pages/authorization/api/useConfirmPasswordApi';
+import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { UsersApi } from '@shared/api/baseQuerys';
 import { RoutePaths } from '@shared/config/routePathsEnum';
 import { StatusCode } from '@shared/const/statusCode';
@@ -276,11 +277,7 @@ export const useConfirmPassword = () => {
         verificationCode: cleanedVerificationCode,
       },
       {
-        onSuccess: (response: {
-          status: StatusCode;
-          detail: string;
-          data: { message: string };
-        }) => {
+        onSuccess: (response: AppAxiosResponse<{ message?: string }>) => {
           if (response?.status === StatusCode.SUCCESS) {
             enqueueSnackbar(i18n.t('auth.codeConfirmed'), { variant: 'success' });
             navigate(RoutePaths.forgetPassword, {

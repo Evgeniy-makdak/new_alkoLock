@@ -5,6 +5,7 @@ import { enqueueSnackbar } from 'notistack';
 
 import { yupResolver } from '@hookform/resolvers/yup';
 import { useChangePasswordApi } from '@pages/authorization/api/useChangePasswordApi';
+import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 import { StatusCode } from '@shared/const/statusCode';
 import { appStore } from '@shared/model/app_store/AppStore';
 import { ValidationMessages } from '@shared/validations/validation_messages';
@@ -62,7 +63,7 @@ export const useChangePassword = () => {
     }
 
     mutate(data as Parameters<typeof mutate>[0], {
-      onSuccess: (response: { status: StatusCode; detail: string }) => {
+      onSuccess: (response: AppAxiosResponse<unknown>) => {
         if (response?.status === StatusCode.SUCCESS) {
           enqueueSnackbar(i18n.t('auth.passwordChangedSuccess'), { variant: 'success' });
           appStore.getState().logout(false);
