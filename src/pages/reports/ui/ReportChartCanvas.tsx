@@ -1,10 +1,16 @@
-import { useEffect, useMemo, useRef, type UIEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, CircularProgress, Typography, useTheme } from '@mui/material';
 import ReactECharts from 'echarts-for-react';
+import type { EChartsType } from 'echarts';
 
-import { buildChartOption, getChartCanvasWidthPx } from '../lib/buildChartOption';
+import {
+  buildChartOption,
+  chartNeedsHorizontalPan,
+  CHART_CATEGORY_SLOT_PX,
+  withFixedYAxisHorizontalPan,
+} from '../lib/buildChartOption';
 import { prepareChartData } from '../lib/prepareChartData';
 import { normalizeChartSpec, type ReportChartSpec } from '../types/chartSpec';
 
@@ -22,7 +28,7 @@ type Props = {
   onReachEnd?: () => void;
 };
 
-const SCROLL_END_THRESHOLD_PX = 48;
+const SCROLL_END_THRESHOLD_PCT = 97;
 
 export function ReportChartCanvas({
   rows,
@@ -36,15 +42,38 @@ export function ReportChartCanvas({
 }: Props) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const chartRef = useRef<EChartsType | null>(null);
   const reachEndLockRef = useRef(false);
   const lastAutoCategoryCountRef = useRef(-1);
+  const zoomRangeRef = useRef<{ start: number; end: number } | null>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
   const spec = useMemo(() => normalizeChartSpec(rawSpec), [rawSpec]);
 
   const data = useMemo(
     () => prepareChartData(rows, spec, groupBy),
     [rows, spec, groupBy],
   );
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const update = () => {
+      const next = Math.floor(el.clientWidth);
+      setViewportWidth((prev) => (prev === next ? prev : next));
+      chartRef.current?.resize();
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!loadingMore) {
+      reachEndLockRef.current = false;
+    }
+  }, [loadingMore]);
 
   const option = useMemo(() => {
     const chartTheme = {
@@ -58,39 +87,60 @@ export function ReportChartCanvas({
       compact && spec.legend.show
         ? { ...spec, legend: { ...spec.legend, show: data.seriesNames.length > 1 } }
         : spec;
-    return buildChartOption(compactSpec, data, chartTheme, {
+    const base = buildChartOption(compactSpec, data, chartTheme, {
       countFallback: t('reports.chartCount', { defaultValue: 'Количество' }),
       medianLabel: t('reports.chartMedian', { defaultValue: 'Медиана' }),
       aboveMedian: t('reports.chartAboveMedian', { defaultValue: 'Выше медианы' }),
       belowMedian: t('reports.chartBelowMedian', { defaultValue: 'Ниже медианы' }),
     });
-  }, [theme, spec, data, compact, t]);
 
-  const canvasWidth = useMemo(
-    () => getChartCanvasWidthPx(spec.type, data.categories.length),
-    [spec.type, data.categories.length],
+    const categoryCount = data.categories.length;
+    const needsPan = chartNeedsHorizontalPan(spec.type, categoryCount, viewportWidth);
+    if (!needsPan) {
+      zoomRangeRef.current = null;
+      return base;
+    }
+
+    const visible = Math.max(1, Math.floor(viewportWidth / CHART_CATEGORY_SLOT_PX));
+    const span = Math.max(3, Math.min(100, (visible / categoryCount) * 100));
+    const prev = zoomRangeRef.current;
+    let start = 0;
+    let end = span;
+    if (prev) {
+      if (prev.end >= SCROLL_END_THRESHOLD_PCT) {
+        start = Math.max(0, 100 - span);
+        end = 100;
+      } else {
+        start = Math.min(prev.start, 100 - span);
+        end = Math.min(100, start + span);
+      }
+    }
+    zoomRangeRef.current = { start, end };
+    return withFixedYAxisHorizontalPan(base, categoryCount, viewportWidth, { start, end });
+  }, [theme, spec, data, compact, t, viewportWidth]);
+
+  const maybeLoadMore = useCallback(
+    (endPct: number) => {
+      if (!hasMore || loadingMore || !onReachEnd || reachEndLockRef.current) return;
+      if (endPct < SCROLL_END_THRESHOLD_PCT) return;
+      reachEndLockRef.current = true;
+      onReachEnd();
+    },
+    [hasMore, loadingMore, onReachEnd],
   );
 
-  useEffect(() => {
-    if (!loadingMore) {
-      reachEndLockRef.current = false;
-    }
-  }, [loadingMore]);
-
-  // Если категорий мало и горизонтального скролла ещё нет — подгружаем порции,
-  // пока не появится скролл. Если число категорий перестало расти — останавливаемся
-  // (иначе при сильной агрегации ушли бы в полную выгрузку).
+  // Если категорий мало и «хвост» уже виден целиком — подгружаем, пока не появится панорама
+  // или пока число категорий растёт.
   useEffect(() => {
     if (!hasMore || loadingMore || !onReachEnd) return;
-    if (canvasWidth === '100%') return;
-    const el = scrollRef.current;
-    if (!el) return;
-    const canScroll = el.scrollWidth > el.clientWidth + 1;
-    if (canScroll) {
+    if (spec.type === 'pie' || spec.type === 'funnel') return;
+    if (viewportWidth <= 0) return;
+    const categoryCount = data.categories.length;
+    const needsPan = chartNeedsHorizontalPan(spec.type, categoryCount, viewportWidth);
+    if (needsPan) {
       lastAutoCategoryCountRef.current = -1;
       return;
     }
-    const categoryCount = data.categories.length;
     if (
       lastAutoCategoryCountRef.current >= 0 &&
       categoryCount <= lastAutoCategoryCountRef.current
@@ -101,21 +151,36 @@ export function ReportChartCanvas({
     lastAutoCategoryCountRef.current = categoryCount;
     reachEndLockRef.current = true;
     onReachEnd();
-  }, [hasMore, loadingMore, onReachEnd, canvasWidth, data.categories.length, rows.length]);
+  }, [
+    hasMore,
+    loadingMore,
+    onReachEnd,
+    spec.type,
+    viewportWidth,
+    data.categories.length,
+    rows.length,
+  ]);
 
-  const handleScroll = (event: UIEvent<HTMLDivElement>) => {
-    if (!hasMore || loadingMore || !onReachEnd || reachEndLockRef.current) return;
-    const el = event.currentTarget;
-    if (el.scrollWidth <= el.clientWidth + 1) return;
-    if (el.scrollLeft + el.clientWidth >= el.scrollWidth - SCROLL_END_THRESHOLD_PX) {
-      reachEndLockRef.current = true;
-      onReachEnd();
-    }
-  };
+  const onChartEvents = useMemo(
+    () => ({
+      datazoom: (params: {
+        start?: number;
+        end?: number;
+        batch?: Array<{ start?: number; end?: number }>;
+      }) => {
+        const batch = params.batch?.[0];
+        const start = batch?.start ?? params.start ?? zoomRangeRef.current?.start ?? 0;
+        const end = batch?.end ?? params.end ?? zoomRangeRef.current?.end ?? 100;
+        zoomRangeRef.current = { start, end };
+        maybeLoadMore(end);
+      },
+    }),
+    [maybeLoadMore],
+  );
 
   if (!rows.length || data.categories.length === 0) {
     return (
-      <Box sx={{ py: 4, textAlign: 'center' }}>
+      <Box sx={{ py: 4, textAlign: 'center', height: typeof height === 'number' ? height : '100%' }}>
         <Typography variant="body2" color="text.secondary">
           {t('reports.chartNoVisualData', {
             defaultValue: 'Недостаточно данных для построения графика',
@@ -125,26 +190,36 @@ export function ReportChartCanvas({
     );
   }
 
+  const fillParent = height === '100%';
+
   return (
-    <Box sx={{ width: '100%', position: 'relative' }}>
+    <Box
+      sx={{
+        width: '100%',
+        height: fillParent ? '100%' : height,
+        minHeight: fillParent ? 0 : undefined,
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+      }}>
       <Box
-        ref={scrollRef}
-        onScroll={handleScroll}
+        ref={containerRef}
         sx={{
+          flex: 1,
+          minHeight: 0,
           width: '100%',
-          overflowX: canvasWidth === '100%' ? 'hidden' : 'auto',
-          overflowY: 'hidden',
         }}>
         <ReactECharts
           option={option}
-          style={{
-            width: canvasWidth === '100%' ? '100%' : canvasWidth,
-            minWidth: canvasWidth === '100%' ? undefined : '100%',
-            height,
-          }}
+          style={{ width: '100%', height: '100%', minHeight: fillParent ? 280 : undefined }}
           notMerge
           lazyUpdate={false}
           opts={{ renderer: 'canvas' }}
+          onEvents={onChartEvents}
+          onChartReady={(instance) => {
+            chartRef.current = instance;
+            instance.resize();
+          }}
         />
       </Box>
       {loadingMore ? (
@@ -161,6 +236,7 @@ export function ReportChartCanvas({
             py: 0.5,
             borderRadius: 1,
             boxShadow: 1,
+            zIndex: 2,
           }}>
           <CircularProgress size={16} />
           <Typography variant="caption" color="text.secondary">

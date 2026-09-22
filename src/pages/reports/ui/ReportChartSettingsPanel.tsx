@@ -68,7 +68,7 @@ export function ReportChartSettingsPanel({
   };
 
   return (
-    <Stack spacing={1.5} sx={{ minWidth: 260, maxWidth: 340 }}>
+    <Stack spacing={1.5} sx={{ minWidth: 0, width: '100%' }}>
       <Typography variant="subtitle2">
         {t('reports.chartSettingsTitle', { defaultValue: 'Настройки графика' })}
       </Typography>

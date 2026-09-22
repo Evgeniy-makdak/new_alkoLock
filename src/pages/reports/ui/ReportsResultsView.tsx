@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 
-import { useMediaQuery, Box, CircularProgress, TablePagination, Typography } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { useMediaQuery, Box, CircularProgress, IconButton, TablePagination, Tooltip, Typography } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import {
@@ -376,6 +378,7 @@ export function ReportsResultsView() {
   const handleChartReachEnd = useCallback(() => {
     void appendChartPage();
   }, [appendChartPage]);
+  const [chartSettingsCollapsed, setChartSettingsCollapsed] = useState(false);
 
   const handleMobilePageChange = useCallback(
     (newPage: number) => {
@@ -399,7 +402,10 @@ export function ReportsResultsView() {
             </Box>
           ) : (
             <>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 1, flexShrink: 0 }}>
                 {chartHasMore
                   ? t('reports.chartRowsHintPaged', {
                       defaultValue:
@@ -412,41 +418,56 @@ export function ReportsResultsView() {
                       defaultValue: 'Строк в графике: {{count}}',
                     }).replace('{{count}}', String(chartRows.length))}
               </Typography>
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', md: 'row' },
-                  gap: 2,
-                  alignItems: 'stretch',
-                }}>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
+              <div className={styles.chartsBody}>
+                <div className={styles.chartsCanvasCol}>
                   <ReportChartCanvas
                     rows={chartRows}
                     spec={chartSpec}
                     groupBy={queryContext?.body.groupBy}
-                    height={isMobile ? 360 : 460}
+                    height="100%"
                     hasMore={chartHasMore}
                     loadingMore={isAppendingChart}
                     onReachEnd={handleChartReachEnd}
                   />
-                </Box>
-                <Box
-                  sx={{
-                    flexShrink: 0,
-                    borderLeft: { md: 1 },
-                    borderColor: 'divider',
-                    pl: { md: 2 },
-                    maxHeight: { md: 520 },
-                    overflow: 'auto',
-                  }}>
-                  <ReportChartSettingsPanel
-                    spec={chartSpec}
-                    fieldOptions={chartFieldOptions}
-                    onChange={handleChartSpecChange}
-                    disabled={isLoadingPage || isGenerating}
-                  />
-                </Box>
-              </Box>
+                </div>
+                <div
+                  className={`${styles.chartsSettingsCol} ${
+                    chartSettingsCollapsed ? styles.chartsSettingsColCollapsed : ''
+                  }`}>
+                  <Tooltip
+                    title={
+                      chartSettingsCollapsed
+                        ? t('reports.chartSettingsExpand', { defaultValue: 'Показать настройки' })
+                        : t('reports.chartSettingsCollapse', { defaultValue: 'Скрыть настройки' })
+                    }>
+                    <IconButton
+                      size="small"
+                      className={styles.chartsSettingsToggle}
+                      onClick={() => setChartSettingsCollapsed((prev) => !prev)}
+                      aria-label={
+                        chartSettingsCollapsed
+                          ? t('reports.chartSettingsExpand', { defaultValue: 'Показать настройки' })
+                          : t('reports.chartSettingsCollapse', { defaultValue: 'Скрыть настройки' })
+                      }>
+                      {chartSettingsCollapsed ? (
+                        <ChevronLeftIcon fontSize="small" />
+                      ) : (
+                        <ChevronRightIcon fontSize="small" />
+                      )}
+                    </IconButton>
+                  </Tooltip>
+                  {!chartSettingsCollapsed ? (
+                    <div className={styles.chartsSettingsContent}>
+                      <ReportChartSettingsPanel
+                        spec={chartSpec}
+                        fieldOptions={chartFieldOptions}
+                        onChange={handleChartSpecChange}
+                        disabled={isLoadingPage || isGenerating}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              </div>
             </>
           )}
         </div>

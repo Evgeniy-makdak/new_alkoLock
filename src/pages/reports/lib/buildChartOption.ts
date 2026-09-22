@@ -49,13 +49,40 @@ function legendOption(spec: ReportChartSpec, textColor: string) {
 
 function gridPadding(spec: ReportChartSpec) {
   const legend = spec.legend.show ? spec.legend.position : null;
+  const hasXTitle = Boolean(spec.axes.xTitle?.trim());
+  // Место под повёрнутые подписи категорий + отдельная полоса под название оси X.
   const bottomForLabels = spec.axes.rotateXLabels ? 110 : 36;
+  const bottomForXTitle = hasXTitle ? (spec.axes.rotateXLabels ? 28 : 22) : 0;
+  const bottom = bottomForLabels + bottomForXTitle;
   return {
     left: legend === 'left' ? 88 : 40,
     right: legend === 'right' ? 88 : 16,
     top: legend === 'top' ? 40 : 24,
-    bottom: legend === 'bottom' ? bottomForLabels + 28 : bottomForLabels,
+    bottom: legend === 'bottom' ? bottom + 28 : bottom,
     containLabel: true,
+  };
+}
+
+/** nameGap так, чтобы заголовок оси X был ниже подписей категорий, ближе к слайдеру. */
+function xAxisNameOptions(spec: ReportChartSpec, theme: ChartThemeColors) {
+  const title = spec.axes.xTitle?.trim();
+  if (!title) {
+    return {
+      name: undefined as string | undefined,
+      nameGap: undefined as number | undefined,
+      nameTextStyle: undefined as EChartsOption['textStyle'] | undefined,
+    };
+  }
+  return {
+    name: title,
+    nameLocation: 'middle' as const,
+    nameGap: spec.axes.rotateXLabels ? 118 : 44,
+    nameTextStyle: {
+      color: theme.text,
+      fontSize: 12,
+      fontWeight: 600,
+      padding: [6, 0, 0, 0],
+    },
   };
 }
 
@@ -293,10 +320,7 @@ export function buildChartOption(
       xAxis: {
         type: 'category',
         data: data.categories,
-        name: spec.axes.xTitle || undefined,
-        nameLocation: 'middle',
-        nameGap: spec.axes.rotateXLabels ? 90 : 28,
-        nameTextStyle: { color: theme.axis },
+        ...xAxisNameOptions(spec, theme),
         axisLabel: {
           color: theme.axis,
           rotate: spec.axes.rotateXLabels ? 90 : 0,
@@ -413,10 +437,7 @@ export function buildChartOption(
     xAxis: {
       type: 'category',
       data: data.categories,
-      name: spec.axes.xTitle || undefined,
-      nameLocation: 'middle',
-      nameGap: spec.axes.rotateXLabels ? 90 : 28,
-      nameTextStyle: { color: theme.axis },
+      ...xAxisNameOptions(spec, theme),
       axisLabel: {
         color: theme.axis,
         rotate: spec.axes.rotateXLabels ? 90 : 0,
@@ -455,4 +476,76 @@ export function getChartCanvasWidthPx(
   if (chartType === 'pie' || chartType === 'funnel') return '100%';
   if (categoryCount <= 0) return '100%';
   return Math.max(containerMinWidth, categoryCount * CHART_CATEGORY_SLOT_PX);
+}
+
+/** Нужен ли горизонтальный dataZoom (вместо CSS-скролла всей картинки). */
+export function chartNeedsHorizontalPan(
+  chartType: ReportChartSpec['type'],
+  categoryCount: number,
+  viewportWidthPx: number,
+): boolean {
+  if (chartType === 'pie' || chartType === 'funnel') return false;
+  if (categoryCount <= 0 || viewportWidthPx <= 0) return false;
+  const visible = Math.max(1, Math.floor(viewportWidthPx / CHART_CATEGORY_SLOT_PX));
+  return categoryCount > visible;
+}
+
+/**
+ * Фиксирует ось Y: панорама/слайдер по X внутри ECharts, а не overflow у широкого canvas.
+ */
+export function withFixedYAxisHorizontalPan(
+  option: EChartsOption,
+  categoryCount: number,
+  viewportWidthPx: number,
+  zoom?: { start: number; end: number },
+): EChartsOption {
+  if (!chartNeedsHorizontalPan('bar', categoryCount, viewportWidthPx)) {
+    return option;
+  }
+
+  const visible = Math.max(1, Math.floor(viewportWidthPx / CHART_CATEGORY_SLOT_PX));
+  const defaultEnd = Math.max(3, Math.min(100, (visible / categoryCount) * 100));
+  const start = zoom?.start ?? 0;
+  const end = zoom?.end ?? defaultEnd;
+
+  const grid = option.grid;
+  const gridObj = (Array.isArray(grid) ? grid[0] : grid) as
+    | { bottom?: number | string; [key: string]: unknown }
+    | undefined;
+  const prevBottom = typeof gridObj?.bottom === 'number' ? gridObj.bottom : 36;
+
+  return {
+    ...option,
+    grid: gridObj
+      ? {
+          ...gridObj,
+          // Слайдер ниже подписи оси X.
+          bottom: prevBottom + 28,
+        }
+      : option.grid,
+    dataZoom: [
+      {
+        type: 'inside',
+        xAxisIndex: 0,
+        start,
+        end,
+        filterMode: 'none',
+        zoomOnMouseWheel: false,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: true,
+        preventDefaultMouseMove: true,
+      },
+      {
+        type: 'slider',
+        xAxisIndex: 0,
+        start,
+        end,
+        height: 18,
+        bottom: 6,
+        showDetail: false,
+        brushSelect: false,
+        filterMode: 'none',
+      },
+    ],
+  };
 }

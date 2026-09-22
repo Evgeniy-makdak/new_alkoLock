@@ -646,9 +646,92 @@
 .chartsArea {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   padding: 8px var(--table-page-content-inset-inline, 16px) 16px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartsBody {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.chartsCanvasCol {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartsSettingsCol {
+  flex-shrink: 0;
+  width: 280px;
+  max-width: 36%;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  transition: width 0.2s ease, max-width 0.2s ease;
+}
+
+.chartsSettingsColCollapsed {
+  width: 36px;
+  max-width: 36px;
+}
+
+.chartsSettingsToggle {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+  color: inherit;
+  opacity: 0.55;
+
+  &:hover {
+    opacity: 0.9;
+    background-color: transparent;
+  }
+}
+
+.chartsSettingsContent {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding-left: 4px;
+}
+
+@media (max-width: 900px) {
+  .chartsBody {
+    flex-direction: column;
+  }
+
+  .chartsSettingsCol {
+    width: 100%;
+    max-width: none;
+    flex-direction: column;
+    max-height: 40vh;
+  }
+
+  .chartsSettingsColCollapsed {
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    flex-direction: row;
+  }
+
+  .chartsSettingsContent {
+    padding-left: 0;
+    padding-top: 4px;
+  }
 }
 
 .chartsLoading {
