@@ -9,10 +9,19 @@ export function isReportFilterNullOperation(operationCode: string | null | undef
   return op === 'isnull' || op === 'isnotnull';
 }
 
-/** Операторы сравнения: одно значение в поле «Значение» (без мультивыбора). */
+/** Операторы сравнения / «после»/«до»: одно значение в поле «Значение» (без мультивыбора). */
 export function isReportSingleValueFilterOperation(operationCode: string | null | undefined): boolean {
   const op = (operationCode ?? '').trim().toLowerCase();
-  return op === 'eq' || op === 'ne' || op === 'gt' || op === 'gte' || op === 'lt' || op === 'lte';
+  return (
+    op === 'eq' ||
+    op === 'ne' ||
+    op === 'gt' ||
+    op === 'gte' ||
+    op === 'lt' ||
+    op === 'lte' ||
+    op === 'after' ||
+    op === 'before'
+  );
 }
 
 /** Лимит значений в «Значение»: 1 для операторов сравнения; для enum без оператора — 1; иначе без лимита. */

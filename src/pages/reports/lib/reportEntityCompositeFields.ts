@@ -648,7 +648,8 @@ function findEntityIdFieldDefinition(
     type: 'ENTITY',
     referenceEntity: kind,
     filterable: true,
-    availableOperations: [{ code: 'eq', label: '=' }, { code: 'in', label: 'in' }],
+    // Без metadata.id — не выдумываем операторы; UI покажет пустой список.
+    availableOperations: [],
     ...DEFAULT_SYNTHETIC_FIELD_FLAGS,
   };
 }

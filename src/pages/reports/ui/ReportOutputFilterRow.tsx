@@ -127,27 +127,21 @@ export function ReportOutputFilterRow({
     return picked?.value != null && picked.value !== '' ? String(picked.value) : null;
   }, [row.filterSelections, operationKey]);
 
+  /** Операторы/функции — только availableOperations / availableFunctions текущего листа metadata. */
   const operationFunctionSource = useMemo(() => {
     if (!primaryField) return null;
-    if (refEntity && nestedPath.length) {
-      const attributeField = resolveNestedFilterLeafField(
-        tableFieldsMetadata,
-        nestedPath,
-        referenceEntityMetadataByName,
+    if (refEntity) {
+      if (!nestedPath.length) return null;
+      return (
+        resolveNestedFilterLeafField(
+          tableFieldsMetadata,
+          nestedPath,
+          referenceEntityMetadataByName,
+        ) ?? null
       );
-      if (attributeField) return attributeField;
-      if (tableFieldsMetadataLoading || !tableFieldsMetadata) return null;
-      return primaryField;
     }
     return primaryField;
-  }, [
-    primaryField,
-    refEntity,
-    nestedPath,
-    tableFieldsMetadata,
-    tableFieldsMetadataLoading,
-    referenceEntityMetadataByName,
-  ]);
+  }, [primaryField, refEntity, nestedPath, tableFieldsMetadata, referenceEntityMetadataByName]);
 
   const operationOptions = useMemo(
     () => operationsToValues(operationFunctionSource?.availableOperations),
@@ -157,6 +151,32 @@ export function ReportOutputFilterRow({
     () => operationsToValues(operationFunctionSource?.availableFunctions),
     [operationFunctionSource],
   );
+
+  // Смена листа metadata: сбрасываем оператор/функцию, которых нет в новых списках.
+  useEffect(() => {
+    // Пока лист не известен — не трогаем выбор (идут промежуточные metadata).
+    if (!operationFunctionSource) return;
+
+    const allowedOps = new Set(operationOptions.map((o) => String(o.value)));
+    const allowedFns = new Set(functionOptions.map((o) => String(o.value)));
+    const selectedOp = row.filterSelections[operationKey]?.[0];
+    const selectedFn = row.filterSelections[functionKey]?.[0];
+
+    if (selectedOp && !allowedOps.has(String(selectedOp.value))) {
+      onFilterChange(operationKey, []);
+    }
+    if (selectedFn && !allowedFns.has(String(selectedFn.value))) {
+      onFilterChange(functionKey, []);
+    }
+  }, [
+    operationFunctionSource,
+    operationOptions,
+    functionOptions,
+    operationKey,
+    functionKey,
+    row.filterSelections,
+    onFilterChange,
+  ]);
 
   const nestedAttributeReady = Boolean(
     refEntity &&
@@ -195,15 +215,17 @@ export function ReportOutputFilterRow({
     t,
   );
   const canShowAddButton = showAddButton && rowComplete && !isModalVariant;
-  const showOperationAndFunction = isModalVariant
-    ? Boolean(primaryField)
-    : outputControlsReady;
 
   const showOperatorField = isModalVariant
-    ? Boolean(primaryField) && (!refEntity || nestedAttributeReady)
+    ? Boolean(primaryField) &&
+      operationOptions.length > 0 &&
+      (!refEntity || nestedAttributeReady)
     : refEntity
-      ? nestedAttributeReady
-      : outputControlsReady;
+      ? nestedAttributeReady && operationOptions.length > 0
+      : outputControlsReady && operationOptions.length > 0;
+
+  const showFunctionField =
+    (isModalVariant ? Boolean(primaryField) : outputControlsReady) && functionOptions.length > 0;
 
   const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
   const selectCompact = isModalVariant;
@@ -249,7 +271,7 @@ export function ReportOutputFilterRow({
     ) : null;
 
   const filterFunctionBlock =
-    primaryField && showOperationAndFunction ? (
+    primaryField && showFunctionField ? (
       <ReportSearchMultipleSelect
         multiple={false}
         compact={selectCompact}

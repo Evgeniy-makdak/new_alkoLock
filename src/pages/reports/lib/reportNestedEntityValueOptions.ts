@@ -56,7 +56,7 @@ export function shouldForceReportLeafDomainList(
 }
 
 /**
- * Листовое «Значение»: сначала тип из metadata; для скаляров — доменный API по leafEntityName.
+ * Листовое «Значение»: тип/ENUM/BOOLEAN из metadata; иначе доменный API по leafEntityName.
  */
 export function resolveNestedEntityValueLoadKind(
   field: ReportFieldDefinition | undefined,
@@ -64,6 +64,12 @@ export function resolveNestedEntityValueLoadKind(
 ): NestedEntityValueLoadKind {
   if (field && isReportCoordinatesCompositePropertyFieldName(field.fieldName)) {
     return 'coordinatePairInput';
+  }
+
+  // BOOLEAN / ENUM.allowedValues / DATETIME / YEAR / COORDINATE — строго из metadata поля.
+  const fromMetadata = resolveReportMetadataValueLoadKind(field);
+  if (fromMetadata !== 'textInput') {
+    return fromMetadata;
   }
 
   if (shouldForceEventsForFrontDomainList(leafEntityName, field)) {
@@ -74,10 +80,6 @@ export function resolveNestedEntityValueLoadKind(
     return 'domainList';
   }
 
-  const fromMetadata = resolveReportMetadataValueLoadKind(field);
-  if (fromMetadata !== 'textInput') {
-    return fromMetadata;
-  }
   return 'textInput';
 }
 

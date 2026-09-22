@@ -165,7 +165,8 @@ export function buildSyntheticCoordinatesFilterField(
     sortable: false,
     groupable: false,
     aggregation: null,
-    availableOperations: [{ code: 'eq', label: '=' }, { code: 'in', label: 'in' }],
+    // Без latitude из metadata — не подставляем захардкоженные операторы.
+    availableOperations: [],
     availableFunctions: [],
   };
   return {

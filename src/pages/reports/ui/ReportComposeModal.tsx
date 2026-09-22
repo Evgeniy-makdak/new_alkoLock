@@ -388,11 +388,11 @@ export function ReportComposeModal({
     [t],
   );
 
-  const executeReportLoad = useCallback(async () => {
+  const executeReportLoad = useCallback(async (): Promise<boolean> => {
     saveTableFieldsSelectionToStore();
 
     const ctx = buildCurrentReportBody();
-    if (!ctx) return;
+    if (!ctx) return false;
     const { entityName, body: rawBody } = ctx;
     const body = ensureSelectedFieldsInBody(rawBody);
 
@@ -444,12 +444,14 @@ export function ReportComposeModal({
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
+      return true;
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') {
         reportGenerationStore.getState().finishCancelled();
-        return;
+        return false;
       }
       reportGenerationStore.getState().completeError(reportQueryErrorMessage(e));
+      return false;
     }
   }, [
     buildCurrentReportBody,
@@ -469,12 +471,21 @@ export function ReportComposeModal({
     await ensureTableFieldsMetadataLoaded();
     saveTableFieldsSelectionToStore();
 
+    const ok = await executeReportLoad();
+    if (!ok) {
+      // Ошибка бэка / отмена: модалку не закрываем, параметры остаются для правки.
+      return;
+    }
+
     confirmedRef.current = true;
     snapshotRef.current = null;
     onClose();
-
-    void executeReportLoad();
-  }, [ensureTableFieldsMetadataLoaded, saveTableFieldsSelectionToStore, onClose, executeReportLoad]);
+  }, [
+    ensureTableFieldsMetadataLoaded,
+    saveTableFieldsSelectionToStore,
+    executeReportLoad,
+    onClose,
+  ]);
 
   useEffect(() => {
     if (!open || !metadata) return;

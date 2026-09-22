@@ -102,20 +102,21 @@ function DateTimePair({ dateLabel, storedRaw, onCommit }: DateTimePairProps) {
           theme={theme}
         />
       </Box>
-      <ReportTimeTextField
-        className={pageStyles.reportFilterTimeField}
-        label={t('reports.timeOfDayLabel')}
-        value={timePart}
-        placeholder={t('reports.timePlaceholder')}
-        invalid={timeInvalid}
-        errorMessage={t('reports.timeFormatError')}
-        sx={timeFieldSx}
-        onChange={(raw) => {
-          const formatted = formatReportTimeInput(raw);
-          setTimePart(formatted);
-          commit(datePart, formatted);
-        }}
-      />
+      <Box className={pageStyles.reportFilterTimeField}>
+        <ReportTimeTextField
+          label={t('reports.timeOfDayLabel')}
+          value={timePart}
+          placeholder={t('reports.timePlaceholder')}
+          invalid={timeInvalid}
+          errorMessage={t('reports.timeFormatError')}
+          sx={timeFieldSx}
+          onChange={(raw) => {
+            const formatted = formatReportTimeInput(raw);
+            setTimePart(formatted);
+            commit(datePart, formatted);
+          }}
+        />
+      </Box>
     </Box>
   );
 }
