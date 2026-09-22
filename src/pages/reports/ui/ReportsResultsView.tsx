@@ -52,6 +52,7 @@ export function ReportsResultsView() {
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const isLoadingPage = reportGenerationStore((s) => s.isLoadingPage);
   const isAppendingChart = reportGenerationStore((s) => s.isAppendingChart);
+  const chartExhausted = reportGenerationStore((s) => s.chartExhausted);
   const appendChartPage = reportGenerationStore((s) => s.appendChartPage);
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const queryContext = reportGenerationStore((s) => s.queryContext);
@@ -357,8 +358,11 @@ export function ReportsResultsView() {
   useEffect(() => {
     if (!isChartView || !queryContext) return;
     const total = lastResult?.totalElements ?? 0;
-    const loaded = Array.isArray(lastResult?.content) ? lastResult.content.length : 0;
     if (total <= 0) return;
+    // Порция нужного размера уже в lastResult — дальше только append, иначе page 0
+    // запрашивался бы по кругу (видимых строк меньше 100 из-за фильтра анонимных).
+    if ((lastResult?.size ?? 0) >= CHART_REPORT_PAGE_SIZE) return;
+    const loaded = Array.isArray(lastResult?.content) ? lastResult.content.length : 0;
     if (loaded >= Math.min(total, CHART_REPORT_PAGE_SIZE)) return;
     if (isLoadingPage || isGenerating || isAppendingChart) return;
     void loadReportPage(0, CHART_REPORT_PAGE_SIZE);
@@ -366,6 +370,7 @@ export function ReportsResultsView() {
     isChartView,
     queryContext,
     lastResult?.totalElements,
+    lastResult?.size,
     lastResult?.content,
     isLoadingPage,
     isGenerating,
@@ -374,10 +379,8 @@ export function ReportsResultsView() {
   ]);
 
   const chartRows = (lastResult?.content as Array<Record<string, unknown>>) ?? [];
-  const chartHasMore = chartRows.length < totalElements;
-  const handleChartReachEnd = useCallback(() => {
-    void appendChartPage();
-  }, [appendChartPage]);
+  const chartHasMore = chartRows.length < totalElements && !chartExhausted;
+  const handleChartReachEnd = useCallback(() => appendChartPage(), [appendChartPage]);
   const [chartSettingsCollapsed, setChartSettingsCollapsed] = useState(false);
 
   const handleMobilePageChange = useCallback(

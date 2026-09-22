@@ -43,6 +43,8 @@ type ReportGenerationState = {
   isLoadingPage: boolean;
   /** Тихая подгрузка следующей порции для графика (не скрывает уже отрисованный chart). */
   isAppendingChart: boolean;
+  /** Режим графика: сервер отдал последнюю страницу — просить дальше нечего. */
+  chartExhausted: boolean;
   progress: number;
   loaded: number;
   total: number;
@@ -65,8 +67,11 @@ type ReportGenerationState = {
   clearResults: () => void;
   exportDisplayedReport: (format: ReportExportFormat, fileName?: string) => Promise<boolean>;
   loadReportPage: (page: number, pageSize: number) => Promise<void>;
-  /** Следующие CHART_REPORT_PAGE_SIZE строк в конец lastResult (режим графика). */
-  appendChartPage: () => Promise<void>;
+  /**
+   * Следующие CHART_REPORT_PAGE_SIZE строк в конец lastResult (режим графика).
+   * @returns true, если запрос на сервер реально ушёл.
+   */
+  appendChartPage: () => Promise<boolean>;
 };
 
 const resetRunMetrics = {
@@ -74,6 +79,7 @@ const resetRunMetrics = {
   loaded: 0,
   total: 0,
   runStartedAt: null as number | null,
+  chartExhausted: false,
 };
 
 export const reportGenerationStore = create<ReportGenerationState>()((set, get) => ({
@@ -81,6 +87,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
   isExporting: false,
   isLoadingPage: false,
   isAppendingChart: false,
+  chartExhausted: false,
   progress: 0,
   loaded: 0,
   total: 0,
@@ -107,6 +114,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       queryContext: null,
       pagination: { page: 0, pageSize: get().pagination.pageSize },
       sort: [] as string[],
+      chartExhausted: false,
     }),
 
   start: () => {
@@ -116,6 +124,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       isGenerating: true,
       isLoadingPage: false,
       isAppendingChart: false,
+      chartExhausted: false,
       lastResult: null,
       progress: 0,
       loaded: 0,
@@ -153,7 +162,8 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
 
   completeSuccess: (data) => {
     reportFetchAbortController = null;
-    const visibleContent = filterReportContentRowsForUi(data.content ?? []);
+    const rawContent = Array.isArray(data.content) ? data.content : [];
+    const visibleContent = filterReportContentRowsForUi(rawContent);
     const pageLoaded = visibleContent.length;
     const totalElements = data.totalElements ?? pageLoaded;
     const pageIndex = typeof data.number === 'number' ? data.number : get().pagination.page;
@@ -183,6 +193,8 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       isGenerating: false,
       isLoadingPage: false,
       isAppendingChart: false,
+      // Короткий ответ сервера = последняя страница, просить дальше бессмысленно.
+      chartExhausted: rawContent.length < (data.size ?? rawContent.length),
       lastResult: visibleData,
       queryContext,
       progress: 100,
@@ -223,6 +235,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       queryContext: null,
       pagination: { page: 0, pageSize: get().pagination.pageSize },
       sort: [],
+      chartExhausted: false,
     }),
 
   async exportDisplayedReport(format, fileName = '') {
@@ -312,24 +325,31 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       isGenerating,
       isLoadingPage,
       isAppendingChart,
+      chartExhausted,
       sort,
     } = get();
     if (!queryContext || !lastResult || isGenerating || isLoadingPage || isAppendingChart) {
-      return;
+      return false;
     }
 
     const prevContent = filterReportContentRowsForUi(lastResult.content ?? []);
     const totalElements = lastResult.totalElements ?? prevContent.length;
-    if (prevContent.length >= totalElements) return;
+    if (chartExhausted || prevContent.length >= totalElements) return false;
 
     const pageSize = CHART_REPORT_PAGE_SIZE;
-    const nextPage = Math.floor(prevContent.length / pageSize);
+    const loadedSize = lastResult.size;
+    const loadedNumber = lastResult.number;
 
     // Если пришли из таблицы с иным pageSize (например 25) — сначала выровнять первую порцию.
-    if (prevContent.length > 0 && prevContent.length < pageSize && nextPage === 0) {
+    if (loadedSize !== pageSize || typeof loadedNumber !== 'number') {
       await get().loadReportPage(0, pageSize);
-      return;
+      return true;
     }
+
+    // Следующая страница берётся из ответа сервера: часть строк скрывается фильтром
+    // анонимных, поэтому считать offset по длине видимого контента нельзя —
+    // страницы запрашивались бы повторно (или через одну) и подгрузка зацикливалась.
+    const nextPage = loadedNumber + 1;
 
     const requestSeq = ++reportPageRequestSeq;
     set({ isAppendingChart: true });
@@ -343,15 +363,17 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       });
       if (requestSeq !== reportPageRequestSeq) {
         set({ isAppendingChart: false });
-        return;
+        return false;
       }
 
-      const pageContent = filterReportContentRowsForUi(result.content ?? []);
+      const rawContent = Array.isArray(result.content) ? result.content : [];
+      const pageContent = filterReportContentRowsForUi(rawContent);
       const mergedContent = [...prevContent, ...pageContent];
       const mergedTotal = result.totalElements ?? totalElements;
 
       set({
         isAppendingChart: false,
+        chartExhausted: rawContent.length < pageSize,
         lastResult: {
           ...result,
           content: mergedContent,
@@ -363,11 +385,12 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
         total: mergedTotal,
         pagination: { page: nextPage, pageSize },
       });
+      return true;
     } catch (e) {
-      if (requestSeq !== reportPageRequestSeq) return;
+      if (requestSeq !== reportPageRequestSeq) return false;
       if (e instanceof DOMException && e.name === 'AbortError') {
         set({ isAppendingChart: false });
-        return;
+        return false;
       }
       set({ isAppendingChart: false });
       const message =
@@ -377,6 +400,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
             ? e.message
             : i18n.t('reports.loadError');
       enqueueSnackbar(message, { variant: 'error' });
+      return false;
     }
   },
 }));

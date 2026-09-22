@@ -24,8 +24,11 @@ type Props = {
   hasMore?: boolean;
   /** Идёт тихая подгрузка следующей порции. */
   loadingMore?: boolean;
-  /** Доскроллили вправо до конца видимой области графика. */
-  onReachEnd?: () => void;
+  /**
+   * Доскроллили вправо до конца видимой области графика.
+   * @returns false, если запрос не стартовал (блокировку нужно снять сразу).
+   */
+  onReachEnd?: () => void | boolean | Promise<boolean | void>;
 };
 
 const SCROLL_END_THRESHOLD_PCT = 97;
@@ -47,6 +50,8 @@ export function ReportChartCanvas({
   const reachEndLockRef = useRef(false);
   const lastAutoCategoryCountRef = useRef(-1);
   const zoomRangeRef = useRef<{ start: number; end: number } | null>(null);
+  /** Число категорий на прошлом пересчёте option — нужно для сохранения окна панорамы. */
+  const prevCategoryCountRef = useRef(0);
   const [viewportWidth, setViewportWidth] = useState(0);
   const spec = useMemo(() => normalizeChartSpec(rawSpec), [rawSpec]);
 
@@ -54,6 +59,11 @@ export function ReportChartCanvas({
     () => prepareChartData(rows, spec, groupBy),
     [rows, spec, groupBy],
   );
+
+  // Держим актуальные колбэки в ref: onEvents сравнивается глубоко, и новое замыкание
+  // заставляло echarts-for-react пересоздавать график на каждой подгрузке.
+  const loadMoreStateRef = useRef({ hasMore, loadingMore, onReachEnd });
+  loadMoreStateRef.current = { hasMore, loadingMore, onReachEnd };
 
   useEffect(() => {
     const el = containerRef.current;
@@ -69,11 +79,13 @@ export function ReportChartCanvas({
     return () => observer.disconnect();
   }, []);
 
+  // Разблокируем подгрузку по концу загрузки И по смене данных: страницу могут перезаписать
+  // через loadReportPage (без isAppendingChart), и тогда блокировка осталась бы навсегда.
   useEffect(() => {
     if (!loadingMore) {
       reachEndLockRef.current = false;
     }
-  }, [loadingMore]);
+  }, [loadingMore, rows.length]);
 
   const option = useMemo(() => {
     const chartTheme = {
@@ -98,36 +110,61 @@ export function ReportChartCanvas({
     const needsPan = chartNeedsHorizontalPan(spec.type, categoryCount, viewportWidth);
     if (!needsPan) {
       zoomRangeRef.current = null;
+      prevCategoryCountRef.current = categoryCount;
       return base;
     }
 
     const visible = Math.max(1, Math.floor(viewportWidth / CHART_CATEGORY_SLOT_PX));
     const span = Math.max(3, Math.min(100, (visible / categoryCount) * 100));
     const prev = zoomRangeRef.current;
+    const prevCount = prevCategoryCountRef.current;
     let start = 0;
     let end = span;
-    if (prev) {
-      if (prev.end >= SCROLL_END_THRESHOLD_PCT) {
-        start = Math.max(0, 100 - span);
-        end = 100;
-      } else {
-        start = Math.min(prev.start, 100 - span);
-        end = Math.min(100, start + span);
-      }
+    // Категорий стало меньше — данные заменены целиком (другой отчёт/окно), окно сбрасываем.
+    if (prev && prevCount > 0 && categoryCount >= prevCount) {
+      // Окно держим по абсолютным индексам категорий. Если «пришпильить» его к 100%,
+      // то после подгрузки правый край уже достигнут, echarts не отдаст datazoom при
+      // движении вправо — и следующая порция никогда не запросится.
+      const startIdx = (prev.start / 100) * prevCount;
+      start = Math.min(
+        Math.max(0, (startIdx / categoryCount) * 100),
+        Math.max(0, 100 - span),
+      );
+      end = Math.min(100, start + span);
     }
+    prevCategoryCountRef.current = categoryCount;
     zoomRangeRef.current = { start, end };
     return withFixedYAxisHorizontalPan(base, categoryCount, viewportWidth, { start, end });
   }, [theme, spec, data, compact, t, viewportWidth]);
 
-  const maybeLoadMore = useCallback(
-    (endPct: number) => {
-      if (!hasMore || loadingMore || !onReachEnd || reachEndLockRef.current) return;
-      if (endPct < SCROLL_END_THRESHOLD_PCT) return;
-      reachEndLockRef.current = true;
-      onReachEnd();
-    },
-    [hasMore, loadingMore, onReachEnd],
-  );
+  const triggerLoadMore = useCallback(() => {
+    const { onReachEnd: notify } = loadMoreStateRef.current;
+    if (!notify) return;
+    const result = notify();
+    if (typeof result === 'boolean') {
+      if (!result) reachEndLockRef.current = false;
+      return;
+    }
+    if (result && typeof result.then === 'function') {
+      void result
+        .then((started) => {
+          // false — запрос не ушёл (идёт другая загрузка/данных больше нет).
+          if (started === false) reachEndLockRef.current = false;
+        })
+        .catch(() => {
+          reachEndLockRef.current = false;
+        });
+    }
+  }, []);
+
+  const maybeLoadMore = useCallback((endPct: number) => {
+    const { hasMore: canLoad, loadingMore: isLoading, onReachEnd: notify } =
+      loadMoreStateRef.current;
+    if (!canLoad || isLoading || !notify || reachEndLockRef.current) return;
+    if (endPct < SCROLL_END_THRESHOLD_PCT) return;
+    reachEndLockRef.current = true;
+    triggerLoadMore();
+  }, [triggerLoadMore]);
 
   // Если категорий мало и «хвост» уже виден целиком — подгружаем, пока не появится панорама
   // или пока число категорий растёт.
@@ -150,11 +187,12 @@ export function ReportChartCanvas({
     if (reachEndLockRef.current) return;
     lastAutoCategoryCountRef.current = categoryCount;
     reachEndLockRef.current = true;
-    onReachEnd();
+    triggerLoadMore();
   }, [
     hasMore,
     loadingMore,
     onReachEnd,
+    triggerLoadMore,
     spec.type,
     viewportWidth,
     data.categories.length,
