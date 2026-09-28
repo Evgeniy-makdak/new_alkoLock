@@ -14,6 +14,7 @@ import { openNativeDatePickerFromHiddenInput } from '@shared/lib/openNativeDateP
 import { ID } from '@shared/types/BaseQueryTypes';
 import { HiddenFiltersOfDates } from '@shared/ui/hidden_filters_of_dates';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
+import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useEventsTable } from '../hooks/useEventsTable';
@@ -36,6 +37,7 @@ export const EventsMobileTable = ({
   const { t } = useTranslation();
   const theme = useTheme();
   const { filtersData, tableData } = useEventsTable();
+  const { statusFilter, resetStatusFilter } = useStatusFilter();
   const hasActiveFilters = eventsFilterPanelStore((state) => state.hasActiveFilters);
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
@@ -117,6 +119,13 @@ export const EventsMobileTable = ({
       handleFilterChange();
     }
   }, [tableData.pageSize]);
+
+  // Сброс страницы при смене фильтра статуса — как на вкладках Пользователи/Алкозамки/Транспорт
+  useEffect(() => {
+    if (tableData.changePage) {
+      tableData.changePage(0);
+    }
+  }, [statusFilter]);
 
   const handleRowClick = (row: any) => {
     if (row?.actionId) {
@@ -486,6 +495,7 @@ export const EventsMobileTable = ({
     const event = new CustomEvent('resetFilters');
     window.dispatchEvent(event);
 
+    resetStatusFilter();
     setStartDateInput('');
     setEndDateInput('');
     setStartDateError('');
@@ -502,6 +512,7 @@ export const EventsMobileTable = ({
   const handleResetAllFilters = () => {
     filtersData.clearDates();
     filtersData.setInput('');
+    resetStatusFilter();
     setStartDateInput('');
     setEndDateInput('');
     setStartDateError('');
@@ -537,6 +548,7 @@ export const EventsMobileTable = ({
             filtersData.setInput(value);
             handleFilterChange();
           }}
+          showStatusFilter={true}
         />
 
         <HiddenFiltersOfDates

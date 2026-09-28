@@ -42,7 +42,7 @@ function appendQueryParts(baseUrl: string, ...segments: Array<string | undefined
 }
 
 const getSortQuery = (orderType: SortTypes | string, order: GridSortDirection) => {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.NAMING:
@@ -84,7 +84,7 @@ export function getCreateAttachmentApiURL() {
   return 'api/vehicle-driver-allotments';
 }
 function getSortQueryAttachments(orderType: SortTypes | string, order: GridSortDirection) {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.ALCOLOKS:
@@ -280,7 +280,8 @@ const getSelectBranchToQueryUrlToChat = ({
   return joinQuerySegments(parameters, branch || undefined);
 };
 
-export function getUrlCountEventsToQuery({ filterOptions: { branchId } }: QueryOptions) {
+export function getUrlCountEventsToQuery({ filterOptions }: QueryOptions) {
+  const branchId = filterOptions?.branchId;
   let query = '?';
 
   if (branchId) {
@@ -334,7 +335,8 @@ const createBranchQueryBuilder = (mode: 'all' | 'any' = 'all') => {
 export const getSelectBranchQueryUrl = createBranchQueryBuilder('all');
 export const getSelectBranchQueryUrlNotForAdmin = createBranchQueryBuilder('any');
 
-export function getUrlCountEventsQuery({ filterOptions: { branchId } }: QueryOptions) {
+export function getUrlCountEventsQuery({ filterOptions }: QueryOptions) {
+  const branchId = filterOptions?.branchId;
   let query = '?';
 
   if (branchId) {
@@ -510,7 +512,7 @@ export function getUserListURLToChat(
   });
 
   if (forChat) {
-    const date = new Date(startDate).toISOString();
+    const date = new Date(startDate as string).toISOString();
     queries += `&all.createdAt.greaterThanOrEqual=${date}`;
   }
 
@@ -581,7 +583,7 @@ export function getChatTransferOperatorsListURL({
 /////////////////////////////////////////////////////////CARS API ===================================================
 
 const getSortQueryCar = (orderType: SortTypes | string, order: GridSortDirection) => {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.MARK:
@@ -686,7 +688,7 @@ export const getCarSwitchBranchUrl = (options: QueryOptions, isPairSwitch: boole
 ////////////////////////////////////// ALCOLOCK API/////////------------------------------------------------------------------------------------
 
 const getSortQueryAlcoloks = (orderType: SortTypes | string, order: GridSortDirection) => {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.TC:
@@ -869,7 +871,7 @@ export function getCreateAlkolocksURL() {
 ////////////////////////////////==============================================EVENTS API
 
 function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirection) {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.NAMING:
@@ -879,7 +881,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
     case SortTypes.TC:
       return `&sort=vehicleRecord.manufacturer,vehicleRecord.model${orderStr}`;
     case SortTypes.ALCOLOKS:
-      return `&sort=deviceRecord.name,deviceRecord.serialNumber,${order.toUpperCase()}`;
+      return `&sort=deviceRecord.name,deviceRecord.serialNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=eventsForFront.label${orderStr}`;
     case SortTypes.WHO_LINK:
@@ -901,7 +903,7 @@ function getSortQueryEvents(orderType: SortTypes | string, order: GridSortDirect
 
 // Сортировка для Сервисного режима:
 function getSortQueryByService(orderType: SortTypes | string, order: GridSortDirection) {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.NAMING:
@@ -911,7 +913,7 @@ function getSortQueryByService(orderType: SortTypes | string, order: GridSortDir
     case SortTypes.TC:
       return `&sort=vehicleRecord.manufacturer,vehicleRecord.model${orderStr}`;
     case SortTypes.ALCOLOKS:
-      return `&sort=action.device.name,action.device.serialNumber,${order.toUpperCase()}`;
+      return `&sort=action.device.name,action.device.serialNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=eventsForFront.label${orderStr}`;
     case SortTypes.WHO_LINK:
@@ -933,13 +935,13 @@ function getSortQueryByService(orderType: SortTypes | string, order: GridSortDir
 
 // Сортировка для Истории сервисного режима:
 function getSortQueryHistory(orderType: SortTypes | string, order: GridSortDirection) {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.TC:
       return `&sort=vehicle.manufacturer,vehicle.model${orderStr}`;
     case SortTypes.ALCOLOKS:
-      return `&sort=device.name,device.serialNumber,${order.toUpperCase()}`;
+      return `&sort=device.name,device.serialNumber${orderStr}`;
     case SortTypes.TYPE_OF_EVENT:
       return `&sort=eventType.label${orderStr}`;
     case SortTypes.HANDLER:
@@ -1005,8 +1007,9 @@ export function getEventsHistoryURL({
   }
 
   // Фильтрация по типам событий
-  if (filterOptions?.eventsByType?.length > 0) {
-    let eventIds = filterOptions.eventsByType
+  const eventsByType = filterOptions?.eventsByType;
+  if (eventsByType && eventsByType.length > 0) {
+    let eventIds = eventsByType
       .map((event) => String(event.value))
       .filter((value) => value.trim() !== '');
 
@@ -1152,6 +1155,8 @@ export function getEventsApiURL({
   sortBy,
   filterOptions,
   currentUserId,
+  // Дополнительные query-параметры (как в getAlcolockListURL: фильтр статуса с вкладки)
+  query,
 }: QueryOptions & { currentUserId?: number; permission?: string[]; role?: number[] }) {
   const queryTrimmed = Formatters.removeExtraSpaces(searchQuery ?? '');
   const branchId = filterOptions?.branchId;
@@ -1206,6 +1211,10 @@ export function getEventsApiURL({
   if (eventClasses && eventClasses.length > 0) {
     const eventClassIds = eventClasses.map((event) => event.value).join(',');
     queries += `&all.eventsForFront.levelType.id.in=${eventClassIds}`;
+  }
+
+  if (query) {
+    queries += query;
   }
 
   let sortParams = '';
@@ -1439,7 +1448,7 @@ export function getEventListCountForAutoServiceURL({
 //////////////////////////////////====================================================================BranchAPi
 
 const getBranchSortQuery = (orderType: SortTypes | string, order: GridSortDirection) => {
-  const orderStr = ',' + order.toUpperCase();
+  const orderStr = order ? ',' + order.toUpperCase() : '';
 
   switch (orderType) {
     case SortTypes.NAMING:

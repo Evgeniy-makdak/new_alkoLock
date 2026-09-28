@@ -11,6 +11,7 @@ import { ID } from '@shared/types/BaseQueryTypes';
 import { InputsDates } from '@shared/ui/inputs_dates/InputsDates';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { SearchInput } from '@shared/ui/search_input/SearchInput';
+import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 import { FilterButton } from '@shared/ui/table_filter_button';
 
 import { useEventsTable } from '../hooks/useEventsTable';
@@ -31,6 +32,7 @@ export const EventsDesktopTable = ({
   prevBranch,
 }: EventsDesktopTableProps) => {
   const { filtersData, tableData } = useEventsTable();
+  const { statusFilter, resetStatusFilter } = useStatusFilter();
   const prevRowCountRef = useRef(tableData.totalCount);
   const pageSize = useRef(tableData.pageSize);
   const [isFiltersChanged, setIsFiltersChanged] = useState(false);
@@ -59,6 +61,13 @@ export const EventsDesktopTable = ({
   useEffect(() => {
     tableData.apiRef.current.setPage(0);
   }, [prevBranch]);
+
+  // Сброс страницы при смене фильтра статуса — как на вкладках Пользователи/Алкозамки/Транспорт
+  useEffect(() => {
+    if (tableData.apiRef.current) {
+      tableData.apiRef.current.setPage(0);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     if (tableData.sortModel) {
@@ -195,6 +204,7 @@ export const EventsDesktopTable = ({
             filtersData.setInput(value);
             handleFilterChange();
           }}
+          showStatusFilter={true}
         />
         <InputsDates
           onClear={() => {
@@ -228,6 +238,7 @@ export const EventsDesktopTable = ({
             reset={() => {
               filtersData.clearDates();
               filtersData.setInput('');
+              resetStatusFilter();
               const event = new CustomEvent('resetFilters');
               window.dispatchEvent(event);
             }}
