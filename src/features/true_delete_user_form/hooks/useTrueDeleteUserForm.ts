@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { useProcessingStore } from '@shared/model/processing_store/processingStore';
 import type { ID } from '@shared/types/BaseQueryTypes';
 import { useUserContext } from '@widgets/users_info/UserContext';
@@ -14,11 +16,13 @@ async function clearCache() {
 export const useTrueDeleteUserForm = (id: ID, closeModal: () => void, closeAside: () => void) => {
   const { selectedUserId } = useUserContext();
   const mutate = useTrueDeleteUserFormApi();
+  const [isLoading, setIsLoading] = useState(false);
   const addProcessingId = useProcessingStore((state) => state.addProcessingId);
   const removeProcessingId = useProcessingStore((state) => state.removeProcessingId);
 
   const handleDelete = async () => {
     if (id != null) addProcessingId('users', id);
+    setIsLoading(true);
     try {
       await mutate(id);
       if (id === selectedUserId) {
@@ -28,8 +32,9 @@ export const useTrueDeleteUserForm = (id: ID, closeModal: () => void, closeAside
       await clearCache();
     } finally {
       if (id != null) removeProcessingId('users', id);
+      setIsLoading(false);
     }
   };
 
-  return handleDelete;
+  return { handleDelete, isLoading };
 };

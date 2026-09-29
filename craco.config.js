@@ -12,6 +12,7 @@ module.exports = {
     },
   ],
   devServer: {
+    // Порт 80 → http://localhost/... (нужен sudo yarn start; порты <1024 требуют root)
     port: 80,
     client: {
       overlay: {

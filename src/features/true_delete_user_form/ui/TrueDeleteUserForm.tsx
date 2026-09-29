@@ -1,7 +1,7 @@
 import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Stack, Typography } from '@mui/material';
+import { Backdrop, CircularProgress, Stack, Typography } from '@mui/material';
 
 import { ButtonFormWrapper } from '@shared/components/button_form_wrapper/ButtonFormWrapper';
 import { testids } from '@shared/const/testid';
@@ -23,9 +23,12 @@ const TrueDeleteUserFormInner: FC<{
   closeAside: () => void;
 }> = ({ user, closeModal, closeAside }) => {
   const { t } = useTranslation();
-  const onTrueDelete = useTrueDeleteUserForm(user.id, closeModal, closeAside);
+  const { handleDelete, isLoading } = useTrueDeleteUserForm(user.id, closeModal, closeAside);
   return (
     <>
+      <Backdrop sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.modal + 1 }} open={isLoading}>
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <Typography marginBottom={2} fontWeight={700} variant="h6">
         {t('modals.userDeletion')}
       </Typography>
@@ -34,10 +37,16 @@ const TrueDeleteUserFormInner: FC<{
           {t('modals.confirmDeleteUser', { name: reactNodeToPlainText(user.text) })}
         </Typography>
         <ButtonFormWrapper>
-          <Button testid={`${testids.POPUP_ACTION_BUTTON}`} onClick={onTrueDelete}>
+          <Button
+            testid={`${testids.POPUP_ACTION_BUTTON}`}
+            onClick={handleDelete}
+            disabled={isLoading}>
             {t('modals.yes')}
           </Button>
-          <Button testid={`${testids.POPUP_CANCEL_BUTTON}`} onClick={closeModal}>
+          <Button
+            testid={`${testids.POPUP_CANCEL_BUTTON}`}
+            onClick={closeModal}
+            disabled={isLoading}>
             {t('modals.no')}
           </Button>
         </ButtonFormWrapper>
