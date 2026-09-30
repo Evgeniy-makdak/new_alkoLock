@@ -83,6 +83,8 @@ export interface ChatContextType {
   openUnreadDialog: (sessionId: string, dialog: UnreadDialog) => Promise<void>;
   setDialogsUnreadCounts: (counts: Map<number, number>) => void;
   forceLoadUnreadDialogs: (sessionId: string) => Promise<void>;
+  /** После unread REST (в т.ч. закрытая иконка чата): STOMP DELIVERED для SENT без открытия диалога. */
+  confirmDeliveredForUnreadDialogs: (dialogs: UnreadDialog[]) => void;
   sendDeliveredStatusesForSession: (sessionId: string) => void;
   sendReadStatusesForSession: (sessionId: string) => void;
   sendDeliveredStatusForNewMessage: (sessionId: string, messageUuid: string) => boolean; // ДОБАВЬТЕ ЭТУ СТРОКУ

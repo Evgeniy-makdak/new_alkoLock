@@ -53,6 +53,7 @@ import {
   isClosedDialogVisibleToCurrentOperator,
   isSessionClosedClaimedByOtherOperator,
 } from '../lib/chatOperatorPermissions';
+import { flushDeliveredForUnreadDialogs } from '../lib/flushDeliveredForUnreadDialogs';
 import {
   pickSessionMatchingDialogId,
   resolveSessionDialogIdForUnread,
@@ -70,11 +71,6 @@ import { useChatStatusHandlers } from './hooks/useChatStatusHandlers';
 import { ChatContextType, ChatPagination } from './types/ChatTypes';
 
 const ChatContext = createContext<ChatContextType | null>(null);
-
-function isChatDialogClosedStatus(status: unknown): boolean {
-  if (status == null || status === '') return false;
-  return String(status).toUpperCase() === 'CLOSED';
-}
 
 /**
  * Входит в счётчики как непрочитанное для оператора.
@@ -213,6 +209,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
   const {
     lastMessage,
     stompClient,
+    isConnected: stompIsConnected,
     dialogsUnreadCounts: socketDialogsUnreadCounts,
     reconcileDialogUnreadFromSessionFeed: socketReconcileDialogUnreadFromSessionFeed,
     mergeDialogUnreadFromApi: socketMergeDialogUnreadFromApi,
@@ -225,6 +222,109 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
   const socketDialogsUnreadCountsRef = useRef(socketDialogsUnreadCounts);
   socketDialogsUnreadCountsRef.current = socketDialogsUnreadCounts;
+
+  /** Диалоги, для которых уже слали DELIVERED после unread-load (без открытия окна). */
+  const unreadDeliveredFetchInProgressRef = useRef<Set<string>>(new Set());
+  const unreadDeliveredLastAttemptRef = useRef<Map<string, number>>(new Map());
+  /** Последний unread-снимок: flush часто раньше STOMP CONNECTED при логине. */
+  const pendingUnreadDeliveryDialogsRef = useRef<UnreadDialog[]>([]);
+  const stompConnectedRef = useRef(false);
+  stompConnectedRef.current = Boolean(stompIsConnected || stompClient?.connected);
+
+  const confirmDeliveredForUnreadDialogs = useCallback(
+    (dialogs: UnreadDialog[]) => {
+      const filteredDialogs = filterUnreadDialogsForCurrentOperator(dialogs);
+      if (filteredDialogs.length > 0) {
+        pendingUnreadDeliveryDialogsRef.current = filteredDialogs;
+      }
+      void flushDeliveredForUnreadDialogs(filteredDialogs, {
+        sendMessageStatus,
+        deliveredConfirmedByBackend: refs.deliveredConfirmedByBackendRef.current,
+        statusSendingInProgress: refs.statusSendingInProgressRef.current,
+        lastAttemptAtByDialog: unreadDeliveredLastAttemptRef.current,
+        fetchInProgress: unreadDeliveredFetchInProgressRef.current,
+        waitForTransport: async () => {
+          if (stompConnectedRef.current) return true;
+          for (let i = 0; i < 80; i += 1) {
+            await new Promise((r) => window.setTimeout(r, 250));
+            if (stompConnectedRef.current) return true;
+          }
+          return stompConnectedRef.current;
+        },
+      });
+    },
+    // refs.* — стабильные useRef; объект `refs` каждый рендер новый.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sendMessageStatus],
+  );
+
+  const buildUnreadDialogsFromSocketMap = useCallback((): UnreadDialog[] => {
+    const rows: UnreadDialog[] = [];
+    socketDialogsUnreadCounts.forEach((count, id) => {
+      if (!(id > 0) || !(count > 0)) return;
+      rows.push({ id, countUnMessages: count } as UnreadDialog);
+    });
+    return rows;
+  }, [socketDialogsUnreadCounts]);
+
+  const socketUnreadMapRef = useRef(socketDialogsUnreadCounts);
+  socketUnreadMapRef.current = socketDialogsUnreadCounts;
+  const loginDeliveryFlushAttemptsRef = useRef(0);
+
+  // Главный триггер после логина: бейдж часто живёт в WS-карте, а не в REST count*.
+  useEffect(() => {
+    if (!stompIsConnected && !stompClient?.connected) return;
+
+    const collect = (): UnreadDialog[] => {
+      const rows: UnreadDialog[] = [];
+      socketUnreadMapRef.current.forEach((count, id) => {
+        if (!(id > 0) || !(count > 0)) return;
+        rows.push({ id, countUnMessages: count } as UnreadDialog);
+      });
+      if (rows.length > 0) return rows;
+      return pendingUnreadDeliveryDialogsRef.current;
+    };
+
+    // Дать бэку зарегистрировать оператора после CONNECTED (ранний publish иногда глотается).
+    const initialTimer = window.setTimeout(() => {
+      const merged = collect();
+      if (merged.length) confirmDeliveredForUnreadDialogs(merged);
+    }, 1000);
+
+    // Несколько дожимов только на старте сессии сокета (не вечный polling).
+    loginDeliveryFlushAttemptsRef.current = 0;
+    const intervalId = window.setInterval(() => {
+      if (loginDeliveryFlushAttemptsRef.current >= 6) {
+        window.clearInterval(intervalId);
+        return;
+      }
+      loginDeliveryFlushAttemptsRef.current += 1;
+      const merged = collect();
+      if (!merged.length) return;
+      confirmDeliveredForUnreadDialogs(merged);
+    }, 3000);
+
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(intervalId);
+    };
+  }, [stompIsConnected, stompClient?.connected, confirmDeliveredForUnreadDialogs]);
+
+  // Когда WS-карта впервые/снова показывает unread — сразу flush (без ожидания интервала).
+  useEffect(() => {
+    if (!stompIsConnected && !stompClient?.connected) return;
+    const fromMap = buildUnreadDialogsFromSocketMap();
+    if (!fromMap.length) return;
+    const t = window.setTimeout(() => {
+      confirmDeliveredForUnreadDialogs(fromMap);
+    }, 500);
+    return () => window.clearTimeout(t);
+  }, [
+    buildUnreadDialogsFromSocketMap,
+    stompIsConnected,
+    stompClient?.connected,
+    confirmDeliveredForUnreadDialogs,
+  ]);
 
   const onUnreadDialogsLoaded = useCallback(
     (dialogs: UnreadDialog[]) => {
@@ -260,11 +360,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         if (isBoundToSession && count === 0 && fromSocket > 0) return;
         socketMergeDialogUnreadFromApi(d.id, count);
       });
+
+      confirmDeliveredForUnreadDialogs(filteredDialogs);
     },
     [
       socketMergeDialogUnreadFromApi,
       socketDialogsUnreadCounts,
       socketRestrictUnreadCountsToDialogIds,
+      confirmDeliveredForUnreadDialogs,
     ],
   );
 
@@ -1299,19 +1402,32 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         ) {
           setTimeout(() => {
             const currentSession = getSession(existingSession.id);
-            if (!currentSession) return;
-            const dialogSt = currentSession.selectedDialog?.status;
-            const incomingClosed = isChatDialogClosedStatus(messageData.dialog?.status);
-            if (!dialogSt && !incomingClosed) return;
-            // CLOSED по сессии или по самому сообщению (selectedDialog иногда не CLOSED при несоответствии).
-            const treatAsClosed = incomingClosed || isChatDialogClosedStatus(dialogSt);
-            if (treatAsClosed && (!isChatOpen || currentSession.isMinimized)) {
+            const dialogForClaim =
+              messageData.dialog ?? currentSession?.selectedDialog ?? messageData;
+            // Чужой CLOSED — не наш оператор, DELIVERED не шлём (как и бейдж).
+            if (isClosedDialogClaimedByOtherOperator(dialogForClaim)) {
               return;
             }
-            const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
+            // DELIVERED = сообщение дошло до ЛК оператора (счётчик уже вырос).
+            // Не зависит от isChatOpen / isMinimized / открытой ленты диалога.
+            let sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
               existingSession.id,
               messageData.uuid,
             );
+            if (
+              !sendResult &&
+              !refs.deliveredConfirmedByBackendRef.current.has(messageData.uuid) &&
+              !refs.deliveredStatusesRef.current.has(messageData.uuid)
+            ) {
+              const sendKey = `DELIVERED_${messageData.uuid}`;
+              if (!refs.statusSendingInProgressRef.current.has(sendKey)) {
+                refs.statusSendingInProgressRef.current.add(sendKey);
+                sendResult = sendMessageStatus(messageData.uuid, 'DELIVERED');
+                setTimeout(() => {
+                  refs.statusSendingInProgressRef.current.delete(sendKey);
+                }, 5000);
+              }
+            }
             if (sendResult) {
               refs.deliveredStatusesRef.current.add(messageData.uuid);
             }
@@ -1435,18 +1551,29 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         ) {
           setTimeout(() => {
             const currentSession = getSession(newSessionId);
-            if (!currentSession) return;
-            const dialogSt = currentSession.selectedDialog?.status;
-            const incomingClosed = isChatDialogClosedStatus(messageData.dialog?.status);
-            if (!dialogSt && !incomingClosed) return;
-            const treatAsClosed = incomingClosed || isChatDialogClosedStatus(dialogSt);
-            if (treatAsClosed && (!isChatOpen || currentSession.isMinimized)) {
+            const dialogForClaim =
+              messageData.dialog ?? currentSession?.selectedDialog ?? messageData;
+            if (isClosedDialogClaimedByOtherOperator(dialogForClaim)) {
               return;
             }
-            const sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
+            let sendResult = statusHandlers.sendDeliveredStatusForNewMessage(
               newSessionId,
               messageData.uuid,
             );
+            if (
+              !sendResult &&
+              !refs.deliveredConfirmedByBackendRef.current.has(messageData.uuid) &&
+              !refs.deliveredStatusesRef.current.has(messageData.uuid)
+            ) {
+              const sendKey = `DELIVERED_${messageData.uuid}`;
+              if (!refs.statusSendingInProgressRef.current.has(sendKey)) {
+                refs.statusSendingInProgressRef.current.add(sendKey);
+                sendResult = sendMessageStatus(messageData.uuid, 'DELIVERED');
+                setTimeout(() => {
+                  refs.statusSendingInProgressRef.current.delete(sendKey);
+                }, 5000);
+              }
+            }
             if (sendResult) {
               refs.deliveredStatusesRef.current.add(messageData.uuid);
             }
@@ -1472,7 +1599,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
       socketIncrementDialogUnreadCount,
       socketExcludeDialogFromUnreadTotal,
       refs,
-      isChatOpen,
     ],
   );
 
@@ -1803,6 +1929,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     if (sessions.length > 1) removeDuplicateSessions();
   }, [sessions, removeDuplicateSessions]);
 
+  const activeSessionForDeliveryFlush = sessions.find((s) => s.id === activeSessionId);
+  const activeSessionDeliveryMsgCount = activeSessionForDeliveryFlush?.messages?.length ?? 0;
+  const activeSessionDeliveryHistoryLoaded = !!activeSessionForDeliveryFlush?.hasHistoryLoaded;
+
   useEffect(() => {
     if (isChatOpen && activeSessionId) {
       const session = getSession(activeSessionId);
@@ -1811,13 +1941,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         if (!session.selectedDialog?.status) return;
 
         const timerId = setTimeout(() => {
-          const pendingDeliveryMessages = sessionMessages.filter(
+          // Берём актуальный снимок — к моменту таймера история уже может быть в store.
+          const latest = getSession(activeSessionId);
+          const latestMessages = latest?.messages ?? [];
+          const pendingDeliveryMessages = latestMessages.filter(
             (msg: any) =>
               msg.messageStatus === 'TO_OPERATOR' &&
               !msg.is_read &&
               String(msg.confirmStatus ?? '').toUpperCase() !== 'READ' &&
               (String(msg.confirmStatus ?? '').toUpperCase() === 'SENT' ||
-                String(msg.confirmStatus ?? '').toUpperCase() === 'DELIVERED'),
+                String(msg.confirmStatus ?? '').toUpperCase() === 'DELIVERED') &&
+              !refs.deliveredConfirmedByBackendRef.current.has(msg.uuid),
           );
 
           if (pendingDeliveryMessages.length > 0) {
@@ -1828,7 +1962,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         return () => clearTimeout(timerId);
       }
     }
-  }, [isChatOpen, activeSessionId, getSession, statusHandlers.sendDeliveredStatusesForSession]);
+  }, [
+    isChatOpen,
+    activeSessionId,
+    activeSessionDeliveryMsgCount,
+    activeSessionDeliveryHistoryLoaded,
+    getSession,
+    statusHandlers.sendDeliveredStatusesForSession,
+  ]);
 
   useEffect(() => {
     if (activeSessionId) {
@@ -1976,6 +2117,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     openUnreadDialog: openUnreadDialogWithStatus,
     setDialogsUnreadCounts,
     forceLoadUnreadDialogs,
+    confirmDeliveredForUnreadDialogs,
     sendDeliveredStatusesForSession: statusHandlers.sendDeliveredStatusesForSession,
     sendReadStatusesForSession: statusHandlers.sendReadStatusesForSession,
     sendDeliveredStatusForNewMessage: statusHandlers.sendDeliveredStatusForNewMessage,

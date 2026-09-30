@@ -38,6 +38,10 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
         return false;
       }
 
+      if (deliveredConfirmedByBackendRef.current.has(messageUuid)) {
+        return false;
+      }
+
       const session = getSession(sessionId);
       if (!session) {
         return false;
@@ -48,8 +52,16 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
         return false;
       }
 
-      // Проверяем реальный статус сообщения, а не ref
-      if (message.confirmStatus !== 'SENT') {
+      if (message.messageStatus !== 'TO_OPERATOR') {
+        return false;
+      }
+
+      const localStatus = String(message.confirmStatus ?? '').toUpperCase();
+      // Локальный fake SENT→DELIVERED (UI) не должен блокировать publish на бэк.
+      if (localStatus === 'READ' || message.is_read) {
+        return false;
+      }
+      if (localStatus !== 'SENT' && localStatus !== 'DELIVERED') {
         return false;
       }
 
@@ -321,6 +333,10 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
         return false;
       }
 
+      if (deliveredConfirmedByBackendRef.current.has(messageUuid)) {
+        return false;
+      }
+
       const session = getSession(sessionId);
       if (!session) {
         return false;
@@ -331,11 +347,16 @@ export const useChatStatusHandlers = (refs: ChatRefs, deps: StatusHandlersDeps) 
         return false;
       }
 
-      if (message.confirmStatus !== 'SENT') {
+      if (message.messageStatus !== 'TO_OPERATOR') {
         return false;
       }
 
-      if (message.messageStatus !== 'TO_OPERATOR') {
+      const localStatus = String(message.confirmStatus ?? '').toUpperCase();
+      // UI часто уже поставил DELIVERED локально без WS — publish всё равно нужен.
+      if (localStatus === 'READ' || message.is_read) {
+        return false;
+      }
+      if (localStatus !== 'SENT' && localStatus !== 'DELIVERED') {
         return false;
       }
 

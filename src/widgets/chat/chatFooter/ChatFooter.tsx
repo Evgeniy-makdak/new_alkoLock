@@ -564,7 +564,7 @@ const ChatToggleButton = ({
   isOperatorChatPopupWindow?: boolean;
 }) => {
   const { t } = useTranslation();
-  const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId } =
+  const { isChatOpen, setIsChatOpen, sessions, closeSession, createNewSession, activeSessionId, confirmDeliveredForUnreadDialogs } =
     useChat();
   const {
     calculateTotalUnread,
@@ -625,6 +625,14 @@ const ChatToggleButton = ({
           if (cancelled) return;
           const list = (response?.data?.content ?? []) as UnreadDialog[];
           applyList(list);
+          // Закрытый чат: бейдж грузится здесь, а не через forceLoadUnreadDialogs —
+          // без этого DELIVERED для сообщений «до логина» не уходит.
+          confirmDeliveredForUnreadDialogs(
+            list.map((d) => ({
+              ...d,
+              countUnMessages: unreadCountFromDialogRecord(d),
+            })),
+          );
           const sum = sumUnreadDialogCounts(list);
           if (sum === 0 && attempt < 4) {
             timer = window.setTimeout(() => loadClosedChatBadge(attempt + 1), 500);
@@ -654,7 +662,12 @@ const ChatToggleButton = ({
       loadClosedChatBadgeRef.current = null;
       unsubscribe();
     };
-  }, [isChatOpen, mergeDialogUnreadFromApi, restrictUnreadCountsToDialogIds]);
+  }, [
+    isChatOpen,
+    mergeDialogUnreadFromApi,
+    restrictUnreadCountsToDialogIds,
+    confirmDeliveredForUnreadDialogs,
+  ]);
 
   /**
    * Только закрытое окно чата. Триггер по DIALOG_STATUS (как у пользователя):
