@@ -17,6 +17,7 @@ export const useCarsSelect = (
   isAttachment?: boolean,
   /** Варианты, которых нет в ответе API (напр. ТС уже привязано к этому алкозамку при редактировании). */
   alwaysIncludeOptions?: Value[],
+  statusFilter?: 'Все' | 'Активные' | 'Неактивные',
 ) => {
   const [inputValue, setInputValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +53,7 @@ export const useCarsSelect = (
       specified,
       isActive,
       isAttachment,
+      statusFilter,
     },
     includeIsActive,
   );

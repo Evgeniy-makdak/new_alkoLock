@@ -20,6 +20,7 @@ export const useUserSelect = (
   excludeSuperAdmin = false,
   getOptions: (driver: any) => [string, ID] | [] = adapterMapOptions,
   includeActiveOnly = false, // Только для вкладки Карта: фильтр по активным пользователям
+  statusFilter?: 'Все' | 'Активные' | 'Неактивные',
 ) => {
   const [searchQuery, setSearchQuery] = useState('');
   const onChange = (value: string) => {
@@ -38,6 +39,7 @@ export const useUserSelect = (
     order: SortsTypes.asc,
     isAttachment,
     includeActiveOnly,
+    statusFilter,
   });
 
   const onReset = () => {

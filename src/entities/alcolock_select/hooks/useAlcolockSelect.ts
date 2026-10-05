@@ -7,7 +7,12 @@ import { mapOptions } from '@shared/ui/search_multiple_select';
 import { useAlcolockListQuery } from '../api/alcolockListQuery';
 import { adapterMapOptions } from '../lib/adapterMapOptions';
 
-export const useAlcolockSelect = (vieBranch = false, branchId?: ID, notInBranch?: ID) => {
+export const useAlcolockSelect = (
+  vieBranch = false,
+  branchId?: ID,
+  notInBranch?: ID,
+  statusFilter?: 'Все' | 'Активные' | 'Неактивные',
+) => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const onChange = (value: string) => {
@@ -17,6 +22,7 @@ export const useAlcolockSelect = (vieBranch = false, branchId?: ID, notInBranch?
   const { alcolocks, isLoading } = useAlcolockListQuery({
     searchQuery,
     filterOptions: { branchId, notBranchId: notInBranch },
+    statusFilter,
   });
   const filteredAlcolocks = alcolocks.filter((alcolock: IAlcolock) => {
     const nameMatch = alcolock?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false;

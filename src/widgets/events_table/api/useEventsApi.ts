@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { EventsApi } from '@shared/api/baseQuerys';
 import { QueryKeys } from '@shared/const/storageKeys';
 import { useConfiguredQuery } from '@shared/hooks/useConfiguredQuery';
+import { getIsActiveInQuery } from '@shared/lib/getUrlForQueries';
 import type { QueryOptions } from '@shared/types/QueryTypes';
 import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 import { keepPreviousData } from '@tanstack/react-query';
@@ -15,13 +16,8 @@ export const useEventsApi = (
   const filterKey = statusFilter as any;
   const [totalLimit, setTotalLimit] = useState<number | undefined>(undefined);
 
-  // Фильтр по активности пользователей (как на вкладках Пользователи/Алкозамки/Транспорт)
-  let additionalQuery = '';
-  if (statusFilter === 'Активные') {
-    additionalQuery = '&all.user.isActive.in=true';
-  } else if (statusFilter === 'Неактивные') {
-    additionalQuery = '&all.user.isActive.in=false';
-  }
+  const isActiveQuery = getIsActiveInQuery(statusFilter);
+  const additionalQuery = isActiveQuery ? `&${isActiveQuery}` : '';
 
   // Модификация options с учётом дополнительных параметров
   const modifiedOptions: QueryOptions & { searchQuery?: string } = {

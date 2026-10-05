@@ -15,18 +15,21 @@ interface AlcolockSelectProps<T> {
   vieBranch?: boolean;
   branchId?: ID;
   notInBranch?: ID;
+  statusFilter?: 'Все' | 'Активные' | 'Неактивные';
 }
 
 export function AlcolockSelect<T>({
   vieBranch,
   branchId,
   notInBranch,
+  statusFilter,
   ...rest
 }: AlcolockSelectProps<T>) {
   const { onChange, isLoading, onReset, alcolockList } = useAlcolockSelect(
     vieBranch,
     branchId,
     notInBranch,
+    statusFilter,
   );
 
   return (

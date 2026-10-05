@@ -23,6 +23,7 @@ type UsersSelectProps<T> = {
   excludeDisabledUsers?: boolean;
   isAttachment?: boolean;
   includeActiveOnly?: boolean;
+  statusFilter?: 'Все' | 'Активные' | 'Неактивные';
 } & Omit<SearchMultipleSelectProps<T>, 'values'>;
 
 export const UsersSelect = <T,>({
@@ -36,6 +37,7 @@ export const UsersSelect = <T,>({
   excludeDisabledUsers,
   isAttachment,
   includeActiveOnly,
+  statusFilter,
   vieBranch = false,
   excludeSuperAdmin = false,
   placeholder,
@@ -55,6 +57,7 @@ export const UsersSelect = <T,>({
     excludeSuperAdmin,
     (driver) => adapterMapOptionsForList(driver, displayBranchName),
     includeActiveOnly,
+    statusFilter,
   );
 
   const placeholderResolved =

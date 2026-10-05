@@ -33,6 +33,15 @@ export function joinQuerySegments(
     .join('&');
 }
 
+/** Фильтр активности для вкладки «События» (Все / Активные / Неактивные). */
+export function getIsActiveInQuery(
+  statusFilter?: QueryOptions['statusFilter'],
+): string {
+  if (statusFilter === 'Активные') return 'all.isActive.in=true';
+  if (statusFilter === 'Неактивные') return 'all.isActive.in=false';
+  return '';
+}
+
 /** Добавляет query-сегменты к URL после «?» (с ведущим «&», если base уже содержит «?»). */
 function appendQueryParts(baseUrl: string, ...segments: Array<string | undefined | null | false>): string {
   const extra = joinQuerySegments(...segments);
@@ -427,6 +436,7 @@ export function getUserListURLToAttachments(
     excludeDisabledUsers,
     isAttachment,
     includeActiveOnly,
+    statusFilter,
   }: QueryOptions,
   widthCars: boolean,
   // excludeSuperAdmin: boolean,
@@ -487,6 +497,7 @@ export function getUserListURLToAttachments(
   return appendQueryParts(
     `api/users/full-name?page=${page || 0}&size=${limit || 20}`,
     queries,
+    getIsActiveInQuery(statusFilter),
     'sort=surname,firstName,middleName',
   );
 }
@@ -632,6 +643,7 @@ export const getCarListURL = ({
   isActive,
   isAttachment,
   query,
+  statusFilter,
 }: QueryOptions): string => {
   const branchId = filterOptions && filterOptions?.branchId;
   const notBranchId = filterOptions && filterOptions?.notBranchId;
@@ -670,6 +682,11 @@ export const getCarListURL = ({
 
   if (isAttachment) {
     queries += '&all.isActive.in=true';
+  }
+
+  const isActiveQuery = getIsActiveInQuery(statusFilter);
+  if (isActiveQuery) {
+    queries += `&${isActiveQuery}`;
   }
 
   if (query) {
@@ -723,6 +740,7 @@ export function getAlcolocksURL({
   includeActiveOnly,
   filterOptions,
   query,
+  statusFilter,
 }: QueryOptions & {
   excludeAlcolockId?: number;
   excludeType?: 'any' | 'all';
@@ -780,6 +798,11 @@ export function getAlcolocksURL({
 
   if (query) {
     queries += query.startsWith('&') ? query : `&${query}`;
+  }
+
+  const isActiveQuery = getIsActiveInQuery(statusFilter);
+  if (isActiveQuery) {
+    queries += `&${isActiveQuery}`;
   }
 
   return `${baseUrl}?page=${page || 0}&size=${limit || 20}${queries}&sort=name`;

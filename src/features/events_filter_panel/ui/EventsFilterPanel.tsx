@@ -13,6 +13,7 @@ import { LevelSelect } from '@entities/type_event_select/ui/LevelSelect';
 import { UsersSelect } from '@entities/users_select';
 import { testids } from '@shared/const/testid';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 
 import { EventsFilters, useEventsFilterPanel } from '../hooks/useEventsFilterPanel';
 import styles from './EventsFilterPanel.module.scss';
@@ -31,6 +32,7 @@ export const EventsFilterPanel = ({
 }: EventsFilterPanelProps) => {
   const { t } = useTranslation();
   const { filters: eventFilters, setFilters: setEventFilters } = useEventsFilterPanel();
+  const { statusFilter } = useStatusFilter();
   const handleEventFilterChange = (name: keyof EventsFilters, value: any) => {
     setEventFilters(name, value);
     onFilterChange();
@@ -57,6 +59,7 @@ export const EventsFilterPanel = ({
               excludeUserWithId2={false}
               onlyWithDriverId={false}
               needDriverId={true}
+              statusFilter={statusFilter}
               name="driverId"
               setValueStore={(name: string, value: any) =>
                 handleEventFilterChange(name as keyof EventsFilters, value)
@@ -73,6 +76,7 @@ export const EventsFilterPanel = ({
             />
             <CarsSelect
               multiple={true}
+              statusFilter={statusFilter}
               name="carId"
               testid={
                 testids.page_attachments.attachments_widget_header
@@ -84,6 +88,7 @@ export const EventsFilterPanel = ({
             />
             <AlcolockSelect
               multiple={true}
+              statusFilter={statusFilter}
               label={t('filters.searchByAlcolock')}
               setValueStore={handleEventFilterChange}
               value={eventFilters.alcolocks}
