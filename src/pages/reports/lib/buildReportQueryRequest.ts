@@ -51,6 +51,7 @@ import {
 import { reportOutputFunctionKey, reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
+import { parseReportTableFieldDisplayParam } from './reportTableFieldDisplayParam';
 import { resolveEventsForFrontLevelFilterApiFieldName } from './eventsForFrontReportOptions';
 import {
   normalizeNestedFilterPath,
@@ -237,6 +238,7 @@ type BuildRowReportTableFieldsContext = {
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
   allowedTableFieldPaths: Set<string>;
+  displayParamByPath: Record<string, string>;
 };
 
 const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
@@ -290,7 +292,12 @@ function buildRowReportTableFields(
     if (!isAutoQualified && displayLabel !== defaultLabel && isSafeAlias) {
       payload.alias = displayLabel;
     }
-    if (fnCode) {
+    const perFieldEncoded =
+      context.displayParamByPath[emitPath] ?? context.displayParamByPath[path] ?? '';
+    const perField = parseReportTableFieldDisplayParam(perFieldEncoded);
+    if (perField?.kind === 'function') {
+      payload.aggregation = perField.code;
+    } else if (fnCode) {
       payload.aggregation = fnCode;
     }
     return [payload];
@@ -566,6 +573,7 @@ function createTableFieldsContext(
   outputRows: ReportOutputRow[],
   reportTableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null>,
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>,
+  displayParamByPath: Record<string, string> = {},
 ): BuildRowReportTableFieldsContext {
   const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
   const allowedTableFieldPaths = buildAllowedReportTableFieldPaths(
@@ -582,6 +590,7 @@ function createTableFieldsContext(
     tableMetadataByRowId: reportTableFieldsMetadataByRowId,
     referenceEntityMetadataByName,
     allowedTableFieldPaths,
+    displayParamByPath,
   };
 }
 
@@ -591,6 +600,7 @@ export function buildReportQueryRequest(params: {
   logicOperator?: ReportLogicOperator;
   reportTableFieldsMetadataByRowId?: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataByName?: Record<string, ReportEntityMetadata | null>;
+  tableFieldDisplayParamByPath?: Record<string, string>;
 }): ReportQueryRequest {
   const {
     metadata,
@@ -598,6 +608,7 @@ export function buildReportQueryRequest(params: {
     logicOperator = 'or',
     reportTableFieldsMetadataByRowId = {},
     referenceEntityMetadataByName = {},
+    tableFieldDisplayParamByPath = {},
   } = params;
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
@@ -607,6 +618,7 @@ export function buildReportQueryRequest(params: {
     outputRows,
     reportTableFieldsMetadataByRowId,
     referenceEntityMetadataByName,
+    tableFieldDisplayParamByPath,
   );
 
   /** Отчёт без фильтров: колонки из «Текущего состава» первой строки (с раскрытием composite). */

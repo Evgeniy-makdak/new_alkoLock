@@ -696,7 +696,7 @@
 }
 
 .transferListItemButtonChosen {
-  padding-right: 108px !important;
+  padding-right: 268px !important;
 }
 
 .transferRowActions {
@@ -704,6 +704,23 @@
   flex-direction: row;
   align-items: center;
   gap: 0;
+}
+
+.transferDisplayParam {
+  min-width: 148px;
+  max-width: 180px;
+  margin-right: 4px;
+
+  :global(.MuiInputBase-root) {
+    height: 28px;
+    font-size: 12px;
+  }
+
+  :global(.MuiSelect-select) {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-right: 28px !important;
+  }
 }
 
 .transferListCheckbox {
@@ -962,7 +979,7 @@
   }
 
   .transferListItemButtonChosen {
-    padding-right: 72px !important;
+    padding-right: 200px !important;
   }
 }
 

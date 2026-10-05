@@ -801,6 +801,7 @@
     "composeLoadingMetadata": "Жүктелуде…",
     "composeTransferAvailable": "Қолжетімді бағандар",
     "composeTransferSelected": "Кесте құрамы",
+    "tableFieldDisplayParamNone": "Таңдалмаған",
     "composeTransferAdd": "Қосу",
     "composeTransferAddAll": "Барлығын қосу",
     "composeTransferRemove": "Алып тастау",

@@ -35,7 +35,12 @@ import { ReportFilterLogicConnector } from './ReportFilterLogicConnector';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 import pageStyles from './Reports.module.scss';
 
-export function ReportComposeForm() {
+type ReportComposeFormProps = {
+  /** entity — сущность; filters — фильтрация; all — оба блока. */
+  part?: 'entity' | 'filters' | 'all';
+};
+
+export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
@@ -172,20 +177,26 @@ export function ReportComposeForm() {
     />
   );
 
+  const showEntity = part === 'entity' || part === 'all';
+  const showFilters = part === 'filters' || part === 'all';
+
   return (
     <>
-      {entitiesError ? (
+      {showEntity && entitiesError ? (
         <Alert severity="error" sx={{ width: '100%', gridColumn: '1 / -1' }}>
           {entitiesError}
         </Alert>
       ) : null}
 
+      {showEntity ? (
       <div className={composeStyles.composeTopSlot}>
         <div className={composeStyles.composeTopRow}>
           <div className={composeStyles.composeEntityField}>{renderEntityAutocomplete()}</div>
         </div>
       </div>
+      ) : null}
 
+      {showFilters ? (
       <div className={composeStyles.composeFiltersSlot}>
         {metadataError ? (
           <Alert severity="error" sx={{ width: '100%', mb: 1 }}>
@@ -249,12 +260,15 @@ export function ReportComposeForm() {
           </Typography>
         ) : null}
       </div>
+      ) : null}
 
+      {showFilters ? (
       <ReportAddVariantDialog
         open={addVariantDialogOpen}
         onClose={() => setAddVariantDialogOpen(false)}
         onConfirm={handleConfirmAddVariant}
       />
+      ) : null}
     </>
   );
 }

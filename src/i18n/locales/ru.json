@@ -893,6 +893,7 @@
     "composeLoadingMetadata": "Загрузка параметров сущности…",
     "composeTransferAvailable": "Доступные колонки",
     "composeTransferSelected": "Текущий состав таблицы",
+    "tableFieldDisplayParamNone": "Не выбрана",
     "composeTransferAdd": "Добавить выбранные",
     "composeTransferAddAll": "Добавить все",
     "composeTransferRemove": "Убрать выбранные",

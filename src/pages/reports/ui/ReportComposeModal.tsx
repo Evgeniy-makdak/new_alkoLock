@@ -21,9 +21,18 @@ import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequ
 import {
   buildRootReportTableFieldOptions,
   collectReferenceEntitiesFromMetadata,
+  findReportTableFieldDefinition,
   mergeAllReportTableFieldOptions,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
-import { normalizeCompositeTableFieldSelection } from '@pages/reports/lib/reportEntityCompositeFields';
+import {
+  expandCompositeFieldPath,
+  isReportCompositeFieldPath,
+  normalizeCompositeTableFieldSelection,
+} from '@pages/reports/lib/reportEntityCompositeFields';
+import {
+  buildReportTableFieldDisplayOptions,
+  encodeReportTableFieldFunctionParam,
+} from '@pages/reports/lib/reportTableFieldDisplayParam';
 import {
   type ReportsComposeSnapshot,
   captureReportsComposeSnapshot,
@@ -82,6 +91,9 @@ export function ReportComposeModal({
   const logicOperator = reportsStore((s) => s.logicOperator);
   const reportTableFieldsMetadataByRowId = reportsStore((s) => s.reportTableFieldsMetadataByRowId);
   const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
+  const tableFieldDisplayParamByPath = reportsStore((s) => s.tableFieldDisplayParamByPath);
+  const setTableFieldDisplayParam = reportsStore((s) => s.setTableFieldDisplayParam);
+  const setTableFieldDisplayParamByPath = reportsStore((s) => s.setTableFieldDisplayParamByPath);
   const referenceEntityMetadataLoadingByName = reportsStore(
     (s) => s.referenceEntityMetadataLoadingByName,
   );
@@ -114,6 +126,7 @@ export function ReportComposeModal({
       // При «Отмена» снимок будет восстановлен (handleClose).
       reportsStore.getState().setSelectedEntityName(null);
       reportsStore.getState().resetFilters();
+      reportsStore.getState().setTableFieldDisplayParamByPath({});
       setTableFieldsSelection([]);
       setComposeSortRows([]);
       setComposeGroupRows([]);
@@ -139,6 +152,13 @@ export function ReportComposeModal({
       parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
     );
     setComposeGroupRows(parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields));
+    const restoredDisplay: Record<string, string> = {};
+    for (const field of queryBody?.selectedFields ?? []) {
+      const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
+      if (!encoded || !field.fieldName) continue;
+      restoredDisplay[field.fieldName] = encoded;
+    }
+    reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
     filterConfigurationKeyRef.current = buildComposeFilterConfigurationKey({
       selectedEntityName: reportsStore.getState().selectedEntityName,
       logicOperator: reportsStore.getState().logicOperator,
@@ -210,8 +230,6 @@ export function ReportComposeModal({
     return primaryRow.reportTableFields.length > 0 ? primaryRow.reportTableFields : [];
   }, [outputRows, open]);
 
-  const showColumnsSection = tableFieldsDialogOptions.length > 0;
-
   const canFormReport = useMemo(
     () => Boolean(selectedEntityName && metadata && !metadataLoading),
     [selectedEntityName, metadata, metadataLoading],
@@ -229,6 +247,9 @@ export function ReportComposeModal({
     if (!metadata) return [];
     return buildRootReportTableFieldOptions(metadata, outputRows, entities, t);
   }, [metadata, outputRows, entities, t]);
+
+  const showColumnsSection =
+    defaultRootTableFields.length > 0 || tableFieldsDialogOptions.length > 0;
 
   const sortColumnOptions = useMemo(() => {
     const selected =
@@ -353,6 +374,7 @@ export function ReportComposeModal({
           logicOperator: currentLogicOperator,
           reportTableFieldsMetadataByRowId: tableMetadataByRowId,
           referenceEntityMetadataByName: nestedMetadataByName,
+          tableFieldDisplayParamByPath: reportsStore.getState().tableFieldDisplayParamByPath,
         })
       : emptyBody;
 
@@ -375,6 +397,50 @@ export function ReportComposeModal({
       setTableFields(row.id, selected);
     }
   }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
+
+  const getTableFieldDisplayOptions = useCallback(
+    (fieldPath: string): Values => {
+      if (!metadata) return [];
+      const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+      const paths = isReportCompositeFieldPath(fieldPath)
+        ? expandCompositeFieldPath(fieldPath)
+        : [fieldPath];
+      const lookupPath = paths.find((p) => !isReportCompositeFieldPath(p)) ?? fieldPath;
+      const fieldDef = findReportTableFieldDefinition(
+        lookupPath,
+        metadata,
+        outputRows,
+        fieldMap,
+        reportTableFieldsMetadataByRowId,
+        referenceEntityMetadataByName,
+      );
+      return buildReportTableFieldDisplayOptions(fieldDef);
+    },
+    [metadata, outputRows, reportTableFieldsMetadataByRowId, referenceEntityMetadataByName],
+  );
+
+  const handleTableFieldDisplayParamChange = useCallback(
+    (fieldPath: string, encoded: string) => {
+      setTableFieldDisplayParam(fieldPath, encoded);
+    },
+    [setTableFieldDisplayParam],
+  );
+
+  useEffect(() => {
+    const allowed = new Set(tableFieldsSelection.map((item) => String(item.value)));
+    const current = reportsStore.getState().tableFieldDisplayParamByPath;
+    const next: Record<string, string> = {};
+    for (const [path, encoded] of Object.entries(current)) {
+      if (
+        allowed.has(path) ||
+        [...allowed].some((key) => path === key || path.startsWith(`${key}.`))
+      ) {
+        next[path] = encoded;
+      }
+    }
+    if (Object.keys(next).length === Object.keys(current).length) return;
+    setTableFieldDisplayParamByPath(next);
+  }, [tableFieldsSelection, setTableFieldDisplayParamByPath]);
 
   const ensureSelectedFieldsInBody = useCallback((body: ReportQueryRequest) => body, []);
 
@@ -514,7 +580,7 @@ export function ReportComposeModal({
       body={
         <Box className={composeStyles.composeBody}>
           <div className={composeStyles.composeMainGrid}>
-            <ReportComposeForm />
+            <ReportComposeForm part="entity" />
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>
                 <ReportComposeSection
@@ -526,6 +592,9 @@ export function ReportComposeModal({
                     options={tableFieldsDialogOptions}
                     value={tableFieldsSelection}
                     onChange={setTableFieldsSelection}
+                    displayParamByKey={tableFieldDisplayParamByPath}
+                    getDisplayOptions={getTableFieldDisplayOptions}
+                    onDisplayParamChange={handleTableFieldDisplayParamChange}
                   />
                 </ReportComposeSection>
                 {sortColumnOptionsForUi.length > 0 ? (
@@ -548,6 +617,7 @@ export function ReportComposeModal({
                 ) : null}
               </div>
             ) : null}
+            <ReportComposeForm part="filters" />
           </div>
         </Box>
       }

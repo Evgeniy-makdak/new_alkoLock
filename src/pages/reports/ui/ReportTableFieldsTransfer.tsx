@@ -18,12 +18,15 @@ import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
   Box,
   Checkbox,
+  FormControl,
   IconButton,
   List,
   ListItem,
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  MenuItem,
+  Select,
   TextField,
   Tooltip,
   Typography,
@@ -39,6 +42,10 @@ export type ReportTableFieldsTransferProps = {
   value: Values;
   onChange: (selected: Values) => void;
   disabled?: boolean;
+  /** Параметры отображения (fn:/op:) по fieldName строки «Текущий состав». */
+  displayParamByKey?: Record<string, string>;
+  getDisplayOptions?: (fieldPath: string) => Values;
+  onDisplayParamChange?: (fieldPath: string, encoded: string) => void;
 };
 
 function fieldKey(item: Value): string {
@@ -169,6 +176,9 @@ export function ReportTableFieldsTransfer({
   value,
   onChange,
   disabled = false,
+  displayParamByKey = {},
+  getDisplayOptions,
+  onDisplayParamChange,
 }: ReportTableFieldsTransferProps) {
   const { t, i18n } = useTranslation();
   const sortLocale = i18n.language || 'ru';
@@ -455,6 +465,10 @@ export function ReportTableFieldsTransfer({
         const isRenaming = side === 'chosen' && renamingKey === key;
         const canMoveRowUp = side === 'chosen' && rowIndex > 0;
         const canMoveRowDown = side === 'chosen' && rowIndex < items.length - 1;
+        const displayOptions = side === 'chosen' ? (getDisplayOptions?.(key) ?? []) : [];
+        const selectedDisplayParam = displayParamByKey[key] ?? '';
+        const showDisplaySelect =
+          side === 'chosen' && displayOptions.length > 0 && Boolean(onDisplayParamChange);
 
         return (
           <ListItem
@@ -463,8 +477,40 @@ export function ReportTableFieldsTransfer({
             data-transfer-key={key}
             className={composeStyles.transferListItem}
             secondaryAction={
-              side === 'chosen' && !disabled ? (
+              side === 'chosen' ? (
                 <Box className={composeStyles.transferRowActions}>
+                  {showDisplaySelect ? (
+                    <FormControl
+                      size="small"
+                      className={composeStyles.transferDisplayParam}
+                      onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        displayEmpty
+                        value={
+                          displayOptions.some((item) => String(item.value) === selectedDisplayParam)
+                            ? selectedDisplayParam
+                            : ''
+                        }
+                        disabled={disabled}
+                        onChange={(e) => {
+                          onDisplayParamChange?.(key, String(e.target.value ?? ''));
+                        }}
+                        inputProps={{
+                          'aria-label': t('reports.filterFunctionLabel'),
+                        }}>
+                        <MenuItem value="">
+                          <em>{t('reports.tableFieldDisplayParamNone')}</em>
+                        </MenuItem>
+                        {displayOptions.map((item) => (
+                          <MenuItem key={String(item.value)} value={String(item.value)}>
+                            {item.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  ) : null}
+                  {!disabled ? (
+                    <>
                   <Tooltip title={t('reports.composeTransferMoveUp')}>
                     <span>
                       <IconButton
@@ -508,6 +554,8 @@ export function ReportTableFieldsTransfer({
                       <EditOutlinedIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
+                    </>
+                  ) : null}
                 </Box>
               ) : undefined
             }>

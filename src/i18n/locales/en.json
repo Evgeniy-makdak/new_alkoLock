@@ -869,6 +869,7 @@
     "composeLoadingMetadata": "Loading entity parameters…",
     "composeTransferAvailable": "Available columns",
     "composeTransferSelected": "Current table layout",
+    "tableFieldDisplayParamNone": "Not selected",
     "composeTransferAdd": "Add selected",
     "composeTransferAddAll": "Add all",
     "composeTransferRemove": "Remove selected",

@@ -801,6 +801,7 @@
     "composeLoadingMetadata": "Жүктөлүүдө…",
     "composeTransferAvailable": "Жеткиликтүү тилкелер",
     "composeTransferSelected": "Таблица курамы",
+    "tableFieldDisplayParamNone": "Тандалган эмес",
     "composeTransferAdd": "Кошуу",
     "composeTransferAddAll": "Баарын кошуу",
     "composeTransferRemove": "Алып салуу",

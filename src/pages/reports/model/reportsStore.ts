@@ -83,6 +83,10 @@ type ReportsStore = {
   reportTableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null>;
   reportTableFieldsMetadataLoadingByRowId: Record<string, boolean>;
   reportTableFieldsMetadataKeyByRowId: Record<string, string>;
+  /** Параметр отображения колонки (fn:/op: из metadata) в «Текущем составе». */
+  tableFieldDisplayParamByPath: Record<string, string>;
+  setTableFieldDisplayParam: (fieldPath: string, encoded: string) => void;
+  setTableFieldDisplayParamByPath: (next: Record<string, string>) => void;
   loadReferenceEntityRecords: (referenceEntity: string) => Promise<void>;
   loadVehicleLabelMaps: () => Promise<void>;
   setViewMode: (mode: ReportViewMode) => void;
@@ -149,6 +153,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   reportTableFieldsMetadataByRowId: {},
   reportTableFieldsMetadataLoadingByRowId: {},
   reportTableFieldsMetadataKeyByRowId: {},
+  tableFieldDisplayParamByPath: {},
   viewMode: 'table',
   chartSpec: createDefaultChartSpec(),
 
@@ -188,6 +193,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataByRowId: {},
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
+      tableFieldDisplayParamByPath: {},
     });
   },
 
@@ -223,6 +229,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataByRowId: {},
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
+        tableFieldDisplayParamByPath: {},
       });
       await get().loadAllReferenceEntityMetadataForReport(metadata);
       const { shouldLoadVehicleLabelMaps } = await import('../lib/reportVehicleContext');
@@ -245,6 +252,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataByRowId: {},
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
+        tableFieldDisplayParamByPath: {},
       });
     }
   },
@@ -517,6 +525,25 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
     });
   },
 
+  setTableFieldDisplayParam(fieldPath, encoded) {
+    const key = fieldPath.trim();
+    if (!key) return;
+    set((state) => {
+      const next = { ...state.tableFieldDisplayParamByPath };
+      const value = encoded.trim();
+      if (!value) {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return { tableFieldDisplayParamByPath: next };
+    });
+  },
+
+  setTableFieldDisplayParamByPath(next) {
+    set({ tableFieldDisplayParamByPath: { ...next } });
+  },
+
   async loadReferenceEntityRecords(referenceEntity) {
     const cacheKey = referenceEntity.trim();
     if (!cacheKey) return;
@@ -597,6 +624,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataByRowId: {},
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
+      tableFieldDisplayParamByPath: {},
     });
     const entityMetadata = get().metadata;
     if (entityMetadata) {
