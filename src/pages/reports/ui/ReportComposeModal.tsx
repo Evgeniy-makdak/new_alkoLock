@@ -597,27 +597,27 @@ export function ReportComposeModal({
                     onDisplayParamChange={handleTableFieldDisplayParamChange}
                   />
                 </ReportComposeSection>
-                {sortColumnOptionsForUi.length > 0 ? (
-                  <div className={composeStyles.sortSectionSlot}>
-                    <ReportComposeSortSection
-                      columnOptions={sortColumnOptionsForUi}
-                      sortRows={composeSortRows}
-                      onChange={setComposeSortRows}
-                    />
-                  </div>
-                ) : null}
-                {groupColumnOptions.length > 0 ? (
-                  <div className={composeStyles.sortSectionSlot}>
-                    <ReportComposeGroupSection
-                      columnOptions={groupColumnOptions}
-                      groupRows={composeGroupRows}
-                      onChange={setComposeGroupRows}
-                    />
-                  </div>
-                ) : null}
               </div>
             ) : null}
             <ReportComposeForm part="filters" />
+            {showColumnsSection && groupColumnOptions.length > 0 ? (
+              <div className={composeStyles.sortSectionSlot}>
+                <ReportComposeGroupSection
+                  columnOptions={groupColumnOptions}
+                  groupRows={composeGroupRows}
+                  onChange={setComposeGroupRows}
+                />
+              </div>
+            ) : null}
+            {showColumnsSection && sortColumnOptionsForUi.length > 0 ? (
+              <div className={composeStyles.sortSectionSlot}>
+                <ReportComposeSortSection
+                  columnOptions={sortColumnOptionsForUi}
+                  sortRows={composeSortRows}
+                  onChange={setComposeSortRows}
+                />
+              </div>
+            ) : null}
           </div>
         </Box>
       }
