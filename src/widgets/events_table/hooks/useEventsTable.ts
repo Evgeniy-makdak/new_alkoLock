@@ -11,6 +11,7 @@ import { StorageKeys } from '@shared/const/storageKeys';
 import { useDebounce } from '@shared/hooks/useDebounce';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
 import { appStore } from '@shared/model/app_store/AppStore';
+import { useStatusFilter } from '@shared/ui/search_multiple_select/StatusFilterContext';
 import { Formatters } from '@shared/utils/formatters';
 
 import { useEventsApi } from '../api/useEventsApi';
@@ -32,6 +33,8 @@ export const useEventsTable = () => {
 
   const { resetFilters, filters, hasActiveFilters } = eventsFilterPanelStore();
   const eventsBranchId = appStore((s) => s.selectedBranchState?.id);
+
+  const { statusFilter } = useStatusFilter();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [inputWidthDelay] = useDebounce(searchQuery, InputSearchDelay);
@@ -91,10 +94,16 @@ export const useEventsTable = () => {
 
   const { isLoading, isPlaceholderData, data, refetch } = useEventsApi(queryOptions);
 
+  // Ключ текущей выборки для подсветки новых строк: меняется только при реальном
+  // изменении запроса, поэтому стабилен между поллингами (refetchInterval).
+  // Статусы из шапки («Все» / «Активные» / «Неактивные») входят в ключ: при их
+  // переключении состав выборки меняется, и базовый набор id пересобирается —
+  // иначе строки, пришедшие с другой выборки, подсвечивались бы как новые.
   const highlightBaselineKey = useMemo(
     () =>
       JSON.stringify({
         branchId: eventsBranchId,
+        statusFilter,
         page: state.page,
         pageSize: state.pageSize,
         sortModel: state.sortModel,
@@ -112,6 +121,7 @@ export const useEventsTable = () => {
       }),
     [
       eventsBranchId,
+      statusFilter,
       state.page,
       state.pageSize,
       state.sortModel,
