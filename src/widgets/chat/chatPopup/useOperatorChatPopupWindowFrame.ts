@@ -113,6 +113,15 @@ function resolveContentOuterAt100(dock: Element, zoomFactor: number): ContentOut
   };
 }
 
+/**
+ * Electron: при росте ширины держим правый край окна на месте.
+ * Иначе leftOverflowPx сдвигает window.screenX влево сильнее, чем растёт outerW —
+ * FAB/диалог «прыгают» влево на ~50–70px при открытии панели.
+ */
+function resolveElectronRightAnchoredLeft(nextOuterW: number): number {
+  return window.screenX + window.outerWidth - nextOuterW;
+}
+
 /** Удерживает popup в пределах экрана; позицию пользователя не сбрасывает. */
 function resolvePopupScreenPosition(
   outerW: number,
@@ -122,8 +131,9 @@ function resolvePopupScreenPosition(
   // Electron: не пересчитывать в bottom-right и не clamp'ить по primary screen —
   // иначе окно «прилипает» к дефолту / основному монитору после drag.
   // Дефолт (правый низ) задаётся только при openOperatorChatPopup.
+  // При смене outerW якорим правый край (см. resolveElectronRightAnchoredLeft).
   if (isElectronChatShell()) {
-    return { left: window.screenX, top: window.screenY };
+    return { left: resolveElectronRightAnchoredLeft(outerW), top: window.screenY };
   }
 
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
@@ -646,8 +656,9 @@ function installPwaDynamicPopupFrame(): () => void {
     if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
 
     let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
-    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
-      // Расширение влево без сброса пользовательской позиции в дефолтный угол.
+    // Browser/PWA: сдвиг влево на leftOverflow. Electron — только якорь правого края
+    // (см. resolvePopupScreenPosition), без доп. subtract (иначе прыжок FAB влево).
+    if (!isElectronChatShell() && measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
       position = {
         ...position,
         left: position.left - measured.leftOverflowPx,

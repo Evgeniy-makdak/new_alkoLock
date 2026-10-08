@@ -954,13 +954,22 @@ function normalizePopupBounds(bounds) {
     y: Number.isFinite(bounds.top) ? bounds.top : 0,
   });
   const area = display.workArea;
-  const width = Math.max(320, Math.round(bounds.outerW || 620));
-  const height = Math.max(240, Math.round(bounds.outerH || 720));
+  const width = Math.max(320, Math.min(Math.round(bounds.outerW || 620), area.width));
+  const height = Math.max(240, Math.min(Math.round(bounds.outerH || 720), area.height));
+  // Clamp по реальному размеру окна (раньше max был area.width-80 — ломало якорь правого края).
   return {
     width,
     height,
-    x: clampToDisplay(Math.round(bounds.left ?? area.x + 80), area.x, area.x + area.width - 80),
-    y: clampToDisplay(Math.round(bounds.top ?? area.y + 80), area.y, area.y + area.height - 80),
+    x: clampToDisplay(
+      Math.round(bounds.left ?? area.x + 80),
+      area.x,
+      Math.max(area.x, area.x + area.width - width),
+    ),
+    y: clampToDisplay(
+      Math.round(bounds.top ?? area.y + 80),
+      area.y,
+      Math.max(area.y, area.y + area.height - height),
+    ),
   };
 }
 
