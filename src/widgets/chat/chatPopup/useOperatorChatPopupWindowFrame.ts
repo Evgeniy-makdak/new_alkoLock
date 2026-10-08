@@ -12,6 +12,7 @@ import {
 } from './operatorChatPopupFrameLock';
 import {
   getOperatorChatPopupMinOuterSize,
+  isOperatorChatPopupDockFullyVisible,
   measureOperatorChatPopupDockOuterSize,
   OPERATOR_CHAT_POPUP_DOCK_EDGE_MARGIN_PX,
 } from './operatorChatPopupLayout';
@@ -24,8 +25,6 @@ const ABS_MIN_OUTER_W_PX = 300;
 const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const APPLY_DEBOUNCE_MS = 400;
-/** Electron: дождаться стабильного layout панели — иначе краткий overflow → скачок и откат. */
-const ELECTRON_MUTATION_APPLY_MS = 280;
 const SELF_RESIZE_COOLDOWN_MS = 550;
 
 type ViewportSnapshot = { outerW: number; innerW: number };
@@ -626,7 +625,16 @@ function installPwaDynamicPopupFrame(): () => void {
   };
 
   const refreshContentOuterAt100 = (dock: Element) => {
-    contentOuterAt100 = resolveContentOuterAt100(dock, zoomFactor);
+    const next = resolveContentOuterAt100(dock, zoomFactor);
+    // Electron: не даём mid-layout measure уменьшить baseline — иначе grow→shrink bounce.
+    if (isElectronChatShell()) {
+      contentOuterAt100 = {
+        w: Math.max(contentOuterAt100.w, next.w),
+        h: Math.max(contentOuterAt100.h, next.h),
+      };
+      return;
+    }
+    contentOuterAt100 = next;
   };
 
   const applyScaledTarget = () => {
@@ -675,6 +683,16 @@ function installPwaDynamicPopupFrame(): () => void {
       return;
     }
 
+    // Окно уже вмещает dock (типичный open панели) — setBounds не трогаем:
+    // иначе краткий mid-layout target → сдвиг влево по right-anchor и откат.
+    if (isOperatorChatPopupDockFullyVisible()) {
+      return;
+    }
+
+    // Только рост: сжатие даёт тот же bounce (right-anchor → left → back).
+    targetW = Math.max(targetW, window.outerWidth);
+    targetH = Math.max(targetH, window.outerHeight);
+
     const target = clampOuterSize(targetW, targetH, zoomFactor, includePreview);
     if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
 
@@ -701,27 +719,31 @@ function installPwaDynamicPopupFrame(): () => void {
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
     if (!dock || typeof MutationObserver === 'undefined') return;
 
+    const isElectron = isElectronChatShell();
     previewMutationObserver = new MutationObserver(() => {
       window.clearTimeout(applyTimer);
-      const delay = isElectronChatShell() ? ELECTRON_MUTATION_APPLY_MS : 60;
       applyTimer = window.setTimeout(() => {
         if (cancelled) return;
-        // Два rAF — layout панели успевает стабилизироваться до measure.
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (cancelled) return;
-            refreshContentOuterAt100(dock);
-            applyScaledTarget();
-          });
-        });
-      }, delay);
+        refreshContentOuterAt100(dock);
+        applyScaledTarget();
+      }, isElectron ? APPLY_DEBOUNCE_MS : 60);
     });
-    previewMutationObserver.observe(dock, {
-      attributes: true,
-      attributeFilter: ['data-operator-chat-preview-count'],
-      childList: true,
-      subtree: true,
-    });
+    // Electron: только preview-count. childList/subtree на mount панели даёт
+    // mid-layout measure → grow/shift → shrink/snap (~0.5s bounce).
+    previewMutationObserver.observe(
+      dock,
+      isElectron
+        ? {
+            attributes: true,
+            attributeFilter: ['data-operator-chat-preview-count'],
+          }
+        : {
+            attributes: true,
+            attributeFilter: ['data-operator-chat-preview-count'],
+            childList: true,
+            subtree: true,
+          },
+    );
   };
 
   const onWindowResize = () => {
@@ -741,7 +763,14 @@ function installPwaDynamicPopupFrame(): () => void {
     const outerSame =
       Math.abs(window.outerWidth - lastObserved.outerW) <= OUTER_SAME_TOLERANCE_PX;
 
-    if (outerSame && lastObserved.innerW > 0 && window.innerWidth > 0) {
+    // Electron: zoom только через onZoomChanged. innerWidth-jitter (scrollbar при
+    // открытии панели) ложно считался zoom → scheduleApply ~400ms → сдвиг влево и откат.
+    if (
+      !isElectronChatShell() &&
+      outerSame &&
+      lastObserved.innerW > 0 &&
+      window.innerWidth > 0
+    ) {
       const innerRatio = lastObserved.innerW / window.innerWidth;
       if (Math.abs(innerRatio - 1) >= ZOOM_INNER_RATIO_THRESHOLD) {
         zoomFactor = Math.min(ZOOM_FACTOR_MAX, Math.max(0.2, zoomFactor * innerRatio));
@@ -758,6 +787,21 @@ function installPwaDynamicPopupFrame(): () => void {
     syncViewportSnapshot();
   };
 
+  const onDesktopZoomChanged = () => {
+    if (cancelled || !isElectronChatShell()) return;
+    // Zoom приходит только с IPC — здесь innerWidth-ratio безопасен (не scrollbar).
+    if (lastObserved.innerW > 0 && window.innerWidth > 0) {
+      const innerRatio = lastObserved.innerW / window.innerWidth;
+      if (Math.abs(innerRatio - 1) >= ZOOM_INNER_RATIO_THRESHOLD) {
+        zoomFactor = Math.min(ZOOM_FACTOR_MAX, Math.max(0.2, zoomFactor * innerRatio));
+      }
+    }
+    const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
+    if (dock) refreshContentOuterAt100(dock);
+    scheduleApply();
+    syncViewportSnapshot();
+  };
+
   const runInitialApply = () => {
     if (cancelled || initialApplyDone) return;
     applyLock();
@@ -767,14 +811,20 @@ function installPwaDynamicPopupFrame(): () => void {
       syncViewportSnapshot();
       const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
       if (dock) refreshContentOuterAt100(dock);
-      scheduleApply();
+      // Electron: лишний scheduleApply после стартового applyLock даёт второй setBounds
+      // (right-anchor) и микро-сдвиг. Дальше — только preview-count / реальный zoom.
+      if (!isElectronChatShell()) {
+        scheduleApply();
+      }
       return;
     }
     if (initialAttempts++ >= INITIAL_APPLY_MAX_ATTEMPTS) {
       initialApplyDone = true;
       viewportBaselineReady = true;
       syncViewportSnapshot();
-      scheduleApply();
+      if (!isElectronChatShell()) {
+        scheduleApply();
+      }
       return;
     }
     initialApplyTimer = window.setTimeout(runInitialApply, INITIAL_APPLY_INTERVAL_MS);
@@ -808,7 +858,7 @@ function installPwaDynamicPopupFrame(): () => void {
   const unsubscribeDesktopZoom =
     isElectronChatShell() && window.alcolockDesktop?.onZoomChanged
       ? window.alcolockDesktop.onZoomChanged(() => {
-          window.setTimeout(onWindowResize, 50);
+          window.setTimeout(onDesktopZoomChanged, 50);
         })
       : undefined;
 
@@ -824,7 +874,11 @@ function installPwaDynamicPopupFrame(): () => void {
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
     if (dock) {
       refreshContentOuterAt100(dock);
-      scheduleApply();
+      // Electron: стартовый applyLock уже выставил bounds; повторный apply через
+      // debounce даёт right-anchor микро-сдвиг при первом открытии панели.
+      if (!isElectronChatShell()) {
+        scheduleApply();
+      }
       window.clearInterval(dockWatchTimer);
       dockWatchTimer = 0;
     }
