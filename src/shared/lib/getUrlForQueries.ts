@@ -33,12 +33,29 @@ export function joinQuerySegments(
     .join('&');
 }
 
-/** Фильтр активности для вкладки «События» (Все / Активные / Неактивные). */
+/**
+ * Фильтр активности для основного списка событий (device-events):
+ * Активные → true, Неактивные → false, Все → без параметра.
+ */
 export function getIsActiveInQuery(
   statusFilter?: QueryOptions['statusFilter'],
 ): string {
   if (statusFilter === 'Активные') return 'all.isActive.in=true';
   if (statusFilter === 'Неактивные') return 'all.isActive.in=false';
+  return '';
+}
+
+/**
+ * Фильтр активности только для выпадающих «Поиск по…» на вкладке «События».
+ * Активные (или фильтр не задан) → all.isActive.in=true;
+ * Неактивные / Все → параметр не добавляем (активные + неактивные).
+ */
+export function getEventsDropdownIsActiveInQuery(
+  statusFilter?: QueryOptions['statusFilter'],
+): string {
+  if (statusFilter == null || statusFilter === 'Активные') {
+    return 'all.isActive.in=true';
+  }
   return '';
 }
 
@@ -497,7 +514,7 @@ export function getUserListURLToAttachments(
   return appendQueryParts(
     `api/users/full-name?page=${page || 0}&size=${limit || 20}`,
     queries,
-    getIsActiveInQuery(statusFilter),
+    getEventsDropdownIsActiveInQuery(statusFilter),
     'sort=surname,firstName,middleName',
   );
 }
@@ -684,7 +701,7 @@ export const getCarListURL = ({
     queries += '&all.isActive.in=true';
   }
 
-  const isActiveQuery = getIsActiveInQuery(statusFilter);
+  const isActiveQuery = getEventsDropdownIsActiveInQuery(statusFilter);
   if (isActiveQuery) {
     queries += `&${isActiveQuery}`;
   }
@@ -800,7 +817,7 @@ export function getAlcolocksURL({
     queries += query.startsWith('&') ? query : `&${query}`;
   }
 
-  const isActiveQuery = getIsActiveInQuery(statusFilter);
+  const isActiveQuery = getEventsDropdownIsActiveInQuery(statusFilter);
   if (isActiveQuery) {
     queries += `&${isActiveQuery}`;
   }
