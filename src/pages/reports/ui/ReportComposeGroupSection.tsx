@@ -143,19 +143,23 @@ export function ReportComposeGroupSection({
                 tableMetadataByRowId,
                 referenceEntityMetadataByName,
               );
+              // Подписи: сначала label из availableHaving (бэк), иначе i18n/fallback.
+              const labelFromMetaOrI18n =
+                (i18nKeyPrefix: string) => (code: string, metaLabel: string) => {
+                  if (metaLabel && metaLabel !== code) return metaLabel;
+                  return t(`${i18nKeyPrefix}.${code}`, { defaultValue: metaLabel || code });
+                };
               const operatorOptions = opsToLabeledValues(
                 getReportHavingOperatorOptions(fieldDef),
-                (code, fallback) =>
-                  t(`reports.havingOperator.${code}`, { defaultValue: fallback }),
+                labelFromMetaOrI18n('reports.havingOperator'),
               );
               const aggregationOptions = opsToLabeledValues(
                 getReportHavingAggregationOptions(fieldDef),
-                (code, fallback) =>
-                  t(`reports.havingAggregation.${code}`, { defaultValue: fallback }),
+                labelFromMetaOrI18n('reports.havingAggregation'),
               );
               const havingModeOptions = opsToLabeledValues(
                 getReportHavingModeOptions(fieldDef),
-                (code, fallback) => t(`reports.havingMode.${code}`, { defaultValue: fallback }),
+                labelFromMetaOrI18n('reports.havingMode'),
               );
               const valueOptions = opsToLabeledValues(
                 (fieldDef?.allowedValues ?? [])

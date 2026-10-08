@@ -10,6 +10,14 @@ export type ReportFieldOperation = {
   label: string;
 };
 
+/** Блок having из GET …/metadata (availableHaving у поля). */
+export type ReportAvailableHaving = {
+  functions?: ReportFieldOperation[] | null;
+  modes?: ReportFieldOperation[] | null;
+  availableHavingOperations?: ReportFieldOperation[] | null;
+  type?: string | null;
+};
+
 /** Полное описание поля из GET …/metadata (только для UI). */
 export type ReportFieldDefinition = {
   fieldName: string;
@@ -25,6 +33,8 @@ export type ReportFieldDefinition = {
   aggregation: string | null;
   availableOperations: ReportFieldOperation[];
   availableFunctions: ReportFieldOperation[];
+  /** Параметры UI/операций для блока «Группировка» → having. */
+  availableHaving?: ReportAvailableHaving | null;
   /** Справочник значений для ENUM (если бэкенд отдаёт в metadata). */
   allowedValues?: Array<
     | string

@@ -81,36 +81,50 @@ function codesToFieldOperations(codes: readonly string[]): ReportFieldOperation[
   return codes.map((code) => ({ code, label: code }));
 }
 
-/** Операторы having: metadata.availableOperations, иначе enum swagger. */
+function filterHavingOps(list: ReportFieldOperation[] | null | undefined): ReportFieldOperation[] {
+  return (list ?? []).filter((item) => item?.code);
+}
+
+/**
+ * Операторы having:
+ * 1) availableHaving.availableHavingOperations
+ * 2) availableOperations (legacy)
+ * 3) enum swagger
+ */
 export function getReportHavingOperatorOptions(
   fieldDef: ReportFieldDefinition | null | undefined,
 ): ReportFieldOperation[] {
-  const fromMeta = (fieldDef?.availableOperations ?? []).filter((item) => item?.code);
-  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_OPERATOR_CODES);
+  const fromHaving = filterHavingOps(fieldDef?.availableHaving?.availableHavingOperations);
+  if (fromHaving.length) return fromHaving;
+  const fromLegacy = filterHavingOps(fieldDef?.availableOperations);
+  return fromLegacy.length ? fromLegacy : codesToFieldOperations(REPORT_HAVING_OPERATOR_CODES);
 }
 
-/** Агрегации having: metadata.availableFunctions, иначе enum swagger. */
+/**
+ * Агрегации having:
+ * 1) availableHaving.functions
+ * 2) availableFunctions (legacy)
+ * 3) enum swagger
+ */
 export function getReportHavingAggregationOptions(
   fieldDef: ReportFieldDefinition | null | undefined,
 ): ReportFieldOperation[] {
-  const fromMeta = (fieldDef?.availableFunctions ?? []).filter((item) => item?.code);
-  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_AGGREGATION_CODES);
+  const fromHaving = filterHavingOps(fieldDef?.availableHaving?.functions);
+  if (fromHaving.length) return fromHaving;
+  const fromLegacy = filterHavingOps(fieldDef?.availableFunctions);
+  return fromLegacy.length ? fromLegacy : codesToFieldOperations(REPORT_HAVING_AGGREGATION_CODES);
 }
 
-/** Режим having: metadata (если есть), иначе enum swagger. */
+/**
+ * Режим having:
+ * 1) availableHaving.modes
+ * 2) enum swagger
+ */
 export function getReportHavingModeOptions(
   fieldDef: ReportFieldDefinition | null | undefined,
 ): ReportFieldOperation[] {
-  const extended = fieldDef as
-    | (ReportFieldDefinition & {
-        availableHavingModes?: ReportFieldOperation[] | null;
-        havingModes?: ReportFieldOperation[] | null;
-      })
-    | null
-    | undefined;
-  const list = extended?.availableHavingModes ?? extended?.havingModes ?? [];
-  const fromMeta = Array.isArray(list) ? list.filter((item) => item?.code) : [];
-  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_MODE_CODES);
+  const fromHaving = filterHavingOps(fieldDef?.availableHaving?.modes);
+  return fromHaving.length ? fromHaving : codesToFieldOperations(REPORT_HAVING_MODE_CODES);
 }
 
 /** Нормализация aggregation → swagger: none|count|countDistinct|sum|avg|min|max */
