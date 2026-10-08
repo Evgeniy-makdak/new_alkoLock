@@ -24,6 +24,8 @@ const ABS_MIN_OUTER_W_PX = 300;
 const INITIAL_APPLY_MAX_ATTEMPTS = 12;
 const INITIAL_APPLY_INTERVAL_MS = 120;
 const APPLY_DEBOUNCE_MS = 400;
+/** Electron: дождаться стабильного layout панели — иначе краткий overflow → скачок и откат. */
+const ELECTRON_MUTATION_APPLY_MS = 280;
 const SELF_RESIZE_COOLDOWN_MS = 550;
 
 type ViewportSnapshot = { outerW: number; innerW: number };
@@ -639,32 +641,44 @@ function installPwaDynamicPopupFrame(): () => void {
     let targetW = Math.max(Math.round(content.w * zoomFactor), minOuter.outerW);
     let targetH = Math.max(Math.round(content.h * zoomFactor), minOuter.outerH);
 
-    const overflow = computeDockOverflowPx();
-    if (overflow.growW > LOCK_TOLERANCE_PX) {
-      targetW = Math.max(targetW, window.outerWidth + overflow.growW);
-    }
-    if (overflow.growH > LOCK_TOLERANCE_PX) {
-      targetH = Math.max(targetH, window.outerHeight + overflow.growH);
-    }
+    const isElectron = isElectronChatShell();
+    // Electron: не компенсируем mid-layout overflow — он даёт краткий grow/shift и откат.
+    // Размер только из contentOuterAt100 + min (после стабилизации layout).
+    if (!isElectron) {
+      const overflow = computeDockOverflowPx();
+      if (overflow.growW > LOCK_TOLERANCE_PX) {
+        targetW = Math.max(targetW, window.outerWidth + overflow.growW);
+      }
+      if (overflow.growH > LOCK_TOLERANCE_PX) {
+        targetH = Math.max(targetH, window.outerHeight + overflow.growH);
+      }
 
-    const measured = measureOperatorChatPopupDockOuterSize(dock);
-    if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
-      targetW = Math.max(targetW, window.outerWidth + measured.leftOverflowPx);
+      const measured = measureOperatorChatPopupDockOuterSize(dock);
+      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+        targetW = Math.max(targetW, window.outerWidth + measured.leftOverflowPx);
+      }
+
+      const target = clampOuterSize(targetW, targetH, zoomFactor, includePreview);
+      if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
+
+      let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
+      if (measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
+        position = {
+          ...position,
+          left: position.left - measured.leftOverflowPx,
+        };
+      }
+
+      lockRef.current = { ...lockRef.current, outerW: target.outerW, outerH: target.outerH };
+      writeOperatorChatPopupFrameLock(lockRef.current);
+      applyOuterSize(target.outerW, target.outerH, position);
+      return;
     }
 
     const target = clampOuterSize(targetW, targetH, zoomFactor, includePreview);
     if (target.outerW < ABS_MIN_OUTER_W_PX || target.outerW > 2400) return;
 
-    let position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
-    // Browser/PWA: сдвиг влево на leftOverflow. Electron — только якорь правого края
-    // (см. resolvePopupScreenPosition), без доп. subtract (иначе прыжок FAB влево).
-    if (!isElectronChatShell() && measured.leftOverflowPx > LOCK_TOLERANCE_PX) {
-      position = {
-        ...position,
-        left: position.left - measured.leftOverflowPx,
-      };
-    }
-
+    const position = resolvePopupScreenPosition(target.outerW, target.outerH, lockRef.current);
     lockRef.current = { ...lockRef.current, outerW: target.outerW, outerH: target.outerH };
     writeOperatorChatPopupFrameLock(lockRef.current);
     applyOuterSize(target.outerW, target.outerH, position);
@@ -688,11 +702,19 @@ function installPwaDynamicPopupFrame(): () => void {
     if (!dock || typeof MutationObserver === 'undefined') return;
 
     previewMutationObserver = new MutationObserver(() => {
-      refreshContentOuterAt100(dock);
       window.clearTimeout(applyTimer);
+      const delay = isElectronChatShell() ? ELECTRON_MUTATION_APPLY_MS : 60;
       applyTimer = window.setTimeout(() => {
-        if (!cancelled) applyScaledTarget();
-      }, 60);
+        if (cancelled) return;
+        // Два rAF — layout панели успевает стабилизироваться до measure.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (cancelled) return;
+            refreshContentOuterAt100(dock);
+            applyScaledTarget();
+          });
+        });
+      }, delay);
     });
     previewMutationObserver.observe(dock, {
       attributes: true,
