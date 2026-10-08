@@ -18,6 +18,8 @@ import { createReportComposeGroupRow } from '../types/reportComposeGroup';
 import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
+  ReportFieldOperation,
+  ReportHavingFilter,
   ReportOutputRow,
   ReportQueryRequest,
   ReportSelectedFieldPayload,
@@ -25,6 +27,171 @@ import type {
 import type { Values } from '@shared/ui/search_multiple_select';
 
 const AGGREGATION_PREFERENCE = ['COUNT', 'MAX', 'MIN', 'SUM', 'AVG'] as const;
+
+/** Enum aggregation из swagger having (lowercase). */
+export const REPORT_HAVING_AGGREGATION_CODES = [
+  'none',
+  'count',
+  'countDistinct',
+  'sum',
+  'avg',
+  'min',
+  'max',
+] as const;
+
+/** Enum havingMode из swagger. */
+export const REPORT_HAVING_MODE_CODES = [
+  'max_only',
+  'min_only',
+  'top_n',
+  'above_avg',
+  'comparison',
+] as const;
+
+/** Enum operator из swagger having. */
+export const REPORT_HAVING_OPERATOR_CODES = [
+  'eq',
+  'ne',
+  'isNull',
+  'isNotNull',
+  'contains',
+  'startsWith',
+  'endsWith',
+  'isEmpty',
+  'isNotEmpty',
+  'gt',
+  'gte',
+  'lt',
+  'lte',
+  'between',
+  'after',
+  'before',
+  'in',
+  'notIn',
+] as const;
+
+const HAVING_OPERATORS_WITHOUT_VALUES = new Set([
+  'isnull',
+  'isnotnull',
+  'isempty',
+  'isnotempty',
+]);
+
+function codesToFieldOperations(codes: readonly string[]): ReportFieldOperation[] {
+  return codes.map((code) => ({ code, label: code }));
+}
+
+/** Операторы having: metadata.availableOperations, иначе enum swagger. */
+export function getReportHavingOperatorOptions(
+  fieldDef: ReportFieldDefinition | null | undefined,
+): ReportFieldOperation[] {
+  const fromMeta = (fieldDef?.availableOperations ?? []).filter((item) => item?.code);
+  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_OPERATOR_CODES);
+}
+
+/** Агрегации having: metadata.availableFunctions, иначе enum swagger. */
+export function getReportHavingAggregationOptions(
+  fieldDef: ReportFieldDefinition | null | undefined,
+): ReportFieldOperation[] {
+  const fromMeta = (fieldDef?.availableFunctions ?? []).filter((item) => item?.code);
+  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_AGGREGATION_CODES);
+}
+
+/** Режим having: metadata (если есть), иначе enum swagger. */
+export function getReportHavingModeOptions(
+  fieldDef: ReportFieldDefinition | null | undefined,
+): ReportFieldOperation[] {
+  const extended = fieldDef as
+    | (ReportFieldDefinition & {
+        availableHavingModes?: ReportFieldOperation[] | null;
+        havingModes?: ReportFieldOperation[] | null;
+      })
+    | null
+    | undefined;
+  const list = extended?.availableHavingModes ?? extended?.havingModes ?? [];
+  const fromMeta = Array.isArray(list) ? list.filter((item) => item?.code) : [];
+  return fromMeta.length ? fromMeta : codesToFieldOperations(REPORT_HAVING_MODE_CODES);
+}
+
+/** Нормализация aggregation → swagger: none|count|countDistinct|sum|avg|min|max */
+export function normalizeHavingAggregationForApi(code: string): string | undefined {
+  const trimmed = code.trim();
+  if (!trimmed) return undefined;
+  const key = trimmed.toLowerCase().replace(/[\s-]+/g, '_');
+  const compact = key.replace(/_/g, '');
+  const aliases: Record<string, string> = {
+    none: 'none',
+    count: 'count',
+    countdistinct: 'countDistinct',
+    count_distinct: 'countDistinct',
+    sum: 'sum',
+    avg: 'avg',
+    average: 'avg',
+    min: 'min',
+    max: 'max',
+  };
+  return aliases[key] ?? aliases[compact] ?? trimmed.toLowerCase();
+}
+
+/** Нормализация havingMode → swagger enum. */
+export function normalizeHavingModeForApi(code: string): string | undefined {
+  const trimmed = code.trim();
+  if (!trimmed) return undefined;
+  const key = trimmed.toLowerCase().replace(/[\s-]+/g, '_');
+  const aliases: Record<string, string> = {
+    max_only: 'max_only',
+    min_only: 'min_only',
+    mix_only: 'min_only',
+    top_n: 'top_n',
+    top: 'top_n',
+    above_avg: 'above_avg',
+    above_average: 'above_avg',
+    comparison: 'comparison',
+  };
+  return aliases[key] ?? key;
+}
+
+/** Нормализация operator → lowercase swagger-код. */
+export function normalizeHavingOperatorForApi(code: string): string | undefined {
+  const trimmed = code.trim();
+  if (!trimmed) return undefined;
+  const lower = trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
+  // isNull / startsWith сохраняем camelCase как в swagger
+  const aliases: Record<string, string> = {
+    eq: 'eq',
+    ne: 'ne',
+    isnull: 'isNull',
+    is_not_null: 'isNotNull',
+    isnotnull: 'isNotNull',
+    contains: 'contains',
+    startswith: 'startsWith',
+    starts_with: 'startsWith',
+    endswith: 'endsWith',
+    ends_with: 'endsWith',
+    isempty: 'isEmpty',
+    is_empty: 'isEmpty',
+    isnotempty: 'isNotEmpty',
+    is_not_empty: 'isNotEmpty',
+    gt: 'gt',
+    gte: 'gte',
+    lt: 'lt',
+    lte: 'lte',
+    between: 'between',
+    after: 'after',
+    before: 'before',
+    in: 'in',
+    notin: 'notIn',
+    not_in: 'notIn',
+  };
+  const compact = trimmed.toLowerCase().replace(/[\s_-]+/g, '');
+  return aliases[trimmed.toLowerCase()] ?? aliases[compact] ?? lower;
+}
+
+export function havingOperatorNeedsValues(operator: string): boolean {
+  const normalized = normalizeHavingOperatorForApi(operator);
+  if (!normalized) return false;
+  return !HAVING_OPERATORS_WITHOUT_VALUES.has(normalized.toLowerCase());
+}
 
 /** UI-ключ колонки → все fieldName для groupBy (составная колонка → все её поля). */
 export function resolveComposeGroupApiFields(columnKey: string): string[] {
@@ -68,16 +235,51 @@ function findComposeGroupColumnKey(apiField: string, columnKeys: Values): string
   return apiField;
 }
 
-/** groupBy из сформированного отчёта → строки формы (режим редактирования). */
+function havingByPrimaryField(
+  having: ReportHavingFilter[] | undefined,
+): Map<string, ReportHavingFilter> {
+  const map = new Map<string, ReportHavingFilter>();
+  for (const item of having ?? []) {
+    const key = item.fieldName?.trim();
+    if (!key || map.has(key)) continue;
+    map.set(key, item);
+  }
+  return map;
+}
+
+function applyHavingToGroupRow(
+  row: ReportComposeGroupRow,
+  havingItem: ReportHavingFilter | undefined,
+): ReportComposeGroupRow {
+  if (!havingItem) return row;
+  const values: Values = Array.isArray(havingItem.values)
+    ? havingItem.values.map((value, index) => ({
+        value: value as string | number,
+        label: String(value ?? index),
+      }))
+    : [];
+  return {
+    ...row,
+    operator: havingItem.operator?.trim() ?? '',
+    havingAggregation: havingItem.aggregation?.trim() ?? '',
+    havingMode: havingItem.havingMode?.trim() ?? '',
+    topN: havingItem.topN != null && Number.isFinite(havingItem.topN) ? String(havingItem.topN) : '',
+    values,
+  };
+}
+
+/** groupBy (+ having) из сформированного отчёта → строки формы (режим редактирования). */
 export function parseComposeGroupRowsFromGroupBy(
   groupBy: string[] | undefined,
   columnKeys: Values,
+  having?: ReportHavingFilter[],
 ): ReportComposeGroupRow[] {
   const groupByList = (groupBy ?? []).map((field) => field.trim()).filter(Boolean);
   if (!groupByList.length) return [];
 
   const remaining = new Set(groupByList);
   const rows: ReportComposeGroupRow[] = [];
+  const havingMap = havingByPrimaryField(having);
 
   const compositeColumnKeys = columnKeys
     .map((item) => String(item.value))
@@ -89,17 +291,91 @@ export function parseComposeGroupRowsFromGroupBy(
   for (const columnKey of compositeColumnKeys) {
     const members = resolveComposeGroupApiFields(columnKey);
     if (!members.length || !members.every((member) => remaining.has(member))) continue;
-    rows.push(createReportComposeGroupRow(columnKey));
+    const primary = members[0];
+    rows.push(applyHavingToGroupRow(createReportComposeGroupRow(columnKey), havingMap.get(primary)));
     for (const member of members) remaining.delete(member);
   }
 
   for (const apiField of groupByList) {
     if (!remaining.has(apiField)) continue;
-    rows.push(createReportComposeGroupRow(findComposeGroupColumnKey(apiField, columnKeys)));
+    const columnKey = findComposeGroupColumnKey(apiField, columnKeys);
+    rows.push(applyHavingToGroupRow(createReportComposeGroupRow(columnKey), havingMap.get(apiField)));
     remaining.delete(apiField);
   }
 
   return rows;
+}
+
+function rowHasHavingSelections(row: ReportComposeGroupRow): boolean {
+  return Boolean(
+    row.operator.trim() ||
+      row.havingAggregation.trim() ||
+      row.havingMode.trim() ||
+      row.topN.trim() ||
+      row.values.length,
+  );
+}
+
+/**
+ * Строки группировки → having в теле POST …/query.
+ * Элемент добавляется только если в карточке выбраны параметры having
+ * (operator / aggregation / havingMode / topN / values).
+ * Коды приводятся к enum swagger (aggregation lowercase, havingMode, operator).
+ */
+export function buildComposeHavingParams(
+  rows: ReportComposeGroupRow[],
+  columnLabelByKey?: Map<string, string>,
+): ReportHavingFilter[] {
+  const result: ReportHavingFilter[] = [];
+
+  rows.forEach((row, index) => {
+    if (!row.columnKey.trim() || !rowHasHavingSelections(row)) return;
+    const apiFields = resolveComposeGroupApiFields(row.columnKey);
+    const fieldName = apiFields[0] ?? resolveComposeColumnApiField(row.columnKey);
+    if (!fieldName) return;
+
+    const item: ReportHavingFilter = {
+      fieldName,
+      group: index + 1,
+    };
+
+    const aggregation = normalizeHavingAggregationForApi(row.havingAggregation);
+    if (aggregation) item.aggregation = aggregation;
+
+    const havingMode = normalizeHavingModeForApi(row.havingMode);
+    if (havingMode) item.havingMode = havingMode;
+
+    // topN только для havingMode = top_n; всегда integer, не строка
+    if (havingMode === 'top_n') {
+      const topNRaw = row.topN.trim();
+      if (topNRaw !== '') {
+        const topN = Number.parseInt(topNRaw, 10);
+        if (Number.isFinite(topN)) {
+          item.topN = topN;
+        }
+      }
+    }
+
+    // operator + values — только для comparison (не для max_only / top_n / …)
+    if (havingMode === 'comparison') {
+      const operator = normalizeHavingOperatorForApi(row.operator);
+      if (operator) item.operator = operator;
+
+      const cleanedValues = row.values
+        .map((v) => v.value)
+        .filter((value) => value !== '' && value != null);
+      if (cleanedValues.length) {
+        item.values = cleanedValues;
+      }
+    }
+
+    const displayName = columnLabelByKey?.get(row.columnKey);
+    if (displayName) item.displayName = displayName;
+
+    result.push(item);
+  });
+
+  return result;
 }
 
 function isColumnGroupableForGroupBy(
@@ -440,46 +716,39 @@ function readGlobalAggregationFromOutputRows(outputRows: ReportOutputRow[]): str
 }
 
 /**
- * При groupBy все поля вне группировки должны иметь aggregation (требование SQL GROUP BY).
- * Поля из groupBy — без aggregation. Вложенные пути (branch.name) — MAX, не COUNT.
+ * При groupBy:
+ * — дополняет groupBy соседними полями выбранной сущности;
+ * — у полей из groupBy убирает aggregation (они в GROUP BY, не в SELECT agg);
+ * — НЕ подставляет aggregation в selectedFields автоматически:
+ *   aggregation в selectedFields задаёт только контрол «Текущий состав таблицы»;
+ *   условия агрегации по группам — в having.
  */
 export function finalizeReportQueryBodyForGroupBy(
   body: ReportQueryRequest,
-  context?: ApplyGroupByAggregationContext,
+  _context?: ApplyGroupByAggregationContext,
 ): ReportQueryRequest {
   const groupBy = body.groupBy;
   if (!groupBy?.length) return body;
 
-  const globalAggregation = context ? readGlobalAggregationFromOutputRows(context.outputRows) : null;
   const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, body.selectedFields);
   const groupSet = new Set(effectiveGroupBy);
   const deduped = dedupeSelectedFieldsByFieldName(body.selectedFields, groupSet);
 
   const selectedFields = deduped.map((field) => {
     if (!field.fieldName) return field;
-
     if (groupSet.has(field.fieldName)) {
       return stripSelectedFieldAggregation(field);
     }
-
-    const fieldDef = context
-      ? findReportTableFieldDefinition(
-          field.fieldName,
-          context.metadata,
-          context.outputRows,
-          context.fieldMap,
-          context.tableMetadataByRowId,
-          context.referenceEntityMetadataByName,
-        )
-      : undefined;
-
-    return {
-      ...field,
-      aggregation: resolveAggregationForGroupedField(field, fieldDef, globalAggregation),
-    };
+    // Сохраняем aggregation только если пользователь выбрал её в «Текущий состав».
+    return field;
   });
 
-  return { ...body, groupBy: effectiveGroupBy, selectedFields };
+  return {
+    ...body,
+    groupBy: effectiveGroupBy,
+    selectedFields,
+    ...(body.having?.length ? { having: body.having } : {}),
+  };
 }
 
 /** @deprecated Используйте finalizeReportQueryBodyForGroupBy */

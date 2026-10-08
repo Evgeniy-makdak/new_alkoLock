@@ -82,6 +82,24 @@ export type ReportLogicConnect = {
   logicOperator: ReportLogicOperator;
 };
 
+/** Элемент having в POST …/query (условия после GROUP BY). */
+export type ReportHavingFilter = {
+  fieldName: string;
+  operator?: string;
+  aggregation?: string;
+  havingMode?: string;
+  topN?: number;
+  values?: unknown[];
+  group?: number;
+  displayName?: string;
+};
+
+export type ReportHavingGroupConnection = {
+  leftGroup: number;
+  rightGroup: number;
+  logicOperator: string;
+};
+
 /** Собранные поля и фильтры одной строки «поле результата». */
 export type ReportQueryRowPayload = {
   selectedFields: ReportSelectedFieldPayload[];
@@ -93,7 +111,11 @@ export type ReportQueryRequest = {
   selectedFields: ReportSelectedFieldPayload[];
   filters: ReportQueryFilter[];
   groupBy?: string[];
+  having?: ReportHavingFilter[];
+  havingConnects?: ReportLogicConnect[];
+  havingGroupConnections?: ReportHavingGroupConnection[];
   logicConnects?: ReportLogicConnect[];
+  groupConnections?: ReportHavingGroupConnection[];
 };
 
 /** Одна строка фильтров «поле результата» и зависимых контролов в UI. */

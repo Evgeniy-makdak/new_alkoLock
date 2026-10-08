@@ -8,6 +8,7 @@ import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports
 import {
   buildGroupableColumnOptions,
   buildComposeGroupParams,
+  buildComposeHavingParams,
   finalizeReportQueryBodyForGroupBy,
   parseComposeGroupRowsFromGroupBy,
 } from '@pages/reports/lib/buildReportGroupParam';
@@ -151,7 +152,9 @@ export function ReportComposeModal({
     setComposeSortRows(
       parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
     );
-    setComposeGroupRows(parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields));
+    setComposeGroupRows(
+      parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields, queryBody?.having),
+    );
     const restoredDisplay: Record<string, string> = {};
     for (const field of queryBody?.selectedFields ?? []) {
       const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
@@ -463,6 +466,13 @@ export function ReportComposeModal({
     const body = ensureSelectedFieldsInBody(rawBody);
 
     const groupBy = composeGroupBy;
+    const columnLabelByKey = new Map(
+      groupColumnOptions.map((option) => [
+        String(option.value),
+        String(option.label ?? option.value),
+      ]),
+    );
+    const having = buildComposeHavingParams(composeGroupRows, columnLabelByKey);
     const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
     const {
       metadata: entityMetadata,
@@ -471,7 +481,11 @@ export function ReportComposeModal({
       referenceEntityMetadataByName: nestedMetadataByName,
     } = reportsStore.getState();
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
-      { ...body, ...(groupBy.length ? { groupBy } : {}) },
+      {
+        ...body,
+        ...(groupBy.length ? { groupBy } : {}),
+        ...(having.length ? { having } : {}),
+      },
       groupBy.length && entityMetadata
         ? {
             metadata: entityMetadata,
@@ -525,6 +539,8 @@ export function ReportComposeModal({
     ensureSelectedFieldsInBody,
     composeSortRows,
     composeGroupBy,
+    composeGroupRows,
+    groupColumnOptions,
     onReportFormed,
     reportQueryErrorMessage,
     isSuperAdmin,
@@ -606,6 +622,10 @@ export function ReportComposeModal({
                   columnOptions={groupColumnOptions}
                   groupRows={composeGroupRows}
                   onChange={setComposeGroupRows}
+                  entityMetadata={metadata}
+                  outputRows={outputRows}
+                  tableMetadataByRowId={reportTableFieldsMetadataByRowId}
+                  referenceEntityMetadataByName={referenceEntityMetadataByName}
                 />
               </div>
             ) : null}
