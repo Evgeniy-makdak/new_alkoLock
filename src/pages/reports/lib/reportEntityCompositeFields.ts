@@ -49,7 +49,16 @@ type ReportEntityCompositeConfig = {
   labelKey: string;
   /** Короткая подпись в фильтрах («Пользователь», «Алкозамок», «ТС»). */
   entityLabelKey: string;
+  /**
+   * false — не склеивать поля в «Состав колонок» / гриде результата.
+   * Нужно для User: SQL не ищет по ФИО+email как по одному полю.
+   */
+  mergeTableColumns?: boolean;
 };
+
+function shouldMergeEntityTableColumns(config: ReportEntityCompositeConfig): boolean {
+  return config.mergeTableColumns !== false;
+}
 
 const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
   {
@@ -57,18 +66,21 @@ const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
     memberFieldNames: ['surname', 'firstName', 'middleName', 'email'],
     labelKey: 'reports.composite.userDisplay',
     entityLabelKey: 'reports.composite.entityUser',
+    mergeTableColumns: false,
   },
   {
     referenceEntity: 'MonitoringDevice',
     memberFieldNames: ['name', 'serialNumber'],
     labelKey: 'reports.composite.deviceDisplay',
     entityLabelKey: 'reports.composite.entityDevice',
+    mergeTableColumns: false,
   },
   {
     referenceEntity: 'Vehicle',
     memberFieldNames: ['manufacturer', 'model', 'registrationNumber'],
     labelKey: 'reports.composite.vehicleDisplay',
     entityLabelKey: 'reports.composite.entityVehicle',
+    mergeTableColumns: false,
   },
 ];
 
@@ -150,7 +162,11 @@ export function applyReportEntityCompositeFieldGrouping(
     const kind = ref ? resolveCompositeKind(ref) : undefined;
     const config = kind ? CONFIG_BY_ENTITY.get(kind) : undefined;
     const { prefix, leaf } = parseFieldPath(draft.value);
-    if (!config || !config.memberFieldNames.includes(leaf)) {
+    if (
+      !config ||
+      !shouldMergeEntityTableColumns(config) ||
+      !config.memberFieldNames.includes(leaf)
+    ) {
       passthrough.push(draft);
       continue;
     }
@@ -287,6 +303,7 @@ export function planReportCompositeResultColumns(
 
   for (const prefix of Array.from(prefixes)) {
     for (const config of COMPOSITE_CONFIGS) {
+      if (!shouldMergeEntityTableColumns(config)) continue;
       const memberKeys = config.memberFieldNames.map((leaf) =>
         prefix ? `${prefix}.${leaf}` : leaf,
       );
@@ -549,6 +566,7 @@ export function collectReportCompositeMemberBundles(fieldNames: string[]): Repor
     }
 
     for (const config of COMPOSITE_CONFIGS) {
+      if (!shouldMergeEntityTableColumns(config)) continue;
       if (!config.memberFieldNames.includes(leaf)) continue;
       const members = config.memberFieldNames.map((member) =>
         prefix ? `${prefix}.${member}` : member,
@@ -802,7 +820,21 @@ export function resolveCompositeFilterApiFieldName(
 
 /** Заменяет набор отдельных полей-членов одной объединённой колонкой в сохранённом выборе. */
 export function normalizeCompositeTableFieldSelection(values: Values, options: Values): Values {
-  let result: Values = [...values];
+  const optionByKey = new Map(options.map((opt) => [String(opt.value), opt]));
+  let result: Values = [];
+  for (const item of values) {
+    const key = String(item.value);
+    if (isReportCompositeFieldPath(key) && !optionByKey.has(key)) {
+      for (const member of expandCompositeFieldPath(key)) {
+        const opt = optionByKey.get(member);
+        if (opt && !result.some((v) => String(v.value) === member)) {
+          result.push({ value: member, label: opt.label });
+        }
+      }
+      continue;
+    }
+    result.push(item);
+  }
   for (const opt of options) {
     const compositePath = String(opt.value);
     if (!isReportCompositeFieldPath(compositePath)) continue;
