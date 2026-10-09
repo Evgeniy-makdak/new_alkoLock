@@ -11,7 +11,10 @@ import {
   buildReportAttributeValueOptions,
   resolveReportMetadataValueLoadKind,
 } from '@pages/reports/lib/reportMetadataFilterOptions';
-import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
+import {
+  isReportCoordinatesCompositePath,
+  isReportCoordinatesCompositePropertyFieldName,
+} from '@pages/reports/lib/reportCoordinateComposite';
 import { resolveNestedEntityValueLoadKind } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { resolveReportDomainListEntityName } from '@pages/reports/lib/reportLeafEntityListApi';
 import {
@@ -133,7 +136,9 @@ export function ReportFieldFilterControl({
   );
 
   const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
-  const isCoordinatesComposite = isReportCoordinatesCompositePropertyFieldName(field.fieldName);
+  const isCoordinatesComposite =
+    isReportCoordinatesCompositePropertyFieldName(field.fieldName) ||
+    isReportCoordinatesCompositePath(field.fieldName);
 
   const displayOptions = useMemo(
     () =>
@@ -186,7 +191,8 @@ export function ReportFieldFilterControl({
     );
   }
 
-  if (isCoordinatesComposite) {
+  // Координаты с доменным API (DeviceEvent и т.п.) — dropdown ниже; иначе ручной ввод.
+  if (isCoordinatesComposite && nestedValueLoadKind !== 'domainList') {
     return (
       <ReportCoordinatePairFilterField
         label={label}
@@ -198,7 +204,7 @@ export function ReportFieldFilterControl({
     );
   }
 
-  if (isReportCoordinateField(field)) {
+  if (isReportCoordinateField(field) && nestedValueLoadKind !== 'domainList') {
     return (
       <ReportCoordinateFilterField
         label={label}
@@ -244,10 +250,11 @@ export function ReportFieldFilterControl({
         label={label}
         values={displayOptions}
         value={value}
-        serverFilter={false}
+        serverFilter
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
+        onInputChange={(next) => setSearchQuery(next)}
         setValueStore={(_, next) => onChange(next as Values)}
       />
     );

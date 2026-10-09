@@ -934,6 +934,7 @@
     "saveReportFile": "Сохранить файл",
     "saveReportModalTitle": "Сохранение отчёта",
     "composeAddFilterGroup": "+ Добавить фильтр",
+    "composeFilterEmptyPlaceholder": "Выберите поле для фильтрации",
     "composeRemoveFilter": "Удалить фильтр",
     "composeLoadingMetadata": "Загрузка параметров сущности…",
     "composeTransferAvailable": "Доступные колонки",

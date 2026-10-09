@@ -13,11 +13,12 @@ import {
   normalizeHavingModeForApi,
 } from '@pages/reports/lib/buildReportGroupParam';
 import { findReportTableFieldDefinition } from '@pages/reports/lib/buildReportTableFieldOptions';
+import { buildDomainListValuesForAttribute } from '@pages/reports/lib/buildDomainListValuesForAttribute';
+import { buildDeviceEventHavingValueOptions } from '@pages/reports/lib/fetchDeviceEventHavingValueOptions';
 import {
-  buildDeviceEventHavingValueOptions,
-  fetchDeviceEventsForHavingOptions,
-  isDeviceEventReportEntity,
-} from '@pages/reports/lib/fetchDeviceEventHavingValueOptions';
+  fetchReportDomainEntityRecords,
+  resolveReportDomainListEntityForFieldPath,
+} from '@pages/reports/lib/fetchReportDomainEntityRecords';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterModalControlSx,
@@ -128,26 +129,14 @@ export function ReportComposeGroupSection({
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [deviceEventOptionsByPath, setDeviceEventOptionsByPath] = useState<Record<string, Values>>(
-    {},
-  );
-  const [deviceEventOptionsLoading, setDeviceEventOptionsLoading] = useState(false);
+  const [domainOptionsByPath, setDomainOptionsByPath] = useState<Record<string, Values>>({});
+  const [domainOptionsLoading, setDomainOptionsLoading] = useState(false);
+  const [domainSearchByPath, setDomainSearchByPath] = useState<Record<string, string>>({});
 
   const entityName = entityMetadata?.entityName?.trim() ?? '';
-  const isDeviceEventEntity = isDeviceEventReportEntity(entityName);
 
-  const usedColumnKeys = useMemo(
-    () => new Set(groupRows.map((row) => row.columnKey).filter(Boolean)),
-    [groupRows],
-  );
-
-  const availableColumnOptions = useMemo(
-    () => columnOptions.filter((option) => !usedColumnKeys.has(String(option.value))),
-    [columnOptions, usedColumnKeys],
-  );
-
-  const deviceEventValueFieldPaths = useMemo(() => {
-    if (!isDeviceEventEntity) return [] as string[];
+  // Одно и то же поле можно выбрать в нескольких группировках — не вырезаем «занятые».
+  const domainValueFieldPaths = useMemo(() => {
     const paths = new Set<string>();
     for (const row of groupRows) {
       if (!row.columnKey.trim()) continue;
@@ -159,14 +148,15 @@ export function ReportComposeGroupSection({
         tableMetadataByRowId,
         referenceEntityMetadataByName,
       );
-      // BOOLEAN / ENUM из metadata — без device-events.
+      // BOOLEAN / ENUM из metadata — без доменного API.
       if (buildMetadataHavingValueOptions(fieldDef).length > 0) continue;
+      if (!resolveReportDomainListEntityForFieldPath(row.columnKey, entityName)) continue;
       paths.add(row.columnKey);
     }
     return Array.from(paths).sort();
   }, [
-    isDeviceEventEntity,
     groupRows,
+    entityName,
     entityMetadata,
     outputRows,
     tableMetadataByRowId,
@@ -174,54 +164,82 @@ export function ReportComposeGroupSection({
   ]);
 
   const branchIdsKey = branchIds.join(',');
-  const deviceEventValueFieldPathsKey = deviceEventValueFieldPaths.join('\0');
+  const domainValueFieldPathsKey = domainValueFieldPaths.join('\0');
+  const domainSearchKey = domainValueFieldPaths
+    .map((path) => `${path}=${domainSearchByPath[path] ?? ''}`)
+    .join('\0');
 
   useEffect(() => {
-    const fieldPaths = deviceEventValueFieldPathsKey
-      ? deviceEventValueFieldPathsKey.split('\0')
+    const fieldPaths = domainValueFieldPathsKey
+      ? domainValueFieldPathsKey.split('\0')
       : [];
     if (!fieldPaths.length) {
-      setDeviceEventOptionsByPath({});
-      setDeviceEventOptionsLoading(false);
+      setDomainOptionsByPath({});
+      setDomainOptionsLoading(false);
       return;
     }
 
+    // Не AbortController: при «Сформировать отчёт» модалка размонтируется и abort()
+    // красит device-events как (canceled) в Network — это не ошибка API.
+    // Достаточно игнорировать ответ через cancelled.
     let cancelled = false;
-    const controller = new AbortController();
-    setDeviceEventOptionsLoading(true);
+    setDomainOptionsLoading(true);
 
-    void fetchDeviceEventsForHavingOptions({
-      entityName,
-      branchIds,
-      signal: controller.signal,
-    })
-      .then((events) => {
-        if (cancelled) return;
+    const searchByPath: Record<string, string> = {};
+    for (const part of domainSearchKey ? domainSearchKey.split('\0') : []) {
+      const eq = part.indexOf('=');
+      if (eq < 0) continue;
+      searchByPath[part.slice(0, eq)] = part.slice(eq + 1);
+    }
+
+    void (async () => {
+      try {
         const next: Record<string, Values> = {};
+        // Группируем пути по сущности справочника — один запрос на сущность+search.
+        const byEntity = new Map<string, string[]>();
         for (const fieldPath of fieldPaths) {
-          next[fieldPath] = buildDeviceEventHavingValueOptions(events, fieldPath);
+          const source =
+            resolveReportDomainListEntityForFieldPath(fieldPath, entityName) ?? 'DeviceEvent';
+          const search = searchByPath[fieldPath] ?? '';
+          const key = `${source}\n${search}`;
+          const list = byEntity.get(key) ?? [];
+          list.push(fieldPath);
+          byEntity.set(key, list);
         }
-        setDeviceEventOptionsByPath(next);
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        // AbortController abort() → красные canceled в Network; это не ошибка API.
-        const code =
-          error && typeof error === 'object' && 'code' in error
-            ? String((error as { code?: string }).code)
-            : '';
-        if (code === 'ERR_CANCELED') return;
-        setDeviceEventOptionsByPath({});
-      })
-      .finally(() => {
-        if (!cancelled) setDeviceEventOptionsLoading(false);
-      });
+
+        await Promise.all(
+          Array.from(byEntity.entries()).map(async ([key, paths]) => {
+            const [source, search = ''] = key.split('\n');
+            const records = await fetchReportDomainEntityRecords({
+              entityName: source,
+              searchQuery: search,
+              branchIds,
+            });
+            for (const fieldPath of paths) {
+              if (source === 'DeviceEvent') {
+                next[fieldPath] = buildDeviceEventHavingValueOptions(records, fieldPath, search);
+              } else {
+                const attr = fieldPath.includes('.')
+                  ? fieldPath.slice(fieldPath.lastIndexOf('.') + 1)
+                  : fieldPath;
+                next[fieldPath] = buildDomainListValuesForAttribute(source, records, attr);
+              }
+            }
+          }),
+        );
+
+        if (!cancelled) setDomainOptionsByPath(next);
+      } catch {
+        if (!cancelled) setDomainOptionsByPath({});
+      } finally {
+        if (!cancelled) setDomainOptionsLoading(false);
+      }
+    })();
 
     return () => {
       cancelled = true;
-      controller.abort();
     };
-  }, [deviceEventValueFieldPathsKey, entityName, branchIdsKey, branchIds]);
+  }, [domainValueFieldPathsKey, domainSearchKey, entityName, branchIdsKey, branchIds]);
 
   const handleConfirmAdd = ({ columnKey, logicOperator: nextLogic }: ReportAddGroupConfirm) => {
     if (nextLogic) {
@@ -238,7 +256,7 @@ export function ReportComposeGroupSection({
     onChange(groupRows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
 
-  const canAddGroup = availableColumnOptions.length > 0;
+  const canAddGroup = columnOptions.length > 0;
 
   return (
     <>
@@ -288,7 +306,7 @@ export function ReportComposeGroupSection({
                 labelFromMetaOrI18n('reports.havingMode'),
               );
               const metadataValueOptions = buildMetadataHavingValueOptions(fieldDef);
-              const remoteValueOptions = deviceEventOptionsByPath[row.columnKey] ?? [];
+              const remoteValueOptions = domainOptionsByPath[row.columnKey] ?? [];
               const valueOptions =
                 metadataValueOptions.length > 0 ? metadataValueOptions : remoteValueOptions;
 
@@ -317,10 +335,7 @@ export function ReportComposeGroupSection({
 
               const columnChoices = [
                 ...columnValue,
-                ...columnOptions.filter((option) => {
-                  const key = String(option.value);
-                  return key === row.columnKey || !usedColumnKeys.has(key);
-                }),
+                ...columnOptions.filter((option) => String(option.value) !== row.columnKey),
               ];
               const uniqueColumnChoices = Array.from(
                 new Map(columnChoices.map((item) => [String(item.value), item])).values(),
@@ -332,16 +347,16 @@ export function ReportComposeGroupSection({
               // max_only / min_only / above_avg → только aggregation.
               const showTopN = normalizedHavingMode === 'top_n';
               const showComparisonControls = normalizedHavingMode === 'comparison';
-              const waitingDeviceEventOptions =
+              const waitsDomainOptions =
                 showComparisonControls &&
-                isDeviceEventEntity &&
                 metadataValueOptions.length === 0 &&
-                deviceEventOptionsLoading &&
+                Boolean(resolveReportDomainListEntityForFieldPath(row.columnKey, entityName)) &&
+                domainOptionsLoading &&
                 !valueOptions.length;
               const showValuesSelect =
-                showComparisonControls && (valueOptions.length > 0 || waitingDeviceEventOptions);
+                showComparisonControls && (valueOptions.length > 0 || waitsDomainOptions);
               const showValuesTextInput =
-                showComparisonControls && !showValuesSelect && !waitingDeviceEventOptions;
+                showComparisonControls && !showValuesSelect && !waitsDomainOptions;
 
               return (
                 <div key={row.id}>
@@ -484,10 +499,16 @@ export function ReportComposeGroupSection({
                             label={t('reports.composeGroupHavingValuesLabel')}
                             values={valueOptions}
                             value={row.values}
-                            serverFilter={false}
-                            isLoading={waitingDeviceEventOptions}
+                            serverFilter
+                            isLoading={waitsDomainOptions}
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
+                            onInputChange={(next) => {
+                              setDomainSearchByPath((prev) => ({
+                                ...prev,
+                                [row.columnKey]: next,
+                              }));
+                            }}
                             setValueStore={(_, next) => {
                               patchRow(row.id, { values: (next as Values) ?? [] });
                             }}
@@ -538,7 +559,7 @@ export function ReportComposeGroupSection({
 
       <ReportAddGroupDialog
         open={addDialogOpen}
-        columnOptions={availableColumnOptions}
+        columnOptions={columnOptions}
         requireLogicOperator={groupRows.length > 0}
         onClose={() => setAddDialogOpen(false)}
         onConfirm={handleConfirmAdd}

@@ -5,7 +5,6 @@ import { Alert, Autocomplete, CircularProgress, TextField } from '@mui/material'
 
 import { FilterPanel } from '@entities/filter_panel';
 import { buildReportOutputFieldOptions } from '@pages/reports/lib/reportEntityCompositeFields';
-import { isReportOutputRowComplete } from '@pages/reports/lib/reportOutputRow';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { ReportFieldDefinition, ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -37,7 +36,6 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
   const metadataError = reportsStore((s) => s.metadataError);
   const filterControls = reportsStore((s) => s.filterControls);
   const outputRows = reportsStore((s) => s.outputRows);
-  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
   const setSelectedEntityName = reportsStore((s) => s.setSelectedEntityName);
   const loadMetadataForEntity = reportsStore((s) => s.loadMetadataForEntity);
   const addOutputRow = reportsStore((s) => s.addOutputRow);
@@ -79,6 +77,14 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     },
     [addOutputRow],
   );
+
+  const handleRequestAddRow = useCallback(() => {
+    if (outputRows.length === 0) {
+      addOutputRow('or');
+      return;
+    }
+    setAddVariantDialogOpen(true);
+  }, [addOutputRow, outputRows.length]);
 
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
@@ -133,7 +139,7 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
       fieldMap={fieldMap}
       groupControls={groupControls}
       showAddButton={options.showAddButton}
-      onRequestAddRow={() => setAddVariantDialogOpen(true)}
+      onRequestAddRow={handleRequestAddRow}
       onRemoveRow={options.showRemoveButton ? () => removeOutputRow(row.id) : undefined}
       onOutputFieldChange={(values) => setOutputRowSelectedFields(row.id, values)}
       onFilterChange={(controlId, values) => setOutputRowFilterSelection(row.id, controlId, values)}
@@ -167,49 +173,46 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
           </Alert>
         ) : null}
 
-        {outputRows.map((row, index) => {
-          const isFirstRow = index === 0;
-          const isLastRow = index === outputRows.length - 1;
-          const rowTableMetadata = reportsStore.getState().reportTableFieldsMetadataByRowId[row.id] ?? null;
-          const rowComplete = isReportOutputRowComplete(
-            row,
-            fieldMap,
-            rowTableMetadata,
-            metadata,
-            referenceEntityMetadataByName,
-            t,
-          );
+        {outputRows.length === 0 ? (
+          <div className={pageStyles.reportFilterRowPrimary}>
+            {renderEntityAutocomplete()}
+          </div>
+        ) : (
+          outputRows.map((row, index) => {
+            const isFirstRow = index === 0;
+            const isLastRow = index === outputRows.length - 1;
 
-          if (isFirstRow) {
+            if (isFirstRow) {
+              return (
+                <div key={row.id} className={pageStyles.reportFilterRowPrimary}>
+                  {renderEntityAutocomplete()}
+                  {showOutputRow
+                    ? renderOutputRow(row, {
+                        isPrimaryRow: true,
+                        showAddButton: isLastRow,
+                        showRemoveButton: true,
+                      })
+                    : null}
+                </div>
+              );
+            }
+
+            if (!showOutputRow) {
+              return null;
+            }
+
             return (
-              <div key={row.id} className={pageStyles.reportFilterRowPrimary}>
-                {renderEntityAutocomplete()}
-                {showOutputRow
-                  ? renderOutputRow(row, {
-                      isPrimaryRow: true,
-                      showAddButton: isLastRow,
-                      showRemoveButton: false,
-                    })
-                  : null}
+              <div key={row.id} className={pageStyles.reportFilterOutputRow}>
+                <div className={pageStyles.reportFilterRowEntitySpacer} aria-hidden />
+                {renderOutputRow(row, {
+                  isPrimaryRow: false,
+                  showAddButton: isLastRow,
+                  showRemoveButton: true,
+                })}
               </div>
             );
-          }
-
-          if (!showOutputRow) {
-            return null;
-          }
-
-          return (
-            <div key={row.id} className={pageStyles.reportFilterOutputRow}>
-              <div className={pageStyles.reportFilterRowEntitySpacer} aria-hidden />
-              {renderOutputRow(row, {
-                isPrimaryRow: false,
-                showAddButton: isLastRow,
-                showRemoveButton: true,
-              })}
-            </div>
-          );
-        })}
+          })
+        )}
       </FilterPanel>
 
       <ReportAddVariantDialog

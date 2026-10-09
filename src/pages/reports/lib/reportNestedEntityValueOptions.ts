@@ -4,11 +4,13 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
-import { isReportCoordinatesCompositePropertyFieldName } from './reportCoordinateComposite';
+import {
+  isReportCoordinatesCompositePath,
+  isReportCoordinatesCompositePropertyFieldName,
+} from './reportCoordinateComposite';
 import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
 import {
   isReportBooleanField,
-  isReportCoordinateField,
   isReportDateTimeField,
   isReportTimeOnlyField,
   isReportYearOnlyField,
@@ -25,6 +27,17 @@ export type NestedEntityValueLoadKind =
   | 'year'
   | 'coordinate'
   | 'coordinatePairInput';
+
+function isCoordinatesCompositeFilterField(field: ReportFieldDefinition): boolean {
+  const name = field.fieldName ?? '';
+  return (
+    isReportCoordinatesCompositePropertyFieldName(name) || isReportCoordinatesCompositePath(name)
+  );
+}
+
+function canLoadCoordinatesFromDomainApi(leafEntityName: string): boolean {
+  return Boolean(resolveReportDomainListEntityName(leafEntityName));
+}
 
 /** Список сущностей (id + подпись) вместо значений скалярного поля. */
 export function isNestedEntityListPickerField(
@@ -47,27 +60,31 @@ export function shouldForceReportLeafDomainList(
   if (!field) return false;
   const domainEntity = resolveReportDomainListEntityName(leafEntityName);
   if (!domainEntity) return false;
-  if (isReportCoordinatesCompositePropertyFieldName(field.fieldName)) return false;
   if (isReportBooleanField(field)) return false;
   if (isReportDateTimeField(field) || isReportTimeOnlyField(field)) return false;
   if (isReportYearOnlyField(field)) return false;
-  if (isReportCoordinateField(field)) return false;
   return true;
 }
 
 /**
  * Листовое «Значение»: тип/ENUM/BOOLEAN из metadata; иначе доменный API по leafEntityName.
+ * Координаты при наличии доменного API — dropdown (пары / lat / lon), не ручной ввод.
  */
 export function resolveNestedEntityValueLoadKind(
   field: ReportFieldDefinition | undefined,
   leafEntityName: string,
 ): NestedEntityValueLoadKind {
-  if (field && isReportCoordinatesCompositePropertyFieldName(field.fieldName)) {
-    return 'coordinatePairInput';
+  if (field && isCoordinatesCompositeFilterField(field)) {
+    return canLoadCoordinatesFromDomainApi(leafEntityName)
+      ? 'domainList'
+      : 'coordinatePairInput';
   }
 
-  // BOOLEAN / ENUM.allowedValues / DATETIME / YEAR / COORDINATE — строго из metadata поля.
+  // BOOLEAN / ENUM / DATETIME / YEAR — из metadata; COORDINATE — из domain API при наличии.
   const fromMetadata = resolveReportMetadataValueLoadKind(field);
+  if (fromMetadata === 'coordinate') {
+    return canLoadCoordinatesFromDomainApi(leafEntityName) ? 'domainList' : 'coordinate';
+  }
   if (fromMetadata !== 'textInput') {
     return fromMetadata;
   }

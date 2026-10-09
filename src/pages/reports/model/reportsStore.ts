@@ -105,7 +105,8 @@ const defaultNestedFilterState = (): ReportNestedEntityFilterState => ({
 
 const emptyLabelMaps = (): ReportVehicleLabelMaps => ({ types: {}, colors: {} });
 
-const defaultOutputRows = (): ReportOutputRow[] => [createDefaultReportOutputRow()];
+/** Пустой список: в модалке «Фильтрация» как у «Группировка» — только ссылка «Добавить». */
+const defaultOutputRows = (): ReportOutputRow[] => [];
 
 function resetRowFilterState(row: ReportOutputRow): ReportOutputRow {
   return {
@@ -352,22 +353,9 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
   removeOutputRow(rowId) {
     const current = get().outputRows;
-    if (current.length > 1) {
-      set({
-        outputRows: current.filter((row) => row.id !== rowId),
-        ...omitRowReportTableMetadataCache(
-          get().reportTableFieldsMetadataByRowId,
-          get().reportTableFieldsMetadataLoadingByRowId,
-          get().reportTableFieldsMetadataKeyByRowId,
-          rowId,
-        ),
-      });
-      return;
-    }
-    const primary = getPrimaryOutputRowFromList(current);
-    if (primary.id !== rowId) return;
+    if (!current.some((row) => row.id === rowId)) return;
     set({
-      outputRows: [resetRowFilterState(primary)],
+      outputRows: current.filter((row) => row.id !== rowId),
       ...omitRowReportTableMetadataCache(
         get().reportTableFieldsMetadataByRowId,
         get().reportTableFieldsMetadataLoadingByRowId,

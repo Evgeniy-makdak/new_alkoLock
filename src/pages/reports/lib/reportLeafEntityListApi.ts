@@ -1,5 +1,6 @@
 /** Сущности, для которых «Значение» на листе path грузится доменным API (не metadata). */
 export const REPORT_LEAF_DOMAIN_LIST_ENTITIES = new Set([
+  'DeviceEvent',
   'User',
   'Driver',
   'Vehicle',

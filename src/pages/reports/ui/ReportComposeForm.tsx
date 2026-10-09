@@ -97,6 +97,15 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
     [addOutputRow],
   );
 
+  const handleAddFilterClick = useCallback(() => {
+    // Первый фильтр — сразу карточка; со второго — диалог И/ИЛИ (как у группировки).
+    if (outputRows.length === 0) {
+      addOutputRow('or');
+      return;
+    }
+    setAddVariantDialogOpen(true);
+  }, [addOutputRow, outputRows.length]);
+
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
 
@@ -213,30 +222,33 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
               <button
                 type="button"
                 className={composeStyles.addGroupLink}
-                onClick={() => setAddVariantDialogOpen(true)}>
+                onClick={handleAddFilterClick}>
                 {t('reports.composeAddFilterGroup')}
               </button>
             }>
-            <div className={composeStyles.filterGroups}>
-              {outputRows.map((row, index) => {
-                const isFirstRow = index === 0;
-                const canRemoveGroup = !isFirstRow;
+            {outputRows.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                {t('reports.composeFilterEmptyPlaceholder')}
+              </Typography>
+            ) : (
+              <div className={composeStyles.filterGroups}>
+                {outputRows.map((row, index) => {
+                  const isFirstRow = index === 0;
 
-                return (
-                  <div key={row.id}>
-                    {index > 0 ? <ReportFilterLogicConnector /> : null}
-                    <div className={composeStyles.filterGroup}>
-                      <div className={composeStyles.filterGroupMain}>
-                        <div className={composeStyles.filterGroupHead}>
-                          <span className={composeStyles.filterGroupLabel}>
-                            {t('reports.composeFilterGroup', { number: index + 1 })}
-                          </span>
+                  return (
+                    <div key={row.id}>
+                      {index > 0 ? <ReportFilterLogicConnector /> : null}
+                      <div className={composeStyles.filterGroup}>
+                        <div className={composeStyles.filterGroupMain}>
+                          <div className={composeStyles.filterGroupHead}>
+                            <span className={composeStyles.filterGroupLabel}>
+                              {t('reports.composeFilterGroup', { number: index + 1 })}
+                            </span>
+                          </div>
+                          <div className={composeStyles.filterGroupFields}>
+                            {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
+                          </div>
                         </div>
-                        <div className={composeStyles.filterGroupFields}>
-                          {renderOutputRow(row, { isPrimaryRow: isFirstRow })}
-                        </div>
-                      </div>
-                      {canRemoveGroup ? (
                         <Tooltip title={t('reports.composeRemoveFilter')}>
                           <IconButton
                             type="button"
@@ -247,12 +259,12 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
                             <CloseIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                      ) : null}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </ReportComposeSection>
         ) : selectedEntityName && metadataLoading ? (
           <Typography variant="body2" color="text.secondary">

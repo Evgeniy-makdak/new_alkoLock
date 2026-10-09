@@ -3,6 +3,7 @@ import { Formatters } from '@shared/utils/formatters';
 
 import {
   buildCoordinatePairValueOptions,
+  isReportCoordinatesCompositePath,
   isReportCoordinatesCompositePropertyFieldName,
 } from './reportCoordinateComposite';
 import {
@@ -54,7 +55,10 @@ export function buildDomainListValuesForAttribute(
   const visibleRecords = filterReportReferenceRecordsForUi(ref, records);
   if (!ref || !attr || !visibleRecords.length) return [];
 
-  if (isReportCoordinatesCompositePropertyFieldName(attr)) {
+  if (
+    isReportCoordinatesCompositePropertyFieldName(attr) ||
+    isReportCoordinatesCompositePath(attr)
+  ) {
     return buildCoordinatePairValueOptions(visibleRecords);
   }
 

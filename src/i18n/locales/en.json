@@ -847,6 +847,7 @@
     "saveReportFile": "Save file",
     "saveReportModalTitle": "Save report",
     "composeAddFilterGroup": "+ Add filter",
+    "composeFilterEmptyPlaceholder": "Select a field to filter",
     "addVariantDialogTitle": "Filter grouping",
     "addVariantLogicPlaceholder": "Grouping type",
     "logicOr": "OR",

@@ -19,7 +19,6 @@ import {
 import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
 import { resolveReportFilterValueMaxValues } from '@pages/reports/lib/mapReportQueryOperator';
-import { isReportCoordinatesCompositePropertyFieldName } from '@pages/reports/lib/reportCoordinateComposite';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
@@ -136,10 +135,7 @@ export function NestedFilterValueControl({
     [valueOptions, values],
   );
 
-  if (
-    valueLoadKind === 'coordinatePairInput' ||
-    isReportCoordinatesCompositePropertyFieldName(segment.field.fieldName)
-  ) {
+  if (valueLoadKind === 'coordinatePairInput') {
     return (
       <ReportCoordinatePairFilterField
         label={t('reports.terminalValuesLabel', { parameter: segment.label })}
@@ -185,6 +181,8 @@ export function NestedFilterValueControl({
     );
   }
 
+  // domainList для координат — общий select ниже (пары / lat / lon из device-events).
+
   const maxValues = resolveReportFilterValueMaxValues(
     filterOperationCode,
     valueLoadKind !== 'enum' || staticValueOptions.length === 0,
@@ -201,10 +199,13 @@ export function NestedFilterValueControl({
       label={t('reports.terminalValuesLabel', { parameter: segment.label })}
       values={displayValueOptions}
       value={isBooleanValueField ? values.slice(0, 1) : values}
-      serverFilter={false}
-      isLoading={false}
+      serverFilter={valueLoadKind === 'domainList'}
+      isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
+      onInputChange={
+        valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
+      }
       setValueStore={(_, next) =>
         onChange(isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values))
       }

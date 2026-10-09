@@ -1,10 +1,6 @@
-import { AlcolocksApi, CarsApi, EventsApi } from '@shared/api/baseQuerys';
+import { EventsApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
-import type {
-  IAlcolock,
-  ICar,
-  IDeviceAction,
-} from '@shared/types/BaseQueryTypes';
+import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 import { Formatters } from '@shared/utils/formatters';
 
@@ -19,7 +15,10 @@ import {
 } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
 import { fetchDeviceActionsForReport } from './deviceActionReportOptions';
-import { fetchUsersForReportFilter } from './fetchUsersForReportFilter';
+import {
+  fetchReportDomainEntityRecords,
+  isReportDomainListEntityName,
+} from './fetchReportDomainEntityRecords';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import { resolveNestedEntityValueLoadKind } from './reportNestedEntityValueOptions';
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
@@ -53,6 +52,15 @@ export async function fetchReportNestedEntityValueOptions(
   const pageSize = REPORT_REFERENCE_LIST_PAGE_SIZE;
   const branchFilter = branchId != null ? { branchId } : {};
 
+  // DeviceEvent / Vehicle / User / MonitoringDevice — page=0&size=25 + поиск по подстроке.
+  if (isReportDomainListEntityName(ref) || ref === 'Driver') {
+    const records = await fetchReportDomainEntityRecords({
+      entityName: ref,
+      searchQuery: match,
+    });
+    return buildDomainListValuesForAttribute(ref, records, attr, labelMaps, field);
+  }
+
   switch (ref) {
     case 'BranchOffice': {
       const offices = await fetchBranchOfficesForReport(match);
@@ -61,46 +69,6 @@ export async function fetchReportNestedEntityValueOptions(
     case 'DeviceAction': {
       const actions = await fetchDeviceActionsForReport(match);
       return buildDomainListValuesForAttribute(ref, actions, attr, labelMaps, field);
-    }
-    case 'Vehicle': {
-      const cars = await fetchAllReportReferencePages<ICar>(
-        (page) =>
-          CarsApi.getCarsList({
-            page,
-            limit: pageSize,
-            searchQuery: match,
-            isActive: true,
-            filterOptions: branchFilter,
-          }),
-        pageSize,
-      );
-      return buildDomainListValuesForAttribute(ref, cars, attr, labelMaps, field);
-    }
-    case 'MonitoringDevice': {
-      const devices = await fetchAllReportReferencePages<IAlcolock>(
-        (page) =>
-          AlcolocksApi.getList({
-            page,
-            limit: pageSize,
-            searchQuery: match,
-            isAttachment: false,
-            includeActiveOnly: true,
-            query: '&all.id.notIn=3',
-            filterOptions: branchFilter,
-          }),
-        pageSize,
-      );
-      return buildDomainListValuesForAttribute(ref, devices, attr, labelMaps, field);
-    }
-    case 'User':
-    case 'Driver': {
-      const users = await fetchUsersForReportFilter({
-        pageSize,
-        searchQuery: match,
-        branchId: branchId ?? undefined,
-        driversOnly: ref === 'Driver',
-      });
-      return buildDomainListValuesForAttribute(ref, users, attr, labelMaps, field);
     }
     case 'VehicleBind': {
       const binds = await fetchVehicleDriverAllotmentsForReportFilter(match);

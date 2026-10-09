@@ -259,6 +259,7 @@ export async function fetchDeviceEventsForHavingOptions(
   const multiBranchQuery =
     branchIds.length > 1 ? `&all.branch.id.in=${branchIds.join(',')}` : undefined;
 
+  const activeQuery = '&all.isActive.in=true';
   const res = await EventsApi.getList(
     {
       page: 0,
@@ -270,7 +271,7 @@ export async function fetchDeviceEventsForHavingOptions(
           : selectedBranchId != null && !branchIds.length
             ? { branchId: selectedBranchId }
             : {},
-      ...(multiBranchQuery ? { query: multiBranchQuery } : {}),
+      query: `${activeQuery}${multiBranchQuery ?? ''}`,
     },
     params.signal ? { signal: params.signal } : undefined,
   );
