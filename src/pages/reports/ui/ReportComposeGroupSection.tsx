@@ -25,11 +25,13 @@ import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
   ReportFieldOperation,
+  ReportLogicOperator,
   ReportOutputRow,
 } from '@pages/reports/types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { ReportAddGroupDialog } from './ReportAddGroupDialog';
+import { ReportAddGroupDialog, type ReportAddGroupConfirm } from './ReportAddGroupDialog';
+import { ReportLogicOperatorConnector } from './ReportFilterLogicConnector';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -39,6 +41,8 @@ type ReportComposeGroupSectionProps = {
   columnOptions: Values;
   groupRows: ReportComposeGroupRow[];
   onChange: (rows: ReportComposeGroupRow[]) => void;
+  logicOperator: ReportLogicOperator;
+  onLogicOperatorChange: (logicOperator: ReportLogicOperator) => void;
   entityMetadata: ReportEntityMetadata | null;
   outputRows: ReportOutputRow[];
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>;
@@ -80,6 +84,8 @@ export function ReportComposeGroupSection({
   columnOptions,
   groupRows,
   onChange,
+  logicOperator,
+  onLogicOperatorChange,
   entityMetadata,
   outputRows,
   tableMetadataByRowId,
@@ -100,7 +106,10 @@ export function ReportComposeGroupSection({
     [columnOptions, usedColumnKeys],
   );
 
-  const handleConfirmAdd = (columnKey: string) => {
+  const handleConfirmAdd = ({ columnKey, logicOperator: nextLogic }: ReportAddGroupConfirm) => {
+    if (nextLogic) {
+      onLogicOperatorChange(nextLogic);
+    }
     onChange([...groupRows, createReportComposeGroupRow(columnKey)]);
   };
 
@@ -223,7 +232,14 @@ export function ReportComposeGroupSection({
               const showValuesTextInput = showComparisonControls && valueOptions.length === 0;
 
               return (
-                <div key={row.id} className={composeStyles.filterGroup}>
+                <div key={row.id}>
+                  {index > 0 ? (
+                    <ReportLogicOperatorConnector
+                      value={logicOperator}
+                      onChange={onLogicOperatorChange}
+                    />
+                  ) : null}
+                  <div className={composeStyles.filterGroup}>
                   <div className={composeStyles.filterGroupMain}>
                     <div className={composeStyles.filterGroupHead}>
                       <span className={composeStyles.filterGroupLabel}>
@@ -399,6 +415,7 @@ export function ReportComposeGroupSection({
                       <CloseIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
+                  </div>
                 </div>
               );
             })}
@@ -409,6 +426,7 @@ export function ReportComposeGroupSection({
       <ReportAddGroupDialog
         open={addDialogOpen}
         columnOptions={availableColumnOptions}
+        requireLogicOperator={groupRows.length > 0}
         onClose={() => setAddDialogOpen(false)}
         onConfirm={handleConfirmAdd}
       />

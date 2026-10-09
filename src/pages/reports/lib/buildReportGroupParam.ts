@@ -13,6 +13,11 @@ import {
 import { reportOutputFunctionKey } from './reportOutputFilterKeys';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
 
+import {
+  buildReportLogicConnects,
+  reportFilterGroupNumberForRowIndex,
+} from './reportFilterGroupNumber';
+
 import type { ReportComposeGroupRow } from '../types/reportComposeGroup';
 import { createReportComposeGroupRow } from '../types/reportComposeGroup';
 import type {
@@ -20,6 +25,8 @@ import type {
   ReportFieldDefinition,
   ReportFieldOperation,
   ReportHavingFilter,
+  ReportLogicConnect,
+  ReportLogicOperator,
   ReportOutputRow,
   ReportQueryRequest,
   ReportSelectedFieldPayload,
@@ -334,6 +341,7 @@ function rowHasHavingSelections(row: ReportComposeGroupRow): boolean {
  * Строки группировки → having в теле POST …/query.
  * Элемент добавляется только если в карточке выбраны параметры having
  * (operator / aggregation / havingMode / topN / values).
+ * group — попарно, как у filters: строки 0–1 → 1, 2–3 → 2, …
  * Коды приводятся к enum swagger (aggregation lowercase, havingMode, operator).
  */
 export function buildComposeHavingParams(
@@ -350,7 +358,7 @@ export function buildComposeHavingParams(
 
     const item: ReportHavingFilter = {
       fieldName,
-      group: index + 1,
+      group: reportFilterGroupNumberForRowIndex(index),
     };
 
     const aggregation = normalizeHavingAggregationForApi(row.havingAggregation);
@@ -390,6 +398,18 @@ export function buildComposeHavingParams(
   });
 
   return result;
+}
+
+/**
+ * Связи И/ИЛИ между парами having-групп — тот же контракт, что logicConnects у filters.
+ * Считаем по числу карточек группировки с выбранным полем.
+ */
+export function buildComposeHavingConnects(
+  rows: ReportComposeGroupRow[],
+  logicOperator: ReportLogicOperator,
+): ReportLogicConnect[] {
+  const activeCount = rows.filter((row) => row.columnKey.trim()).length;
+  return buildReportLogicConnects(activeCount, logicOperator);
 }
 
 function isColumnGroupableForGroupBy(

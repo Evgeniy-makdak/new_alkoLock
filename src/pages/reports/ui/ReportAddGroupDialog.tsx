@@ -1,6 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import {
+  Box,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  type SelectChangeEvent,
+} from '@mui/material';
+
 import { InputsColumnWrapper } from '@shared/components/Inputs_column_wrapper';
 import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
@@ -11,30 +20,43 @@ import {
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
+import type { ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
+
+type LogicOperatorValue = '' | ReportLogicOperator;
+
+export type ReportAddGroupConfirm = {
+  columnKey: string;
+  logicOperator?: ReportLogicOperator;
+};
 
 type ReportAddGroupDialogProps = {
   open: boolean;
   columnOptions: Values;
+  /** true — уже есть группировки: нужно выбрать И/ИЛИ, как у фильтров. */
+  requireLogicOperator?: boolean;
   onClose: () => void;
-  onConfirm: (columnKey: string) => void;
+  onConfirm: (payload: ReportAddGroupConfirm) => void;
 };
 
 export function ReportAddGroupDialog({
   open,
   columnOptions,
+  requireLogicOperator = false,
   onClose,
   onConfirm,
 }: ReportAddGroupDialogProps) {
   const { t } = useTranslation();
   const [columnKey, setColumnKey] = useState('');
-  const baselineRef = useRef({ columnKey: '' });
+  const [logicOperator, setLogicOperator] = useState<LogicOperatorValue>('');
+  const baselineRef = useRef({ columnKey: '', logicOperator: '' as LogicOperatorValue });
 
   useEffect(() => {
     if (!open) return;
     setColumnKey('');
-    baselineRef.current = { columnKey: '' };
+    setLogicOperator('');
+    baselineRef.current = { columnKey: '', logicOperator: '' };
   }, [open]);
 
   const selectedColumn = useMemo((): Values => {
@@ -43,22 +65,48 @@ export function ReportAddGroupDialog({
     return hit ? [hit] : [{ value: columnKey, label: columnKey }];
   }, [columnKey, columnOptions]);
 
-  const isDirty = columnKey !== baselineRef.current.columnKey;
-  const canConfirm = isDirty && columnKey !== '';
+  const logicOptions = useMemo(
+    () =>
+      [
+        { value: 'or' as const, label: t('reports.logicOr') },
+        { value: 'and' as const, label: t('reports.logicAnd') },
+      ] satisfies { value: ReportLogicOperator; label: string }[],
+    [t],
+  );
+
+  const isDirty =
+    columnKey !== baselineRef.current.columnKey ||
+    (requireLogicOperator && logicOperator !== baselineRef.current.logicOperator);
+  const canConfirm =
+    isDirty &&
+    columnKey !== '' &&
+    (!requireLogicOperator || logicOperator !== '');
+
+  const handleLogicChange = (event: SelectChangeEvent<LogicOperatorValue>) => {
+    setLogicOperator(event.target.value as LogicOperatorValue);
+  };
 
   const handleConfirm = () => {
     if (!canConfirm) return;
-    onConfirm(columnKey);
+    onConfirm({
+      columnKey,
+      ...(requireLogicOperator && logicOperator ? { logicOperator } : {}),
+    });
     setColumnKey('');
-    baselineRef.current = { columnKey: '' };
+    setLogicOperator('');
+    baselineRef.current = { columnKey: '', logicOperator: '' };
     onClose();
   };
 
   const handleClose = () => {
     setColumnKey('');
-    baselineRef.current = { columnKey: '' };
+    setLogicOperator('');
+    baselineRef.current = { columnKey: '', logicOperator: '' };
     onClose();
   };
+
+  const selectedLogicLabel =
+    logicOptions.find((option) => option.value === logicOperator)?.label ?? '';
 
   return (
     <Popup
@@ -70,6 +118,41 @@ export function ReportAddGroupDialog({
       closeOnEscapeKey={false}
       body={
         <InputsColumnWrapper>
+          {requireLogicOperator ? (
+            <FormControl fullWidth variant="outlined" size="small">
+              <InputLabel id="report-add-group-logic-label" shrink>
+                {t('reports.addVariantLogicPlaceholder')}
+              </InputLabel>
+              <Select
+                labelId="report-add-group-logic-label"
+                label={t('reports.addVariantLogicPlaceholder')}
+                value={logicOperator}
+                displayEmpty
+                onChange={handleLogicChange}
+                renderValue={(selected) => {
+                  if (!selected) {
+                    return (
+                      <Box component="span" sx={{ color: 'text.secondary' }}>
+                        {t('reports.addVariantLogicPlaceholder')}
+                      </Box>
+                    );
+                  }
+                  return selectedLogicLabel;
+                }}>
+                <MenuItem value="">
+                  <Box component="em" sx={{ color: 'text.secondary', fontStyle: 'normal' }}>
+                    {t('reports.addVariantLogicPlaceholder')}
+                  </Box>
+                </MenuItem>
+                {logicOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          ) : null}
+
           <ReportSearchMultipleSelect
             multiple={false}
             compact

@@ -8,6 +8,7 @@ import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports
 import {
   buildGroupableColumnOptions,
   buildComposeGroupParams,
+  buildComposeHavingConnects,
   buildComposeHavingParams,
   finalizeReportQueryBodyForGroupBy,
   parseComposeGroupRowsFromGroupBy,
@@ -42,7 +43,10 @@ import {
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { getPrimaryReportOutputRow, reportsStore } from '@pages/reports/model/reportsStore';
 import { CHART_REPORT_PAGE_SIZE } from '@pages/reports/types/chartSpec';
-import type { ReportQueryRequest } from '@pages/reports/types/reportApiTypes';
+import type {
+  ReportLogicOperator,
+  ReportQueryRequest,
+} from '@pages/reports/types/reportApiTypes';
 import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
 import { Button } from '@shared/ui/button';
 import { Popup } from '@shared/ui/popup';
@@ -104,6 +108,8 @@ export function ReportComposeModal({
   const [tableFieldsSelection, setTableFieldsSelection] = useState<Values>([]);
   const [composeSortRows, setComposeSortRows] = useState<ReportComposeSortRow[]>([]);
   const [composeGroupRows, setComposeGroupRows] = useState<ReportComposeGroupRow[]>([]);
+  const [composeHavingLogicOperator, setComposeHavingLogicOperator] =
+    useState<ReportLogicOperator>('or');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const filterConfigurationKeyRef = useRef<string | null>(null);
 
@@ -131,6 +137,7 @@ export function ReportComposeModal({
       setTableFieldsSelection([]);
       setComposeSortRows([]);
       setComposeGroupRows([]);
+      setComposeHavingLogicOperator('or');
       setSelectedBranchOffices([]);
       return;
     }
@@ -154,6 +161,9 @@ export function ReportComposeModal({
     );
     setComposeGroupRows(
       parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields, queryBody?.having),
+    );
+    setComposeHavingLogicOperator(
+      queryBody?.havingConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',
     );
     const restoredDisplay: Record<string, string> = {};
     for (const field of queryBody?.selectedFields ?? []) {
@@ -185,6 +195,7 @@ export function ReportComposeModal({
     filterConfigurationKeyRef.current = filterConfigurationKey;
     setComposeSortRows([]);
     setComposeGroupRows([]);
+    setComposeHavingLogicOperator('or');
   }, [open, filterConfigurationKey]);
 
   const handleClose = useCallback(() => {
@@ -473,6 +484,9 @@ export function ReportComposeModal({
       ]),
     );
     const having = buildComposeHavingParams(composeGroupRows, columnLabelByKey);
+    const havingConnects = having.length
+      ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
+      : [];
     const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
     const {
       metadata: entityMetadata,
@@ -485,6 +499,7 @@ export function ReportComposeModal({
         ...body,
         ...(groupBy.length ? { groupBy } : {}),
         ...(having.length ? { having } : {}),
+        ...(havingConnects.length ? { havingConnects } : {}),
       },
       groupBy.length && entityMetadata
         ? {
@@ -540,6 +555,7 @@ export function ReportComposeModal({
     composeSortRows,
     composeGroupBy,
     composeGroupRows,
+    composeHavingLogicOperator,
     groupColumnOptions,
     onReportFormed,
     reportQueryErrorMessage,
@@ -622,6 +638,8 @@ export function ReportComposeModal({
                   columnOptions={groupColumnOptions}
                   groupRows={composeGroupRows}
                   onChange={setComposeGroupRows}
+                  logicOperator={composeHavingLogicOperator}
+                  onLogicOperatorChange={setComposeHavingLogicOperator}
                   entityMetadata={metadata}
                   outputRows={outputRows}
                   tableMetadataByRowId={reportTableFieldsMetadataByRowId}

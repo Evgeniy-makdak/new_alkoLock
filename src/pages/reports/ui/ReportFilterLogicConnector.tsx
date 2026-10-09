@@ -8,15 +8,22 @@ import type { ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
-export function ReportFilterLogicConnector() {
+type ReportLogicOperatorConnectorProps = {
+  value: ReportLogicOperator;
+  onChange: (logicOperator: ReportLogicOperator) => void;
+};
+
+/** И/ИЛИ между карточками «Фильтрация» / «Группировка». */
+export function ReportLogicOperatorConnector({
+  value,
+  onChange,
+}: ReportLogicOperatorConnectorProps) {
   const { t } = useTranslation();
   const theme = useTheme();
-  const logicOperator = reportsStore((s) => s.logicOperator);
-  const setLogicOperator = reportsStore((s) => s.setLogicOperator);
   const secondaryColor = theme.palette.text.secondary;
 
   const handleChange = (event: SelectChangeEvent<ReportLogicOperator>) => {
-    setLogicOperator(event.target.value as ReportLogicOperator);
+    onChange(event.target.value as ReportLogicOperator);
   };
 
   return (
@@ -24,7 +31,7 @@ export function ReportFilterLogicConnector() {
       <Select
         size="small"
         variant="standard"
-        value={logicOperator}
+        value={value}
         onChange={handleChange}
         disableUnderline
         className={composeStyles.filterLogicConnectorSelect}
@@ -52,5 +59,14 @@ export function ReportFilterLogicConnector() {
         <MenuItem value="or">{t('reports.logicOr')}</MenuItem>
       </Select>
     </div>
+  );
+}
+
+/** Коннектор фильтров: оператор из store (как раньше). */
+export function ReportFilterLogicConnector() {
+  const logicOperator = reportsStore((s) => s.logicOperator);
+  const setLogicOperator = reportsStore((s) => s.setLogicOperator);
+  return (
+    <ReportLogicOperatorConnector value={logicOperator} onChange={setLogicOperator} />
   );
 }
