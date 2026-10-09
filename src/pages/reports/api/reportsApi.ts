@@ -1,11 +1,19 @@
 import axios from 'axios';
 
-import { getApiUrl, getQuery, postQuery, returnHeaders } from '@shared/api/baseQueryTypes';
+import {
+  getApiUrl,
+  getQuery,
+  returnHeaders,
+  viewResErrors,
+} from '@shared/api/baseQueryTypes';
 
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
 import { appendReportBranchIdsToQueryParts } from '../lib/buildReportBranchQueryParams';
-import { finalizeReportQueryBodyForGroupBy } from '../lib/buildReportGroupParam';
+import {
+  finalizeReportQueryBodyForGroupBy,
+  serializeReportQueryRequest,
+} from '../lib/buildReportGroupParam';
 import {
   expandCompositeSelectedFields,
   isReportCompositeFieldPath,
@@ -24,6 +32,26 @@ function sanitizeReportQueryBody(body: ReportQueryRequest): ReportQueryRequest {
     (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
   );
   return finalizeReportQueryBodyForGroupBy({ ...body, selectedFields });
+}
+
+/** POST query/export: сырой JSON, чтобы having Long ушёл как N.0, не Integer. */
+async function postReportQueryBody<T>(
+  url: string,
+  body: ReportQueryRequest,
+): Promise<AppAxiosResponse<T>> {
+  const requestUrl = `${getApiUrl()}${url}`;
+  try {
+    const res = await axios.post<T>(requestUrl, serializeReportQueryRequest(body), {
+      headers: {
+        ...returnHeaders(),
+        'Content-Type': 'application/json',
+      },
+      transformRequest: [(data) => data],
+    });
+    return res as AppAxiosResponse<T>;
+  } catch (e) {
+    return viewResErrors<T>(e as Parameters<typeof viewResErrors>[0]);
+  }
 }
 
 /** Сигнал для UI: обрыв ответа (ERR_HTTP2_PROTOCOL_ERROR и т.п.), не ошибка бизнес-логики. */
@@ -101,10 +129,10 @@ export async function executeReportQuery(
       await delay(400 * attempt);
     }
 
-    const res = await postQuery<ReportQueryResponse, ReportQueryRequest>({
+    const res = await postReportQueryBody<ReportQueryResponse>(
       url,
-      data: sanitizeReportQueryBody(body),
-    });
+      sanitizeReportQueryBody(body),
+    );
 
     if (!res.isError && res.data != null) {
       return res.data;
@@ -140,8 +168,12 @@ export async function exportReport(
   appendReportBranchIdsToQueryParts(queryParts, branchIds);
   const url = `${getApiUrl()}api/v1/reports/${encoded}/export?${queryParts.join('&')}`;
 
-  const res = await axios.post(url, sanitizeReportQueryBody(body), {
-    headers: returnHeaders(),
+  const res = await axios.post(url, serializeReportQueryRequest(sanitizeReportQueryBody(body)), {
+    headers: {
+      ...returnHeaders(),
+      'Content-Type': 'application/json',
+    },
+    transformRequest: [(data) => data],
     responseType: 'blob',
   });
 

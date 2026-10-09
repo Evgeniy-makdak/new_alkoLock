@@ -22,6 +22,12 @@ export const COORDINATES_COMPOSITE_KIND = 'Coordinates';
 
 export const COORDINATE_MEMBER_FIELD_NAMES = ['latitude', 'longitude'] as const;
 
+/**
+ * false — latitude/longitude отдельные колонки в «Состав колонок» / гриде
+ * (как User/ТС/Алкозамок после split; SQL и having.Values работают по одному полю).
+ */
+export const MERGE_COORDINATE_TABLE_COLUMNS = false;
+
 export const COORDINATE_PAIR_VALUE_SEPARATOR = ':';
 
 export function isReportCoordinateMemberField(leaf: string): boolean {
@@ -182,11 +188,32 @@ type CoordinateGroup = {
   members: ReportTableFieldOptionDraft[];
 };
 
-/** Объединяет latitude/longitude в одну колонку «Координаты». */
+function coordinateMemberBaseLabel(leaf: string, t: TFunction): string {
+  if (leaf === 'latitude') return t('reports.composite.coordinateLatitude');
+  if (leaf === 'longitude') return t('reports.composite.coordinateLongitude');
+  return leaf;
+}
+
+/**
+ * Раньше склеивал latitude/longitude в «Координаты».
+ * При MERGE_COORDINATE_TABLE_COLUMNS=false оставляет два отдельных поля
+ * («Координаты (широта)» / «Координаты (долгота)»).
+ */
 export function applyReportCoordinateFieldGrouping(
   drafts: ReportTableFieldOptionDraft[],
   t: TFunction,
 ): ReportTableFieldOptionDraft[] {
+  if (!MERGE_COORDINATE_TABLE_COLUMNS) {
+    return drafts.map((draft) => {
+      const { leaf } = parseFieldPath(draft.value);
+      if (!isReportCoordinateMemberField(leaf)) return draft;
+      return {
+        ...draft,
+        baseLabel: coordinateMemberBaseLabel(leaf, t),
+      };
+    });
+  }
+
   const groups = new Map<string, CoordinateGroup>();
   const passthrough: ReportTableFieldOptionDraft[] = [];
 

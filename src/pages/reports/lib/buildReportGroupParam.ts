@@ -17,6 +17,7 @@ import {
   buildReportLogicConnects,
   reportFilterGroupNumberForRowIndex,
 } from './reportFilterGroupNumber';
+import { stripMapNavigationFieldsIncompatibleWithGroupBy } from './reportCoordinateMapLink';
 
 import type { ReportComposeGroupRow } from '../types/reportComposeGroup';
 import { createReportComposeGroupRow } from '../types/reportComposeGroup';
@@ -338,6 +339,82 @@ function rowHasHavingSelections(row: ReportComposeGroupRow): boolean {
 }
 
 /**
+ * Маркер целого для having.values: в JSON уходит как N.0 (Double).
+ * Jackson кладёт маленькие целые как Integer, а having ждёт Long
+ * («тип Integer несовместимо с Long»). Строка тоже отвергается бэком.
+ */
+const HAVING_LONG_JSON_PREFIX = '__reportHavingLong:';
+
+/** count/sum/avg — порог агрегата, не значение поля из device-events. */
+export function isHavingNumericThresholdAggregation(code: string): boolean {
+  const aggregation = normalizeHavingAggregationForApi(code);
+  return (
+    aggregation === 'count' ||
+    aggregation === 'countDistinct' ||
+    aggregation === 'sum' ||
+    aggregation === 'avg'
+  );
+}
+
+function resolveHavingValueType(
+  fieldDef: ReportFieldDefinition | null | undefined,
+  aggregation: string | undefined,
+): string {
+  const fromHaving = (fieldDef?.availableHaving?.type ?? '').trim();
+  if (fromHaving) return fromHaving;
+  if (isHavingNumericThresholdAggregation(aggregation ?? '')) return 'LONG';
+  return (fieldDef?.type ?? '').trim();
+}
+
+function havingValueTypeNeedsLongWire(type: string): boolean {
+  const t = type.toUpperCase();
+  return t === 'LONG' || t === 'BIGINT' || t === 'INT64';
+}
+
+/**
+ * having.values: целые под Long помечаются маркером → serializeReportQueryRequest
+ * пишет N.0; дроби и строки (timestamp) без изменений.
+ */
+export function coerceHavingValueForApi(raw: unknown, valueType = ''): unknown {
+  if (raw === '' || raw == null) return raw;
+  if (typeof raw === 'boolean') return raw;
+
+  const needsLongWire = havingValueTypeNeedsLongWire(valueType);
+
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    if (needsLongWire && Number.isInteger(raw)) {
+      return `${HAVING_LONG_JSON_PREFIX}${raw}`;
+    }
+    return raw;
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed !== '' && /^-?\d+$/.test(trimmed)) {
+      if (needsLongWire) return `${HAVING_LONG_JSON_PREFIX}${trimmed}`;
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : raw;
+    }
+    if (trimmed !== '' && /^-?\d+\.\d+$/.test(trimmed)) {
+      const num = Number(trimmed);
+      return Number.isFinite(num) ? num : raw;
+    }
+    return raw;
+  }
+  return raw;
+}
+
+/**
+ * JSON тела отчёта: маркеры Long → числовой литерал с .0
+ * (Jackson → Double, бэк приводит к Long; Integer/String отвергает).
+ */
+export function serializeReportQueryRequest(body: ReportQueryRequest): string {
+  return JSON.stringify(body).replace(
+    new RegExp(`"${HAVING_LONG_JSON_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(-?\\d+)"`, 'g'),
+    '$1.0',
+  );
+}
+
+/**
  * Строки группировки → having в теле POST …/query.
  * Элемент добавляется только если в карточке выбраны параметры having
  * (operator / aggregation / havingMode / topN / values).
@@ -347,6 +424,7 @@ function rowHasHavingSelections(row: ReportComposeGroupRow): boolean {
 export function buildComposeHavingParams(
   rows: ReportComposeGroupRow[],
   columnLabelByKey?: Map<string, string>,
+  resolveField?: (columnKey: string) => ReportFieldDefinition | null,
 ): ReportHavingFilter[] {
   const result: ReportHavingFilter[] = [];
 
@@ -367,6 +445,10 @@ export function buildComposeHavingParams(
     const havingMode = normalizeHavingModeForApi(row.havingMode);
     if (havingMode) item.havingMode = havingMode;
 
+    const fieldDef = resolveField?.(row.columnKey) ?? null;
+    const valueType = resolveHavingValueType(fieldDef, aggregation);
+    if (valueType) item.type = valueType;
+
     // topN только для havingMode = top_n; всегда integer, не строка
     if (havingMode === 'top_n') {
       const topNRaw = row.topN.trim();
@@ -384,7 +466,7 @@ export function buildComposeHavingParams(
       if (operator) item.operator = operator;
 
       const cleanedValues = row.values
-        .map((v) => v.value)
+        .map((v) => coerceHavingValueForApi(v.value, valueType))
         .filter((value) => value !== '' && value != null);
       if (cleanedValues.length) {
         item.values = cleanedValues;
@@ -753,6 +835,8 @@ function readGlobalAggregationFromOutputRows(outputRows: ReportOutputRow[]): str
  * При groupBy:
  * — дополняет groupBy соседними полями выбранной сущности;
  * — у полей из groupBy убирает aggregation (они в GROUP BY, не в SELECT agg);
+ * — снимает автодобавленный для карты vehicle.registrationNumber
+ *   (его нет в «Текущем составе», но inject ломал GROUP BY);
  * — НЕ подставляет aggregation в selectedFields автоматически:
  *   aggregation в selectedFields задаёт только контрол «Текущий состав таблицы»;
  *   условия агрегации по группам — в having.
@@ -764,9 +848,13 @@ export function finalizeReportQueryBodyForGroupBy(
   const groupBy = body.groupBy;
   if (!groupBy?.length) return body;
 
-  const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, body.selectedFields);
+  const withoutMapExtras = stripMapNavigationFieldsIncompatibleWithGroupBy(
+    body.selectedFields ?? [],
+    groupBy,
+  );
+  const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, withoutMapExtras);
   const groupSet = new Set(effectiveGroupBy);
-  const deduped = dedupeSelectedFieldsByFieldName(body.selectedFields, groupSet);
+  const deduped = dedupeSelectedFieldsByFieldName(withoutMapExtras, groupSet);
 
   const selectedFields = deduped.map((field) => {
     if (!field.fieldName) return field;

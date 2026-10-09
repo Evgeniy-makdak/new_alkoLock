@@ -186,9 +186,21 @@ function registrationPathMatchesCoordinatePrefix(regPath: string, coordPrefix: s
   return regPath.split('.').length <= MAX_REPORT_SELECTED_FIELD_DEPTH;
 }
 
+function selectedFieldsIncludeCoordinateLeaf(fields: ReportSelectedFieldPayload[]): boolean {
+  return fields.some((field) => {
+    const name = field.fieldName?.trim() ?? '';
+    if (!name) return false;
+    const leaf = name.includes('.') ? name.slice(name.lastIndexOf('.') + 1) : name;
+    return COORDINATE_LEAF_FIELDS.has(leaf);
+  });
+}
+
 /**
  * Для перехода на карту по координатам бэкенд должен вернуть госномер в content.
  * Добавляем только пути из metadata (allowedPaths), иначе POST …/query отвечает 409.
+ *
+ * Не вызывать при наличии groupBy: лишний vehicle.registrationNumber без aggregation
+ * ломает SQL («поле в таблице, но не в группировке»).
  */
 export function augmentReportSelectedFieldsForMapNavigation(
   fields: ReportSelectedFieldPayload[],
@@ -227,4 +239,23 @@ export function augmentReportSelectedFieldsForMapNavigation(
   }
 
   return extra.length ? [...fields, ...extra] : fields;
+}
+
+/**
+ * Убирает госномер, автодобавленный для карты, если есть GROUP BY и поле
+ * не входит в groupBy и не агрегировано (иначе бэкенд отвергает query).
+ */
+export function stripMapNavigationFieldsIncompatibleWithGroupBy(
+  fields: ReportSelectedFieldPayload[],
+  groupBy: string[],
+): ReportSelectedFieldPayload[] {
+  if (!groupBy.length || !selectedFieldsIncludeCoordinateLeaf(fields)) return fields;
+  const groupSet = new Set(groupBy);
+  return fields.filter((field) => {
+    const name = field.fieldName?.trim() ?? '';
+    if (!name || !isRegistrationNumberPath(name)) return true;
+    if (field.aggregation) return true;
+    if (groupSet.has(name)) return true;
+    return false;
+  });
 }

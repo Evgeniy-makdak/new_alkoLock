@@ -483,17 +483,32 @@ export function ReportComposeModal({
         String(option.label ?? option.value),
       ]),
     );
-    const having = buildComposeHavingParams(composeGroupRows, columnLabelByKey);
-    const havingConnects = having.length
-      ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
-      : [];
-    const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
     const {
       metadata: entityMetadata,
       outputRows: currentOutputRows,
       reportTableFieldsMetadataByRowId: tableMetadataByRowId,
       referenceEntityMetadataByName: nestedMetadataByName,
     } = reportsStore.getState();
+    const havingFieldMap = entityMetadata
+      ? new Map(entityMetadata.fields.map((field) => [field.fieldName, field]))
+      : null;
+    const having = buildComposeHavingParams(composeGroupRows, columnLabelByKey, (columnKey) => {
+      if (!entityMetadata || !havingFieldMap) return null;
+      return (
+        findReportTableFieldDefinition(
+          columnKey,
+          entityMetadata,
+          currentOutputRows,
+          havingFieldMap,
+          tableMetadataByRowId,
+          nestedMetadataByName,
+        ) ?? null
+      );
+    });
+    const havingConnects = having.length
+      ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
+      : [];
+    const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
       {
         ...body,
@@ -644,6 +659,11 @@ export function ReportComposeModal({
                   outputRows={outputRows}
                   tableMetadataByRowId={reportTableFieldsMetadataByRowId}
                   referenceEntityMetadataByName={referenceEntityMetadataByName}
+                  branchIds={
+                    isSuperAdmin
+                      ? reportComposeBranchValuesToIds(selectedBranchOffices)
+                      : []
+                  }
                 />
               </div>
             ) : null}

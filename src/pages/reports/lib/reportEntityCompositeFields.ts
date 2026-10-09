@@ -4,6 +4,7 @@ import { formatDeviceNameSerialLabel } from './deviceActionReportOptions';
 import {
   COORDINATE_MEMBER_FIELD_NAMES,
   COORDINATES_COMPOSITE_KIND,
+  MERGE_COORDINATE_TABLE_COLUMNS,
   applyReportCoordinateFieldGrouping,
   buildReportCoordinatesCompositePropertyFieldName,
   buildSyntheticCoordinatesFilterField,
@@ -318,28 +319,30 @@ export function planReportCompositeResultColumns(
       }
     }
 
-    const coordMemberKeys = COORDINATE_MEMBER_FIELD_NAMES.map((leaf) =>
-      prefix ? `${prefix}.${leaf}` : leaf,
-    );
-    const compositeCoordKey = buildReportCompositeFieldPath(prefix, COORDINATES_COMPOSITE_KIND);
-    const allCoordInContent = coordMemberKeys.every((k) => keySet.has(k));
-    const allCoordSelected =
-      coordMemberKeys.every((k) => selectedSet.has(k)) ||
-      selectedSet.has(compositeCoordKey) ||
-      Array.from(selectedSet).some(
-        (name) =>
-          isReportCoordinatesCompositePath(name) &&
-          (parseCompositePath(name)?.prefix ?? '') === prefix,
+    if (MERGE_COORDINATE_TABLE_COLUMNS) {
+      const coordMemberKeys = COORDINATE_MEMBER_FIELD_NAMES.map((leaf) =>
+        prefix ? `${prefix}.${leaf}` : leaf,
       );
-    if (allCoordInContent && allCoordSelected) {
-      groups.push({
-        compositeKey: compositeCoordKey,
-        memberKeys: coordMemberKeys,
-        kind: COORDINATES_COMPOSITE_KIND,
-        prefix,
-      });
-      for (const mk of coordMemberKeys) {
-        keysToHide.add(mk);
+      const compositeCoordKey = buildReportCompositeFieldPath(prefix, COORDINATES_COMPOSITE_KIND);
+      const allCoordInContent = coordMemberKeys.every((k) => keySet.has(k));
+      const allCoordSelected =
+        coordMemberKeys.every((k) => selectedSet.has(k)) ||
+        selectedSet.has(compositeCoordKey) ||
+        Array.from(selectedSet).some(
+          (name) =>
+            isReportCoordinatesCompositePath(name) &&
+            (parseCompositePath(name)?.prefix ?? '') === prefix,
+        );
+      if (allCoordInContent && allCoordSelected) {
+        groups.push({
+          compositeKey: compositeCoordKey,
+          memberKeys: coordMemberKeys,
+          kind: COORDINATES_COMPOSITE_KIND,
+          prefix,
+        });
+        for (const mk of coordMemberKeys) {
+          keysToHide.add(mk);
+        }
       }
     }
   }
@@ -557,7 +560,7 @@ export function collectReportCompositeMemberBundles(fieldNames: string[]): Repor
     const leaf = parts[parts.length - 1] ?? fieldName;
     const prefix = parts.length > 1 ? parts.slice(0, -1).join('.') : '';
 
-    if (isReportCoordinateMemberField(leaf)) {
+    if (MERGE_COORDINATE_TABLE_COLUMNS && isReportCoordinateMemberField(leaf)) {
       const members = COORDINATE_MEMBER_FIELD_NAMES.map((member) =>
         prefix ? `${prefix}.${member}` : member,
       );

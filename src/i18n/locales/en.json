@@ -770,7 +770,9 @@
       "entityDevice": "Alcolock",
       "entityVehicle": "Vehicle",
       "coordinatesDisplay": "Latitude:longitude",
-      "entityCoordinates": "Coordinates"
+      "entityCoordinates": "Coordinates",
+      "coordinateLatitude": "Coordinates (latitude)",
+      "coordinateLongitude": "Coordinates (longitude)"
     },
     "aggregation": {
       "count": "count",

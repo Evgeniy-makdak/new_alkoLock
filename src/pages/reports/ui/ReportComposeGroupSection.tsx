@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import CloseIcon from '@mui/icons-material/Close';
@@ -14,10 +14,16 @@ import {
 } from '@pages/reports/lib/buildReportGroupParam';
 import { findReportTableFieldDefinition } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
+  buildDeviceEventHavingValueOptions,
+  fetchDeviceEventsForHavingOptions,
+  isDeviceEventReportEntity,
+} from '@pages/reports/lib/fetchDeviceEventHavingValueOptions';
+import {
   reportFilterAutocompleteSlotProps,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
+import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
 import { createReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
@@ -47,7 +53,33 @@ type ReportComposeGroupSectionProps = {
   outputRows: ReportOutputRow[];
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
+  /** Филиалы суперадмина для all.branch.id.in в device-events. */
+  branchIds?: number[];
 };
+
+function buildMetadataHavingValueOptions(fieldDef: ReportFieldDefinition | null): Values {
+  if (!fieldDef) return [];
+  if (isReportBooleanField(fieldDef)) {
+    return [
+      { value: 'true', label: 'true' },
+      { value: 'false', label: 'false' },
+    ];
+  }
+  return (fieldDef.allowedValues ?? [])
+    .map((item) => {
+      if (item == null) return null;
+      if (typeof item === 'string' || typeof item === 'number') {
+        return { value: item, label: String(item) };
+      }
+      const code = item.value ?? item.code ?? item.name;
+      if (code == null) return null;
+      return {
+        value: code as string | number,
+        label: String(item.label ?? item.name ?? code),
+      };
+    })
+    .filter((item): item is Values[number] => Boolean(item));
+}
 
 function resolveGroupFieldDef(
   columnKey: string,
@@ -90,11 +122,19 @@ export function ReportComposeGroupSection({
   outputRows,
   tableMetadataByRowId,
   referenceEntityMetadataByName,
+  branchIds = [],
 }: ReportComposeGroupSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [deviceEventOptionsByPath, setDeviceEventOptionsByPath] = useState<Record<string, Values>>(
+    {},
+  );
+  const [deviceEventOptionsLoading, setDeviceEventOptionsLoading] = useState(false);
+
+  const entityName = entityMetadata?.entityName?.trim() ?? '';
+  const isDeviceEventEntity = isDeviceEventReportEntity(entityName);
 
   const usedColumnKeys = useMemo(
     () => new Set(groupRows.map((row) => row.columnKey).filter(Boolean)),
@@ -105,6 +145,83 @@ export function ReportComposeGroupSection({
     () => columnOptions.filter((option) => !usedColumnKeys.has(String(option.value))),
     [columnOptions, usedColumnKeys],
   );
+
+  const deviceEventValueFieldPaths = useMemo(() => {
+    if (!isDeviceEventEntity) return [] as string[];
+    const paths = new Set<string>();
+    for (const row of groupRows) {
+      if (!row.columnKey.trim()) continue;
+      if (normalizeHavingModeForApi(row.havingMode) !== 'comparison') continue;
+      const fieldDef = resolveGroupFieldDef(
+        row.columnKey,
+        entityMetadata,
+        outputRows,
+        tableMetadataByRowId,
+        referenceEntityMetadataByName,
+      );
+      // BOOLEAN / ENUM из metadata — без device-events.
+      if (buildMetadataHavingValueOptions(fieldDef).length > 0) continue;
+      paths.add(row.columnKey);
+    }
+    return Array.from(paths).sort();
+  }, [
+    isDeviceEventEntity,
+    groupRows,
+    entityMetadata,
+    outputRows,
+    tableMetadataByRowId,
+    referenceEntityMetadataByName,
+  ]);
+
+  const branchIdsKey = branchIds.join(',');
+  const deviceEventValueFieldPathsKey = deviceEventValueFieldPaths.join('\0');
+
+  useEffect(() => {
+    const fieldPaths = deviceEventValueFieldPathsKey
+      ? deviceEventValueFieldPathsKey.split('\0')
+      : [];
+    if (!fieldPaths.length) {
+      setDeviceEventOptionsByPath({});
+      setDeviceEventOptionsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    const controller = new AbortController();
+    setDeviceEventOptionsLoading(true);
+
+    void fetchDeviceEventsForHavingOptions({
+      entityName,
+      branchIds,
+      signal: controller.signal,
+    })
+      .then((events) => {
+        if (cancelled) return;
+        const next: Record<string, Values> = {};
+        for (const fieldPath of fieldPaths) {
+          next[fieldPath] = buildDeviceEventHavingValueOptions(events, fieldPath);
+        }
+        setDeviceEventOptionsByPath(next);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        // AbortController abort() → красные canceled в Network; это не ошибка API.
+        const code =
+          error && typeof error === 'object' && 'code' in error
+            ? String((error as { code?: string }).code)
+            : '';
+        if (code === 'ERR_CANCELED') return;
+        setDeviceEventOptionsByPath({});
+      })
+      .finally(() => {
+        if (!cancelled) setDeviceEventOptionsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [deviceEventValueFieldPathsKey, entityName, branchIdsKey, branchIds]);
 
   const handleConfirmAdd = ({ columnKey, logicOperator: nextLogic }: ReportAddGroupConfirm) => {
     if (nextLogic) {
@@ -170,23 +287,10 @@ export function ReportComposeGroupSection({
                 getReportHavingModeOptions(fieldDef),
                 labelFromMetaOrI18n('reports.havingMode'),
               );
-              const valueOptions = opsToLabeledValues(
-                (fieldDef?.allowedValues ?? [])
-                  .map((item) => {
-                    if (item == null) return null;
-                    if (typeof item === 'string' || typeof item === 'number') {
-                      return { code: String(item), label: String(item) };
-                    }
-                    const code = item.value ?? item.code ?? item.name;
-                    if (code == null) return null;
-                    return {
-                      code: String(code),
-                      label: String(item.label ?? item.name ?? code),
-                    };
-                  })
-                  .filter((item): item is { code: string; label: string } => Boolean(item)),
-                (_code, fallback) => fallback,
-              );
+              const metadataValueOptions = buildMetadataHavingValueOptions(fieldDef);
+              const remoteValueOptions = deviceEventOptionsByPath[row.columnKey] ?? [];
+              const valueOptions =
+                metadataValueOptions.length > 0 ? metadataValueOptions : remoteValueOptions;
 
               const selectedColumn = columnOptions.find(
                 (option) => String(option.value) === row.columnKey,
@@ -228,8 +332,16 @@ export function ReportComposeGroupSection({
               // max_only / min_only / above_avg → только aggregation.
               const showTopN = normalizedHavingMode === 'top_n';
               const showComparisonControls = normalizedHavingMode === 'comparison';
-              const showValuesSelect = showComparisonControls && valueOptions.length > 0;
-              const showValuesTextInput = showComparisonControls && valueOptions.length === 0;
+              const waitingDeviceEventOptions =
+                showComparisonControls &&
+                isDeviceEventEntity &&
+                metadataValueOptions.length === 0 &&
+                deviceEventOptionsLoading &&
+                !valueOptions.length;
+              const showValuesSelect =
+                showComparisonControls && (valueOptions.length > 0 || waitingDeviceEventOptions);
+              const showValuesTextInput =
+                showComparisonControls && !showValuesSelect && !waitingDeviceEventOptions;
 
               return (
                 <div key={row.id}>
@@ -373,6 +485,7 @@ export function ReportComposeGroupSection({
                             values={valueOptions}
                             value={row.values}
                             serverFilter={false}
+                            isLoading={waitingDeviceEventOptions}
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {

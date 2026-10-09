@@ -102,6 +102,8 @@ export type ReportHavingFilter = {
   values?: unknown[];
   group?: number;
   displayName?: string;
+  /** Тип значения having (из availableHaving.type / field.type), напр. LONG. */
+  type?: string;
 };
 
 export type ReportHavingGroupConnection = {

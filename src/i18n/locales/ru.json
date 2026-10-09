@@ -784,7 +784,9 @@
       "entityDevice": "Алкозамок",
       "entityVehicle": "ТС",
       "coordinatesDisplay": "Широта:долгота",
-      "entityCoordinates": "Координаты"
+      "entityCoordinates": "Координаты",
+      "coordinateLatitude": "Координаты (широта)",
+      "coordinateLongitude": "Координаты (долгота)"
     },
     "aggregation": {
       "count": "количество",
