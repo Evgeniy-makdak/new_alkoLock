@@ -27,10 +27,7 @@ import {
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
-import {
-  reportOutputFunctionKey,
-  reportOutputOperationKey,
-} from '@pages/reports/lib/reportOutputFilterKeys';
+import { reportOutputOperationKey } from '@pages/reports/lib/reportOutputFilterKeys';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type {
@@ -121,13 +118,12 @@ export function ReportOutputFilterRow({
   }, [refEntity, row.id, loadReportTableFieldsMetadata]);
 
   const operationKey = reportOutputOperationKey(row.id);
-  const functionKey = reportOutputFunctionKey(row.id);
   const filterOperationCode = useMemo(() => {
     const picked = row.filterSelections[operationKey]?.[0];
     return picked?.value != null && picked.value !== '' ? String(picked.value) : null;
   }, [row.filterSelections, operationKey]);
 
-  /** Операторы/функции — только availableOperations / availableFunctions текущего листа metadata. */
+  /** Операторы — только availableOperations текущего листа metadata. */
   const operationFunctionSource = useMemo(() => {
     if (!primaryField) return null;
     if (refEntity) {
@@ -147,33 +143,22 @@ export function ReportOutputFilterRow({
     () => operationsToValues(operationFunctionSource?.availableOperations),
     [operationFunctionSource],
   );
-  const functionOptions = useMemo(
-    () => operationsToValues(operationFunctionSource?.availableFunctions),
-    [operationFunctionSource],
-  );
 
-  // Смена листа metadata: сбрасываем оператор/функцию, которых нет в новых списках.
+  // Смена листа metadata: сбрасываем оператор, которого нет в новом списке.
   useEffect(() => {
     // Пока лист не известен — не трогаем выбор (идут промежуточные metadata).
     if (!operationFunctionSource) return;
 
     const allowedOps = new Set(operationOptions.map((o) => String(o.value)));
-    const allowedFns = new Set(functionOptions.map((o) => String(o.value)));
     const selectedOp = row.filterSelections[operationKey]?.[0];
-    const selectedFn = row.filterSelections[functionKey]?.[0];
 
     if (selectedOp && !allowedOps.has(String(selectedOp.value))) {
       onFilterChange(operationKey, []);
     }
-    if (selectedFn && !allowedFns.has(String(selectedFn.value))) {
-      onFilterChange(functionKey, []);
-    }
   }, [
     operationFunctionSource,
     operationOptions,
-    functionOptions,
     operationKey,
-    functionKey,
     row.filterSelections,
     onFilterChange,
   ]);
@@ -224,9 +209,6 @@ export function ReportOutputFilterRow({
       ? nestedAttributeReady && operationOptions.length > 0
       : outputControlsReady && operationOptions.length > 0;
 
-  const showFunctionField =
-    (isModalVariant ? Boolean(primaryField) : outputControlsReady) && functionOptions.length > 0;
-
   const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
   const selectCompact = isModalVariant;
 
@@ -269,52 +251,6 @@ export function ReportOutputFilterRow({
         }}
       />
     ) : null;
-
-  const filterFunctionBlock =
-    primaryField && showFunctionField ? (
-      <ReportSearchMultipleSelect
-        multiple={false}
-        compact={selectCompact}
-        name={functionKey}
-        label={
-          isModalVariant ? (
-            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'baseline', gap: 0.5 }}>
-              {t('reports.filterFunctionLabel')}
-              <Box
-                component="span"
-                sx={{
-                  fontSize: '0.75rem',
-                  fontWeight: 400,
-                  color: 'text.secondary',
-                  letterSpacing: 0,
-                }}>
-                {t('reports.filterFunctionOptionalBadge')}
-              </Box>
-            </Box>
-          ) : (
-            t('reports.filterFunctionLabel')
-          )
-        }
-        values={functionOptions}
-        value={row.filterSelections[functionKey] ?? []}
-        serverFilter={false}
-        isLoading={Boolean(refEntity && tableFieldsMetadataLoading)}
-        sx={selectSx}
-        slotProps={reportFilterAutocompleteSlotProps}
-        setValueStore={(_, value) =>
-          onFilterChange(functionKey, toValuesFromSingleSelect(value))
-        }
-      />
-    ) : null;
-
-  const filterFunctionField =
-    filterFunctionBlock && isModalVariant ? (
-      <Tooltip title={t('reports.filterFunctionOptionalHint')} placement="top">
-        <Box className={composeStyles.optionalFilterControl}>{filterFunctionBlock}</Box>
-      </Tooltip>
-    ) : (
-      filterFunctionBlock
-    );
 
   const nestedEntityFilterControl = primaryField && refEntity ? (
     <ReportNestedEntityFilterControl
@@ -416,14 +352,7 @@ export function ReportOutputFilterRow({
         outputFieldControl
       )}
 
-      {isModalVariant ? (
-        modalFilterControlsBlock
-      ) : (
-        <>
-          {valueFilterBlock}
-          {filterFunctionBlock}
-        </>
-      )}
+      {isModalVariant ? modalFilterControlsBlock : valueFilterBlock}
 
       {isPrimaryRow &&
       primaryField &&
@@ -448,8 +377,6 @@ export function ReportOutputFilterRow({
             );
           })
         : null}
-
-      {isModalVariant ? filterFunctionField : null}
 
       {canShowAddButton || (!isModalVariant && onRemoveRow != null) ? (
         <div className={pageStyles.reportFilterRowActions}>

@@ -373,7 +373,8 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
           ? {
               ...row,
               selectedOutputFields: single,
-              reportTableFields: [],
+              // «Текущий состав» хранится отдельно от поля результата фильтра.
+              reportTableFields: row.reportTableFields,
               filterSelections: emptySelections(),
               nestedEntityFilterByField: emptyNestedFilters(),
             }
@@ -433,9 +434,6 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
             ? patch.values
             : prev.values;
 
-        const rowTerminalReset =
-          pathChanged || (patch.values !== undefined && nextValues.length === 0);
-
         const opKey = reportOutputOperationKey(row.id);
         const fnKey = reportOutputFunctionKey(row.id);
         let nextFilterSelections = row.filterSelections;
@@ -446,7 +444,8 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
         return {
           ...row,
-          reportTableFields: rowTerminalReset ? [] : row.reportTableFields,
+          // «Текущий состав» не зависит от nested-фильтра — не очищаем.
+          reportTableFields: row.reportTableFields,
           filterSelections: nextFilterSelections,
           nestedEntityFilterByField: {
             ...row.nestedEntityFilterByField,

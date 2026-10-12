@@ -26,7 +26,6 @@ import {
   parseCoordinatePairFilterValue,
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
-import { augmentReportSelectedFieldsForMapNavigation } from './reportCoordinateMapLink';
 import {
   expandCompositeFieldPath,
   expandCompositeSelectedFields,
@@ -48,7 +47,7 @@ import {
   buildReportLogicConnects,
   reportFilterGroupNumberForRowIndex,
 } from './reportFilterGroupNumber';
-import { reportOutputFunctionKey, reportOutputOperationKey } from './reportOutputFilterKeys';
+import { reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
 import { parseReportTableFieldDisplayParam } from './reportTableFieldDisplayParam';
@@ -246,12 +245,14 @@ const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
 function buildRowReportTableFields(
   row: ReportOutputRow,
   context: BuildRowReportTableFieldsContext,
+  tableFieldsOverride?: Values,
 ): ReportSelectedFieldPayload[] {
-  const functionKey = reportOutputFunctionKey(row.id);
-  const fnPick = row.filterSelections[functionKey]?.[0];
-  const fnCode = fnPick?.value != null && fnPick.value !== '' ? String(fnPick.value) : null;
+  const tableFields =
+    tableFieldsOverride && tableFieldsOverride.length > 0
+      ? tableFieldsOverride
+      : row.reportTableFields;
 
-  return row.reportTableFields.flatMap((item) => {
+  return tableFields.flatMap((item) => {
     const path = String(item.value);
     const pathsToEmit = isReportCompositeFieldPath(path)
       ? expandCompositeFieldPath(path)
@@ -292,13 +293,12 @@ function buildRowReportTableFields(
     if (!isAutoQualified && displayLabel !== defaultLabel && isSafeAlias) {
       payload.alias = displayLabel;
     }
+    // aggregation — только из селекта «Текущий состав»; «Не выбрана» → без aggregation.
     const perFieldEncoded =
       context.displayParamByPath[emitPath] ?? context.displayParamByPath[path] ?? '';
     const perField = parseReportTableFieldDisplayParam(perFieldEncoded);
     if (perField?.kind === 'function') {
       payload.aggregation = perField.code;
-    } else if (fnCode) {
-      payload.aggregation = fnCode;
     }
     return [payload];
     });
@@ -560,12 +560,13 @@ function buildSharedGroupFilters(
 /** UI-ключи __composite.* никогда не отправляются в POST …/query. */
 function finalizeReportSelectedFields(
   fields: ReportSelectedFieldPayload[],
-  allowedTableFieldPaths: Set<string>,
+  _allowedTableFieldPaths: Set<string>,
 ): ReportSelectedFieldPayload[] {
-  const expanded = expandCompositeSelectedFields(fields).filter(
+  // Только явно выбранные в «Текущем составе» поля — без автодобавления
+  // vehicle.registrationNumber «для карты».
+  return expandCompositeSelectedFields(fields).filter(
     (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
   );
-  return augmentReportSelectedFieldsForMapNavigation(expanded, allowedTableFieldPaths);
 }
 
 function createTableFieldsContext(
@@ -601,6 +602,11 @@ export function buildReportQueryRequest(params: {
   reportTableFieldsMetadataByRowId?: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataByName?: Record<string, ReportEntityMetadata | null>;
   tableFieldDisplayParamByPath?: Record<string, string>;
+  /**
+   * UI «Текущий состав таблицы» — когда фильтров ещё нет (outputRows пуст)
+   * или reportTableFields в store ещё не синхронизированы.
+   */
+  fallbackReportTableFields?: Values;
 }): ReportQueryRequest {
   const {
     metadata,
@@ -609,9 +615,14 @@ export function buildReportQueryRequest(params: {
     reportTableFieldsMetadataByRowId = {},
     referenceEntityMetadataByName = {},
     tableFieldDisplayParamByPath = {},
+    fallbackReportTableFields = [],
   } = params;
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
+  const composeTableFields =
+    primaryRow.reportTableFields.length > 0
+      ? primaryRow.reportTableFields
+      : fallbackReportTableFields;
 
   const tableFieldsContext = createTableFieldsContext(
     metadata,
@@ -621,20 +632,22 @@ export function buildReportQueryRequest(params: {
     tableFieldDisplayParamByPath,
   );
 
-  /** Отчёт без фильтров: колонки из «Текущего состава» первой строки (с раскрытием composite). */
+  const selectedFieldsFromCompose = () =>
+    finalizeReportSelectedFields(
+      buildRowReportTableFields(primaryRow, tableFieldsContext, composeTableFields),
+      tableFieldsContext.allowedTableFieldPaths,
+    );
+
+  /** Отчёт без фильтров: колонки из «Текущего состава» (UI или store). */
   if (!activeRows.length) {
-    if (!primaryRow.reportTableFields.length) {
+    if (!composeTableFields.length) {
       return { selectedFields: [], filters: [] };
     }
-    const selectedFields = buildRowReportTableFields(primaryRow, tableFieldsContext);
     const filters = buildSharedGroupFilters(metadata, primaryRow).map((filter) =>
       withFilterGroup(filter, reportFilterGroupNumberForRowIndex(0)),
     );
     return {
-      selectedFields: finalizeReportSelectedFields(
-        selectedFields,
-        tableFieldsContext.allowedTableFieldPaths,
-      ),
+      selectedFields: selectedFieldsFromCompose(),
       filters,
     };
   }
@@ -662,13 +675,31 @@ export function buildReportQueryRequest(params: {
       activeTableFieldsContext,
     );
     if (!single) {
-      return { selectedFields: [], filters: [] };
+      // Неполный фильтр — колонки состава всё равно отправляем.
+      return {
+        selectedFields: finalizeReportSelectedFields(
+          buildRowReportTableFields(
+            primaryRow,
+            activeTableFieldsContext,
+            composeTableFields,
+          ),
+          activeTableFieldsContext.allowedTableFieldPaths,
+        ),
+        filters: [],
+      };
     }
+    const selectedFields = finalizeReportSelectedFields(
+      single.selectedFields.length
+        ? single.selectedFields
+        : buildRowReportTableFields(
+            primaryRow,
+            activeTableFieldsContext,
+            composeTableFields,
+          ),
+      activeTableFieldsContext.allowedTableFieldPaths,
+    );
     return {
-      selectedFields: finalizeReportSelectedFields(
-        single.selectedFields,
-        activeTableFieldsContext.allowedTableFieldPaths,
-      ),
+      selectedFields,
       filters: single.filters,
     };
   }
@@ -700,11 +731,19 @@ export function buildReportQueryRequest(params: {
     }
   }
 
-  return {
-    selectedFields: finalizeReportSelectedFields(
-      mergeSelectedFields(selectedFieldLists),
+  let selectedFields = finalizeReportSelectedFields(
+    mergeSelectedFields(selectedFieldLists),
+    activeTableFieldsContext.allowedTableFieldPaths,
+  );
+  if (!selectedFields.length && composeTableFields.length) {
+    selectedFields = finalizeReportSelectedFields(
+      buildRowReportTableFields(primaryRow, activeTableFieldsContext, composeTableFields),
       activeTableFieldsContext.allowedTableFieldPaths,
-    ),
+    );
+  }
+
+  return {
+    selectedFields,
     filters,
     logicConnects: buildReportLogicConnects(activeRows.length, logicOperator),
   };

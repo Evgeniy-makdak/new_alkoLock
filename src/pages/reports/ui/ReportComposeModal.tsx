@@ -366,6 +366,18 @@ export function ReportComposeModal({
     return true;
   }, [loadAllReferenceEntityMetadataForReport]);
 
+  const resolveComposeTableFieldsSelection = useCallback((): Values => {
+    const selectedRaw =
+      tableFieldsSelection.length > 0
+        ? tableFieldsSelection
+        : tableFieldsInitialSelection.length > 0
+          ? tableFieldsInitialSelection
+          : defaultRootTableFields;
+    return Array.from(
+      new Map(selectedRaw.map((item) => [String(item.value), item])).values(),
+    );
+  }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
+
   const buildCurrentReportBody = useCallback((): {
     entityName: string;
     body: ReportQueryRequest;
@@ -389,28 +401,21 @@ export function ReportComposeModal({
           reportTableFieldsMetadataByRowId: tableMetadataByRowId,
           referenceEntityMetadataByName: nestedMetadataByName,
           tableFieldDisplayParamByPath: reportsStore.getState().tableFieldDisplayParamByPath,
+          fallbackReportTableFields: resolveComposeTableFieldsSelection(),
         })
       : emptyBody;
 
     return { entityName, body };
-  }, []);
+  }, [resolveComposeTableFieldsSelection]);
 
   const saveTableFieldsSelectionToStore = useCallback(() => {
-    const selectedRaw =
-      tableFieldsSelection.length > 0
-        ? tableFieldsSelection
-        : tableFieldsInitialSelection.length > 0
-          ? tableFieldsInitialSelection
-          : defaultRootTableFields;
-    const selected = Array.from(
-      new Map(selectedRaw.map((item) => [String(item.value), item])).values(),
-    );
+    const selected = resolveComposeTableFieldsSelection();
     if (!selected.length) return;
     const { setOutputRowReportTableFields: setTableFields, outputRows } = reportsStore.getState();
     for (const row of outputRows) {
       setTableFields(row.id, selected);
     }
-  }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
+  }, [resolveComposeTableFieldsSelection]);
 
   const getTableFieldDisplayOptions = useCallback(
     (fieldPath: string): Values => {
