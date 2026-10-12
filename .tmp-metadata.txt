@@ -1,0 +1,8001 @@
+Сущность отчёта: «Отчёт по событиям»: /api/v1/reports/DeviceEvent/metadata 
+Ответ бэка: 
+{ 
+  "entityName" : "DeviceEvent", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+
+===== PAGE =====
+
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+
+===== PAGE =====
+
+    } 
+  }, { 
+    "fieldName" : "timestamp", 
+    "label" : "Время события", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+
+===== PAGE =====
+
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "reportedAt", 
+    "label" : "Время записи события в БД", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+
+===== PAGE =====
+
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+
+===== PAGE =====
+
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "latitude", 
+    "label" : "Широта", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+
+===== PAGE =====
+
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "longitude", 
+    "label" : "Долгота", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+
+===== PAGE =====
+
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+
+===== PAGE =====
+
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "action", 
+    "label" : "Действие связанное с событием", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "DeviceAction", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+
+===== PAGE =====
+
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+
+===== PAGE =====
+
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "user", 
+    "label" : "Пользователь совершивший событие", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "User", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+
+===== PAGE =====
+
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+
+===== PAGE =====
+
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+
+===== PAGE =====
+
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+
+===== PAGE =====
+
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "eventsForFront", 
+    "label" : "Тип события", 
+
+===== PAGE =====
+
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "EventsForFront", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+
+===== PAGE =====
+
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "branch", 
+    "label" : "Офис", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchOffice", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+
+===== PAGE =====
+
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "device", 
+    "label" : "Алкозамок", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "MonitoringDevice", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+
+===== PAGE =====
+
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+
+===== PAGE =====
+
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "vehicle", 
+    "label" : "ТС", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "Vehicle", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+
+===== PAGE =====
+
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+
+===== PAGE =====
+
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/DeviceAction/metadata Ответ: 
+{ 
+  "entityName" : "DeviceAction", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+
+===== PAGE =====
+
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+
+===== PAGE =====
+
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+
+===== PAGE =====
+
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "type", 
+    "label" : "Тип действия", 
+    "alias" : null, 
+    "type" : "ENUM", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      } ], 
+      "type" : "ENUM" 
+
+===== PAGE =====
+
+    } 
+  }, { 
+    "fieldName" : "status", 
+    "label" : "Статус действия", 
+    "alias" : null, 
+    "type" : "ENUM", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      } ], 
+      "type" : "ENUM" 
+    } 
+  }, { 
+
+===== PAGE =====
+
+    "fieldName" : "startedAt", 
+    "label" : "Начало действия", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+
+===== PAGE =====
+
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+
+===== PAGE =====
+
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "finishedAt", 
+    "label" : "Конец действия", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+
+===== PAGE =====
+
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "seen", 
+    "label" : "Флаг просмотра", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+
+===== PAGE =====
+
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+
+===== PAGE =====
+
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "device", 
+    "label" : "Алкозамок", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "MonitoringDevice", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+
+===== PAGE =====
+
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "vehicle", 
+    "label" : "ТС", 
+
+===== PAGE =====
+
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "Vehicle", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+
+===== PAGE =====
+
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "userAction", 
+    "label" : "Пользователь совершивший действие", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "User", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+
+===== PAGE =====
+
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "occurredAt", 
+    "label" : "Время действия", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+
+===== PAGE =====
+
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+
+===== PAGE =====
+
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+
+===== PAGE =====
+
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "branch", 
+    "label" : "Офис", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchOffice", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+
+===== PAGE =====
+
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/User/metadata 
+Ответ бэка: 
+{ 
+  "entityName" : "User", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+
+===== PAGE =====
+
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+
+===== PAGE =====
+
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "email", 
+    "label" : "Электронная почта", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+
+===== PAGE =====
+
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+
+===== PAGE =====
+
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "phone", 
+    "label" : "Телефон", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+
+===== PAGE =====
+
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+
+===== PAGE =====
+
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+
+===== PAGE =====
+
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+
+===== PAGE =====
+
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "firstName", 
+    "label" : "Имя", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+
+===== PAGE =====
+
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "surname", 
+    "label" : "Фамилия", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+
+===== PAGE =====
+
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "middleName", 
+    "label" : "Отчество", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+
+===== PAGE =====
+
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "birthDate", 
+    "label" : "Дата рождения", 
+    "alias" : null, 
+
+===== PAGE =====
+
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+
+===== PAGE =====
+
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг блокировки", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+
+===== PAGE =====
+
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "driver", 
+    "label" : "Водитель", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "Driver", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "assignment", 
+    "label" : "Привязка к офису", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchAssignment", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+
+===== PAGE =====
+
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+
+===== PAGE =====
+
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+
+===== PAGE =====
+
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/EventsForFront/metadata 
+Ответ бэка: 
+{ 
+  "entityName" : "EventsForFront", 
+  "fields" : [ { 
+    "fieldName" : "label", 
+    "label" : "название", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "level", 
+    "label" : "уровень", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "LevelsForFront", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+
+===== PAGE =====
+
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/BranchOffice/metadata 
+Ответ бэка: 
+{ 
+  "entityName" : "BranchOffice", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+
+===== PAGE =====
+
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+
+===== PAGE =====
+
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "name", 
+    "label" : "Название", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+
+===== PAGE =====
+
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+
+===== PAGE =====
+
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/MonitoringDevice/metadata относится к Алкозамкам. 
+Ответ бэка: 
+{ 
+  "entityName" : "MonitoringDevice", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+
+===== PAGE =====
+
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+
+===== PAGE =====
+
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "name", 
+    "label" : "Имя", 
+    "alias" : null, 
+    "type" : "TEXT", 
+
+===== PAGE =====
+
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+
+===== PAGE =====
+
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "serialNumber", 
+    "label" : "Серийный номер", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+
+===== PAGE =====
+
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+
+===== PAGE =====
+
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "mode", 
+    "label" : "Режим", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+
+===== PAGE =====
+
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "vehicleBind", 
+    "label" : "Привязка к ТС", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "VehicleBind", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+
+===== PAGE =====
+
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "assignment", 
+    "label" : "Привязка к офису", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchAssignment", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+
+===== PAGE =====
+
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+
+===== PAGE =====
+
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+
+===== PAGE =====
+
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+
+===== PAGE =====
+
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+
+===== PAGE =====
+
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/Vehicle/metadata. Относится к ТС (транспортным средствам). 
+Ответ бэка: 
+{ 
+  "entityName" : "Vehicle", 
+  "fields" : [ { 
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+
+===== PAGE =====
+
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "registrationNumber", 
+    "label" : "Регистрационный номер", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+
+===== PAGE =====
+
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+
+===== PAGE =====
+
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "manufacturer", 
+    "label" : "Марка", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+
+===== PAGE =====
+
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+
+===== PAGE =====
+
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "model", 
+    "label" : "Модель", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+
+===== PAGE =====
+
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+
+===== PAGE =====
+
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+
+===== PAGE =====
+
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+
+===== PAGE =====
+
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "year", 
+    "label" : "Год выпуска", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+
+===== PAGE =====
+
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+
+===== PAGE =====
+
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "vin", 
+    "label" : "Vin", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+
+===== PAGE =====
+
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "type", 
+    "label" : "Тип", 
+    "alias" : null, 
+    "type" : "ENUM", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+
+===== PAGE =====
+
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      } ], 
+      "type" : "ENUM" 
+    } 
+  }, { 
+    "fieldName" : "color", 
+    "label" : "Цвет", 
+    "alias" : null, 
+    "type" : "ENUM", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+
+===== PAGE =====
+
+      "label" : "Не равно" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      } ], 
+      "type" : "ENUM" 
+    } 
+  }, { 
+    "fieldName" : "monitoringDevice", 
+    "label" : "Алкозамок", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "MonitoringDevice", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+
+===== PAGE =====
+
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+
+===== PAGE =====
+
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "assignment", 
+    "label" : "Привязка к офису", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchAssignment", 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+
+===== PAGE =====
+
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+
+===== PAGE =====
+
+      "type" : "ENTITY" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+
+===== PAGE =====
+
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+
+===== PAGE =====
+
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "latitude", 
+
+===== PAGE =====
+
+    "label" : "Широта", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "longitude", 
+    "label" : "Долгота", 
+    "alias" : null, 
+
+===== PAGE =====
+
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+
+===== PAGE =====
+
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+
+===== PAGE =====
+
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/Driver/metadata. Относится к водителям.  
+Ответ бэка: 
+{ 
+  "entityName" : "Driver", 
+  "fields" : [ { 
+
+===== PAGE =====
+
+    "fieldName" : "id", 
+    "label" : "Идентификатор", 
+    "alias" : null, 
+    "type" : "NUMBER", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gt", 
+      "label" : "Больше" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lt", 
+      "label" : "Меньше" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+
+===== PAGE =====
+
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "sum", 
+      "label" : "Сумма" 
+    }, { 
+      "code" : "avg", 
+      "label" : "Среднее" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+
+===== PAGE =====
+
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "sum", 
+        "label" : "Сумма" 
+      }, { 
+        "code" : "avg", 
+        "label" : "Среднее" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gt", 
+        "label" : "Больше" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lt", 
+        "label" : "Меньше" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "NUMBER" 
+    } 
+  }, { 
+    "fieldName" : "licenseCode", 
+    "label" : "Номер водительского удостоверения", 
+
+===== PAGE =====
+
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+
+===== PAGE =====
+
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+    } 
+  }, { 
+    "fieldName" : "licenseIssueDate", 
+    "label" : "Дата выдачи вод. удостоверения", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+
+===== PAGE =====
+
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "licenseIssueDate", 
+    "label" : "Дата окончания действия вод. удостоверения", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+
+===== PAGE =====
+
+      "label" : "Больше или равно" 
+    }, { 
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+
+===== PAGE =====
+
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  }, { 
+    "fieldName" : "licenseClass", 
+    "label" : "Дата категория вод. удостоверения", 
+    "alias" : null, 
+    "type" : "TEXT", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+
+===== PAGE =====
+
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "contains", 
+      "label" : "Содержит" 
+    }, { 
+      "code" : "startsWith", 
+      "label" : "Начинается с" 
+    }, { 
+      "code" : "endsWith", 
+      "label" : "Заканчивается на" 
+    }, { 
+      "code" : "isEmpty", 
+      "label" : "Пустая строка" 
+    }, { 
+      "code" : "isNotEmpty", 
+      "label" : "Не пустая строка" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    }, { 
+      "code" : "notIn", 
+      "label" : "Не в списке" 
+    } ], 
+
+===== PAGE =====
+
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+
+===== PAGE =====
+
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "contains", 
+        "label" : "Содержит" 
+      }, { 
+        "code" : "startsWith", 
+        "label" : "Начинается с" 
+      }, { 
+        "code" : "endsWith", 
+        "label" : "Заканчивается на" 
+      }, { 
+        "code" : "isEmpty", 
+        "label" : "Пустая строка" 
+      }, { 
+        "code" : "isNotEmpty", 
+        "label" : "Не пустая строка" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      }, { 
+        "code" : "notIn", 
+        "label" : "Не в списке" 
+      } ], 
+      "type" : "TEXT" 
+
+===== PAGE =====
+
+    } 
+  }, { 
+    "fieldName" : "vehicleAllotments", 
+    "label" : "Привязки ТС", 
+    "alias" : null, 
+    "type" : "COLLECTION", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : false, 
+    "groupable" : false, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "COLLECTION" 
+    } 
+  }, { 
+    "fieldName" : "isActive", 
+    "label" : "Флаг активности", 
+    "alias" : null, 
+    "type" : "BOOLEAN", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+
+===== PAGE =====
+
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+
+===== PAGE =====
+
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      } ], 
+      "type" : "BOOLEAN" 
+    } 
+  }, { 
+    "fieldName" : "inactiveSince", 
+    "label" : "Время деактивации", 
+    "alias" : null, 
+    "type" : "DATETIME", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "gte", 
+      "label" : "Больше или равно" 
+    }, { 
+
+===== PAGE =====
+
+      "code" : "lte", 
+      "label" : "Меньше или равно" 
+    }, { 
+      "code" : "after", 
+      "label" : "После" 
+    }, { 
+      "code" : "before", 
+      "label" : "До" 
+    }, { 
+      "code" : "between", 
+      "label" : "В диапазоне" 
+    }, { 
+      "code" : "isNull", 
+      "label" : "Пусто" 
+    }, { 
+      "code" : "isNotNull", 
+      "label" : "Не пусто" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "min", 
+      "label" : "Минимум" 
+    }, { 
+      "code" : "max", 
+      "label" : "Максимум" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+
+===== PAGE =====
+
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "min", 
+        "label" : "Минимум" 
+      }, { 
+        "code" : "max", 
+        "label" : "Максимум" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+
+===== PAGE =====
+
+        "label" : "Не равно" 
+      }, { 
+        "code" : "gte", 
+        "label" : "Больше или равно" 
+      }, { 
+        "code" : "lte", 
+        "label" : "Меньше или равно" 
+      }, { 
+        "code" : "after", 
+        "label" : "После" 
+      }, { 
+        "code" : "before", 
+        "label" : "До" 
+      }, { 
+        "code" : "between", 
+        "label" : "В диапазоне" 
+      }, { 
+        "code" : "isNull", 
+        "label" : "Пусто" 
+      }, { 
+        "code" : "isNotNull", 
+        "label" : "Не пусто" 
+      } ], 
+      "type" : "DATETIME" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/BranchAssignment/metadata. Относится к офису. 
+Ответ бэка: 
+{ 
+  "entityName" : "BranchAssignment", 
+  "fields" : [ { 
+    "fieldName" : "branch", 
+    "label" : "Офис", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "BranchOffice", 
+
+===== PAGE =====
+
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/LevelsForFront/metadata. Относится к уровням для фронта. 
+Ответ от бэка: 
+{ 
+  "entityName" : "LevelsForFront", 
+  "fields" : [ { 
+    "fieldName" : "level", 
+    "label" : "название", 
+    "alias" : null, 
+    "type" : "ENUM", 
+    "referenceEntity" : null, 
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+
+===== PAGE =====
+
+    "selectable" : true, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    }, { 
+      "code" : "in", 
+      "label" : "В списке" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      }, { 
+        "code" : "in", 
+        "label" : "В списке" 
+      } ], 
+      "type" : "ENUM" 
+    } 
+  } ] 
+} 
+ 
+Следующая метадата: /api/v1/reports/VehicleBind/metadata. Относится к привязкам. 
+Ответ бэка: 
+{ 
+  "entityName" : "VehicleBind", 
+  "fields" : [ { 
+    "fieldName" : "vehicle", 
+    "label" : "ТС", 
+    "alias" : null, 
+    "type" : "ENTITY", 
+    "referenceEntity" : "Vehicle", 
+
+===== PAGE =====
+
+    "filterable" : true, 
+    "sortable" : true, 
+    "groupable" : true, 
+    "selectable" : false, 
+    "aggregation" : null, 
+    "availableOperations" : [ { 
+      "code" : "eq", 
+      "label" : "Равно" 
+    }, { 
+      "code" : "ne", 
+      "label" : "Не равно" 
+    } ], 
+    "availableFunctions" : [ { 
+      "code" : "count", 
+      "label" : "Количество" 
+    }, { 
+      "code" : "countDistinct", 
+      "label" : "Уникальных" 
+    }, { 
+      "code" : "none", 
+      "label" : "Без агрегации" 
+    } ], 
+    "availableHaving" : { 
+      "functions" : [ { 
+        "code" : "count", 
+        "label" : "Количество" 
+      }, { 
+        "code" : "countDistinct", 
+        "label" : "Уникальных" 
+      }, { 
+        "code" : "none", 
+        "label" : "Без агрегации" 
+      } ], 
+      "modes" : [ { 
+        "code" : "comparison", 
+        "label" : "Явное сравнение" 
+
+===== PAGE =====
+
+      }, { 
+        "code" : "max_only", 
+        "label" : "Максимальное значение" 
+      }, { 
+        "code" : "min_only", 
+        "label" : "Минимальное значение" 
+      }, { 
+        "code" : "top_n", 
+        "label" : "N наибольших значений" 
+      }, { 
+        "code" : "above_avg", 
+        "label" : "Выше среднего" 
+      } ], 
+      "availableHavingOperations" : [ { 
+        "code" : "eq", 
+        "label" : "Равно" 
+      }, { 
+        "code" : "ne", 
+        "label" : "Не равно" 
+      } ], 
+      "type" : "ENTITY" 
+    } 
+  } ] 
+} 

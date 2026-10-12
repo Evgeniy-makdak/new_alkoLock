@@ -280,11 +280,15 @@ export function ReportNestedEntityFilterControl({
   );
 
   useEffect(() => {
-    const refs = collectNestedFilterMetadataEntities(tableFieldsMetadata, path);
+    const refs = collectNestedFilterMetadataEntities(
+      tableFieldsMetadata,
+      path,
+      metadataByEntity,
+    );
     for (const ref of refs) {
       void reportsStore.getState().loadReferenceEntityMetadata(ref);
     }
-  }, [tableFieldsMetadata, path.join('\0')]);
+  }, [tableFieldsMetadata, path.join('\0'), metadataByEntity]);
 
   const segments = useMemo(
     () =>

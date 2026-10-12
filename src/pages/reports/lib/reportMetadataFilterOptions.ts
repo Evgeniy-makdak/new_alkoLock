@@ -2,7 +2,10 @@ import type { TFunction } from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { buildReferenceEntityPropertyOptionsWithComposite } from './reportEntityCompositeFields';
+import {
+  COORDINATE_MEMBER_FIELD_NAMES,
+  buildReportCoordinatesCompositePropertyFieldName,
+} from './reportCoordinateComposite';
 import { buildNestedEntityStaticValueOptions } from './reportNestedEntityValueOptions';
 import {
   isReportBooleanField,
@@ -17,12 +20,39 @@ import type {
   ReportFieldDefinition,
 } from '../types/reportApiTypes';
 
-/** «Параметр сущности» — filterable-поля metadata; члены группы — одна опция «Пользователь» и т.д. */
+/**
+ * «Параметр сущности» / «Атрибут» — строго filterable-поля соответствующей metadata.
+ * latitude+longitude → одна опция «Координаты»; FIO/номер ТС и т.п. НЕ схлопываем в композит —
+ * иначе пропадает ветвление по полям User/Vehicle/… из metadata.
+ */
 export function buildReferenceEntityPropertyOptions(
   tableMetadata: ReportEntityMetadata | null | undefined,
   t: TFunction,
 ): Values {
-  return buildReferenceEntityPropertyOptionsWithComposite(tableMetadata, t);
+  const fields = (tableMetadata?.fields ?? []).filter((f) => f.filterable);
+  const coordMembers = new Set<string>(COORDINATE_MEMBER_FIELD_NAMES);
+  const options: Values = [];
+  let hasCoords = false;
+
+  for (const f of fields) {
+    if (coordMembers.has(f.fieldName)) {
+      hasCoords = true;
+      continue;
+    }
+    options.push({
+      value: f.fieldName,
+      label: (f.label ?? '').trim() || f.fieldName,
+    });
+  }
+
+  if (hasCoords) {
+    options.push({
+      value: buildReportCoordinatesCompositePropertyFieldName(),
+      label: t('reports.composite.entityCoordinates'),
+    });
+  }
+
+  return options.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
 }
 
 function readAllowedValues(field: ReportFieldDefinition): Values {

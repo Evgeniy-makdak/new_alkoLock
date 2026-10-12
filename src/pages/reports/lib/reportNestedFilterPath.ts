@@ -70,16 +70,22 @@ export function resolveNestedFilterLeafField(
 export function collectNestedFilterMetadataEntities(
   rootMetadata: ReportEntityMetadata | null | undefined,
   path: string[],
+  metadataByEntity: Record<string, ReportEntityMetadata | null> = {},
 ): string[] {
   const refs: string[] = [];
   let metadata = rootMetadata;
 
   for (let i = 0; i < path.length; i += 1) {
-    const field = findFieldInMetadata(metadata, path[i]);
-    const ref = field?.referenceEntity?.trim();
+    const step = path[i];
+    const field = findFieldInMetadata(metadata, step);
+    const compositeKind = parseCompositePropertyFieldName(step);
+    const ref =
+      compositeKind && compositeKind !== 'Coordinates'
+        ? compositeKind
+        : field?.referenceEntity?.trim();
     if (!ref) break;
     refs.push(ref);
-    metadata = null;
+    metadata = metadataByEntity[ref] ?? null;
   }
 
   if (path.some((step) => isEventsForFrontLevelAttribute(step)) && !refs.includes('EventsForFront')) {
@@ -110,18 +116,28 @@ export function resolveNestedFilterPendingReferenceEntity(
   return null;
 }
 
-/** Ссылка на доменную сущность (Vehicle, User, …) — сразу «Значение» + api/vehicles и т.д. */
+/**
+ * Legacy-shortcut: `__composite.User` / Vehicle / Device → сразу «Значение» (доменный список).
+ * Обычные ENTITY-поля metadata сюда не попадают — у них следующий «Параметр сущности».
+ */
 export function resolveNestedFilterDomainListEntity(
   field: ReportFieldDefinition | undefined,
   fieldName?: string,
 ): string | null {
   const compositeKind = fieldName ? parseCompositePropertyFieldName(fieldName) : undefined;
-  if (compositeKind && isReportLeafDomainListEntity(compositeKind)) {
+  if (compositeKind && compositeKind !== 'Coordinates' && isReportLeafDomainListEntity(compositeKind)) {
     return compositeKind;
   }
-  const ref = field?.referenceEntity?.trim();
-  if (!ref || !isReportLeafDomainListEntity(ref)) return null;
-  return ref;
+  // Синтетическое ENTITY-поле композита (fieldName === 'id', referenceEntity = User|…).
+  if (
+    field &&
+    (field.type ?? '').toUpperCase() === 'ENTITY' &&
+    field.fieldName === 'id'
+  ) {
+    const ref = field.referenceEntity?.trim();
+    if (ref && isReportLeafDomainListEntity(ref)) return ref;
+  }
+  return null;
 }
 
 export function isNestedFilterPathReadyForValueInput(
@@ -134,7 +150,9 @@ export function isNestedFilterPathReadyForValueInput(
   if (isReportCoordinatesCompositePropertyFieldName(lastStep)) return true;
   const leaf = resolveNestedFilterLeafField(rootMetadata, path, metadataByEntity);
   if (!leaf) return false;
+  // Legacy __composite.User/Vehicle/Device — терминал со списком сущностей.
   if (resolveNestedFilterDomainListEntity(leaf, lastStep)) return true;
+  // Терминал = нет дальнейшего referenceEntity (скаляр / ENUM / BOOLEAN / …).
   return !leaf.referenceEntity?.trim();
 }
 
@@ -287,25 +305,24 @@ export function buildNestedFilterUiSegments(
       return segments;
     }
 
-    if (depth === path.length - 1 && nextRef && isReportLeafDomainListEntity(nextRef)) {
-      const valueField =
-        compositeKind && compositeKind !== 'Coordinates'
-          ? buildSyntheticCompositeDomainListField(
-              compositeKind,
-              metadataByEntity[nextRef] ?? metadata,
-            )
-          : field;
-      if (valueField) {
-        segments.push({
-          kind: 'value',
-          leafEntityName: nextRef,
-          field: valueField,
-          label:
-            compositeKind && compositeKind !== 'Coordinates'
-              ? i18n.t(getReportCompositeEntityLabelKey(compositeKind))
-              : (valueField.label ?? '').trim() || valueField.fieldName,
-        });
-      }
+    // Только legacy `__composite.User|Vehicle|MonitoringDevice` — сразу доменный список.
+    // Обычный ENTITY (user → User, vehicle → Vehicle, …) всегда раскрывается в следующий «Параметр».
+    if (
+      depth === path.length - 1 &&
+      compositeKind &&
+      compositeKind !== 'Coordinates' &&
+      isReportLeafDomainListEntity(compositeKind)
+    ) {
+      const valueField = buildSyntheticCompositeDomainListField(
+        compositeKind,
+        metadataByEntity[nextRef] ?? metadata,
+      );
+      segments.push({
+        kind: 'value',
+        leafEntityName: nextRef,
+        field: valueField,
+        label: i18n.t(getReportCompositeEntityLabelKey(compositeKind)),
+      });
       return segments;
     }
 
