@@ -25,6 +25,7 @@ import {
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
+import { resolveComposeColumnDisplayLabel } from '@pages/reports/lib/restoreReportComposeTableFields';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
 import { createReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
@@ -56,6 +57,8 @@ type ReportComposeGroupSectionProps = {
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
   /** Филиалы суперадмина для all.branch.id.in в device-events. */
   branchIds?: number[];
+  /** Подписи колонок сформированного отчёта (edit) — если поля нет в columnOptions. */
+  columnHeaderLabels?: Record<string, string>;
 };
 
 function buildMetadataHavingValueOptions(fieldDef: ReportFieldDefinition | null): Values {
@@ -124,6 +127,7 @@ export function ReportComposeGroupSection({
   tableMetadataByRowId,
   referenceEntityMetadataByName,
   branchIds = [],
+  columnHeaderLabels = {},
 }: ReportComposeGroupSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -316,7 +320,16 @@ export function ReportComposeGroupSection({
               const columnValue: Values = selectedColumn
                 ? [selectedColumn]
                 : row.columnKey
-                  ? [{ value: row.columnKey, label: row.columnKey }]
+                  ? [
+                      {
+                        value: row.columnKey,
+                        label: resolveComposeColumnDisplayLabel(
+                          row.columnKey,
+                          columnOptions,
+                          columnHeaderLabels,
+                        ),
+                      },
+                    ]
                   : [];
 
               const pickSingle = (options: Values, code: string): Values =>
@@ -544,7 +557,11 @@ export function ReportComposeGroupSection({
                       type="button"
                       aria-label={t('reports.composeRemoveGroup')}
                       className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
-                      onClick={() => handleRemove(row.id)}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        handleRemove(row.id);
+                      }}
                       sx={circleIconSx}>
                       <CloseIcon fontSize="small" />
                     </IconButton>

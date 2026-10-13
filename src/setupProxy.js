@@ -3,6 +3,8 @@ const path = require('path');
 
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+const { mountReportsAiComposeProxy } = require('./setupProxy.reportsAi');
+
 const DEFAULT_DOMAIN = 'alcolock-test.lsystems.ru';
 
 function readDevWsProxyTarget() {
@@ -36,6 +38,9 @@ function readDevWsProxyTarget() {
  */
 module.exports = function setupProxy(app) {
   const target = readDevWsProxyTarget();
+
+  // NL → ReportQueryRequest (Gemini). Без ключа клиент уйдёт в local_fallback.
+  mountReportsAiComposeProxy(app);
 
   app.use(
     '/ws',

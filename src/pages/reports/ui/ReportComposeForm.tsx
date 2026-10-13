@@ -254,7 +254,11 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
                             type="button"
                             aria-label={t('reports.composeRemoveFilter')}
                             className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
-                            onClick={() => removeOutputRow(row.id)}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              removeOutputRow(row.id);
+                            }}
                             sx={circleIconSx}>
                             <CloseIcon fontSize="small" />
                           </IconButton>

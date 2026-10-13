@@ -171,7 +171,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
 
     const prevContext = get().queryContext;
     let queryContext = prevContext;
-    if (prevContext && visibleContent.length) {
+    if (prevContext) {
       const columnHeaderLabels =
         prevContext.columnHeaderLabels ??
         (() => {

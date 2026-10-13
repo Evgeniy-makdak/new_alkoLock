@@ -7,6 +7,7 @@ import { IconButton, Tooltip, Typography } from '@mui/material';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import { useTheme } from '@mui/material/styles';
 
+import { ROOT_ENTITY_LABEL_SEPARATOR } from '@pages/reports/lib/buildReportTableFieldOptions';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type { ReportComposeSortRow } from '@pages/reports/types/reportComposeSort';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -100,7 +101,7 @@ export function ReportComposeSortSection({
                         {columnLabel}
                       </Typography>
                     </OverflowTooltip>
-                    <span className={composeStyles.sortRowDash}>—</span>
+                    <span className={composeStyles.sortRowDash}>{ROOT_ENTITY_LABEL_SEPARATOR}</span>
                     <Typography variant="body2" component="span" color="text.secondary">
                       {directionLabel(row.direction, t)}
                     </Typography>

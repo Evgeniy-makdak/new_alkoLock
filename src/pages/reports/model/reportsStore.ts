@@ -367,6 +367,24 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
   setOutputRowSelectedFields(rowId, values) {
     const single = values.slice(0, 1);
+    const nextKey = single[0] ? String(single[0].value) : '';
+    const prevRow = get().outputRows.find((row) => row.id === rowId);
+    const prevKey = prevRow?.selectedOutputFields[0]
+      ? String(prevRow.selectedOutputFields[0].value)
+      : '';
+
+    // Тот же fieldName: не трогаем nested-фильтры / operations.
+    // Иначе перерисовка (добавление/удаление группировки, закрытие Popup)
+    // через Autocomplete onChange затирает уже заполненную «Фильтрацию».
+    if (nextKey && nextKey === prevKey) {
+      set({
+        outputRows: get().outputRows.map((row) =>
+          row.id === rowId ? { ...row, selectedOutputFields: single } : row,
+        ),
+      });
+      return;
+    }
+
     set({
       outputRows: get().outputRows.map((row) =>
         row.id === rowId
@@ -388,9 +406,8 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       ),
     });
 
-    const fieldKey = single[0] ? String(single[0].value) : '';
-    if (!fieldKey) return;
-    const field = get().metadata?.fields?.find((f) => f.fieldName === fieldKey);
+    if (!nextKey) return;
+    const field = get().metadata?.fields?.find((f) => f.fieldName === nextKey);
     const refEntity = field?.referenceEntity?.trim();
     if (!refEntity) return;
     void get().loadReferenceEntityMetadata(refEntity);

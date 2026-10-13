@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
+import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
   Button as MuiButton,
@@ -31,6 +32,7 @@ import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
+import { ReportAiComposeDialog } from './ReportAiComposeDialog';
 import { ReportComposeModal, type ReportComposeModalMode } from './ReportComposeModal';
 import { ReportGeneratingOverlay } from './ReportGeneratingOverlay';
 import { ReportSaveFileDialog } from './ReportSaveFileDialog';
@@ -58,6 +60,7 @@ export function ReportsPage() {
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
   const [composeModalMode, setComposeModalMode] = useState<ReportComposeModalMode>('create');
+  const [aiComposeOpen, setAiComposeOpen] = useState(false);
   const [saveFileDialogOpen, setSaveFileDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
 
@@ -125,6 +128,16 @@ export function ReportsPage() {
     setComposeModalOpen(true);
   }, []);
 
+  const openAiComposeDialog = useCallback(() => {
+    if (reportGenerationStore.getState().isGenerating) return;
+    setAiComposeOpen(true);
+  }, []);
+
+  const handleAiOpenEditor = useCallback(() => {
+    setComposeModalMode('edit');
+    setComposeModalOpen(true);
+  }, []);
+
   const isCompactHeader = isMobile || isTablet;
 
   return (
@@ -152,6 +165,15 @@ export function ReportsPage() {
                         {t('reports.editReport')}
                       </MuiButton>
                     ) : null}
+                    <MuiButton
+                      variant="contained"
+                      size="small"
+                      startIcon={<AutoAwesomeOutlinedIcon />}
+                      disabled={isGenerating}
+                      onClick={openAiComposeDialog}
+                      sx={createReportButtonSx}>
+                      {t('reports.aiComposeOpen')}
+                    </MuiButton>
                     <MuiButton
                       variant="contained"
                       size="small"
@@ -211,6 +233,16 @@ export function ReportsPage() {
                     <MuiButton
                       variant="contained"
                       size="small"
+                      startIcon={<AutoAwesomeOutlinedIcon />}
+                      disabled={isGenerating}
+                      onClick={openAiComposeDialog}
+                      className={styles.mobileCreateButton}
+                      sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
+                      {t('reports.aiComposeOpen')}
+                    </MuiButton>
+                    <MuiButton
+                      variant="contained"
+                      size="small"
                       startIcon={<AddIcon />}
                       disabled={isGenerating}
                       onClick={openComposeModalForCreate}
@@ -242,6 +274,12 @@ export function ReportsPage() {
         open={composeModalOpen}
         mode={composeModalMode}
         onClose={() => setComposeModalOpen(false)}
+      />
+
+      <ReportAiComposeDialog
+        open={aiComposeOpen}
+        onClose={() => setAiComposeOpen(false)}
+        onOpenEditor={handleAiOpenEditor}
       />
 
       <ReportSaveFileDialog

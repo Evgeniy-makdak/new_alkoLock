@@ -35,6 +35,7 @@ import {
   buildReportTableFieldDisplayOptions,
   encodeReportTableFieldFunctionParam,
 } from '@pages/reports/lib/reportTableFieldDisplayParam';
+import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
   type ReportsComposeSnapshot,
   captureReportsComposeSnapshot,
@@ -88,6 +89,9 @@ export function ReportComposeModal({
   const confirmedRef = useRef(false);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
+  const editColumnHeaderLabels = reportGenerationStore(
+    (s) => s.queryContext?.columnHeaderLabels,
+  );
   const metadata = reportsStore((s) => s.metadata);
   const metadataLoading = reportsStore((s) => s.metadataLoading);
   const selectedEntityName = reportsStore((s) => s.selectedEntityName);
@@ -142,13 +146,28 @@ export function ReportComposeModal({
       return;
     }
 
+    const queryContext = reportGenerationStore.getState().queryContext;
+    const queryBody = queryContext?.body;
     const primaryRow = getPrimaryReportOutputRow();
-    const tableFields =
+    // Источник истины при edit — selectedFields сформированного отчёта, не дефолтный состав.
+    const fromQuery = restoreReportComposeTableFieldsFromQuery(
+      queryBody?.selectedFields,
+      queryContext?.columnHeaderLabels,
+    );
+    const fromStore =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
-    const queryBody = reportGenerationStore.getState().queryContext?.body;
-    const savedBranchOffices = reportGenerationStore.getState().queryContext?.branchOffices;
-    const savedBranchIds = reportGenerationStore.getState().queryContext?.branchIds;
+    const tableFields = fromQuery.length > 0 ? fromQuery : fromStore;
+
+    const savedBranchOffices = queryContext?.branchOffices;
+    const savedBranchIds = queryContext?.branchIds;
     setTableFieldsSelection(tableFields);
+    // Держим store в синхроне — иначе sync-эффект / повторное открытие видят пустой состав.
+    const { setOutputRowReportTableFields, outputRows: rows } = reportsStore.getState();
+    if (tableFields.length) {
+      for (const row of rows) {
+        setOutputRowReportTableFields(row.id, tableFields);
+      }
+    }
     setSelectedBranchOffices(
       savedBranchOffices?.length
         ? [...savedBranchOffices]
@@ -279,7 +298,7 @@ export function ReportComposeModal({
     if (!metadata) return [];
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
     const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
-    return buildGroupableColumnOptions(
+    const base = buildGroupableColumnOptions(
       sortColumnOptions,
       metadata,
       activeRows,
@@ -287,12 +306,30 @@ export function ReportComposeModal({
       reportTableFieldsMetadataByRowId,
       referenceEntityMetadataByName,
     );
+    // Поля уже выбранной группировки (edit) — с русскими подписями, даже если
+    // временно нет в отфильтрованном списке groupable options.
+    const byKey = new Map(base.map((o) => [String(o.value), o]));
+    for (const row of composeGroupRows) {
+      const key = row.columnKey.trim();
+      if (!key || byKey.has(key)) continue;
+      const fromSort = sortColumnOptions.find((o) => String(o.value) === key);
+      byKey.set(key, {
+        value: key,
+        label:
+          (fromSort?.label != null && String(fromSort.label).trim()) ||
+          (editColumnHeaderLabels?.[key] ?? '').trim() ||
+          key,
+      });
+    }
+    return Array.from(byKey.values());
   }, [
     sortColumnOptions,
     metadata,
     outputRows,
     reportTableFieldsMetadataByRowId,
     referenceEntityMetadataByName,
+    composeGroupRows,
+    editColumnHeaderLabels,
   ]);
 
   const composeGroupBy = useMemo(
@@ -331,16 +368,18 @@ export function ReportComposeModal({
       const optionByKey = new Map(
         [...defaultRootTableFields, ...currentOptions].map((o) => [String(o.value), o]),
       );
+      // Edit: пустой prev — ждём restore из queryContext, не подставляем весь дефолтный состав.
       if (prev.length === 0) {
+        if (mode === 'edit') return prev;
         return defaultRootTableFields.length ? [...defaultRootTableFields] : [];
       }
-      const remapped = prev
-        .filter((p) => optionByKey.has(String(p.value)))
-        .map((p) => {
-          const key = String(p.value);
-          const opt = optionByKey.get(key);
-          return { value: key, label: opt?.label ?? p.label };
-        });
+      // Не выкидываем пути, которых ещё нет в options (nested metadata догружается).
+      // Иначе edit теряет выбранные поля и следующий проход заливает дефолты.
+      const remapped = prev.map((p) => {
+        const key = String(p.value);
+        const opt = optionByKey.get(key);
+        return { value: key, label: opt?.label ?? p.label ?? key };
+      });
       const deduped = Array.from(
         new Map(remapped.map((item) => [String(item.value), item])).values(),
       );
@@ -353,7 +392,7 @@ export function ReportComposeModal({
         );
       return unchanged ? prev : normalized;
     });
-  }, [open, tableFieldsOptionsKey, defaultRootTableFields]);
+  }, [open, mode, tableFieldsOptionsKey, defaultRootTableFields]);
 
   const loadAllReferenceEntityMetadataForReport = reportsStore(
     (s) => s.loadAllReferenceEntityMetadataForReport,
@@ -664,6 +703,7 @@ export function ReportComposeModal({
                   outputRows={outputRows}
                   tableMetadataByRowId={reportTableFieldsMetadataByRowId}
                   referenceEntityMetadataByName={referenceEntityMetadataByName}
+                  columnHeaderLabels={editColumnHeaderLabels}
                   branchIds={
                     isSuperAdmin
                       ? reportComposeBranchValuesToIds(selectedBranchOffices)

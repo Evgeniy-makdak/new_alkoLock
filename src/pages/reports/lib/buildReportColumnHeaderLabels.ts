@@ -30,7 +30,7 @@ export function buildReportColumnHeaderLabels(
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>,
   entities: ReportEntityListItem[],
 ): Record<string, string> {
-  if (!content.length || !entityMetadata) {
+  if (!entityMetadata) {
     return {};
   }
 
@@ -38,7 +38,9 @@ export function buildReportColumnHeaderLabels(
   const columnAliases = buildReportColumnAliasMap(body?.selectedFields);
   const fieldMap = new Map(entityMetadata.fields.map((f) => [f.fieldName, f]));
   const activeOutputRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
-  const contentKeys = collectReportContentColumnKeys(content);
+  const contentKeys = content.length
+    ? collectReportContentColumnKeys(content)
+    : (body?.selectedFields ?? []).map((f) => f.fieldName).filter(Boolean);
   const orderedKeys = orderReportContentColumnKeys(
     contentKeys,
     body?.selectedFields?.map((f) => f.fieldName),
