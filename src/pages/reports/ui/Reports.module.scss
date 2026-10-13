@@ -283,9 +283,9 @@
   box-sizing: border-box;
 
   > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-    flex: 0 1 240px;
-    min-width: 220px;
-    max-width: 280px;
+    flex: 1 1 360px;
+    min-width: 320px;
+    max-width: 480px;
     width: auto;
     box-sizing: border-box;
   }
@@ -394,9 +394,9 @@
   > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterNestedEntity):not(
       .reportFilterDateTimeRoot
     ):not(.reportFilterDateTimeRootRange) {
-    flex: 0 1 240px;
-    min-width: 220px;
-    max-width: 280px;
+    flex: 1 1 360px;
+    min-width: 320px;
+    max-width: 480px;
     width: auto;
     box-sizing: border-box;
   }
@@ -417,18 +417,18 @@
   > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterOutputRowInner):not(
       .reportFilterNestedEntity
     ):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-    flex: 0 1 240px;
-    min-width: 220px;
-    max-width: 280px;
+    flex: 1 1 360px;
+    min-width: 320px;
+    max-width: 480px;
     width: auto;
     box-sizing: border-box;
   }
 }
 
 .reportFilterRowEntitySpacer {
-  flex: 0 1 240px;
-  min-width: 220px;
-  max-width: 280px;
+  flex: 1 1 360px;
+  min-width: 320px;
+  max-width: 480px;
   height: 0;
   visibility: hidden;
   pointer-events: none;

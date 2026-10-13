@@ -1,9 +1,9 @@
 import type { SxProps, Theme } from '@mui/material';
 
 export const reportFilterControlSx: SxProps<Theme> = {
-  flex: '0 1 240px',
-  minWidth: 220,
-  maxWidth: 280,
+  flex: '1 1 360px',
+  minWidth: 320,
+  maxWidth: 480,
   width: 'auto',
   boxSizing: 'border-box',
 };
@@ -19,10 +19,10 @@ export const reportFilterDateTimeControlSx: SxProps<Theme> = {
 
 export const reportFilterAutocompleteSlotProps = {
   popper: {
-    sx: { minWidth: 290 },
+    sx: { minWidth: 360 },
   },
   paper: {
-    sx: { minWidth: 290 },
+    sx: { minWidth: 360 },
   },
 } as const;
 

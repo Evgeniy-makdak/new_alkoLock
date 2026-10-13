@@ -103,9 +103,9 @@
 }
 
 .composeEntityField {
-  flex: 1 1 240px;
-  min-width: 200px;
-  max-width: 320px;
+  flex: 1 1 360px;
+  min-width: 320px;
+  max-width: 480px;
 }
 
 .composeExportControls {
@@ -437,10 +437,12 @@
   }
 }
 
+/* Шире, чтобы длинные подписи колонок («Пользователь совершивший…») читались целиком;
+   flex-wrap на .modalFilterRow переносит контролы на следующую строку. */
 %modalFilterFieldWidth {
-  flex: 0 1 240px !important;
-  min-width: 200px !important;
-  max-width: 320px !important;
+  flex: 1 1 360px !important;
+  min-width: 320px !important;
+  max-width: 480px !important;
   width: auto !important;
   box-sizing: border-box;
 }
@@ -564,9 +566,9 @@
 
   .optionalFilterControl {
     @extend %modalFilterFieldWidth;
-    flex: 0 0 240px !important;
-    min-width: 200px !important;
-    max-width: 320px !important;
+    flex: 1 1 360px !important;
+    min-width: 320px !important;
+    max-width: 480px !important;
     position: relative;
     z-index: 0;
     background: transparent;
