@@ -1,5 +1,9 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import {
+  isReportIdentifierAggregationCode,
+  isReportIdentifierFieldPath,
+} from './reportTableFieldIdentifier';
 import type { ReportFieldDefinition, ReportFieldOperation } from '../types/reportApiTypes';
 
 export const REPORT_TABLE_FIELD_FN_PREFIX = 'fn:';
@@ -30,13 +34,24 @@ function functionsToValues(ops: ReportFieldOperation[] | undefined): Values {
 }
 
 /** Селект «Текущий состав»: только availableFunctions текущего поля metadata. */
-export function buildReportTableFieldDisplayOptions(field: ReportFieldDefinition | undefined): Values {
+export function buildReportTableFieldDisplayOptions(
+  field: ReportFieldDefinition | undefined,
+  fieldPath?: string,
+): Values {
   if (!field) return [];
   const seen = new Set<string>();
   const merged: Values = [];
+  const path = fieldPath ?? field.fieldName;
+  const identifierOnly = isReportIdentifierFieldPath(path);
   for (const item of functionsToValues(field.availableFunctions)) {
     const key = String(item.value);
     if (seen.has(key)) continue;
+    if (identifierOnly) {
+      const code = key.startsWith(REPORT_TABLE_FIELD_FN_PREFIX)
+        ? key.slice(REPORT_TABLE_FIELD_FN_PREFIX.length)
+        : key;
+      if (!isReportIdentifierAggregationCode(code)) continue;
+    }
     seen.add(key);
     merged.push(item);
   }

@@ -34,6 +34,7 @@ import {
 } from '@pages/reports/lib/reportFilterControlSx';
 import type { ReportEntityMetadata, ReportFieldDefinition } from '@pages/reports/types/reportApiTypes';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
+import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -135,19 +136,31 @@ export function ReportFieldFilterControl({
     [field, t],
   );
 
+  const vehicleDictionaryOptions = useMemo(() => {
+    const attr = field.fieldName;
+    if (
+      (attr === 'color' || attr === 'type') &&
+      (metadata.entityName === 'Vehicle' || domainListEntityName === 'Vehicle')
+    ) {
+      return buildVehicleAttributeOptions([], attr, vehicleLabelMaps);
+    }
+    return [];
+  }, [field.fieldName, metadata.entityName, domainListEntityName, vehicleLabelMaps]);
+
   const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
   const isCoordinatesComposite =
     isReportCoordinatesCompositePropertyFieldName(field.fieldName) ||
     isReportCoordinatesCompositePath(field.fieldName);
 
-  const displayOptions = useMemo(
-    () =>
-      mergeOptionsWithSelected(
-        groupStaticOptions.length > 0 ? groupStaticOptions : metadataValueOptions,
-        value,
-      ),
-    [groupStaticOptions, metadataValueOptions, value],
-  );
+  const displayOptions = useMemo(() => {
+    const base =
+      vehicleDictionaryOptions.length > 0
+        ? vehicleDictionaryOptions
+        : groupStaticOptions.length > 0
+          ? groupStaticOptions
+          : metadataValueOptions;
+    return mergeOptionsWithSelected(base, value);
+  }, [vehicleDictionaryOptions, groupStaticOptions, metadataValueOptions, value]);
 
   if (isReportDateTimeField(field)) {
     return (

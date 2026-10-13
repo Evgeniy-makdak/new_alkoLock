@@ -20,6 +20,8 @@ import type {
   ReportFieldDefinition,
 } from '../types/reportApiTypes';
 
+import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
+
 /**
  * «Параметр сущности» / «Атрибут» — строго filterable-поля соответствующей metadata.
  * latitude+longitude → одна опция «Координаты»; FIO/номер ТС и т.п. НЕ схлопываем в композит —
@@ -29,7 +31,9 @@ export function buildReferenceEntityPropertyOptions(
   tableMetadata: ReportEntityMetadata | null | undefined,
   t: TFunction,
 ): Values {
-  const fields = (tableMetadata?.fields ?? []).filter((f) => f.filterable);
+  const fields = (tableMetadata?.fields ?? []).filter(
+    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
+  );
   const coordMembers = new Set<string>(COORDINATE_MEMBER_FIELD_NAMES);
   const options: Values = [];
   let hasCoords = false;

@@ -26,6 +26,7 @@ import {
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
 import { isReportSortAllowedWithGroupBy } from './buildReportSortParam';
+import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 import {
   applyReportAggregationHeaderLabel,
   buildReportFieldAggregationMap,
@@ -184,18 +185,36 @@ export function mapReportContentToResultGrid(
   selectedFieldsForColumnOrder?: ReportSelectedFieldPayload[],
   entities: ReportEntityListItem[] = [],
   groupBy?: string[],
+  /** Ключи с закрытым глазом + идентификаторы — не рендерить в гриде. */
+  hiddenColumnKeys: string[] = [],
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
     return { columns: [], rows: [] };
   }
 
-  const contentKeys = collectReportContentColumnKeys(content);
+  const hiddenSet = new Set(
+    hiddenColumnKeys
+      .map((key) => String(key).trim())
+      .filter(Boolean)
+      .concat(
+        // Идентификатор никогда не рендерится в отчёте.
+        collectReportContentColumnKeys(content).filter(isReportIdentifierFieldPath),
+      ),
+  );
+
+  const contentKeys = collectReportContentColumnKeys(content).filter((key) => !hiddenSet.has(key));
   const orderedKeys = orderReportContentColumnKeys(
     contentKeys,
-    selectedFieldsForColumnOrder?.map((f) => f.fieldName),
+    selectedFieldsForColumnOrder?.map((f) => f.fieldName).filter((name) => !hiddenSet.has(name)),
   );
-  const { displayColumnKeys: columnKeys, groups: compositeGroups } =
-    planReportCompositeResultColumns(orderedKeys, selectedFieldsForColumnOrder?.map((f) => f.fieldName));
+  const { displayColumnKeys: rawColumnKeys, groups: compositeGroups } =
+    planReportCompositeResultColumns(
+      orderedKeys,
+      selectedFieldsForColumnOrder?.map((f) => f.fieldName).filter((name) => !hiddenSet.has(name)),
+    );
+  const columnKeys = rawColumnKeys.filter(
+    (key) => !hiddenSet.has(key) && !isReportIdentifierFieldPath(key),
+  );
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
   const aggregationMap = buildReportFieldAggregationMap(selectedFieldsForColumnOrder);
   const groupBySet = buildReportGroupBySet(groupBy);

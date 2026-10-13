@@ -328,14 +328,15 @@ export function parseComposeGroupRowsFromGroupBy(
   return rows;
 }
 
+/**
+ * Нужен ли элемент having в POST.
+ * aggregation «none» / пусто = только groupBy, без having.
+ * Иначе бэкенд требует havingMode («Поле havingMode обязательно…»).
+ */
 function rowHasHavingSelections(row: ReportComposeGroupRow): boolean {
-  return Boolean(
-    row.operator.trim() ||
-      row.havingAggregation.trim() ||
-      row.havingMode.trim() ||
-      row.topN.trim() ||
-      row.values.length,
-  );
+  const aggregation = normalizeHavingAggregationForApi(row.havingAggregation);
+  if (!aggregation || aggregation === 'none') return false;
+  return Boolean(normalizeHavingModeForApi(row.havingMode));
 }
 
 /**

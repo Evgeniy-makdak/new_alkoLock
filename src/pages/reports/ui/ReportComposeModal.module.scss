@@ -372,7 +372,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: center;
   gap: 8px;
   min-width: 0;
 }
@@ -380,8 +380,10 @@
 .sortRowDash {
   flex: 0 0 auto;
   font-size: 13px;
+  line-height: 1.43;
   color: var(--mui-palette-text-secondary, #757575);
-  padding-bottom: 8px;
+  padding-bottom: 0;
+  align-self: center;
 }
 
 .sortRowRemoveBtn {
@@ -437,13 +439,12 @@
   }
 }
 
-/* Шире, чтобы длинные подписи колонок («Пользователь совершивший…») читались целиком;
-   flex-wrap на .modalFilterRow переносит контролы на следующую строку. */
+/* Ширина по контенту; flex-wrap на .modalFilterRow переносит на следующую строку. */
 %modalFilterFieldWidth {
-  flex: 1 1 360px !important;
-  min-width: 320px !important;
-  max-width: 480px !important;
-  width: auto !important;
+  flex: 0 1 auto !important;
+  width: fit-content !important;
+  min-width: 160px !important;
+  max-width: 100% !important;
   box-sizing: border-box;
 }
 
@@ -461,9 +462,9 @@
   padding-top: 12px;
 
   :global(.MuiFormControl-root) {
-    min-width: 0 !important;
-    max-width: none !important;
-    width: 100% !important;
+    width: max-content !important;
+    min-width: 160px !important;
+    max-width: 100% !important;
     overflow-x: clip;
     overflow-y: visible;
   }
@@ -487,15 +488,24 @@
   }
 
   :global(.MuiInputLabel-root) {
-    max-width: calc(100% - 32px);
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: none;
+    overflow: visible;
+    text-overflow: unset;
     white-space: nowrap;
     display: block;
   }
 
+  :global(.MuiOutlinedInput-root) {
+    width: max-content !important;
+    min-width: 160px !important;
+    max-width: 100% !important;
+  }
+
   :global(.MuiInputBase-input),
   :global(.MuiAutocomplete-input) {
+    width: auto !important;
+    min-width: 8ch !important;
+    field-sizing: content;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -503,9 +513,9 @@
 
   :global(.MuiAutocomplete-root),
   :global([class*='searchSelect']) {
-    min-width: 0 !important;
-    max-width: none !important;
-    width: 100% !important;
+    width: max-content !important;
+    min-width: 160px !important;
+    max-width: 100% !important;
   }
 
   > *:not(.modalFilterOutputField):not(.reportFilterRowActions):not(.reportFilterDateTimeRoot):not(
@@ -520,16 +530,20 @@
 
   :global([class*='reportFilterNestedEntity']) {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 1 auto;
     flex-wrap: wrap;
     align-content: flex-start;
     align-items: flex-end;
     gap: 12px 16px;
+    width: max-content;
     min-width: 0;
     max-width: 100%;
     overflow: visible;
 
     :global(.MuiFormControl-root) {
+      width: max-content !important;
+      min-width: 160px !important;
+      max-width: 100% !important;
       overflow-x: clip;
       overflow-y: visible;
     }
@@ -552,11 +566,24 @@
     }
 
     :global(.MuiInputLabel-root) {
-      max-width: calc(100% - 32px);
-      overflow: hidden;
-      text-overflow: ellipsis;
+      max-width: none;
+      overflow: visible;
+      text-overflow: unset;
       white-space: nowrap;
       display: block;
+    }
+
+    :global(.MuiOutlinedInput-root) {
+      width: max-content !important;
+      min-width: 160px !important;
+      max-width: 100% !important;
+    }
+
+    :global(.MuiInputBase-input),
+    :global(.MuiAutocomplete-input) {
+      width: auto !important;
+      min-width: 8ch !important;
+      field-sizing: content;
     }
 
     > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
@@ -566,9 +593,6 @@
 
   .optionalFilterControl {
     @extend %modalFilterFieldWidth;
-    flex: 1 1 360px !important;
-    min-width: 320px !important;
-    max-width: 480px !important;
     position: relative;
     z-index: 0;
     background: transparent;
@@ -698,7 +722,8 @@
 }
 
 .transferListItemButtonChosen {
-  padding-right: 268px !important;
+  /* select ~152 + 5 слотов иконок × 34 */
+  padding-right: 330px !important;
 }
 
 .transferRowActions {
@@ -709,9 +734,11 @@
 }
 
 .transferDisplayParam {
+  width: 148px;
   min-width: 148px;
-  max-width: 180px;
+  max-width: 148px;
   margin-right: 4px;
+  flex-shrink: 0;
 
   :global(.MuiInputBase-root) {
     height: 28px;
@@ -723,6 +750,24 @@
     padding-bottom: 4px;
     padding-right: 28px !important;
   }
+}
+
+/* Пустой слот вместо select / иконки — выравнивание колонок по вертикали. */
+.transferDisplayParamSpacer {
+  width: 148px;
+  min-width: 148px;
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.transferActionSlot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  flex-shrink: 0;
 }
 
 .transferListCheckbox {

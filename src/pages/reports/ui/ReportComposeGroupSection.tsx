@@ -10,10 +10,12 @@ import {
   getReportHavingAggregationOptions,
   getReportHavingModeOptions,
   getReportHavingOperatorOptions,
+  normalizeHavingAggregationForApi,
   normalizeHavingModeForApi,
 } from '@pages/reports/lib/buildReportGroupParam';
 import { findReportTableFieldDefinition } from '@pages/reports/lib/buildReportTableFieldOptions';
 import { buildDomainListValuesForAttribute } from '@pages/reports/lib/buildDomainListValuesForAttribute';
+import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import { buildDeviceEventHavingValueOptions } from '@pages/reports/lib/fetchDeviceEventHavingValueOptions';
 import {
   fetchReportDomainEntityRecords,
@@ -26,6 +28,7 @@ import {
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
 import { resolveComposeColumnDisplayLabel } from '@pages/reports/lib/restoreReportComposeTableFields';
+import { reportsStore } from '@pages/reports/model/reportsStore';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
 import { createReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
@@ -60,6 +63,17 @@ type ReportComposeGroupSectionProps = {
   /** Подписи колонок сформированного отчёта (edit) — если поля нет в columnOptions. */
   columnHeaderLabels?: Record<string, string>;
 };
+
+function leafAttributeName(fieldPath: string): string {
+  const key = fieldPath.trim();
+  if (!key.includes('.')) return key;
+  return key.slice(key.lastIndexOf('.') + 1);
+}
+
+function isVehicleColorOrTypePath(fieldPath: string): boolean {
+  const leaf = leafAttributeName(fieldPath);
+  return leaf === 'color' || leaf === 'type';
+}
 
 function buildMetadataHavingValueOptions(fieldDef: ReportFieldDefinition | null): Values {
   if (!fieldDef) return [];
@@ -136,8 +150,21 @@ export function ReportComposeGroupSection({
   const [domainOptionsByPath, setDomainOptionsByPath] = useState<Record<string, Values>>({});
   const [domainOptionsLoading, setDomainOptionsLoading] = useState(false);
   const [domainSearchByPath, setDomainSearchByPath] = useState<Record<string, string>>({});
+  const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
+  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
 
   const entityName = entityMetadata?.entityName?.trim() ?? '';
+
+  useEffect(() => {
+    const needsVehicleMaps = groupRows.some(
+      (row) =>
+        normalizeHavingModeForApi(row.havingMode) === 'comparison' &&
+        isVehicleColorOrTypePath(row.columnKey),
+    );
+    if (needsVehicleMaps || entityName === 'Vehicle') {
+      void loadVehicleLabelMaps();
+    }
+  }, [groupRows, entityName, loadVehicleLabelMaps]);
 
   // Одно и то же поле можно выбрать в нескольких группировках — не вырезаем «занятые».
   const domainValueFieldPaths = useMemo(() => {
@@ -145,6 +172,8 @@ export function ReportComposeGroupSection({
     for (const row of groupRows) {
       if (!row.columnKey.trim()) continue;
       if (normalizeHavingModeForApi(row.havingMode) !== 'comparison') continue;
+      // color/type ТС — из front-data, не из ENUM metadata и не из domain list cars.
+      if (isVehicleColorOrTypePath(row.columnKey)) continue;
       const fieldDef = resolveGroupFieldDef(
         row.columnKey,
         entityMetadata,
@@ -309,10 +338,20 @@ export function ReportComposeGroupSection({
                 getReportHavingModeOptions(fieldDef),
                 labelFromMetaOrI18n('reports.havingMode'),
               );
+              const leafAttr = leafAttributeName(row.columnKey);
+              const vehicleDictionaryOptions =
+                leafAttr === 'color' || leafAttr === 'type'
+                  ? buildVehicleAttributeOptions([], leafAttr, vehicleLabelMaps)
+                  : [];
               const metadataValueOptions = buildMetadataHavingValueOptions(fieldDef);
               const remoteValueOptions = domainOptionsByPath[row.columnKey] ?? [];
+              // Цвет/тип ТС: русские подписи из /front-data/vehicle-color|vehicle-types.
               const valueOptions =
-                metadataValueOptions.length > 0 ? metadataValueOptions : remoteValueOptions;
+                vehicleDictionaryOptions.length > 0
+                  ? vehicleDictionaryOptions
+                  : metadataValueOptions.length > 0
+                    ? metadataValueOptions
+                    : remoteValueOptions;
 
               const selectedColumn = columnOptions.find(
                 (option) => String(option.value) === row.columnKey,
@@ -354,12 +393,18 @@ export function ReportComposeGroupSection({
                 new Map(columnChoices.map((item) => [String(item.value), item])).values(),
               );
 
+              const hasColumn = Boolean(row.columnKey.trim());
+              const aggregationCode = normalizeHavingAggregationForApi(row.havingAggregation);
+              // «none» / «Без агрегации» — только groupBy, without having-контролов.
+              const hasAggregation = Boolean(aggregationCode && aggregationCode !== 'none');
               const normalizedHavingMode = normalizeHavingModeForApi(row.havingMode);
               // По swagger:
               // top_n → поле N (topN); comparison → operator + values;
               // max_only / min_only / above_avg → только aggregation.
-              const showTopN = normalizedHavingMode === 'top_n';
-              const showComparisonControls = normalizedHavingMode === 'comparison';
+              // Дочерние контролы — только при заполненных родителях.
+              const showTopN = hasColumn && hasAggregation && normalizedHavingMode === 'top_n';
+              const showComparisonControls =
+                hasColumn && hasAggregation && normalizedHavingMode === 'comparison';
               const waitsDomainOptions =
                 showComparisonControls &&
                 metadataValueOptions.length === 0 &&
@@ -390,6 +435,7 @@ export function ReportComposeGroupSection({
                       {/* modalFilterRow — та же ширина контролов, что у «Фильтрация» */}
                       <div className={composeStyles.modalFilterRow}>
                         <ReportSearchMultipleSelect
+                          key={`report-group-field-${row.id}`}
                           multiple={false}
                           compact
                           name={`report-group-field-${row.id}`}
@@ -413,8 +459,9 @@ export function ReportComposeGroupSection({
                           }}
                         />
 
-                        {aggregationOptions.length > 0 ? (
+                        {hasColumn && aggregationOptions.length > 0 ? (
                           <ReportSearchMultipleSelect
+                            key={`report-group-aggregation-${row.id}-${row.columnKey}`}
                             multiple={false}
                             compact
                             name={`report-group-aggregation-${row.id}`}
@@ -426,15 +473,29 @@ export function ReportComposeGroupSection({
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {
                               const picked = toValuesFromSingleSelect(next)[0];
+                              const nextAgg = picked ? String(picked.value) : '';
+                              const nextAggCode = normalizeHavingAggregationForApi(nextAgg);
+                              const clearsHavingChildren =
+                                !nextAggCode || nextAggCode === 'none';
                               patchRow(row.id, {
-                                havingAggregation: picked ? String(picked.value) : '',
+                                havingAggregation: nextAgg,
+                                // Пусто / «Без агрегации» — сбрасываем havingMode и ниже.
+                                ...(clearsHavingChildren
+                                  ? {
+                                      havingMode: '',
+                                      operator: '',
+                                      topN: '',
+                                      values: [],
+                                    }
+                                  : {}),
                               });
                             }}
                           />
                         ) : null}
 
-                        {havingModeOptions.length > 0 ? (
+                        {hasColumn && hasAggregation && havingModeOptions.length > 0 ? (
                           <ReportSearchMultipleSelect
+                            key={`report-group-having-mode-${row.id}-${row.havingAggregation}`}
                             multiple={false}
                             compact
                             name={`report-group-having-mode-${row.id}`}
@@ -452,8 +513,8 @@ export function ReportComposeGroupSection({
                                 : '';
                               patchRow(row.id, {
                                 havingMode: nextMode,
+                                // Смена/очистка режима — сбрасываем дочерние comparison/topN.
                                 topN: nextMode === 'top_n' ? row.topN : '',
-                                // operator/values только для comparison
                                 operator: nextMode === 'comparison' ? row.operator : '',
                                 values: nextMode === 'comparison' ? row.values : [],
                               });
@@ -461,8 +522,12 @@ export function ReportComposeGroupSection({
                           />
                         ) : null}
 
-                        {showComparisonControls && operatorOptions.length > 0 ? (
+                        {hasColumn &&
+                        hasAggregation &&
+                        showComparisonControls &&
+                        operatorOptions.length > 0 ? (
                           <ReportSearchMultipleSelect
+                            key={`report-group-operator-${row.id}-${row.havingMode}`}
                             multiple={false}
                             compact
                             name={`report-group-operator-${row.id}`}

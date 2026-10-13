@@ -128,7 +128,7 @@ export function ReportsResultsView() {
     [storePagination.page, storePagination.pageSize],
   );
 
-  // Сброс страницы и сортировки при новом отчёте или после «Очистить фильтры». changeTable* нестабильны — не в deps.
+  // Сброс страницы при новом отчёте / очистке. Compose-sort не затираем — нужен для page и edit.
   useLayoutEffect(() => {
     if (!queryContext) {
       lastSyncedReportKeyRef.current = null;
@@ -154,7 +154,9 @@ export function ReportsResultsView() {
     apiRef.current?.setSortModel?.([]);
     apiRef.current?.setPage?.(0);
     setPagination({ page: 0, pageSize });
-    setSort([]);
+    // Восстановить pageable.sort из контекста формирования (не обнулять).
+    const composeSort = queryContext.sort ?? [];
+    setSort(composeSort);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
 
@@ -222,6 +224,7 @@ export function ReportsResultsView() {
       queryContext?.body.selectedFields,
       entities,
       reportGroupBy,
+      queryContext?.hiddenColumnKeys ?? [],
     );
 
     if (!frozenColumnHeaderLabels) {
@@ -253,6 +256,7 @@ export function ReportsResultsView() {
     entities,
     frozenColumnHeaderLabels,
     reportGroupBy,
+    queryContext?.hiddenColumnKeys,
   ]);
 
   const handlePaginationModelChange = useCallback(

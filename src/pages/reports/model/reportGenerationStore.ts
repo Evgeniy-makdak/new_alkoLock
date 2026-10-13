@@ -26,10 +26,16 @@ export type ReportQueryContext = {
   body: ReportQueryRequest;
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
+  /**
+   * Колонки с закрытым «глазом» + идентификаторы: в payload есть, в гриде не рендерятся.
+   */
+  hiddenColumnKeys?: string[];
   /** Выбранные филиалы суперадмина (query: all.branch.id.in=…). */
   branchIds?: number[];
   /** Подписи выбранных филиалов для восстановления UI при редактировании. */
   branchOffices?: Values;
+  /** pageable.sort на момент формирования (для edit: «Сортировка»). */
+  sort?: string[];
   /** Сохранённые настройки графика (если отчёт смотрели/сохраняли как график). */
   chartSpec?: ReportChartSpec;
 };

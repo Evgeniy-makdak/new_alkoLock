@@ -19,7 +19,8 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 import {
   reportFilterAutocompleteSlotProps,
-  reportFilterModalControlSx,
+  reportFilterDialogControlSx,
+  reportFilterDialogSelectSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 
@@ -109,7 +110,7 @@ export function ReportAddSortDialog({
             values={columnOptions}
             value={selectedColumn}
             serverFilter={false}
-            sx={reportFilterModalControlSx}
+            sx={reportFilterDialogControlSx}
             slotProps={reportFilterAutocompleteSlotProps}
             setValueStore={(_, next) => {
               const picked = toValuesFromSingleSelect(next)[0];
@@ -126,6 +127,7 @@ export function ReportAddSortDialog({
               value={direction}
               displayEmpty
               onChange={handleDirectionChange}
+              sx={reportFilterDialogSelectSx}
               renderValue={(selected) => {
                 if (!selected) {
                   return (

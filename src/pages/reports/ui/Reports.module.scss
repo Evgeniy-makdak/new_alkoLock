@@ -283,10 +283,10 @@
   box-sizing: border-box;
 
   > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-    flex: 1 1 360px;
-    min-width: 320px;
-    max-width: 480px;
-    width: auto;
+    flex: 0 1 auto;
+    width: max-content;
+    min-width: 160px;
+    max-width: 100%;
     box-sizing: border-box;
   }
 
@@ -394,10 +394,10 @@
   > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterNestedEntity):not(
       .reportFilterDateTimeRoot
     ):not(.reportFilterDateTimeRootRange) {
-    flex: 1 1 360px;
-    min-width: 320px;
-    max-width: 480px;
-    width: auto;
+    flex: 0 1 auto;
+    width: max-content;
+    min-width: 160px;
+    max-width: 100%;
     box-sizing: border-box;
   }
 }
@@ -417,18 +417,18 @@
   > *:not(.MuiIconButton-root):not(.reportFilterRowActions):not(.reportFilterOutputRowInner):not(
       .reportFilterNestedEntity
     ):not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {
-    flex: 1 1 360px;
-    min-width: 320px;
-    max-width: 480px;
-    width: auto;
+    flex: 0 1 auto;
+    width: max-content;
+    min-width: 160px;
+    max-width: 100%;
     box-sizing: border-box;
   }
 }
 
 .reportFilterRowEntitySpacer {
-  flex: 1 1 360px;
-  min-width: 320px;
-  max-width: 480px;
+  flex: 0 1 auto;
+  min-width: 160px;
+  max-width: 100%;
   height: 0;
   visibility: hidden;
   pointer-events: none;

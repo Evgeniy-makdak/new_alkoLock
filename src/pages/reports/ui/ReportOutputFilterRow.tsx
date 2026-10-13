@@ -108,6 +108,7 @@ export function ReportOutputFilterRow({
     (s) => s.referenceEntityMetadataLoadingByName,
   );
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
+  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
 
   const nestedState = primaryField ? row.nestedEntityFilterByField[primaryField.fieldName] : undefined;
   const nestedPath = nestedState ? normalizeNestedFilterPath(nestedState) : [];
@@ -116,6 +117,21 @@ export function ReportOutputFilterRow({
     if (!refEntity) return;
     void loadReportTableFieldsMetadata(row.id, refEntity);
   }, [refEntity, row.id, loadReportTableFieldsMetadata]);
+
+  useEffect(() => {
+    const needsVehicleLabels =
+      refEntity === 'Vehicle' ||
+      primaryKey === 'color' ||
+      primaryKey === 'type' ||
+      primaryKey.endsWith('.color') ||
+      primaryKey.endsWith('.type') ||
+      nestedPath.includes('color') ||
+      nestedPath.includes('type') ||
+      nestedPath.includes('vehicle');
+    if (needsVehicleLabels) {
+      void loadVehicleLabelMaps();
+    }
+  }, [refEntity, primaryKey, nestedPath, loadVehicleLabelMaps]);
 
   const operationKey = reportOutputOperationKey(row.id);
   const filterOperationCode = useMemo(() => {
@@ -215,6 +231,7 @@ export function ReportOutputFilterRow({
   const filterOperationBlock =
     primaryField && showOperatorField ? (
       <ReportSearchMultipleSelect
+        key={`${operationKey}__${nestedPath.join('.') || 'none'}`}
         multiple={false}
         compact={selectCompact}
         name={operationKey}
@@ -340,6 +357,7 @@ export function ReportOutputFilterRow({
       serverFilter={false}
       sx={selectSx}
       slotProps={reportFilterAutocompleteSlotProps}
+      blockEmptyClear
       setValueStore={(_, value) => onOutputFieldChange(toValuesFromSingleSelect(value))}
     />
   );

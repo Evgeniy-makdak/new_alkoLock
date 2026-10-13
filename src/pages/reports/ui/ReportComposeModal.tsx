@@ -13,7 +13,6 @@ import {
   finalizeReportQueryBodyForGroupBy,
   parseComposeGroupRowsFromGroupBy,
 } from '@pages/reports/lib/buildReportGroupParam';
-import { buildComposeFilterConfigurationKey } from '@pages/reports/lib/buildComposeFilterConfigurationKey';
 import {
   buildComposeSortParams,
   isReportSortAllowedWithGroupBy,
@@ -24,6 +23,7 @@ import {
   buildRootReportTableFieldOptions,
   collectReferenceEntitiesFromMetadata,
   findReportTableFieldDefinition,
+  isReportTableFieldLabelAutoQualified,
   mergeAllReportTableFieldOptions,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
@@ -35,6 +35,10 @@ import {
   buildReportTableFieldDisplayOptions,
   encodeReportTableFieldFunctionParam,
 } from '@pages/reports/lib/reportTableFieldDisplayParam';
+import {
+  isReportIdentifierFieldPath,
+  isRootReportIdentifierFieldPath,
+} from '@pages/reports/lib/reportTableFieldIdentifier';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
   type ReportsComposeSnapshot,
@@ -103,6 +107,9 @@ export function ReportComposeModal({
   const tableFieldDisplayParamByPath = reportsStore((s) => s.tableFieldDisplayParamByPath);
   const setTableFieldDisplayParam = reportsStore((s) => s.setTableFieldDisplayParam);
   const setTableFieldDisplayParamByPath = reportsStore((s) => s.setTableFieldDisplayParamByPath);
+  const tableFieldHiddenByPath = reportsStore((s) => s.tableFieldHiddenByPath);
+  const setTableFieldHidden = reportsStore((s) => s.setTableFieldHidden);
+  const setTableFieldHiddenByPath = reportsStore((s) => s.setTableFieldHiddenByPath);
   const referenceEntityMetadataLoadingByName = reportsStore(
     (s) => s.referenceEntityMetadataLoadingByName,
   );
@@ -115,17 +122,7 @@ export function ReportComposeModal({
   const [composeHavingLogicOperator, setComposeHavingLogicOperator] =
     useState<ReportLogicOperator>('or');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
-  const filterConfigurationKeyRef = useRef<string | null>(null);
-
-  const filterConfigurationKey = useMemo(
-    () =>
-      buildComposeFilterConfigurationKey({
-        selectedEntityName,
-        logicOperator,
-        outputRows,
-      }),
-    [selectedEntityName, logicOperator, outputRows],
-  );
+  const prevComposeEntityRef = useRef<string | null>(null);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -175,9 +172,12 @@ export function ReportComposeModal({
           ? savedBranchIds.map((id) => ({ value: id, label: String(id) }))
           : [],
     );
-    setComposeSortRows(
-      parseComposeSortRowsFromSortParams(reportGenerationStore.getState().sort, tableFields),
-    );
+    // Сортировка: сначала live store, иначе снимок из queryContext (store мог сброситься гридом).
+    const savedSort =
+      reportGenerationStore.getState().sort.length > 0
+        ? reportGenerationStore.getState().sort
+        : (queryContext?.sort ?? []);
+    setComposeSortRows(parseComposeSortRowsFromSortParams(savedSort, tableFields));
     setComposeGroupRows(
       parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields, queryBody?.having),
     );
@@ -191,31 +191,18 @@ export function ReportComposeModal({
       restoredDisplay[field.fieldName] = encoded;
     }
     reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
-    filterConfigurationKeyRef.current = buildComposeFilterConfigurationKey({
-      selectedEntityName: reportsStore.getState().selectedEntityName,
-      logicOperator: reportsStore.getState().logicOperator,
-      outputRows: reportsStore.getState().outputRows,
-    });
+    const restoredHidden: Record<string, boolean> = {};
+    for (const key of queryContext?.hiddenColumnKeys ?? []) {
+      if (key) restoredHidden[key] = true;
+    }
+    for (const field of tableFields) {
+      const key = String(field.value);
+      if (isReportIdentifierFieldPath(key)) {
+        restoredHidden[key] = true;
+      }
+    }
+    reportsStore.getState().setTableFieldHiddenByPath(restoredHidden);
   }, [open, mode]);
-
-  useEffect(() => {
-    if (!open) {
-      filterConfigurationKeyRef.current = null;
-      return;
-    }
-
-    if (filterConfigurationKeyRef.current === null) {
-      filterConfigurationKeyRef.current = filterConfigurationKey;
-      return;
-    }
-
-    if (filterConfigurationKeyRef.current === filterConfigurationKey) return;
-
-    filterConfigurationKeyRef.current = filterConfigurationKey;
-    setComposeSortRows([]);
-    setComposeGroupRows([]);
-    setComposeHavingLogicOperator('or');
-  }, [open, filterConfigurationKey]);
 
   const handleClose = useCallback(() => {
     if (!confirmedRef.current && snapshotRef.current) {
@@ -291,7 +278,9 @@ export function ReportComposeModal({
         : tableFieldsInitialSelection.length > 0
           ? tableFieldsInitialSelection
           : defaultRootTableFields;
-    return Array.from(new Map(selected.map((item) => [String(item.value), item])).values());
+    return Array.from(
+      new Map(selected.map((item) => [String(item.value), item])).values(),
+    ).filter((item) => !isReportIdentifierFieldPath(String(item.value)));
   }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
 
   const groupColumnOptions = useMemo(() => {
@@ -355,31 +344,93 @@ export function ReportComposeModal({
   }, [open, composeGroupBy]);
 
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
-   *  вложенные колонки не добавляются автоматически (только в «Доступные»). */
+   *  вложенные колонки не добавляются автоматически (только в «Доступные»).
+   *  Смена сущности в create — полный сброс состава под новую metadata. */
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      prevComposeEntityRef.current = null;
+      return;
+    }
+
+    const entityChanged =
+      Boolean(selectedEntityName) &&
+      prevComposeEntityRef.current != null &&
+      prevComposeEntityRef.current !== selectedEntityName;
+    if (selectedEntityName) {
+      prevComposeEntityRef.current = selectedEntityName;
+    }
+
+    // Смена сущности (create или подтверждённая в edit) — как новый отчёт.
+    if (entityChanged) {
+      setComposeSortRows([]);
+      setComposeGroupRows([]);
+      setComposeHavingLogicOperator('or');
+      setTableFieldDisplayParamByPath({});
+      const nextDefaults = defaultRootTableFields.length ? [...defaultRootTableFields] : [];
+      setTableFieldsSelection(nextDefaults);
+      const hidden: Record<string, boolean> = {};
+      for (const item of nextDefaults) {
+        if (isReportIdentifierFieldPath(String(item.value))) {
+          hidden[String(item.value)] = true;
+        }
+      }
+      setTableFieldHiddenByPath(hidden);
+      return;
+    }
+
     const currentOptions = tableFieldsDialogOptionsRef.current;
     setTableFieldsSelection((prev) => {
       // На части сущностей options может кратко стать пустым во время перерасчёта metadata.
-      // Не затираем уже отображённый «Текущий состав» в этот момент.
       if (!currentOptions.length) {
+        if (!defaultRootTableFields.length) {
+          return mode === 'edit' ? prev : [];
+        }
         return prev;
       }
       const optionByKey = new Map(
         [...defaultRootTableFields, ...currentOptions].map((o) => [String(o.value), o]),
       );
-      // Edit: пустой prev — ждём restore из queryContext, не подставляем весь дефолтный состав.
+      // Пустой состав: после смены сущности / create — дефолты; при первом открытии edit
+      // состав уже восстановлен в useLayoutEffect (prev не пуст).
       if (prev.length === 0) {
-        if (mode === 'edit') return prev;
-        return defaultRootTableFields.length ? [...defaultRootTableFields] : [];
+        return defaultRootTableFields.length ? [...defaultRootTableFields] : prev;
       }
-      // Не выкидываем пути, которых ещё нет в options (nested metadata догружается).
-      // Иначе edit теряет выбранные поля и следующий проход заливает дефолты.
-      const remapped = prev.map((p) => {
+
+      // create: только поля текущей сущности; edit — сохраняем пути, пока грузится nested.
+      const source =
+        mode === 'create'
+          ? prev.filter((p) => optionByKey.has(String(p.value)))
+          : prev;
+      if (mode === 'create' && source.length === 0 && defaultRootTableFields.length) {
+        return [...defaultRootTableFields];
+      }
+
+      let remapped = source.map((p) => {
         const key = String(p.value);
         const opt = optionByKey.get(key);
-        return { value: key, label: opt?.label ?? p.label ?? key };
+        const prevLabel = (p.label ?? '').trim();
+        const optLabel = (opt?.label ?? '').trim();
+        // Алиас с «карандаша» не затираем дефолтной подписью options.
+        const keepCustomAlias =
+          Boolean(prevLabel) &&
+          prevLabel !== key &&
+          prevLabel !== optLabel &&
+          !isReportTableFieldLabelAutoQualified(prevLabel);
+        return {
+          value: key,
+          label: keepCustomAlias ? prevLabel : optLabel || prevLabel || key,
+        };
       });
+
+      // Корневой id всегда в «Текущем составе».
+      if (
+        optionByKey.has('id') &&
+        !remapped.some((item) => isRootReportIdentifierFieldPath(String(item.value)))
+      ) {
+        const idOpt = optionByKey.get('id')!;
+        remapped = [{ value: 'id', label: idOpt.label ?? 'id' }, ...remapped];
+      }
+
       const deduped = Array.from(
         new Map(remapped.map((item) => [String(item.value), item])).values(),
       );
@@ -392,7 +443,15 @@ export function ReportComposeModal({
         );
       return unchanged ? prev : normalized;
     });
-  }, [open, mode, tableFieldsOptionsKey, defaultRootTableFields]);
+  }, [
+    open,
+    mode,
+    selectedEntityName,
+    tableFieldsOptionsKey,
+    defaultRootTableFields,
+    setTableFieldDisplayParamByPath,
+    setTableFieldHiddenByPath,
+  ]);
 
   const loadAllReferenceEntityMetadataForReport = reportsStore(
     (s) => s.loadAllReferenceEntityMetadataForReport,
@@ -472,7 +531,7 @@ export function ReportComposeModal({
         reportTableFieldsMetadataByRowId,
         referenceEntityMetadataByName,
       );
-      return buildReportTableFieldDisplayOptions(fieldDef);
+      return buildReportTableFieldDisplayOptions(fieldDef, fieldPath);
     },
     [metadata, outputRows, reportTableFieldsMetadataByRowId, referenceEntityMetadataByName],
   );
@@ -482,6 +541,49 @@ export function ReportComposeModal({
       setTableFieldDisplayParam(fieldPath, encoded);
     },
     [setTableFieldDisplayParam],
+  );
+
+  const handleTableFieldsSelectionChange = useCallback(
+    (next: Values) => {
+      let selection = next;
+      const idOpt =
+        defaultRootTableFields.find((item) => isRootReportIdentifierFieldPath(String(item.value))) ??
+        tableFieldsDialogOptions.find((item) =>
+          isRootReportIdentifierFieldPath(String(item.value)),
+        );
+      if (
+        idOpt &&
+        !selection.some((item) => isRootReportIdentifierFieldPath(String(item.value)))
+      ) {
+        selection = [idOpt, ...selection];
+      }
+      setTableFieldsSelection(selection);
+
+      const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
+      const allowed = new Set(selection.map((item) => String(item.value)));
+      const hidden: Record<string, boolean> = {};
+      for (const key of allowed) {
+        if (prevHidden[key] !== undefined) {
+          hidden[key] = prevHidden[key]!;
+        } else if (isReportIdentifierFieldPath(key)) {
+          hidden[key] = true;
+        }
+      }
+      setTableFieldHiddenByPath(hidden);
+    },
+    [defaultRootTableFields, tableFieldsDialogOptions, setTableFieldHiddenByPath],
+  );
+
+  const handleTableFieldVisibilityChange = useCallback(
+    (fieldPath: string, visible: boolean) => {
+      // Идентификатор никогда не показывается в гриде — глаз всегда «закрыт».
+      if (isReportIdentifierFieldPath(fieldPath)) {
+        setTableFieldHidden(fieldPath, true);
+        return;
+      }
+      setTableFieldHidden(fieldPath, !visible);
+    },
+    [setTableFieldHidden],
   );
 
   useEffect(() => {
@@ -496,9 +598,34 @@ export function ReportComposeModal({
         next[path] = encoded;
       }
     }
-    if (Object.keys(next).length === Object.keys(current).length) return;
-    setTableFieldDisplayParamByPath(next);
-  }, [tableFieldsSelection, setTableFieldDisplayParamByPath]);
+    if (Object.keys(next).length !== Object.keys(current).length) {
+      setTableFieldDisplayParamByPath(next);
+    }
+
+    // Идентификаторы по умолчанию скрыты в гриде; прочие ключи вне состава убираем.
+    const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
+    const hidden: Record<string, boolean> = {};
+    let hiddenChanged = false;
+    for (const key of allowed) {
+      if (prevHidden[key] !== undefined) {
+        hidden[key] = isReportIdentifierFieldPath(key) ? true : prevHidden[key]!;
+      } else if (isReportIdentifierFieldPath(key)) {
+        hidden[key] = true;
+      } else {
+        continue;
+      }
+      if (hidden[key] !== prevHidden[key]) hiddenChanged = true;
+    }
+    for (const key of Object.keys(prevHidden)) {
+      if (!allowed.has(key)) {
+        hiddenChanged = true;
+        break;
+      }
+    }
+    if (hiddenChanged || Object.keys(hidden).length !== Object.keys(prevHidden).length) {
+      setTableFieldHiddenByPath(hidden);
+    }
+  }, [tableFieldsSelection, setTableFieldDisplayParamByPath, setTableFieldHiddenByPath]);
 
   const ensureSelectedFieldsInBody = useCallback((body: ReportQueryRequest) => body, []);
 
@@ -578,11 +705,24 @@ export function ReportComposeModal({
     setSort(sortParams);
 
     try {
+      const hiddenFromUi = reportsStore.getState().tableFieldHiddenByPath;
+      const hiddenColumnKeys = Array.from(
+        new Set([
+          ...Object.entries(hiddenFromUi)
+            .filter(([, hidden]) => hidden)
+            .map(([key]) => key),
+          ...(bodyWithGroup.selectedFields ?? [])
+            .map((field) => field.fieldName)
+            .filter((name) => isReportIdentifierFieldPath(name)),
+        ]),
+      );
       setQueryContext({
         entityName,
         body: bodyWithGroup,
+        hiddenColumnKeys,
         branchIds: branchIds.length ? branchIds : undefined,
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
+        sort: sortParams,
         chartSpec: reportsStore.getState().chartSpec,
       });
 
@@ -671,7 +811,16 @@ export function ReportComposeModal({
       body={
         <Box className={composeStyles.composeBody}>
           <div className={composeStyles.composeMainGrid}>
-            <ReportComposeForm part="entity" />
+            <ReportComposeForm
+              part="entity"
+              confirmEntityChange={mode === 'edit'}
+              onAfterEntityChange={() => {
+                setComposeSortRows([]);
+                setComposeGroupRows([]);
+                setComposeHavingLogicOperator('or');
+                reportGenerationStore.getState().clearResults();
+              }}
+            />
             {showColumnsSection ? (
               <div className={composeStyles.composeColumnsSlot}>
                 <ReportComposeSection
@@ -682,10 +831,13 @@ export function ReportComposeModal({
                   <ReportTableFieldsTransfer
                     options={tableFieldsDialogOptions}
                     value={tableFieldsSelection}
-                    onChange={setTableFieldsSelection}
+                    onChange={handleTableFieldsSelectionChange}
                     displayParamByKey={tableFieldDisplayParamByPath}
                     getDisplayOptions={getTableFieldDisplayOptions}
                     onDisplayParamChange={handleTableFieldDisplayParamChange}
+                    hiddenByKey={tableFieldHiddenByPath}
+                    onVisibilityChange={handleTableFieldVisibilityChange}
+                    lockedChosenKeys={['id']}
                   />
                 </ReportComposeSection>
               </div>

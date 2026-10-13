@@ -345,6 +345,19 @@ export function buildRootReportTableFieldOptions(
     });
   }
 
+  // Идентификатор корневой сущности всегда в дефолтном «Текущем составе» (даже если selectable=false).
+  const idField = entityMetadata.fields.find((f) => f.fieldName === 'id');
+  if (idField && !seen.has('id')) {
+    seen.add('id');
+    drafts.unshift({
+      value: 'id',
+      baseLabel: idField.label || idField.fieldName,
+      sourceLabel: entitySourceLabel,
+      qualifyAs: 'root',
+      leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, 'id'),
+    });
+  }
+
   const grouped = t ? applyReportEntityCompositeFieldGrouping(drafts, t) : drafts;
   return buildReportTableFieldOptionLabels(grouped);
 }
@@ -381,6 +394,19 @@ export function mergeAllReportTableFieldOptions(
       sourceLabel: entitySourceLabel,
       qualifyAs: 'root',
       leafKey: buildReportTableFieldLeafKey(rootEntityName, f.fieldName),
+    });
+  }
+
+  // Корневой id всегда в опциях состава (для «Текущего состава»), даже при selectable=false.
+  const rootIdField = entityMetadata.fields.find((f) => f.fieldName === 'id');
+  if (rootIdField && !seen.has('id')) {
+    seen.add('id');
+    drafts.unshift({
+      value: 'id',
+      baseLabel: rootIdField.label || rootIdField.fieldName,
+      sourceLabel: entitySourceLabel,
+      qualifyAs: 'root',
+      leafKey: buildReportTableFieldLeafKey(rootEntityName, 'id'),
     });
   }
 

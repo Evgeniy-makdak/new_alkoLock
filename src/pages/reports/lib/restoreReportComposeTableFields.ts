@@ -19,6 +19,7 @@ export function restoreReportComposeTableFieldsFromQuery(
     if (!path || seen.has(path)) continue;
     seen.add(path);
     const label =
+      (field.alias ?? '').trim() ||
       (columnHeaderLabels[path] ?? '').trim() ||
       (optionLabelByPath[path] ?? '').trim() ||
       path;

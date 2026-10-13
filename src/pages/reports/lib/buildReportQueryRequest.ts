@@ -288,9 +288,12 @@ function buildRowReportTableFields(
         context.entityMetadata.entityName,
       ),
     };
-    const isAutoQualified = isReportTableFieldLabelAutoQualified(displayLabel);
-    const isSafeAlias = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(displayLabel);
-    if (!isAutoQualified && displayLabel !== defaultLabel && isSafeAlias) {
+    // Alias из «карандаша»: любое имя, кроме авто «Сущность -> поле» и сырого fieldName.
+    if (
+      displayLabel &&
+      displayLabel !== emitPath &&
+      !isReportTableFieldLabelAutoQualified(displayLabel)
+    ) {
       payload.alias = displayLabel;
     }
     // aggregation — только из селекта «Текущий состав»; «Не выбрана» → без aggregation.
@@ -619,10 +622,11 @@ export function buildReportQueryRequest(params: {
   } = params;
   const primaryRow = getPrimaryOutputRowFromList(outputRows);
   const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
+  // UI «Текущий состав» (fallback) — источник алиасов с «карандаша»; store может отставать.
   const composeTableFields =
-    primaryRow.reportTableFields.length > 0
-      ? primaryRow.reportTableFields
-      : fallbackReportTableFields;
+    fallbackReportTableFields.length > 0
+      ? fallbackReportTableFields
+      : primaryRow.reportTableFields;
 
   const tableFieldsContext = createTableFieldsContext(
     metadata,
@@ -674,30 +678,20 @@ export function buildReportQueryRequest(params: {
       },
       activeTableFieldsContext,
     );
-    if (!single) {
-      // Неполный фильтр — колонки состава всё равно отправляем.
-      return {
-        selectedFields: finalizeReportSelectedFields(
-          buildRowReportTableFields(
-            primaryRow,
-            activeTableFieldsContext,
-            composeTableFields,
-          ),
-          activeTableFieldsContext.allowedTableFieldPaths,
-        ),
-        filters: [],
-      };
-    }
+    // selectedFields всегда из «Текущего состава» (с alias), filters — из строки фильтра.
     const selectedFields = finalizeReportSelectedFields(
-      single.selectedFields.length
-        ? single.selectedFields
-        : buildRowReportTableFields(
+      composeTableFields.length
+        ? buildRowReportTableFields(
             primaryRow,
             activeTableFieldsContext,
             composeTableFields,
-          ),
+          )
+        : single?.selectedFields ?? [],
       activeTableFieldsContext.allowedTableFieldPaths,
     );
+    if (!single) {
+      return { selectedFields, filters: [] };
+    }
     return {
       selectedFields,
       filters: single.filters,
@@ -731,16 +725,16 @@ export function buildReportQueryRequest(params: {
     }
   }
 
-  let selectedFields = finalizeReportSelectedFields(
-    mergeSelectedFields(selectedFieldLists),
-    activeTableFieldsContext.allowedTableFieldPaths,
-  );
-  if (!selectedFields.length && composeTableFields.length) {
-    selectedFields = finalizeReportSelectedFields(
-      buildRowReportTableFields(primaryRow, activeTableFieldsContext, composeTableFields),
-      activeTableFieldsContext.allowedTableFieldPaths,
-    );
-  }
+  // Колонки + alias — из состава UI; списки с фильтров только для filters.
+  let selectedFields = composeTableFields.length
+    ? finalizeReportSelectedFields(
+        buildRowReportTableFields(primaryRow, activeTableFieldsContext, composeTableFields),
+        activeTableFieldsContext.allowedTableFieldPaths,
+      )
+    : finalizeReportSelectedFields(
+        mergeSelectedFields(selectedFieldLists),
+        activeTableFieldsContext.allowedTableFieldPaths,
+      );
 
   return {
     selectedFields,

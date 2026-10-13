@@ -6,6 +6,7 @@ import { Box } from '@mui/material';
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
 import { resolveNestedFilterValueFetchTarget } from '@pages/reports/lib/eventsForFrontReportOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
+import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import {
   buildReferenceEntityPropertyOptions,
   buildReportAttributeValueOptions,
@@ -93,10 +94,26 @@ export function NestedFilterValueControl({
       return buildNestedEntityStaticValueOptions(segment.field, t);
     }
     if (valueLoadKind === 'enum') {
+      const attr = segment.field.fieldName;
+      // Цвет/тип ТС — русские подписи из front-data, не ENUM-коды metadata.
+      if (
+        (attr === 'color' || attr === 'type') &&
+        (segment.leafEntityName === 'Vehicle' || fetchTarget.referenceEntity === 'Vehicle')
+      ) {
+        const fromMaps = buildVehicleAttributeOptions([], attr, vehicleLabelMaps);
+        if (fromMaps.length) return fromMaps;
+      }
       return buildReportAttributeValueOptions(segment.field, t);
     }
     return [];
-  }, [segment.field, valueLoadKind, t]);
+  }, [
+    segment.field,
+    segment.leafEntityName,
+    valueLoadKind,
+    t,
+    vehicleLabelMaps,
+    fetchTarget.referenceEntity,
+  ]);
 
   useEffect(() => {
     if (valueLoadKind !== 'domainList') {
@@ -312,6 +329,7 @@ export function ReportNestedEntityFilterControl({
 
   const propertySegments = segments.filter((s) => s.kind === 'property');
   const valueSegments = segments.filter((s) => s.kind === 'value');
+  const pathKey = path.join('\0');
 
   return (
     <Box className={pageStyles.reportFilterNestedEntity}>
@@ -336,9 +354,12 @@ export function ReportNestedEntityFilterControl({
                   entity: segment.entityName,
                 });
 
+          // Ключ зависит только от родительского path — при очистке родителя дочерний селект размонтируется.
+          const parentPathKey = path.slice(0, segment.depth).join('.') || 'root';
+
           return (
             <ReportSearchMultipleSelect
-              key={`${field.fieldName}__property_${segment.depth}`}
+              key={`${field.fieldName}__property_${segment.depth}__${parentPathKey}`}
               multiple={false}
               compact={compact}
               name={`${field.fieldName}__property_${segment.depth}`}
@@ -367,7 +388,7 @@ export function ReportNestedEntityFilterControl({
         if (segment.kind !== 'value') return null;
         return (
           <NestedFilterValueControl
-            key={`${field.fieldName}__value_${index}`}
+            key={`${field.fieldName}__value_${index}__${pathKey}`}
             fieldKey={field.fieldName}
             segment={segment}
             values={state.values}

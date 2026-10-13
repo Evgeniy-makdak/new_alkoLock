@@ -20,6 +20,7 @@ export type ReportsComposeSnapshot = {
   reportTableFieldsMetadataLoadingByRowId: Record<string, boolean>;
   reportTableFieldsMetadataKeyByRowId: Record<string, string>;
   tableFieldDisplayParamByPath: Record<string, string>;
+  tableFieldHiddenByPath: Record<string, boolean>;
 };
 
 function cloneOutputRows(rows: ReportOutputRow[]): ReportOutputRow[] {
@@ -55,6 +56,7 @@ export function captureReportsComposeSnapshot(): ReportsComposeSnapshot {
     },
     reportTableFieldsMetadataKeyByRowId: { ...state.reportTableFieldsMetadataKeyByRowId },
     tableFieldDisplayParamByPath: { ...state.tableFieldDisplayParamByPath },
+    tableFieldHiddenByPath: { ...state.tableFieldHiddenByPath },
   };
 }
 
@@ -75,5 +77,6 @@ export function restoreReportsComposeSnapshot(snapshot: ReportsComposeSnapshot):
     },
     reportTableFieldsMetadataKeyByRowId: { ...snapshot.reportTableFieldsMetadataKeyByRowId },
     tableFieldDisplayParamByPath: { ...snapshot.tableFieldDisplayParamByPath },
+    tableFieldHiddenByPath: { ...(snapshot.tableFieldHiddenByPath ?? {}) },
   });
 }

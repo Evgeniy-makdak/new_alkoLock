@@ -27,6 +27,7 @@ import {
   formatRootReportTableFieldLabel,
   type ReportTableFieldOptionDraft,
 } from './buildReportTableFieldOptions';
+import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 
 import { Formatters } from '@shared/utils/formatters';
 
@@ -731,7 +732,9 @@ export function buildReportOutputFieldOptions(
   metadata: ReportEntityMetadata,
   t: TFunction,
 ): Values {
-  const filterable = metadata.fields.filter((f) => f.filterable);
+  const filterable = metadata.fields.filter(
+    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
+  );
   return groupFilterableFieldsToCompositeOption(filterable, metadata.entityName, t).sort(
     (a, b) => a.label.localeCompare(b.label, 'ru'),
   );
@@ -742,7 +745,9 @@ export function buildReferenceEntityPropertyOptionsWithComposite(
   tableMetadata: ReportEntityMetadata | null | undefined,
   t: TFunction,
 ): Values {
-  const fields = (tableMetadata?.fields ?? []).filter((f) => f.filterable);
+  const fields = (tableMetadata?.fields ?? []).filter(
+    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
+  );
   const entityName = tableMetadata?.entityName ?? '';
   const options = groupFilterableFieldsToCompositeOption(fields, entityName, t);
   return options.sort((a, b) => a.label.localeCompare(b.label, 'ru'));

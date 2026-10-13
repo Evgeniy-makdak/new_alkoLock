@@ -10,11 +10,14 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
+import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import {
   Box,
   Checkbox,
@@ -35,6 +38,8 @@ import {
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
+import { isReportIdentifierFieldPath } from '@pages/reports/lib/reportTableFieldIdentifier';
+
 import composeStyles from './ReportComposeModal.module.scss';
 
 export type ReportTableFieldsTransferProps = {
@@ -46,6 +51,11 @@ export type ReportTableFieldsTransferProps = {
   displayParamByKey?: Record<string, string>;
   getDisplayOptions?: (fieldPath: string) => Values;
   onDisplayParamChange?: (fieldPath: string, encoded: string) => void;
+  /** true = скрыто в гриде (закрытый глаз), в payload остаётся. */
+  hiddenByKey?: Record<string, boolean>;
+  onVisibilityChange?: (fieldPath: string, visible: boolean) => void;
+  /** Ключи, которые нельзя убрать из «Текущего состава» (корневой id). */
+  lockedChosenKeys?: string[];
 };
 
 function fieldKey(item: Value): string {
@@ -179,7 +189,11 @@ export function ReportTableFieldsTransfer({
   displayParamByKey = {},
   getDisplayOptions,
   onDisplayParamChange,
+  hiddenByKey = {},
+  onVisibilityChange,
+  lockedChosenKeys = [],
 }: ReportTableFieldsTransferProps) {
+  const lockedChosen = useMemo(() => new Set(lockedChosenKeys.map(String)), [lockedChosenKeys]);
   const { t, i18n } = useTranslation();
   const sortLocale = i18n.language || 'ru';
   const [availableSelected, setAvailableSelected] = useState<string[]>([]);
@@ -293,7 +307,15 @@ export function ReportTableFieldsTransfer({
 
   const emitChosen = useCallback(
     (next: Values) => {
-      onChange(next.map((item) => mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue)));
+      // Подмешиваем label из next поверх customLabels — иначе updateLabel
+      // (setState customLabels ещё не применился) затирает новый алиас старым.
+      const labels = { ...customLabelsByKey };
+      for (const item of next) {
+        const key = fieldKey(item);
+        const explicit = item.label?.trim();
+        if (explicit) labels[key] = explicit;
+      }
+      onChange(next.map((item) => mergeOptionMeta(item, labels, defaultLabelsByValue)));
     },
     [onChange, customLabelsByKey, defaultLabelsByValue],
   );
@@ -356,7 +378,8 @@ export function ReportTableFieldsTransfer({
 
   const moveToAvailable = (keys: string[]) => {
     if (!keys.length) return;
-    const remove = new Set(keys);
+    const remove = new Set(keys.filter((key) => !lockedChosen.has(key)));
+    if (!remove.size) return;
     setCustomLabelsByKey((prev) => {
       const next = { ...prev };
       for (const item of value) {
@@ -375,11 +398,20 @@ export function ReportTableFieldsTransfer({
 
   const updateLabel = (fieldValue: string, nextLabel: string) => {
     const trimmed = nextLabel.trim() || defaultLabelsByValue[fieldValue] || fieldValue;
-    setCustomLabelsByKey((prev) => ({ ...prev, [fieldValue]: trimmed }));
-    emitChosen(
-      value.map((item) =>
-        fieldKey(item) === fieldValue ? { ...item, value: fieldValue, label: trimmed } : item,
-      ),
+    const nextLabels = { ...customLabelsByKey, [fieldValue]: trimmed };
+    setCustomLabelsByKey(nextLabels);
+    // Пишем в родителя сразу с новым алиасом (без stale customLabels в emitChosen).
+    onChange(
+      value.map((item) => {
+        const key = fieldKey(item);
+        return {
+          value: key,
+          label:
+            key === fieldValue
+              ? trimmed
+              : resolveFieldLabel(key, nextLabels, defaultLabelsByValue, item),
+        };
+      }),
     );
   };
 
@@ -396,6 +428,30 @@ export function ReportTableFieldsTransfer({
   const cancelRename = () => {
     setRenamingKey(null);
     setRenameDraft('');
+  };
+
+  /** Вернуть подпись колонки к дефолту из metadata («Сущность -> поле»). */
+  const resetLabelToDefault = (fieldValue: string) => {
+    const defaultLabel = defaultLabelsByValue[fieldValue] || fieldValue;
+    const nextLabels = { ...customLabelsByKey };
+    delete nextLabels[fieldValue];
+    setCustomLabelsByKey(nextLabels);
+    if (renamingKey === fieldValue) {
+      setRenamingKey(null);
+      setRenameDraft('');
+    }
+    onChange(
+      value.map((item) => {
+        const key = fieldKey(item);
+        return {
+          value: key,
+          label:
+            key === fieldValue
+              ? defaultLabel
+              : resolveFieldLabel(key, nextLabels, defaultLabelsByValue, item),
+        };
+      }),
+    );
   };
 
   const renderScrollListStepper = (
@@ -469,6 +525,12 @@ export function ReportTableFieldsTransfer({
         const selectedDisplayParam = displayParamByKey[key] ?? '';
         const showDisplaySelect =
           side === 'chosen' && displayOptions.length > 0 && Boolean(onDisplayParamChange);
+        const isIdentifier = isReportIdentifierFieldPath(key);
+        const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
+        const visibilityLocked = isIdentifier;
+        const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
+        const defaultLabel = (defaultLabelsByValue[key] || key).trim();
+        const isCustomLabel = !isIdentifier && label.trim() !== defaultLabel;
 
         return (
           <ListItem
@@ -508,61 +570,121 @@ export function ReportTableFieldsTransfer({
                         ))}
                       </Select>
                     </FormControl>
-                  ) : null}
-                  {!disabled ? (
-                    <>
-                  <Tooltip title={t('reports.composeTransferMoveUp')}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={!canMoveRowUp}
-                        aria-label={t('reports.composeTransferMoveUp')}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          moveChosenRow(key, -1);
-                        }}>
-                        <KeyboardArrowUpIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('reports.composeTransferMoveDown')}>
-                    <span>
-                      <IconButton
-                        size="small"
-                        disabled={!canMoveRowDown}
-                        aria-label={t('reports.composeTransferMoveDown')}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          moveChosenRow(key, 1);
-                        }}>
-                        <KeyboardArrowDownIcon fontSize="small" />
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                  <Tooltip title={t('reports.composeTransferRename')}>
-                    <IconButton
-                      edge="end"
-                      size="small"
-                      aria-label={t('reports.composeTransferRename')}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        startRename(key, label);
-                      }}>
-                      <EditOutlinedIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                    </>
-                  ) : null}
+                  ) : (
+                    <span className={composeStyles.transferDisplayParamSpacer} aria-hidden />
+                  )}
+                  <span className={composeStyles.transferActionSlot}>
+                    {onVisibilityChange ? (
+                      <Tooltip
+                        title={
+                          isHidden
+                            ? t('reports.composeTransferShowColumn')
+                            : t('reports.composeTransferHideColumn')
+                        }>
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={disabled || visibilityLocked}
+                            aria-label={
+                              isHidden
+                                ? t('reports.composeTransferShowColumn')
+                                : t('reports.composeTransferHideColumn')
+                            }
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onVisibilityChange(key, isHidden);
+                            }}>
+                            {isHidden ? (
+                              <VisibilityOffOutlinedIcon fontSize="small" />
+                            ) : (
+                              <VisibilityOutlinedIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled ? (
+                      <Tooltip title={t('reports.composeTransferMoveUp')}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!canMoveRowUp}
+                            aria-label={t('reports.composeTransferMoveUp')}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              moveChosenRow(key, -1);
+                            }}>
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled ? (
+                      <Tooltip title={t('reports.composeTransferMoveDown')}>
+                        <span>
+                          <IconButton
+                            size="small"
+                            disabled={!canMoveRowDown}
+                            aria-label={t('reports.composeTransferMoveDown')}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              moveChosenRow(key, 1);
+                            }}>
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled && !isIdentifier ? (
+                      <Tooltip title={t('reports.composeTransferRename')}>
+                        <IconButton
+                          size="small"
+                          aria-label={t('reports.composeTransferRename')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            startRename(key, label);
+                          }}>
+                          <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled && isCustomLabel ? (
+                      <Tooltip title={t('common.resetToDefault')}>
+                        <IconButton
+                          size="small"
+                          aria-label={t('common.resetToDefault')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            resetLabelToDefault(key);
+                          }}>
+                          <AutorenewIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : null}
+                  </span>
                 </Box>
               ) : undefined
             }>
             <ListItemButton
               selected={false}
-              disabled={disabled}
-              onClick={() => onToggle(key)}
+              disabled={disabled || isLockedChosen}
+              onClick={() => {
+                if (isLockedChosen) return;
+                onToggle(key);
+              }}
               className={
                 side === 'chosen'
                   ? `${composeStyles.transferListItemButton} ${composeStyles.transferListItemButtonChosen}`
@@ -575,7 +697,7 @@ export function ReportTableFieldsTransfer({
                   checked={isChecked}
                   tabIndex={-1}
                   disableRipple
-                  disabled={disabled}
+                  disabled={disabled || isLockedChosen}
                 />
               </ListItemIcon>
               {isRenaming ? (

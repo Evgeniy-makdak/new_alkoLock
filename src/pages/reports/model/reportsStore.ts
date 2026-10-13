@@ -87,6 +87,13 @@ type ReportsStore = {
   tableFieldDisplayParamByPath: Record<string, string>;
   setTableFieldDisplayParam: (fieldPath: string, encoded: string) => void;
   setTableFieldDisplayParamByPath: (next: Record<string, string>) => void;
+  /**
+   * Скрытые в гриде колонки (закрытый глаз): поле остаётся в selectedFields / payload,
+   * но не рендерится в таблице результата. true = скрыто.
+   */
+  tableFieldHiddenByPath: Record<string, boolean>;
+  setTableFieldHidden: (fieldPath: string, hidden: boolean) => void;
+  setTableFieldHiddenByPath: (next: Record<string, boolean>) => void;
   loadReferenceEntityRecords: (referenceEntity: string) => Promise<void>;
   loadVehicleLabelMaps: () => Promise<void>;
   setViewMode: (mode: ReportViewMode) => void;
@@ -155,6 +162,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   reportTableFieldsMetadataLoadingByRowId: {},
   reportTableFieldsMetadataKeyByRowId: {},
   tableFieldDisplayParamByPath: {},
+  tableFieldHiddenByPath: {},
   viewMode: 'table',
   chartSpec: createDefaultChartSpec(),
 
@@ -195,6 +203,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
       tableFieldDisplayParamByPath: {},
+      tableFieldHiddenByPath: {},
     });
   },
 
@@ -231,6 +240,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
         tableFieldDisplayParamByPath: {},
+        tableFieldHiddenByPath: {},
       });
       await get().loadAllReferenceEntityMetadataForReport(metadata);
       const { shouldLoadVehicleLabelMaps } = await import('../lib/reportVehicleContext');
@@ -254,6 +264,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
         tableFieldDisplayParamByPath: {},
+        tableFieldHiddenByPath: {},
       });
     }
   },
@@ -385,12 +396,6 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       return;
     }
 
-    // Пустой clear при уже выбранном поле — ложный onChange shared Autocomplete.
-    // Сброс фильтра в UI отчётов: кнопка удаления строки (removeOutputRow).
-    if (!nextKey && prevKey) {
-      return;
-    }
-
     set({
       outputRows: get().outputRows.map((row) =>
         row.id === rowId
@@ -412,6 +417,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       ),
     });
 
+    // Пустое «Поле результата» — дочерние nested/операции уже сброшены выше.
     if (!nextKey) return;
     const field = get().metadata?.fields?.find((f) => f.fieldName === nextKey);
     const refEntity = field?.referenceEntity?.trim();
@@ -554,6 +560,18 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
     set({ tableFieldDisplayParamByPath: { ...next } });
   },
 
+  setTableFieldHidden(fieldPath, hidden) {
+    const key = fieldPath.trim();
+    if (!key) return;
+    set((state) => ({
+      tableFieldHiddenByPath: { ...state.tableFieldHiddenByPath, [key]: hidden },
+    }));
+  },
+
+  setTableFieldHiddenByPath(next) {
+    set({ tableFieldHiddenByPath: { ...next } });
+  },
+
   async loadReferenceEntityRecords(referenceEntity) {
     const cacheKey = referenceEntity.trim();
     if (!cacheKey) return;
@@ -635,6 +653,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
       tableFieldDisplayParamByPath: {},
+      tableFieldHiddenByPath: {},
     });
     const entityMetadata = get().metadata;
     if (entityMetadata) {

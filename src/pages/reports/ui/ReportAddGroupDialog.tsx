@@ -17,7 +17,8 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import {
   reportFilterAutocompleteSlotProps,
-  reportFilterModalControlSx,
+  reportFilterDialogControlSx,
+  reportFilterDialogSelectSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import type { ReportLogicOperator } from '@pages/reports/types/reportApiTypes';
@@ -129,6 +130,7 @@ export function ReportAddGroupDialog({
                 value={logicOperator}
                 displayEmpty
                 onChange={handleLogicChange}
+                sx={reportFilterDialogSelectSx}
                 renderValue={(selected) => {
                   if (!selected) {
                     return (
@@ -162,7 +164,7 @@ export function ReportAddGroupDialog({
             values={columnOptions}
             value={selectedColumn}
             serverFilter={false}
-            sx={reportFilterModalControlSx}
+            sx={reportFilterDialogControlSx}
             slotProps={reportFilterAutocompleteSlotProps}
             setValueStore={(_, next) => {
               const picked = toValuesFromSingleSelect(next)[0];

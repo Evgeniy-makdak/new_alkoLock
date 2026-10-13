@@ -26,11 +26,11 @@ import type {
 } from '@pages/reports/types/reportApiTypes';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
-import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
+import { ReportEntityChangeConfirmDialog } from './ReportEntityChangeConfirmDialog';
 import { ReportFilterLogicConnector } from './ReportFilterLogicConnector';
 import { ReportOutputFilterRow } from './ReportOutputFilterRow';
 import pageStyles from './Reports.module.scss';
@@ -38,13 +38,26 @@ import pageStyles from './Reports.module.scss';
 type ReportComposeFormProps = {
   /** entity — сущность; filters — фильтрация; all — оба блока. */
   part?: 'entity' | 'filters' | 'all';
+  /**
+   * edit сформированного отчёта: смена сущности — с подтверждением
+   * (иначе setSelectedEntityName сразу очищает store).
+   */
+  confirmEntityChange?: boolean;
+  /** После подтверждённой/обычной смены сущности (сброс group/sort в модалке). */
+  onAfterEntityChange?: () => void;
 };
 
-export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
+export function ReportComposeForm({
+  part = 'all',
+  confirmEntityChange = false,
+  onAfterEntityChange,
+}: ReportComposeFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addVariantDialogOpen, setAddVariantDialogOpen] = useState(false);
+  const [entityChangeConfirmOpen, setEntityChangeConfirmOpen] = useState(false);
+  const [pendingEntityName, setPendingEntityName] = useState<string | null>(null);
 
   const entities = reportsStore((s) => s.entities);
   const entitiesLoading = reportsStore((s) => s.entitiesLoading);
@@ -90,6 +103,48 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
     void loadMetadataForEntity(selectedEntityName);
   };
 
+  const applyEntityChange = useCallback(
+    (entityName: string | null) => {
+      setSelectedEntityName(entityName);
+      if (entityName) {
+        void loadMetadataForEntity(entityName);
+      }
+      onAfterEntityChange?.();
+    },
+    [setSelectedEntityName, loadMetadataForEntity, onAfterEntityChange],
+  );
+
+  const handleEntityAutocompleteChange = useCallback(
+    (nextName: string | null) => {
+      if (
+        confirmEntityChange &&
+        selectedEntityName &&
+        nextName &&
+        nextName !== selectedEntityName
+      ) {
+        setPendingEntityName(nextName);
+        setEntityChangeConfirmOpen(true);
+        return;
+      }
+      applyEntityChange(nextName);
+    },
+    [confirmEntityChange, selectedEntityName, applyEntityChange],
+  );
+
+  const handleConfirmEntityChange = useCallback(() => {
+    const next = pendingEntityName;
+    setEntityChangeConfirmOpen(false);
+    setPendingEntityName(null);
+    if (next) {
+      applyEntityChange(next);
+    }
+  }, [pendingEntityName, applyEntityChange]);
+
+  const handleCancelEntityChange = useCallback(() => {
+    setEntityChangeConfirmOpen(false);
+    setPendingEntityName(null);
+  }, []);
+
   const handleConfirmAddVariant = useCallback(
     (nextLogicOperator: ReportLogicOperator) => {
       addOutputRow(nextLogicOperator);
@@ -109,6 +164,11 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
   const showOutputControls = Boolean(metadata && !metadataLoading);
   const showOutputRow = Boolean(selectedEntityName && showOutputControls);
 
+  const currentReportName =
+    selectedEntity?.label?.trim() ||
+    selectedEntity?.entityName?.trim() ||
+    t('reports.composeModalEditTitle');
+
   const renderEntityAutocomplete = () => {
     const entityTitle = selectedEntity?.label || selectedEntity?.entityName || '';
 
@@ -124,10 +184,7 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
           getOptionLabel={(o) => o.label || o.entityName}
           isOptionEqualToValue={(a, b) => a.entityName === b.entityName}
           onChange={(_, value) => {
-            setSelectedEntityName(value?.entityName ?? null);
-            if (value?.entityName) {
-              void loadMetadataForEntity(value.entityName);
-            }
+            handleEntityAutocompleteChange(value?.entityName ?? null);
           }}
           onOpen={handleEntityOpen}
           renderInput={(params) => (
@@ -284,6 +341,15 @@ export function ReportComposeForm({ part = 'all' }: ReportComposeFormProps) {
         onClose={() => setAddVariantDialogOpen(false)}
         onConfirm={handleConfirmAddVariant}
       />
+      ) : null}
+
+      {confirmEntityChange ? (
+        <ReportEntityChangeConfirmDialog
+          open={entityChangeConfirmOpen}
+          reportName={currentReportName}
+          onConfirm={handleConfirmEntityChange}
+          onCancel={handleCancelEntityChange}
+        />
       ) : null}
     </>
   );

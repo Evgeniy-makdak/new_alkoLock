@@ -77,10 +77,12 @@ export async function applyReportAiComposeDraftToStore(
   reportsStore.getState().setViewMode(draft.viewMode);
   reportsStore.getState().setChartSpec(chartSpec);
 
-  reportGenerationStore.getState().setSort(draft.sort ?? []);
+  const sort = draft.sort ?? [];
+  reportGenerationStore.getState().setSort(sort);
   reportGenerationStore.getState().setQueryContext({
     entityName,
     body,
+    sort,
     chartSpec: draft.viewMode === 'chart' ? chartSpec : undefined,
   });
 
