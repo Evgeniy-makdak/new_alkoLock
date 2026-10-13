@@ -4,38 +4,31 @@ import type {
   ReportLogicOperator,
   ReportNestedEntityFilterByField,
   ReportOutputRow,
-  ReportUiFilterSelections,
 } from '../types/reportApiTypes';
 
 function serializeValues(values: Values | undefined): string[] {
   return (values ?? []).map((item) => String(item.value));
 }
 
-function serializeFilterSelections(
-  selections: ReportUiFilterSelections,
-): Record<string, string[]> {
-  const result: Record<string, string[]> = {};
-  for (const [key, values] of Object.entries(selections)) {
-    result[key] = serializeValues(values);
-  }
-  return result;
-}
-
-function serializeNestedEntityFilters(
+/** Путь nested-фильтра без values — смена выбранных офисов/устройств не должна сбрасывать группировку. */
+function serializeNestedEntityFilterStructure(
   nested: ReportNestedEntityFilterByField,
-): Record<string, { path: string[]; values: string[] }> {
-  const result: Record<string, { path: string[]; values: string[] }> = {};
+): Record<string, { path: string[] }> {
+  const result: Record<string, { path: string[] }> = {};
   for (const [key, state] of Object.entries(nested)) {
     if (!state) continue;
     result[key] = {
       path: [...(state.path ?? [])],
-      values: serializeValues(state.values),
     };
   }
   return result;
 }
 
-/** Стабильный ключ конфигурации фильтров — при смене сбрасываем сортировку и группировку. */
+/**
+ * Ключ «структуры» фильтров (сущность, поле результата, путь nested).
+ * Значения мультиселектов и filterSelections сюда не входят — иначе правка
+ * «Значение (Название)» в edit очищала бы группировку/сортировку.
+ */
 export function buildComposeFilterConfigurationKey(params: {
   selectedEntityName: string | null;
   logicOperator: ReportLogicOperator;
@@ -46,8 +39,9 @@ export function buildComposeFilterConfigurationKey(params: {
   const rows = outputRows.map((row) => ({
     id: row.id,
     selectedOutputFields: serializeValues(row.selectedOutputFields),
-    filterSelections: serializeFilterSelections(row.filterSelections),
-    nestedEntityFilterByField: serializeNestedEntityFilters(row.nestedEntityFilterByField),
+    nestedEntityFilterByField: serializeNestedEntityFilterStructure(
+      row.nestedEntityFilterByField,
+    ),
   }));
 
   return JSON.stringify({ selectedEntityName, logicOperator, rows });
