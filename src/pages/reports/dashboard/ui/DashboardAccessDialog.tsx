@@ -91,7 +91,7 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
             page: 0,
             limit: USER_PAGE_SIZE,
             searchQuery: searchQuery,
-            query: '&all.isActive.in=true',
+            query: '&all.isActive.in=true&all.id.notIn=2',
           },
           false,
         );

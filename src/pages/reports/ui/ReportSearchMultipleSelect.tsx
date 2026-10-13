@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
 
 import {
   SearchMultipleSelect,
@@ -31,6 +31,27 @@ function isEmptySelectValue(next: string | Values | Value | (string | Values | V
   return false;
 }
 
+/** Outlined label абсолютно позиционирован — ширина контрола должна вмещать текст лейбла. */
+function estimateReportControlMinWidth(
+  label: SearchMultipleSelectProps<unknown>['label'],
+  placeholder: SearchMultipleSelectProps<unknown>['placeholder'],
+  compact: boolean,
+): number {
+  const base = compact ? 200 : 160;
+  const text = [label, placeholder]
+    .map((part) => (typeof part === 'string' ? part.trim() : ''))
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)[0];
+  if (!text) return base;
+  // ~8.2px/символ (14px) + место под clear/popup и отступы outlined.
+  return Math.max(base, Math.min(560, Math.ceil(text.length * 8.2) + 72));
+}
+
+function isClearIndicatorTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  return Boolean(target.closest('.MuiAutocomplete-clearIndicator'));
+}
+
 export function ReportSearchMultipleSelect<T>({
   onInputChange,
   compact = false,
@@ -40,6 +61,8 @@ export function ReportSearchMultipleSelect<T>({
   value = [],
   multiple,
   blockEmptyClear = false,
+  label,
+  placeholder,
   slotProps,
   ...rest
 }: ReportSearchMultipleSelectProps<T>) {
@@ -47,6 +70,31 @@ export function ReportSearchMultipleSelect<T>({
   const singleSelect = multiple === false;
   /** Явный clear (крестик) — пропускаем при blockEmptyClear. */
   const permitEmptyClearRef = useRef(false);
+
+  const minWidthPx = estimateReportControlMinWidth(label, placeholder, compact);
+  const widthSx = useMemo(
+    () => ({
+      minWidth: minWidthPx,
+      width: 'max-content',
+      maxWidth: '100%',
+      '& .MuiFormControl-root': {
+        minWidth: minWidthPx,
+        width: 'max-content',
+        maxWidth: '100%',
+      },
+      '& .MuiAutocomplete-root': {
+        minWidth: minWidthPx,
+        width: 'max-content',
+        maxWidth: '100%',
+      },
+      '& .MuiOutlinedInput-root': {
+        minWidth: minWidthPx,
+        width: 'max-content',
+        maxWidth: '100%',
+      },
+    }),
+    [minWidthPx],
+  );
 
   const guardedSetValueStore: SearchMultipleSelectProps<T>['setValueStore'] = setValueStore
     ? (name, next) => {
@@ -64,32 +112,54 @@ export function ReportSearchMultipleSelect<T>({
       }
     : undefined;
 
-  const mergedSlotProps = useMemo(() => {
-    if (!blockEmptyClear) return slotProps;
-    return {
-      ...slotProps,
-      clearIndicator: {
-        onMouseDown: () => {
-          permitEmptyClearRef.current = true;
-        },
-        onClick: () => {
-          permitEmptyClearRef.current = true;
-        },
-      },
-    };
-  }, [blockEmptyClear, slotProps]);
+  /**
+   * Нельзя вешать onClick/onMouseDown в slotProps.clearIndicator:
+   * в MUI Autocomplete они идут после getClearProps() и полностью затирают очистку.
+   * Ловим крестик на capture у обёртки — getClearProps остаётся нетронутым.
+   */
+  const onClearIntentCapture = (event: ReactMouseEvent) => {
+    if (!blockEmptyClear) return;
+    if (isClearIndicatorTarget(event.target)) {
+      permitEmptyClearRef.current = true;
+    }
+  };
+
+  const mergedSx = useMemo(() => {
+    const parts = [controlSx, widthSx, sx].filter(Boolean);
+    if (parts.length === 1) return parts[0] as SearchMultipleSelectProps<T>['sx'];
+    return parts as SearchMultipleSelectProps<T>['sx'];
+  }, [controlSx, widthSx, sx]);
 
   return (
-    <SearchMultipleSelect
-      {...rest}
-      multiple={multiple}
-      value={value}
-      size={size ?? (compact ? 'small' : undefined)}
-      overflowTooltip={compact}
-      sx={sx ? ([controlSx, sx] as SearchMultipleSelectProps<T>['sx']) : controlSx}
-      slotProps={mergedSlotProps}
-      onInputChange={onInputChange ?? reportFilterNoopInputChange}
-      setValueStore={guardedSetValueStore}
-    />
+    <div
+      onMouseDownCapture={onClearIntentCapture}
+      onPointerDownCapture={(event) => {
+        if (!blockEmptyClear) return;
+        if (isClearIndicatorTarget(event.target)) {
+          permitEmptyClearRef.current = true;
+        }
+      }}
+      style={{
+        display: 'block',
+        width: '100%',
+        minWidth: minWidthPx,
+        maxWidth: '100%',
+        boxSizing: 'border-box',
+      }}>
+      <SearchMultipleSelect
+        {...rest}
+        label={label}
+        placeholder={placeholder}
+        multiple={multiple}
+        value={value}
+        size={size ?? (compact ? 'small' : undefined)}
+        overflowTooltip={false}
+        sx={mergedSx}
+        // Не передаём clearIndicator-обработчики — иначе ломается clear MUI.
+        slotProps={slotProps}
+        onInputChange={onInputChange ?? reportFilterNoopInputChange}
+        setValueStore={guardedSetValueStore}
+      />
+    </div>
   );
 }

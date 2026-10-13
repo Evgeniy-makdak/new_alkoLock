@@ -889,6 +889,7 @@
     "composeSectionSort": "Сортировка",
     "composeAddSort": "+ Добавить сортировку",
     "composeRemoveSort": "Удалить сортировку",
+    "composeSortCard": "Сортировка №{{number}}",
     "composeSortColumnLabel": "Колонка",
     "composeSortColumnPlaceholder": "Выберите колонку",
     "composeSortDirectionLabel": "Направление",

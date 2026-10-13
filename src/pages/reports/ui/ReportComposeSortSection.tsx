@@ -4,17 +4,24 @@ import { useTranslation } from 'react-i18next';
 import CloseIcon from '@mui/icons-material/Close';
 import SortOutlinedIcon from '@mui/icons-material/SortOutlined';
 import { IconButton, Tooltip, Typography } from '@mui/material';
-import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import { useTheme } from '@mui/material/styles';
 
-import { ROOT_ENTITY_LABEL_SEPARATOR } from '@pages/reports/lib/buildReportTableFieldOptions';
+import {
+  reportFilterAutocompleteSlotProps,
+  reportFilterModalControlSx,
+} from '@pages/reports/lib/reportFilterControlSx';
+import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
-import type { ReportComposeSortRow } from '@pages/reports/types/reportComposeSort';
+import type {
+  ReportComposeSortRow,
+  ReportSortDirection,
+} from '@pages/reports/types/reportComposeSort';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportAddSortDialog } from './ReportAddSortDialog';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
+import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
 import pageStyles from './Reports.module.scss';
 
 type ReportComposeSortSectionProps = {
@@ -23,13 +30,10 @@ type ReportComposeSortSectionProps = {
   onChange: (rows: ReportComposeSortRow[]) => void;
 };
 
-function directionLabel(
-  direction: ReportComposeSortRow['direction'],
-  t: (key: string) => string,
-): string {
-  return direction === 'DESC'
-    ? t('reports.composeSortDirectionDesc')
-    : t('reports.composeSortDirectionAsc');
+function pickSingle(options: Values, key: string): Values {
+  if (!key) return [];
+  const hit = options.find((option) => String(option.value) === key);
+  return hit ? [hit] : [{ value: key, label: key }];
 }
 
 export function ReportComposeSortSection({
@@ -42,15 +46,19 @@ export function ReportComposeSortSection({
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
-  const columnLabelByKey = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const option of columnOptions) {
-      map.set(String(option.value), String(option.label ?? option.value));
-    }
-    return map;
-  }, [columnOptions]);
+  const directionOptions = useMemo(
+    (): Values => [
+      { value: 'ASC', label: t('reports.composeSortDirectionAsc') },
+      { value: 'DESC', label: t('reports.composeSortDirectionDesc') },
+    ],
+    [t],
+  );
 
-  const handleConfirmAdd = (columnKey: string, direction: ReportComposeSortRow['direction']) => {
+  const patchRow = (id: string, patch: Partial<ReportComposeSortRow>) => {
+    onChange(sortRows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
+  };
+
+  const handleConfirmAdd = (columnKey: string, direction: ReportSortDirection) => {
     onChange([
       ...sortRows,
       {
@@ -88,37 +96,94 @@ export function ReportComposeSortSection({
               {t('reports.composeSortColumnPlaceholder')}
             </Typography>
           ) : (
-            sortRows.map((row) => {
-              const columnLabel = columnLabelByKey.get(row.columnKey) ?? row.columnKey;
-              return (
-                <div key={row.id} className={composeStyles.sortRow}>
-                  <div className={composeStyles.sortRowFields}>
-                    <OverflowTooltip title={columnLabel}>
-                      <Typography
-                        variant="body2"
-                        component="span"
-                        sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {columnLabel}
-                      </Typography>
-                    </OverflowTooltip>
-                    <span className={composeStyles.sortRowDash}>{ROOT_ENTITY_LABEL_SEPARATOR}</span>
-                    <Typography variant="body2" component="span" color="text.secondary">
-                      {directionLabel(row.direction, t)}
-                    </Typography>
+            <div className={composeStyles.filterGroups}>
+              {sortRows.map((row, index) => {
+                const columnValue = pickSingle(columnOptions, row.columnKey);
+                const columnChoices = [
+                  ...columnValue,
+                  ...columnOptions.filter((option) => String(option.value) !== row.columnKey),
+                ];
+                const uniqueColumnChoices = Array.from(
+                  new Map(columnChoices.map((item) => [String(item.value), item])).values(),
+                );
+                const directionValue = pickSingle(directionOptions, row.direction);
+                const hasColumn = Boolean(row.columnKey.trim());
+
+                return (
+                  <div key={row.id} className={composeStyles.filterGroup}>
+                    <div className={composeStyles.filterGroupMain}>
+                      <div className={composeStyles.filterGroupHead}>
+                        <span className={composeStyles.filterGroupLabel}>
+                          {t('reports.composeSortCard', { number: index + 1 })}
+                        </span>
+                      </div>
+                      <div className={composeStyles.filterGroupFields}>
+                        <div className={composeStyles.modalFilterRow}>
+                          <ReportSearchMultipleSelect
+                            key={`report-sort-field-${row.id}`}
+                            multiple={false}
+                            compact
+                            name={`report-sort-field-${row.id}`}
+                            label={t('reports.composeSortColumnLabel')}
+                            placeholder={t('reports.composeSortColumnPlaceholder')}
+                            values={uniqueColumnChoices}
+                            value={columnValue}
+                            serverFilter={false}
+                            sx={reportFilterModalControlSx}
+                            slotProps={reportFilterAutocompleteSlotProps}
+                            setValueStore={(_, next) => {
+                              const picked = toValuesFromSingleSelect(next)[0];
+                              patchRow(row.id, {
+                                columnKey: picked ? String(picked.value) : '',
+                                ...(picked ? {} : { direction: 'ASC' }),
+                              });
+                            }}
+                          />
+
+                          {hasColumn ? (
+                            <ReportSearchMultipleSelect
+                              key={`report-sort-direction-${row.id}-${row.columnKey}`}
+                              multiple={false}
+                              compact
+                              name={`report-sort-direction-${row.id}`}
+                              label={t('reports.composeSortDirectionLabel')}
+                              values={directionOptions}
+                              value={directionValue}
+                              serverFilter={false}
+                              sx={reportFilterModalControlSx}
+                              slotProps={reportFilterAutocompleteSlotProps}
+                              setValueStore={(_, next) => {
+                                const picked = toValuesFromSingleSelect(next)[0];
+                                const nextDirection =
+                                  picked &&
+                                  (String(picked.value) === 'ASC' || String(picked.value) === 'DESC')
+                                    ? (String(picked.value) as ReportSortDirection)
+                                    : 'ASC';
+                                patchRow(row.id, { direction: nextDirection });
+                              }}
+                            />
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                    <Tooltip title={t('reports.composeRemoveSort')}>
+                      <IconButton
+                        type="button"
+                        aria-label={t('reports.composeRemoveSort')}
+                        className={`${composeStyles.filterGroupRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          handleRemove(row.id);
+                        }}
+                        sx={circleIconSx}>
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </div>
-                  <Tooltip title={t('reports.composeRemoveSort')}>
-                    <IconButton
-                      type="button"
-                      aria-label={t('reports.composeRemoveSort')}
-                      className={`${composeStyles.sortRowRemoveBtn} ${pageStyles.reportFilterCircleBtn}`}
-                      onClick={() => handleRemove(row.id)}
-                      sx={circleIconSx}>
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </ReportComposeSection>

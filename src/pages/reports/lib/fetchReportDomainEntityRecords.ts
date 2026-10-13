@@ -90,8 +90,8 @@ function resolveBranchId(
  *
  * - DeviceEvent: api/device-events?…&all.branch.id.in=…&sort=timestamp,DESC&all.isActive.in=true&sort=id,DESC
  * - Vehicle: api/vehicles?…&all.assignment.branch.id.in=…&sort=manufacturer,model,registrationNumber
- * - User: api/users?…&all.assignment.branch.id.in=…&sort=surname,firstName,middleName,ASC
- * - MonitoringDevice: api/monitoring-devices?…&all.assignment.branch.id.in=…&sort=name&all.id.notIn=3
+ * - User: api/users?…&all.isActive.in=true&all.id.notIn=2&sort=surname,firstName,middleName,ASC
+ * - MonitoringDevice: api/monitoring-devices?…&all.isActive.in=true&all.id.notIn=3&sort=name
  */
 export async function fetchReportDomainEntityRecords(
   params: FetchReportDomainEntityRecordsParams,
@@ -137,11 +137,13 @@ export async function fetchReportDomainEntityRecords(
     }
     case 'User':
     case 'Driver': {
+      // Пустой пользователь id=2 + только активные (как на full-name / карте).
       const res = await UsersApi.getList(
         {
           page,
           limit,
           searchQuery: match,
+          query: '&all.isActive.in=true&all.id.notIn=2',
           filterOptions: {
             ...branchFilter,
             ...(entityName === 'Driver' ? { driverSpecified: true } : {}),
@@ -155,12 +157,13 @@ export async function fetchReportDomainEntityRecords(
       return Array.isArray(res.data?.content) ? (res.data.content as IUser[]) : [];
     }
     case 'MonitoringDevice': {
-      // api/monitoring-devices?…&all.assignment.branch.id.in=…&sort=name&all.id.notIn=3
+      // Пустой алкозамок id=3 + только активные (getListAlcolocks уже добавляет all.id.notIn=3).
       const res = await AlcolocksApi.getListAlcolocks({
         page,
         limit,
         searchQuery: match,
         filterOptions: branchFilter,
+        query: '&all.isActive.in=true&all.id.notIn=3',
       });
       if (res.isError) {
         throw new Error(res.message || res.detail || 'monitoring-devices request failed');

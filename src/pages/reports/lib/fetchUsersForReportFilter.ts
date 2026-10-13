@@ -31,7 +31,7 @@ export async function fetchUsersForReportFilter(
           page,
           limit: pageSize,
           searchQuery: match,
-          query: '&all.isActive.in=true',
+          query: '&all.isActive.in=true&all.id.notIn=2',
           filterOptions: {
             ...branchFilter,
             ...(options.driversOnly ? { driverSpecified: true } : {}),

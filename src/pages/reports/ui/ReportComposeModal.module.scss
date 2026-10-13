@@ -252,6 +252,11 @@
 
 .sectionAction {
   flex-shrink: 0;
+  /* Одна ширина под самую длинную ссылку («+ Добавить группировку») — плюсы в одну вертикаль. */
+  width: 13.75rem;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .sectionBody {
@@ -427,7 +432,9 @@
   border: none;
   background: none;
   padding: 4px 0;
+  margin: 0;
   text-align: left;
+  white-space: nowrap;
 
   &:hover {
     text-decoration: underline;
@@ -439,11 +446,12 @@
   }
 }
 
-/* Ширина по контенту; flex-wrap на .modalFilterRow переносит на следующую строку. */
+/* Ширина по контенту; flex-wrap на .modalFilterRow переносит на следующую строку.
+   min-width конкретного контрола задаёт ReportSearchMultipleSelect по длине лейбла. */
 %modalFilterFieldWidth {
   flex: 0 1 auto !important;
   width: fit-content !important;
-  min-width: 160px !important;
+  min-width: 200px !important;
   max-width: 100% !important;
   box-sizing: border-box;
 }
@@ -463,10 +471,9 @@
 
   :global(.MuiFormControl-root) {
     width: max-content !important;
-    min-width: 160px !important;
+    min-width: inherit !important;
     max-width: 100% !important;
-    overflow-x: clip;
-    overflow-y: visible;
+    overflow: visible;
   }
 
   /* Дата/время — фиксированная ширина, не сжимать «Время» у конца диапазона */
@@ -488,23 +495,22 @@
   }
 
   :global(.MuiInputLabel-root) {
-    max-width: none;
-    overflow: visible;
-    text-overflow: unset;
+    max-width: calc(100% - 24px);
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-    display: block;
   }
 
   :global(.MuiOutlinedInput-root) {
     width: max-content !important;
-    min-width: 160px !important;
+    min-width: inherit !important;
     max-width: 100% !important;
   }
 
   :global(.MuiInputBase-input),
   :global(.MuiAutocomplete-input) {
     width: auto !important;
-    min-width: 8ch !important;
+    min-width: 12ch !important;
     field-sizing: content;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -512,9 +518,10 @@
   }
 
   :global(.MuiAutocomplete-root),
-  :global([class*='searchSelect']) {
+  :global([class*='searchSelect']),
+  :global([class*='overflowTooltipWrap']) {
     width: max-content !important;
-    min-width: 160px !important;
+    min-width: inherit !important;
     max-width: 100% !important;
   }
 
@@ -878,8 +885,7 @@
       min-width: 0 !important;
       max-width: 100% !important;
       width: 100% !important;
-      overflow-x: clip;
-      overflow-y: visible;
+      overflow: visible;
     }
 
     :global(.MuiInputLabel-root) {

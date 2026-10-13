@@ -26,45 +26,43 @@ export const reportFilterAutocompleteSlotProps = {
   },
 } as const;
 
-/** Компактные контролы в модалке «Новый отчёт» — ширина по контенту. */
+/** Компактные контролы в модалке «Новый отчёт» — ширина по контенту (лейбл + значение + крестик). */
 export const reportFilterModalControlSx: SxProps<Theme> = {
   width: 'max-content',
-  minWidth: 160,
+  minWidth: 200,
   maxWidth: '100%',
   boxSizing: 'border-box',
   '& .MuiFormControl-root': {
     width: 'max-content',
-    minWidth: 160,
+    minWidth: 'inherit',
     maxWidth: '100%',
-    overflowX: 'clip',
-    overflowY: 'visible',
+    overflow: 'visible',
   },
   '& .MuiAutocomplete-root': {
     width: 'max-content',
-    minWidth: 160,
+    minWidth: 'inherit',
     maxWidth: '100%',
   },
   '& .MuiOutlinedInput-root': {
     minHeight: 40,
     width: 'max-content',
-    minWidth: 160,
+    minWidth: 'inherit',
     maxWidth: '100%',
   },
+  // Лейбл не должен вылезать за рамку: ширина контрола задаётся снаружи по длине текста.
   '& .MuiInputLabel-root': {
-    maxWidth: 'none',
-    overflow: 'visible',
-    textOverflow: 'unset',
-    whiteSpace: 'nowrap',
-    display: 'block',
-  },
-  '& .MuiInputBase-input': {
-    width: 'auto',
-    minWidth: '8ch',
+    maxWidth: 'calc(100% - 24px)',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  '& .MuiInputBase-input::placeholder': {
+  '& .MuiInputLabel-root.MuiInputLabel-shrink': {
+    maxWidth: 'calc(100% - 24px)',
+  },
+  '& .MuiInputBase-input': {
+    width: 'auto',
+    minWidth: '12ch',
+    fieldSizing: 'content',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',

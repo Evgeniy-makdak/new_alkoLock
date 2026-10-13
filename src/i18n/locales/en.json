@@ -891,6 +891,7 @@
     "composeRemoveGroup": "Remove grouping",
     "composeGroupColumnLabel": "Field",
     "composeGroupColumnPlaceholder": "Select field to group by",
+    "composeSortCard": "Sort #{{number}}",
     "composeGroupCard": "Grouping #{{number}}",
     "composeGroupHavingAggregationLabel": "Aggregation (having)",
     "composeGroupHavingModeLabel": "Having mode",
