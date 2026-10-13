@@ -385,6 +385,12 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       return;
     }
 
+    // Пустой clear при уже выбранном поле — ложный onChange shared Autocomplete.
+    // Сброс фильтра в UI отчётов: кнопка удаления строки (removeOutputRow).
+    if (!nextKey && prevKey) {
+      return;
+    }
+
     set({
       outputRows: get().outputRows.map((row) =>
         row.id === rowId

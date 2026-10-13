@@ -746,17 +746,10 @@ export function SearchMultipleSelect<T>({
   };
 
   const onChange: OnChange = (_event, nextValue, reason, details) => {
-    // Только явный clear (крестик Autocomplete). Нельзя чистить по !nextValue:
-    // при blur / закрытии Popup / перерисовке MUI иногда отдаёт null — это затирало
-    // соседние контролы (фильтрация при добавлении/удалении группировки в отчётах).
-    if (reason === 'clear') {
+    if (reason === 'clear' || !nextValue) {
       setValueStore(name, []);
       setInputState('');
       setPopupOpen(false);
-      return;
-    }
-
-    if (!nextValue) {
       return;
     }
 

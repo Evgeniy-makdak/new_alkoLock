@@ -1,7 +1,7 @@
 /**
- * Dev-only handler: POST /api/reports-ai/compose → Google Gemini.
+ * Только отчёты. Dev-only: POST /api/reports-ai/compose → Google Gemini.
  * Ключ: GEMINI_API_KEY или REACT_APP_GEMINI_API_KEY в окружении yarn start.
- * Файл внутри src/, чтобы tsc (rootDir=./src, allowJs) не ругался на scripts/.
+ * Подключается одной строкой из src/setupProxy.js (CRA грузит только его).
  */
 
 const GEMINI_MODEL = process.env.REPORTS_AI_GEMINI_MODEL || 'gemini-2.0-flash';
