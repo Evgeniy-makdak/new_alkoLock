@@ -98,8 +98,15 @@ async function callGeminiProxy(
       }),
     });
     if (!res.ok) {
-      // Нет ключа / proxy / модель недоступна → локальный fallback на клиенте.
-      if (res.status === 501 || res.status === 503 || res.status >= 500) {
+      // Нет/битый ключ, proxy или Gemini недоступны → локальный wizard на клиенте.
+      // 401/403: ключ есть, но Google его отклонил (частый кейс после копирования src без .env).
+      if (
+        res.status === 401 ||
+        res.status === 403 ||
+        res.status === 501 ||
+        res.status === 503 ||
+        res.status >= 500
+      ) {
         return null;
       }
       const errText = await res.text().catch(() => '');
