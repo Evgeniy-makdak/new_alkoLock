@@ -41,6 +41,7 @@ import {
   isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
   isRootReportIdentifierFieldPath,
+  orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
@@ -156,7 +157,9 @@ export function ReportComposeModal({
     );
     const fromStore =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
-    const tableFields = fromQuery.length > 0 ? fromQuery : fromStore;
+    const tableFields = orderReportCompositionFieldsByIdentifier(
+      fromQuery.length > 0 ? fromQuery : fromStore,
+    );
 
     const savedBranchOffices = queryContext?.branchOffices;
     const savedBranchIds = queryContext?.branchIds;
@@ -376,7 +379,9 @@ export function ReportComposeModal({
       setComposeSortRows([]);
       setComposeGroupRows([]);
       setComposeHavingLogicOperator('or');
-      const nextDefaults = defaultRootTableFields.length ? [...defaultRootTableFields] : [];
+      const nextDefaults = orderReportCompositionFieldsByIdentifier(
+        defaultRootTableFields.length ? [...defaultRootTableFields] : [],
+      );
       setTableFieldsSelection(nextDefaults);
       const identifierCount = encodeReportIdentifierDisplayParam();
       const display: Record<string, string> = {};
@@ -577,6 +582,7 @@ export function ReportComposeModal({
       ) {
         selection = [idOpt, ...selection];
       }
+      selection = orderReportCompositionFieldsByIdentifier(selection);
       setTableFieldsSelection(selection);
 
       const prevHidden = reportsStore.getState().tableFieldHiddenByPath;

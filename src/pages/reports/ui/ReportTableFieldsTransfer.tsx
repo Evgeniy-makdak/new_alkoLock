@@ -39,7 +39,10 @@ import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
 import { encodeReportIdentifierDisplayParam } from '@pages/reports/lib/reportTableFieldDisplayParam';
-import { isReportIdentifierFieldPath } from '@pages/reports/lib/reportTableFieldIdentifier';
+import {
+  isReportIdentifierFieldPath,
+  orderReportCompositionFieldsByIdentifier,
+} from '@pages/reports/lib/reportTableFieldIdentifier';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
@@ -316,7 +319,11 @@ export function ReportTableFieldsTransfer({
         const explicit = item.label?.trim();
         if (explicit) labels[key] = explicit;
       }
-      onChange(next.map((item) => mergeOptionMeta(item, labels, defaultLabelsByValue)));
+      // id / *.id всегда сверху (корневой id → связанные идентификаторы → прочие).
+      const ordered = orderReportCompositionFieldsByIdentifier(
+        next.map((item) => mergeOptionMeta(item, labels, defaultLabelsByValue)),
+      );
+      onChange(ordered);
     },
     [onChange, customLabelsByKey, defaultLabelsByValue],
   );
@@ -344,11 +351,14 @@ export function ReportTableFieldsTransfer({
 
   const moveChosenRow = useCallback(
     (key: string, direction: -1 | 1) => {
+      // Идентификаторы не переставляются; выше блока id нельзя поднять другие поля.
+      if (isReportIdentifierFieldPath(key)) return;
       const keys = [...chosenKeysList];
       const index = keys.indexOf(key);
       if (index < 0) return;
       const swapWith = index + direction;
       if (swapWith < 0 || swapWith >= keys.length) return;
+      if (isReportIdentifierFieldPath(keys[swapWith]!)) return;
       [keys[index], keys[swapWith]] = [keys[swapWith]!, keys[index]!];
       emitChosen(reorderChosenKeys(keys));
     },
@@ -520,11 +530,21 @@ export function ReportTableFieldsTransfer({
         const isChecked = selectedKeys.includes(key);
         const label = fieldDisplayLabel(option, customLabelsByKey, defaultLabelsByValue);
         const isRenaming = side === 'chosen' && renamingKey === key;
-        const canMoveRowUp = side === 'chosen' && rowIndex > 0;
-        const canMoveRowDown = side === 'chosen' && rowIndex < items.length - 1;
         const displayOptions = side === 'chosen' ? (getDisplayOptions?.(key) ?? []) : [];
         const selectedDisplayParam = displayParamByKey[key] ?? '';
         const isIdentifier = isReportIdentifierFieldPath(key);
+        const prevRowKey = rowIndex > 0 ? fieldKey(items[rowIndex - 1]!) : '';
+        const nextRowKey = rowIndex < items.length - 1 ? fieldKey(items[rowIndex + 1]!) : '';
+        const canMoveRowUp =
+          side === 'chosen' &&
+          !isIdentifier &&
+          rowIndex > 0 &&
+          !isReportIdentifierFieldPath(prevRowKey);
+        const canMoveRowDown =
+          side === 'chosen' &&
+          !isIdentifier &&
+          rowIndex < items.length - 1 &&
+          !isReportIdentifierFieldPath(nextRowKey);
         const identifierCountEncoded =
           displayOptions.find((item) => {
             const raw = String(item.value);
@@ -630,7 +650,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled ? (
+                    {!disabled && !isIdentifier ? (
                       <Tooltip title={t('reports.composeTransferMoveUp')}>
                         <span>
                           <IconButton
@@ -649,7 +669,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled ? (
+                    {!disabled && !isIdentifier ? (
                       <Tooltip title={t('reports.composeTransferMoveDown')}>
                         <span>
                           <IconButton

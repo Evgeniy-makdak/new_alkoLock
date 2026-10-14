@@ -22,3 +22,22 @@ export function isReportIdentifierAggregationCode(code: string): boolean {
 
 /** Код агрегации по умолчанию для Идентификатора. */
 export const REPORT_IDENTIFIER_AGGREGATION_CODE = 'count';
+
+/**
+ * Порядок «Текущего состава»: корневой id → прочие *.id → остальные поля.
+ * Относительный порядок внутри каждой группы сохраняется.
+ */
+export function orderReportCompositionFieldsByIdentifier<T extends { value?: unknown }>(
+  items: T[],
+): T[] {
+  const rootIds: T[] = [];
+  const nestedIds: T[] = [];
+  const rest: T[] = [];
+  for (const item of items) {
+    const key = String(item.value ?? '').trim();
+    if (isRootReportIdentifierFieldPath(key)) rootIds.push(item);
+    else if (isReportIdentifierFieldPath(key)) nestedIds.push(item);
+    else rest.push(item);
+  }
+  return [...rootIds, ...nestedIds, ...rest];
+}
