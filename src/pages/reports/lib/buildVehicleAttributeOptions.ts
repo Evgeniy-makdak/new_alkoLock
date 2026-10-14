@@ -1,4 +1,5 @@
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
+import { resolveVehicleAttributeLabel } from './fetchVehicleFrontDataMaps';
 
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -26,10 +27,10 @@ function resolveOptionLabel(
   labelMaps?: ReportVehicleLabelMaps,
 ): string {
   if (attribute === 'type') {
-    return labelMaps?.types[value] ?? value;
+    return resolveVehicleAttributeLabel('type', value, labelMaps) ?? value;
   }
   if (attribute === 'color') {
-    return labelMaps?.colors[value] ?? value;
+    return resolveVehicleAttributeLabel('color', value, labelMaps) ?? value;
   }
   if (attribute === 'id' && car) {
     return Formatters.carNameFormatter(car, false, true, false);

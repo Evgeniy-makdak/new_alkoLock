@@ -6,7 +6,7 @@ export function isReportIdentifierFieldPath(fieldPath: string): boolean {
   return leaf === 'id';
 }
 
-/** Идентификатор корневой сущности отчёта (всегда в «Текущем составе»). */
+/** Идентификатор корневой сущности отчёта (поле `id`). */
 export function isRootReportIdentifierFieldPath(fieldPath: string): boolean {
   return String(fieldPath ?? '').trim() === 'id';
 }

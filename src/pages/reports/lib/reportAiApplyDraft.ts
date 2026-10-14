@@ -1,5 +1,6 @@
 import { createDefaultReportOutputRow } from './reportOutputRow';
 import { encodeReportTableFieldFunctionParam } from './reportTableFieldDisplayParam';
+import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
 import { reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsStore } from '../model/reportsStore';
 import { createDefaultChartSpec, normalizeChartSpec } from '../types/chartSpec';
@@ -24,10 +25,15 @@ function selectedFieldsToTableValues(
   draft: ReportAiComposeDraft,
   labelByPath?: Record<string, string>,
 ): Values {
-  return (draft.selectedFields ?? []).map((f) => ({
-    value: f.fieldName,
-    label: labelByPath?.[f.fieldName] ?? f.fieldName,
-  }));
+  return (draft.selectedFields ?? []).map((f) => {
+    const fromAlias = (f.alias ?? '').trim()
+      ? decodeReportFieldAliasForUi(String(f.alias))
+      : '';
+    return {
+      value: f.fieldName,
+      label: fromAlias || labelByPath?.[f.fieldName] || f.fieldName,
+    };
+  });
 }
 
 /**

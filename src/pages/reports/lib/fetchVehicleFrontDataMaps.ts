@@ -12,9 +12,22 @@ function toKeyValueMap(items: { key: string; value: string }[] | undefined): Rec
   for (const item of items ?? []) {
     if (item?.key) {
       map[item.key] = item.value;
+      // Дублируем UPPER — бэк отдаёт GREY/PASSENGER, справочник может быть в другом регистре.
+      map[String(item.key).toUpperCase()] = item.value;
     }
   }
   return map;
+}
+
+/** Код ТС (GREY / grey) → русская подпись из front-data. */
+export function resolveVehicleAttributeLabel(
+  attribute: 'type' | 'color',
+  code: string,
+  labelMaps?: ReportVehicleLabelMaps | null,
+): string | undefined {
+  if (!labelMaps || !code) return undefined;
+  const map = attribute === 'type' ? labelMaps.types : labelMaps.colors;
+  return map[code] ?? map[code.toUpperCase()] ?? map[code.toLowerCase()];
 }
 
 /** Справочники типов и цветов ТС для отображения в отчёте. */

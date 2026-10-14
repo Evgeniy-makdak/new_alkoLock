@@ -1,6 +1,33 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import {
+  isReportTableFieldLabelAutoQualified,
+  QUALIFIED_LABEL_SEPARATOR,
+  ROOT_ENTITY_LABEL_SEPARATOR,
+} from './buildReportTableFieldOptions';
+import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
+
+/**
+ * Если в alias только изменённый лист («Тип тип тип»), а дефолт был
+ * «Отчет по ТС -> Тип» — собираем полный вид для «Текущего состава».
+ */
+function mergeAliasLeafIntoQualifiedOptionLabel(
+  aliasUiLabel: string,
+  optionLabel: string,
+): string {
+  const alias = aliasUiLabel.trim();
+  const option = optionLabel.trim();
+  if (!alias || !option) return alias || option;
+  if (isReportTableFieldLabelAutoQualified(alias)) return alias;
+  if (!isReportTableFieldLabelAutoQualified(option)) return alias;
+  const sep = option.includes(ROOT_ENTITY_LABEL_SEPARATOR)
+    ? ROOT_ENTITY_LABEL_SEPARATOR
+    : QUALIFIED_LABEL_SEPARATOR;
+  const idx = option.lastIndexOf(sep);
+  if (idx < 0) return alias;
+  return `${option.slice(0, idx)}${sep}${alias}`;
+}
 
 /**
  * «Текущий состав» при редактировании сформированного отчёта —
@@ -18,10 +45,24 @@ export function restoreReportComposeTableFieldsFromQuery(
     const path = (field.fieldName ?? '').trim();
     if (!path || seen.has(path)) continue;
     seen.add(path);
+
+    // Полная UI-подпись с карандаша (в т.ч. «Сущность -> …») важнее сырого alias-листа.
+    const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
+    if (fromHeaders) {
+      result.push({ value: path, label: fromHeaders });
+      continue;
+    }
+
+    const fromAlias = (field.alias ?? '').trim()
+      ? decodeReportFieldAliasForUi(String(field.alias))
+      : '';
+    const fromOption = (optionLabelByPath[path] ?? '').trim();
     const label =
-      (field.alias ?? '').trim() ||
-      (columnHeaderLabels[path] ?? '').trim() ||
-      (optionLabelByPath[path] ?? '').trim() ||
+      (fromAlias && fromOption
+        ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, fromOption)
+        : '') ||
+      fromAlias ||
+      fromOption ||
       path;
     result.push({ value: path, label });
   }
@@ -29,7 +70,7 @@ export function restoreReportComposeTableFieldsFromQuery(
   return result;
 }
 
-/** Подпись колонки для UI группировки/сортировки, если нет в options. */
+/** Подпись колонки для UI группировки/сортировки. */
 export function resolveComposeColumnDisplayLabel(
   columnKey: string,
   columnOptions: Values,
@@ -37,11 +78,12 @@ export function resolveComposeColumnDisplayLabel(
 ): string {
   const key = columnKey.trim();
   if (!key) return '';
+  // Сначала сохранённые заголовки (карандаш) — options могли уже сброситься к дефолту.
+  const fromHeaders = (columnHeaderLabels[key] ?? '').trim();
+  if (fromHeaders) return fromHeaders;
   const fromOptions = columnOptions.find((o) => String(o.value) === key);
   if (fromOptions?.label != null && String(fromOptions.label).trim()) {
     return String(fromOptions.label).trim();
   }
-  const fromHeaders = (columnHeaderLabels[key] ?? '').trim();
-  if (fromHeaders) return fromHeaders;
   return key;
 }

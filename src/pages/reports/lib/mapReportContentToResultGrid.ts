@@ -36,7 +36,10 @@ import {
   shouldRenderReportCoordinateAsMap,
   isReportFieldAggregatedForDisplay,
 } from './reportAggregationDisplay';
-import { resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
+import {
+  resolveReportColumnHeaderLabel,
+  resolveReportContentFieldName,
+} from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime } from './formatReportTableDateTime';
 import {
@@ -47,6 +50,7 @@ import {
 } from './reportDisplayValue';
 import { extractVehicleCarFromRecord } from './reportVehicleBindLabel';
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
+import { resolveVehicleAttributeLabel } from './fetchVehicleFrontDataMaps';
 import { isReportCoordinateField, isReportDateTimeField } from './reportFieldFilterKind';
 import {
   findReportResultColumnMetaForKey,
@@ -63,15 +67,25 @@ import type {
 } from '../types/reportApiTypes';
 import type { ReportGridRow } from './mapReportContentToFixedGrid';
 
+/**
+ * Ключ строки грида. Нельзя брать content.id, если id — агрегация (count):
+ * иначе разные группы с одинаковым count схлопываются в DataGrid.
+ */
 function buildReportGridRowKey(
   row: Record<string, unknown>,
   index: number,
   rowIdOffset: number,
+  aggregationMap: Map<string, string>,
 ): string {
   const rootId = row.id;
-  return rootId != null && rootId !== ''
-    ? `report-row-${String(rootId)}`
-    : `report-row-${rowIdOffset + index}`;
+  if (
+    rootId != null &&
+    rootId !== '' &&
+    !isReportFieldAggregatedForDisplay('id', aggregationMap)
+  ) {
+    return `report-row-${String(rootId)}`;
+  }
+  return `report-row-${rowIdOffset + index}`;
 }
 
 function formatVehicleBind(raw: unknown): string {
@@ -100,10 +114,10 @@ function formatFromStaticMeta(
     return active ? t('reports.table.activeYes') : t('reports.table.activeNo');
   }
   if (format === 'vehicleType' && typeof raw === 'string') {
-    return labelMaps?.types[raw] ?? raw;
+    return resolveVehicleAttributeLabel('type', raw, labelMaps) ?? raw;
   }
   if (format === 'vehicleColor' && typeof raw === 'string') {
-    return labelMaps?.colors[raw] ?? raw;
+    return resolveVehicleAttributeLabel('color', raw, labelMaps) ?? raw;
   }
   if (format === 'userGroupNames') {
     const names = Array.isArray(raw) ? raw.map(String) : extractUserGroupNames(raw);
@@ -123,10 +137,32 @@ function formatDynamicCellValue(
   labelMaps: ReportVehicleLabelMaps | undefined,
   t: TFunction,
   aggregationMap: Map<string, string>,
+  /** fieldName из selectedFields — даже если content-ключ = alias. */
+  resolvedFieldName: string = columnKey,
 ): string {
   if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
 
-  if (isReportFieldAggregatedForDisplay(columnKey, aggregationMap)) {
+  // Тип/цвет ТС — всегда через front-data (и для groupBy-измерений).
+  // При многословном alias content-ключ ≠ type/color — берём исходный fieldName.
+  if (typeof raw === 'string' && labelMaps) {
+    const fieldPath = resolvedFieldName || columnKey;
+    const leaf = fieldPath.includes('.')
+      ? fieldPath.slice(fieldPath.lastIndexOf('.') + 1)
+      : fieldPath;
+    if (leaf === 'type') {
+      const localized = resolveVehicleAttributeLabel('type', raw, labelMaps);
+      if (localized) return finalizeReportCellDisplay(localized);
+    }
+    if (leaf === 'color') {
+      const localized = resolveVehicleAttributeLabel('color', raw, labelMaps);
+      if (localized) return finalizeReportCellDisplay(localized);
+    }
+  }
+
+  if (
+    isReportFieldAggregatedForDisplay(columnKey, aggregationMap) ||
+    isReportFieldAggregatedForDisplay(resolvedFieldName, aggregationMap)
+  ) {
     if (typeof raw === 'boolean') {
       return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
     }
@@ -134,7 +170,7 @@ function formatDynamicCellValue(
   }
 
   const staticMeta = findReportResultColumnMetaForKey(
-    columnKey,
+    resolvedFieldName || columnKey,
     outputRows,
     fieldMap,
     primaryField,
@@ -156,15 +192,6 @@ function formatDynamicCellValue(
   }
   if (typeof raw === 'object') {
     return finalizeReportCellDisplay(JSON.stringify(raw));
-  }
-  if (labelMaps && typeof raw === 'string') {
-    const leaf = columnKey.includes('.') ? columnKey.slice(columnKey.lastIndexOf('.') + 1) : columnKey;
-    if (leaf === 'type') {
-      return finalizeReportCellDisplay(labelMaps.types[raw] ?? raw);
-    }
-    if (leaf === 'color') {
-      return finalizeReportCellDisplay(labelMaps.colors[raw] ?? raw);
-    }
   }
   return finalizeReportCellDisplay(String(raw));
 }
@@ -192,41 +219,71 @@ export function mapReportContentToResultGrid(
     return { columns: [], rows: [] };
   }
 
-  const hiddenSet = new Set(
-    hiddenColumnKeys
-      .map((key) => String(key).trim())
-      .filter(Boolean)
-      .concat(
-        // Идентификатор никогда не рендерится в отчёте.
-        collectReportContentColumnKeys(content).filter(isReportIdentifierFieldPath),
-      ),
-  );
+  const aggregationMap = buildReportFieldAggregationMap(selectedFieldsForColumnOrder);
+  const groupBySet = buildReportGroupBySet(groupBy);
 
-  const contentKeys = collectReportContentColumnKeys(content).filter((key) => !hiddenSet.has(key));
+  const allContentKeys = collectReportContentColumnKeys(content);
+
+  // Скрытые пути из UI (fieldName) + alias ответа + идентификаторы.
+  // Иначе при alias content-ключ ≠ fieldName и «глаз» перестаёт скрывать колонку.
+  const hiddenSet = new Set<string>();
+  for (const key of hiddenColumnKeys) {
+    const trimmed = String(key).trim();
+    if (trimmed) hiddenSet.add(trimmed);
+  }
+  for (const field of selectedFieldsForColumnOrder ?? []) {
+    const fieldName = (field.fieldName ?? '').trim();
+    if (!fieldName || !hiddenSet.has(fieldName)) continue;
+    const alias = (field.alias ?? '').trim();
+    if (alias) hiddenSet.add(alias);
+  }
+  for (const key of allContentKeys) {
+    if (isReportIdentifierFieldPath(key)) {
+      hiddenSet.add(key);
+      continue;
+    }
+    const resolved = resolveReportContentFieldName(key, selectedFieldsForColumnOrder);
+    if (
+      isReportIdentifierFieldPath(resolved) ||
+      hiddenSet.has(resolved) ||
+      hiddenSet.has(key)
+    ) {
+      hiddenSet.add(key);
+    }
+  }
+
+  const contentKeys = allContentKeys.filter((key) => !hiddenSet.has(key));
   const orderedKeys = orderReportContentColumnKeys(
     contentKeys,
-    selectedFieldsForColumnOrder?.map((f) => f.fieldName).filter((name) => !hiddenSet.has(name)),
+    selectedFieldsForColumnOrder
+      ?.map((f) => f.fieldName)
+      .filter((name) => name && !hiddenSet.has(name)),
   );
   const { displayColumnKeys: rawColumnKeys, groups: compositeGroups } =
     planReportCompositeResultColumns(
       orderedKeys,
-      selectedFieldsForColumnOrder?.map((f) => f.fieldName).filter((name) => !hiddenSet.has(name)),
+      selectedFieldsForColumnOrder
+        ?.map((f) => f.fieldName)
+        .filter((name) => name && !hiddenSet.has(name)),
     );
   const columnKeys = rawColumnKeys.filter(
-    (key) => !hiddenSet.has(key) && !isReportIdentifierFieldPath(key),
+    (key) =>
+      !hiddenSet.has(key) &&
+      !isReportIdentifierFieldPath(
+        resolveReportContentFieldName(key, selectedFieldsForColumnOrder),
+      ),
   );
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
-  const aggregationMap = buildReportFieldAggregationMap(selectedFieldsForColumnOrder);
-  const groupBySet = buildReportGroupBySet(groupBy);
 
   const rawRowByGridKey = new Map<string, Record<string, unknown>>();
   content.forEach((row, index) => {
-    rawRowByGridKey.set(buildReportGridRowKey(row, index, rowIdOffset), row);
+    rawRowByGridKey.set(buildReportGridRowKey(row, index, rowIdOffset, aggregationMap), row);
   });
 
   const columns: GridColDef[] = columnKeys.map((key) => {
+    const resolvedFieldName = resolveReportContentFieldName(key, selectedFieldsForColumnOrder);
     const fieldDef = findReportFieldDefForColumnKey(
-      key,
+      resolvedFieldName,
       entityMetadata,
       outputRows,
       fieldMap,
@@ -235,7 +292,7 @@ export function mapReportContentToResultGrid(
     );
     const compositeGroup = compositeByKey.get(key);
     const columnAggregation = resolveReportColumnDisplayAggregation(
-      key,
+      resolvedFieldName,
       compositeGroup,
       aggregationMap,
       groupBySet,
@@ -244,7 +301,7 @@ export function mapReportContentToResultGrid(
       key,
       columnAliases,
       resolveReportColumnLabel(
-        key,
+        resolvedFieldName,
         entityMetadata,
         outputRows,
         fieldMap,
@@ -260,7 +317,8 @@ export function mapReportContentToResultGrid(
       flex: 1,
       minWidth: 160,
       sortable:
-        fieldDef?.sortable !== false && isReportSortAllowedWithGroupBy(key, groupBy),
+        fieldDef?.sortable !== false &&
+        isReportSortAllowedWithGroupBy(resolvedFieldName, groupBy),
     };
 
     if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND && shouldRenderReportCoordinateAsMap(compositeGroup, aggregationMap)) {
@@ -292,7 +350,7 @@ export function mapReportContentToResultGrid(
   });
 
   const rows: ReportGridRow[] = content.map((row, index) => {
-    const __rowKey = buildReportGridRowKey(row, index, rowIdOffset);
+    const __rowKey = buildReportGridRowKey(row, index, rowIdOffset, aggregationMap);
 
     const flat = { __rowKey } as ReportGridRow;
 
@@ -313,8 +371,12 @@ export function mapReportContentToResultGrid(
         }
         continue;
       }
-      const fieldDef = findReportFieldDefForColumnKey(
+      const resolvedFieldName = resolveReportContentFieldName(
         key,
+        selectedFieldsForColumnOrder,
+      );
+      const fieldDef = findReportFieldDefForColumnKey(
+        resolvedFieldName,
         entityMetadata,
         outputRows,
         fieldMap,
@@ -332,6 +394,7 @@ export function mapReportContentToResultGrid(
         labelMaps,
         t,
         aggregationMap,
+        resolvedFieldName,
       );
     }
 

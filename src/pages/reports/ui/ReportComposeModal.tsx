@@ -25,6 +25,8 @@ import {
   findReportTableFieldDefinition,
   isReportTableFieldLabelAutoQualified,
   mergeAllReportTableFieldOptions,
+  ROOT_ENTITY_LABEL_SEPARATOR,
+  QUALIFIED_LABEL_SEPARATOR,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
   expandCompositeFieldPath,
@@ -40,7 +42,6 @@ import {
 import {
   isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
-  isRootReportIdentifierFieldPath,
   orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
 import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
@@ -212,6 +213,7 @@ export function ReportComposeModal({
     }
     for (const field of tableFields) {
       const key = String(field.value);
+      // Идентификатор в payload есть, в таблице не показываем.
       if (isReportIdentifierFieldPath(key)) {
         restoredHidden[key] = true;
       }
@@ -320,12 +322,18 @@ export function ReportComposeModal({
       byKey.set(key, {
         value: key,
         label:
-          (fromSort?.label != null && String(fromSort.label).trim()) ||
           (editColumnHeaderLabels?.[key] ?? '').trim() ||
+          (fromSort?.label != null && String(fromSort.label).trim()) ||
           key,
       });
     }
-    return Array.from(byKey.values());
+    // Карандаш из columnHeaderLabels — поверх options (иначе edit показывает дефолт).
+    return Array.from(byKey.values()).map((option) => {
+      const key = String(option.value);
+      const fromHeader = (editColumnHeaderLabels?.[key] ?? '').trim();
+      if (!fromHeader) return option;
+      return { ...option, label: fromHeader };
+    });
   }, [
     sortColumnOptions,
     metadata,
@@ -390,8 +398,8 @@ export function ReportComposeModal({
       for (const item of nextDefaults) {
         const key = String(item.value);
         if (isReportIdentifierFieldPath(key)) {
-          hidden[key] = true;
           display[key] = identifierCount;
+          hidden[key] = true;
         }
       }
       setTableFieldDisplayParamByPath(display);
@@ -431,26 +439,29 @@ export function ReportComposeModal({
         const opt = optionByKey.get(key);
         const prevLabel = (p.label ?? '').trim();
         const optLabel = (opt?.label ?? '').trim();
-        // Алиас с «карандаша» не затираем дефолтной подписью options.
+        // Алиас с «карандаша» не затираем дефолтной подписью options
+        // (в т.ч. правки вида «Сущность -> Цвет транспорта !»).
         const keepCustomAlias =
-          Boolean(prevLabel) &&
-          prevLabel !== key &&
-          prevLabel !== optLabel &&
-          !isReportTableFieldLabelAutoQualified(prevLabel);
-        return {
-          value: key,
-          label: keepCustomAlias ? prevLabel : optLabel || prevLabel || key,
-        };
+          Boolean(prevLabel) && prevLabel !== key && prevLabel !== optLabel;
+        let label = keepCustomAlias ? prevLabel : optLabel || prevLabel || key;
+        // После restore alias может быть только листом («Тип тип тип») —
+        // вернём префикс «Сущность ->» из дефолтной option-подписи.
+        if (
+          keepCustomAlias &&
+          optLabel &&
+          isReportTableFieldLabelAutoQualified(optLabel) &&
+          !isReportTableFieldLabelAutoQualified(prevLabel)
+        ) {
+          const sep = optLabel.includes(ROOT_ENTITY_LABEL_SEPARATOR)
+            ? ROOT_ENTITY_LABEL_SEPARATOR
+            : QUALIFIED_LABEL_SEPARATOR;
+          const idx = optLabel.lastIndexOf(sep);
+          if (idx >= 0) {
+            label = `${optLabel.slice(0, idx)}${sep}${prevLabel}`;
+          }
+        }
+        return { value: key, label };
       });
-
-      // Корневой id всегда в «Текущем составе».
-      if (
-        optionByKey.has('id') &&
-        !remapped.some((item) => isRootReportIdentifierFieldPath(String(item.value)))
-      ) {
-        const idOpt = optionByKey.get('id')!;
-        remapped = [{ value: 'id', label: idOpt.label ?? 'id' }, ...remapped];
-      }
 
       const deduped = Array.from(
         new Map(remapped.map((item) => [String(item.value), item])).values(),
@@ -571,19 +582,7 @@ export function ReportComposeModal({
 
   const handleTableFieldsSelectionChange = useCallback(
     (next: Values) => {
-      let selection = next;
-      const idOpt =
-        defaultRootTableFields.find((item) => isRootReportIdentifierFieldPath(String(item.value))) ??
-        tableFieldsDialogOptions.find((item) =>
-          isRootReportIdentifierFieldPath(String(item.value)),
-        );
-      if (
-        idOpt &&
-        !selection.some((item) => isRootReportIdentifierFieldPath(String(item.value)))
-      ) {
-        selection = [idOpt, ...selection];
-      }
-      selection = orderReportCompositionFieldsByIdentifier(selection);
+      const selection = orderReportCompositionFieldsByIdentifier(next);
       setTableFieldsSelection(selection);
 
       const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
@@ -597,13 +596,24 @@ export function ReportComposeModal({
         }
       }
       setTableFieldHiddenByPath(hidden);
+
+      // Группировка только по полям «Текущего состава» — ушедшие колонки снимаем.
+      setComposeGroupRows((prev) => {
+        const nextGroups = prev.filter((row) => allowed.has(row.columnKey.trim()));
+        return nextGroups.length === prev.length ? prev : nextGroups;
+      });
+      // Сортировка — по тому же правилу.
+      setComposeSortRows((prev) => {
+        const nextSort = prev.filter((row) => allowed.has(row.columnKey.trim()));
+        return nextSort.length === prev.length ? prev : nextSort;
+      });
     },
-    [defaultRootTableFields, tableFieldsDialogOptions, setTableFieldHiddenByPath],
+    [setTableFieldHiddenByPath],
   );
 
   const handleTableFieldVisibilityChange = useCallback(
     (fieldPath: string, visible: boolean) => {
-      // Идентификатор никогда не показывается в гриде — глаз всегда «закрыт».
+      // Идентификатор в таблице не рендерится — глаз всегда «закрыт».
       if (isReportIdentifierFieldPath(fieldPath)) {
         setTableFieldHidden(fieldPath, true);
         return;
@@ -640,7 +650,7 @@ export function ReportComposeModal({
       setTableFieldDisplayParamByPath(next);
     }
 
-    // Идентификаторы по умолчанию скрыты в гриде; прочие ключи вне состава убираем.
+    // Идентификаторы скрыты в гриде (в query остаются); прочие ключи вне состава убираем.
     const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
     const hidden: Record<string, boolean> = {};
     let hiddenChanged = false;
@@ -744,22 +754,35 @@ export function ReportComposeModal({
 
     try {
       const hiddenFromUi = reportsStore.getState().tableFieldHiddenByPath;
+      const hiddenFieldNames = Object.entries(hiddenFromUi)
+        .filter(([, hidden]) => hidden)
+        .map(([key]) => key.trim())
+        .filter(Boolean);
+      // Вместе с fieldName кладём alias — content ответа часто ключуется alias.
       const hiddenColumnKeys = Array.from(
         new Set([
-          ...Object.entries(hiddenFromUi)
-            .filter(([, hidden]) => hidden)
-            .map(([key]) => key),
-          ...(bodyWithGroup.selectedFields ?? [])
-            .map((field) => field.fieldName)
-            .filter((name) => isReportIdentifierFieldPath(name)),
+          ...hiddenFieldNames,
+          ...(bodyWithGroup.selectedFields ?? []).flatMap((field) => {
+            const fieldName = (field.fieldName ?? '').trim();
+            if (!fieldName) return [];
+            if (
+              isReportIdentifierFieldPath(fieldName) ||
+              hiddenFieldNames.includes(fieldName)
+            ) {
+              const alias = (field.alias ?? '').trim();
+              return alias ? [fieldName, alias] : [fieldName];
+            }
+            return [];
+          }),
         ]),
       );
       setQueryContext({
         entityName,
         body: bodyWithGroup,
-        // Подписи с «карандаша» (в т.ч. с пробелами) — для грида; в POST fieldName остаётся путём.
+        // Подписи как в UI (с пробелами); `_` только в POST alias.
         columnHeaderLabels: buildReportColumnHeaderLabelsFromComposeFields(
           resolveComposeTableFieldsSelection(),
+          bodyWithGroup.selectedFields,
         ),
         hiddenColumnKeys,
         branchIds: branchIds.length ? branchIds : undefined,
@@ -880,7 +903,6 @@ export function ReportComposeModal({
                     onDisplayParamChange={handleTableFieldDisplayParamChange}
                     hiddenByKey={tableFieldHiddenByPath}
                     onVisibilityChange={handleTableFieldVisibilityChange}
-                    lockedChosenKeys={['id']}
                   />
                 </ReportComposeSection>
               </div>

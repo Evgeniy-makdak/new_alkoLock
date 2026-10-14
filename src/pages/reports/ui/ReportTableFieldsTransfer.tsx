@@ -58,7 +58,7 @@ export type ReportTableFieldsTransferProps = {
   /** true = скрыто в гриде (закрытый глаз), в payload остаётся. */
   hiddenByKey?: Record<string, boolean>;
   onVisibilityChange?: (fieldPath: string, visible: boolean) => void;
-  /** Ключи, которые нельзя убрать из «Текущего состава» (корневой id). */
+  /** Ключи, которые нельзя убрать из «Текущего состава». */
   lockedChosenKeys?: string[];
 };
 
@@ -571,6 +571,7 @@ export function ReportTableFieldsTransfer({
           : selectOptions.some((item) => String(item.value) === selectedDisplayParam)
             ? selectedDisplayParam
             : '';
+        // Идентификатор в таблице не рендерится — глаз всегда закрыт и заблокирован.
         const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
         const visibilityLocked = isIdentifier;
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);

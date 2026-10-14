@@ -26,6 +26,9 @@ export function buildReportFieldAggregationMap(
     const agg = normalizeReportAggregationCode(field.aggregation);
     if (name && agg) {
       map.set(name, agg);
+      const alias = field.alias?.trim();
+      // content может прийти с ключом = alias
+      if (alias) map.set(alias, agg);
     }
   }
   return map;

@@ -1,27 +1,111 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import {
+  isReportTableFieldLabelAutoQualified,
+  QUALIFIED_LABEL_SEPARATOR,
+  ROOT_ENTITY_LABEL_SEPARATOR,
+} from './buildReportTableFieldOptions';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
-/** Заголовки колонок таблицы по alias из POST selectedFields. */
+/**
+ * UI → API: пробелы между словами → `_` (бэк принимает одно непрерывное слово).
+ * Пример: «Время события» → «Время_события».
+ * Только для POST alias; в гриде и модалке показываем с пробелами.
+ */
+export function encodeReportFieldAliasForApi(displayAlias: string): string {
+  return displayAlias.trim().replace(/\s+/g, '_');
+}
+
+/**
+ * API → UI: `_` → пробелы (грид, модалка, карандаш).
+ * Пример: «Время_события» → «Время события».
+ */
+export function decodeReportFieldAliasForUi(apiAlias: string): string {
+  return apiAlias.trim().replace(/_/g, ' ');
+}
+
+/** Лист подписи «Сущность -> Поле» / «Сущность · Поле». */
+export function extractReportTableFieldLabelLeaf(label: string): string {
+  const trimmed = label.trim();
+  const sep = trimmed.includes(ROOT_ENTITY_LABEL_SEPARATOR)
+    ? ROOT_ENTITY_LABEL_SEPARATOR
+    : trimmed.includes(QUALIFIED_LABEL_SEPARATOR)
+      ? QUALIFIED_LABEL_SEPARATOR
+      : null;
+  if (!sep) return trimmed;
+  return trimmed.slice(trimmed.lastIndexOf(sep) + sep.length).trim();
+}
+
+/**
+ * Текст для alias в POST: только изменённая часть, с `_` вместо пробелов.
+ * Дефолтный префикс «Сущность ->» не кодируем.
+ */
+export function resolveReportFieldAliasForApi(
+  displayLabel: string,
+  emitPath: string,
+  fieldName: string,
+  defaultFieldLabel: string,
+): string | undefined {
+  const label = displayLabel.trim();
+  const defaultLabel = defaultFieldLabel.trim();
+  if (!label || label === emitPath || label === fieldName) return undefined;
+  if (defaultLabel && label === defaultLabel) return undefined;
+
+  let aliasSource = label;
+  if (isReportTableFieldLabelAutoQualified(label)) {
+    const leaf = extractReportTableFieldLabelLeaf(label);
+    if (!leaf) return undefined;
+    // Без известного дефолта авто-подпись считаем неизменённой.
+    if (!defaultLabel) return undefined;
+    if (leaf === defaultLabel) return undefined;
+    // В alias только изменённый лист, не вся строка с префиксом.
+    aliasSource = leaf;
+  }
+
+  const apiAlias = encodeReportFieldAliasForApi(aliasSource);
+  if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
+  return apiAlias;
+}
+
+/**
+ * @deprecated Используйте resolveReportFieldAliasForApi.
+ */
+export function shouldEmitReportFieldAlias(
+  displayLabel: string,
+  emitPath: string,
+  fieldName: string,
+  defaultFieldLabel: string,
+): boolean {
+  return Boolean(
+    resolveReportFieldAliasForApi(displayLabel, emitPath, fieldName, defaultFieldLabel),
+  );
+}
+
+/**
+ * Подписи колонок для грида по alias из POST.
+ * Значения — всегда UI-форма с пробелами; ключи — fieldName и сырой alias ответа.
+ */
 export function buildReportColumnAliasMap(
   selectedFields: ReportSelectedFieldPayload[] | undefined,
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const field of selectedFields ?? []) {
     const alias = field.alias?.trim();
-    if (alias) {
-      map.set(field.fieldName, alias);
-    }
+    if (!alias) continue;
+    const uiLabel = decodeReportFieldAliasForUi(alias);
+    map.set(field.fieldName, uiLabel);
+    map.set(alias, uiLabel);
   }
   return map;
 }
 
 /**
- * Подписи «Текущего состава» (value = fieldName/path, label = UI / карандаш)
- * → columnHeaderLabels для грида.
+ * Подписи «Текущего состава» → columnHeaderLabels для грида (как в UI, с пробелами).
+ * Дополнительно индексируем по сырому alias ответа, чтобы заголовок не срывался на `_`.
  */
 export function buildReportColumnHeaderLabelsFromComposeFields(
   tableFields: Values,
+  selectedFields?: ReportSelectedFieldPayload[],
 ): Record<string, string> {
   const labels: Record<string, string> = {};
   for (const item of tableFields) {
@@ -29,6 +113,13 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     const label = String(item.label ?? '').trim();
     if (!path || !label) continue;
     labels[path] = label;
+  }
+  for (const field of selectedFields ?? []) {
+    const path = (field.fieldName ?? '').trim();
+    const alias = (field.alias ?? '').trim();
+    if (!path || !alias) continue;
+    const uiLabel = labels[path] ?? decodeReportFieldAliasForUi(alias);
+    labels[alias] = uiLabel;
   }
   return labels;
 }
@@ -39,4 +130,23 @@ export function resolveReportColumnHeaderLabel(
   fallbackLabel: string,
 ): string {
   return columnAliases.get(columnKey) ?? fallbackLabel;
+}
+
+/**
+ * Ключ колонки в content может быть fieldName или сырым alias ответа.
+ * Для локализации type/color и metadata нужен исходный fieldName.
+ */
+export function resolveReportContentFieldName(
+  columnKey: string,
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): string {
+  const key = columnKey.trim();
+  if (!key || !selectedFields?.length) return key;
+  for (const field of selectedFields) {
+    const fieldName = (field.fieldName ?? '').trim();
+    const alias = (field.alias ?? '').trim();
+    if (!fieldName) continue;
+    if (fieldName === key || alias === key) return fieldName;
+  }
+  return key;
 }

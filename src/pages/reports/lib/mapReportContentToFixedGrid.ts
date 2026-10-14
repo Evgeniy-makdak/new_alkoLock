@@ -8,6 +8,7 @@ import {
 } from './reportDisplayValue';
 
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
+import { resolveVehicleAttributeLabel } from './fetchVehicleFrontDataMaps';
 import type { ReportTableColumnKey } from './reportTableColumns';
 
 export type ReportGridRow = Record<string, string> & { __rowKey: string };
@@ -45,10 +46,10 @@ function formatCellValue(
   }
 
   if (field === 'type' && typeof raw === 'string') {
-    return labelMaps?.types[raw] ?? raw;
+    return resolveVehicleAttributeLabel('type', raw, labelMaps) ?? raw;
   }
   if (field === 'color' && typeof raw === 'string') {
-    return labelMaps?.colors[raw] ?? raw;
+    return resolveVehicleAttributeLabel('color', raw, labelMaps) ?? raw;
   }
 
   if (typeof raw === 'object') {

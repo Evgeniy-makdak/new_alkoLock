@@ -16,7 +16,6 @@ import {
   buildAllowedReportTableFieldPaths,
   findReportTableFieldDefinition,
   isEmittableReportTableField,
-  isReportTableFieldLabelAutoQualified,
   resolveReportFilterFieldName,
   resolveReportTableSelectedPayloadFieldName,
 } from './buildReportTableFieldOptions';
@@ -26,6 +25,7 @@ import {
   parseCoordinatePairFilterValue,
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
+import { resolveReportFieldAliasForApi } from './reportSelectedFieldAliases';
 import {
   expandCompositeFieldPath,
   expandCompositeSelectedFields,
@@ -289,13 +289,16 @@ function buildRowReportTableFields(
         context.entityMetadata.entityName,
       ),
     };
-    // Alias из «карандаша»: любое кастомное имя, кроме авто «Сущность -> поле» и сырого fieldName.
-    if (
-      displayLabel &&
-      displayLabel !== emitPath &&
-      !isReportTableFieldLabelAutoQualified(displayLabel)
-    ) {
-      payload.alias = displayLabel;
+    // Alias только для изменённых подписей: `_` вместо пробелов в кастомном тексте.
+    // Дефолт «Сущность -> Поле» в alias не кодируем (подчёркивания туда не добавляем).
+    const apiAlias = resolveReportFieldAliasForApi(
+      displayLabel,
+      emitPath,
+      payload.fieldName,
+      defaultLabel,
+    );
+    if (apiAlias) {
+      payload.alias = apiAlias;
     }
     // aggregation — только из селекта «Текущий состав»; «Не выбрана» → без aggregation.
     const perFieldEncoded =

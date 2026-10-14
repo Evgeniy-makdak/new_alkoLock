@@ -8,8 +8,11 @@ import { useMediaQuery, Box, CircularProgress, IconButton, TablePagination, Tool
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
 import {
+  alignReportGridSortModelToColumnFields,
+  buildReportGridSortModelFromSortParams,
   buildReportSortFieldMap,
   buildReportSortParams,
+  isReportSortFieldHidden,
   reportSortParamsEqual,
 } from '@pages/reports/lib/buildReportSortParam';
 import {
@@ -74,14 +77,21 @@ export function ReportsResultsView() {
   pageSizeRef.current = tableState.pageSize;
 
   const lastSyncedReportKeyRef = useRef<string | null>(null);
-  /** Блокирует sort-effect на кадре сброса (stale sortModel до setState). */
-  const suppressSortFetchRef = useRef(false);
+  /**
+   * После формирования модалка уже сделала полный POST.
+   * Пока latch === reportTableKey — sort-effect НЕ вызывает loadReportPage
+   * (второй усечённый query без sort не нужен). Снимается только когда
+   * sortModel совпал с pageable.sort, либо пользователь явно сменил сортировку стрелкой.
+   */
+  const suppressSortFetchForReportKeyRef = useRef<string | null>(null);
+  /** Предыдущий sortModel — чтобы отличить снятие стрелки пользователем от сброса DataGrid. */
+  const prevGridSortModelRef = useRef(tableState.sortModel);
   const lastReportsRestoreKeyRef = useRef<string | null>(null);
 
   const reportTableKey = useMemo(
     () =>
       queryContext
-        ? `${queryContext.entityName}:${JSON.stringify(queryContext.body)}`
+        ? `${queryContext.entityName}:${JSON.stringify(queryContext.body)}:${(queryContext.sort ?? []).join('|')}`
         : 'report-empty',
     [queryContext],
   );
@@ -145,17 +155,31 @@ export function ReportsResultsView() {
     }
     if (lastSyncedReportKeyRef.current === reportTableKey) return;
     lastSyncedReportKeyRef.current = reportTableKey;
-    suppressSortFetchRef.current = true;
+    // Модалка уже загрузила данные — блокируем повторный query из sort-effect.
+    suppressSortFetchForReportKeyRef.current = reportTableKey;
 
     const pageSize = pageSizeRef.current;
+    const composeSort = queryContext.sort ?? [];
+    const sortOnHiddenColumn = isReportSortFieldHidden(
+      composeSort,
+      queryContext.hiddenColumnKeys,
+      queryContext.body.selectedFields,
+    );
+
+    // Скрытая колонка сортировки: в гриде field нет — sortModel не ставим.
+    // pageable.sort оставляем (ORDER BY уже в первом ответе + restore при edit).
+    const gridSortModel = sortOnHiddenColumn
+      ? []
+      : buildReportGridSortModelFromSortParams(
+          composeSort,
+          queryContext.body.selectedFields,
+        );
 
     changeTableState({ page: 0, pageSize });
-    changeTableSorts([]);
-    apiRef.current?.setSortModel?.([]);
+    changeTableSorts(gridSortModel);
+    apiRef.current?.setSortModel?.(gridSortModel);
     apiRef.current?.setPage?.(0);
     setPagination({ page: 0, pageSize });
-    // Восстановить pageable.sort из контекста формирования (не обнулять).
-    const composeSort = queryContext.sort ?? [];
     setSort(composeSort);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
@@ -283,32 +307,117 @@ export function ReportsResultsView() {
     [changeTableState, loadReportPage],
   );
 
-  // Как на вкладке «События»: onSortModelChange только сохраняет модель, запрос — по изменению sortModel.
+  // Стрелки грида → pageable.sort. После формирования модалки POST уже был —
+  // повторный query только при реальной смене сортировки пользователем.
   useEffect(() => {
     if (!queryContext) return;
-    if (suppressSortFetchRef.current) {
-      suppressSortFetchRef.current = false;
+
+    const { isGenerating, isLoadingPage, sort, pagination } =
+      reportGenerationStore.getState();
+    if (isGenerating || isLoadingPage) return;
+
+    const composeSort = queryContext.sort ?? [];
+    const nextSort = buildReportSortParams(
+      tableState.sortModel,
+      sortFieldByColumn,
+      reportGroupBy,
+    );
+
+    const prevGridSortModel = prevGridSortModelRef.current;
+    prevGridSortModelRef.current = tableState.sortModel;
+    // ASC/DESC → снятие стрелки: был sortModel, стал [] — нужен query без sort.
+    const userClearedGridSort =
+      prevGridSortModel.length > 0 && tableState.sortModel.length === 0;
+
+    const sortFetchSuppressed =
+      suppressSortFetchForReportKeyRef.current === reportTableKey;
+
+    if (sortFetchSuppressed) {
+      // Модель совпала с pageable.sort — можно снова слушать стрелки.
+      if (reportSortParamsEqual(nextSort, sort)) {
+        suppressSortFetchForReportKeyRef.current = null;
+        return;
+      }
+
+      // Пустой/битый sortModel после form (скрыть глазом, remount колонок) —
+      // не POST. Для видимой колонки пробуем восстановить стрелку без запроса.
+      if (nextSort.length === 0 && sort.length > 0) {
+        if (
+          !isReportSortFieldHidden(
+            sort,
+            queryContext.hiddenColumnKeys,
+            queryContext.body.selectedFields,
+          )
+        ) {
+          const columnFields = columns
+            .map((col) => String(col.field ?? ''))
+            .filter(Boolean);
+          const restored = alignReportGridSortModelToColumnFields(
+            buildReportGridSortModelFromSortParams(
+              sort,
+              queryContext.body.selectedFields,
+            ),
+            columnFields,
+            queryContext.body.selectedFields,
+          );
+          if (restored.length) {
+            const restoredParams = buildReportSortParams(
+              restored,
+              sortFieldByColumn,
+              reportGroupBy,
+            );
+            if (reportSortParamsEqual(restoredParams, sort)) {
+              changeTableSorts(restored);
+              apiRef.current?.setSortModel?.(restored);
+            }
+          }
+        }
+        return;
+      }
+
+      // Пользователь сразу кликнул другую сортировку — снимаем latch и идём в fetch ниже.
+      if (nextSort.length > 0 && !reportSortParamsEqual(nextSort, sort)) {
+        suppressSortFetchForReportKeyRef.current = null;
+      } else {
+        return;
+      }
+    }
+
+    // Не затирать compose-sort пустым sortModel после form / сброса грида.
+    // Исключение: пользователь сам снял стрелку (ASC/DESC → нет сортировки).
+    if (
+      nextSort.length === 0 &&
+      composeSort.length > 0 &&
+      reportSortParamsEqual(sort, composeSort) &&
+      !userClearedGridSort
+    ) {
       return;
     }
-    const { isGenerating, sort, pagination } = reportGenerationStore.getState();
-    if (isGenerating) return;
 
-    const nextSort = buildReportSortParams(tableState.sortModel, sortFieldByColumn, reportGroupBy);
     if (reportSortParamsEqual(sort, nextSort)) return;
 
     setSort(nextSort);
+    const ctx = reportGenerationStore.getState().queryContext;
+    if (ctx && !reportSortParamsEqual(ctx.sort ?? [], nextSort)) {
+      reportGenerationStore.setState({
+        queryContext: { ...ctx, sort: nextSort },
+      });
+    }
     changeTableState({ page: 0, pageSize: pagination.pageSize });
     setPagination({ page: 0 });
     apiRef.current?.setPage?.(0);
     void loadReportPage(0, pagination.pageSize);
   }, [
+    reportTableKey,
     queryContext,
     tableState.sortModel,
     tableState.sortModel[0]?.field,
     tableState.sortModel[0]?.sort,
     sortFieldByColumn,
     reportGroupBy,
+    columns,
     changeTableState,
+    changeTableSorts,
     loadReportPage,
     setPagination,
     setSort,

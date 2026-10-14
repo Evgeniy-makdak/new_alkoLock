@@ -75,12 +75,16 @@ export function buildReportSortFieldMap(
   const map = new Map<string, string>();
   const fieldNames: string[] = [];
 
-  for (const { fieldName } of selectedFields) {
+  for (const field of selectedFields) {
+    const fieldName = field.fieldName?.trim();
     if (!fieldName || isReportCompositeFieldPath(fieldName)) continue;
     fieldNames.push(fieldName);
     const sortField = resolveReportSortApiFieldForQuery(fieldName, groupBy);
     if (sortField) {
       map.set(fieldName, sortField);
+      // content/колонка грида может быть с ключом = alias
+      const alias = field.alias?.trim();
+      if (alias) map.set(alias, sortField);
     }
   }
 
@@ -127,6 +131,105 @@ export function buildReportSortParams(
 export function reportSortParamsEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((v, i) => v === b[i]);
+}
+
+/**
+ * pageable.sort из модалки → GridSortModel, чтобы стрелки грида и sort-effect
+ * не затирали выбранную в compose сортировку пустым sortModel.
+ */
+export function buildReportGridSortModelFromSortParams(
+  sortParams: string[],
+  selectedFields?: ReportSelectedFieldPayload[],
+): GridSortModel {
+  const param = (sortParams[0] ?? '').trim();
+  if (!param) return [];
+
+  const commaIndex = param.lastIndexOf(',');
+  if (commaIndex <= 0) return [];
+
+  const apiField = param.slice(0, commaIndex).trim();
+  const directionRaw = param.slice(commaIndex + 1).trim().toUpperCase();
+  if (!apiField || (directionRaw !== 'ASC' && directionRaw !== 'DESC')) return [];
+
+  // fieldName надёжнее для pageable.sort; alias подставим, когда появятся колонки content.
+  let gridField = apiField;
+  if (selectedFields?.length) {
+    const match = selectedFields.find((field) => (field.fieldName ?? '').trim() === apiField);
+    if (match?.fieldName) {
+      gridField = match.fieldName.trim();
+    }
+  }
+
+  return [
+    {
+      field: gridField,
+      sort: directionRaw === 'ASC' ? SortsTypes.asc : SortsTypes.desc,
+    },
+  ];
+}
+
+/** apiField из pageable.sort (`model,DESC` → `model`). */
+export function getReportSortApiFieldFromParams(sortParams: string[]): string {
+  const param = (sortParams[0] ?? '').trim();
+  if (!param) return '';
+  const commaIndex = param.lastIndexOf(',');
+  return (commaIndex > 0 ? param.slice(0, commaIndex) : param).trim();
+}
+
+/**
+ * Сортировка по колонке с закрытым «глазом»: в гриде колонки нет,
+ * пустой sortModel не должен затирать pageable.sort (нужен для edit).
+ */
+export function isReportSortFieldHidden(
+  sortParams: string[],
+  hiddenColumnKeys: string[] | undefined,
+  selectedFields?: ReportSelectedFieldPayload[],
+): boolean {
+  const apiField = getReportSortApiFieldFromParams(sortParams);
+  if (!apiField) return false;
+
+  const hidden = new Set(
+    (hiddenColumnKeys ?? []).map((key) => String(key).trim()).filter(Boolean),
+  );
+  if (!hidden.size) return false;
+  if (hidden.has(apiField)) return true;
+
+  for (const field of selectedFields ?? []) {
+    const fieldName = (field.fieldName ?? '').trim();
+    const alias = (field.alias ?? '').trim();
+    if (fieldName !== apiField && alias !== apiField) continue;
+    if (hidden.has(fieldName) || (alias && hidden.has(alias))) return true;
+  }
+  return false;
+}
+
+/** Подгоняет sortModel под фактические field колонок грида (fieldName ↔ alias). */
+export function alignReportGridSortModelToColumnFields(
+  sortModel: GridSortModel,
+  columnFields: string[],
+  selectedFields?: ReportSelectedFieldPayload[],
+): GridSortModel {
+  if (!sortModel.length || !columnFields.length) return sortModel;
+  const fieldSet = new Set(columnFields.filter(Boolean));
+
+  return sortModel.map((item) => {
+    const field = (item.field ?? '').trim();
+    if (!field || fieldSet.has(field)) return item;
+
+    const byName = selectedFields?.find((f) => (f.fieldName ?? '').trim() === field);
+    const alias = (byName?.alias ?? '').trim();
+    if (alias && fieldSet.has(alias)) {
+      return { ...item, field: alias };
+    }
+
+    const byAlias = selectedFields?.find((f) => (f.alias ?? '').trim() === field);
+    const fieldName = (byAlias?.fieldName ?? '').trim();
+    if (fieldName && fieldSet.has(fieldName)) {
+      return { ...item, field: fieldName };
+    }
+
+    return item;
+  });
 }
 
 /** UI-ключ колонки → fieldName для sort / groupBy в POST …/query. */
