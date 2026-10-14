@@ -39,6 +39,9 @@ import { ReportSaveFileDialog } from './ReportSaveFileDialog';
 import { ReportsResultsView } from './ReportsResultsView';
 import { ReportsViewModeSelect } from './ReportsViewModeSelect';
 
+/** Временно скрыто в UI — AI-отчёт ещё не готов к показу. */
+const SHOW_REPORT_AI_COMPOSE_UI = false;
+
 export function ReportsPage() {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -165,15 +168,17 @@ export function ReportsPage() {
                         {t('reports.editReport')}
                       </MuiButton>
                     ) : null}
-                    <MuiButton
-                      variant="contained"
-                      size="small"
-                      startIcon={<AutoAwesomeOutlinedIcon />}
-                      disabled={isGenerating}
-                      onClick={openAiComposeDialog}
-                      sx={createReportButtonSx}>
-                      {t('reports.aiComposeOpen')}
-                    </MuiButton>
+                    {SHOW_REPORT_AI_COMPOSE_UI ? (
+                      <MuiButton
+                        variant="contained"
+                        size="small"
+                        startIcon={<AutoAwesomeOutlinedIcon />}
+                        disabled={isGenerating}
+                        onClick={openAiComposeDialog}
+                        sx={createReportButtonSx}>
+                        {t('reports.aiComposeOpen')}
+                      </MuiButton>
+                    ) : null}
                     <MuiButton
                       variant="contained"
                       size="small"
@@ -230,16 +235,18 @@ export function ReportsPage() {
                         {t('reports.editReport')}
                       </MuiButton>
                     ) : null}
-                    <MuiButton
-                      variant="contained"
-                      size="small"
-                      startIcon={<AutoAwesomeOutlinedIcon />}
-                      disabled={isGenerating}
-                      onClick={openAiComposeDialog}
-                      className={styles.mobileCreateButton}
-                      sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                      {t('reports.aiComposeOpen')}
-                    </MuiButton>
+                    {SHOW_REPORT_AI_COMPOSE_UI ? (
+                      <MuiButton
+                        variant="contained"
+                        size="small"
+                        startIcon={<AutoAwesomeOutlinedIcon />}
+                        disabled={isGenerating}
+                        onClick={openAiComposeDialog}
+                        className={styles.mobileCreateButton}
+                        sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
+                        {t('reports.aiComposeOpen')}
+                      </MuiButton>
+                    ) : null}
                     <MuiButton
                       variant="contained"
                       size="small"
@@ -276,11 +283,13 @@ export function ReportsPage() {
         onClose={() => setComposeModalOpen(false)}
       />
 
-      <ReportAiComposeDialog
-        open={aiComposeOpen}
-        onClose={() => setAiComposeOpen(false)}
-        onOpenEditor={handleAiOpenEditor}
-      />
+      {SHOW_REPORT_AI_COMPOSE_UI ? (
+        <ReportAiComposeDialog
+          open={aiComposeOpen}
+          onClose={() => setAiComposeOpen(false)}
+          onOpenEditor={handleAiOpenEditor}
+        />
+      ) : null}
 
       <ReportSaveFileDialog
         open={saveFileDialogOpen}

@@ -48,21 +48,16 @@ export function buildReportTableFieldDisplayOptions(
   const seen = new Set<string>();
   const merged: Values = [];
   const path = fieldPath ?? field.fieldName;
-  const identifierOnly = isReportIdentifierFieldPath(path);
+  const isIdentifier = isReportIdentifierFieldPath(path);
+  // Идентификатор (корневой и связанный): список availableFunctions с бэка, как у прочих полей.
   for (const item of functionsToValues(field.availableFunctions)) {
     const key = String(item.value);
     if (seen.has(key)) continue;
-    if (identifierOnly) {
-      const code = key.startsWith(REPORT_TABLE_FIELD_FN_PREFIX)
-        ? key.slice(REPORT_TABLE_FIELD_FN_PREFIX.length)
-        : key;
-      if (!isReportIdentifierAggregationCode(code)) continue;
-    }
     seen.add(key);
     merged.push(item);
   }
-  // Идентификатор: всегда ровно один вариант — Количество (даже если metadata пустая/без count).
-  if (identifierOnly && merged.length === 0) {
+  // Идентификатор без функций в metadata — хотя бы Количество в payload.
+  if (isIdentifier && merged.length === 0) {
     const countOp = (field.availableFunctions ?? []).find((op) =>
       isReportIdentifierAggregationCode(String(op.code ?? '')),
     );

@@ -555,22 +555,24 @@ export function ReportTableFieldsTransfer({
           side === 'chosen' &&
           (displayOptions.length > 0 || isIdentifier) &&
           Boolean(onDisplayParamChange);
-        const identifierDisplayLocked = isIdentifier;
-        const selectOptions = identifierDisplayLocked
-          ? displayOptions.length > 0
+        // Агрегация идентификатора — как у прочих полей: список с бэка, выбор не locked.
+        const selectOptions =
+          displayOptions.length > 0
             ? displayOptions
-            : [
-                {
-                  value: identifierCountEncoded,
-                  label: t('reports.havingAggregation.count'),
-                },
-              ]
-          : displayOptions;
-        const selectValue = identifierDisplayLocked
-          ? String(identifierCountEncoded)
-          : selectOptions.some((item) => String(item.value) === selectedDisplayParam)
-            ? selectedDisplayParam
-            : '';
+            : isIdentifier
+              ? [
+                  {
+                    value: identifierCountEncoded,
+                    label: t('reports.havingAggregation.count'),
+                  },
+                ]
+              : [];
+        const selectValue = selectOptions.some(
+          (item) => String(item.value) === selectedDisplayParam,
+        )
+          ? selectedDisplayParam
+          : selectedDisplayParam ||
+            (isIdentifier ? String(identifierCountEncoded) : '');
         // Идентификатор в таблице не рендерится — глаз всегда закрыт и заблокирован.
         const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
         const visibilityLocked = isIdentifier;
@@ -593,17 +595,16 @@ export function ReportTableFieldsTransfer({
                       className={composeStyles.transferDisplayParam}
                       onClick={(e) => e.stopPropagation()}>
                       <Select
-                        displayEmpty={!identifierDisplayLocked}
+                        displayEmpty={!isIdentifier}
                         value={selectValue}
-                        disabled={disabled || identifierDisplayLocked}
+                        disabled={disabled}
                         onChange={(e) => {
-                          if (identifierDisplayLocked) return;
                           onDisplayParamChange?.(key, String(e.target.value ?? ''));
                         }}
                         inputProps={{
                           'aria-label': t('reports.filterFunctionLabel'),
                         }}>
-                        {!identifierDisplayLocked ? (
+                        {!isIdentifier ? (
                           <MenuItem value="">
                             <em>{t('reports.tableFieldDisplayParamNone')}</em>
                           </MenuItem>

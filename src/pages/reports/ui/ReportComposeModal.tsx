@@ -40,7 +40,6 @@ import {
   parseReportTableFieldDisplayParam,
 } from '@pages/reports/lib/reportTableFieldDisplayParam';
 import {
-  isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
   orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
@@ -198,11 +197,11 @@ export function ReportComposeModal({
       if (!encoded || !field.fieldName) continue;
       restoredDisplay[field.fieldName] = encoded;
     }
-    // Идентификатор: всегда fn:count (без «не выбрана» / countDistinct).
+    // Идентификатор: из body.aggregation; если нет — дефолт count.
     const identifierCount = encodeReportIdentifierDisplayParam();
     for (const field of tableFields) {
       const key = String(field.value);
-      if (isReportIdentifierFieldPath(key)) {
+      if (isReportIdentifierFieldPath(key) && !restoredDisplay[key]) {
         restoredDisplay[key] = identifierCount;
       }
     }
@@ -570,8 +569,8 @@ export function ReportComposeModal({
 
   const handleTableFieldDisplayParamChange = useCallback(
     (fieldPath: string, encoded: string) => {
-      // Идентификатор: агрегация зафиксирована как Количество.
-      if (isReportIdentifierFieldPath(fieldPath)) {
+      // Идентификатор (в т.ч. «Сущность -> Идентификатор») — выбор из списка бэка.
+      if (isReportIdentifierFieldPath(fieldPath) && !encoded.trim()) {
         setTableFieldDisplayParam(fieldPath, encodeReportIdentifierDisplayParam());
         return;
       }
@@ -640,8 +639,8 @@ export function ReportComposeModal({
     for (const key of allowed) {
       if (!isReportIdentifierFieldPath(key)) continue;
       const parsed = parseReportTableFieldDisplayParam(next[key]);
-      const code = parsed?.code ?? '';
-      if (!isReportIdentifierAggregationCode(code)) {
+      // Пусто — дефолт count; иначе оставляем выбранное из списка бэка.
+      if (!parsed?.code) {
         next[key] = identifierCount;
         displayChanged = true;
       }

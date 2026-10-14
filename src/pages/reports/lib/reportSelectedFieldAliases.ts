@@ -1,3 +1,5 @@
+import i18n from 'i18next';
+
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import {
@@ -5,7 +7,10 @@ import {
   QUALIFIED_LABEL_SEPARATOR,
   ROOT_ENTITY_LABEL_SEPARATOR,
 } from './buildReportTableFieldOptions';
-import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
+import type {
+  ReportFieldDefinition,
+  ReportSelectedFieldPayload,
+} from '../types/reportApiTypes';
 
 /**
  * UI → API: пробелы между словами → `_` (бэк принимает одно непрерывное слово).
@@ -14,6 +19,30 @@ import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
  */
 export function encodeReportFieldAliasForApi(displayAlias: string): string {
   return displayAlias.trim().replace(/\s+/g, '_');
+}
+
+/**
+ * Пробелы → `_` только в добавленной/изменённой части.
+ * Дефолт «Координаты (долгота)» + « рпе» → «Координаты (долгота)_рпе»
+ * (не «Координаты_(долгота)_рпе»).
+ */
+export function encodeReportFieldAliasPreservingDefault(
+  displayAlias: string,
+  defaultFieldLabel: string,
+): string {
+  const label = displayAlias.trim();
+  const defaultLabel = defaultFieldLabel.trim();
+  if (!label) return '';
+  if (!defaultLabel || !label.startsWith(defaultLabel)) {
+    return encodeReportFieldAliasForApi(label);
+  }
+  const suffix = label.slice(defaultLabel.length);
+  if (!suffix.trim()) {
+    return defaultLabel;
+  }
+  // Ведущие пробелы хвоста → один `_`, остальные пробелы хвоста → `_`.
+  const encodedSuffix = suffix.replace(/^\s+/, '_').replace(/\s+/g, '_');
+  return `${defaultLabel}${encodedSuffix}`;
 }
 
 /**
@@ -34,6 +63,26 @@ export function extractReportTableFieldLabelLeaf(label: string): string {
       : null;
   if (!sep) return trimmed;
   return trimmed.slice(trimmed.lastIndexOf(sep) + sep.length).trim();
+}
+
+/**
+ * Дефолтный лист подписи как в «Составе колонок» (не сырой fieldDef.label).
+ * Для lat/lon UI = «Координаты (широта/долгота)», иначе ложный alias в POST.
+ */
+export function resolveReportFieldDefaultLabelForAlias(
+  emitPath: string,
+  fieldDef: ReportFieldDefinition | null | undefined,
+): string {
+  const leaf = emitPath.includes('.')
+    ? emitPath.slice(emitPath.lastIndexOf('.') + 1)
+    : emitPath;
+  if (leaf === 'latitude') {
+    return String(i18n.t('reports.composite.coordinateLatitude'));
+  }
+  if (leaf === 'longitude') {
+    return String(i18n.t('reports.composite.coordinateLongitude'));
+  }
+  return (fieldDef?.label ?? '').trim() || emitPath;
 }
 
 /**
@@ -62,8 +111,12 @@ export function resolveReportFieldAliasForApi(
     aliasSource = leaf;
   }
 
-  const apiAlias = encodeReportFieldAliasForApi(aliasSource);
+  // `_` только в дописанном хвосте; пробелы внутри дефолтной подписи не трогаем.
+  const apiAlias = defaultLabel
+    ? encodeReportFieldAliasPreservingDefault(aliasSource, defaultLabel)
+    : encodeReportFieldAliasForApi(aliasSource);
   if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
+  if (defaultLabel && apiAlias === defaultLabel) return undefined;
   return apiAlias;
 }
 

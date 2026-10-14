@@ -25,7 +25,10 @@ import {
   parseCoordinatePairFilterValue,
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
-import { resolveReportFieldAliasForApi } from './reportSelectedFieldAliases';
+import {
+  resolveReportFieldAliasForApi,
+  resolveReportFieldDefaultLabelForAlias,
+} from './reportSelectedFieldAliases';
 import {
   expandCompositeFieldPath,
   expandCompositeSelectedFields,
@@ -280,7 +283,7 @@ function buildRowReportTableFields(
       return [];
     }
 
-    const defaultLabel = (fieldDef?.label ?? '').trim() || emitPath;
+    const defaultLabel = resolveReportFieldDefaultLabelForAlias(emitPath, fieldDef);
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
     // fieldName — всегда путь поля для бэка; переименование только в alias.
     const payload: ReportSelectedFieldPayload = {
