@@ -20,6 +20,7 @@ import {
   resolveReportFilterFieldName,
   resolveReportTableSelectedPayloadFieldName,
 } from './buildReportTableFieldOptions';
+import { isReportSelectedFieldAliasSafeForBackend } from './reportSelectedFieldAliases';
 import {
   isReportCoordinatesCompositePropertyFieldName,
   isRootCoordinatesCompositeOutputFilter,
@@ -282,17 +283,23 @@ function buildRowReportTableFields(
 
     const defaultLabel = (fieldDef?.label ?? '').trim() || emitPath;
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
+    // fieldName — всегда путь поля для бэка; label/alias никогда не подставляем сюда.
+    const apiFieldName = resolveReportTableSelectedPayloadFieldName(
+      emitPath,
+      context.entityMetadata.entityName,
+    );
     const payload: ReportSelectedFieldPayload = {
-      fieldName: resolveReportTableSelectedPayloadFieldName(
-        emitPath,
-        context.entityMetadata.entityName,
-      ),
+      fieldName: apiFieldName,
     };
-    // Alias из «карандаша»: любое имя, кроме авто «Сущность -> поле» и сырого fieldName.
+    // Alias из «карандаша»: только кастомная подпись, безопасная для HQL (без пробелов).
+    // UI-заголовки с пробелами/«Сущность -> поле» живут в columnHeaderLabels.
     if (
       displayLabel &&
       displayLabel !== emitPath &&
-      !isReportTableFieldLabelAutoQualified(displayLabel)
+      displayLabel !== apiFieldName &&
+      displayLabel !== defaultLabel &&
+      !isReportTableFieldLabelAutoQualified(displayLabel) &&
+      isReportSelectedFieldAliasSafeForBackend(displayLabel)
     ) {
       payload.alias = displayLabel;
     }

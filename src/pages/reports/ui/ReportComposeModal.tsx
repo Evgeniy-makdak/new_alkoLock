@@ -43,6 +43,7 @@ import {
   isRootReportIdentifierFieldPath,
   orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
+import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
   type ReportsComposeSnapshot,
@@ -756,6 +757,10 @@ export function ReportComposeModal({
       setQueryContext({
         entityName,
         body: bodyWithGroup,
+        // Подписи с «карандаша» (в т.ч. с пробелами) — для грида; в POST fieldName остаётся путём.
+        columnHeaderLabels: buildReportColumnHeaderLabelsFromComposeFields(
+          resolveComposeTableFieldsSelection(),
+        ),
         hiddenColumnKeys,
         branchIds: branchIds.length ? branchIds : undefined,
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
@@ -787,6 +792,7 @@ export function ReportComposeModal({
   }, [
     buildCurrentReportBody,
     saveTableFieldsSelectionToStore,
+    resolveComposeTableFieldsSelection,
     ensureSelectedFieldsInBody,
     composeSortRows,
     composeGroupBy,
