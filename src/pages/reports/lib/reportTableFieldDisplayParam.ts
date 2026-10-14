@@ -3,6 +3,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 import {
   isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
+  REPORT_IDENTIFIER_AGGREGATION_CODE,
 } from './reportTableFieldIdentifier';
 import type { ReportFieldDefinition, ReportFieldOperation } from '../types/reportApiTypes';
 
@@ -33,6 +34,11 @@ function functionsToValues(ops: ReportFieldOperation[] | undefined): Values {
     .filter((item): item is NonNullable<typeof item> => item != null);
 }
 
+/** Закодированный fn:count для Идентификатора. */
+export function encodeReportIdentifierDisplayParam(): string {
+  return encodeReportTableFieldFunctionParam(REPORT_IDENTIFIER_AGGREGATION_CODE);
+}
+
 /** Селект «Текущий состав»: только availableFunctions текущего поля metadata. */
 export function buildReportTableFieldDisplayOptions(
   field: ReportFieldDefinition | undefined,
@@ -54,6 +60,17 @@ export function buildReportTableFieldDisplayOptions(
     }
     seen.add(key);
     merged.push(item);
+  }
+  // Идентификатор: всегда ровно один вариант — Количество (даже если metadata пустая/без count).
+  if (identifierOnly && merged.length === 0) {
+    const countOp = (field.availableFunctions ?? []).find((op) =>
+      isReportIdentifierAggregationCode(String(op.code ?? '')),
+    );
+    const code = String(countOp?.code ?? REPORT_IDENTIFIER_AGGREGATION_CODE).trim();
+    merged.push({
+      value: encodeReportTableFieldFunctionParam(code),
+      label: (countOp?.label || code).trim() || code,
+    });
   }
   return merged;
 }

@@ -33,9 +33,12 @@ import {
 } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   buildReportTableFieldDisplayOptions,
+  encodeReportIdentifierDisplayParam,
   encodeReportTableFieldFunctionParam,
+  parseReportTableFieldDisplayParam,
 } from '@pages/reports/lib/reportTableFieldDisplayParam';
 import {
+  isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
   isRootReportIdentifierFieldPath,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
@@ -189,6 +192,14 @@ export function ReportComposeModal({
       const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
       if (!encoded || !field.fieldName) continue;
       restoredDisplay[field.fieldName] = encoded;
+    }
+    // Идентификатор: всегда fn:count (без «не выбрана» / countDistinct).
+    const identifierCount = encodeReportIdentifierDisplayParam();
+    for (const field of tableFields) {
+      const key = String(field.value);
+      if (isReportIdentifierFieldPath(key)) {
+        restoredDisplay[key] = identifierCount;
+      }
     }
     reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
     const restoredHidden: Record<string, boolean> = {};
@@ -365,15 +376,19 @@ export function ReportComposeModal({
       setComposeSortRows([]);
       setComposeGroupRows([]);
       setComposeHavingLogicOperator('or');
-      setTableFieldDisplayParamByPath({});
       const nextDefaults = defaultRootTableFields.length ? [...defaultRootTableFields] : [];
       setTableFieldsSelection(nextDefaults);
+      const identifierCount = encodeReportIdentifierDisplayParam();
+      const display: Record<string, string> = {};
       const hidden: Record<string, boolean> = {};
       for (const item of nextDefaults) {
-        if (isReportIdentifierFieldPath(String(item.value))) {
-          hidden[String(item.value)] = true;
+        const key = String(item.value);
+        if (isReportIdentifierFieldPath(key)) {
+          hidden[key] = true;
+          display[key] = identifierCount;
         }
       }
+      setTableFieldDisplayParamByPath(display);
       setTableFieldHiddenByPath(hidden);
       return;
     }
@@ -538,6 +553,11 @@ export function ReportComposeModal({
 
   const handleTableFieldDisplayParamChange = useCallback(
     (fieldPath: string, encoded: string) => {
+      // Идентификатор: агрегация зафиксирована как Количество.
+      if (isReportIdentifierFieldPath(fieldPath)) {
+        setTableFieldDisplayParam(fieldPath, encodeReportIdentifierDisplayParam());
+        return;
+      }
       setTableFieldDisplayParam(fieldPath, encoded);
     },
     [setTableFieldDisplayParam],
@@ -589,6 +609,7 @@ export function ReportComposeModal({
   useEffect(() => {
     const allowed = new Set(tableFieldsSelection.map((item) => String(item.value)));
     const current = reportsStore.getState().tableFieldDisplayParamByPath;
+    const identifierCount = encodeReportIdentifierDisplayParam();
     const next: Record<string, string> = {};
     for (const [path, encoded] of Object.entries(current)) {
       if (
@@ -598,7 +619,17 @@ export function ReportComposeModal({
         next[path] = encoded;
       }
     }
-    if (Object.keys(next).length !== Object.keys(current).length) {
+    let displayChanged = Object.keys(next).length !== Object.keys(current).length;
+    for (const key of allowed) {
+      if (!isReportIdentifierFieldPath(key)) continue;
+      const parsed = parseReportTableFieldDisplayParam(next[key]);
+      const code = parsed?.code ?? '';
+      if (!isReportIdentifierAggregationCode(code)) {
+        next[key] = identifierCount;
+        displayChanged = true;
+      }
+    }
+    if (displayChanged) {
       setTableFieldDisplayParamByPath(next);
     }
 

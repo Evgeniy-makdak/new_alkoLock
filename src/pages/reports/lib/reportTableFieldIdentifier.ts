@@ -15,8 +15,10 @@ function normalizeAggregationCode(code: string): string {
   return code.toLowerCase().replace(/[_-]/g, '');
 }
 
-/** Для любого Идентификатора в «Текущем составе» — только count / countDistinct. */
+/** Для любого Идентификатора в «Текущем составе» — только count («Количество»). */
 export function isReportIdentifierAggregationCode(code: string): boolean {
-  const normalized = normalizeAggregationCode(code);
-  return normalized === 'count' || normalized === 'countdistinct';
+  return normalizeAggregationCode(code) === 'count';
 }
+
+/** Код агрегации по умолчанию для Идентификатора. */
+export const REPORT_IDENTIFIER_AGGREGATION_CODE = 'count';

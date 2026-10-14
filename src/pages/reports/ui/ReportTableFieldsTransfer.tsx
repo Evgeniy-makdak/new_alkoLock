@@ -38,6 +38,7 @@ import {
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
+import { encodeReportIdentifierDisplayParam } from '@pages/reports/lib/reportTableFieldDisplayParam';
 import { isReportIdentifierFieldPath } from '@pages/reports/lib/reportTableFieldIdentifier';
 
 import composeStyles from './ReportComposeModal.module.scss';
@@ -523,9 +524,33 @@ export function ReportTableFieldsTransfer({
         const canMoveRowDown = side === 'chosen' && rowIndex < items.length - 1;
         const displayOptions = side === 'chosen' ? (getDisplayOptions?.(key) ?? []) : [];
         const selectedDisplayParam = displayParamByKey[key] ?? '';
-        const showDisplaySelect =
-          side === 'chosen' && displayOptions.length > 0 && Boolean(onDisplayParamChange);
         const isIdentifier = isReportIdentifierFieldPath(key);
+        const identifierCountEncoded =
+          displayOptions.find((item) => {
+            const raw = String(item.value);
+            const code = raw.startsWith('fn:') ? raw.slice(3) : raw;
+            return code.toLowerCase().replace(/[_-]/g, '') === 'count';
+          })?.value ?? encodeReportIdentifierDisplayParam();
+        const showDisplaySelect =
+          side === 'chosen' &&
+          (displayOptions.length > 0 || isIdentifier) &&
+          Boolean(onDisplayParamChange);
+        const identifierDisplayLocked = isIdentifier;
+        const selectOptions = identifierDisplayLocked
+          ? displayOptions.length > 0
+            ? displayOptions
+            : [
+                {
+                  value: identifierCountEncoded,
+                  label: t('reports.havingAggregation.count'),
+                },
+              ]
+          : displayOptions;
+        const selectValue = identifierDisplayLocked
+          ? String(identifierCountEncoded)
+          : selectOptions.some((item) => String(item.value) === selectedDisplayParam)
+            ? selectedDisplayParam
+            : '';
         const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
         const visibilityLocked = isIdentifier;
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
@@ -547,23 +572,22 @@ export function ReportTableFieldsTransfer({
                       className={composeStyles.transferDisplayParam}
                       onClick={(e) => e.stopPropagation()}>
                       <Select
-                        displayEmpty
-                        value={
-                          displayOptions.some((item) => String(item.value) === selectedDisplayParam)
-                            ? selectedDisplayParam
-                            : ''
-                        }
-                        disabled={disabled}
+                        displayEmpty={!identifierDisplayLocked}
+                        value={selectValue}
+                        disabled={disabled || identifierDisplayLocked}
                         onChange={(e) => {
+                          if (identifierDisplayLocked) return;
                           onDisplayParamChange?.(key, String(e.target.value ?? ''));
                         }}
                         inputProps={{
                           'aria-label': t('reports.filterFunctionLabel'),
                         }}>
-                        <MenuItem value="">
-                          <em>{t('reports.tableFieldDisplayParamNone')}</em>
-                        </MenuItem>
-                        {displayOptions.map((item) => (
+                        {!identifierDisplayLocked ? (
+                          <MenuItem value="">
+                            <em>{t('reports.tableFieldDisplayParamNone')}</em>
+                          </MenuItem>
+                        ) : null}
+                        {selectOptions.map((item) => (
                           <MenuItem key={String(item.value)} value={String(item.value)}>
                             {item.label}
                           </MenuItem>

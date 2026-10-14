@@ -165,7 +165,7 @@ export function buildWizardColumnCatalog(params: {
       params.tableMetadataByRowId,
       params.referenceEntityMetadataByName,
     );
-    const fnOpts = buildReportTableFieldDisplayOptions(def ?? undefined);
+    const fnOpts = buildReportTableFieldDisplayOptions(def ?? undefined, col.path);
     if (fnOpts.length) {
       functionsByPath[col.path] = fnOpts.map((o) => ({
         code: String(o.value).replace(/^fn:/, ''),
