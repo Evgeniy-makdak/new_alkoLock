@@ -153,13 +153,18 @@ export function ReportsResultsView() {
       apiRef.current?.setPaginationModel?.({ page: 0, pageSize });
       return;
     }
-    if (lastSyncedReportKeyRef.current === reportTableKey) return;
-    lastSyncedReportKeyRef.current = reportTableKey;
-    // Модалка уже загрузила данные — блокируем повторный query из sort-effect.
+    const composeSort = queryContext.sort ?? [];
+    // Всегда блокируем sort-effect после setQueryContext из модалки — в т.ч. при
+    // повторном «Сформировать» с тем же body/sort (reportTableKey не меняется).
     suppressSortFetchForReportKeyRef.current = reportTableKey;
+    setSort(composeSort);
+
+    if (lastSyncedReportKeyRef.current === reportTableKey) {
+      return;
+    }
+    lastSyncedReportKeyRef.current = reportTableKey;
 
     const pageSize = pageSizeRef.current;
-    const composeSort = queryContext.sort ?? [];
     const sortOnHiddenColumn = isReportSortFieldHidden(
       composeSort,
       queryContext.hiddenColumnKeys,
@@ -180,7 +185,6 @@ export function ReportsResultsView() {
     apiRef.current?.setSortModel?.(gridSortModel);
     apiRef.current?.setPage?.(0);
     setPagination({ page: 0, pageSize });
-    setSort(composeSort);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
 

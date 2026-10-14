@@ -55,6 +55,7 @@ import { getPrimaryReportOutputRow, reportsStore } from '@pages/reports/model/re
 import { CHART_REPORT_PAGE_SIZE } from '@pages/reports/types/chartSpec';
 import type {
   ReportLogicOperator,
+  ReportOutputRow,
   ReportQueryRequest,
 } from '@pages/reports/types/reportApiTypes';
 import { normalizeReportViewMode } from '@pages/reports/types/reportApiTypes';
@@ -86,6 +87,69 @@ type ReportComposeModalProps = {
   onClose: () => void;
   onReportFormed?: () => void;
 };
+
+function valuesFingerprint(values: Values | undefined): string[] {
+  return (values ?? []).map((item) => String(item?.value ?? ''));
+}
+
+/** Снимок UI модалки для dirty-check в режиме edit (кнопка «Сформировать»). */
+function buildReportComposeEditFingerprint(parts: {
+  entityName: string | null | undefined;
+  tableFields: Values;
+  displayParams: Record<string, string>;
+  hiddenByPath: Record<string, boolean>;
+  sortRows: ReportComposeSortRow[];
+  groupRows: ReportComposeGroupRow[];
+  havingLogic: ReportLogicOperator;
+  branches: Values;
+  logicOperator: ReportLogicOperator;
+  outputRows: ReportOutputRow[];
+}): string {
+  const filterSig = parts.outputRows.map((row) => ({
+    id: row.id,
+    selectedOutputFields: valuesFingerprint(row.selectedOutputFields),
+    filterSelections: Object.fromEntries(
+      Object.entries(row.filterSelections ?? {}).map(([key, vals]) => [
+        key,
+        valuesFingerprint(vals),
+      ]),
+    ),
+    nested: Object.fromEntries(
+      Object.entries(row.nestedEntityFilterByField ?? {}).map(([key, state]) => [
+        key,
+        {
+          path: state.path ?? [],
+          values: valuesFingerprint(state.values),
+        },
+      ]),
+    ),
+  }));
+  return JSON.stringify({
+    entityName: parts.entityName ?? '',
+    tableFields: parts.tableFields.map((item) => ({
+      value: String(item.value ?? ''),
+      label: String(item.label ?? '').trim(),
+    })),
+    displayParams: parts.displayParams,
+    hiddenByPath: parts.hiddenByPath,
+    sortRows: parts.sortRows.map((row) => ({
+      columnKey: row.columnKey.trim(),
+      direction: row.direction,
+    })),
+    groupRows: parts.groupRows.map((row) => ({
+      columnKey: row.columnKey.trim(),
+      operator: row.operator,
+      havingAggregation: row.havingAggregation,
+      havingMode: row.havingMode,
+      topN: row.topN,
+      values: valuesFingerprint(row.values),
+    })),
+    havingLogic: parts.havingLogic,
+    branches: valuesFingerprint(parts.branches),
+    logicOperator: parts.logicOperator,
+    filterSig,
+  });
+}
 
 export function ReportComposeModal({
   open,
@@ -128,11 +192,24 @@ export function ReportComposeModal({
     useState<ReportLogicOperator>('or');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const prevComposeEntityRef = useRef<string | null>(null);
+  /** Baseline UI при открытии edit — «Сформировать» неактивна, пока снимок совпадает. */
+  const editBaselineFingerprintRef = useRef<string | null>(null);
+  const editBaselineCapturedRef = useRef(false);
+  const [editBaselineVersion, setEditBaselineVersion] = useState(0);
 
   useLayoutEffect(() => {
     if (!open) return;
     confirmedRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
+    if (mode === 'edit') {
+      // До фиксации baseline кнопка неактивна (isEditPristine при null).
+      editBaselineFingerprintRef.current = null;
+      editBaselineCapturedRef.current = false;
+      setEditBaselineVersion((v) => v + 1);
+    } else {
+      editBaselineFingerprintRef.current = null;
+      editBaselineCapturedRef.current = false;
+    }
 
     if (mode === 'create') {
       // Чтобы «Создать новый отчёт» открывался без черновых полей текущего отчёта.
@@ -266,10 +343,63 @@ export function ReportComposeModal({
     return primaryRow.reportTableFields.length > 0 ? primaryRow.reportTableFields : [];
   }, [outputRows, open]);
 
-  const canFormReport = useMemo(
-    () => Boolean(selectedEntityName && metadata && !metadataLoading),
-    [selectedEntityName, metadata, metadataLoading],
+  const composeEditFingerprint = useMemo(
+    () =>
+      buildReportComposeEditFingerprint({
+        entityName: selectedEntityName,
+        tableFields: tableFieldsSelection,
+        displayParams: tableFieldDisplayParamByPath,
+        hiddenByPath: tableFieldHiddenByPath,
+        sortRows: composeSortRows,
+        groupRows: composeGroupRows,
+        havingLogic: composeHavingLogicOperator,
+        branches: selectedBranchOffices,
+        logicOperator,
+        outputRows,
+      }),
+    [
+      selectedEntityName,
+      tableFieldsSelection,
+      tableFieldDisplayParamByPath,
+      tableFieldHiddenByPath,
+      composeSortRows,
+      composeGroupRows,
+      composeHavingLogicOperator,
+      selectedBranchOffices,
+      logicOperator,
+      outputRows,
+    ],
   );
+
+  // Пока baseline не зафиксирован — считаем pristine (кнопка выключена).
+  const isEditPristine =
+    mode === 'edit' &&
+    (editBaselineFingerprintRef.current == null ||
+      composeEditFingerprint === editBaselineFingerprintRef.current);
+
+  const canFormReport = useMemo(
+    () =>
+      Boolean(selectedEntityName && metadata && !metadataLoading) && !isEditPristine,
+    [selectedEntityName, metadata, metadataLoading, isEditPristine, editBaselineVersion],
+  );
+
+  // После restore + sync/remap — один раз за сессию открытия фиксируем baseline.
+  useEffect(() => {
+    if (!open || mode !== 'edit') {
+      editBaselineFingerprintRef.current = null;
+      editBaselineCapturedRef.current = false;
+      return;
+    }
+    if (editBaselineCapturedRef.current) return;
+
+    const timer = window.setTimeout(() => {
+      if (editBaselineCapturedRef.current) return;
+      editBaselineFingerprintRef.current = composeEditFingerprint;
+      editBaselineCapturedRef.current = true;
+      setEditBaselineVersion((v) => v + 1);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open, mode, composeEditFingerprint]);
 
   const tableFieldsOptionsKey = useMemo(
     () => tableFieldsDialogOptions.map((o) => String(o.value)).join('\0'),
@@ -749,7 +879,6 @@ export function ReportComposeModal({
     const branchIds = isSuperAdmin ? reportComposeBranchValuesToIds(selectedBranchOffices) : [];
     reportGenerationStore.getState().start();
     setPagination({ page: 0 });
-    setSort(sortParams);
 
     try {
       const hiddenFromUi = reportsStore.getState().tableFieldHiddenByPath;
@@ -775,6 +904,20 @@ export function ReportComposeModal({
           }),
         ]),
       );
+
+      const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
+      const fetchSize =
+        viewMode === 'chart' ? CHART_REPORT_PAGE_SIZE : pagination.pageSize;
+
+      // Один POST из модалки. queryContext/sort — только после успеха:
+      // иначе ResultsView при ошибке шлёт второй усечённый query без sort и дублирует тост.
+      const result = await executeReportQuery(entityName, bodyWithGroup, {
+        page: 0,
+        size: fetchSize,
+        sort: sortParams,
+        branchIds: branchIds.length ? branchIds : undefined,
+      });
+      setSort(sortParams);
       setQueryContext({
         entityName,
         body: bodyWithGroup,
@@ -788,17 +931,6 @@ export function ReportComposeModal({
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
         sort: sortParams,
         chartSpec: reportsStore.getState().chartSpec,
-      });
-
-      const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
-      const fetchSize =
-        viewMode === 'chart' ? CHART_REPORT_PAGE_SIZE : pagination.pageSize;
-
-      const result = await executeReportQuery(entityName, bodyWithGroup, {
-        page: 0,
-        size: fetchSize,
-        sort: sortParams,
-        branchIds: branchIds.length ? branchIds : undefined,
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
