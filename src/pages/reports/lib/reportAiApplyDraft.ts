@@ -1,6 +1,6 @@
-import { createDefaultReportOutputRow } from './reportOutputRow';
 import { encodeReportTableFieldFunctionParam } from './reportTableFieldDisplayParam';
 import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
+import { restoreReportComposeFiltersFromQuery } from './restoreReportComposeFiltersFromQuery';
 import { reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsStore } from '../model/reportsStore';
 import { createDefaultChartSpec, normalizeChartSpec } from '../types/chartSpec';
@@ -37,8 +37,8 @@ function selectedFieldsToTableValues(
 }
 
 /**
- * Применяет AI-черновик к store: сущность, состав колонок, chart/view, queryContext, sort.
- * Фильтры уходят в body queryContext (редактор восстановит groupBy/having/aggregation).
+ * Применяет AI-черновик к store: сущность, состав колонок, фильтры UI, chart/view,
+ * queryContext, sort. filters[] — и в body, и в outputRows (иначе редактор пустой).
  */
 export async function applyReportAiComposeDraftToStore(
   draft: ReportAiComposeDraft,
@@ -57,13 +57,29 @@ export async function applyReportAiComposeDraftToStore(
     await reportsStore.getState().loadAllReferenceEntityMetadataForReport(meta);
   }
 
-  const row = createDefaultReportOutputRow();
-  row.reportTableFields = tableValues;
+  const outputRows = restoreReportComposeFiltersFromQuery(
+    draft.filters,
+    meta,
+    tableValues,
+  );
   reportsStore.setState({
-    outputRows: [row],
+    outputRows,
     logicOperator: draft.logicConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',
   });
-  reportsStore.getState().setOutputRowReportTableFields(row.id, tableValues);
+  // Держим reportTableFields на primary в sync со store-хелпером.
+  if (outputRows[0]) {
+    reportsStore.getState().setOutputRowReportTableFields(outputRows[0].id, tableValues);
+  }
+
+  // Nested «Поле результата» — подтянуть metadata листа для операций/значений в UI.
+  for (const row of outputRows) {
+    const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
+    const field = meta?.fields.find((f) => f.fieldName === key);
+    const ref = field?.referenceEntity?.trim();
+    if (ref) {
+      void reportsStore.getState().loadReportTableFieldsMetadata(row.id, ref);
+    }
+  }
 
   const displayParams: Record<string, string> = {};
   for (const field of draft.selectedFields ?? []) {

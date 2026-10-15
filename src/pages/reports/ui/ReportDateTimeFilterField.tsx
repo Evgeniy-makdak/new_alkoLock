@@ -27,8 +27,35 @@ const dateFieldSlotProps = {
   textField: {
     size: 'small' as const,
     fullWidth: false,
-    sx: { width: 182, minWidth: 182, maxWidth: 182 },
+    sx: {
+      width: 182,
+      minWidth: 182,
+      maxWidth: 182,
+      '& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root, & .MuiPickersInputBase-root': {
+        width: 182,
+        maxWidth: 182,
+        minHeight: 40,
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        pr: '10px',
+      },
+      '& .MuiInputLabel-root': {
+        overflow: 'visible',
+      },
+      '& .MuiInputBase-input, & .MuiPickersInputBase-input': {
+        minWidth: 0,
+        width: 'auto',
+        flex: '1 1 auto',
+      },
+      '& .MuiIconButton-root': {
+        padding: '4px',
+        marginRight: '2px',
+        flexShrink: 0,
+      },
+    },
   },
+  // В строке фильтров clear+calendar не влезают в 182px — clear отключаем.
+  field: { clearable: false },
 };
 
 const timeFieldSx = {

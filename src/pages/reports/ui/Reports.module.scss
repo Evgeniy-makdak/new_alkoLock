@@ -321,11 +321,58 @@
   width: 182px;
   min-width: 182px;
   max-width: 182px;
+  position: relative;
+  z-index: 0;
+  /* visible — иначе shrink-лейбл на бордере обрезается сверху */
+  overflow: visible;
+  box-sizing: border-box;
 
-  :global(.MuiFormControl-root) {
+  :global(.MuiFormControl-root),
+  :global(.MuiPickersTextField-root),
+  :global(.MuiTextField-root) {
     width: 182px !important;
     min-width: 182px !important;
     max-width: 182px !important;
+    overflow: visible;
+  }
+
+  :global(.MuiInputLabel-root) {
+    overflow: visible;
+    max-width: calc(100% - 28px);
+  }
+
+  :global(.MuiOutlinedInput-root),
+  :global(.MuiPickersOutlinedInput-root),
+  :global(.MuiPickersInputBase-root) {
+    width: 182px !important;
+    min-width: 182px !important;
+    max-width: 182px !important;
+    min-height: 40px;
+    box-sizing: border-box !important;
+    overflow: hidden;
+    /* Отступ календарика от правого края */
+    padding-right: 10px !important;
+  }
+
+  :global(.MuiInputBase-input),
+  :global(.MuiPickersInputBase-input),
+  :global(.MuiPickersSectionList-root) {
+    min-width: 0 !important;
+    width: auto !important;
+    flex: 1 1 auto !important;
+    overflow: hidden;
+  }
+
+  :global(.MuiInputAdornment-root),
+  :global(.MuiPickersInputBase-sectionsContainer) {
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
+  :global(.MuiIconButton-root) {
+    padding: 4px;
+    margin-right: 2px;
+    flex-shrink: 0;
   }
 }
 
@@ -336,6 +383,7 @@
   max-width: 84px !important;
   flex-shrink: 0 !important;
   box-sizing: border-box;
+  overflow: visible;
 
   :global(.MuiFormControl-root),
   :global(.MuiTextField-root) {
@@ -344,6 +392,24 @@
     width: 84px !important;
     min-width: 84px !important;
     max-width: 84px !important;
+    overflow: visible;
+  }
+
+  :global(.MuiInputLabel-root) {
+    overflow: visible;
+  }
+
+  :global(.MuiOutlinedInput-root) {
+    width: 84px !important;
+    min-width: 84px !important;
+    max-width: 84px !important;
+    min-height: 40px;
+    box-sizing: border-box !important;
+  }
+
+  :global(.MuiInputBase-input) {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   :global(.MuiFormHelperText-root) {
@@ -373,8 +439,12 @@
 
 .reportFilterDateTimeRangeSep {
   flex: 0 0 auto;
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
   line-height: 40px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
   user-select: none;
 }
 

@@ -287,6 +287,42 @@ export function ReportsResultsView() {
     queryContext?.hiddenColumnKeys,
   ]);
 
+  // После появления колонок — подогнать field sortModel (fieldName ↔ alias),
+  // иначе стрелка не рисуется при groupBy + агрегации / alias в content.
+  useLayoutEffect(() => {
+    if (!queryContext || !columns.length) return;
+    const composeSort = queryContext.sort ?? [];
+    if (!composeSort.length) return;
+    if (
+      isReportSortFieldHidden(
+        composeSort,
+        queryContext.hiddenColumnKeys,
+        queryContext.body.selectedFields,
+      )
+    ) {
+      return;
+    }
+
+    const columnFields = columns.map((col) => String(col.field ?? '')).filter(Boolean);
+    const aligned = alignReportGridSortModelToColumnFields(
+      buildReportGridSortModelFromSortParams(
+        composeSort,
+        queryContext.body.selectedFields,
+      ),
+      columnFields,
+      queryContext.body.selectedFields,
+    );
+    if (!aligned.length) return;
+
+    const current = tableState.sortModel[0];
+    const next = aligned[0];
+    if (current?.field === next.field && current?.sort === next.sort) return;
+
+    changeTableSorts(aligned);
+    apiRef.current?.setSortModel?.(aligned);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- align when columns ready for this report
+  }, [reportTableKey, columns, queryContext]);
+
   const handlePaginationModelChange = useCallback(
     (model: GridPaginationModel) => {
       const { pagination, queryContext: ctx, isLoadingPage, isGenerating } =

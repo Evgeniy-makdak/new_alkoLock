@@ -25,7 +25,6 @@ import {
 } from './reportCoordinateMapLink';
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
-import { isReportSortAllowedWithGroupBy } from './buildReportSortParam';
 import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 import {
   applyReportAggregationHeaderLabel,
@@ -316,9 +315,9 @@ export function mapReportContentToResultGrid(
       headerName: applyReportAggregationHeaderLabel(baseHeaderLabel, columnAggregation, t),
       flex: 1,
       minWidth: 160,
-      sortable:
-        fieldDef?.sortable !== false &&
-        isReportSortAllowedWithGroupBy(resolvedFieldName, groupBy),
+      // Стрелка грида — для любой колонки состава (как выбор sort в модалке),
+      // не только для полей groupBy.
+      sortable: fieldDef?.sortable !== false,
     };
 
     if (compositeGroup?.kind === COORDINATES_COMPOSITE_KIND && shouldRenderReportCoordinateAsMap(compositeGroup, aggregationMap)) {

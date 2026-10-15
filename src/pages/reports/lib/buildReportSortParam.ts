@@ -26,38 +26,17 @@ export function resolveReportSortApiField(contentColumnKey: string): string {
   return contentColumnKey;
 }
 
-function resolveGroupApiFieldsForColumnKey(columnKey: string): string[] {
-  const key = columnKey.trim();
-  if (!key) return [];
-  if (isReportCompositeFieldPath(key)) {
-    return expandCompositeFieldPath(key).filter(Boolean);
-  }
-  return [key];
-}
-
 /**
- * При активном GROUP BY ORDER BY допустим только по полям из groupBy
- * (иначе PostgreSQL: column must appear in GROUP BY).
+ * Имя поля для pageable.sort.
+ * Раньше при GROUP BY отдавали только поля groupBy — из‑за этого в гриде
+ * не было стрелки на колонках состава с агрегацией. Compose допускает
+ * сортировку по любому полю «Текущего состава» — здесь так же.
  */
 export function resolveReportSortApiFieldForQuery(
   columnKey: string,
-  groupBy?: string[],
+  _groupBy?: string[],
 ): string | null {
-  const apiField = resolveComposeColumnApiField(columnKey);
-  if (!apiField) return null;
-  if (!groupBy?.length) return apiField;
-
-  const groupSet = new Set(groupBy);
-  if (groupSet.has(apiField)) return apiField;
-
-  if (isReportCompositeFieldPath(columnKey)) {
-    const members = resolveGroupApiFieldsForColumnKey(columnKey);
-    if (members.length > 1 && members.every((member) => groupSet.has(member))) {
-      return apiField;
-    }
-  }
-
-  return null;
+  return resolveComposeColumnApiField(columnKey);
 }
 
 export function isReportSortAllowedWithGroupBy(

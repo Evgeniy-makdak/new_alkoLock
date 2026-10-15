@@ -15,7 +15,6 @@ import {
 } from '@pages/reports/lib/buildReportGroupParam';
 import {
   buildComposeSortParams,
-  isReportSortAllowedWithGroupBy,
   parseComposeSortRowsFromSortParams,
 } from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
@@ -162,6 +161,7 @@ export function ReportComposeModal({
   const confirmedRef = useRef(false);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
+  const hasFormedReport = reportGenerationStore((s) => Boolean(s.lastResult));
   const editColumnHeaderLabels = reportGenerationStore(
     (s) => s.queryContext?.columnHeaderLabels,
   );
@@ -371,9 +371,11 @@ export function ReportComposeModal({
     ],
   );
 
+  // Pristine только для уже сформированного отчёта (не AI «открыть в редакторе» без result).
   // Пока baseline не зафиксирован — считаем pristine (кнопка выключена).
   const isEditPristine =
     mode === 'edit' &&
+    hasFormedReport &&
     (editBaselineFingerprintRef.current == null ||
       composeEditFingerprint === editBaselineFingerprintRef.current);
 
@@ -477,23 +479,6 @@ export function ReportComposeModal({
     () => buildComposeGroupParams(composeGroupRows),
     [composeGroupRows],
   );
-
-  const sortColumnOptionsForUi = useMemo(() => {
-    if (!composeGroupBy.length) return sortColumnOptions;
-    return sortColumnOptions.filter((option) =>
-      isReportSortAllowedWithGroupBy(String(option.value), composeGroupBy),
-    );
-  }, [sortColumnOptions, composeGroupBy]);
-
-  useEffect(() => {
-    if (!open || !composeGroupBy.length) return;
-    setComposeSortRows((prev) => {
-      const next = prev.filter((row) =>
-        isReportSortAllowedWithGroupBy(row.columnKey, composeGroupBy),
-      );
-      return next.length === prev.length ? prev : next;
-    });
-  }, [open, composeGroupBy]);
 
   /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
    *  вложенные колонки не добавляются автоматически (только в «Доступные»).
@@ -856,7 +841,8 @@ export function ReportComposeModal({
     const havingConnects = having.length
       ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
       : [];
-    const sortParams = buildComposeSortParams(composeSortRows, groupBy.length ? groupBy : undefined);
+    // Сортировка — по любому полю из «Текущего состава»; groupBy не сужает pageable.sort.
+    const sortParams = buildComposeSortParams(composeSortRows);
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
       {
         ...body,
@@ -1060,10 +1046,10 @@ export function ReportComposeModal({
                 />
               </div>
             ) : null}
-            {showColumnsSection && sortColumnOptionsForUi.length > 0 ? (
+            {showColumnsSection && sortColumnOptions.length > 0 ? (
               <div className={composeStyles.sortSectionSlot}>
                 <ReportComposeSortSection
-                  columnOptions={sortColumnOptionsForUi}
+                  columnOptions={sortColumnOptions}
                   sortRows={composeSortRows}
                   onChange={setComposeSortRows}
                 />

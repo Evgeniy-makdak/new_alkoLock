@@ -476,22 +476,25 @@
     overflow: visible;
   }
 
-  /* Дата/время — фиксированная ширина, не сжимать «Время» у конца диапазона */
-  :global(.reportFilterDateField .MuiFormControl-root) {
+  /* CSS Modules: классы из Reports.module — только [class*='…'], не .reportFilterDateField.
+     overflow:visible у FormControl — shrink-лейбл на бордере не обрезается. */
+  :global([class*='reportFilterDateField'] .MuiFormControl-root),
+  :global([class*='reportFilterDateField'] .MuiPickersTextField-root),
+  :global([class*='reportFilterDateField'] .MuiTextField-root) {
     width: 182px !important;
     min-width: 182px !important;
     max-width: 182px !important;
-    overflow: visible;
+    overflow: visible !important;
   }
 
-  :global(.reportFilterTimeField),
-  :global(.reportFilterTimeField .MuiFormControl-root),
-  :global(.reportFilterTimeField .MuiTextField-root) {
+  :global([class*='reportFilterTimeField']),
+  :global([class*='reportFilterTimeField'] .MuiFormControl-root),
+  :global([class*='reportFilterTimeField'] .MuiTextField-root) {
     width: 84px !important;
     min-width: 84px !important;
     max-width: 84px !important;
     flex: 0 0 84px !important;
-    overflow: visible;
+    overflow: visible !important;
   }
 
   :global(.MuiInputLabel-root) {
@@ -505,16 +508,67 @@
     width: max-content !important;
     min-width: inherit !important;
     max-width: 100% !important;
+    min-height: 40px !important;
   }
 
+  /* Перебиваем max-content у даты — иначе календарик вылезает на «Время». */
+  :global([class*='reportFilterDateField'] .MuiOutlinedInput-root),
+  :global([class*='reportFilterDateField'] .MuiPickersOutlinedInput-root),
+  :global([class*='reportFilterDateField'] .MuiPickersInputBase-root) {
+    width: 182px !important;
+    min-width: 182px !important;
+    max-width: 182px !important;
+    min-height: 40px !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    padding-right: 10px !important;
+  }
+
+  :global([class*='reportFilterDateField'] .MuiInputLabel-root),
+  :global([class*='reportFilterTimeField'] .MuiInputLabel-root) {
+    overflow: visible !important;
+    max-width: calc(100% - 28px);
+  }
+
+  :global([class*='reportFilterTimeField'] .MuiOutlinedInput-root) {
+    width: 84px !important;
+    min-width: 84px !important;
+    max-width: 84px !important;
+    min-height: 40px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Без field-sizing: content — иначе MUI small input сжимается по вертикали. */
   :global(.MuiInputBase-input),
   :global(.MuiAutocomplete-input) {
     width: auto !important;
     min-width: 12ch !important;
-    field-sizing: content;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  :global([class*='reportFilterDateField'] .MuiInputBase-input),
+  :global([class*='reportFilterDateField'] .MuiPickersInputBase-input) {
+    min-width: 0 !important;
+    width: auto !important;
+    flex: 1 1 auto !important;
+  }
+
+  :global([class*='reportFilterDateField'] .MuiInputAdornment-root) {
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
+  :global([class*='reportFilterDateField'] .MuiIconButton-root) {
+    padding: 4px;
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+
+  :global([class*='reportFilterTimeField'] .MuiInputBase-input) {
+    min-width: 0 !important;
+    width: 100% !important;
   }
 
   :global(.MuiAutocomplete-root),
@@ -555,21 +609,52 @@
       overflow-y: visible;
     }
 
-    :global(.reportFilterDateField .MuiFormControl-root) {
+    :global([class*='reportFilterDateField'] .MuiFormControl-root),
+    :global([class*='reportFilterDateField'] .MuiPickersTextField-root) {
       width: 182px !important;
       min-width: 182px !important;
       max-width: 182px !important;
-      overflow: visible;
+      overflow: visible !important;
     }
 
-    :global(.reportFilterTimeField),
-    :global(.reportFilterTimeField .MuiFormControl-root),
-    :global(.reportFilterTimeField .MuiTextField-root) {
+    :global([class*='reportFilterDateField'] .MuiOutlinedInput-root),
+    :global([class*='reportFilterDateField'] .MuiPickersOutlinedInput-root),
+    :global([class*='reportFilterDateField'] .MuiPickersInputBase-root) {
+      width: 182px !important;
+      min-width: 182px !important;
+      max-width: 182px !important;
+      min-height: 40px !important;
+      box-sizing: border-box !important;
+      overflow: hidden !important;
+    }
+
+    :global([class*='reportFilterDateField'] .MuiInputBase-input),
+    :global([class*='reportFilterDateField'] .MuiPickersInputBase-input) {
+      min-width: 0 !important;
+      width: auto !important;
+      flex: 1 1 auto !important;
+    }
+
+    :global([class*='reportFilterDateField'] .MuiInputAdornment-root) {
+      flex-shrink: 0;
+    }
+
+    :global([class*='reportFilterTimeField']),
+    :global([class*='reportFilterTimeField'] .MuiFormControl-root),
+    :global([class*='reportFilterTimeField'] .MuiTextField-root) {
       width: 84px !important;
       min-width: 84px !important;
       max-width: 84px !important;
       flex: 0 0 84px !important;
-      overflow: visible;
+      overflow: hidden !important;
+    }
+
+    :global([class*='reportFilterTimeField'] .MuiOutlinedInput-root) {
+      width: 84px !important;
+      min-width: 84px !important;
+      max-width: 84px !important;
+      min-height: 40px !important;
+      box-sizing: border-box !important;
     }
 
     :global(.MuiInputLabel-root) {
@@ -590,7 +675,6 @@
     :global(.MuiAutocomplete-input) {
       width: auto !important;
       min-width: 8ch !important;
-      field-sizing: content;
     }
 
     > *:not(.reportFilterDateTimeRoot):not(.reportFilterDateTimeRootRange) {

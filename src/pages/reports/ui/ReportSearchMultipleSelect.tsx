@@ -64,6 +64,7 @@ export function ReportSearchMultipleSelect<T>({
   label,
   placeholder,
   slotProps,
+  overflowTooltip = true,
   ...rest
 }: ReportSearchMultipleSelectProps<T>) {
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
@@ -153,7 +154,7 @@ export function ReportSearchMultipleSelect<T>({
         multiple={multiple}
         value={value}
         size={size ?? (compact ? 'small' : undefined)}
-        overflowTooltip={false}
+        overflowTooltip={overflowTooltip}
         sx={mergedSx}
         // Не передаём clearIndicator-обработчики — иначе ломается clear MUI.
         slotProps={slotProps}

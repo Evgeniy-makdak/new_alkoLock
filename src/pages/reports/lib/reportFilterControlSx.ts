@@ -59,10 +59,10 @@ export const reportFilterModalControlSx: SxProps<Theme> = {
   '& .MuiInputLabel-root.MuiInputLabel-shrink': {
     maxWidth: 'calc(100% - 24px)',
   },
+  // Без field-sizing: content — иначе высота input сжимается и значение «съезжает».
   '& .MuiInputBase-input': {
     width: 'auto',
     minWidth: '12ch',
-    fieldSizing: 'content',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
