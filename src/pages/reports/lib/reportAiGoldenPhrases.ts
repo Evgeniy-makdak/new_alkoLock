@@ -62,6 +62,13 @@ export const REPORT_AI_GOLDEN_PHRASES: ReportAiGoldenPhrase[] = [
     expectEntity: 'AutoServiceHistory',
     expectViewMode: 'table',
   },
+  {
+    id: 'unauthorized-moves-zhiguli-moskvich-month',
+    text: 'Создай отчёт по основному филиалу, в котором будет показано количество неразрешённых движений для автомобилей Жигули, а также Москвич за текущий месяц',
+    expectEntity: 'DeviceEvent',
+    expectViewMode: 'table',
+    notes: 'count + branch resolve + eventType + vehicleMake (multi) + current_month',
+  },
 ];
 
 export function matchGoldenPhraseExpectations(

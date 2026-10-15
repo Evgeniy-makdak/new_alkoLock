@@ -1,6 +1,9 @@
 import { fetchBranchOfficesForReport, flattenBranchOffices } from './branchOfficeReportOptions';
+import { fetchEventTypesForReport } from './eventsForFrontReportOptions';
+import { fetchBranchVehiclesForReport } from './fetchBranchVehiclesForReport';
 import { fetchReportDomainEntityRecords } from './fetchReportDomainEntityRecords';
 import { applyRelativeDateRangesToDraft } from './reportAiResolveRelativeDates';
+import { matchVehicleMakesToQuery } from './reportAiVehicleSynonyms';
 import { createDefaultChartSpec, normalizeChartSpec } from '../types/chartSpec';
 
 import type {
@@ -133,6 +136,14 @@ function scoreNameMatch(haystack: string, needle: string): number {
   return 0;
 }
 
+/** Разбивает query на несколько значений: «Жигули, а также Москвич» → [«Жигули», «Москвич»]. */
+function splitResolveQuery(query: string): string[] {
+  return (query ?? '')
+    .split(/,|;|\bи\b|\bа также\b|\bили\b|\bлибо\b/gi)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 async function resolveHintToValues(hint: ReportAiResolveHint): Promise<unknown[] | null> {
   const q = hint.query.trim();
   if (!q) return null;
@@ -172,6 +183,41 @@ async function resolveHintToValues(hint: ReportAiResolveHint): Promise<unknown[]
       const first = records[0] as { id?: unknown } | undefined;
       return first?.id != null ? [first.id] : null;
     }
+    case 'vehicleMake': {
+      // «Жигули, а также Москвич» → значения manufacturer из справочника ТС.
+      const cars = await fetchBranchVehiclesForReport();
+      const makes = Array.from(
+        new Set(
+          cars
+            .map((c) => String((c as unknown as { manufacturer?: unknown })?.manufacturer ?? '').trim())
+            .filter(Boolean),
+        ),
+      );
+      const values: string[] = [];
+      for (const part of splitResolveQuery(q)) {
+        values.push(...matchVehicleMakesToQuery(part, makes));
+      }
+      return values.length ? Array.from(new Set(values)) : null;
+    }
+    case 'vehicleModel': {
+      const cars = await fetchBranchVehiclesForReport();
+      const models = Array.from(
+        new Set(
+          cars
+            .map((c) => String((c as unknown as { model?: unknown })?.model ?? '').trim())
+            .filter(Boolean),
+        ),
+      );
+      const values: string[] = [];
+      for (const part of splitResolveQuery(q)) {
+        const term = part.toLowerCase();
+        for (const model of models) {
+          const m = model.toLowerCase();
+          if (m === term || m.includes(term) || term.includes(m)) values.push(model);
+        }
+      }
+      return values.length ? Array.from(new Set(values)) : null;
+    }
     case 'user': {
       const records = await fetchReportDomainEntityRecords({
         entityName: 'User',
@@ -182,7 +228,25 @@ async function resolveHintToValues(hint: ReportAiResolveHint): Promise<unknown[]
       return first?.id != null ? [first.id] : null;
     }
     case 'eventType': {
-      // Значения eventsForFront обычно строковые label/event — оставляем query как value.
+      // Ищем подпись события в каталоге event-types (label/event), иначе — query как value.
+      try {
+        const types = await fetchEventTypesForReport('');
+        const norm = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+        const qNorm = norm(q);
+        const matched = new Set<string>();
+        for (const item of types) {
+          const label = item.label != null ? String(item.label) : '';
+          const event = typeof item.event === 'string' ? item.event : '';
+          if (label && (norm(label).includes(qNorm) || qNorm.includes(norm(label)))) {
+            matched.add(label);
+          } else if (event && (norm(event).includes(qNorm) || qNorm.includes(norm(event)))) {
+            matched.add(label || event);
+          }
+        }
+        if (matched.size) return Array.from(matched);
+      } catch {
+        /* каталог недоступен — fallback ниже */
+      }
       return [q];
     }
     default:

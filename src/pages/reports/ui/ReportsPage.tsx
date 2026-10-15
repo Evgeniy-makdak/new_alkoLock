@@ -28,6 +28,7 @@ import { createDefaultChartSpec } from '@pages/reports/types/chartSpec';
 import { TableHeaderEndToolbar } from '@shared/components/table_header_wrapper/ui/TableHeaderEndToolbar';
 import { getToolbarSecondaryButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
 import { Button, ButtonsType } from '@shared/ui/button';
+import { Refetch } from '@shared/ui/refetch/Refetch';
 import { ResetFilters } from '@shared/ui/reset_filters/ResetFilters';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
@@ -39,8 +40,8 @@ import { ReportSaveFileDialog } from './ReportSaveFileDialog';
 import { ReportsResultsView } from './ReportsResultsView';
 import { ReportsViewModeSelect } from './ReportsViewModeSelect';
 
-/** Временно скрыто в UI — AI-отчёт ещё не готов к показу. */
-const SHOW_REPORT_AI_COMPOSE_UI = false;
+/** AI-отчёт по описанию (NL → черновик → отрисовка). */
+const SHOW_REPORT_AI_COMPOSE_UI = true;
 
 export function ReportsPage() {
   const { t } = useTranslation();
@@ -69,11 +70,18 @@ export function ReportsPage() {
 
   const hasDisplayableReport = !!queryContext && !!lastResult;
   const canSaveReportToFile = hasDisplayableReport && !isGenerating && !isExporting;
+  const canRefreshReport = hasDisplayableReport && !isGenerating && !isExporting;
 
   const handleSaveReportToFile = useCallback(() => {
     if (!canSaveReportToFile) return;
     setSaveFileDialogOpen(true);
   }, [canSaveReportToFile]);
+
+  const handleRefreshReport = useCallback(() => {
+    if (!canRefreshReport || !queryContext) return;
+    const { pagination } = reportGenerationStore.getState();
+    reportGenerationStore.getState().loadReportPage(0, pagination.pageSize);
+  }, [canRefreshReport, queryContext]);
 
   const renderExportControls = () => (
     <>
@@ -155,41 +163,7 @@ export function ReportsPage() {
               </Typography>
               {!isMobile && !isDashboardsTab ? (
                 <div className={styles.headerActions}>
-                  <TableHeaderEndToolbar>
-                    <div className={styles.headerExportControls}>{renderExportControls()}</div>
-                    {hasDisplayableReport ? (
-                      <MuiButton
-                        variant="contained"
-                        size="small"
-                        startIcon={<EditOutlinedIcon />}
-                        disabled={isGenerating}
-                        onClick={openComposeModalForEdit}
-                        sx={createReportButtonSx}>
-                        {t('reports.editReport')}
-                      </MuiButton>
-                    ) : null}
-                    {SHOW_REPORT_AI_COMPOSE_UI ? (
-                      <MuiButton
-                        variant="contained"
-                        size="small"
-                        startIcon={<AutoAwesomeOutlinedIcon />}
-                        disabled={isGenerating}
-                        onClick={openAiComposeDialog}
-                        sx={createReportButtonSx}>
-                        {t('reports.aiComposeOpen')}
-                      </MuiButton>
-                    ) : null}
-                    <MuiButton
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon />}
-                      disabled={isGenerating}
-                      onClick={openComposeModalForCreate}
-                      sx={createReportButtonSx}>
-                      {t('reports.createNewReport')}
-                    </MuiButton>
-                    <ResetFilters reset={handleResetFilters} />
-                  </TableHeaderEndToolbar>
+                  <TableHeaderEndToolbar />
                 </div>
               ) : null}
             </div>
@@ -219,48 +193,55 @@ export function ReportsPage() {
             </div>
           ) : (
             <>
-              {isMobile ? (
-                <div className={styles.mobileCreateBar}>
-                  <div className={styles.mobileExportControls}>{renderExportControls()}</div>
-                  <div className={styles.mobileCreateActions}>
-                    {hasDisplayableReport ? (
-                      <MuiButton
-                        variant="contained"
-                        size="small"
-                        startIcon={<EditOutlinedIcon />}
-                        disabled={isGenerating}
-                        onClick={openComposeModalForEdit}
-                        className={styles.mobileCreateButton}
-                        sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                        {t('reports.editReport')}
-                      </MuiButton>
-                    ) : null}
-                    {SHOW_REPORT_AI_COMPOSE_UI ? (
-                      <MuiButton
-                        variant="contained"
-                        size="small"
-                        startIcon={<AutoAwesomeOutlinedIcon />}
-                        disabled={isGenerating}
-                        onClick={openAiComposeDialog}
-                        className={styles.mobileCreateButton}
-                        sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                        {t('reports.aiComposeOpen')}
-                      </MuiButton>
-                    ) : null}
-                    <MuiButton
-                      variant="contained"
-                      size="small"
-                      startIcon={<AddIcon />}
-                      disabled={isGenerating}
-                      onClick={openComposeModalForCreate}
-                      className={styles.mobileCreateButton}
-                      sx={[createReportButtonSx, { textTransform: 'none', minWidth: 0 }]}>
-                      {t('reports.createNewReport')}
-                    </MuiButton>
-                    <ResetFilters reset={handleResetFilters} />
-                  </div>
-                </div>
-              ) : null}
+              <div
+                className={styles.reportToolbar}
+                style={{
+                  padding: '8px var(--table-page-content-inset-inline, 16px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  flexShrink: 0,
+                }}>
+                {renderExportControls()}
+                {hasDisplayableReport ? (
+                  <MuiButton
+                    variant="contained"
+                    size="small"
+                    startIcon={<EditOutlinedIcon />}
+                    disabled={isGenerating}
+                    onClick={openComposeModalForEdit}
+                    sx={createReportButtonSx}>
+                    {t('reports.editReport')}
+                  </MuiButton>
+                ) : null}
+                {SHOW_REPORT_AI_COMPOSE_UI ? (
+                  <MuiButton
+                    variant="contained"
+                    size="small"
+                    startIcon={<AutoAwesomeOutlinedIcon />}
+                    disabled={isGenerating}
+                    onClick={openAiComposeDialog}
+                    sx={createReportButtonSx}>
+                    {t('reports.aiComposeOpen')}
+                  </MuiButton>
+                ) : null}
+                <MuiButton
+                  variant="contained"
+                  size="small"
+                  startIcon={<AddIcon />}
+                  disabled={isGenerating}
+                  onClick={openComposeModalForCreate}
+                  sx={createReportButtonSx}>
+                  {t('reports.createNewReport')}
+                </MuiButton>
+                <ResetFilters reset={handleResetFilters} />
+                <Refetch
+                  onClick={handleRefreshReport}
+                  disabled={!canRefreshReport}
+                />
+              </div>
 
               <div
                 className={[

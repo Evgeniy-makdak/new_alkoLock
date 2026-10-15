@@ -11,11 +11,13 @@ import style from './Refetch.module.scss';
 export const Refetch = ({
   testId,
   onClick,
+  disabled,
   rest,
   styles,
 }: {
   testId?: string;
   onClick?: () => void;
+  disabled?: boolean;
   rest?: SvgIconProps;
   styles?: string;
 }) => {
@@ -42,6 +44,7 @@ export const Refetch = ({
         type="button"
         data-testid={testId}
         className={`${style.button} ${styles}`}
+        disabled={disabled}
         onClick={() => debounced()}>
         <ReplayIcon className={animate || ''} {...rest} />
       </button>

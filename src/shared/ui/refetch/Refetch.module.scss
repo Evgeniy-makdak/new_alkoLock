@@ -8,6 +8,16 @@
   height: 22px;
   align-items: center;
   justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.38;
+  }
 }
 
 :global(html[data-theme='dark']) .button {

@@ -1,3 +1,5 @@
+import { REPORT_AI_VEHICLE_MAKE_SYNONYMS } from './reportAiVehicleSynonyms';
+
 import type { ReportAiComposeDraft, ReportAiPromptContext } from '../types/reportAiComposeTypes';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
@@ -10,7 +12,8 @@ function pickEntity(
     const label = e.label.toLowerCase();
     const name = e.entityName.toLowerCase();
     let score = 0;
-    if (lower.includes('событ') && name.includes('deviceevent')) score += 5;
+    if ((lower.includes('событ') || lower.includes('движени')) && name.includes('deviceevent'))
+      score += 5;
     if (lower.includes('водител') && (name === 'user' || name === 'driver')) score += 4;
     if ((lower.includes('алкозам') || lower.includes('устройств')) && name.includes('monitoring'))
       score += 5;
@@ -65,6 +68,7 @@ export function buildLocalReportAiComposeDraft(
   const wantsChart =
     /график|диаграмм|кругов|pie|chart|визуал/i.test(text);
   const wantsSort = /сортир|порядк|возрастани|убывани/i.test(text);
+  const wantsCount = /количеств|сколько|статистик|подсчит|число(?:[^а-яёa-z]|$)/i.test(text);
   let viewMode: 'table' | 'chart' = wantsChart ? 'chart' : 'table';
   if (wantsChart && wantsSort) {
     ignoredHints.push('Сортировка списка проигнорирована в пользу графика.');
@@ -78,7 +82,7 @@ export function buildLocalReportAiComposeDraft(
   let chartSpec: ReportAiComposeDraft['chartSpec'];
 
   const serialMatch = text.match(
-    /(?:алкозам\w*|устройств\w*|serial|номер)\s*(?:с\s*)?(?:номером\s*)?(\d{4,})/i,
+    /(?:алкозам[а-яё]*|устройств[а-яё]*|serial|номер)\s*(?:с\s*)?(?:номером\s*)?(\d{4,})/i,
   ) || text.match(/\b(\d{7,})\b/);
   if (serialMatch && entity.entityName === 'DeviceEvent') {
     resolveHints.push({
@@ -94,7 +98,7 @@ export function buildLocalReportAiComposeDraft(
     });
   }
 
-  if (/основн\w*\s+филиал/i.test(text) || /главн\w*\s+филиал/i.test(text)) {
+  if (/основн[а-яё]*\s+филиал/i.test(text) || /главн[а-яё]*\s+филиал/i.test(text)) {
     resolveHints.push({
       fieldName: entity.entityName === 'DeviceEvent' ? 'branch.id' : 'assignment.branch.id',
       kind: 'branch',
@@ -110,7 +114,7 @@ export function buildLocalReportAiComposeDraft(
     });
   }
 
-  if (/аварийн\w*\s+блокир/i.test(text)) {
+  if (/аварийн[а-яё]*\s+блокир/i.test(text)) {
     resolveHints.push({
       fieldName: 'eventsForFront.label',
       kind: 'eventType',
@@ -118,22 +122,64 @@ export function buildLocalReportAiComposeDraft(
     });
   }
 
-  if (/предыдущ\w*\s+квартал/i.test(text)) {
-    relativeDateRanges.push({
-      fieldName: entity.entityName === 'DeviceEvent' ? 'timestamp' : 'id',
-      range: 'previous_quarter',
-      operator: 'between',
+  if (/неразреш[а-яё]*\s+движени|движени[а-яё]*\s+без\s+разрешени/i.test(text)) {
+    resolveHints.push({
+      fieldName: 'eventsForFront.label',
+      kind: 'eventType',
+      query: 'неразрешённое движение',
     });
-    // для User нет timestamp в default — поправим field если есть
+  }
+
+  // Марки ТС: «Жигули», «Москвич» и т.п. → vehicleMake (несколько через «и»/«а также»).
+  // \b не работает с кириллицей в JS-регэкспах — используем границы по не-буквам.
+  const makeKeys = Object.keys(REPORT_AI_VEHICLE_MAKE_SYNONYMS);
+  const mentionedMakes = makeKeys.filter((key) =>
+    new RegExp(`(^|[^а-яёa-z])${key}([^а-яёa-z]|$)`, 'i').test(text),
+  );
+  if (mentionedMakes.length) {
+    resolveHints.push({
+      fieldName: 'vehicle.manufacturer',
+      kind: 'vehicleMake',
+      query: mentionedMakes.join(', '),
+    });
+  }
+
+  // Относительные периоды: «предыдущий квартал», «текущий месяц» и т.п.
+  const periodMatch =
+    /предыдущ[а-яё]*\s+квартал|текущ[а-яё]*\s+месяц|текущ[а-яё]*\s+год|последн[а-яё]*\s+(7|30)\s+дн|прошл[а-яё]*\s+месяц|прошл[а-яё]*\s+недел/i.exec(
+      text,
+    );
+  if (periodMatch) {
+    const phrase = periodMatch[0].toLowerCase();
+    const range =
+      /предыдущ[а-яё]*\s+квартал/.test(phrase)
+        ? 'previous_quarter'
+        : /текущ[а-яё]*\s+месяц/.test(phrase)
+          ? 'current_month'
+          : /текущ[а-яё]*\s+год/.test(phrase)
+            ? 'current_year'
+            : /последн[а-яё]*\s+7\s+дн/.test(phrase)
+              ? 'last_7_days'
+              : /последн[а-яё]*\s+30\s+дн/.test(phrase)
+                ? 'last_30_days'
+                : /прошл[а-яё]*\s+месяц/.test(phrase)
+                  ? 'previous_month'
+                  : 'previous_week';
+
     const meta = context.metadataByEntity[entity.entityName];
     const timeField = meta?.fields.find((f) =>
       ['timestamp', 'reportedAt', 'createdAt', 'occurredAt'].includes(f.fieldName),
     );
-    if (timeField) {
-      relativeDateRanges[relativeDateRanges.length - 1].fieldName = timeField.fieldName;
-    } else if (entity.entityName !== 'DeviceEvent') {
-      relativeDateRanges.pop();
-      ignoredHints.push('Не найдено поле даты для «предыдущий квартал».');
+    const fieldName = timeField?.fieldName ?? (entity.entityName === 'DeviceEvent' ? 'timestamp' : 'id');
+
+    if (timeField || entity.entityName === 'DeviceEvent') {
+      relativeDateRanges.push({
+        fieldName,
+        range,
+        operator: 'between',
+      });
+    } else {
+      ignoredHints.push(`Не найдено поле даты для периода «${phrase}».`);
     }
   }
 
@@ -161,11 +207,32 @@ export function buildLocalReportAiComposeDraft(
     sort.push(/убыв/i.test(text) ? 'latitude,DESC' : 'latitude,ASC');
   }
 
+  // «количество/сколько/статистика» → count-агрегация на ключевое поле.
+  if (wantsCount && !groupBy) {
+    const countTarget = selectedFields.find((f) => f.fieldName === 'id') ?? selectedFields[0];
+    if (countTarget) {
+      const idx = selectedFields.indexOf(countTarget);
+      selectedFields[idx] = { ...countTarget, aggregation: 'count' };
+    }
+  }
+
+  const periodLabel = relativeDateRanges[0]
+    ? {
+        previous_quarter: 'предыдущий квартал',
+        previous_month: 'предыдущий месяц',
+        previous_week: 'предыдущая неделя',
+        current_month: 'текущий месяц',
+        current_year: 'текущий год',
+        last_7_days: 'последние 7 дней',
+        last_30_days: 'последние 30 дней',
+      }[relativeDateRanges[0].range] ?? relativeDateRanges[0].range
+    : '';
+
   const explanationParts = [
     `Сущность: ${entity.label}`,
     `Вид: ${viewMode === 'chart' ? 'график' : 'таблица'}`,
     resolveHints.length ? `Резолв: ${resolveHints.map((h) => h.query).join(', ')}` : '',
-    relativeDateRanges.length ? 'Период: предыдущий квартал' : '',
+    periodLabel ? `Период: ${periodLabel}` : '',
   ].filter(Boolean);
 
   return {

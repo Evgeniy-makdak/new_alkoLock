@@ -103,8 +103,12 @@ export function buildReportAiSystemPrompt(): string {
     'Для «статистики» / группировок используй groupBy (groupable) и при необходимости having.',
     'viewMode: "chart" только если пользователь явно просит график/диаграмму; иначе "table".',
     'Для pie/bar укажи chartSpec.type и encoding.categoryField / valueField при возможности.',
-    'Относительные периоды («предыдущий квартал») клади в relativeDateRanges, не в абсолютные даты.',
-    'Имена филиалов, серийники алкозамков, подписи событий — в resolveHints (kind + query), не угадывай id.',
+    'Относительные периоды («предыдущий квартал», «текущий месяц») клади в relativeDateRanges, не в абсолютные даты.',
+    'Имена филиалов, серийники алкозамков, подписи событий, марки/модели ТС, пользователей — в resolveHints (kind + query), не угадывай id.',
+    'В context.catalogs есть справочники: branches, eventTypes (label/event), vehicleMakes, vehicleModels, users, devices. Сопоставляй якорные фразы с ними.',
+    '«Жигули», «Москвич» и другие разговорные марки — это vehicleMake (не vehicle). Несколько марок через «и»/«а также»/запятую — один resolveHint с query через запятую.',
+    '«неразрешённое движение», «тестирование не пройдено» и т.п. — eventType (query = подпись события из eventTypes).',
+    'Если в запросе «количество/сколько/статистика» — добавь aggregation "count" на ключевое поле (обычно id) и при необходимости groupBy.',
     'Если в запросе смешаны график и сортировка списка — выбери один viewMode и опиши ignoredHints.',
     'explanation — кратко по-русски, что понял.',
     'Схема draft:',
@@ -120,7 +124,7 @@ export function buildReportAiSystemPrompt(): string {
     '  "explanation": string,',
     '  "ignoredHints"?: string[],',
     '  "relativeDateRanges"?: [{"fieldName": string, "range": "previous_quarter"|"previous_month"|"previous_week"|"current_month"|"current_year"|"last_7_days"|"last_30_days"}],',
-    '  "resolveHints"?: [{"fieldName": string, "kind": "branch"|"device"|"vehicle"|"user"|"eventType", "query": string}]',
+    '  "resolveHints"?: [{"fieldName": string, "kind": "branch"|"device"|"vehicle"|"vehicleMake"|"vehicleModel"|"user"|"eventType", "query": string}]',
     '}',
   ].join('\n');
 }
@@ -128,6 +132,48 @@ export function buildReportAiSystemPrompt(): string {
 export function buildReportAiUserPrompt(userText: string, context: ReportAiPromptContext): string {
   return [
     `Запрос пользователя:\n${userText.trim()}`,
+    '',
+    `Контекст (JSON):\n${JSON.stringify(context)}`,
+  ].join('\n');
+}
+
+/** Системный промпт для уточнения уже собранного черновика (диалог). */
+export function buildReportAiRefineSystemPrompt(): string {
+  return [
+    'Ты помощник по формированию отчётов AlcoLock. Пользователь уточняет уже собранный черновик отчёта.',
+    'Верни ТОЛЬКО JSON (без markdown) — ПОЛНЫЙ обновлённый черновик по той же схеме, что и исходный.',
+    'Сохрани все поля исходного черновика, которые пользователь не просил менять.',
+    'Примени уточнение: добавь/удали колонки, фильтры, группировку, сортировку, агрегации, период.',
+    'Не выдумывай entityName/fieldName — только из переданного context.',
+    'Если уточнение неоднозначно — оставь черновик как есть и поясни в explanation.',
+    'Схема draft:',
+    '{',
+    '  "entityName": string,',
+    '  "selectedFields": [{"fieldName": string, "aggregation"?: string}],',
+    '  "filters": [{"fieldName": string, "operator": string, "values"?: unknown[]}],',
+    '  "groupBy"?: string[],',
+    '  "having"?: object[],',
+    '  "sort"?: string[],',
+    '  "viewMode": "table"|"chart",',
+    '  "chartSpec"?: object,',
+    '  "explanation": string,',
+    '  "ignoredHints"?: string[],',
+    '  "relativeDateRanges"?: object[],',
+    '  "resolveHints"?: [{"fieldName": string, "kind": "branch"|"device"|"vehicle"|"vehicleMake"|"vehicleModel"|"user"|"eventType", "query": string}]',
+    '}',
+  ].join('\n');
+}
+
+/** Промпт уточнения: текущий черновик + текст уточнения + контекст. */
+export function buildReportAiRefineUserPrompt(
+  userText: string,
+  context: ReportAiPromptContext,
+  currentDraft: unknown,
+): string {
+  return [
+    `Уточнение пользователя:\n${userText.trim()}`,
+    '',
+    `Текущий черновик (JSON):\n${JSON.stringify(currentDraft)}`,
     '',
     `Контекст (JSON):\n${JSON.stringify(context)}`,
   ].join('\n');

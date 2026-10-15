@@ -4,6 +4,8 @@ const https = require('https');
 const path = require('path');
 const httpProxy = require('http-proxy');
 
+const { handleAiComposeRequest } = require('./aiComposeProxy.cjs');
+
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -87,6 +89,12 @@ function createBundledWebServer(getBackendBaseUrl) {
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || '/', 'http://127.0.0.1');
     const backendTarget = resolveBackendTarget();
+
+    // AI-отчёты: локальный прокси к Gemini/OpenRouter (бэкенд этого эндпоинта не знает).
+    if (url.pathname === '/api/reports-ai/compose' && req.method === 'POST') {
+      void handleAiComposeRequest(req, res);
+      return;
+    }
 
     if (backendTarget && shouldProxyToBackend(url.pathname)) {
       const targetHost = (() => {

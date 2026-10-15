@@ -21,8 +21,15 @@ export type ReportAiRelativeDateRange =
 export type ReportAiResolveHint = {
   /** Поле фильтра, куда подставить id (например branch.id, device.id). */
   fieldName: string;
-  kind: 'branch' | 'device' | 'vehicle' | 'user' | 'eventType';
-  /** Текст из NL («основной филиал», «7777777»). */
+  kind:
+    | 'branch'
+    | 'device'
+    | 'vehicle'
+    | 'vehicleMake'
+    | 'vehicleModel'
+    | 'user'
+    | 'eventType';
+  /** Текст из NL («основной филиал», «7777777», «Жигули, Москвич»). */
   query: string;
 };
 
@@ -86,10 +93,16 @@ export type ReportAiPromptContext = {
   entities: Array<{ entityName: string; label: string }>;
   /** Metadata выбранной/всех основных сущностей (сжатая). */
   metadataByEntity: Record<string, ReportAiPromptEntity>;
-  /** Краткие справочники для резолва (имена филиалов и т.п.). */
+  /** Краткие справочники для резолва (имена филиалов, типы событий, марки ТС и т.п.). */
   catalogs?: {
     branches?: Array<{ id: number | string; name: string }>;
-    eventTypes?: Array<{ id: number | string; label: string }>;
+    eventTypes?: Array<{ id: number | string; label: string; event?: string }>;
+    /** Уникальные значения manufacturer из справочника ТС. */
+    vehicleMakes?: string[];
+    /** Уникальные значения model из справочника ТС. */
+    vehicleModels?: string[];
+    users?: Array<{ id: number | string; name: string }>;
+    devices?: Array<{ id: number | string; serialNumber: string; name?: string }>;
   };
   locale: string;
   nowIso: string;
@@ -99,7 +112,7 @@ export type ReportAiComposeResponse = {
   draft: ReportAiComposeDraft;
   /** Сырой ответ модели (для отладки). */
   rawModelText?: string;
-  source: 'gemini' | 'local_fallback';
+  source: 'gemini' | 'openrouter' | 'local_fallback';
 };
 
 export type ReportAiValidatedCompose = {

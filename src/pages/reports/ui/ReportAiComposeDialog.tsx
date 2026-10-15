@@ -2,28 +2,30 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
 import {
   Alert,
   Box,
   Chip,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
   Stack,
   TextField,
   Typography,
 } from '@mui/material';
 
 import { executeReportQuery } from '@pages/reports/api/reportsApi';
-import { composeReportFromNaturalLanguage } from '@pages/reports/api/reportAiComposeApi';
-import { applyReportAiComposeDraftToStore } from '@pages/reports/lib/reportAiApplyDraft';
-import { REPORT_AI_GOLDEN_PHRASES } from '@pages/reports/lib/reportAiGoldenPhrases';
 import {
-  advanceReportAiWizard,
-  buildWizardColumnCatalog,
-  createReportAiWizardSession,
-  getWizardQuickReplies,
-  wizardSessionToDraft,
-  type ReportAiWizardSession,
-} from '@pages/reports/lib/reportAiWizard';
+  composeReportFromNaturalLanguage,
+  refineReportDraft,
+} from '@pages/reports/api/reportAiComposeApi';
+import { applyReportAiComposeDraftToStore } from '@pages/reports/lib/reportAiApplyDraft';
+import { buildReportAiDraftSummaryText } from '@pages/reports/lib/reportAiDraftSummary';
+import { REPORT_AI_GOLDEN_PHRASES } from '@pages/reports/lib/reportAiGoldenPhrases';
+import { useReportAiSettings } from '@pages/reports/model/reportAiSettings';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import { CHART_REPORT_PAGE_SIZE } from '@pages/reports/types/chartSpec';
@@ -33,12 +35,30 @@ import { Popup } from '@shared/ui/popup';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
+import type { ReportAiComposeDraft } from '@pages/reports/types/reportAiComposeTypes';
+
 type ReportAiComposeDialogProps = {
   open: boolean;
   onClose: () => void;
   onReportFormed?: () => void;
   onOpenEditor?: () => void;
 };
+
+type AiPhase = 'intent' | 'summary' | 'refine';
+
+type RefineMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+};
+
+function msg(role: RefineMessage['role'], text: string): RefineMessage {
+  return {
+    id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    text,
+  };
+}
 
 export function ReportAiComposeDialog({
   open,
@@ -49,67 +69,52 @@ export function ReportAiComposeDialog({
   const { t } = useTranslation();
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  const settings = useReportAiSettings();
+
   const [userText, setUserText] = useState('');
-  const [replyText, setReplyText] = useState('');
+  const [phase, setPhase] = useState<AiPhase>('intent');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<'gemini' | 'local_fallback' | null>(null);
   const [running, setRunning] = useState(false);
-  const [session, setSession] = useState<ReportAiWizardSession | null>(null);
-  const [phase, setPhase] = useState<'intent' | 'wizard'>('intent');
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<'gemini' | 'openrouter' | 'local_fallback' | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [draft, setDraft] = useState<ReportAiComposeDraft | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const [refineMessages, setRefineMessages] = useState<RefineMessage[]>([]);
+  const [refineInput, setRefineInput] = useState('');
+  const [refineLoading, setRefineLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
     setUserText('');
-    setReplyText('');
+    setPhase('intent');
     setLoading(false);
+    setRunning(false);
     setError(null);
     setSource(null);
-    setRunning(false);
-    setSession(null);
-    setPhase('intent');
+    setWarnings([]);
+    setDraft(null);
+    setShowSettings(false);
+    setRefineMessages([]);
+    setRefineInput('');
+    setRefineLoading(false);
   }, [open]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [session?.messages.length, loading]);
+  }, [refineMessages.length, refineLoading, loading]);
 
-  const startWizardFromIntent = useCallback(async () => {
+  const startCompose = useCallback(async () => {
     if (!userText.trim() || loading) return;
     setLoading(true);
     setError(null);
     try {
       const { response, validated } = await composeReportFromNaturalLanguage(userText);
       setSource(response.source);
-
-      const entityName = validated.draft.entityName;
-      await reportsStore.getState().loadMetadataForEntity(entityName);
-      const meta = reportsStore.getState().metadata;
-      if (!meta) throw new Error(t('reports.aiComposeError'));
-      await reportsStore.getState().loadAllReferenceEntityMetadataForReport(meta);
-
-      const state = reportsStore.getState();
-      const catalog = buildWizardColumnCatalog({
-        metadata: meta,
-        entities: state.entities,
-        outputRows: state.outputRows,
-        tableMetadataByRowId: state.reportTableFieldsMetadataByRowId,
-        referenceEntityMetadataByName: state.referenceEntityMetadataByName,
-        t,
-      });
-
-      const introNote =
-        response.source === 'gemini'
-          ? t('reports.aiComposeSourceGemini')
-          : t('reports.aiComposeSourceLocal');
-
-      const next = createReportAiWizardSession({
-        draft: validated.draft,
-        catalog,
-        introNote,
-      });
-      setSession(next);
-      setPhase('wizard');
+      setWarnings(validated.warnings);
+      setDraft(validated.draft);
+      setPhase('summary');
     } catch (e) {
       setError(e instanceof Error ? e.message : t('reports.aiComposeError'));
     } finally {
@@ -117,30 +122,35 @@ export function ReportAiComposeDialog({
     }
   }, [userText, loading, t]);
 
-  const sendWizardReply = useCallback(
-    (text: string) => {
-      if (!session || !text.trim()) return;
-      setSession(advanceReportAiWizard(session, text));
-      setReplyText('');
-    },
-    [session],
-  );
-
-  const handleWizardSubmit = useCallback(() => {
-    if (!replyText.trim()) return;
-    sendWizardReply(replyText);
-  }, [replyText, sendWizardReply]);
-
-  const finalDraft = session?.done ? wizardSessionToDraft(session) : null;
+  const sendRefine = useCallback(async () => {
+    const text = refineInput.trim();
+    if (!text || !draft || refineLoading) return;
+    setRefineLoading(true);
+    setError(null);
+    setRefineMessages((prev) => [...prev, msg('user', text)]);
+    setRefineInput('');
+    try {
+      const { response, validated } = await refineReportDraft(text, draft);
+      setSource(response.source);
+      setWarnings(validated.warnings);
+      setDraft(validated.draft);
+      setRefineMessages((prev) => [
+        ...prev,
+        msg('assistant', buildReportAiDraftSummaryText(validated.draft)),
+      ]);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('reports.aiComposeError'));
+    } finally {
+      setRefineLoading(false);
+    }
+  }, [refineInput, draft, refineLoading, t]);
 
   const handleFormReport = useCallback(async () => {
-    if (!finalDraft || !session || running) return;
+    if (!draft || running) return;
     setRunning(true);
     setError(null);
     try {
-      const { entityName, body } = await applyReportAiComposeDraftToStore(finalDraft, {
-        labelByPath: session.labelByPath,
-      });
+      const { entityName, body } = await applyReportAiComposeDraftToStore(draft);
       const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
       const fetchSize =
         viewMode === 'chart'
@@ -153,7 +163,7 @@ export function ReportAiComposeDialog({
       const result = await executeReportQuery(entityName, body, {
         page: 0,
         size: fetchSize,
-        sort: finalDraft.sort ?? [],
+        sort: draft.sort ?? [],
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
@@ -169,16 +179,14 @@ export function ReportAiComposeDialog({
     } finally {
       setRunning(false);
     }
-  }, [finalDraft, session, running, onClose, onReportFormed, t]);
+  }, [draft, running, onClose, onReportFormed, t]);
 
   const handleOpenEditor = useCallback(async () => {
-    if (!finalDraft || !session || running) return;
+    if (!draft || running) return;
     setRunning(true);
     setError(null);
     try {
-      await applyReportAiComposeDraftToStore(finalDraft, {
-        labelByPath: session.labelByPath,
-      });
+      await applyReportAiComposeDraftToStore(draft);
       onOpenEditor?.();
       onClose();
     } catch (e) {
@@ -186,10 +194,16 @@ export function ReportAiComposeDialog({
     } finally {
       setRunning(false);
     }
-  }, [finalDraft, session, running, onClose, onOpenEditor, t]);
+  }, [draft, running, onClose, onOpenEditor, t]);
 
-  const quickReplies = session ? getWizardQuickReplies(session) : [];
-  const wizardActive = phase === 'wizard' && session;
+  const summaryText = draft ? buildReportAiDraftSummaryText(draft) : '';
+
+  const sourceLabel =
+    source === 'gemini'
+      ? t('reports.aiComposeSourceGemini')
+      : source === 'openrouter'
+        ? t('reports.aiComposeSourceOpenRouter')
+        : t('reports.aiComposeSourceLocal');
 
   return (
     <Popup
@@ -231,6 +245,56 @@ export function ReportAiComposeDialog({
                 ))}
               </Box>
 
+              <Box>
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<SettingsOutlinedIcon />}
+                  onClick={() => setShowSettings((v) => !v)}
+                  disabled={loading || running}>
+                  {t('reports.aiComposeSettings')}
+                </Button>
+              </Box>
+
+              {showSettings ? (
+                <Stack spacing={1.5} sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                  <Typography variant="subtitle2">{t('reports.aiComposeSettingsTitle')}</Typography>
+                  <TextField
+                    label="Gemini API key (AI Studio)"
+                    value={settings.geminiApiKey}
+                    onChange={(e) => settings.setGeminiApiKey(e.target.value)}
+                    type="password"
+                    size="small"
+                    fullWidth
+                    helperText={t('reports.aiComposeGeminiKeyHint')}
+                  />
+                  <TextField
+                    label="OpenRouter API key"
+                    value={settings.openRouterApiKey}
+                    onChange={(e) => settings.setOpenRouterApiKey(e.target.value)}
+                    type="password"
+                    size="small"
+                    fullWidth
+                    helperText={t('reports.aiComposeOpenRouterKeyHint')}
+                  />
+                  <FormControl size="small" fullWidth>
+                    <InputLabel>{t('reports.aiComposeProviderLabel')}</InputLabel>
+                    <Select
+                      value={settings.preferredProvider}
+                      label={t('reports.aiComposeProviderLabel')}
+                      onChange={(e) =>
+                        settings.setPreferredProvider(
+                          e.target.value as 'auto' | 'gemini' | 'openrouter',
+                        )
+                      }>
+                      <MenuItem value="auto">{t('reports.aiComposeProviderAuto')}</MenuItem>
+                      <MenuItem value="gemini">Gemini</MenuItem>
+                      <MenuItem value="openrouter">OpenRouter</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
+              ) : null}
+
               {error ? <Alert severity="error">{error}</Alert> : null}
               {loading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -240,18 +304,53 @@ export function ReportAiComposeDialog({
             </Stack>
           ) : null}
 
-          {wizardActive ? (
-            <Stack spacing={1} className={composeStyles.aiWizardChat}>
-              {source ? (
-                <Alert severity={source === 'gemini' ? 'success' : 'info'} sx={{ py: 0.5 }}>
-                  {source === 'gemini'
-                    ? t('reports.aiComposeSourceGemini')
-                    : t('reports.aiComposeSourceLocal')}
+          {phase === 'summary' && draft ? (
+            <Stack spacing={1.5}>
+              <Alert severity={source === 'local_fallback' ? 'info' : 'success'} sx={{ py: 0.5 }}>
+                {sourceLabel}
+              </Alert>
+
+              <Typography variant="subtitle2">{t('reports.aiComposeSummaryTitle')}</Typography>
+              <Box
+                sx={{
+                  p: 1.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  bgcolor: 'background.paper',
+                }}>
+                <Typography
+                  variant="body2"
+                  component="pre"
+                  sx={{ m: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                  {summaryText}
+                </Typography>
+              </Box>
+
+              {warnings.length ? (
+                <Alert severity="warning">
+                  <Stack spacing={0.5}>
+                    {warnings.map((w) => (
+                      <Typography key={w} variant="body2">
+                        • {w}
+                      </Typography>
+                    ))}
+                  </Stack>
                 </Alert>
               ) : null}
 
+              {error ? <Alert severity="error">{error}</Alert> : null}
+            </Stack>
+          ) : null}
+
+          {phase === 'refine' && draft ? (
+            <Stack spacing={1} className={composeStyles.aiWizardChat}>
+              <Alert severity={source === 'local_fallback' ? 'info' : 'success'} sx={{ py: 0.5 }}>
+                {sourceLabel}
+              </Alert>
+
               <Box className={composeStyles.aiWizardMessages}>
-                {session.messages.map((m) => (
+                {refineMessages.map((m) => (
                   <Box
                     key={m.id}
                     className={
@@ -283,42 +382,27 @@ export function ReportAiComposeDialog({
                 <div ref={chatEndRef} />
               </Box>
 
-              {!session.done ? (
-                <>
-                  {quickReplies.length ? (
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-                      {quickReplies.map((q) => (
-                        <Chip
-                          key={q}
-                          size="small"
-                          label={q}
-                          onClick={() => sendWizardReply(q)}
-                          disabled={running}
-                        />
-                      ))}
-                    </Box>
-                  ) : null}
-                  <TextField
-                    label={t('reports.aiComposeReplyLabel')}
-                    placeholder={t('reports.aiComposeReplyPlaceholder')}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleWizardSubmit();
-                      }
-                    }}
-                    multiline
-                    minRows={2}
-                    fullWidth
-                    disabled={running}
-                  />
-                </>
-              ) : (
-                <Alert severity="success">{t('reports.aiComposeWizardReady')}</Alert>
-              )}
-
+              <TextField
+                label={t('reports.aiComposeRefineLabel')}
+                placeholder={t('reports.aiComposeRefinePlaceholder')}
+                value={refineInput}
+                onChange={(e) => setRefineInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    void sendRefine();
+                  }
+                }}
+                multiline
+                minRows={2}
+                fullWidth
+                disabled={refineLoading || running}
+              />
+              {refineLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 1 }}>
+                  <CircularProgress size={24} />
+                </Box>
+              ) : null}
               {error ? <Alert severity="error">{error}</Alert> : null}
             </Stack>
           ) : null}
@@ -330,7 +414,7 @@ export function ReportAiComposeDialog({
               <Button
                 key="start"
                 disabled={!userText.trim() || loading || running}
-                onClick={() => void startWizardFromIntent()}>
+                onClick={() => void startCompose()}>
                 {t('reports.aiComposeStartDialog')}
               </Button>,
               <Button key="cancel" onClick={onClose}>
@@ -339,22 +423,34 @@ export function ReportAiComposeDialog({
             ]
           : [
               <Button
-                key="send"
-                disabled={!replyText.trim() || running || Boolean(session?.done)}
-                onClick={handleWizardSubmit}>
-                {t('reports.aiComposeSendReply')}
-              </Button>,
-              <Button
                 key="run"
-                disabled={!finalDraft || running}
+                disabled={!draft || running}
                 onClick={() => void handleFormReport()}>
                 {t('reports.aiComposeRun')}
               </Button>,
               <Button
                 key="edit"
-                disabled={!finalDraft || running}
+                disabled={!draft || running}
                 onClick={() => void handleOpenEditor()}>
                 {t('reports.aiComposeOpenEditor')}
+              </Button>,
+              <Button
+                key="refine"
+                disabled={!draft || running}
+                onClick={() => {
+                  setPhase('refine');
+                  setError(null);
+                }}>
+                {t('reports.aiComposeRefine')}
+              </Button>,
+              <Button
+                key="back"
+                disabled={running}
+                onClick={() => {
+                  setPhase('intent');
+                  setError(null);
+                }}>
+                {t('reports.aiComposeBack')}
               </Button>,
               <Button key="cancel" onClick={onClose}>
                 {t('common.cancel')}

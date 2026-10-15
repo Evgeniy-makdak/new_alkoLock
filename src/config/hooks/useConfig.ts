@@ -6,6 +6,7 @@ interface UseConfigReturn {
   config: {
     apiUrl: string;
     wsUrl: string;
+    reportsAiUrl?: string;
   } | null;
   isLoading: boolean;
   error: Error | null;

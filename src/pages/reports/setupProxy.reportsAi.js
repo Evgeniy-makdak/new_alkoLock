@@ -1,16 +1,35 @@
 /**
- * Только отчёты. Dev-only: POST /api/reports-ai/compose → Google Gemini.
- * Ключ: GEMINI_API_KEY или REACT_APP_GEMINI_API_KEY в окружении yarn start.
+ * Только отчёты. Dev-only: POST /api/reports-ai/compose → Google Gemini / OpenRouter.
+ * Ключи берутся из тела запроса (настройки в рантайме) или из env (yarn start):
+ *   GEMINI_API_KEY / REACT_APP_GEMINI_API_KEY
+ *   OPENROUTER_API_KEY / REACT_APP_OPENROUTER_API_KEY
  * Подключается одной строкой из src/setupProxy.js (CRA грузит только его).
+ * Тот же контракт реализован в electron/aiComposeProxy.cjs для production.
  */
 
 const GEMINI_MODEL = process.env.REPORTS_AI_GEMINI_MODEL || 'gemini-2.0-flash';
+const OPENROUTER_MODEL =
+  process.env.REPORTS_AI_OPENROUTER_MODEL || 'google/gemini-2.0-flash-exp:free';
 
-function readGeminiApiKey() {
+function readEnvKey(...names) {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return '';
+}
+
+function readGeminiApiKey(body) {
   return (
-    process.env.GEMINI_API_KEY?.trim() ||
-    process.env.REACT_APP_GEMINI_API_KEY?.trim() ||
-    ''
+    String(body?.geminiApiKey || '').trim() ||
+    readEnvKey('GEMINI_API_KEY', 'REACT_APP_GEMINI_API_KEY')
+  );
+}
+
+function readOpenRouterApiKey(body) {
+  return (
+    String(body?.openRouterApiKey || '').trim() ||
+    readEnvKey('OPENROUTER_API_KEY', 'REACT_APP_OPENROUTER_API_KEY')
   );
 }
 
@@ -21,6 +40,18 @@ function extractTextFromGeminiResponse(data) {
     .map((p) => (typeof p?.text === 'string' ? p.text : ''))
     .join('\n')
     .trim();
+}
+
+function extractTextFromOpenRouterResponse(data) {
+  const text = data?.choices?.[0]?.message?.content;
+  if (typeof text === 'string') return text.trim();
+  if (Array.isArray(text)) {
+    return text
+      .map((p) => (typeof p?.text === 'string' ? p.text : ''))
+      .join('\n')
+      .trim();
+  }
+  return '';
 }
 
 function tryParseJson(text) {
@@ -70,6 +101,34 @@ async function callGemini({ systemPrompt, userPrompt, apiKey }) {
   return extractTextFromGeminiResponse(data);
 }
 
+async function callOpenRouter({ systemPrompt, userPrompt, apiKey }) {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_MODEL,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: 0.2,
+      response_format: { type: 'json_object' },
+    }),
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.error?.message || `OpenRouter HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return extractTextFromOpenRouterResponse(data);
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     if (req.body && typeof req.body === 'object') {
@@ -107,14 +166,6 @@ function mountReportsAiComposeProxy(app) {
   app.post('/api/reports-ai/compose', async (req, res) => {
     try {
       const body = await readJsonBody(req);
-      const apiKey = readGeminiApiKey();
-      if (!apiKey) {
-        res.status(503).json({
-          error: 'GEMINI_API_KEY not configured',
-          hint: 'Set GEMINI_API_KEY or REACT_APP_GEMINI_API_KEY for yarn start',
-        });
-        return;
-      }
 
       const systemPrompt = String(body.systemPrompt || '');
       const userPrompt = String(body.userPrompt || body.userText || '');
@@ -123,13 +174,46 @@ function mountReportsAiComposeProxy(app) {
         return;
       }
 
-      const text = await callGemini({ systemPrompt, userPrompt, apiKey });
-      const draft = tryParseJson(text);
-      if (!draft) {
-        res.status(502).json({ error: 'Model returned non-JSON', rawModelText: text });
+      const geminiKey = readGeminiApiKey(body);
+      const openRouterKey = readOpenRouterApiKey(body);
+      if (!geminiKey && !openRouterKey) {
+        res.status(503).json({
+          error: 'No AI provider key configured',
+          hint: 'Set GEMINI_API_KEY / OPENROUTER_API_KEY in env or in the app settings',
+        });
         return;
       }
-      res.json({ draft, rawModelText: text });
+
+      const preferred = String(body.preferredProvider || 'auto');
+      const order =
+        preferred === 'openrouter'
+          ? ['openrouter', 'gemini']
+          : preferred === 'gemini'
+            ? ['gemini', 'openrouter']
+            : ['gemini', 'openrouter'];
+
+      const attempts = [];
+      for (const provider of order) {
+        const apiKey = provider === 'gemini' ? geminiKey : openRouterKey;
+        if (!apiKey) continue;
+        try {
+          const text =
+            provider === 'gemini'
+              ? await callGemini({ systemPrompt, userPrompt, apiKey })
+              : await callOpenRouter({ systemPrompt, userPrompt, apiKey });
+          const draft = tryParseJson(text);
+          if (!draft) {
+            attempts.push(`${provider}: non-JSON`);
+            continue;
+          }
+          res.json({ draft, rawModelText: text, provider });
+          return;
+        } catch (e) {
+          attempts.push(`${provider}: ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+
+      res.status(502).json({ error: 'All AI providers failed', attempts });
     } catch (e) {
       const status = e?.status && Number(e.status) >= 400 ? Number(e.status) : 500;
       res.status(status).json({
@@ -139,4 +223,4 @@ function mountReportsAiComposeProxy(app) {
   });
 }
 
-module.exports = { mountReportsAiComposeProxy, readGeminiApiKey };
+module.exports = { mountReportsAiComposeProxy, readGeminiApiKey: readEnvKey };

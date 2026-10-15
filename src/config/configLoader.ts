@@ -45,6 +45,12 @@ export interface AppConfig {
    * В config.json: true или "true". Без .env.
    */
   chatStompDebug?: boolean | string;
+  /**
+   * URL AI-прокси отчётов. По умолчанию относительный /api/reports-ai/compose
+   * (dev CRA-прокси / Electron bundled server). Для статического web/Docker
+   * можно указать абсолютный URL serverless-функции (Cloudflare Worker и т.п.).
+   */
+  reportsAiUrl?: string;
 }
 
 class ConfigLoader {
