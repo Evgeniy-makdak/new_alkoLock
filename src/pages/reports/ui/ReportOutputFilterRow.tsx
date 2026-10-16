@@ -160,16 +160,24 @@ export function ReportOutputFilterRow({
     [operationFunctionSource],
   );
 
-  // Смена листа metadata: сбрасываем оператор, которого нет в новом списке.
+  // Смена листа metadata: сбрасываем чужой оператор; код из AI/restore
+  // подменяем на опцию с русской подписью из availableOperations.
   useEffect(() => {
     // Пока лист не известен — не трогаем выбор (идут промежуточные metadata).
     if (!operationFunctionSource) return;
 
-    const allowedOps = new Set(operationOptions.map((o) => String(o.value)));
     const selectedOp = row.filterSelections[operationKey]?.[0];
+    if (!selectedOp) return;
 
-    if (selectedOp && !allowedOps.has(String(selectedOp.value))) {
+    const match = operationOptions.find(
+      (option) => String(option.value) === String(selectedOp.value),
+    );
+    if (!match) {
       onFilterChange(operationKey, []);
+      return;
+    }
+    if (String(selectedOp.label ?? '') !== String(match.label ?? '')) {
+      onFilterChange(operationKey, [match]);
     }
   }, [
     operationFunctionSource,
@@ -288,6 +296,7 @@ export function ReportOutputFilterRow({
       onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
       filterOperationCode={filterOperationCode}
       operationSlot={showOperatorField ? filterOperationBlock : null}
+      hidePropertySegments={nestedAttributeReady}
     />
   ) : null;
 

@@ -107,6 +107,14 @@ export function resolveReportFieldAliasForApi(
     // Без известного дефолта авто-подпись считаем неизменённой.
     if (!defaultLabel) return undefined;
     if (leaf === defaultLabel) return undefined;
+    // Дефолт свалился на technical path (fieldDef не найден) — «Сущность -> Поле» не alias.
+    if (
+      defaultLabel === emitPath ||
+      defaultLabel === fieldName ||
+      defaultLabel.includes('.')
+    ) {
+      return undefined;
+    }
     // В alias только изменённый лист, не вся строка с префиксом.
     aliasSource = leaf;
   }

@@ -1,5 +1,7 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { findRootFieldForFilterPath } from './reportFilterFieldPath';
+
 import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
@@ -56,9 +58,11 @@ function resolveOperationSelection(
     ops.find((op) => op.code === code) ??
     ops.find((op) => op.code.toLowerCase() === code.toLowerCase());
   if (match) {
-    return { [opKey]: [{ value: match.code, label: match.label || match.code }] };
+    return {
+      [opKey]: [{ value: match.code, label: (match.label || '').trim() || match.code }],
+    };
   }
-  // Нет списка ops (metadata ещё узкая) — оставляем код из draft, UI подхватит.
+  // Нет списка ops (metadata ещё узкая) — код; UI подменит label из options.
   if (!ops.length) {
     return { [opKey]: [{ value: code, label: code }] };
   }
@@ -68,34 +72,33 @@ function resolveOperationSelection(
     ops.find((op) => op.code === 'equals') ??
     ops[0];
   return fallback
-    ? { [opKey]: [{ value: fallback.code, label: fallback.label || fallback.code }] }
+    ? {
+        [opKey]: [
+          { value: fallback.code, label: (fallback.label || '').trim() || fallback.code },
+        ],
+      }
     : {};
 }
 
-function findRootFieldForFilterPath(
-  fieldName: string,
-  metadata: ReportEntityMetadata,
-): { primary: ReportFieldDefinition; nestedPath: string[] } | null {
-  const path = fieldName.trim();
-  if (!path) return null;
-
-  let best: ReportFieldDefinition | null = null;
-  for (const field of metadata.fields) {
-    const name = (field.fieldName ?? '').trim();
-    if (!name) continue;
-    if (path === name || path.startsWith(`${name}.`)) {
-      if (!best || name.length >= (best.fieldName?.length ?? 0)) {
-        best = field;
-      }
-    }
+/** Листовое поле nested path для availableOperations / подписей. */
+function resolveNestedLeafField(
+  primary: ReportFieldDefinition,
+  nestedPath: string[],
+  nestedByName: Record<string, ReportEntityMetadata | null | undefined>,
+): ReportFieldDefinition | undefined {
+  const ref = primary.referenceEntity?.trim();
+  if (!ref || !nestedPath.length) return undefined;
+  let meta: ReportEntityMetadata | null | undefined = nestedByName[ref] ?? null;
+  for (let i = 0; i < nestedPath.length; i += 1) {
+    const step = nestedPath[i];
+    const field = meta?.fields?.find((f) => f.fieldName === step);
+    if (!field) return undefined;
+    if (i === nestedPath.length - 1) return field;
+    const nextRef = field.referenceEntity?.trim();
+    if (!nextRef) return field;
+    meta = nestedByName[nextRef] ?? null;
   }
-  if (!best) return null;
-
-  const primaryName = best.fieldName.trim();
-  const rest =
-    path === primaryName ? '' : path.slice(primaryName.length).replace(/^\./, '');
-  const nestedPath = rest ? rest.split('.').filter(Boolean) : [];
-  return { primary: best, nestedPath };
+  return undefined;
 }
 
 /** Общие фильтры сущности (не отдельное «Поле результата»). */
@@ -110,6 +113,7 @@ function buildRowFromFilter(
   metadata: ReportEntityMetadata,
   rowId: string,
   tableFields: Values,
+  nestedByName: Record<string, ReportEntityMetadata | null | undefined>,
 ): ReportOutputRow | null {
   const fieldName = (filter.fieldName ?? '').trim();
   if (!fieldName) return null;
@@ -133,10 +137,16 @@ function buildRowFromFilter(
   const { primary, nestedPath } = binding;
   const row = createEmptyOutputRow(rowId);
   row.reportTableFields = tableFields;
+  const leaf =
+    nestedPath.length > 0
+      ? resolveNestedLeafField(primary, nestedPath, nestedByName)
+      : undefined;
   row.selectedOutputFields = [
     {
-      value: primary.fieldName,
-      label: primary.label || primary.fieldName,
+      value: fieldName,
+      label:
+        (leaf?.label || primary.label || '').trim() ||
+        fieldName,
     },
   ];
 
@@ -144,7 +154,6 @@ function buildRowFromFilter(
   const isEntity = (primary.type ?? '').toUpperCase() === 'ENTITY' || Boolean(ref);
 
   if (isEntity && nestedPath.length) {
-    // leaf для оператора: последнее имя в path (label / id / …) — ops возьмём мягко.
     row.nestedEntityFilterByField = {
       [primary.fieldName]: {
         path: nestedPath,
@@ -152,13 +161,14 @@ function buildRowFromFilter(
       },
     };
     row.filterSelections = {
-      ...resolveOperationSelection(filter.operator, undefined, rowId),
+      ...resolveOperationSelection(filter.operator, leaf, rowId),
     };
     return row;
   }
 
   if (isEntity && !nestedPath.length) {
     // device / vehicle без атрибута — значения как id сущности.
+    const leaf = resolveNestedLeafField(primary, ['id'], nestedByName);
     row.nestedEntityFilterByField = {
       [primary.fieldName]: {
         path: ['id'],
@@ -166,7 +176,7 @@ function buildRowFromFilter(
       },
     };
     row.filterSelections = {
-      ...resolveOperationSelection(filter.operator, undefined, rowId),
+      ...resolveOperationSelection(filter.operator, leaf ?? primary, rowId),
     };
     return row;
   }
@@ -201,6 +211,11 @@ function clusterFiltersByGroup(filters: ReportQueryFilter[]): ReportQueryFilter[
   return order.map((key) => map.get(key)!);
 }
 
+export type RestoreReportComposeFiltersOptions = {
+  /** Nested metadata для подписей операторов на листьях path. */
+  referenceEntityMetadataByName?: Record<string, ReportEntityMetadata | null | undefined>;
+};
+
 /**
  * Восстанавливает UI-строки «Фильтрация» из filters[] тела query / AI-черновика.
  * Не трогает остальной compose — только outputRows.
@@ -209,7 +224,9 @@ export function restoreReportComposeFiltersFromQuery(
   filters: ReportQueryFilter[] | undefined,
   metadata: ReportEntityMetadata | null | undefined,
   tableFields: Values = [],
+  options?: RestoreReportComposeFiltersOptions,
 ): ReportOutputRow[] {
+  const nestedByName = options?.referenceEntityMetadataByName ?? {};
   const list = (filters ?? []).filter((f) => (f.fieldName ?? '').trim());
   if (!list.length || !metadata?.fields?.length) {
     const row = createEmptyOutputRow(PRIMARY_ROW_ID);
@@ -225,13 +242,14 @@ export function restoreReportComposeFiltersFromQuery(
     // В одной group-группе AI/бэк обычно кладёт одно условие; берём первое
     // (lat+lon пары пока не склеиваем — редкий AI-кейс).
     const filter = cluster[0];
-    const rowId =
-      index === 0 ? PRIMARY_ROW_ID : `report-row-ai-${index}-${Date.now().toString(36)}`;
+    // Стабильный id (без Date.now) — applyDraft грузит nested metadata по тому же ключу.
+    const rowId = index === 0 ? PRIMARY_ROW_ID : `report-row-ai-${index}`;
     const row = buildRowFromFilter(
       filter,
       metadata,
       rowId,
       index === 0 ? tableFields : [],
+      nestedByName,
     );
     if (row) rows.push(row);
   }

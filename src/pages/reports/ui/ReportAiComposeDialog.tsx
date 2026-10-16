@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from 'i18next';
 
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
@@ -23,7 +24,11 @@ import {
   refineReportDraft,
 } from '@pages/reports/api/reportAiComposeApi';
 import { applyReportAiComposeDraftToStore } from '@pages/reports/lib/reportAiApplyDraft';
-import { buildReportAiDraftSummaryText } from '@pages/reports/lib/reportAiDraftSummary';
+import {
+  buildReportAiDraftSummaryText,
+  type ReportAiDraftSummaryLabels,
+} from '@pages/reports/lib/reportAiDraftSummary';
+import { buildReportAiComposeLabelByPath } from '@pages/reports/lib/reportAiFieldLabels';
 import { REPORT_AI_GOLDEN_PHRASES } from '@pages/reports/lib/reportAiGoldenPhrases';
 import { useReportAiSettings } from '@pages/reports/model/reportAiSettings';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
@@ -36,6 +41,42 @@ import { Popup } from '@shared/ui/popup';
 import composeStyles from './ReportComposeModal.module.scss';
 
 import type { ReportAiComposeDraft } from '@pages/reports/types/reportAiComposeTypes';
+
+/** Подписи для сводки AI — только из metadata.label, не fieldName. */
+function buildAiDraftSummaryLabels(draft: ReportAiComposeDraft): ReportAiDraftSummaryLabels {
+  const state = reportsStore.getState();
+  const meta =
+    (state.metadata?.entityName === draft.entityName ? state.metadata : null) ??
+    state.referenceEntityMetadataByName[draft.entityName] ??
+    null;
+  const entityLabel =
+    state.entities.find((e) => e.entityName === draft.entityName)?.label?.trim() ||
+    meta?.label?.trim() ||
+    draft.entityName;
+  return {
+    entityLabel,
+    fieldLabels: buildReportAiComposeLabelByPath({
+      metadata: meta,
+      outputRows: state.outputRows,
+      reportTableFieldsMetadataByRowId: state.reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName: state.referenceEntityMetadataByName,
+      entities: state.entities,
+      t: i18n.t.bind(i18n),
+    }),
+    metadata: meta,
+    referenceEntityMetadataByName: state.referenceEntityMetadataByName,
+  };
+}
+
+async function ensureAiDraftEntityMetadata(entityName: string): Promise<void> {
+  const name = entityName.trim();
+  if (!name) return;
+  await reportsStore.getState().loadMetadataForEntity(name);
+  const meta = reportsStore.getState().metadata;
+  if (meta) {
+    await reportsStore.getState().loadAllReferenceEntityMetadataForReport(meta);
+  }
+}
 
 type ReportAiComposeDialogProps = {
   open: boolean;
@@ -111,6 +152,7 @@ export function ReportAiComposeDialog({
     setError(null);
     try {
       const { response, validated } = await composeReportFromNaturalLanguage(userText);
+      await ensureAiDraftEntityMetadata(validated.draft.entityName);
       setSource(response.source);
       setWarnings(validated.warnings);
       setDraft(validated.draft);
@@ -131,12 +173,19 @@ export function ReportAiComposeDialog({
     setRefineInput('');
     try {
       const { response, validated } = await refineReportDraft(text, draft);
+      await ensureAiDraftEntityMetadata(validated.draft.entityName);
       setSource(response.source);
       setWarnings(validated.warnings);
       setDraft(validated.draft);
       setRefineMessages((prev) => [
         ...prev,
-        msg('assistant', buildReportAiDraftSummaryText(validated.draft)),
+        msg(
+          'assistant',
+          buildReportAiDraftSummaryText(
+            validated.draft,
+            buildAiDraftSummaryLabels(validated.draft),
+          ),
+        ),
       ]);
     } catch (e) {
       setError(e instanceof Error ? e.message : t('reports.aiComposeError'));
@@ -196,7 +245,10 @@ export function ReportAiComposeDialog({
     }
   }, [draft, running, onClose, onOpenEditor, t]);
 
-  const summaryText = draft ? buildReportAiDraftSummaryText(draft) : '';
+  const summaryText = useMemo(
+    () => (draft ? buildReportAiDraftSummaryText(draft, buildAiDraftSummaryLabels(draft)) : ''),
+    [draft],
+  );
 
   const sourceLabel =
     source === 'gemini'

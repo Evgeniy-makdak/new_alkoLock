@@ -59,8 +59,9 @@ export function ReportComposeSortSection({
   };
 
   const handleConfirmAdd = (columnKey: string, direction: ReportSortDirection) => {
+    // Одна сортировка: pageable.sort по одному столбцу.
+    if (sortRows.length > 0) return;
     onChange([
-      ...sortRows,
       {
         id: `report-sort-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
         columnKey,
@@ -73,7 +74,7 @@ export function ReportComposeSortSection({
     onChange(sortRows.filter((row) => row.id !== id));
   };
 
-  const canAddSort = columnOptions.length > 0;
+  const canAddSort = columnOptions.length > 0 && sortRows.length === 0;
 
   return (
     <>
@@ -82,13 +83,14 @@ export function ReportComposeSortSection({
         iconTone="blue"
         title={t('reports.composeSectionSort')}
         action={
-          <button
-            type="button"
-            className={composeStyles.addGroupLink}
-            disabled={!canAddSort}
-            onClick={() => setAddDialogOpen(true)}>
-            {t('reports.composeAddSort')}
-          </button>
+          canAddSort ? (
+            <button
+              type="button"
+              className={composeStyles.addGroupLink}
+              onClick={() => setAddDialogOpen(true)}>
+              {t('reports.composeAddSort')}
+            </button>
+          ) : null
         }>
         <div className={composeStyles.sortSectionBody}>
           {sortRows.length === 0 ? (

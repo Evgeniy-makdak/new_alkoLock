@@ -1,5 +1,8 @@
+import i18n from 'i18next';
+
 import { encodeReportTableFieldFunctionParam } from './reportTableFieldDisplayParam';
 import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
+import { buildReportAiComposeLabelByPath } from './reportAiFieldLabels';
 import { restoreReportComposeFiltersFromQuery } from './restoreReportComposeFiltersFromQuery';
 import { reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsStore } from '../model/reportsStore';
@@ -23,22 +26,25 @@ export function draftToReportQueryRequest(draft: ReportAiComposeDraft): ReportQu
 
 function selectedFieldsToTableValues(
   draft: ReportAiComposeDraft,
-  labelByPath?: Record<string, string>,
+  labelByPath: Record<string, string>,
 ): Values {
   return (draft.selectedFields ?? []).map((f) => {
+    const path = (f.fieldName ?? '').trim();
     const fromAlias = (f.alias ?? '').trim()
       ? decodeReportFieldAliasForUi(String(f.alias))
       : '';
+    const fromMeta = (labelByPath[path] ?? '').trim();
     return {
-      value: f.fieldName,
-      label: fromAlias || labelByPath?.[f.fieldName] || f.fieldName,
+      value: path,
+      // UI-подпись из metadata.label (как вручную), не fieldName.
+      label: fromAlias || fromMeta || path,
     };
   });
 }
 
 /**
  * Применяет AI-черновик к store: сущность, состав колонок, фильтры UI, chart/view,
- * queryContext, sort. filters[] — и в body, и в outputRows (иначе редактор пустой).
+ * queryContext, sort. Подписи колонок/фильтров — из metadata.label (не fieldName).
  */
 export async function applyReportAiComposeDraftToStore(
   draft: ReportAiComposeDraft,
@@ -48,7 +54,6 @@ export async function applyReportAiComposeDraftToStore(
   if (!entityName) throw new Error('Не указана сущность отчёта');
 
   const body = draftToReportQueryRequest(draft);
-  const tableValues = selectedFieldsToTableValues(draft, options?.labelByPath);
 
   reportsStore.getState().setSelectedEntityName(entityName);
   await reportsStore.getState().loadMetadataForEntity(entityName);
@@ -57,11 +62,45 @@ export async function applyReportAiComposeDraftToStore(
     await reportsStore.getState().loadAllReferenceEntityMetadataForReport(meta);
   }
 
-  const outputRows = restoreReportComposeFiltersFromQuery(
-    draft.filters,
-    meta,
-    tableValues,
+  const store = reportsStore.getState();
+  const labelByPath = {
+    ...buildReportAiComposeLabelByPath({
+      metadata: meta,
+      outputRows: store.outputRows,
+      reportTableFieldsMetadataByRowId: store.reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName: store.referenceEntityMetadataByName,
+      entities: store.entities,
+      t: i18n.t.bind(i18n),
+    }),
+    ...(options?.labelByPath ?? {}),
+  };
+  const tableValues = selectedFieldsToTableValues(draft, labelByPath);
+  const columnHeaderLabels = Object.fromEntries(
+    tableValues
+      .map((item) => [String(item.value ?? '').trim(), String(item.label ?? '').trim()] as const)
+      .filter(([key, label]) => key && label),
   );
+
+  // Сначала узнаём primary-поля фильтров, чтобы дождаться nested metadata
+  // и сразу подставить русские label операторов/атрибутов.
+  const previewRows = restoreReportComposeFiltersFromQuery(draft.filters, meta, tableValues);
+  const tableMetaLoads: Promise<unknown>[] = [];
+  for (const row of previewRows) {
+    const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
+    const field = meta?.fields.find((f) => f.fieldName === key);
+    const ref = field?.referenceEntity?.trim();
+    if (ref) {
+      tableMetaLoads.push(reportsStore.getState().loadReportTableFieldsMetadata(row.id, ref));
+    }
+  }
+  if (tableMetaLoads.length) {
+    await Promise.all(tableMetaLoads);
+  }
+
+  const nestedByName = reportsStore.getState().referenceEntityMetadataByName;
+  const outputRows = restoreReportComposeFiltersFromQuery(draft.filters, meta, tableValues, {
+    referenceEntityMetadataByName: nestedByName,
+  });
   reportsStore.setState({
     outputRows,
     logicOperator: draft.logicConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',
@@ -69,16 +108,6 @@ export async function applyReportAiComposeDraftToStore(
   // Держим reportTableFields на primary в sync со store-хелпером.
   if (outputRows[0]) {
     reportsStore.getState().setOutputRowReportTableFields(outputRows[0].id, tableValues);
-  }
-
-  // Nested «Поле результата» — подтянуть metadata листа для операций/значений в UI.
-  for (const row of outputRows) {
-    const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-    const field = meta?.fields.find((f) => f.fieldName === key);
-    const ref = field?.referenceEntity?.trim();
-    if (ref) {
-      void reportsStore.getState().loadReportTableFieldsMetadata(row.id, ref);
-    }
   }
 
   const displayParams: Record<string, string> = {};
@@ -105,6 +134,8 @@ export async function applyReportAiComposeDraftToStore(
     entityName,
     body,
     sort,
+    // Чтобы edit-restore не падал обратно на fieldName.
+    columnHeaderLabels,
     chartSpec: draft.viewMode === 'chart' ? chartSpec : undefined,
   });
 

@@ -48,10 +48,22 @@ export function ReportsDynamicFilters({ layout = 'default', className }: Reports
     [entities, selectedEntityName],
   );
 
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
+
+  const filterCompositionFields = useMemo(() => {
+    const primary = outputRows.find((row) => row.reportTableFields.length > 0) ?? outputRows[0];
+    return primary?.reportTableFields ?? [];
+  }, [outputRows]);
+
   const outputFieldOptions = useMemo(() => {
     if (!metadata?.fields?.length) return [];
-    return buildReportOutputFieldOptions(metadata, t);
-  }, [metadata, t]);
+    return buildReportOutputFieldOptions(
+      metadata,
+      t,
+      referenceEntityMetadataByName,
+      filterCompositionFields,
+    );
+  }, [metadata, t, referenceEntityMetadataByName, filterCompositionFields]);
 
   const fieldMap = useMemo(() => {
     const map = new Map<string, ReportFieldDefinition>();

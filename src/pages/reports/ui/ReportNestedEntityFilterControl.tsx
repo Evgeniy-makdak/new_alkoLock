@@ -244,6 +244,11 @@ type ReportNestedEntityFilterControlProps = {
   compact?: boolean;
   /** Между «Параметр сущности» и «Значение» (обычно «Операция фильтра»). */
   operationSlot?: ReactNode;
+  /**
+   * Path уже задан до терминального листа (выбор из «Текущего состава») —
+   * не показываем цепочку «Атрибут», только оператор и значение.
+   */
+  hidePropertySegments?: boolean;
 };
 
 function mergeOptionsWithSelected(options: Values, selected: Values): Values {
@@ -273,6 +278,7 @@ export function ReportNestedEntityFilterControl({
   filterOperationCode,
   compact = false,
   operationSlot = null,
+  hidePropertySegments = false,
 }: ReportNestedEntityFilterControlProps) {
   const { t } = useTranslation();
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
@@ -333,7 +339,8 @@ export function ReportNestedEntityFilterControl({
 
   return (
     <Box className={pageStyles.reportFilterNestedEntity}>
-      {propertySegments.map((segment) => {
+      {!hidePropertySegments &&
+        propertySegments.map((segment) => {
         if (segment.kind !== 'property') return null;
           const propertyOptions = buildReferenceEntityPropertyOptions(segment.metadata, t);
           const selectedProperty = segment.selectedFieldName
@@ -341,9 +348,15 @@ export function ReportNestedEntityFilterControl({
                 const hit = propertyOptions.find(
                   (o) => String(o.value) === segment.selectedFieldName,
                 );
-                return hit
-                  ? [hit]
-                  : [{ value: segment.selectedFieldName, label: segment.selectedFieldName }];
+                if (hit) return [hit];
+                // AI/restore может восстановить path с id и др., которых нет в options
+                // (идентификатор скрыт) — подпись берём из metadata, не fieldName.
+                const fromMeta = segment.metadata?.fields?.find(
+                  (f) => f.fieldName === segment.selectedFieldName,
+                );
+                const label =
+                  (fromMeta?.label ?? '').trim() || segment.selectedFieldName;
+                return [{ value: segment.selectedFieldName, label }];
               })()
             : [];
 

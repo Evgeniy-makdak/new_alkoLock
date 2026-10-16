@@ -27,7 +27,11 @@ import {
   formatRootReportTableFieldLabel,
   type ReportTableFieldOptionDraft,
 } from './buildReportTableFieldOptions';
-import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
+import {
+  buildReportFilterOptionsFromComposition,
+  collectReportNestedFilterPropertyOptions,
+} from './reportFilterFieldEligibility';
+import { findRootFieldForFilterPath } from './reportFilterFieldPath';
 
 import { Formatters } from '@shared/utils/formatters';
 
@@ -691,66 +695,31 @@ export function buildSyntheticCompositeDomainListField(
   };
 }
 
-function groupFilterableFieldsToCompositeOption(
-  fields: ReportFieldDefinition[],
-  entityName: string,
-  t: TFunction,
-): Values {
-  const coordMembers = new Set<string>(COORDINATE_MEMBER_FIELD_NAMES);
-  const kind = resolveCompositeKind(entityName);
-  const config = kind ? CONFIG_BY_ENTITY.get(kind) : undefined;
-  const entityMembers = config ? new Set(config.memberFieldNames) : new Set<string>();
-
-  const options: Values = [];
-  for (const f of fields) {
-    if (entityMembers.has(f.fieldName) || coordMembers.has(f.fieldName)) continue;
-    options.push({
-      value: f.fieldName,
-      label: (f.label ?? '').trim() || f.fieldName,
-    });
-  }
-
-  if (config && fields.some((f) => entityMembers.has(f.fieldName))) {
-    options.push({
-      value: buildReportCompositePropertyFieldName(kind!),
-      label: t(config.entityLabelKey),
-    });
-  }
-
-  if (fields.some((f) => coordMembers.has(f.fieldName))) {
-    options.push({
-      value: buildReportCoordinatesCompositePropertyFieldName(),
-      label: t('reports.composite.entityCoordinates'),
-    });
-  }
-
-  return options;
-}
-
-/** «Поле результата» на корневой сущности (отчёт по пользователям и т.п.). */
+/**
+ * «Поле результата» — только поля из «Текущий состав таблицы»
+ * (и filterable на листе path). Пустой состав → пустой список.
+ */
 export function buildReportOutputFieldOptions(
   metadata: ReportEntityMetadata,
   t: TFunction,
+  nestedByName: Record<string, ReportEntityMetadata | null | undefined> = {},
+  compositionFields: Values = [],
 ): Values {
-  const filterable = metadata.fields.filter(
-    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
-  );
-  return groupFilterableFieldsToCompositeOption(filterable, metadata.entityName, t).sort(
-    (a, b) => a.label.localeCompare(b.label, 'ru'),
+  if (!compositionFields.length) return [];
+  return buildReportFilterOptionsFromComposition(
+    compositionFields,
+    metadata,
+    nestedByName,
+    t,
   );
 }
 
-/** «Параметр сущности» в nested-фильтре. */
+/** «Параметр сущности» в nested-фильтре — ручной выбор шага (без авто-цепочки). */
 export function buildReferenceEntityPropertyOptionsWithComposite(
   tableMetadata: ReportEntityMetadata | null | undefined,
   t: TFunction,
 ): Values {
-  const fields = (tableMetadata?.fields ?? []).filter(
-    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
-  );
-  const entityName = tableMetadata?.entityName ?? '';
-  const options = groupFilterableFieldsToCompositeOption(fields, entityName, t);
-  return options.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  return collectReportNestedFilterPropertyOptions(tableMetadata, t);
 }
 
 export function resolveReportOutputPrimaryField(
@@ -763,6 +732,12 @@ export function resolveReportOutputPrimaryField(
   const direct = fieldMap.get(primaryKey);
   if (direct) return direct;
   if (!metadata) return null;
+
+  // flattened path (assignment.branch.name) → корневое поле assignment
+  if (primaryKey.includes('.')) {
+    const binding = findRootFieldForFilterPath(primaryKey, metadata);
+    if (binding) return binding.primary;
+  }
 
   if (isRootCoordinatesCompositeOutputFilter(primaryKey, metadata)) {
     const latField = metadata.fields.find((f) => f.fieldName === 'latitude');

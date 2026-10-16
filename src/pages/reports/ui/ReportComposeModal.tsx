@@ -1024,7 +1024,10 @@ export function ReportComposeModal({
                 </ReportComposeSection>
               </div>
             ) : null}
-            <ReportComposeForm part="filters" />
+            <ReportComposeForm
+              part="filters"
+              filterCompositionFields={tableFieldsSelection}
+            />
             {showColumnsSection && groupColumnOptions.length > 0 ? (
               <div className={composeStyles.sortSectionSlot}>
                 <ReportComposeGroupSection

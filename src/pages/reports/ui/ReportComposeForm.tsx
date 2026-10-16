@@ -25,6 +25,7 @@ import type {
   ReportLogicOperator,
 } from '@pages/reports/types/reportApiTypes';
 import { getToolbarCircleIconButtonSx } from '@shared/lib/toolbarCircleAddButtonSx';
+import type { Values } from '@shared/ui/search_multiple_select';
 import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import { ReportAddVariantDialog } from './ReportAddVariantDialog';
@@ -45,12 +46,15 @@ type ReportComposeFormProps = {
   confirmEntityChange?: boolean;
   /** После подтверждённой/обычной смены сущности (сброс group/sort в модалке). */
   onAfterEntityChange?: () => void;
+  /** «Текущий состав таблицы» — источник опций «Поле результата». */
+  filterCompositionFields?: Values;
 };
 
 export function ReportComposeForm({
   part = 'all',
   confirmEntityChange = false,
   onAfterEntityChange,
+  filterCompositionFields = [],
 }: ReportComposeFormProps) {
   const { t } = useTranslation();
   const theme = useTheme();
@@ -80,10 +84,17 @@ export function ReportComposeForm({
     [entities, selectedEntityName],
   );
 
+  const referenceEntityMetadataByName = reportsStore((s) => s.referenceEntityMetadataByName);
+
   const outputFieldOptions = useMemo(() => {
     if (!metadata?.fields?.length) return [];
-    return buildReportOutputFieldOptions(metadata, t);
-  }, [metadata, t]);
+    return buildReportOutputFieldOptions(
+      metadata,
+      t,
+      referenceEntityMetadataByName,
+      filterCompositionFields,
+    );
+  }, [metadata, t, referenceEntityMetadataByName, filterCompositionFields]);
 
   const fieldMap = useMemo(() => {
     const map = new Map<string, ReportFieldDefinition>();

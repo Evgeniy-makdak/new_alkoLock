@@ -7,6 +7,7 @@ import {
   collectReferenceEntitiesFromMetadata,
 } from '../lib/buildReportTableFieldOptions';
 import type { ReportVehicleLabelMaps } from '../lib/fetchVehicleFrontDataMaps';
+import { findRootFieldForFilterPath } from '../lib/reportFilterFieldPath';
 import {
   reportOutputFunctionKey,
   reportOutputOperationKey,
@@ -396,6 +397,19 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       return;
     }
 
+    const metadata = get().metadata;
+    const binding =
+      metadata && nextKey ? findRootFieldForFilterPath(nextKey, metadata) : null;
+    let initialNested = emptyNestedFilters();
+    if (binding?.nestedPath.length) {
+      initialNested = {
+        [binding.primary.fieldName]: {
+          path: [...binding.nestedPath],
+          values: [],
+        },
+      };
+    }
+
     set({
       outputRows: get().outputRows.map((row) =>
         row.id === rowId
@@ -405,7 +419,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
               // «Текущий состав» хранится отдельно от поля результата фильтра.
               reportTableFields: row.reportTableFields,
               filterSelections: emptySelections(),
-              nestedEntityFilterByField: emptyNestedFilters(),
+              nestedEntityFilterByField: initialNested,
             }
           : row,
       ),
@@ -419,8 +433,10 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
     // Пустое «Поле результата» — дочерние nested/операции уже сброшены выше.
     if (!nextKey) return;
-    const field = get().metadata?.fields?.find((f) => f.fieldName === nextKey);
-    const refEntity = field?.referenceEntity?.trim();
+    const primaryField =
+      binding?.primary ??
+      get().metadata?.fields?.find((f) => f.fieldName === nextKey);
+    const refEntity = primaryField?.referenceEntity?.trim();
     if (!refEntity) return;
     void get().loadReferenceEntityMetadata(refEntity);
   },

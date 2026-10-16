@@ -14,6 +14,7 @@ import {
   isReportCoordinatesCompositePath,
 } from './reportCoordinateComposite';
 import { isEventsForFrontTypeListAttribute } from './eventsForFrontReportOptions';
+import { resolveReportFilterPathLeafField } from './reportFilterFieldEligibility';
 
 import type {
   ReportEntityListItem,
@@ -455,6 +456,28 @@ export function mergeAllReportTableFieldOptions(
           nextVisited,
         );
       }
+
+      // Мосты ENTITY (VehicleBind.vehicle, BranchAssignment.branch, …): selectable=false,
+      // в колонки сами не попадают, но по referenceEntity нужно спуститься дальше —
+      // иначе «Доступные колонки» пустые при отчёте по MonitoringDevice и т.п.
+      for (const f of meta.fields) {
+        const childRef = f.referenceEntity?.trim();
+        if (!childRef) continue;
+        if ((f.type ?? '').toUpperCase() !== 'ENTITY') continue;
+        if (visitedEntities.has(childRef)) continue;
+        if (rootEntityName && childRef === rootEntityName) continue;
+        const bridgePath = prefixedFieldName(prefix, f.fieldName);
+        const bridgeDepth = bridgePath.split('.').length;
+        if (bridgeDepth >= MAX_SELECTED_FIELD_PATH_SEGMENTS) continue;
+        const nextVisited = new Set(visitedEntities);
+        nextVisited.add(childRef);
+        walkNested(
+          bridgePath,
+          (f.label ?? '').trim() || f.fieldName,
+          childRef,
+          nextVisited,
+        );
+      }
     };
 
     walkNested(
@@ -503,6 +526,14 @@ export function findReportTableFieldDefinition(
     const leaf = fieldPath.slice(rootPrefix.length + 1);
     return allEntityFields.find((f) => f.fieldName === leaf);
   }
+
+  // Глубокие пути через ENTITY-bridge (assignment.branch.name): шаговой walk по referenceEntity.
+  const deepLeaf = resolveReportFilterPathLeafField(
+    fieldPath,
+    entityMetadata,
+    referenceEntityMetadataByName,
+  );
+  if (deepLeaf) return deepLeaf;
 
   for (const parentField of allEntityFields) {
     const nestedPrefix = parentField.fieldName?.trim() ?? '';

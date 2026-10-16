@@ -74,7 +74,7 @@ describe('restoreReportComposeFiltersFromQuery', () => {
       rows[0].filterSelections[`__report_output_operation__${rows[0].id}`]?.[0]?.value,
     ).toBe('in');
 
-    expect(String(rows[1].selectedOutputFields[0]?.value)).toBe('eventsForFront');
+    expect(String(rows[1].selectedOutputFields[0]?.value)).toBe('eventsForFront.label');
     expect(rows[1].nestedEntityFilterByField.eventsForFront?.path).toEqual(['label']);
     expect(rows[1].nestedEntityFilterByField.eventsForFront?.values.map((v) => v.value)).toEqual([
       'Блокировка двигателя',

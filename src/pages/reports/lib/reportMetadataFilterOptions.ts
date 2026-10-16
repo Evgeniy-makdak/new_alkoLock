@@ -2,10 +2,6 @@ import type { TFunction } from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import {
-  COORDINATE_MEMBER_FIELD_NAMES,
-  buildReportCoordinatesCompositePropertyFieldName,
-} from './reportCoordinateComposite';
 import { buildNestedEntityStaticValueOptions } from './reportNestedEntityValueOptions';
 import {
   isReportBooleanField,
@@ -14,49 +10,22 @@ import {
   isReportTimeOnlyField,
   isReportYearOnlyField,
 } from './reportFieldFilterKind';
+import { collectReportNestedFilterPropertyOptions } from './reportFilterFieldEligibility';
 
 import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
 } from '../types/reportApiTypes';
 
-import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
-
 /**
- * «Параметр сущности» / «Атрибут» — строго filterable-поля соответствующей metadata.
- * latitude+longitude → одна опция «Координаты»; FIO/номер ТС и т.п. НЕ схлопываем в композит —
- * иначе пропадает ветвление по полям User/Vehicle/… из metadata.
+ * «Параметр сущности» / «Атрибут» — прямые filterable && selectable поля текущего metadata.
+ * Шаги path выбираются вручную (без автозаполнения цепочки).
  */
 export function buildReferenceEntityPropertyOptions(
   tableMetadata: ReportEntityMetadata | null | undefined,
   t: TFunction,
 ): Values {
-  const fields = (tableMetadata?.fields ?? []).filter(
-    (f) => f.filterable && !isReportIdentifierFieldPath(f.fieldName),
-  );
-  const coordMembers = new Set<string>(COORDINATE_MEMBER_FIELD_NAMES);
-  const options: Values = [];
-  let hasCoords = false;
-
-  for (const f of fields) {
-    if (coordMembers.has(f.fieldName)) {
-      hasCoords = true;
-      continue;
-    }
-    options.push({
-      value: f.fieldName,
-      label: (f.label ?? '').trim() || f.fieldName,
-    });
-  }
-
-  if (hasCoords) {
-    options.push({
-      value: buildReportCoordinatesCompositePropertyFieldName(),
-      label: t('reports.composite.entityCoordinates'),
-    });
-  }
-
-  return options.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+  return collectReportNestedFilterPropertyOptions(tableMetadata, t);
 }
 
 function readAllowedValues(field: ReportFieldDefinition): Values {
