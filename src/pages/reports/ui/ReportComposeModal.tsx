@@ -419,6 +419,9 @@ export function ReportComposeModal({
   const showColumnsSection =
     defaultRootTableFields.length > 0 || tableFieldsDialogOptions.length > 0;
 
+  // Фильтры/группировка/сортировка доступны только при непустом «Текущем составе таблицы».
+  const hasComposeTableColumns = tableFieldsSelection.length > 0;
+
   const sortColumnOptions = useMemo(() => {
     const selected =
       tableFieldsSelection.length > 0
@@ -1024,11 +1027,13 @@ export function ReportComposeModal({
                 </ReportComposeSection>
               </div>
             ) : null}
-            <ReportComposeForm
-              part="filters"
-              filterCompositionFields={tableFieldsSelection}
-            />
-            {showColumnsSection && groupColumnOptions.length > 0 ? (
+            {hasComposeTableColumns ? (
+              <ReportComposeForm
+                part="filters"
+                filterCompositionFields={tableFieldsSelection}
+              />
+            ) : null}
+            {hasComposeTableColumns && showColumnsSection && groupColumnOptions.length > 0 ? (
               <div className={composeStyles.sortSectionSlot}>
                 <ReportComposeGroupSection
                   columnOptions={groupColumnOptions}
@@ -1049,7 +1054,7 @@ export function ReportComposeModal({
                 />
               </div>
             ) : null}
-            {showColumnsSection && sortColumnOptions.length > 0 ? (
+            {hasComposeTableColumns && showColumnsSection && sortColumnOptions.length > 0 ? (
               <div className={composeStyles.sortSectionSlot}>
                 <ReportComposeSortSection
                   columnOptions={sortColumnOptions}
