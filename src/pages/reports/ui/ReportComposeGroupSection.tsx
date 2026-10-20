@@ -83,20 +83,21 @@ function buildMetadataHavingValueOptions(fieldDef: ReportFieldDefinition | null)
       { value: 'false', label: 'false' },
     ];
   }
-  return (fieldDef.allowedValues ?? [])
-    .map((item) => {
-      if (item == null) return null;
-      if (typeof item === 'string' || typeof item === 'number') {
-        return { value: item, label: String(item) };
-      }
-      const code = item.value ?? item.code ?? item.name;
-      if (code == null) return null;
-      return {
-        value: code as string | number,
-        label: String(item.label ?? item.name ?? code),
-      };
-    })
-    .filter((item): item is Values[number] => Boolean(item));
+  const out: Values = [];
+  for (const item of fieldDef.allowedValues ?? []) {
+    if (item == null) continue;
+    if (typeof item === 'string' || typeof item === 'number') {
+      out.push({ value: item, label: String(item) });
+      continue;
+    }
+    const code = item.value ?? item.code ?? item.name;
+    if (code == null) continue;
+    out.push({
+      value: code as string | number,
+      label: String(item.label ?? item.name ?? code),
+    });
+  }
+  return out;
 }
 
 function resolveGroupFieldDef(
@@ -290,6 +291,14 @@ export function ReportComposeGroupSection({
   };
 
   const canAddGroup = columnOptions.length > 0;
+
+  // Поля, уже участвующие в группировке, не предлагаются при добавлении новой.
+  const usedGroupColumnKeys = new Set(
+    groupRows.map((row) => row.columnKey.trim()).filter(Boolean),
+  );
+  const availableGroupColumnOptions = columnOptions.filter(
+    (option) => !usedGroupColumnKeys.has(String(option.value)),
+  );
 
   return (
     <>
@@ -641,8 +650,8 @@ export function ReportComposeGroupSection({
 
       <ReportAddGroupDialog
         open={addDialogOpen}
-        columnOptions={columnOptions}
-        requireLogicOperator={groupRows.length > 0}
+        columnOptions={availableGroupColumnOptions}
+        requireLogicOperator={false}
         onClose={() => setAddDialogOpen(false)}
         onConfirm={handleConfirmAdd}
       />

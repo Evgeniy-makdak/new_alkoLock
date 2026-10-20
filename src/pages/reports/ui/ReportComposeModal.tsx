@@ -724,6 +724,20 @@ export function ReportComposeModal({
         const nextSort = prev.filter((row) => allowed.has(row.columnKey.trim()));
         return nextSort.length === prev.length ? prev : nextSort;
       });
+      // Фильтры («Поле результата») — только по полям «Текущего состава»: ушедшие колонки снимаем.
+      const store = reportsStore.getState();
+      const currentRows = store.outputRows;
+      const keptRows = currentRows.filter((row) => {
+        const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
+        return !key || allowed.has(key);
+      });
+      if (keptRows.length !== currentRows.length) {
+        for (const row of currentRows) {
+          if (!keptRows.some((kept) => kept.id === row.id)) {
+            store.removeOutputRow(row.id);
+          }
+        }
+      }
     },
     [setTableFieldHiddenByPath],
   );
