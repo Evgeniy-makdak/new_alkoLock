@@ -303,11 +303,15 @@ function buildRowReportTableFields(
     if (apiAlias) {
       payload.alias = apiAlias;
     }
-    // aggregation — только из селекта «Текущий состав»; «Не выбрана» → без aggregation.
+    // aggregation — только из селекта «Текущий состав»;
+    // «Не выбрана» / «Без агрегации» (none) → без aggregation.
     const perFieldEncoded =
       context.displayParamByPath[emitPath] ?? context.displayParamByPath[path] ?? '';
     const perField = parseReportTableFieldDisplayParam(perFieldEncoded);
-    if (perField?.kind === 'function') {
+    if (
+      perField?.kind === 'function' &&
+      perField.code.toLowerCase().replace(/[_-]/g, '') !== 'none'
+    ) {
       payload.aggregation = perField.code;
     }
     return [payload];

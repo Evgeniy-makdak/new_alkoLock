@@ -551,6 +551,13 @@ export function ReportTableFieldsTransfer({
             const code = raw.startsWith('fn:') ? raw.slice(3) : raw;
             return code.toLowerCase().replace(/[_-]/g, '') === 'count';
           })?.value ?? encodeReportIdentifierDisplayParam();
+        // «Без агрегации» из metadata (fn:none) — дефолт селекта вместо фронтового «не выбрано».
+        const noAggregationEncoded =
+          displayOptions.find((item) => {
+            const raw = String(item.value);
+            const code = raw.startsWith('fn:') ? raw.slice(3) : raw;
+            return code.toLowerCase().replace(/[_-]/g, '') === 'none';
+          })?.value ?? '';
         const showDisplaySelect =
           side === 'chosen' &&
           (displayOptions.length > 0 || isIdentifier) &&
@@ -572,7 +579,7 @@ export function ReportTableFieldsTransfer({
         )
           ? selectedDisplayParam
           : selectedDisplayParam ||
-            (isIdentifier ? String(identifierCountEncoded) : '');
+            (isIdentifier ? String(identifierCountEncoded) : noAggregationEncoded);
         // Идентификатор в таблице не рендерится — глаз всегда закрыт и заблокирован.
         const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
         const visibilityLocked = isIdentifier;
@@ -604,11 +611,6 @@ export function ReportTableFieldsTransfer({
                         inputProps={{
                           'aria-label': t('reports.filterFunctionLabel'),
                         }}>
-                        {!isIdentifier ? (
-                          <MenuItem value="">
-                            <em>{t('reports.tableFieldDisplayParamNone')}</em>
-                          </MenuItem>
-                        ) : null}
                         {selectOptions.map((item) => (
                           <MenuItem key={String(item.value)} value={String(item.value)}>
                             {item.label}
