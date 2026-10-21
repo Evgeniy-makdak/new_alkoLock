@@ -379,10 +379,27 @@ export function ReportComposeModal({
     (editBaselineFingerprintRef.current == null ||
       composeEditFingerprint === editBaselineFingerprintRef.current);
 
+  // «Сформировать» доступен только при наличии хотя бы одного ВИДИМОГО поля в составе.
+  // Идентификатор в гриде не рендерится — «видимым» не считается.
+  const hasVisibleTableColumns = tableFieldsSelection.some((item) => {
+    const key = String(item.value);
+    if (isReportIdentifierFieldPath(key)) return false;
+    return tableFieldHiddenByPath[key] !== true;
+  });
+
   const canFormReport = useMemo(
     () =>
-      Boolean(selectedEntityName && metadata && !metadataLoading) && !isEditPristine,
-    [selectedEntityName, metadata, metadataLoading, isEditPristine, editBaselineVersion],
+      Boolean(selectedEntityName && metadata && !metadataLoading) &&
+      hasVisibleTableColumns &&
+      !isEditPristine,
+    [
+      selectedEntityName,
+      metadata,
+      metadataLoading,
+      hasVisibleTableColumns,
+      isEditPristine,
+      editBaselineVersion,
+    ],
   );
 
   // После restore + sync/remap — один раз за сессию открытия фиксируем baseline.
