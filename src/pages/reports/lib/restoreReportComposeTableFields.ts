@@ -6,6 +6,7 @@ import {
   ROOT_ENTITY_LABEL_SEPARATOR,
 } from './buildReportTableFieldOptions';
 import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
+import { buildDuplicateColumnKey } from './reportColumnDuplicate';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 /**
@@ -39,17 +40,20 @@ export function restoreReportComposeTableFieldsFromQuery(
   optionLabelByPath: Record<string, string> = {},
 ): Values {
   const result: Values = [];
-  const seen = new Set<string>();
+  // Дубли колонок («latitude», «latitude#2», …) сохраняются при редактировании отчёта.
+  const seen = new Map<string, number>();
 
   for (const field of selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
-    if (!path || seen.has(path)) continue;
-    seen.add(path);
+    if (!path) continue;
+    const occurrence = (seen.get(path) ?? 0) + 1;
+    seen.set(path, occurrence);
+    const key = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
 
     // Полная UI-подпись с карандаша (в т.ч. «Сущность -> …») важнее сырого alias-листа.
     const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
     if (fromHeaders) {
-      result.push({ value: path, label: fromHeaders });
+      result.push({ value: key, label: fromHeaders });
       continue;
     }
 
@@ -64,7 +68,7 @@ export function restoreReportComposeTableFieldsFromQuery(
       fromAlias ||
       fromOption ||
       path;
-    result.push({ value: path, label });
+    result.push({ value: key, label });
   }
 
   return result;

@@ -957,6 +957,7 @@
     "composeTransferAddAll": "Add all",
     "composeTransferRemove": "Remove selected",
     "composeTransferRename": "Rename column in report",
+    "composeTransferDuplicate": "Duplicate column",
     "composeTransferSelectHint": "Select a row with the checkbox or by clicking the row, then use the arrow to move it.",
     "composeTransferRemoveAll": "Remove all",
     "composeTransferMoveUp": "Move up",

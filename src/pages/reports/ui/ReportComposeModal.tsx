@@ -42,6 +42,11 @@ import {
   isReportIdentifierFieldPath,
   orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
+import {
+  buildDuplicateColumnKey,
+  normalizeDuplicateColumnKeys,
+  stripDuplicateColumnSuffix,
+} from '@pages/reports/lib/reportColumnDuplicate';
 import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
@@ -235,8 +240,12 @@ export function ReportComposeModal({
     );
     const fromStore =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
-    const tableFields = orderReportCompositionFieldsByIdentifier(
-      fromQuery.length > 0 ? fromQuery : fromStore,
+    // Нормализация: повторные вхождения поля — «field#N», иначе дубли React-ключей
+    // и общий дисплей-параметр у дублей.
+    const tableFields = normalizeDuplicateColumnKeys(
+      orderReportCompositionFieldsByIdentifier(
+        fromQuery.length > 0 ? fromQuery : fromStore,
+      ),
     );
 
     const savedBranchOffices = queryContext?.branchOffices;
@@ -269,10 +278,16 @@ export function ReportComposeModal({
       queryBody?.havingConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',
     );
     const restoredDisplay: Record<string, string> = {};
+    const displayCounts = new Map<string, number>();
     for (const field of queryBody?.selectedFields ?? []) {
       const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
       if (!encoded || !field.fieldName) continue;
-      restoredDisplay[field.fieldName] = encoded;
+      const base = stripDuplicateColumnSuffix(field.fieldName);
+      const n = (displayCounts.get(base) ?? 0) + 1;
+      displayCounts.set(base, n);
+      // Первое вхождение — базовый ключ; дубли — «field#N» (своя агрегация).
+      const key = n === 1 ? base : buildDuplicateColumnKey(base, n);
+      restoredDisplay[key] = encoded;
     }
     // Идентификатор: из body.aggregation; если нет — дефолт count.
     const identifierCount = encodeReportIdentifierDisplayParam();
@@ -446,9 +461,16 @@ export function ReportComposeModal({
         : tableFieldsInitialSelection.length > 0
           ? tableFieldsInitialSelection
           : defaultRootTableFields;
-    return Array.from(
-      new Map(selected.map((item) => [String(item.value), item])).values(),
-    ).filter((item) => !isReportIdentifierFieldPath(String(item.value)));
+    // Дубли колонок («field#N») схлопываем в одно поле по базовому fieldPath.
+    const seen = new Set<string>();
+    const deduped: Values = [];
+    for (const item of selected) {
+      const base = stripDuplicateColumnSuffix(String(item.value));
+      if (seen.has(base)) continue;
+      seen.add(base);
+      deduped.push({ ...item, value: base });
+    }
+    return deduped.filter((item) => !isReportIdentifierFieldPath(String(item.value)));
   }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
 
   const groupColumnOptions = useMemo(() => {
@@ -688,7 +710,9 @@ export function ReportComposeModal({
       const paths = isReportCompositeFieldPath(fieldPath)
         ? expandCompositeFieldPath(fieldPath)
         : [fieldPath];
-      const lookupPath = paths.find((p) => !isReportCompositeFieldPath(p)) ?? fieldPath;
+      const rawPath = paths.find((p) => !isReportCompositeFieldPath(p)) ?? fieldPath;
+      // Дубли «field#N» — опции агрегаций берём по базовому fieldPath.
+      const lookupPath = stripDuplicateColumnSuffix(rawPath);
       const fieldDef = findReportTableFieldDefinition(
         lookupPath,
         metadata,
@@ -697,7 +721,7 @@ export function ReportComposeModal({
         reportTableFieldsMetadataByRowId,
         referenceEntityMetadataByName,
       );
-      return buildReportTableFieldDisplayOptions(fieldDef, fieldPath);
+      return buildReportTableFieldDisplayOptions(fieldDef, lookupPath);
     },
     [metadata, outputRows, reportTableFieldsMetadataByRowId, referenceEntityMetadataByName],
   );
@@ -720,9 +744,14 @@ export function ReportComposeModal({
       setTableFieldsSelection(selection);
 
       const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
-      const allowed = new Set(selection.map((item) => String(item.value)));
+      // Точные ключи (включая дубли «field#N») — для видимости каждой строки.
+      const allowedExact = new Set(selection.map((item) => String(item.value)));
+      // Базовые fieldPath (без суффикса дубля) — для группировки/сортировки/фильтров.
+      const allowed = new Set(
+        selection.map((item) => stripDuplicateColumnSuffix(String(item.value))),
+      );
       const hidden: Record<string, boolean> = {};
-      for (const key of allowed) {
+      for (const key of allowedExact) {
         if (prevHidden[key] !== undefined) {
           hidden[key] = prevHidden[key]!;
         } else if (isReportIdentifierFieldPath(key)) {

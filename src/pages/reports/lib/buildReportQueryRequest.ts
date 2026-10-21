@@ -53,6 +53,7 @@ import {
 import { reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 import { parseReportTableFieldDisplayParam } from './reportTableFieldDisplayParam';
 import { resolveEventsForFrontLevelFilterApiFieldName } from './eventsForFrontReportOptions';
 import {
@@ -265,14 +266,17 @@ function buildRowReportTableFields(
     if (isReportCompositeFieldPath(emitPath)) {
       return [];
     }
-    if (emitPath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
+    // Дубли колонок («field#N») → базовый fieldPath для бэка; суффикс нужен
+    // только для отдельной агрегации/алиаса/видимости строки.
+    const basePath = stripDuplicateColumnSuffix(emitPath);
+    if (basePath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
       return [];
     }
-    if (!context.allowedTableFieldPaths.has(emitPath)) {
+    if (!context.allowedTableFieldPaths.has(basePath)) {
       return [];
     }
     const fieldDef = findReportTableFieldDefinition(
-      emitPath,
+      basePath,
       context.entityMetadata,
       context.outputRows,
       context.fieldMap,
@@ -283,12 +287,12 @@ function buildRowReportTableFields(
       return [];
     }
 
-    const defaultLabel = resolveReportFieldDefaultLabelForAlias(emitPath, fieldDef);
+    const defaultLabel = resolveReportFieldDefaultLabelForAlias(basePath, fieldDef);
     const displayLabel = (item.label ?? '').trim() || defaultLabel;
     // fieldName — всегда путь поля для бэка; переименование только в alias.
     const payload: ReportSelectedFieldPayload = {
       fieldName: resolveReportTableSelectedPayloadFieldName(
-        emitPath,
+        basePath,
         context.entityMetadata.entityName,
       ),
     };
@@ -296,17 +300,20 @@ function buildRowReportTableFields(
     // Дефолт «Сущность -> Поле» в alias не кодируем (подчёркивания туда не добавляем).
     const apiAlias = resolveReportFieldAliasForApi(
       displayLabel,
-      emitPath,
+      basePath,
       payload.fieldName,
       defaultLabel,
     );
     if (apiAlias) {
       payload.alias = apiAlias;
     }
-    // aggregation — только из селекта «Текущий состав»;
+    // aggregation — только из селекта «Текущий состав»; ключ — строка (м.б. дубль
+    // «field#N» → своя агрегация), иначе база «field» → общая.
     // «Не выбрана» / «Без агрегации» (none) → без aggregation.
     const perFieldEncoded =
-      context.displayParamByPath[emitPath] ?? context.displayParamByPath[path] ?? '';
+      context.displayParamByPath[emitPath] ??
+      context.displayParamByPath[path] ??
+      context.displayParamByPath[basePath] ?? '';
     const perField = parseReportTableFieldDisplayParam(perFieldEncoded);
     if (
       perField?.kind === 'function' &&

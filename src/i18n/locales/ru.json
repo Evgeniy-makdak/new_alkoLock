@@ -981,6 +981,7 @@
     "composeTransferAddAll": "Добавить все",
     "composeTransferRemove": "Убрать выбранные",
     "composeTransferRename": "Переименовать колонку в отчёте",
+    "composeTransferDuplicate": "Дублировать колонку",
     "composeTransferSelectHint": "Отметьте строку чекбоксом или кликом по строке, затем перенесите стрелкой.",
     "composeTransferRemoveAll": "Убрать все",
     "composeTransferMoveUp": "Выше",

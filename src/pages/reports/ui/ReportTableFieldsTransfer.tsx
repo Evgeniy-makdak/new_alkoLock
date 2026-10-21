@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import AddIcon from '@mui/icons-material/Add';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -39,6 +40,11 @@ import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 
 import { encodeReportIdentifierDisplayParam } from '@pages/reports/lib/reportTableFieldDisplayParam';
+import {
+  buildDuplicateColumnKey,
+  getDuplicateColumnIndex,
+  stripDuplicateColumnSuffix,
+} from '@pages/reports/lib/reportColumnDuplicate';
 import {
   isReportIdentifierFieldPath,
   orderReportCompositionFieldsByIdentifier,
@@ -73,7 +79,11 @@ function resolveFieldLabel(
   defaultLabels: Record<string, string>,
   item?: Value,
 ): string {
-  return (customLabels[key] ?? item?.label ?? defaultLabels[key] ?? key).trim() || key;
+  const baseKey = stripDuplicateColumnSuffix(key);
+  return (
+    customLabels[key] ?? item?.label ?? defaultLabels[baseKey] ?? defaultLabels[key] ?? baseKey
+  )
+    .trim() || baseKey;
 }
 
 function fieldDisplayLabel(
@@ -443,7 +453,8 @@ export function ReportTableFieldsTransfer({
 
   /** Вернуть подпись колонки к дефолту из metadata («Сущность -> поле»). */
   const resetLabelToDefault = (fieldValue: string) => {
-    const defaultLabel = defaultLabelsByValue[fieldValue] || fieldValue;
+    const defaultLabel =
+      defaultLabelsByValue[stripDuplicateColumnSuffix(fieldValue)] || fieldValue;
     const nextLabels = { ...customLabelsByKey };
     delete nextLabels[fieldValue];
     setCustomLabelsByKey(nextLabels);
@@ -464,6 +475,33 @@ export function ReportTableFieldsTransfer({
       }),
     );
   };
+
+  /**
+   * Дублирование строки «Текущего состава»: вставка идентичной строки ниже текущей
+   * с УНИКАЛЬНЫМ составным ключом «field#N» и дефолтной агрегацией (дисплей-параметр
+   * нового ключа не задан → селект показывает «Без агрегации»).
+   */
+  const duplicateChosenRow = useCallback(
+    (rowKey: string, rowIndex: number) => {
+      if (isReportIdentifierFieldPath(rowKey)) return;
+      const base = stripDuplicateColumnSuffix(rowKey);
+      const maxIndex = Math.max(
+        1,
+        ...value.map((item) => {
+          const k = fieldKey(item);
+          return stripDuplicateColumnSuffix(k) === base ? getDuplicateColumnIndex(k) : 0;
+        }),
+      );
+      const dupKey = buildDuplicateColumnKey(base, maxIndex + 1);
+      const dupLabel = resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
+      const next = value.map((item) =>
+        mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue),
+      );
+      next.splice(rowIndex + 1, 0, { value: dupKey, label: dupLabel });
+      emitChosen(next);
+    },
+    [value, customLabelsByKey, defaultLabelsByValue, emitChosen],
+  );
 
   const renderScrollListStepper = (
     keys: string[],
@@ -584,7 +622,8 @@ export function ReportTableFieldsTransfer({
         const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
         const visibilityLocked = isIdentifier;
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
-        const defaultLabel = (defaultLabelsByValue[key] || key).trim();
+        const defaultLabel =
+          (defaultLabelsByValue[stripDuplicateColumnSuffix(key)] || key).trim();
         const isCustomLabel = !isIdentifier && label.trim() !== defaultLabel;
 
         return (
@@ -703,6 +742,22 @@ export function ReportTableFieldsTransfer({
                             startRename(key, label);
                           }}>
                           <EditOutlinedIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled && !isIdentifier ? (
+                      <Tooltip title={t('reports.composeTransferDuplicate')}>
+                        <IconButton
+                          size="small"
+                          aria-label={t('reports.composeTransferDuplicate')}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            duplicateChosenRow(key, rowIndex);
+                          }}>
+                          <AddIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     ) : null}
