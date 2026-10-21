@@ -813,8 +813,10 @@
 }
 
 .transferListItemButtonChosen {
-  /* select ~152 + 5 слотов иконок × 34 */
-  padding-right: 330px !important;
+  /* select 148+4 + 6 слотов иконок × 34 + inset secondaryAction ~16 — иначе label залезает на селект */
+  padding-right: 372px !important;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .transferRowActions {
@@ -859,6 +861,20 @@
   min-width: 34px;
   height: 34px;
   flex-shrink: 0;
+}
+
+/* Только label в «Текущий состав»: ellipsis + место под OverflowTooltip */
+.transferChosenLabel {
+  min-width: 0 !important;
+  flex: 1 1 0 !important;
+  overflow: hidden;
+}
+
+.transferChosenLabelPrimary {
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  max-width: 100%;
 }
 
 .transferListCheckbox {

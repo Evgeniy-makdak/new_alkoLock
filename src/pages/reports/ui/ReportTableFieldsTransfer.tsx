@@ -833,8 +833,13 @@ export function ReportTableFieldsTransfer({
                       variant: 'body2',
                       noWrap: true,
                       component: 'span',
+                      className:
+                        side === 'chosen' ? composeStyles.transferChosenLabelPrimary : undefined,
                       sx: { display: 'block', overflow: 'hidden', textOverflow: 'ellipsis' },
                     }}
+                    className={
+                      side === 'chosen' ? composeStyles.transferChosenLabel : undefined
+                    }
                     sx={{ minWidth: 0, flex: 1, m: 0 }}
                   />
                 </OverflowTooltip>
