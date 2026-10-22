@@ -56,8 +56,6 @@ interface Window {
       left?: number;
       top?: number;
     }): Promise<void>;
-    /** Закреп окна: запрет/разрешение перемещения окна ОС (Electron, popup чата). */
-    setPopupMoveable(movable: boolean): Promise<void>;
     onZoomChanged(callback: () => void): () => void;
     onCloseUiOverlays(callback: () => void): () => void;
     getAuthToken(): Promise<string | null>;

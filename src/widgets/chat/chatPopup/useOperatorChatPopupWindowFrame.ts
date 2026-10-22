@@ -754,7 +754,12 @@ function installPwaDynamicPopupFrame(): () => void {
     const pinned = node?.getAttribute('data-chat-layout-pinned') === '1';
     if (pinned === lastPinSyncValue) return;
     lastPinSyncValue = pinned;
-    const desktop = window.alcolockDesktop;
+    // Не опираемся на декларацию Window.alcolockDesktop (declarations.d.ts может не
+    // попасть в сборку на CI): приводим к минимальному типу с опциональным методом.
+    // В рантайме метод существует только в preload Electron и вызывается в Electron.
+    const desktop = window.alcolockDesktop as
+      | { setPopupMoveable?: (movable: boolean) => Promise<void> }
+      | undefined;
     if (desktop?.setPopupMoveable) {
       void desktop.setPopupMoveable(!pinned);
     }
