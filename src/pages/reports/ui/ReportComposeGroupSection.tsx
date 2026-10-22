@@ -489,8 +489,21 @@ export function ReportComposeGroupSection({
                             values={aggregationOptions}
                             value={aggregationValue}
                             serverFilter={false}
-                            // Значение всегда задано («Без агрегации» по умолчанию) — крестик очистки скрыт.
+                            // Значение всегда задано («Без агрегации» по умолчанию) — крестик очистки скрыт;
+                            // Блокируем правку текста (Delete/Backspace/печать): значение нельзя стереть визуально,
+                            // дропдаун и выбор остаются доступными.
                             disableClearable
+                            onKeyDown={(event) => {
+                              const keyEdit = event.key;
+                              if (event.ctrlKey || event.metaKey || event.altKey) return;
+                              if (
+                                keyEdit.length === 1 ||
+                                keyEdit === 'Backspace' ||
+                                keyEdit === 'Delete'
+                              ) {
+                                event.preventDefault();
+                              }
+                            }}
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {

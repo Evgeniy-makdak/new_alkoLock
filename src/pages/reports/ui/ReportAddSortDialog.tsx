@@ -138,11 +138,6 @@ export function ReportAddSortDialog({
                 }
                 return selectedDirectionLabel;
               }}>
-              <MenuItem value="">
-                <Box component="em" sx={{ color: 'text.secondary', fontStyle: 'normal' }}>
-                  {t('reports.composeSortDirectionLabel')}
-                </Box>
-              </MenuItem>
               {directionOptions.map((option) => (
                 <MenuItem key={option.value} value={option.value}>
                   {option.label}

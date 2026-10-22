@@ -29,6 +29,7 @@ export type Values = Value[];
 export const isOptionEqualToValue = (option: Value | Values, value: Value | Values) => {
   if (!Array.isArray(option) && !Array.isArray(value)) return option.value === value.value;
   if (!Array.isArray(option) && Array.isArray(value)) return option.value === value[0]?.value;
+  return false;
 };
 export type AdapterReturn = [string, ID] | [string, ID, Permissions[] | [] | undefined | null] | [];
 

@@ -152,8 +152,21 @@ export function ReportComposeSortSection({
                               values={directionOptions}
                               value={directionValue}
                               serverFilter={false}
-                              // Направление сортировки обязательно — крестик очистки скрыт.
+                              // Направление сортировки обязательно — крестик очистки скрыт;
+                              // Блокируем правку текста (Delete/Backspace/печать): значение нельзя стереть визуально,
+                              // дропдаун и выбор остаются доступными.
                               disableClearable
+                              onKeyDown={(event) => {
+                                const keyEdit = event.key;
+                                if (event.ctrlKey || event.metaKey || event.altKey) return;
+                                if (
+                                  keyEdit.length === 1 ||
+                                  keyEdit === 'Backspace' ||
+                                  keyEdit === 'Delete'
+                                ) {
+                                  event.preventDefault();
+                                }
+                              }}
                               sx={reportFilterModalControlSx}
                               slotProps={reportFilterAutocompleteSlotProps}
                               setValueStore={(_, next) => {

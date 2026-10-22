@@ -25,7 +25,6 @@ import {
   ListItemIcon,
   ListItemText,
   TextField,
-  Tooltip,
   Typography,
   createFilterOptions,
 } from '@mui/material';
@@ -42,7 +41,6 @@ import { OverflowTooltip } from '@shared/ui/overflow_tooltip/OverflowTooltip';
 
 import style from './SearchMultipleSelect.module.scss';
 import {
-  type OnChange,
   type Value,
   type Values,
   isOptionEqualToValue,
@@ -179,7 +177,11 @@ function SearchMultipleSelectMobileModal<T>({
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<Values>([]);
   const [filterText, setFilterText] = useState('');
-  const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
+  // callBack принимает необязательный аргумент; onInputChange требует string — оборачиваем.
+  const debouncedFunc = debounce({
+    time: 500,
+    callBack: onInputChange ? (value?: string) => onInputChange(value ?? '') : undefined,
+  });
 
   const displayLabel = resolveSearchSelectDisplayLabel(label);
 
@@ -525,7 +527,11 @@ export function SearchMultipleSelect<T>({
   const [inputState, setInputState] = useState('');
   const [focused, setFocused] = useState(false);
   const [popupOpen, setPopupOpen] = useState(false);
-  const debouncedFunc = debounce({ time: 500, callBack: onInputChange });
+  // callBack принимает необязательный аргумент; onInputChange требует string — оборачиваем.
+  const debouncedFunc = debounce({
+    time: 500,
+    callBack: onInputChange ? (value?: string) => onInputChange(value ?? '') : undefined,
+  });
   const isMultipleMode = maxValues != null ? true : Boolean(multiple);
   const atMaxCapacity =
     maxValues != null && maxValues > 0 && (value?.length ?? 0) >= maxValues;
@@ -662,8 +668,8 @@ export function SearchMultipleSelect<T>({
         disabled={disabled}
         placeholder={placeholder}
         sx={
-          disabled
-            ? (theme) => ({
+          (disabled
+            ? (theme: Theme) => ({
                 ...modalLabelEllipsisSx,
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: theme.palette.action.hover,
@@ -674,7 +680,7 @@ export function SearchMultipleSelect<T>({
                   opacity: 1,
                 },
               })
-            : modalLabelEllipsisSx
+            : modalLabelEllipsisSx) as unknown as SxProps<Theme>
         }
         InputProps={{
           ...prop.InputProps,
@@ -732,7 +738,7 @@ export function SearchMultipleSelect<T>({
       setInputState(value);
     }
     if (reason === 'clear') {
-      setValueStore(name, []);
+      setValueStore?.(name, []);
       setInputState('');
       if (!debouncedFunc) return;
 
@@ -745,9 +751,14 @@ export function SearchMultipleSelect<T>({
     debouncedFunc(value);
   };
 
-  const onChange: OnChange = (_event, nextValue, reason, details) => {
+  const onChange: AutocompleteProps<Value, boolean, boolean, true, 'div'>['onChange'] = (
+    _event,
+    nextValue,
+    reason,
+    details,
+  ) => {
     if (reason === 'clear' || !nextValue) {
-      setValueStore(name, []);
+      setValueStore?.(name, []);
       setInputState('');
       setPopupOpen(false);
       return;
@@ -755,20 +766,20 @@ export function SearchMultipleSelect<T>({
 
     if (reason === 'selectOption') {
       setInputState('');
-      debouncedFunc('');
+      debouncedFunc?.('');
     }
 
+    // freeSolo-тип MUI видит details.option как string, но в рантайме это Value.
+    const rawOption = details?.option;
     const pickedOption =
-      details?.option && typeof details.option === 'object'
-        ? (details.option as Value)
-        : null;
+      rawOption && typeof rawOption === 'object' ? (rawOption as unknown as Value) : null;
     const limited = applyMaxValuesLimit(
       toValuesArray(nextValue),
       maxValues,
       reason,
       pickedOption,
     );
-    setValueStore(name, limited);
+    setValueStore?.(name, limited);
     if (maxValues != null && limited.length >= maxValues) {
       setPopupOpen(false);
     }
@@ -821,7 +832,7 @@ export function SearchMultipleSelect<T>({
         size={size}
         sx={mergedAutocompleteSx}
         disabled={disabled}
-        slotProps={mergedSlotProps}
+        slotProps={mergedSlotProps as unknown as AutocompleteProps<Value, boolean, boolean, true, 'div'>['slotProps']}
         getOptionLabel={(option) => {
           // ВАЖНОЕ ИСПРАВЛЕНИЕ: всегда возвращаем строку
           if (typeof option === 'string') return option;
@@ -861,7 +872,7 @@ export function SearchMultipleSelect<T>({
         filterOptions={serverFilter ? (op) => op : createFilterOptions()}
         onInputChange={onInputChangeHandler}
         loadingText={'Загрузка...'}
-        renderOption={(props, option) => renderOptions(props, option as Value, testid)}
+        renderOption={(props, option) => renderOptions(props, option as Value, testid ?? '')}
         renderInput={renderInput}
         noOptionsText={'Ничего не найдено'}
       />
