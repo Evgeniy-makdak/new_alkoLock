@@ -152,6 +152,8 @@ export function ReportComposeSortSection({
                               values={directionOptions}
                               value={directionValue}
                               serverFilter={false}
+                              // Направление сортировки обязательно — крестик очистки скрыт.
+                              disableClearable
                               sx={reportFilterModalControlSx}
                               slotProps={reportFilterAutocompleteSlotProps}
                               setValueStore={(_, next) => {

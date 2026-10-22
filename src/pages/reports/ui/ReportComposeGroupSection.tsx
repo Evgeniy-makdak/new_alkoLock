@@ -343,6 +343,13 @@ export function ReportComposeGroupSection({
                 getReportHavingAggregationOptions(fieldDef),
                 labelFromMetaOrI18n('reports.havingAggregation'),
               );
+              // Дефолт селекта «Без агрегации» — как в «Текущем составе таблицы»:
+              // берём метаданную none (fn:none | none) и показываем её, пока значение не выбрано.
+              const noAggregationOption = aggregationOptions.find((option) => {
+                const raw = String(option.value);
+                const code = raw.startsWith('fn:') ? raw.slice(3) : raw;
+                return normalizeHavingAggregationForApi(code) === 'none';
+              });
               const havingModeOptions = opsToLabeledValues(
                 getReportHavingModeOptions(fieldDef),
                 labelFromMetaOrI18n('reports.havingMode'),
@@ -391,7 +398,11 @@ export function ReportComposeGroupSection({
                   : [];
 
               const operatorValue = pickSingle(operatorOptions, row.operator);
-              const aggregationValue = pickSingle(aggregationOptions, row.havingAggregation);
+              const aggregationValue = pickSingle(
+                aggregationOptions,
+                row.havingAggregation ||
+                  (noAggregationOption ? String(noAggregationOption.value) : ''),
+              );
               const havingModeValue = pickSingle(havingModeOptions, row.havingMode);
 
               const columnChoices = [
@@ -478,6 +489,8 @@ export function ReportComposeGroupSection({
                             values={aggregationOptions}
                             value={aggregationValue}
                             serverFilter={false}
+                            // Значение всегда задано («Без агрегации» по умолчанию) — крестик очистки скрыт.
+                            disableClearable
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {
