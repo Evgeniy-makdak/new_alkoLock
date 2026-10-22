@@ -2138,7 +2138,9 @@ const ChatContainer = () => {
                     dockDragEnabled={!isChatLayoutPinned && !isOperatorChatPopupWindow}
                     onDockDragPointerDown={handleDockDragPointerDown}
                     chatLayoutPinned={isChatLayoutPinned}
-                    onToggleChatLayoutPin={handleToggleChatLayoutPin}
+                    onToggleChatLayoutPin={
+                      isBrowserDetachedChatPopup ? undefined : handleToggleChatLayoutPin
+                    }
                     onCloseAllChats={
                       isOperatorChatPopupWindow ? closeOperatorChatPopupAndRestoreMain : undefined
                     }

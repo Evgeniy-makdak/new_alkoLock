@@ -8,9 +8,16 @@ import {
   clearMainRestoreIsChatOpenFromPopup,
   readOperatorPopupPreviewSnapshot,
 } from './mainChatOpenRestoreFromPopup';
-import { writeOperatorChatPopupFrameLock } from './operatorChatPopupFrameLock';
+import {
+  clearOperatorChatPopupPinnedFrame,
+  readOperatorChatPopupPinnedFrame,
+  writeOperatorChatPopupFrameLock,
+} from './operatorChatPopupFrameLock';
 import { resolveBottomRightPopupScreenPosition } from './operatorChatPopupLayout';
-import { clearOperatorChatPopupLayoutStorage } from './popupLayoutStorage';
+import {
+  clearOperatorChatPopupLayoutStorage,
+  readChatLayoutPinned,
+} from './popupLayoutStorage';
 
 /**
  * Отдельное окно с тем же origin (сессия из storage).
@@ -44,6 +51,14 @@ export async function openOperatorChatPopup(): Promise<void> {
   }
   
   const url = `${window.location.origin}${RoutePaths.operatorChatPopup}${tokenParam}`;
+  // ТОЛЬКО Электрон: если layout закреплён — возвращаем popup на сохранённое
+  // место/размер (пережило закрытие окна в localStorage), а не в дефолтное.
+  const pinnedFrame =
+    desktopBridge && readChatLayoutPinned(true) ? readOperatorChatPopupPinnedFrame() : null;
+  if (desktopBridge && !readChatLayoutPinned(true)) {
+    clearOperatorChatPopupPinnedFrame();
+  }
+
   const hasPreviewSnapshot = readOperatorPopupPreviewSnapshot().length > 0;
   const { outerW: estOuterW, outerH: estOuterH } = estimateOperatorChatPopupOuterSize({
     includePreviewColumn: Boolean(desktopBridge) || hasPreviewSnapshot,
@@ -55,12 +70,20 @@ export async function openOperatorChatPopup(): Promise<void> {
 
   const scr = window.screen as Screen & { availLeft?: number; availTop?: number };
   const desktopPosition = resolveBottomRightPopupScreenPosition(outerW, outerH);
-  const left = desktopBridge
-    ? desktopPosition.left
-    : scr.availLeft! + Math.max(0, (scr.availWidth - outerW) / 2);
-  const top = desktopBridge
-    ? desktopPosition.top
-    : scr.availTop! + Math.max(0, (scr.availHeight - outerH) / 2);
+  const left = pinnedFrame
+    ? pinnedFrame.left
+    : desktopBridge
+      ? desktopPosition.left
+      : scr.availLeft! + Math.max(0, (scr.availWidth - outerW) / 2);
+  const top = pinnedFrame
+    ? pinnedFrame.top
+    : desktopBridge
+      ? desktopPosition.top
+      : scr.availTop! + Math.max(0, (scr.availHeight - outerH) / 2);
+  if (pinnedFrame) {
+    outerW = pinnedFrame.outerW;
+    outerH = pinnedFrame.outerH;
+  }
 
   const features = [
     'popup=yes',

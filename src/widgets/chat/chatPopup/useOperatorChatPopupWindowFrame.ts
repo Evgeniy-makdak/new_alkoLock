@@ -226,6 +226,26 @@ function installBrowserWebPopupFrame(): () => void {
     lastObserved = { outerW: window.outerWidth, innerW: window.innerWidth };
   };
 
+  /**
+   * Браузер: фактическая позиция окна (пользователь мог перетащить popup на другой
+   * монитор) является авторитетной. Без синка lock-позиции авто-фит размера или
+   * восстановление min-размера берут устаревший lockRef (позиция из window.open) и
+   * «прижимают» окно к левому/верхнему краю текущего монитора (resolvePopupScreenPosition
+   * клампит старую позицию в новые границы). Десктоп (installPwaDynamicPopupFrame)
+   * не использует этот код.
+   */
+  const syncLockPositionFromWindow = () => {
+    const nextLeft = window.screenX;
+    const nextTop = window.screenY;
+    if (
+      Math.abs(nextLeft - lockRef.current.left) > LOCK_TOLERANCE_PX ||
+      Math.abs(nextTop - lockRef.current.top) > LOCK_TOLERANCE_PX
+    ) {
+      lockRef.current = { ...lockRef.current, left: nextLeft, top: nextTop };
+      writeOperatorChatPopupFrameLock(lockRef.current);
+    }
+  };
+
   const applyOuterSize = (
     outerW: number,
     outerH: number,
@@ -288,6 +308,7 @@ function installBrowserWebPopupFrame(): () => void {
   const restoreLockFrame = (): boolean => {
     if (isSelfResize || isApplyingLock) return false;
     if (!isManuallyTooSmall()) return false;
+    syncLockPositionFromWindow();
 
     const locked = resolveLockedMinOuterSize();
     const { left, top } = lockRef.current;
@@ -326,6 +347,7 @@ function installBrowserWebPopupFrame(): () => void {
 
   const applyScaledTarget = () => {
     if (cancelled || isApplyingLock || Date.now() < selfResizeUntil) return;
+    syncLockPositionFromWindow();
 
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
     if (!dock) return;
@@ -399,6 +421,7 @@ function installBrowserWebPopupFrame(): () => void {
 
   const onWindowResize = () => {
     if (cancelled) return;
+    syncLockPositionFromWindow();
 
     if (enforceMinOuterFrame()) {
       return;
@@ -475,6 +498,7 @@ function installBrowserWebPopupFrame(): () => void {
   };
 
   const onMouseUp = () => {
+    syncLockPositionFromWindow();
     if (restoreLockFrame()) scheduleRestoreRetries();
   };
 
@@ -493,6 +517,7 @@ function installBrowserWebPopupFrame(): () => void {
 
   guardInterval = window.setInterval(() => {
     if (cancelled) return;
+    syncLockPositionFromWindow();
     if (isManuallyTooSmall()) restoreLockFrame();
   }, 80);
 
@@ -544,6 +569,8 @@ function installPwaDynamicPopupFrame(): () => void {
   let contentOuterAt100: ContentOuter = { w: 0, h: 0 };
   let zoomFactor = 1;
   let lastObserved: ViewportSnapshot = { outerW: 0, innerW: 0 };
+  let pinSyncTimer = 0;
+  let lastPinSyncValue: boolean | null = null;
 
   const lockRef = { current: normalizeLock(readOperatorChatPopupFrameLock()) };
   writeOperatorChatPopupFrameLock(lockRef.current);
@@ -714,6 +741,25 @@ function installPwaDynamicPopupFrame(): () => void {
     applyOuterSize(lockRef.current.outerW, lockRef.current.outerH);
   };
 
+  /**
+   * Electron: синхронизируем OS-флаг movable окна чата с состоянием закрепа.
+   * CSS уже отключает drag-регион заголовка при закрепе, setMovable(false)
+   * дополнительно блокирует перемещение на уровне ОС — в том числе после
+   * повторного открытия окна, когда попап монтируется уже закреплённым.
+   * Для браузера/PWA (нет window.alcolockDesktop) является no-op.
+   */
+  const syncPopupMovableWithPin = () => {
+    if (!isElectronChatShell()) return;
+    const node = document.querySelector('[data-chat-layout-pinned]');
+    const pinned = node?.getAttribute('data-chat-layout-pinned') === '1';
+    if (pinned === lastPinSyncValue) return;
+    lastPinSyncValue = pinned;
+    const desktop = window.alcolockDesktop;
+    if (desktop?.setPopupMoveable) {
+      void desktop.setPopupMoveable(!pinned);
+    }
+  };
+
   const ensurePreviewCountObserver = () => {
     if (previewMutationObserver) return;
     const dock = document.querySelector(OPERATOR_CHAT_POPUP_DOCK_SELECTOR);
@@ -851,6 +897,7 @@ function installPwaDynamicPopupFrame(): () => void {
       enforceMinOuterFrame();
       runInitialApply();
       ensurePreviewCountObserver();
+      syncPopupMovableWithPin();
     });
   });
 
@@ -883,6 +930,9 @@ function installPwaDynamicPopupFrame(): () => void {
       dockWatchTimer = 0;
     }
   }, 400);
+  // Electron: лёгкий поллинг состояния закрепа (атрибут data-chat-layout-pinned
+  // монтируется React-ом динамически), чтобы держать win.setMovable актуальным.
+  pinSyncTimer = window.setInterval(syncPopupMovableWithPin, 600);
   window.setTimeout(() => {
     if (dockWatchTimer) {
       window.clearInterval(dockWatchTimer);
@@ -895,6 +945,7 @@ function installPwaDynamicPopupFrame(): () => void {
     window.clearTimeout(initialApplyTimer);
     window.clearTimeout(applyTimer);
     if (dockWatchTimer) window.clearInterval(dockWatchTimer);
+    if (pinSyncTimer) window.clearInterval(pinSyncTimer);
     vv?.removeEventListener('resize', onWindowResize);
     window.removeEventListener('resize', onWindowResize);
     window.removeEventListener('mouseup', enforceMinOuterFrame);

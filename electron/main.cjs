@@ -1305,6 +1305,17 @@ ipcMain.handle('operator-chat-popup:set-bounds', (event, bounds = {}) => {
   );
 });
 
+/** Закреп окна: запрет/разрешение перемещения окна ОС (Electron). */
+ipcMain.handle('operator-chat-popup:set-movable', (event, movable) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win || win.isDestroyed()) return;
+  try {
+    win.setMovable(Boolean(movable));
+  } catch {
+    /* ignore */
+  }
+});
+
 /** Получить токен авторизации из основного окна для передачи в popup */
 ipcMain.handle('operator-chat-popup:get-auth-token', async () => {
   if (!mainWindow || mainWindow.isDestroyed()) return null;

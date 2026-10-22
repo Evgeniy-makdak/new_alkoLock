@@ -23,6 +23,10 @@ contextBridge.exposeInMainWorld('alcolockDesktop', {
   setPopupBounds(bounds) {
     return ipcRenderer.invoke('operator-chat-popup:set-bounds', bounds);
   },
+  /** Закреп окна: запрет перемещения окна ОС (Electron). */
+  setPopupMoveable(movable) {
+    return ipcRenderer.invoke('operator-chat-popup:set-movable', movable);
+  },
   onZoomChanged(callback) {
     const channel = 'operator-chat-popup:zoom-changed';
     const listener = () => {
