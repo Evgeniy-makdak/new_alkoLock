@@ -270,13 +270,16 @@ function installBrowserWebPopupFrame(): () => void {
     isApplyingLock = true;
     selfResizeUntil = Date.now() + SELF_RESIZE_COOLDOWN_MS;
     isSelfResize = true;
-    resizePopupOuter(next.outerW, next.outerH, position.left, position.top);
+    // Браузер: авто-фит НЕ двигает окно (только resize). Позицию окна задаёт пользователь
+    // (window.open / drag) — иначе mid-layout leftOverflow или stale window.screen при
+    // перетаскивании между мониторами резко «уезжают» окно к левому краю монитора.
+    resizePopupOuter(next.outerW, next.outerH);
     lockRef.current = {
       ...lockRef.current,
       outerW: next.outerW,
       outerH: next.outerH,
-      left: position.left,
-      top: position.top,
+      left: window.screenX,
+      top: window.screenY,
     };
     writeOperatorChatPopupFrameLock(lockRef.current);
     window.setTimeout(() => {

@@ -1,6 +1,7 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 import { useSelectedBranchOfficeSync } from '@features/nav_bar_branch_select/hooks/useSelectedBranchOfficeSync';
+import { StorageKeys } from '@shared/const/storageKeys';
 import { cookieManager, getBearerToken, isValidJwtFormat } from '@shared/utils/cookie_manager';
 import { CHAT_POPUP_ACTIVE_STORAGE_KEY } from '@widgets/chat/chatPopup/constants';
 import {
@@ -21,6 +22,8 @@ import {
   requestElectronPopupUnreadRest,
 } from '@widgets/chat/chatPopup/electronPopupUnreadRest';
 import { CHAT_POPUP_HEARTBEAT_MS } from '@widgets/chat/chatPopup/popupPresence';
+import { isBrowserWebChatShell } from '@widgets/chat/chatPopup/chatShellEnvironment';
+import { closeOperatorChatPopupAndRestoreMain } from '@widgets/chat/chatPopup/openOperatorChatPopup';
 import { installOperatorChatPopupResizeObserverErrorGuard } from '@widgets/chat/chatPopup/suppressResizeObserverLoopError';
 import { useOperatorChatPopupWindowFrame } from '@widgets/chat/chatPopup/useOperatorChatPopupWindowFrame';
 
@@ -104,6 +107,43 @@ export default function OperatorChatPopupPage(): null {
 
   useEffect(() => {
     installOperatorChatPopupResizeObserverErrorGuard();
+  }, []);
+
+  useEffect(() => {
+    // Web-попап: если закрыли главное окно (window.opener), закрываем и окно чата.
+    // Только для обычного браузера — Electron/PWA открывают попап без window.opener.
+    if (!isBrowserWebChatShell()) return;
+    if (!window.opener) return;
+
+    const checkOpener = () => {
+      if (!window.opener || window.opener.closed) {
+        window.clearInterval(intervalId);
+        closeOperatorChatPopupAndRestoreMain();
+      }
+    };
+
+    const intervalId = window.setInterval(checkOpener, 1500);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
+    // Web-попап: закрываем окно чата, если пользователь разлогинился в главном окне.
+    // Сигнал — удаление штампа сессии (AUTH_SESSION) из localStorage: событие `storage`
+    // приходит во все окна того же origin (см. clearAuthSessionStamp в AppStore.logout).
+    if (!isBrowserWebChatShell()) return;
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === StorageKeys.AUTH_SESSION && event.newValue == null) {
+        closeOperatorChatPopupAndRestoreMain();
+      }
+    };
+
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener('storage', onStorage);
+    };
   }, []);
 
   useEffect(() => {
