@@ -1465,6 +1465,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         // Вход по WS при пустых сессиях: не разворачивать главное окно — только мини-превью (как у «только иконка чата»).
         const newSessionId = enhancedCreateNewSession({ asMinimized: true });
 
+        // Сразу (в том же синхронном тике) помечаем новую свёрнутую сессию «не пустой»:
+        // иначе removeEmptySessions в гонке с асинхронной загрузкой пользователя/диалога может
+        // вычистить превью и оставить открытую сессию без защиты от чистки (окно «схлопывается»).
+        if (dialogIdStr) {
+          updateSession(newSessionId, { assignedDialogId: dialogIdStr });
+        } else if (userIdNum > 0) {
+          updateSession(newSessionId, { selectedUsers: [userIdNum] });
+        }
+
         for (let i = 0; i < 20; i++) {
           await new Promise((r) => setTimeout(r, 50));
           if (getSession(newSessionId)) break;
@@ -1515,7 +1524,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
           incrementUnreadCount(newSessionId, 1);
         }
 
-        setActiveSessionId(newSessionId);
+        // «Только мини-превью»: активной остаётся открытая сессия — не переключаем активность
+        // на новую свёрнутую (иначе удаляется защита открытой сессии от removeEmptySessions).
+        if (!getSession(newSessionId)?.isMinimized) {
+          setActiveSessionId(newSessionId);
+        }
 
         if (verifiedUser) {
           updateSession(newSessionId, {
