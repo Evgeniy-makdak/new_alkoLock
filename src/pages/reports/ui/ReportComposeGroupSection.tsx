@@ -42,7 +42,6 @@ import type {
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { ReportAddGroupDialog, type ReportAddGroupConfirm } from './ReportAddGroupDialog';
-import { ReportLogicOperatorConnector } from './ReportFilterLogicConnector';
 import composeStyles from './ReportComposeModal.module.scss';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -135,7 +134,6 @@ export function ReportComposeGroupSection({
   columnOptions,
   groupRows,
   onChange,
-  logicOperator,
   onLogicOperatorChange,
   entityMetadata,
   outputRows,
@@ -438,12 +436,6 @@ export function ReportComposeGroupSection({
 
               return (
                 <div key={row.id}>
-                  {index > 0 ? (
-                    <ReportLogicOperatorConnector
-                      value={logicOperator}
-                      onChange={onLogicOperatorChange}
-                    />
-                  ) : null}
                   <div className={composeStyles.filterGroup}>
                   <div className={composeStyles.filterGroupMain}>
                     <div className={composeStyles.filterGroupHead}>

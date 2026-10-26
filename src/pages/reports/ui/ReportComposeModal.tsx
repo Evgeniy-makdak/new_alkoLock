@@ -47,6 +47,10 @@ import {
   normalizeDuplicateColumnKeys,
   stripDuplicateColumnSuffix,
 } from '@pages/reports/lib/reportColumnDuplicate';
+import {
+  applyReportTableFieldPresetAvailable,
+  applyReportTableFieldPresetDefaults,
+} from '@pages/reports/lib/reportTableFieldPresets';
 import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
@@ -194,7 +198,7 @@ export function ReportComposeModal({
   const [composeSortRows, setComposeSortRows] = useState<ReportComposeSortRow[]>([]);
   const [composeGroupRows, setComposeGroupRows] = useState<ReportComposeGroupRow[]>([]);
   const [composeHavingLogicOperator, setComposeHavingLogicOperator] =
-    useState<ReportLogicOperator>('or');
+    useState<ReportLogicOperator>('and');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const prevComposeEntityRef = useRef<string | null>(null);
   /** Baseline UI при открытии edit — «Сформировать» неактивна, пока снимок совпадает. */
@@ -225,7 +229,7 @@ export function ReportComposeModal({
       setTableFieldsSelection([]);
       setComposeSortRows([]);
       setComposeGroupRows([]);
-      setComposeHavingLogicOperator('or');
+      setComposeHavingLogicOperator('and');
       setSelectedBranchOffices([]);
       return;
     }
@@ -275,7 +279,7 @@ export function ReportComposeModal({
       parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields, queryBody?.having),
     );
     setComposeHavingLogicOperator(
-      queryBody?.havingConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',
+      queryBody?.havingConnects?.[0]?.logicOperator === 'or' ? 'or' : 'and',
     );
     const restoredDisplay: Record<string, string> = {};
     const displayCounts = new Map<string, number>();
@@ -335,7 +339,7 @@ export function ReportComposeModal({
     if (!metadata) return [];
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
     const activeRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
-    return mergeAllReportTableFieldOptions(
+    const fullOptions = mergeAllReportTableFieldOptions(
       metadata,
       activeRows,
       fieldMap,
@@ -344,6 +348,8 @@ export function ReportComposeModal({
       entities,
       t,
     );
+    // ТЗ: состав «Доступных колонок» по пресету; для сущностей вне пресета — без изменений.
+    return applyReportTableFieldPresetAvailable(metadata.entityName, fullOptions);
   }, [
     metadata,
     outputRows,
@@ -445,8 +451,31 @@ export function ReportComposeModal({
 
   const defaultRootTableFields = useMemo(() => {
     if (!metadata) return [];
+    // ТЗ: «Текущий состав» по умолчанию — bold-позиции пресета (в т.ч. вложенные
+    // дисплейные колонки); для сущностей вне пресета — прежний состав из корневых полей.
+    const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+    const presetDefaults = applyReportTableFieldPresetDefaults(
+      metadata.entityName,
+      mergeAllReportTableFieldOptions(
+        metadata,
+        outputRows,
+        fieldMap,
+        reportTableFieldsMetadataByRowId,
+        referenceEntityMetadataByName,
+        entities,
+        t,
+      ),
+    );
+    if (presetDefaults.length > 0) return presetDefaults;
     return buildRootReportTableFieldOptions(metadata, outputRows, entities, t);
-  }, [metadata, outputRows, entities, t]);
+  }, [
+    metadata,
+    outputRows,
+    entities,
+    t,
+    referenceEntityMetadataByName,
+    reportTableFieldsMetadataByRowId,
+  ]);
 
   const showColumnsSection =
     defaultRootTableFields.length > 0 || tableFieldsDialogOptions.length > 0;
@@ -543,7 +572,7 @@ export function ReportComposeModal({
     if (entityChanged) {
       setComposeSortRows([]);
       setComposeGroupRows([]);
-      setComposeHavingLogicOperator('or');
+      setComposeHavingLogicOperator('and');
       const nextDefaults = orderReportCompositionFieldsByIdentifier(
         defaultRootTableFields.length ? [...defaultRootTableFields] : [],
       );
@@ -590,7 +619,7 @@ export function ReportComposeModal({
         return [...defaultRootTableFields];
       }
 
-      let remapped = source.map((p) => {
+      const remapped = source.map((p) => {
         const key = String(p.value);
         const opt = optionByKey.get(key);
         const prevLabel = (p.label ?? '').trim();
@@ -1063,7 +1092,7 @@ export function ReportComposeModal({
               onAfterEntityChange={() => {
                 setComposeSortRows([]);
                 setComposeGroupRows([]);
-                setComposeHavingLogicOperator('or');
+                setComposeHavingLogicOperator('and');
                 reportGenerationStore.getState().clearResults();
               }}
             />

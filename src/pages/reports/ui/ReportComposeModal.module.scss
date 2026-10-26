@@ -447,12 +447,14 @@
 }
 
 /* Ширина по контенту; flex-wrap на .modalFilterRow переносит на следующую строку.
-   min-width конкретного контрола задаёт ReportSearchMultipleSelect по длине лейбла. */
+   min-width конкретного контрола задаёт ReportSearchMultipleSelect по длине лейбла.
+   max-width не ограничиваем: названия значений в «Группировках/Фильтрации/Сортировке»
+   должны входить целиком без сокращения. */
 %modalFilterFieldWidth {
   flex: 0 1 auto !important;
   width: fit-content !important;
   min-width: 200px !important;
-  max-width: 100% !important;
+  max-width: none !important;
   box-sizing: border-box;
 }
 

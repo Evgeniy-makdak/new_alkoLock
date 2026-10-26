@@ -19,6 +19,7 @@ import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { filterComposeReportEntities } from '@pages/reports/lib/reportTableFieldPresets';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type {
   ReportFieldDefinition,
@@ -188,7 +189,7 @@ export function ReportComposeForm({
         <Autocomplete
           sx={{ ...reportFilterControlSx, width: '100%', maxWidth: '100%' }}
           slotProps={reportFilterAutocompleteSlotProps}
-          options={entities}
+          options={filterComposeReportEntities(entities)}
           loading={entitiesLoading}
           size="small"
           value={selectedEntity}

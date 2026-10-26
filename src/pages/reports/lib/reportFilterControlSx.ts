@@ -60,11 +60,10 @@ export const reportFilterModalControlSx: SxProps<Theme> = {
     maxWidth: 'calc(100% - 24px)',
   },
   // Без field-sizing: content — иначе высота input сжимается и значение «съезжает».
+  // Названия значений в блоках «Группировки/Фильтрация/Сортировки» не сокращаем: без ellipsis.
   '& .MuiInputBase-input': {
     width: 'auto',
     minWidth: '12ch',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
 };
