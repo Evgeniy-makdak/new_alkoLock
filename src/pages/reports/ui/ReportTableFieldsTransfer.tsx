@@ -238,19 +238,23 @@ export function ReportTableFieldsTransfer({
     return map;
   }, [options]);
 
-  const chosenKeys = useMemo(() => new Set(value.map(fieldKey)), [value]);
+  /** Базовые fieldPath в составе (без «#N») — поле скрыто в «Доступных», пока есть хоть один экземпляр. */
+  const chosenBaseKeys = useMemo(
+    () => new Set(value.map((item) => stripDuplicateColumnSuffix(fieldKey(item)))),
+    [value],
+  );
 
   const availableOptions = useMemo(
     () =>
       sortFieldsByLabel(
         options
-          .filter((o) => !chosenKeys.has(fieldKey(o)))
+          .filter((o) => !chosenBaseKeys.has(fieldKey(o)))
           .map((o) => mergeOptionMeta(o, customLabelsByKey, defaultLabelsByValue)),
         customLabelsByKey,
         defaultLabelsByValue,
         sortLocale,
       ),
-    [options, chosenKeys, customLabelsByKey, defaultLabelsByValue, sortLocale],
+    [options, chosenBaseKeys, customLabelsByKey, defaultLabelsByValue, sortLocale],
   );
 
   const chosenOptions = useMemo(
@@ -618,9 +622,8 @@ export function ReportTableFieldsTransfer({
           ? selectedDisplayParam
           : selectedDisplayParam ||
             (isIdentifier ? String(identifierCountEncoded) : noAggregationEncoded);
-        // Идентификатор в таблице не рендерится — глаз всегда закрыт и заблокирован.
-        const isHidden = isIdentifier || Boolean(hiddenByKey[key]);
-        const visibilityLocked = isIdentifier;
+        // Идентификатор при добавлении — видим (как прочие); глаз не блокируем.
+        const isHidden = Boolean(hiddenByKey[key]);
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
         const defaultLabel =
           (defaultLabelsByValue[stripDuplicateColumnSuffix(key)] || key).trim();
@@ -671,7 +674,7 @@ export function ReportTableFieldsTransfer({
                         <span>
                           <IconButton
                             size="small"
-                            disabled={disabled || visibilityLocked}
+                            disabled={disabled}
                             aria-label={
                               isHidden
                                 ? t('reports.composeTransferShowColumn')

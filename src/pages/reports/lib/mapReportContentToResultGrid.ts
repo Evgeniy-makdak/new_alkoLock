@@ -25,7 +25,6 @@ import {
 } from './reportCoordinateMapLink';
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
-import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 import {
   applyReportAggregationHeaderLabel,
   buildReportFieldAggregationMap,
@@ -211,7 +210,7 @@ export function mapReportContentToResultGrid(
   selectedFieldsForColumnOrder?: ReportSelectedFieldPayload[],
   entities: ReportEntityListItem[] = [],
   groupBy?: string[],
-  /** Ключи с закрытым глазом + идентификаторы — не рендерить в гриде. */
+  /** Ключи с закрытым глазом — не рендерить в гриде (в т.ч. Идентификатор, если скрыт). */
   hiddenColumnKeys: string[] = [],
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
@@ -223,8 +222,9 @@ export function mapReportContentToResultGrid(
 
   const allContentKeys = collectReportContentColumnKeys(content);
 
-  // Скрытые пути из UI (fieldName) + alias ответа + идентификаторы.
+  // Скрытые пути из UI (fieldName) + alias ответа.
   // Иначе при alias content-ключ ≠ fieldName и «глаз» перестаёт скрывать колонку.
+  // Идентификатор скрываем только если он в hiddenColumnKeys (закрытый глаз).
   const hiddenSet = new Set<string>();
   for (const key of hiddenColumnKeys) {
     const trimmed = String(key).trim();
@@ -237,16 +237,8 @@ export function mapReportContentToResultGrid(
     if (alias) hiddenSet.add(alias);
   }
   for (const key of allContentKeys) {
-    if (isReportIdentifierFieldPath(key)) {
-      hiddenSet.add(key);
-      continue;
-    }
     const resolved = resolveReportContentFieldName(key, selectedFieldsForColumnOrder);
-    if (
-      isReportIdentifierFieldPath(resolved) ||
-      hiddenSet.has(resolved) ||
-      hiddenSet.has(key)
-    ) {
+    if (hiddenSet.has(resolved) || hiddenSet.has(key)) {
       hiddenSet.add(key);
     }
   }
@@ -265,13 +257,7 @@ export function mapReportContentToResultGrid(
         ?.map((f) => f.fieldName)
         .filter((name) => name && !hiddenSet.has(name)),
     );
-  const columnKeys = rawColumnKeys.filter(
-    (key) =>
-      !hiddenSet.has(key) &&
-      !isReportIdentifierFieldPath(
-        resolveReportContentFieldName(key, selectedFieldsForColumnOrder),
-      ),
-  );
+  const columnKeys = rawColumnKeys.filter((key) => !hiddenSet.has(key));
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
 
   const rawRowByGridKey = new Map<string, Record<string, unknown>>();

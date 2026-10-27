@@ -306,13 +306,6 @@ export function ReportComposeModal({
     for (const key of queryContext?.hiddenColumnKeys ?? []) {
       if (key) restoredHidden[key] = true;
     }
-    for (const field of tableFields) {
-      const key = String(field.value);
-      // Идентификатор в payload есть, в таблице не показываем.
-      if (isReportIdentifierFieldPath(key)) {
-        restoredHidden[key] = true;
-      }
-    }
     reportsStore.getState().setTableFieldHiddenByPath(restoredHidden);
   }, [open, mode]);
 
@@ -401,10 +394,8 @@ export function ReportComposeModal({
       composeEditFingerprint === editBaselineFingerprintRef.current);
 
   // «Сформировать» доступен только при наличии хотя бы одного ВИДИМОГО поля в составе.
-  // Идентификатор в гриде не рендерится — «видимым» не считается.
   const hasVisibleTableColumns = tableFieldsSelection.some((item) => {
     const key = String(item.value);
-    if (isReportIdentifierFieldPath(key)) return false;
     return tableFieldHiddenByPath[key] !== true;
   });
 
@@ -579,16 +570,14 @@ export function ReportComposeModal({
       setTableFieldsSelection(nextDefaults);
       const identifierCount = encodeReportIdentifierDisplayParam();
       const display: Record<string, string> = {};
-      const hidden: Record<string, boolean> = {};
       for (const item of nextDefaults) {
         const key = String(item.value);
         if (isReportIdentifierFieldPath(key)) {
           display[key] = identifierCount;
-          hidden[key] = true;
         }
       }
       setTableFieldDisplayParamByPath(display);
-      setTableFieldHiddenByPath(hidden);
+      setTableFieldHiddenByPath({});
       return;
     }
 
@@ -781,10 +770,9 @@ export function ReportComposeModal({
       );
       const hidden: Record<string, boolean> = {};
       for (const key of allowedExact) {
+        // Новый Идентификатор — видимый (hidden не задаём); count ставит effect ниже.
         if (prevHidden[key] !== undefined) {
           hidden[key] = prevHidden[key]!;
-        } else if (isReportIdentifierFieldPath(key)) {
-          hidden[key] = true;
         }
       }
       setTableFieldHiddenByPath(hidden);
@@ -819,11 +807,6 @@ export function ReportComposeModal({
 
   const handleTableFieldVisibilityChange = useCallback(
     (fieldPath: string, visible: boolean) => {
-      // Идентификатор в таблице не рендерится — глаз всегда «закрыт».
-      if (isReportIdentifierFieldPath(fieldPath)) {
-        setTableFieldHidden(fieldPath, true);
-        return;
-      }
       setTableFieldHidden(fieldPath, !visible);
     },
     [setTableFieldHidden],
@@ -856,18 +839,13 @@ export function ReportComposeModal({
       setTableFieldDisplayParamByPath(next);
     }
 
-    // Идентификаторы скрыты в гриде (в query остаются); прочие ключи вне состава убираем.
+    // Ключи вне состава убираем; Идентификатор по умолчанию видимый (как прочие поля).
     const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
     const hidden: Record<string, boolean> = {};
     let hiddenChanged = false;
     for (const key of allowed) {
-      if (prevHidden[key] !== undefined) {
-        hidden[key] = isReportIdentifierFieldPath(key) ? true : prevHidden[key]!;
-      } else if (isReportIdentifierFieldPath(key)) {
-        hidden[key] = true;
-      } else {
-        continue;
-      }
+      if (prevHidden[key] === undefined) continue;
+      hidden[key] = prevHidden[key]!;
       if (hidden[key] !== prevHidden[key]) hiddenChanged = true;
     }
     for (const key of Object.keys(prevHidden)) {
@@ -971,10 +949,7 @@ export function ReportComposeModal({
           ...(bodyWithGroup.selectedFields ?? []).flatMap((field) => {
             const fieldName = (field.fieldName ?? '').trim();
             if (!fieldName) return [];
-            if (
-              isReportIdentifierFieldPath(fieldName) ||
-              hiddenFieldNames.includes(fieldName)
-            ) {
+            if (hiddenFieldNames.includes(fieldName)) {
               const alias = (field.alias ?? '').trim();
               return alias ? [fieldName, alias] : [fieldName];
             }

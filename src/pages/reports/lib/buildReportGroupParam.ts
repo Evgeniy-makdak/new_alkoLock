@@ -748,36 +748,33 @@ function isNestedReportFieldName(fieldName: string): boolean {
   return fieldName.includes('.');
 }
 
+/**
+ * Дедуп selectedFields: один ключ = fieldName + aggregation.
+ * Дубли колонок из «Текущего состава» (одно поле с count и без) остаются отдельными.
+ * groupSet оставлен в сигнатуре — вызывающий код groupBy; на ключ дедупа не влияет.
+ */
 function dedupeSelectedFieldsByFieldName(
   fields: ReportSelectedFieldPayload[],
-  groupSet: Set<string>,
+  _groupSet: Set<string>,
 ): ReportSelectedFieldPayload[] {
-  const byName = new Map<string, ReportSelectedFieldPayload>();
+  const byKey = new Map<string, ReportSelectedFieldPayload>();
 
   for (const field of fields) {
     const name = field.fieldName?.trim();
     if (!name) continue;
 
-    const existing = byName.get(name);
+    const key = `${name}:${field.aggregation ?? ''}`;
+    const existing = byKey.get(key);
     if (!existing) {
-      byName.set(name, field);
+      byKey.set(key, field);
       continue;
     }
-
-    const inGroup = groupSet.has(name);
-    if (inGroup) {
-      if (existing.aggregation && !field.aggregation) {
-        byName.set(name, field);
-      }
-      continue;
-    }
-
-    if (!existing.aggregation && field.aggregation) {
-      byName.set(name, field);
+    if (!existing.alias && field.alias) {
+      byKey.set(key, { ...existing, alias: field.alias });
     }
   }
 
-  return Array.from(byName.values());
+  return Array.from(byKey.values());
 }
 
 function resolveAggregationForGroupedField(
@@ -859,10 +856,14 @@ export function finalizeReportQueryBodyForGroupBy(
 
   const selectedFields = deduped.map((field) => {
     if (!field.fieldName) return field;
+    // Поле в GROUP BY: голую колонку без aggregation оставляем;
+    // дубль с aggregation (COUNT и т.п.) из «Текущего состава» не трогаем.
+    if (groupSet.has(field.fieldName) && field.aggregation) {
+      return field;
+    }
     if (groupSet.has(field.fieldName)) {
       return stripSelectedFieldAggregation(field);
     }
-    // Сохраняем aggregation только если пользователь выбрал её в «Текущий состав».
     return field;
   });
 

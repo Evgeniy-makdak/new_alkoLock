@@ -53,7 +53,10 @@ import {
 import { reportOutputOperationKey } from './reportOutputFilterKeys';
 import { isGroupFilterControlId } from './reportOutputRow';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
-import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
+import {
+  isDuplicateColumnKey,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
 import { parseReportTableFieldDisplayParam } from './reportTableFieldDisplayParam';
 import { resolveEventsForFrontLevelFilterApiFieldName } from './eventsForFrontReportOptions';
 import {
@@ -308,12 +311,16 @@ function buildRowReportTableFields(
       payload.alias = apiAlias;
     }
     // aggregation — только из селекта «Текущий состав»; ключ — строка (м.б. дубль
-    // «field#N» → своя агрегация), иначе база «field» → общая.
+    // «field#N» → своя агрегация). Дубль НЕ наследует aggregation базы.
     // «Не выбрана» / «Без агрегации» (none) → без aggregation.
-    const perFieldEncoded =
-      context.displayParamByPath[emitPath] ??
-      context.displayParamByPath[path] ??
-      context.displayParamByPath[basePath] ?? '';
+    const perFieldEncoded = isDuplicateColumnKey(emitPath)
+      ? (context.displayParamByPath[emitPath] ??
+        context.displayParamByPath[path] ??
+        '')
+      : (context.displayParamByPath[emitPath] ??
+        context.displayParamByPath[path] ??
+        context.displayParamByPath[basePath] ??
+        '');
     const perField = parseReportTableFieldDisplayParam(perFieldEncoded);
     if (
       perField?.kind === 'function' &&

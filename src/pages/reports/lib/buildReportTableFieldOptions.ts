@@ -335,6 +335,8 @@ export function buildRootReportTableFieldOptions(
 
   for (const f of entityMetadata.fields) {
     if (!isReportTableSelectableField(f)) continue;
+    // Идентификатор не входит в дефолтный «Текущий состав» — только в «Доступные».
+    if (f.fieldName === 'id') continue;
     if (seen.has(f.fieldName)) continue;
     seen.add(f.fieldName);
     drafts.push({
@@ -343,19 +345,6 @@ export function buildRootReportTableFieldOptions(
       sourceLabel: entitySourceLabel,
       qualifyAs: 'root',
       leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, f.fieldName),
-    });
-  }
-
-  // Идентификатор корневой сущности всегда в дефолтном «Текущем составе» (даже если selectable=false).
-  const idField = entityMetadata.fields.find((f) => f.fieldName === 'id');
-  if (idField && !seen.has('id')) {
-    seen.add('id');
-    drafts.unshift({
-      value: 'id',
-      baseLabel: idField.label || idField.fieldName,
-      sourceLabel: entitySourceLabel,
-      qualifyAs: 'root',
-      leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, 'id'),
     });
   }
 

@@ -1,5 +1,7 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
+
 import type { ReportEntityListItem } from '../types/reportApiTypes';
 
 /**
@@ -264,7 +266,10 @@ export function applyReportTableFieldPresetDefaults(
 ): Values {
   const preset = REPORT_TABLE_FIELD_PRESETS.find((p) => p.entityName === entityName);
   if (!preset) return [];
-  return pickPresetOptions(options, preset.defaults);
+  // Идентификатор (id / *.id) — только вручную из «Доступных», не в дефолтном составе.
+  return pickPresetOptions(options, preset.defaults).filter(
+    (item) => !isReportIdentifierFieldPath(String(item.value ?? '')),
+  );
 }
 
 /** Скрытие технических сущностей (например «Водитель») из списка отчётов. */
