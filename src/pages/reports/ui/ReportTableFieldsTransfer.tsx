@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
+import CloseIcon from '@mui/icons-material/Close';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -43,12 +44,10 @@ import { encodeReportIdentifierDisplayParam } from '@pages/reports/lib/reportTab
 import {
   buildDuplicateColumnKey,
   getDuplicateColumnIndex,
+  isDuplicateColumnKey,
   stripDuplicateColumnSuffix,
 } from '@pages/reports/lib/reportColumnDuplicate';
-import {
-  isReportIdentifierFieldPath,
-  orderReportCompositionFieldsByIdentifier,
-} from '@pages/reports/lib/reportTableFieldIdentifier';
+import { isReportIdentifierFieldPath } from '@pages/reports/lib/reportTableFieldIdentifier';
 
 import composeStyles from './ReportComposeModal.module.scss';
 
@@ -333,11 +332,8 @@ export function ReportTableFieldsTransfer({
         const explicit = item.label?.trim();
         if (explicit) labels[key] = explicit;
       }
-      // id / *.id всегда сверху (корневой id → связанные идентификаторы → прочие).
-      const ordered = orderReportCompositionFieldsByIdentifier(
-        next.map((item) => mergeOptionMeta(item, labels, defaultLabelsByValue)),
-      );
-      onChange(ordered);
+      // Без принудительного pin идентификаторов наверх — строки перемещаются свободно.
+      onChange(next.map((item) => mergeOptionMeta(item, labels, defaultLabelsByValue)));
     },
     [onChange, customLabelsByKey, defaultLabelsByValue],
   );
@@ -365,14 +361,12 @@ export function ReportTableFieldsTransfer({
 
   const moveChosenRow = useCallback(
     (key: string, direction: -1 | 1) => {
-      // Идентификаторы не переставляются; выше блока id нельзя поднять другие поля.
-      if (isReportIdentifierFieldPath(key)) return;
+      // Идентификаторы перемещаются как все остальные строки «Текущего состава».
       const keys = [...chosenKeysList];
       const index = keys.indexOf(key);
       if (index < 0) return;
       const swapWith = index + direction;
       if (swapWith < 0 || swapWith >= keys.length) return;
-      if (isReportIdentifierFieldPath(keys[swapWith]!)) return;
       [keys[index], keys[swapWith]] = [keys[swapWith]!, keys[index]!];
       emitChosen(reorderChosenKeys(keys));
     },
@@ -417,6 +411,19 @@ export function ReportTableFieldsTransfer({
     emitChosen(value.filter((item) => !remove.has(fieldKey(item))));
     setChosenSelected([]);
     if (renamingKey && remove.has(renamingKey)) {
+      setRenamingKey(null);
+    }
+  };
+
+  /** Удаление ОДНОЙ строки состава (крестик у клона «field#N»). */
+  const removeChosenRow = (removeKey: string) => {
+    setCustomLabelsByKey((prev) => {
+      const next = { ...prev };
+      delete next[removeKey];
+      return next;
+    });
+    emitChosen(value.filter((item) => fieldKey(item) !== removeKey));
+    if (renamingKey === removeKey) {
       setRenamingKey(null);
     }
   };
@@ -504,7 +511,6 @@ export function ReportTableFieldsTransfer({
    */
   const duplicateChosenRow = useCallback(
     (rowKey: string, rowIndex: number) => {
-      if (isReportIdentifierFieldPath(rowKey)) return;
       const base = stripDuplicateColumnSuffix(rowKey);
       const maxIndex = Math.max(
         1,
@@ -613,18 +619,9 @@ export function ReportTableFieldsTransfer({
         const displayOptions = side === 'chosen' ? (getDisplayOptions?.(key) ?? []) : [];
         const selectedDisplayParam = displayParamByKey[key] ?? '';
         const isIdentifier = isReportIdentifierFieldPath(key);
-        const prevRowKey = rowIndex > 0 ? fieldKey(items[rowIndex - 1]!) : '';
-        const nextRowKey = rowIndex < items.length - 1 ? fieldKey(items[rowIndex + 1]!) : '';
-        const canMoveRowUp =
-          side === 'chosen' &&
-          !isIdentifier &&
-          rowIndex > 0 &&
-          !isReportIdentifierFieldPath(prevRowKey);
-        const canMoveRowDown =
-          side === 'chosen' &&
-          !isIdentifier &&
-          rowIndex < items.length - 1 &&
-          !isReportIdentifierFieldPath(nextRowKey);
+        const isCloneRow = isDuplicateColumnKey(key);
+        const canMoveRowUp = side === 'chosen' && rowIndex > 0;
+        const canMoveRowDown = side === 'chosen' && rowIndex < items.length - 1;
         const identifierCountEncoded =
           displayOptions.find((item) => {
             const raw = String(item.value);
@@ -683,7 +680,7 @@ export function ReportTableFieldsTransfer({
             : baseDefaultLabel;
         const autoLabel =
           dupIndex === 1 ? baseDefaultLabel : `${originalRowLabel}_${dupIndex - 1}`;
-        const isCustomLabel = !isIdentifier && label.trim() !== autoLabel;
+        const isCustomLabel = label.trim() !== autoLabel;
 
         return (
           <ListItem
@@ -752,7 +749,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled && !isIdentifier ? (
+                    {!disabled ? (
                       <Tooltip title={t('reports.composeTransferMoveUp')}>
                         <span>
                           <IconButton
@@ -771,7 +768,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled && !isIdentifier ? (
+                    {!disabled ? (
                       <Tooltip title={t('reports.composeTransferMoveDown')}>
                         <span>
                           <IconButton
@@ -790,7 +787,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled && !isIdentifier ? (
+                    {!disabled ? (
                       <Tooltip title={t('reports.composeTransferRename')}>
                         <IconButton
                           size="small"
@@ -806,7 +803,7 @@ export function ReportTableFieldsTransfer({
                     ) : null}
                   </span>
                   <span className={composeStyles.transferActionSlot}>
-                    {!disabled && !isIdentifier ? (
+                    {!disabled ? (
                       <Tooltip title={t('reports.composeTransferDuplicate')}>
                         <IconButton
                           size="small"
@@ -817,6 +814,23 @@ export function ReportTableFieldsTransfer({
                             duplicateChosenRow(key, rowIndex);
                           }}>
                           <AddIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    ) : null}
+                  </span>
+                  <span className={composeStyles.transferActionSlot}>
+                    {!disabled && isCloneRow && !isCustomLabel ? (
+                      <Tooltip
+                        title={t('reports.cloneRemoveTitle', { defaultValue: 'Удалить клон' })}>
+                        <IconButton
+                          size="small"
+                          aria-label={t('reports.cloneRemoveTitle', { defaultValue: 'Удалить клон' })}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            removeChosenRow(key);
+                          }}>
+                          <CloseIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     ) : null}

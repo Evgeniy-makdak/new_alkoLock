@@ -770,7 +770,9 @@ export function ReportComposeModal({
 
   const handleTableFieldsSelectionChange = useCallback(
     (next: Values) => {
-      const selection = orderReportCompositionFieldsByIdentifier(next);
+      // Порядок сохраняем как в UI (без принудительного pin идентификаторов наверх —
+      // строки-идентификаторы перемещаются как все остальные).
+      const selection = next;
       setTableFieldsSelection(selection);
 
       const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
