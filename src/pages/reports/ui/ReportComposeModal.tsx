@@ -245,11 +245,10 @@ export function ReportComposeModal({
     const fromStore =
       primaryRow.reportTableFields.length > 0 ? [...primaryRow.reportTableFields] : [];
     // Нормализация: повторные вхождения поля — «field#N», иначе дубли React-ключей
-    // и общий дисплей-параметр у дублей.
+    // и общий дисплей-параметр у дублей. Порядок строк сохраняем КАК В СФОРМИРОВАННОМ
+    // отчёте (без принудительного переноса идентификатора наверх при редактировании).
     const tableFields = normalizeDuplicateColumnKeys(
-      orderReportCompositionFieldsByIdentifier(
-        fromQuery.length > 0 ? fromQuery : fromStore,
-      ),
+      fromQuery.length > 0 ? fromQuery : fromStore,
     );
 
     const savedBranchOffices = queryContext?.branchOffices;
