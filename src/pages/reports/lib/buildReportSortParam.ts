@@ -5,6 +5,7 @@ import {
   isReportCompositeFieldPath,
   planReportCompositeResultColumns,
 } from './reportEntityCompositeFields';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 
 import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
 import { createReportComposeSortRow } from '../types/reportComposeSort';
@@ -213,7 +214,8 @@ export function alignReportGridSortModelToColumnFields(
 
 /** UI-ключ колонки → fieldName для sort / groupBy в POST …/query. */
 export function resolveComposeColumnApiField(columnKey: string): string | null {
-  const key = columnKey.trim();
+  // Клоны «field#N» → базовый fieldPath (SQL видит реальное поле, без суффикса).
+  const key = stripDuplicateColumnSuffix(String(columnKey ?? '').trim());
   if (!key || isReportCompositeFieldPath(key)) {
     const members = isReportCompositeFieldPath(key) ? expandCompositeFieldPath(key) : [];
     const firstMember = members.find((member) => !isReportCompositeFieldPath(member));

@@ -457,8 +457,8 @@ export function ReportTableFieldsTransfer({
 
   /** Вернуть подпись колонки к дефолту из metadata («Сущность -> поле»). */
   const resetLabelToDefault = (fieldValue: string) => {
-    const defaultLabel =
-      defaultLabelsByValue[stripDuplicateColumnSuffix(fieldValue)] || fieldValue;
+    const baseKey = stripDuplicateColumnSuffix(fieldValue);
+    const defaultLabel = defaultLabelsByValue[baseKey] || fieldValue;
     const nextLabels = { ...customLabelsByKey };
     delete nextLabels[fieldValue];
     setCustomLabelsByKey(nextLabels);
@@ -466,6 +466,23 @@ export function ReportTableFieldsTransfer({
       setRenamingKey(null);
       setRenameDraft('');
     }
+    // Клон («field#N»): «восстановить по умолчанию» возвращает СИСТЕМНОЕ имя клона
+    // («исходная строка + _N»), а не дефолт оригинала, — ручной алиас снимается.
+    const dupIndex = getDuplicateColumnIndex(fieldValue);
+    const baseOriginalRow =
+      dupIndex === 1
+        ? undefined
+        : value.find(
+            (item) =>
+              stripDuplicateColumnSuffix(fieldKey(item)) === baseKey &&
+              getDuplicateColumnIndex(fieldKey(item)) === 1,
+          );
+    const originalRowLabel =
+      baseOriginalRow?.label != null && String(baseOriginalRow.label).trim() !== ''
+        ? String(baseOriginalRow.label).trim()
+        : defaultLabel;
+    const systemLabel =
+      dupIndex === 1 ? defaultLabel : `${originalRowLabel}_${dupIndex - 1}`;
     onChange(
       value.map((item) => {
         const key = fieldKey(item);
@@ -473,7 +490,7 @@ export function ReportTableFieldsTransfer({
           value: key,
           label:
             key === fieldValue
-              ? defaultLabel
+              ? systemLabel
               : resolveFieldLabel(key, nextLabels, defaultLabelsByValue, item),
         };
       }),
@@ -497,7 +514,28 @@ export function ReportTableFieldsTransfer({
         }),
       );
       const dupKey = buildDuplicateColumnKey(base, maxIndex + 1);
-      const dupLabel = resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
+      // Порядковый номер клона (первый дубль — «_1», второй — «_2» и т.д.)
+      // добавляется к подписи строки и автоматически попадает в SQL-alias
+      // (resolveReportFieldAliasForApi: подпись ≠ дефолтной → alias эмитится),
+      // чтобы колонки-дубли были различимы при группировке/фильтрации.
+      // Без скобок: бэк отклоняет их в именах алиасов.
+      const cloneSequence = value.filter(
+        (item) => stripDuplicateColumnSuffix(fieldKey(item)) === base,
+      ).length;
+      // Подпись клона строится от ИСХОДНОЙ (первой) строки базового поля + порядковый
+      // номер клона («_1», «_2», …) — тогда она совпадает с системной подписью
+      // (autoLabel в renderList) и «восстановить по умолчанию» не показывается
+      // у технических клонов.
+      const baseOriginalRow = value.find(
+        (item) =>
+          stripDuplicateColumnSuffix(fieldKey(item)) === base &&
+          getDuplicateColumnIndex(fieldKey(item)) === 1,
+      );
+      const baseOriginalLabel =
+        baseOriginalRow?.label != null && String(baseOriginalRow.label).trim() !== ''
+          ? String(baseOriginalRow.label).trim()
+          : resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
+      const dupLabel = `${baseOriginalLabel}_${cloneSequence}`;
       const next = value.map((item) =>
         mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue),
       );
@@ -625,9 +663,27 @@ export function ReportTableFieldsTransfer({
         // Идентификатор при добавлении — видим (как прочие); глаз не блокируем.
         const isHidden = Boolean(hiddenByKey[key]);
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
-        const defaultLabel =
-          (defaultLabelsByValue[stripDuplicateColumnSuffix(key)] || key).trim();
-        const isCustomLabel = !isIdentifier && label.trim() !== defaultLabel;
+        // Системное название строки: оригинал — дефолтная подпись поля; клон — подпись
+        // исходной строки + «_N» (технический суффикс для бэка). «Восстановить значение
+        // по умолчанию» показываем только если оператор ВРУЧНУЮ изменил название.
+        const baseKey = stripDuplicateColumnSuffix(key);
+        const baseDefaultLabel = (defaultLabelsByValue[baseKey] || baseKey).trim();
+        const dupIndex = getDuplicateColumnIndex(key);
+        const originalRow =
+          dupIndex === 1
+            ? undefined
+            : value.find(
+                (item) =>
+                  stripDuplicateColumnSuffix(fieldKey(item)) === baseKey &&
+                  getDuplicateColumnIndex(fieldKey(item)) === 1,
+              );
+        const originalRowLabel =
+          originalRow?.label != null && String(originalRow.label).trim() !== ''
+            ? String(originalRow.label).trim()
+            : baseDefaultLabel;
+        const autoLabel =
+          dupIndex === 1 ? baseDefaultLabel : `${originalRowLabel}_${dupIndex - 1}`;
+        const isCustomLabel = !isIdentifier && label.trim() !== autoLabel;
 
         return (
           <ListItem

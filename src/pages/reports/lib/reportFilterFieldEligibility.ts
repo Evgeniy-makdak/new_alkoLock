@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 
 import type { ReportEntityMetadata, ReportFieldDefinition } from '../types/reportApiTypes';
@@ -63,7 +64,9 @@ export function resolveReportFilterPathLeafField(
     if (!field) return undefined;
     if (i === parts.length - 1) return field;
 
-    const ref = field.referenceEntity?.trim();
+    // Явная аннотация: иначе TS (строгий контроль потока в цикле) выводит «any»
+    // из-за косвенной циклической ссылки meta → field → ref.
+    const ref: string | undefined = field.referenceEntity?.trim();
     if (!ref) return field;
     meta = nestedByName[ref] ?? null;
   }
@@ -85,17 +88,17 @@ export function buildReportFilterOptionsFromComposition(
   const seen = new Set<string>();
 
   for (const item of compositionFields) {
-    const path = String(item.value ?? '').trim();
-    if (!path || seen.has(path)) continue;
-    if (isReportIdentifierFieldPath(path)) continue;
+    const rawPath = String(item.value ?? '').trim();
+    if (!rawPath || seen.has(rawPath)) continue;
+    if (isReportIdentifierFieldPath(rawPath)) continue;
 
     const isCoordComposite =
-      path === COORDINATES_COMPOSITE_PROPERTY ||
-      path.endsWith(`.${COORDINATES_COMPOSITE_PROPERTY}`);
+      rawPath === COORDINATES_COMPOSITE_PROPERTY ||
+      rawPath.endsWith(`.${COORDINATES_COMPOSITE_PROPERTY}`);
     if (isCoordComposite) {
-      seen.add(path);
+      seen.add(rawPath);
       options.push({
-        value: path,
+        value: rawPath,
         label:
           (item.label != null && String(item.label).trim()) ||
           t('reports.composite.entityCoordinates'),
@@ -103,13 +106,19 @@ export function buildReportFilterOptionsFromComposition(
       continue;
     }
 
-    const leaf = resolveReportFilterPathLeafField(path, metadata, nestedByName);
+    // Клоны («field#N»): фильтруемость/leaf проверяем по БАЗОВОМУ пути,
+    // а в опцию кладём ИСХОДНЫЙ ключ клона с его подписью («…_1»).
+    const basePath = stripDuplicateColumnSuffix(rawPath);
+    const leaf = resolveReportFilterPathLeafField(basePath, metadata, nestedByName);
     if (!leaf?.filterable) continue;
 
-    seen.add(path);
+    seen.add(rawPath);
     options.push({
-      value: path,
-      label: (item.label != null && String(item.label).trim()) || (leaf.label ?? '').trim() || path,
+      value: rawPath,
+      label:
+        (item.label != null && String(item.label).trim()) ||
+        (leaf.label ?? '').trim() ||
+        rawPath,
     });
   }
 

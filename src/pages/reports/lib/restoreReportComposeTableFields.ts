@@ -5,7 +5,10 @@ import {
   QUALIFIED_LABEL_SEPARATOR,
   ROOT_ENTITY_LABEL_SEPARATOR,
 } from './buildReportTableFieldOptions';
-import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
+import {
+  decodeReportFieldAliasForUi,
+  extractReportTableFieldLabelLeaf,
+} from './reportSelectedFieldAliases';
 import { buildDuplicateColumnKey } from './reportColumnDuplicate';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
@@ -42,6 +45,8 @@ export function restoreReportComposeTableFieldsFromQuery(
   const result: Values = [];
   // Дубли колонок («latitude», «latitude#2», …) сохраняются при редактировании отчёта.
   const seen = new Map<string, number>();
+  // Имя ИСХОДНОЙ строки базового поля — от неё строится системное имя клона («…_1»).
+  const baseLabelByPath = new Map<string, string>();
 
   for (const field of selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
@@ -50,24 +55,52 @@ export function restoreReportComposeTableFieldsFromQuery(
     seen.set(path, occurrence);
     const key = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
 
-    // Полная UI-подпись с карандаша (в т.ч. «Сущность -> …») важнее сырого alias-листа.
-    const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
-    if (fromHeaders) {
-      result.push({ value: key, label: fromHeaders });
+    const fromAlias = (field.alias ?? '').trim()
+      ? decodeReportFieldAliasForUi(String(field.alias)).trim()
+      : '';
+
+    if (occurrence === 1) {
+      // Полная UI-подпись с карандаша (в т.ч. «Сущность -> …») важнее сырого alias-листа.
+      const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
+      if (fromHeaders) {
+        baseLabelByPath.set(path, fromHeaders);
+        result.push({ value: key, label: fromHeaders });
+        continue;
+      }
+      const fromOption = (optionLabelByPath[path] ?? '').trim();
+      const label =
+        (fromAlias && fromOption
+          ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, fromOption)
+          : '') ||
+        fromAlias ||
+        fromOption ||
+        path;
+      baseLabelByPath.set(path, label);
+      result.push({ value: key, label });
       continue;
     }
 
-    const fromAlias = (field.alias ?? '').trim()
-      ? decodeReportFieldAliasForUi(String(field.alias))
+    // Клон («field#N»): системное имя = имя исходной строки + «_N» (с подчёркиванием!).
+    // Алиас бэка «Время_события_1» декодируется как «Время события 1» — распознаём
+    // его как системный суффикс и возвращаем UI-форму «…Время события_1».
+    const baseLabel = baseLabelByPath.get(path) ?? '';
+    // Алиас на бэке хранит только «лист» подписи и кодируется «_» вместо пробелов
+    // («Время_события_1»). Системный алиас клона = encode(лист базовой подписи) + «_N»,
+    // иначе декодированную подпись не отличить от ручного переименования.
+    const baseLeaf = extractReportTableFieldLabelLeaf(baseLabel) || baseLabel;
+    const rawAlias = (field.alias ?? '').trim();
+    const systemEncodedAlias = baseLeaf
+      ? `${baseLeaf.replace(/\s+/g, '_')}_${occurrence - 1}`
       : '';
-    const fromOption = (optionLabelByPath[path] ?? '').trim();
-    const label =
-      (fromAlias && fromOption
-        ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, fromOption)
-        : '') ||
-      fromAlias ||
-      fromOption ||
-      path;
+    const isSystemSuffix =
+      Boolean(rawAlias) && Boolean(systemEncodedAlias) && rawAlias === systemEncodedAlias;
+    const label = isSystemSuffix
+      ? `${baseLabel}_${occurrence - 1}`
+      : fromAlias
+        ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, baseLabel)
+        : baseLabel
+          ? `${baseLabel}_${occurrence - 1}`
+          : key;
     result.push({ value: key, label });
   }
 

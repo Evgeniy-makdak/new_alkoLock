@@ -36,6 +36,8 @@ export type ReportQueryContext = {
   branchOffices?: Values;
   /** pageable.sort на момент формирования (для edit: «Сортировка»). */
   sort?: string[];
+  /** UI-ключи строк «Группировки» («field» или клон «field#N») — точный выбор варианта при edit. */
+  groupByColumnKeys?: string[];
   /** Сохранённые настройки графика (если отчёт смотрели/сохраняли как график). */
   chartSpec?: ReportChartSpec;
 };

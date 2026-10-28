@@ -7,6 +7,7 @@ import {
   collectReferenceEntitiesFromMetadata,
 } from '../lib/buildReportTableFieldOptions';
 import type { ReportVehicleLabelMaps } from '../lib/fetchVehicleFrontDataMaps';
+import { stripDuplicateColumnSuffix } from '../lib/reportColumnDuplicate';
 import { findRootFieldForFilterPath } from '../lib/reportFilterFieldPath';
 import {
   reportOutputFunctionKey,
@@ -398,8 +399,12 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
     }
 
     const metadata = get().metadata;
+    // Клон («field#N»): метадата-привязку и авто-nested-путь строим по БАЗОВОМУ полю,
+    // иначе в «Атрибут» попадает лист с суффиксом («name#2»).
     const binding =
-      metadata && nextKey ? findRootFieldForFilterPath(nextKey, metadata) : null;
+      metadata && nextKey
+        ? findRootFieldForFilterPath(stripDuplicateColumnSuffix(nextKey), metadata)
+        : null;
     let initialNested = emptyNestedFilters();
     if (binding?.nestedPath.length) {
       initialNested = {

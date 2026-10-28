@@ -276,7 +276,12 @@ export function ReportComposeModal({
         : (queryContext?.sort ?? []);
     setComposeSortRows(parseComposeSortRowsFromSortParams(savedSort, tableFields));
     setComposeGroupRows(
-      parseComposeGroupRowsFromGroupBy(queryBody?.groupBy, tableFields, queryBody?.having),
+      parseComposeGroupRowsFromGroupBy(
+        queryBody?.groupBy,
+        tableFields,
+        queryBody?.having,
+        queryContext?.groupByColumnKeys,
+      ),
     );
     setComposeHavingLogicOperator(
       queryBody?.havingConnects?.[0]?.logicOperator === 'or' ? 'or' : 'and',
@@ -481,14 +486,16 @@ export function ReportComposeModal({
         : tableFieldsInitialSelection.length > 0
           ? tableFieldsInitialSelection
           : defaultRootTableFields;
-    // Дубли колонок («field#N») схлопываем в одно поле по базовому fieldPath.
+    // Клоны («field#N») — отдельные опции со СВОИМ названием («…_1») — их можно
+    // выбирать в «Группировка»/«Сортировка». Суффикс «#N» срезается при сборке
+    // запроса (resolveComposeColumnApiField / resolveComposeGroupApiFields).
     const seen = new Set<string>();
     const deduped: Values = [];
     for (const item of selected) {
-      const base = stripDuplicateColumnSuffix(String(item.value));
-      if (seen.has(base)) continue;
-      seen.add(base);
-      deduped.push({ ...item, value: base });
+      const key = String(item.value ?? '');
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      deduped.push(item);
     }
     return deduped.filter((item) => !isReportIdentifierFieldPath(String(item.value)));
   }, [tableFieldsSelection, tableFieldsInitialSelection, defaultRootTableFields]);
@@ -600,9 +607,14 @@ export function ReportComposeModal({
       }
 
       // create: только поля текущей сущности; edit — сохраняем пути, пока грузится nested.
+      // Клоны («field#N») сохраняем, если в options есть их БАЗОВОЕ поле, — иначе
+      // дубли «Текущего состава» исчезают при пересчёте эффекта (загрузка nested).
       const source =
         mode === 'create'
-          ? prev.filter((p) => optionByKey.has(String(p.value)))
+          ? prev.filter((p) => {
+              const key = String(p.value);
+              return optionByKey.has(key) || optionByKey.has(stripDuplicateColumnSuffix(key));
+            })
           : prev;
       if (mode === 'create' && source.length === 0 && defaultRootTableFields.length) {
         return [...defaultRootTableFields];
@@ -778,13 +790,20 @@ export function ReportComposeModal({
       setTableFieldHiddenByPath(hidden);
 
       // Группировка только по полям «Текущего состава» — ушедшие колонки снимаем.
+      // Сравнение по БАЗОВОМУ пути (без суффикса дубля): клон «field#N» остаётся
+      // валидным, пока его базовое поле в составе (иначе группировка по клону
+      // слетает при любом изменении состава).
       setComposeGroupRows((prev) => {
-        const nextGroups = prev.filter((row) => allowed.has(row.columnKey.trim()));
+        const nextGroups = prev.filter((row) =>
+          allowed.has(stripDuplicateColumnSuffix(row.columnKey.trim())),
+        );
         return nextGroups.length === prev.length ? prev : nextGroups;
       });
       // Сортировка — по тому же правилу.
       setComposeSortRows((prev) => {
-        const nextSort = prev.filter((row) => allowed.has(row.columnKey.trim()));
+        const nextSort = prev.filter((row) =>
+          allowed.has(stripDuplicateColumnSuffix(row.columnKey.trim())),
+        );
         return nextSort.length === prev.length ? prev : nextSort;
       });
       // Фильтры («Поле результата») — только по полям «Текущего состава»: ушедшие колонки снимаем.
@@ -792,7 +811,7 @@ export function ReportComposeModal({
       const currentRows = store.outputRows;
       const keptRows = currentRows.filter((row) => {
         const key = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-        return !key || allowed.has(key);
+        return !key || allowed.has(stripDuplicateColumnSuffix(key));
       });
       if (keptRows.length !== currentRows.length) {
         for (const row of currentRows) {
@@ -983,6 +1002,10 @@ export function ReportComposeModal({
         branchIds: branchIds.length ? branchIds : undefined,
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
         sort: sortParams,
+        // Точный выбор варианта группировки (оригинал/клон «#N») для edit-restore.
+        groupByColumnKeys: composeGroupRows
+          .map((row) => row.columnKey.trim())
+          .filter(Boolean),
         chartSpec: reportsStore.getState().chartSpec,
       });
       reportGenerationStore.getState().completeSuccess(result);

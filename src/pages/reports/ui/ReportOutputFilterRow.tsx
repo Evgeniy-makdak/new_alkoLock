@@ -7,12 +7,12 @@ import { Box, IconButton, Tooltip } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
+import { stripDuplicateColumnSuffix } from '@pages/reports/lib/reportColumnDuplicate';
 import { isReportSingleValueFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
 import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
 import {
   isNestedFilterPathReadyForValueInput,
   normalizeNestedFilterPath,
-  resolveNestedFilterLeafEntityName,
   resolveNestedFilterLeafField,
 } from '@pages/reports/lib/reportNestedFilterPath';
 import {
@@ -84,11 +84,13 @@ export function ReportOutputFilterRow({
   const addCircleSx = getToolbarCircleIconButtonSx(theme);
 
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
-  const primaryField = primaryKey
-    ? resolveReportOutputPrimaryField(primaryKey, fieldMap, metadata, t)
+  // Клон («field#N»): для metadata-резолва срезаем суффикс дубля (UI-ключ остаётся полным).
+  const primaryBaseKey = stripDuplicateColumnSuffix(primaryKey);
+  const primaryField = primaryBaseKey
+    ? resolveReportOutputPrimaryField(primaryBaseKey, fieldMap, metadata, t)
     : null;
-  const rootCompositeFilter = isRootCompositeOutputFilter(primaryKey, metadata);
-  const rootCompositeParsed = rootCompositeFilter ? parseCompositePath(primaryKey) : null;
+  const rootCompositeFilter = isRootCompositeOutputFilter(primaryBaseKey, metadata);
+  const rootCompositeParsed = rootCompositeFilter ? parseCompositePath(primaryBaseKey) : null;
   const rootCompositeKind =
     rootCompositeParsed &&
     rootCompositeParsed.kind !== 'Coordinates' &&
@@ -121,17 +123,17 @@ export function ReportOutputFilterRow({
   useEffect(() => {
     const needsVehicleLabels =
       refEntity === 'Vehicle' ||
-      primaryKey === 'color' ||
-      primaryKey === 'type' ||
-      primaryKey.endsWith('.color') ||
-      primaryKey.endsWith('.type') ||
+      primaryBaseKey === 'color' ||
+      primaryBaseKey === 'type' ||
+      primaryBaseKey.endsWith('.color') ||
+      primaryBaseKey.endsWith('.type') ||
       nestedPath.includes('color') ||
       nestedPath.includes('type') ||
       nestedPath.includes('vehicle');
     if (needsVehicleLabels) {
       void loadVehicleLabelMaps();
     }
-  }, [refEntity, primaryKey, nestedPath, loadVehicleLabelMaps]);
+  }, [refEntity, primaryBaseKey, nestedPath, loadVehicleLabelMaps]);
 
   const operationKey = reportOutputOperationKey(row.id);
   const filterOperationCode = useMemo(() => {

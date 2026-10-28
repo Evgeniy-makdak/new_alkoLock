@@ -10,6 +10,7 @@ import {
   isReportCompositeFieldPath,
   parseCompositePath,
 } from './reportEntityCompositeFields';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 import { reportOutputFunctionKey } from './reportOutputFilterKeys';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
 
@@ -217,7 +218,8 @@ export function havingOperatorNeedsValues(operator: string): boolean {
 
 /** UI-ключ колонки → все fieldName для groupBy (составная колонка → все её поля). */
 export function resolveComposeGroupApiFields(columnKey: string): string[] {
-  const key = columnKey.trim();
+  // Клоны «field#N» → базовый fieldPath (SQL groupBy видит реальное поле).
+  const key = stripDuplicateColumnSuffix(String(columnKey ?? '').trim());
   if (!key) return [];
   if (isReportCompositeFieldPath(key)) {
     return expandCompositeFieldPath(key).filter(Boolean);
@@ -242,6 +244,8 @@ export function buildComposeGroupParams(rows: Pick<ReportComposeGroupRow, 'colum
 }
 
 function findComposeGroupColumnKey(apiField: string, columnKeys: Values): string {
+  // Без сохранённого выбора — первый матч (оригинал). Точный выбор варианта
+  // (клон «field#N») восстанавливается через preferColumnKeys (queryContext).
   for (const item of columnKeys) {
     const key = String(item.value);
     if (resolveComposeColumnApiField(key) === apiField) {
@@ -255,6 +259,24 @@ function findComposeGroupColumnKey(apiField: string, columnKeys: Values): string
     }
   }
   return apiField;
+}
+
+/** Ключ строки группировки: сохранённый UI-ключ (клон/оригинал), если он в составе, иначе первый матч. */
+function resolveGroupColumnKey(
+  apiField: string,
+  columnKeys: Values,
+  preferColumnKeys?: string[],
+): string {
+  if (preferColumnKeys?.length) {
+    const preferred = preferColumnKeys.find(
+      (key) =>
+        Boolean(key) &&
+        columnKeys.some((option) => String(option.value) === key) &&
+        resolveComposeColumnApiField(key) === apiField,
+    );
+    if (preferred) return preferred;
+  }
+  return findComposeGroupColumnKey(apiField, columnKeys);
 }
 
 function havingByPrimaryField(
@@ -295,6 +317,7 @@ export function parseComposeGroupRowsFromGroupBy(
   groupBy: string[] | undefined,
   columnKeys: Values,
   having?: ReportHavingFilter[],
+  preferColumnKeys?: string[],
 ): ReportComposeGroupRow[] {
   const groupByList = (groupBy ?? []).map((field) => field.trim()).filter(Boolean);
   if (!groupByList.length) return [];
@@ -320,7 +343,7 @@ export function parseComposeGroupRowsFromGroupBy(
 
   for (const apiField of groupByList) {
     if (!remaining.has(apiField)) continue;
-    const columnKey = findComposeGroupColumnKey(apiField, columnKeys);
+    const columnKey = resolveGroupColumnKey(apiField, columnKeys, preferColumnKeys);
     rows.push(applyHavingToGroupRow(createReportComposeGroupRow(columnKey), havingMap.get(apiField)));
     remaining.delete(apiField);
   }
@@ -598,7 +621,8 @@ export function buildGroupableColumnOptions(
   if (!entityMetadata) return [];
 
   return columnOptions.filter((option) => {
-    const path = String(option.value);
+    // Клоны «field#N» проверяем на группируемость по базовому полю.
+    const path = stripDuplicateColumnSuffix(String(option.value));
     if (!path) return false;
 
     return isColumnGroupableForGroupBy(
@@ -749,8 +773,9 @@ function isNestedReportFieldName(fieldName: string): boolean {
 }
 
 /**
- * Дедуп selectedFields: один ключ = fieldName + aggregation.
- * Дубли колонок из «Текущего состава» (одно поле с count и без) остаются отдельными.
+ * Дедуп selectedFields: ключ = fieldName + aggregation + alias.
+ * Дубли колонок из «Текущего состава» (одно поле с count и без, а также КЛОНЫ с
+ * разными алиасами «…_1») остаются отдельными записями — их SQL-колонки различны.
  * groupSet оставлен в сигнатуре — вызывающий код groupBy; на ключ дедупа не влияет.
  */
 function dedupeSelectedFieldsByFieldName(
@@ -763,7 +788,7 @@ function dedupeSelectedFieldsByFieldName(
     const name = field.fieldName?.trim();
     if (!name) continue;
 
-    const key = `${name}:${field.aggregation ?? ''}`;
+    const key = `${name}:${field.aggregation ?? ''}:${field.alias ?? ''}`;
     const existing = byKey.get(key);
     if (!existing) {
       byKey.set(key, field);

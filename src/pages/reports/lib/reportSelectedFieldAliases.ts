@@ -2,6 +2,8 @@ import i18n from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { buildDuplicateColumnKey } from './reportColumnDuplicate';
+
 import {
   isReportTableFieldLabelAutoQualified,
   QUALIFIED_LABEL_SEPARATOR,
@@ -50,7 +52,12 @@ export function encodeReportFieldAliasPreservingDefault(
  * Пример: «Время_события» → «Время события».
  */
 export function decodeReportFieldAliasForUi(apiAlias: string): string {
-  return apiAlias.trim().replace(/_/g, ' ');
+  const trimmed = apiAlias.trim();
+  // Системный постфикс клона «_N» сохраняем подчёркиванием («…Время события_1»),
+  // остальные `_` → пробелы.
+  const suffixMatch = trimmed.match(/^(.*)_(\d+)$/);
+  if (!suffixMatch) return trimmed.replace(/_/g, ' ');
+  return `${suffixMatch[1].replace(/_/g, ' ')}_${suffixMatch[2]}`;
 }
 
 /** Лист подписи «Сущность -> Поле» / «Сущность · Поле». */
@@ -119,10 +126,10 @@ export function resolveReportFieldAliasForApi(
     aliasSource = leaf;
   }
 
-  // `_` только в дописанном хвосте; пробелы внутри дефолтной подписи не трогаем.
-  const apiAlias = defaultLabel
-    ? encodeReportFieldAliasPreservingDefault(aliasSource, defaultLabel)
-    : encodeReportFieldAliasForApi(aliasSource);
+  // При изменении названия строки ВСЕ отдельные слова алиаса разделяются нижними
+  // подчёркиваниями (SQL видит одно непрерывное слово) — для каждой переименованной
+  // строки, а не только для клонов. Декодирование в гриде («_» → пробелы) не меняется.
+  const apiAlias = encodeReportFieldAliasForApi(aliasSource);
   if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
   if (defaultLabel && apiAlias === defaultLabel) return undefined;
   return apiAlias;
@@ -175,11 +182,18 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     if (!path || !label) continue;
     labels[path] = label;
   }
+  // Алиас из selectedFields привязываем к подписи ДУБЛЯ по UI-ключу («field#N»),
+  // а не по базовому path — иначе заголовок клона в гриде совпадает с оригиналом.
+  const occurrenceByPath = new Map<string, number>();
   for (const field of selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
+    if (!path) continue;
+    const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
+    occurrenceByPath.set(path, occurrence);
     const alias = (field.alias ?? '').trim();
-    if (!path || !alias) continue;
-    const uiLabel = labels[path] ?? decodeReportFieldAliasForUi(alias);
+    if (!alias) continue;
+    const uiKey = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
+    const uiLabel = labels[uiKey] ?? labels[path] ?? decodeReportFieldAliasForUi(alias);
     labels[alias] = uiLabel;
   }
   return labels;
