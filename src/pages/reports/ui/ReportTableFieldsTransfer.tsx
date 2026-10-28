@@ -833,10 +833,7 @@ export function ReportTableFieldsTransfer({
                           <CloseIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                    ) : null}
-                  </span>
-                  <span className={composeStyles.transferActionSlot}>
-                    {!disabled && isCustomLabel ? (
+                    ) : !disabled && isCustomLabel ? (
                       <Tooltip title={t('common.resetToDefault')}>
                         <IconButton
                           size="small"
