@@ -858,7 +858,9 @@ export function ReportTableFieldsTransfer({
               selected={false}
               disabled={disabled || isLockedChosen}
               onClick={() => {
-                if (isLockedChosen) return;
+                // Клоны («field#N») не выбираются чекбоксом — ими управляют крестик
+                // удаления и кнопки строки.
+                if (isLockedChosen || isCloneRow) return;
                 onToggle(key);
               }}
               className={
@@ -867,14 +869,16 @@ export function ReportTableFieldsTransfer({
                   : composeStyles.transferListItemButton
               }>
               <ListItemIcon className={composeStyles.transferListCheckbox}>
-                <Checkbox
-                  edge="start"
-                  size="small"
-                  checked={isChecked}
-                  tabIndex={-1}
-                  disableRipple
-                  disabled={disabled || isLockedChosen}
-                />
+                {!isCloneRow ? (
+                  <Checkbox
+                    edge="start"
+                    size="small"
+                    checked={isChecked}
+                    tabIndex={-1}
+                    disableRipple
+                    disabled={disabled || isLockedChosen}
+                  />
+                ) : null}
               </ListItemIcon>
               {isRenaming ? (
                 <TextField
