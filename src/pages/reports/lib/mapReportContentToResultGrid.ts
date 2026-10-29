@@ -176,10 +176,20 @@ function formatDynamicCellValue(
     if (typeof raw === 'boolean') {
       return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
     }
-    // Агрегированные значения Дата/Время (Минимум/Максимум и т.п.): точность
-    // округления не меняем (минуты), но приводим сырое ISO с сервера к виду ДД.ММ.ГГГГ ЧЧ:ММ.
+    // Только MIN/MAX поля Дата/Время сохраняют значение даты (сервер возвращает ISO).
+    // Количество/Сумма/… на поле Дата/Время — это ЧИСЛА (например [Количество] на timestamp),
+    // их датой форматировать нельзя — иначе 56268 превращается в «01.01.56268».
+    const normAgg = String(
+      aggregationMap.get(resolvedFieldName || columnKey) ??
+        aggregationMap.get(columnKey) ??
+        '',
+    )
+      .trim()
+      .toLowerCase();
     if (staticMeta?.isDateTime || (fieldDef && isReportDateTimeField(fieldDef))) {
-      return formatReportTableDateTime(raw);
+      if (normAgg === 'min' || normAgg === 'max') {
+        return formatReportTableDateTime(raw);
+      }
     }
     return finalizeReportCellDisplay(String(raw));
   }
