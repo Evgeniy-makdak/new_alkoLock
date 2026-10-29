@@ -176,19 +176,18 @@ function formatDynamicCellValue(
     if (typeof raw === 'boolean') {
       return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
     }
-    // Только MIN/MAX поля Дата/Время сохраняют значение даты (сервер возвращает ISO).
-    // Количество/Сумма/… на поле Дата/Время — это ЧИСЛА (например [Количество] на timestamp),
-    // их датой форматировать нельзя — иначе 56268 превращается в «01.01.56268».
-    const normAgg = String(
-      aggregationMap.get(resolvedFieldName || columnKey) ??
-        aggregationMap.get(columnKey) ??
-        '',
-    )
-      .trim()
-      .toLowerCase();
+    // Агрегированное значение ПОЛЯ Дата/Время: число (Количество/Сумма/Уникальных/…) —
+    // это НЕ дата (например 56268 — количество событий). Число никогда не форматируем
+    // через new Date() — иначе 56268 превращается в «01.01.56268», 32 → «01.01.2032».
+    // Датами остаются только значения-строки (MIN/MAX: сервер возвращает ISO-строку).
+    // Решение по типу значения устойчиво и к дублям колонок (count+max на одном fieldName).
     if (staticMeta?.isDateTime || (fieldDef && isReportDateTimeField(fieldDef))) {
-      if (normAgg === 'min' || normAgg === 'max') {
-        return formatReportTableDateTime(raw);
+      if (typeof raw !== 'number') {
+        // Точность как у обычного поля: «Время события» — до секунд (resolveReportDateTimePrecision).
+        return formatReportTableDateTime(
+          raw,
+          resolveReportDateTimePrecision(resolvedFieldName || columnKey),
+        );
       }
     }
     return finalizeReportCellDisplay(String(raw));
@@ -232,6 +231,12 @@ export function mapReportContentToResultGrid(
   groupBy?: string[],
   /** Ключи с закрытым глазом — не рендерить в гриде (в т.ч. Идентификатор, если скрыт). */
   hiddenColumnKeys: string[] = [],
+  /**
+   * Заголовки «Текущего состава» (карандаш) — БАЗА для headerName.
+   * Суффикс агрегации добавляется ПОВЕРХ, чтобы frozen-подпись не стирала
+   * «(Количество)»/«(Минимум)» у агрегированных колонок.
+   */
+  frozenColumnHeaderLabels?: Record<string, string>,
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
     return { columns: [], rows: [] };
@@ -296,8 +301,10 @@ export function mapReportContentToResultGrid(
       referenceEntityMetadataByName,
     );
     const compositeGroup = compositeByKey.get(key);
+    // Агрегацию берём по content-ключу: для дублей колонок это уникальный alias,
+    // карта агрегаций хранит alias → агрегацию (по fieldName она бы схлопнулась).
     const columnAggregation = resolveReportColumnDisplayAggregation(
-      resolvedFieldName,
+      key,
       compositeGroup,
       aggregationMap,
       groupBySet,
@@ -316,9 +323,12 @@ export function mapReportContentToResultGrid(
         t,
       ),
     );
+    // Заголовок «Текущего состава» (карандаш) — база; суффикс агрегации ПОВЕРХ.
+    const frozenLabel = (frozenColumnHeaderLabels?.[key] ?? '').trim();
+    const headerLabel = frozenLabel || baseHeaderLabel;
     const colDef: GridColDef = {
       field: key,
-      headerName: applyReportAggregationHeaderLabel(baseHeaderLabel, columnAggregation, t),
+      headerName: applyReportAggregationHeaderLabel(headerLabel, columnAggregation, t),
       flex: 1,
       minWidth: 160,
       // Стрелка грида — для любой колонки состава (как выбор sort в модалке),

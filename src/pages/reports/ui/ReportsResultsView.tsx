@@ -253,21 +253,12 @@ export function ReportsResultsView() {
       entities,
       reportGroupBy,
       queryContext?.hiddenColumnKeys ?? [],
+      // Подписи «Текущего состава» (карандаш) — база для headerName; суффикс
+      // агрегации добавляется внутри маппера ПОВЕРХ (frozen не стирает «(Количество)»).
+      frozenColumnHeaderLabels,
     );
 
-    if (!frozenColumnHeaderLabels) {
-      return grid;
-    }
-
-    return {
-      ...grid,
-      columns: grid.columns.map((col) => {
-        const field = col.field;
-        if (typeof field !== 'string') return col;
-        const frozen = frozenColumnHeaderLabels[field];
-        return frozen ? { ...col, headerName: frozen } : col;
-      }),
-    };
+    return grid;
   }, [
     lastResult,
     primaryField,

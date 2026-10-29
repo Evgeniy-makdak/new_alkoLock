@@ -26,6 +26,7 @@ import {
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
 import {
+  extractReportTableFieldLabelLeaf,
   resolveReportFieldAliasForApi,
   resolveReportFieldDefaultLabelForAlias,
 } from './reportSelectedFieldAliases';
@@ -64,6 +65,23 @@ import {
   resolveNestedFilterApiFieldName,
   resolveNestedFilterLeafField,
 } from './reportNestedFilterPath';
+
+/**
+ * Безопасный alias для дублей колонок: только буквы/цифры/`_`, начинается с буквы
+ * (правило бэка). Берём ЛИСТ подписи («Сущность -> Поле» → «Поле»), без префикса.
+ * Суффикс `_N` — по порядку вхождения дубля (первое вхождение — без суффикса).
+ */
+function encodeSafeReportFieldAlias(display: string, dupNo: number): string {
+  const leaf = extractReportTableFieldLabelLeaf(display) || display;
+  const base = String(leaf)
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^\p{L}\p{N}_]/gu, '_')
+    .replace(/_+/g, '_')
+    .replace(/^[^\p{L}]+/u, '');
+  const value = dupNo === 1 ? base : `${base}_${dupNo}`;
+  return value || 'column';
+}
 
 function pickOperator(field: ReportFieldDefinition | undefined, multi: boolean): string {
   if (!field?.availableOperations?.length) {
@@ -259,6 +277,16 @@ function buildRowReportTableFields(
       ? tableFieldsOverride
       : row.reportTableFields;
 
+  // Сколько раз базовое поле встречается в составе — дубликаты колонок нуждаются
+  // в УНИКАЛЬНЫХ alias (иначе бэкенд вернёт одинаковые content-ключи и карта
+  // агрегаций схлопнется по fieldName — заголовки/форматирование сломаются).
+  const baseOccurrenceCount = new Map<string, number>();
+  for (const tf of tableFields) {
+    const base = stripDuplicateColumnSuffix(String(tf.value ?? ''));
+    baseOccurrenceCount.set(base, (baseOccurrenceCount.get(base) ?? 0) + 1);
+  }
+  const emittedBaseCount = new Map<string, number>();
+
   return tableFields.flatMap((item) => {
     const path = String(item.value);
     const pathsToEmit = isReportCompositeFieldPath(path)
@@ -301,6 +329,10 @@ function buildRowReportTableFields(
     };
     // Alias только для изменённых подписей: `_` вместо пробелов в кастомном тексте.
     // Дефолт «Сущность -> Поле» в alias не кодируем (подчёркивания туда не добавляем).
+    const isDupBase = (baseOccurrenceCount.get(basePath) ?? 0) > 1;
+    const dupEmitNo = isDupBase ? (emittedBaseCount.get(basePath) ?? 0) + 1 : 1;
+    if (isDupBase) emittedBaseCount.set(basePath, dupEmitNo);
+
     const apiAlias = resolveReportFieldAliasForApi(
       displayLabel,
       basePath,
@@ -309,6 +341,13 @@ function buildRowReportTableFields(
     );
     if (apiAlias) {
       payload.alias = apiAlias;
+    } else if (isDupBase) {
+      // Дубли колонок (одно и то же поле несколько раз): каждому вхождению нужен
+      // УНИКАЛЬНЫЙ alias, иначе бэкенд вернёт одинаковый content-ключ и карта
+      // агрегаций схлопнется по fieldName. Суффикс — по порядку вхождения.
+      // Алиас — только ЛИСТ подписи («Сущность -> Поле» → «Поле»), без префикса:
+      // бэк принимает только буквы/цифры/`_`, начиная с буквы.
+      payload.alias = encodeSafeReportFieldAlias(displayLabel, dupEmitNo);
     }
     // aggregation — только из селекта «Текущий состав»; ключ — строка (м.б. дубль
     // «field#N» → своя агрегация). Дубль НЕ наследует aggregation базы.

@@ -64,8 +64,9 @@ export function resolveReportColumnDisplayAggregation(
 }
 
 export function formatReportAggregationHeaderSuffix(aggregation: string, t: TFunction): string {
-  const key = normalizeReportAggregationCode(aggregation);
+  const key = normalizeReportAggregationCode(aggregation)?.replace(/[_-]/g, '');
   if (!key) return '';
+  // countDistinct / count_distinct / count-distinct → ключ «countdistinct».
   const label = t(`reports.aggregation.${key}`, { defaultValue: '' });
   if (!label) return ` (${aggregation})`;
   return ` (${label})`;

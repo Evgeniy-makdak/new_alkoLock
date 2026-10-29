@@ -777,6 +777,7 @@
     },
     "aggregation": {
       "count": "count",
+      "countdistinct": "distinct",
       "max": "max value",
       "min": "min value",
       "sum": "sum",
