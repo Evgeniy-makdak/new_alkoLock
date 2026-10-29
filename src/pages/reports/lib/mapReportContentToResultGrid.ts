@@ -181,13 +181,18 @@ function formatDynamicCellValue(
     // через new Date() — иначе 56268 превращается в «01.01.56268», 32 → «01.01.2032».
     // Датами остаются только значения-строки (MIN/MAX: сервер возвращает ISO-строку).
     // Решение по типу значения устойчиво и к дублям колонок (count+max на одном fieldName).
-    if (staticMeta?.isDateTime || (fieldDef && isReportDateTimeField(fieldDef))) {
+    // Точность как у обычного поля: «Время события» — до секунд, «Дата рождения» — до дня.
+    const dateTimePrecision = resolveReportDateTimePrecision(resolvedFieldName || columnKey);
+    // Поля-даты документов (birthDate/licenseIssueDate/licenseExpirationDate) бэк может
+    // отдавать типом DATE — isReportDateTimeField их не распознаёт, но округление до дня
+    // должно сохраняться и в агрегированных MIN/MAX.
+    if (
+      staticMeta?.isDateTime ||
+      (fieldDef && isReportDateTimeField(fieldDef)) ||
+      dateTimePrecision === 'day'
+    ) {
       if (typeof raw !== 'number') {
-        // Точность как у обычного поля: «Время события» — до секунд (resolveReportDateTimePrecision).
-        return formatReportTableDateTime(
-          raw,
-          resolveReportDateTimePrecision(resolvedFieldName || columnKey),
-        );
+        return formatReportTableDateTime(raw, dateTimePrecision);
       }
     }
     return finalizeReportCellDisplay(String(raw));
