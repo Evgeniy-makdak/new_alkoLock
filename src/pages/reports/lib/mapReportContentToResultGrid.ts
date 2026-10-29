@@ -39,7 +39,7 @@ import {
   resolveReportContentFieldName,
 } from './reportSelectedFieldAliases';
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
-import { formatReportTableDateTime } from './formatReportTableDateTime';
+import { formatReportTableDateTime, resolveReportDateTimePrecision } from './formatReportTableDateTime';
 import {
   REPORT_EMPTY_DISPLAY,
   finalizeReportCellDisplay,
@@ -100,10 +100,14 @@ function formatFromStaticMeta(
   meta: ReportResultColumnMeta | undefined,
   labelMaps: ReportVehicleLabelMaps | undefined,
   t: TFunction,
+  /** Путь колонки (fieldName из состава) — для точности отображения даты/времени. */
+  fieldPath?: string,
 ): string | null {
   if (!meta) return null;
   if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
-  if (meta.isDateTime) return formatReportTableDateTime(raw);
+  if (meta.isDateTime) {
+    return formatReportTableDateTime(raw, resolveReportDateTimePrecision(fieldPath));
+  }
 
   const format = meta.format as ReportResultColumnFormat | undefined;
   if (format === 'vehicleBind') return formatVehicleBind(raw);
@@ -157,16 +161,6 @@ function formatDynamicCellValue(
     }
   }
 
-  if (
-    isReportFieldAggregatedForDisplay(columnKey, aggregationMap) ||
-    isReportFieldAggregatedForDisplay(resolvedFieldName, aggregationMap)
-  ) {
-    if (typeof raw === 'boolean') {
-      return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
-    }
-    return finalizeReportCellDisplay(String(raw));
-  }
-
   const staticMeta = findReportResultColumnMetaForKey(
     resolvedFieldName || columnKey,
     outputRows,
@@ -174,11 +168,27 @@ function formatDynamicCellValue(
     primaryField,
     entityFields,
   );
-  const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t);
+
+  if (
+    isReportFieldAggregatedForDisplay(columnKey, aggregationMap) ||
+    isReportFieldAggregatedForDisplay(resolvedFieldName, aggregationMap)
+  ) {
+    if (typeof raw === 'boolean') {
+      return raw ? t('reports.table.activeYes') : t('reports.table.activeNo');
+    }
+    // Агрегированные значения Дата/Время (Минимум/Максимум и т.п.): точность
+    // округления не меняем (минуты), но приводим сырое ISO с сервера к виду ДД.ММ.ГГГГ ЧЧ:ММ.
+    if (staticMeta?.isDateTime || (fieldDef && isReportDateTimeField(fieldDef))) {
+      return formatReportTableDateTime(raw);
+    }
+    return finalizeReportCellDisplay(String(raw));
+  }
+
+  const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t, resolvedFieldName);
   if (fromStatic != null) return finalizeReportCellDisplay(fromStatic);
 
   if (fieldDef && isReportDateTimeField(fieldDef)) {
-    return formatReportTableDateTime(raw);
+    return formatReportTableDateTime(raw, resolveReportDateTimePrecision(resolvedFieldName || columnKey));
   }
 
   if (fieldDef && isReportCoordinateField(fieldDef)) {
