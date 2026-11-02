@@ -164,7 +164,8 @@ export type BackendDashboardWriteBody = BackendDashboardCreateBody;
 export type SavedReportWriteBody = {
   name: string;
   definition: ReportDashboardAllotmentDefinition;
-  visibility?: string;
+  /** Обязательно на бэке («Область видимости отчёта»). */
+  visibility: string;
 };
 
 /** DTO прав доступа к отчёту (/api/v1/report-accesses). */

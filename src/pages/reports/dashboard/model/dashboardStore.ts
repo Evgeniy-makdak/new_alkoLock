@@ -58,7 +58,7 @@ async function persistReportForWidget(
 ): Promise<DashboardWidgetBinding> {
   const definition = buildAllotmentDefinitionFromWidget(widget);
   const name = widget.title?.trim() || widget.entityName;
-  const body = { name, definition };
+  const body = { name, definition, visibility: 'private' };
 
   if (widget.reportId != null) {
     try {
