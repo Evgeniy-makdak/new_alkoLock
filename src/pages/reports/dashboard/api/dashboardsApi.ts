@@ -4,6 +4,7 @@ import {
   deleteQuery,
   getApiUrl,
   getQuery,
+  postQuery,
   returnHeaders,
   viewResErrors,
 } from '@shared/api/baseQueryTypes';
@@ -67,22 +68,6 @@ function serializeDefinition(body: ReportDashboardAllotmentDefinition): string {
   return serializeReportQueryRequest(sanitizeDefinition(body) as ReportQueryRequest);
 }
 
-async function postRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
-  const requestUrl = `${getApiUrl()}${url}`;
-  try {
-    const res = await axios.post<T>(requestUrl, payload, {
-      headers: {
-        ...returnHeaders(),
-        'Content-Type': 'application/json',
-      },
-      transformRequest: [(data) => data],
-    });
-    return res as AppAxiosResponse<T>;
-  } catch (e) {
-    return viewResErrors<T>(e as Parameters<typeof viewResErrors>[0]);
-  }
-}
-
 async function putRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
   const requestUrl = `${getApiUrl()}${url}`;
   try {
@@ -117,29 +102,44 @@ export async function fetchDashboardById(id: number): Promise<BackendDashboardDt
 
 /**
  * POST /api/v1/dashboards
- * Body = report definition (selectedFields, filters, …) — как в Swagger.
+ * Обязательные поля (по 400 validation): name, description, visibility.
  */
 export async function createDashboard(
   body: BackendDashboardCreateBody,
 ): Promise<BackendDashboardDto> {
-  const res = await postRawJson<BackendDashboardDto>(BASE, serializeDefinition(body));
+  const payload: BackendDashboardCreateBody = {
+    name: body.name.trim(),
+    description: body.description.trim(),
+    visibility: body.visibility || 'private',
+  };
+  if (body.definition) {
+    payload.definition = sanitizeDefinition(body.definition);
+  }
+  const res = await postQuery<BackendDashboardDto, BackendDashboardCreateBody>({
+    url: BASE,
+    data: payload,
+  });
   return unwrap(res);
 }
 
 /**
  * PUT /api/v1/dashboards/{id}
- * Body = { dataForUpdate: { name, visibility, definition } }
+ * Body = { dataForUpdate: { name, description, visibility, definition? } }
  */
 export async function updateDashboard(
   id: number,
   body: BackendDashboardUpdateBody,
 ): Promise<BackendDashboardDto> {
-  const definitionJson = serializeDefinition(body.dataForUpdate.definition);
-  const payload = `{"dataForUpdate":{"name":${JSON.stringify(
-    body.dataForUpdate.name,
-  )},"visibility":${JSON.stringify(
-    body.dataForUpdate.visibility,
-  )},"definition":${definitionJson}}}`;
+  const { name, description, visibility, definition } = body.dataForUpdate;
+  const parts = [
+    `"name":${JSON.stringify(name)}`,
+    `"description":${JSON.stringify(description)}`,
+    `"visibility":${JSON.stringify(visibility)}`,
+  ];
+  if (definition) {
+    parts.push(`"definition":${serializeDefinition(definition)}`);
+  }
+  const payload = `{"dataForUpdate":{${parts.join(',')}}}`;
   const res = await putRawJson<BackendDashboardDto>(`${BASE}/${id}`, payload);
   return unwrap(res);
 }

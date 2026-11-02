@@ -2,7 +2,6 @@ import type { ReportDashboard } from '../types';
 import {
   collectAllotmentIdsFromLayout,
   collectReportIdsFromLayout,
-  EMPTY_DASHBOARD_QUERY_DEFINITION,
   mapBackendDashboardToReportDashboard,
   mergeAllotmentsIntoLayout,
   parseBackendDashboardId,
@@ -194,52 +193,44 @@ export const localDashboardRepository: DashboardRepository = {
   async save(dashboard) {
     const backendId = parseBackendDashboardId(dashboard.id);
     const visibility = dashboard.visibility || 'private';
+    const name = dashboard.name.trim();
+    const description = dashboard.description.trim();
     const definition = resolveDashboardQueryDefinition(dashboard);
+    const hasQuery = Boolean(definition.selectedFields?.length);
 
     let saved: ReportDashboard;
 
     if (backendId != null) {
       const dto = await updateDashboardRequest(backendId, {
         dataForUpdate: {
-          name: dashboard.name,
+          name,
+          description,
           visibility,
-          definition,
+          ...(hasQuery ? { definition } : {}),
         },
       });
-      saved = mergeClientShell(
-        mapBackendDashboardToReportDashboard(dto),
-        dashboard,
-      );
+      saved = mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard);
       saved = {
         ...saved,
-        name: dashboard.name || saved.name,
-        description: dashboard.description,
+        name: name || saved.name,
+        description: description || saved.description,
         layout: dashboard.layout,
         access: dashboard.access,
         visibility,
         queryDefinition: definition,
       };
     } else {
-      // 1) POST definition  2) PUT name/visibility/definition
-      const created = await createDashboardRequest(
-        definition.selectedFields?.length
-          ? definition
-          : { ...EMPTY_DASHBOARD_QUERY_DEFINITION },
-      );
-      const createdId = created.id;
-      const dto = await updateDashboardRequest(createdId, {
-        dataForUpdate: {
-          name: dashboard.name,
-          visibility,
-          definition: definition.selectedFields?.length
-            ? definition
-            : { ...EMPTY_DASHBOARD_QUERY_DEFINITION },
-        },
+      // POST: name + description + visibility (обязательны по валидации бэка)
+      const dto = await createDashboardRequest({
+        name,
+        description,
+        visibility,
+        ...(hasQuery ? { definition } : {}),
       });
       saved = {
         ...mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard),
-        name: dashboard.name,
-        description: dashboard.description,
+        name: name || mapBackendDashboardToReportDashboard(dto).name,
+        description: description || dto.description || dashboard.description,
         layout: dashboard.layout,
         access: dashboard.access,
         visibility,

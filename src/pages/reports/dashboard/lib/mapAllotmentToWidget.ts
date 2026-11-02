@@ -211,7 +211,7 @@ export function mapBackendDashboardToReportDashboard(
   return {
     id: String(dto.id),
     name: dto.name?.trim() || `Дашборд ${dto.id}`,
-    description: shell?.description ?? '',
+    description: dto.description?.trim() || shell?.description || '',
     ownerUserId,
     ownerLabel,
     createdAt: dto.createdAt || now,

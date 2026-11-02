@@ -121,8 +121,9 @@ export type ReportDashboardAllotmentListParams = {
 export type BackendDashboardDto = {
   id: number;
   name?: string;
+  description?: string;
   /**
-   * Query-definition отчёта (объект) — по контракту Swagger.
+   * Query-definition отчёта (объект).
    * Иногда бэк может отдать строку; парсим на клиенте.
    */
   definition?: ReportDashboardAllotmentDefinition | string | null;
@@ -133,15 +134,24 @@ export type BackendDashboardDto = {
   lastModifiedAt?: string;
 };
 
-/** POST /api/v1/dashboards — тело = definition отчёта. */
-export type BackendDashboardCreateBody = ReportDashboardAllotmentDefinition;
+/**
+ * POST /api/v1/dashboards
+ * Бэк валидирует: name, description, visibility — обязательны.
+ */
+export type BackendDashboardCreateBody = {
+  name: string;
+  description: string;
+  visibility: string;
+  definition?: ReportDashboardAllotmentDefinition;
+};
 
 /** PUT /api/v1/dashboards/{id} */
 export type BackendDashboardUpdateBody = {
   dataForUpdate: {
     name: string;
+    description: string;
     visibility: string;
-    definition: ReportDashboardAllotmentDefinition;
+    definition?: ReportDashboardAllotmentDefinition;
   };
 };
 
