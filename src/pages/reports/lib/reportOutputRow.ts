@@ -1,5 +1,9 @@
 import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
-import { isReportFilterNullOperation } from './mapReportQueryOperator';
+import {
+  isReportBetweenFilterOperation,
+  isReportBetweenFilterValuesComplete,
+  isReportFilterNullOperation,
+} from './mapReportQueryOperator';
 import { resolveReportOutputPrimaryField } from './reportEntityCompositeFields';
 import {
   isNestedFilterPathReadyForValueInput,
@@ -100,6 +104,18 @@ export function isReportOutputRowComplete(
   // isNull / isNotNull — значение не требуется.
   const valueNotRequired =
     operationSelected && isReportFilterNullOperation(operationCode);
+  // between — обязательно оба слота (начало и конец).
+  const needsBetweenPair =
+    operationSelected && isReportBetweenFilterOperation(operationCode);
+
+  const nestedValues = nestedState?.values ?? [];
+  const scalarValues = row.filterSelections[primaryField.fieldName] ?? [];
+  const nestedValuesReady = needsBetweenPair
+    ? isReportBetweenFilterValuesComplete(nestedValues)
+    : nestedValues.length > 0;
+  const scalarValuesReady = needsBetweenPair
+    ? isReportBetweenFilterValuesComplete(scalarValues)
+    : scalarValues.length > 0;
 
   const nestedTerminalReady = Boolean(
     refEntity &&
@@ -108,13 +124,13 @@ export function isReportOutputRowComplete(
         nestedPath,
         referenceEntityMetadataByName,
       ) &&
-      ((nestedState?.values?.length ?? 0) > 0 || valueNotRequired),
+      (nestedValuesReady || valueNotRequired),
   );
 
   const scalarTerminalReady = Boolean(
     !refEntity &&
       primaryField.filterable &&
-      ((row.filterSelections[primaryField.fieldName]?.length ?? 0) > 0 || valueNotRequired),
+      (scalarValuesReady || valueNotRequired),
   );
 
   const outputControlsReady = Boolean(

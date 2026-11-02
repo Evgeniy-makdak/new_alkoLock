@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
 import { resolveNestedFilterValueFetchTarget } from '@pages/reports/lib/eventsForFrontReportOptions';
@@ -19,7 +19,14 @@ import {
 } from '@pages/reports/lib/reportNestedFilterPath';
 import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
-import { resolveReportFilterValueMaxValues } from '@pages/reports/lib/mapReportQueryOperator';
+import {
+  commitReportBetweenFilterSlot,
+  reportBetweenSlotValues,
+} from '@pages/reports/lib/reportBetweenFilterSlots';
+import {
+  isReportBetweenFilterOperation,
+  resolveReportFilterValueMaxValues,
+} from '@pages/reports/lib/mapReportQueryOperator';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
@@ -170,6 +177,7 @@ export function NestedFilterValueControl({
       <ReportYearFilterField
         label={t('reports.terminalValuesLabel', { parameter: segment.label })}
         value={values}
+        operationCode={filterOperationCode}
         onChange={onChange}
         sx={controlSx}
         overflowTooltip={compact}
@@ -206,6 +214,73 @@ export function NestedFilterValueControl({
     valueLoadKind !== 'enum' || staticValueOptions.length === 0,
     isBooleanValueField,
   );
+
+  if (!isBooleanValueField && isReportBetweenFilterOperation(filterOperationCode)) {
+    return (
+      <Box className={pageStyles.reportFilterDateTimeRootRange}>
+        <ReportSearchMultipleSelect
+          key={`${fieldKey}__between_start__${filterOperationCode}`}
+          multiple
+          maxValues={1}
+          compact={compact}
+          name={`${fieldKey}__between_start`}
+          label={t('reports.dateRangeStart')}
+          values={displayValueOptions}
+          value={reportBetweenSlotValues(values, 0)}
+          serverFilter={valueLoadKind === 'domainList'}
+          isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
+          sx={controlSx}
+          slotProps={reportFilterAutocompleteSlotProps}
+          commitFreeText
+          onInputChange={
+            valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
+          }
+          setValueStore={(_, next) =>
+            onChange(
+              commitReportBetweenFilterSlot(
+                values,
+                0,
+                normalizeReportFilterSelectValues(next),
+              ),
+            )
+          }
+        />
+        <Typography
+          component="span"
+          className={pageStyles.reportFilterDateTimeRangeSep}
+          color="text.secondary">
+          —
+        </Typography>
+        <ReportSearchMultipleSelect
+          key={`${fieldKey}__between_end__${filterOperationCode}`}
+          multiple
+          maxValues={1}
+          compact={compact}
+          name={`${fieldKey}__between_end`}
+          label={t('reports.dateRangeEnd')}
+          values={displayValueOptions}
+          value={reportBetweenSlotValues(values, 1)}
+          serverFilter={valueLoadKind === 'domainList'}
+          isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
+          sx={controlSx}
+          slotProps={reportFilterAutocompleteSlotProps}
+          commitFreeText
+          onInputChange={
+            valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
+          }
+          setValueStore={(_, next) =>
+            onChange(
+              commitReportBetweenFilterSlot(
+                values,
+                1,
+                normalizeReportFilterSelectValues(next),
+              ),
+            )
+          }
+        />
+      </Box>
+    );
+  }
 
   return (
     <ReportSearchMultipleSelect
