@@ -57,23 +57,21 @@ export type CreateReportDashboardAllotmentBody = {
 
 /**
  * POST /api/v1/report-dashboard-allotments
- * Связь уже сохранённого отчёта с дашбордом (не definition).
- * Body — непустой список назначений (иначе «Список не может быть пустым»).
+ * Body = ReportDashboardAllotmentDto.Create (один объект, не массив).
  */
 export async function createReportDashboardAllotment(
   options: CreateReportDashboardAllotmentBody,
 ): Promise<ReportDashboardAllotment[]> {
-  const item = {
+  const body = {
     report: { id: options.reportId },
     dashboard: { id: options.dashboardId },
   };
-  // Контроллер принимает List — шлём массив из одного элемента.
   const res = await postQuery<
     ReportDashboardAllotment[] | ReportDashboardAllotment,
-    Array<{ report: { id: number }; dashboard: { id: number } }>
+    typeof body
   >({
     url: BASE,
-    data: [item],
+    data: body,
   });
   const data = unwrap(res);
   return Array.isArray(data) ? data : data ? [data] : [];

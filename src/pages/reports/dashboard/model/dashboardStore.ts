@@ -13,6 +13,8 @@ import {
 } from '../api/reportAccessesApi';
 import {
   deleteSavedReport,
+  findSavedReportByName,
+  isDuplicateReportNameError,
   saveReportForEntity,
   updateSavedReport,
 } from '../api/savedReportsApi';
@@ -53,16 +55,58 @@ function accessLevelFor(
   return dashboard.access.find((entry) => entry.userId === userId)?.level ?? null;
 }
 
+function buildUniqueReportName(widget: DashboardWidgetBinding, dashboardName?: string): string {
+  const base = widget.title?.trim() || widget.entityName;
+  const dash = dashboardName?.trim();
+  const stamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+  if (dash) return `${base} · ${dash} · ${stamp}`;
+  return `${base} · ${stamp}`;
+}
+
+async function reuseOrUpdateExistingReport(
+  widget: DashboardWidgetBinding,
+  name: string,
+  definition: ReturnType<typeof buildAllotmentDefinitionFromWidget>,
+): Promise<DashboardWidgetBinding | null> {
+  const existing = await findSavedReportByName(name);
+  if (!existing?.id) return null;
+  try {
+    const updated = await updateSavedReport(existing.id, {
+      name: existing.name || name,
+      definition,
+      visibility: 'private',
+    });
+    return {
+      ...widget,
+      reportId: updated.id ?? existing.id,
+      title: updated.name || existing.name || widget.title,
+      entityName: updated.entityName?.trim() || widget.entityName,
+    };
+  } catch {
+    return {
+      ...widget,
+      reportId: existing.id,
+      title: existing.name || widget.title,
+      entityName: existing.entityName?.trim() || widget.entityName,
+    };
+  }
+}
+
 async function persistReportForWidget(
   widget: DashboardWidgetBinding,
+  dashboardName?: string,
 ): Promise<DashboardWidgetBinding> {
   const definition = buildAllotmentDefinitionFromWidget(widget);
-  const name = widget.title?.trim() || widget.entityName;
-  const body = { name, definition, visibility: 'private' };
+  const visibility = 'private';
 
   if (widget.reportId != null) {
     try {
-      const updated = await updateSavedReport(widget.reportId, body);
+      const name = widget.title?.trim() || widget.entityName;
+      const updated = await updateSavedReport(widget.reportId, {
+        name,
+        definition,
+        visibility,
+      });
       return {
         ...widget,
         reportId: updated.id ?? widget.reportId,
@@ -70,17 +114,45 @@ async function persistReportForWidget(
         entityName: updated.entityName?.trim() || widget.entityName,
       };
     } catch {
-      // если PUT не принял — создаём новый
+      // если PUT не принял — создаём / переиспользуем по имени
     }
   }
 
-  const saved = await saveReportForEntity(widget.entityName, body);
-  return {
-    ...widget,
-    reportId: saved.id,
-    title: saved.name || widget.title,
-    entityName: saved.entityName?.trim() || widget.entityName,
-  };
+  // Уникальное имя: бэк не даёт два отчёта с одним name.
+  let name = buildUniqueReportName(widget, dashboardName);
+  const body = { name, definition, visibility };
+
+  try {
+    const saved = await saveReportForEntity(widget.entityName, body);
+    return {
+      ...widget,
+      reportId: saved.id,
+      title: saved.name || widget.title,
+      entityName: saved.entityName?.trim() || widget.entityName,
+    };
+  } catch (error) {
+    if (!isDuplicateReportNameError(error)) throw error;
+
+    // Имя занято прошлым save (например allotment упал после save) — обновляем/берём существующий.
+    const reused = await reuseOrUpdateExistingReport(widget, name, definition);
+    if (reused) return reused;
+
+    // Fallback: ещё одна попытка с суффиксом
+    name = `${buildUniqueReportName(widget, dashboardName)} · ${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+    const saved = await saveReportForEntity(widget.entityName, {
+      name,
+      definition,
+      visibility,
+    });
+    return {
+      ...widget,
+      reportId: saved.id,
+      title: saved.name || widget.title,
+      entityName: saved.entityName?.trim() || widget.entityName,
+    };
+  }
 }
 
 async function syncReportAccesses(
@@ -323,7 +395,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
 
     let boundWidget: DashboardWidgetBinding = { ...widget };
     try {
-      boundWidget = await persistReportForWidget(boundWidget);
+      boundWidget = await persistReportForWidget(boundWidget, current.name);
 
       const backendDashboardId = parseBackendDashboardId(dashboardId);
       const reportId = boundWidget.reportId;

@@ -32,7 +32,8 @@ function unwrap<T>(res: {
   detail?: string;
 }): T {
   if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'saved reports request failed');
+    // detail содержит человекочитаемый текст («уже существует»), message часто error.http.400
+    throw new Error(res.detail || res.message || 'saved reports request failed');
   }
   return res.data;
 }
@@ -153,6 +154,25 @@ export async function fetchSavedReports(): Promise<ReportDashboardAllotmentRepor
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data.content)) return data.content;
   return [];
+}
+
+export function isDuplicateReportNameError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  return /уже существует|already exists|duplicate/i.test(message);
+}
+
+/** Найти сохранённый отчёт по точному имени (после 400 «имя уже существует»). */
+export async function findSavedReportByName(
+  name: string,
+): Promise<ReportDashboardAllotmentReport | null> {
+  const needle = name.trim().toLowerCase();
+  if (!needle) return null;
+  try {
+    const list = await fetchSavedReports();
+    return list.find((item) => (item.name ?? '').trim().toLowerCase() === needle) ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** На случай, если PUT через putQuery удобнее без Long-маркеров. */
