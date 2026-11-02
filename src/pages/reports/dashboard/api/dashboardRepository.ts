@@ -196,7 +196,6 @@ export const localDashboardRepository: DashboardRepository = {
     const name = dashboard.name.trim();
     const description = dashboard.description.trim();
     const definition = resolveDashboardQueryDefinition(dashboard);
-    const hasQuery = Boolean(definition.selectedFields?.length);
 
     let saved: ReportDashboard;
 
@@ -204,9 +203,9 @@ export const localDashboardRepository: DashboardRepository = {
       const dto = await updateDashboardRequest(backendId, {
         dataForUpdate: {
           name,
-          description,
           visibility,
-          ...(hasQuery ? { definition } : {}),
+          definition,
+          ...(description ? { description } : {}),
         },
       });
       saved = mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard);
@@ -220,12 +219,13 @@ export const localDashboardRepository: DashboardRepository = {
         queryDefinition: definition,
       };
     } else {
-      // POST: name + description + visibility (обязательны по валидации бэка)
+      // POST: name + visibility + definition («Описание» в 400 = definition)
+      // текстовое description из UI — опционально
       const dto = await createDashboardRequest({
         name,
-        description,
         visibility,
-        ...(hasQuery ? { definition } : {}),
+        definition,
+        ...(description ? { description } : {}),
       });
       saved = {
         ...mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard),

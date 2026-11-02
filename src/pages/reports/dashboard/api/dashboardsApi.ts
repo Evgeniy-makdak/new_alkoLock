@@ -4,7 +4,6 @@ import {
   deleteQuery,
   getApiUrl,
   getQuery,
-  postQuery,
   returnHeaders,
   viewResErrors,
 } from '@shared/api/baseQueryTypes';
@@ -25,6 +24,7 @@ import type {
   BackendDashboardUpdateBody,
   ReportDashboardAllotmentDefinition,
 } from '../types';
+import { EMPTY_DASHBOARD_QUERY_DEFINITION } from '../lib/mapAllotmentToWidget';
 
 const BASE = 'api/v1/dashboards';
 
@@ -68,6 +68,22 @@ function serializeDefinition(body: ReportDashboardAllotmentDefinition): string {
   return serializeReportQueryRequest(sanitizeDefinition(body) as ReportQueryRequest);
 }
 
+async function postRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
+  const requestUrl = `${getApiUrl()}${url}`;
+  try {
+    const res = await axios.post<T>(requestUrl, payload, {
+      headers: {
+        ...returnHeaders(),
+        'Content-Type': 'application/json',
+      },
+      transformRequest: [(data) => data],
+    });
+    return res as AppAxiosResponse<T>;
+  } catch (e) {
+    return viewResErrors<T>(e as Parameters<typeof viewResErrors>[0]);
+  }
+}
+
 async function putRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
   const requestUrl = `${getApiUrl()}${url}`;
   try {
@@ -102,42 +118,47 @@ export async function fetchDashboardById(id: number): Promise<BackendDashboardDt
 
 /**
  * POST /api/v1/dashboards
- * Обязательные поля (по 400 validation): name, description, visibility.
+ * { name, visibility, definition, description? }
+ * «Описание дашборда» в 400 = definition (query), не text description.
  */
 export async function createDashboard(
   body: BackendDashboardCreateBody,
 ): Promise<BackendDashboardDto> {
-  const payload: BackendDashboardCreateBody = {
-    name: body.name.trim(),
-    description: body.description.trim(),
-    visibility: body.visibility || 'private',
-  };
-  if (body.definition) {
-    payload.definition = sanitizeDefinition(body.definition);
+  const definition = sanitizeDefinition(
+    body.definition ?? { ...EMPTY_DASHBOARD_QUERY_DEFINITION },
+  );
+  const definitionJson = serializeDefinition(definition);
+  const parts = [
+    `"name":${JSON.stringify(body.name.trim())}`,
+    `"visibility":${JSON.stringify(body.visibility || 'private')}`,
+    `"definition":${definitionJson}`,
+  ];
+  const textDescription = body.description?.trim();
+  if (textDescription) {
+    parts.push(`"description":${JSON.stringify(textDescription)}`);
   }
-  const res = await postQuery<BackendDashboardDto, BackendDashboardCreateBody>({
-    url: BASE,
-    data: payload,
-  });
+  const payload = `{${parts.join(',')}}`;
+  const res = await postRawJson<BackendDashboardDto>(BASE, payload);
   return unwrap(res);
 }
 
 /**
  * PUT /api/v1/dashboards/{id}
- * Body = { dataForUpdate: { name, description, visibility, definition? } }
+ * { dataForUpdate: { name, visibility, definition, description? } }
  */
 export async function updateDashboard(
   id: number,
   body: BackendDashboardUpdateBody,
 ): Promise<BackendDashboardDto> {
-  const { name, description, visibility, definition } = body.dataForUpdate;
+  const { name, visibility, definition, description } = body.dataForUpdate;
   const parts = [
     `"name":${JSON.stringify(name)}`,
-    `"description":${JSON.stringify(description)}`,
     `"visibility":${JSON.stringify(visibility)}`,
+    `"definition":${serializeDefinition(definition)}`,
   ];
-  if (definition) {
-    parts.push(`"definition":${serializeDefinition(definition)}`);
+  const textDescription = description?.trim();
+  if (textDescription) {
+    parts.push(`"description":${JSON.stringify(textDescription)}`);
   }
   const payload = `{"dataForUpdate":{${parts.join(',')}}}`;
   const res = await putRawJson<BackendDashboardDto>(`${BASE}/${id}`, payload);

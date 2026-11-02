@@ -136,22 +136,24 @@ export type BackendDashboardDto = {
 
 /**
  * POST /api/v1/dashboards
- * Бэк валидирует: name, description, visibility — обязательны.
+ * По 400: «Название»→name, «Область видимости»→visibility,
+ * «Описание дашборда»→definition (query-definition), не текстовое description.
+ * Текстовое description (из UI) — опционально, если бэк его принимает.
  */
 export type BackendDashboardCreateBody = {
   name: string;
-  description: string;
   visibility: string;
-  definition?: ReportDashboardAllotmentDefinition;
+  definition: ReportDashboardAllotmentDefinition;
+  description?: string;
 };
 
-/** PUT /api/v1/dashboards/{id} */
+/** PUT /api/v1/dashboards/{id} — как в Swagger dataForUpdate. */
 export type BackendDashboardUpdateBody = {
   dataForUpdate: {
     name: string;
-    description: string;
     visibility: string;
-    definition?: ReportDashboardAllotmentDefinition;
+    definition: ReportDashboardAllotmentDefinition;
+    description?: string;
   };
 };
 
