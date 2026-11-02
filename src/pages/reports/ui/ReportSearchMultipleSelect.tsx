@@ -141,7 +141,15 @@ export function ReportSearchMultipleSelect<T>({
         }
         permitEmptyClearRef.current = false;
         if (commitFreeText) {
+          const pending = pendingFreeTextRef.current.trim();
+          const normalized = normalizeReportFilterSelectValues(next);
+          // Shared Autocomplete при freeSolo-string может отдать [] — не затираем набор.
+          if (normalized.length === 0 && pending) {
+            return;
+          }
           pendingFreeTextRef.current = '';
+          emitValue(fieldName, normalized);
+          return;
         }
         emitValue(fieldName, next);
       }

@@ -61,21 +61,9 @@ function toValuesArray(
   value: string | Value | Values | (string | Value | Values)[] | null,
 ): Values {
   if (!value) return [];
-  const asItems: unknown[] = Array.isArray(value) ? value : [value];
-  const result: Values = [];
-  for (const item of asItems) {
-    if (item == null || item === '') continue;
-    // freeSolo createOption отдаёт string — иначе значение теряется и UI считает поле пустым.
-    if (typeof item === 'string') {
-      const trimmed = item.trim();
-      if (trimmed) result.push({ value: trimmed, label: trimmed });
-      continue;
-    }
-    if (typeof item === 'object' && 'value' in item) {
-      result.push(item as Value);
-    }
-  }
-  return result;
+  if (Array.isArray(value)) return value as Values;
+  if (typeof value === 'object' && 'value' in value) return [value as Value];
+  return [];
 }
 
 function applyMaxValuesLimit(
@@ -85,13 +73,8 @@ function applyMaxValuesLimit(
   pickedOption?: Value | null,
 ): Values {
   if (maxValues == null || maxValues < 1) return values;
-  if (
-    (reason === 'selectOption' || reason === 'createOption') &&
-    maxValues === 1 &&
-    values.length > 0
-  ) {
-    if (pickedOption) return [pickedOption];
-    return [values[values.length - 1]!];
+  if (reason === 'selectOption' && maxValues === 1 && pickedOption) {
+    return [pickedOption];
   }
   if (values.length <= maxValues) return values;
   return values.slice(-maxValues);
@@ -781,20 +764,15 @@ export function SearchMultipleSelect<T>({
       return;
     }
 
-    if (reason === 'selectOption' || reason === 'createOption') {
+    if (reason === 'selectOption') {
       setInputState('');
       debouncedFunc?.('');
     }
 
-    // freeSolo createOption: details.option — string; selectOption — Value.
-    // MUI-типы для freeSolo сужают option до Value, поэтому каст через unknown.
-    const rawOption = details?.option as unknown;
-    const pickedOption: Value | null =
-      rawOption && typeof rawOption === 'object'
-        ? (rawOption as Value)
-        : typeof rawOption === 'string' && rawOption.trim()
-          ? { value: rawOption.trim(), label: rawOption.trim() }
-          : null;
+    // freeSolo-тип MUI видит details.option как string, но в рантайме это Value.
+    const rawOption = details?.option;
+    const pickedOption =
+      rawOption && typeof rawOption === 'object' ? (rawOption as unknown as Value) : null;
     const limited = applyMaxValuesLimit(
       toValuesArray(nextValue),
       maxValues,
