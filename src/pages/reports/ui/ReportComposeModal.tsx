@@ -52,6 +52,7 @@ import {
   applyReportTableFieldPresetDefaults,
 } from '@pages/reports/lib/reportTableFieldPresets';
 import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
+import { areReportComposeFiltersComplete } from '@pages/reports/lib/reportOutputRow';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
   type ReportsComposeSnapshot,
@@ -403,16 +404,37 @@ export function ReportComposeModal({
     return tableFieldHiddenByPath[key] !== true;
   });
 
+  const composeFiltersComplete = useMemo(() => {
+    if (!metadata) return true;
+    const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
+    return areReportComposeFiltersComplete(
+      outputRows,
+      fieldMap,
+      reportTableFieldsMetadataByRowId,
+      metadata,
+      referenceEntityMetadataByName,
+      t,
+    );
+  }, [
+    metadata,
+    outputRows,
+    reportTableFieldsMetadataByRowId,
+    referenceEntityMetadataByName,
+    t,
+  ]);
+
   const canFormReport = useMemo(
     () =>
       Boolean(selectedEntityName && metadata && !metadataLoading) &&
       hasVisibleTableColumns &&
+      composeFiltersComplete &&
       !isEditPristine,
     [
       selectedEntityName,
       metadata,
       metadataLoading,
       hasVisibleTableColumns,
+      composeFiltersComplete,
       isEditPristine,
       editBaselineVersion,
     ],

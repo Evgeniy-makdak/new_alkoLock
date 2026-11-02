@@ -1,4 +1,5 @@
 import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldByAttribute';
+import { isReportFilterNullOperation } from './mapReportQueryOperator';
 import { resolveReportOutputPrimaryField } from './reportEntityCompositeFields';
 import {
   isNestedFilterPathReadyForValueInput,
@@ -79,27 +80,6 @@ export function isReportOutputRowComplete(
   const nestedState = row.nestedEntityFilterByField[primaryField.fieldName];
 
   const nestedPath = nestedState ? normalizeNestedFilterPath(nestedState) : [];
-  const nestedTerminalReady = Boolean(
-    refEntity &&
-      isNestedFilterPathReadyForValueInput(
-        tableFieldsMetadata,
-        nestedPath,
-        referenceEntityMetadataByName,
-      ) &&
-      (nestedState?.values?.length ?? 0) > 0,
-  );
-
-  const scalarTerminalReady = Boolean(
-    !refEntity &&
-      primaryField.filterable &&
-      (row.filterSelections[primaryField.fieldName]?.length ?? 0) > 0,
-  );
-
-  const outputControlsReady = Boolean(
-    nestedTerminalReady || scalarTerminalReady || (!refEntity && !primaryField.filterable),
-  );
-  if (!outputControlsReady) return false;
-
   const attributeField =
     refEntity && nestedPath.length
       ? resolveNestedFilterLeafField(
@@ -111,10 +91,63 @@ export function isReportOutputRowComplete(
   const operationSource = attributeField ?? primaryField;
 
   const needsOperation = (operationSource.availableOperations ?? []).length > 0;
-  const operationSelected =
-    (row.filterSelections[reportOutputOperationKey(row.id)] ?? []).length > 0;
+  const operationPicked = row.filterSelections[reportOutputOperationKey(row.id)] ?? [];
+  const operationSelected = operationPicked.length > 0;
+  const operationCode =
+    operationPicked[0]?.value != null && operationPicked[0].value !== ''
+      ? String(operationPicked[0].value)
+      : null;
+  // isNull / isNotNull — значение не требуется.
+  const valueNotRequired =
+    operationSelected && isReportFilterNullOperation(operationCode);
+
+  const nestedTerminalReady = Boolean(
+    refEntity &&
+      isNestedFilterPathReadyForValueInput(
+        tableFieldsMetadata,
+        nestedPath,
+        referenceEntityMetadataByName,
+      ) &&
+      ((nestedState?.values?.length ?? 0) > 0 || valueNotRequired),
+  );
+
+  const scalarTerminalReady = Boolean(
+    !refEntity &&
+      primaryField.filterable &&
+      ((row.filterSelections[primaryField.fieldName]?.length ?? 0) > 0 || valueNotRequired),
+  );
+
+  const outputControlsReady = Boolean(
+    nestedTerminalReady || scalarTerminalReady || (!refEntity && !primaryField.filterable),
+  );
+  if (!outputControlsReady) return false;
 
   return !needsOperation || operationSelected;
+}
+
+/**
+ * Фильтры модалки «Новый отчёт» готовы к формированию:
+ * нет строк — ок; каждая добавленная строка должна быть заполнена полностью.
+ */
+export function areReportComposeFiltersComplete(
+  outputRows: ReportOutputRow[],
+  fieldMap: Map<string, ReportFieldDefinition>,
+  tableFieldsMetadataByRowId: Record<string, ReportEntityMetadata | null> = {},
+  entityMetadata?: ReportEntityMetadata | null,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  t?: TFunction,
+): boolean {
+  if (!outputRows.length) return true;
+  return outputRows.every((row) =>
+    isReportOutputRowComplete(
+      row,
+      fieldMap,
+      tableFieldsMetadataByRowId[row.id] ?? null,
+      entityMetadata,
+      referenceEntityMetadataByName,
+      t,
+    ),
+  );
 }
 
 export function pickSharedGroupFilterSelections(

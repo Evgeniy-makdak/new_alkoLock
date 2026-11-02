@@ -26,6 +26,7 @@ import {
 } from '@pages/reports/lib/reportFieldFilterKind';
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
 import { resolveReportFilterValueMaxValues } from '@pages/reports/lib/mapReportQueryOperator';
+import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
   reportFilterAutocompleteSlotProps,
@@ -268,7 +269,7 @@ export function ReportFieldFilterControl({
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
         onInputChange={(next) => setSearchQuery(next)}
-        setValueStore={(_, next) => onChange(next as Values)}
+        setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
       />
     );
   }
@@ -289,7 +290,7 @@ export function ReportFieldFilterControl({
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      setValueStore={(_, next) => onChange(next as Values)}
+      setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
     />
   );
 }

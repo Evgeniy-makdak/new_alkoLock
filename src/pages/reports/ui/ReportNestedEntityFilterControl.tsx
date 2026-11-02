@@ -25,6 +25,7 @@ import {
   reportFilterControlSx,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type {
@@ -224,7 +225,11 @@ export function NestedFilterValueControl({
         valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
       }
       setValueStore={(_, next) =>
-        onChange(isBooleanValueField ? toValuesFromSingleSelect(next) : (next as Values))
+        onChange(
+          isBooleanValueField
+            ? toValuesFromSingleSelect(next)
+            : normalizeReportFilterSelectValues(next),
+        )
       }
     />
   );
