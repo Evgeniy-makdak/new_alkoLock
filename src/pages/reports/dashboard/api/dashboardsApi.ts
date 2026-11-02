@@ -1,13 +1,9 @@
-import axios from 'axios';
-
 import {
   deleteQuery,
-  getApiUrl,
   getQuery,
-  returnHeaders,
-  viewResErrors,
+  postQuery,
+  putQuery,
 } from '@shared/api/baseQueryTypes';
-import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
 import {
   finalizeReportQueryBodyForGroupBy,
@@ -64,40 +60,12 @@ function sanitizeDefinition(
   return sanitized;
 }
 
-function serializeDefinition(body: ReportDashboardAllotmentDefinition): string {
-  return serializeReportQueryRequest(sanitizeDefinition(body) as ReportQueryRequest);
-}
-
-async function postRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
-  const requestUrl = `${getApiUrl()}${url}`;
-  try {
-    const res = await axios.post<T>(requestUrl, payload, {
-      headers: {
-        ...returnHeaders(),
-        'Content-Type': 'application/json',
-      },
-      transformRequest: [(data) => data],
-    });
-    return res as AppAxiosResponse<T>;
-  } catch (e) {
-    return viewResErrors<T>(e as Parameters<typeof viewResErrors>[0]);
-  }
-}
-
-async function putRawJson<T>(url: string, payload: string): Promise<AppAxiosResponse<T>> {
-  const requestUrl = `${getApiUrl()}${url}`;
-  try {
-    const res = await axios.put<T>(requestUrl, payload, {
-      headers: {
-        ...returnHeaders(),
-        'Content-Type': 'application/json',
-      },
-      transformRequest: [(data) => data],
-    });
-    return res as AppAxiosResponse<T>;
-  } catch (e) {
-    return viewResErrors<T>(e as Parameters<typeof viewResErrors>[0]);
-  }
+/** definition → JSON-строка для поля String на бэке. */
+export function stringifyDashboardDefinition(
+  definition?: ReportDashboardAllotmentDefinition | null,
+): string {
+  const safe = sanitizeDefinition(definition ?? { ...EMPTY_DASHBOARD_QUERY_DEFINITION });
+  return serializeReportQueryRequest(safe as ReportQueryRequest);
 }
 
 /** GET /api/v1/dashboards */
@@ -118,51 +86,51 @@ export async function fetchDashboardById(id: number): Promise<BackendDashboardDt
 
 /**
  * POST /api/v1/dashboards
- * { name, visibility, definition, description? }
- * «Описание дашборда» в 400 = definition (query), не text description.
+ * { name, description, visibility, definition: "<json-string>" }
  */
 export async function createDashboard(
   body: BackendDashboardCreateBody,
 ): Promise<BackendDashboardDto> {
-  const definition = sanitizeDefinition(
-    body.definition ?? { ...EMPTY_DASHBOARD_QUERY_DEFINITION },
-  );
-  const definitionJson = serializeDefinition(definition);
-  const parts = [
-    `"name":${JSON.stringify(body.name.trim())}`,
-    `"visibility":${JSON.stringify(body.visibility || 'private')}`,
-    `"definition":${definitionJson}`,
-  ];
-  const textDescription = body.description?.trim();
-  if (textDescription) {
-    parts.push(`"description":${JSON.stringify(textDescription)}`);
-  }
-  const payload = `{${parts.join(',')}}`;
-  const res = await postRawJson<BackendDashboardDto>(BASE, payload);
+  const payload: BackendDashboardCreateBody = {
+    name: body.name.trim(),
+    description: body.description.trim(),
+    visibility: body.visibility || 'private',
+    definition: body.definition,
+  };
+  const res = await postQuery<BackendDashboardDto, BackendDashboardCreateBody>({
+    url: BASE,
+    data: payload,
+  });
   return unwrap(res);
 }
 
 /**
  * PUT /api/v1/dashboards/{id}
- * { dataForUpdate: { name, visibility, definition, description? } }
+ * { dataForUpdate: { name, description, visibility, definition: "<json-string>" } }
  */
 export async function updateDashboard(
   id: number,
   body: BackendDashboardUpdateBody,
 ): Promise<BackendDashboardDto> {
-  const { name, visibility, definition, description } = body.dataForUpdate;
-  const parts = [
-    `"name":${JSON.stringify(name)}`,
-    `"visibility":${JSON.stringify(visibility)}`,
-    `"definition":${serializeDefinition(definition)}`,
-  ];
-  const textDescription = description?.trim();
-  if (textDescription) {
-    parts.push(`"description":${JSON.stringify(textDescription)}`);
-  }
-  const payload = `{"dataForUpdate":{${parts.join(',')}}}`;
-  const res = await putRawJson<BackendDashboardDto>(`${BASE}/${id}`, payload);
-  return unwrap(res);
+  const res = await putQuery<BackendDashboardDto, BackendDashboardUpdateBody>({
+    url: `${BASE}/${id}`,
+    data: {
+      dataForUpdate: {
+        name: body.dataForUpdate.name.trim(),
+        description: body.dataForUpdate.description.trim(),
+        visibility: body.dataForUpdate.visibility || 'private',
+        definition: body.dataForUpdate.definition,
+      },
+    },
+  });
+  return unwrap(
+    res as {
+      data: BackendDashboardDto | null;
+      isError?: boolean;
+      message?: string;
+      detail?: string;
+    },
+  );
 }
 
 /** DELETE /api/v1/dashboards/{id} */

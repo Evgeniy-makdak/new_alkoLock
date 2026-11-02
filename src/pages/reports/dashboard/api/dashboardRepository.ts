@@ -12,6 +12,7 @@ import {
   deleteDashboard as deleteDashboardRequest,
   fetchDashboardById,
   fetchDashboards,
+  stringifyDashboardDefinition,
   updateDashboard as updateDashboardRequest,
 } from './dashboardsApi';
 import {
@@ -199,13 +200,15 @@ export const localDashboardRepository: DashboardRepository = {
 
     let saved: ReportDashboard;
 
+    const definitionString = stringifyDashboardDefinition(definition);
+
     if (backendId != null) {
       const dto = await updateDashboardRequest(backendId, {
         dataForUpdate: {
           name,
+          description,
           visibility,
-          definition,
-          ...(description ? { description } : {}),
+          definition: definitionString,
         },
       });
       saved = mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard);
@@ -219,13 +222,12 @@ export const localDashboardRepository: DashboardRepository = {
         queryDefinition: definition,
       };
     } else {
-      // POST: name + visibility + definition («Описание» в 400 = definition)
-      // текстовое description из UI — опционально
+      // definition — JSON-строка (java.lang.String на бэке)
       const dto = await createDashboardRequest({
         name,
+        description,
         visibility,
-        definition,
-        ...(description ? { description } : {}),
+        definition: definitionString,
       });
       saved = {
         ...mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard),

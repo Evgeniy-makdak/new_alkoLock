@@ -136,24 +136,24 @@ export type BackendDashboardDto = {
 
 /**
  * POST /api/v1/dashboards
- * По 400: «Название»→name, «Область видимости»→visibility,
- * «Описание дашборда»→definition (query-definition), не текстовое description.
- * Текстовое description (из UI) — опционально, если бэк его принимает.
+ * definition на бэке — String (JSON), не объект
+ * (иначе: Cannot deserialize String from START_OBJECT).
  */
 export type BackendDashboardCreateBody = {
   name: string;
+  description: string;
   visibility: string;
-  definition: ReportDashboardAllotmentDefinition;
-  description?: string;
+  /** JSON-строка report definition. */
+  definition: string;
 };
 
-/** PUT /api/v1/dashboards/{id} — как в Swagger dataForUpdate. */
+/** PUT /api/v1/dashboards/{id} — dataForUpdate; definition тоже String. */
 export type BackendDashboardUpdateBody = {
   dataForUpdate: {
     name: string;
+    description: string;
     visibility: string;
-    definition: ReportDashboardAllotmentDefinition;
-    description?: string;
+    definition: string;
   };
 };
 
