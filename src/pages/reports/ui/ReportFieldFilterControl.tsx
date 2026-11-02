@@ -268,6 +268,7 @@ export function ReportFieldFilterControl({
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
+        commitFreeText
         onInputChange={(next) => setSearchQuery(next)}
         setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
       />
@@ -290,6 +291,7 @@ export function ReportFieldFilterControl({
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
+      commitFreeText
       setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
     />
   );

@@ -221,6 +221,7 @@ export function NestedFilterValueControl({
       isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
+      commitFreeText={!isBooleanValueField}
       onInputChange={
         valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
       }

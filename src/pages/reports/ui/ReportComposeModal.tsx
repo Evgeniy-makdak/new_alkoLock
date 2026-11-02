@@ -1186,7 +1186,13 @@ export function ReportComposeModal({
               />,
             ]
           : []),
-        <div key="actions" className={composeStyles.composeFooterButtons}>
+        <div
+          key="actions"
+          className={composeStyles.composeFooterButtons}
+          onMouseDown={() => {
+            // Коммит произвольной строки в «Значение» до click (blur с disabled-кнопки).
+            (document.activeElement as HTMLElement | null)?.blur?.();
+          }}>
           <Button
             disabled={!canFormReport || isGenerating}
             onClick={() => void handleFormReport()}>

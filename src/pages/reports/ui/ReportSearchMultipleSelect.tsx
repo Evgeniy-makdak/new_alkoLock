@@ -1,4 +1,12 @@
-import { useMemo, useRef, type MouseEvent as ReactMouseEvent } from 'react';
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type FocusEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
+import { flushSync } from 'react-dom';
 
 import {
   SearchMultipleSelect,
@@ -11,6 +19,7 @@ import {
   reportFilterControlSx,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
 
 /** SearchMultipleSelect требует onInputChange для debounce; в отчётах поиск по серверу не используется. */
 const reportFilterNoopInputChange = () => {};
@@ -23,6 +32,12 @@ type ReportSearchMultipleSelectProps<T> = SearchMultipleSelectProps<T> & {
    * (ложный clear MUI на «Поле результата»), кроме явного clear-индикатора.
    */
   blockEmptyClear?: boolean;
+  /**
+   * Произвольная строка в «Значение» фильтра: нормализует freeSolo-string → Value
+   * и коммитит набранный текст при blur (Enter в Autocomplete часто не срабатывает).
+   * Только для value-контролов; оператор / поле результата не включают.
+   */
+  commitFreeText?: boolean;
 };
 
 function isEmptySelectValue(next: string | Values | Value | (string | Values | Value)[]): boolean {
@@ -60,17 +75,24 @@ export function ReportSearchMultipleSelect<T>({
   setValueStore,
   value = [],
   multiple,
+  maxValues,
+  name,
   blockEmptyClear = false,
+  commitFreeText = false,
   label,
   placeholder,
   slotProps,
   overflowTooltip = true,
+  onBlur,
   ...rest
 }: ReportSearchMultipleSelectProps<T>) {
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
   const singleSelect = multiple === false;
   /** Явный clear (крестик) — пропускаем при blockEmptyClear. */
   const permitEmptyClearRef = useRef(false);
+  const pendingFreeTextRef = useRef('');
+  /** Remount после commit free-text — сбрасывает внутренний inputState Autocomplete. */
+  const [freeTextEpoch, setFreeTextEpoch] = useState(0);
 
   const minWidthPx = estimateReportControlMinWidth(label, placeholder, compact);
   const widthSx = useMemo(
@@ -97,8 +119,17 @@ export function ReportSearchMultipleSelect<T>({
     [minWidthPx],
   );
 
+  const emitValue = useCallback(
+    (fieldName: keyof T | string, next: string | Values | Value | (string | Values | Value)[]) => {
+      if (!setValueStore) return;
+      const payload = commitFreeText ? normalizeReportFilterSelectValues(next) : next;
+      setValueStore(fieldName, payload);
+    },
+    [commitFreeText, setValueStore],
+  );
+
   const guardedSetValueStore: SearchMultipleSelectProps<T>['setValueStore'] = setValueStore
-    ? (name, next) => {
+    ? (fieldName, next) => {
         if (
           blockEmptyClear &&
           singleSelect &&
@@ -109,9 +140,54 @@ export function ReportSearchMultipleSelect<T>({
           return;
         }
         permitEmptyClearRef.current = false;
-        setValueStore(name, next);
+        if (commitFreeText) {
+          pendingFreeTextRef.current = '';
+        }
+        emitValue(fieldName, next);
       }
     : undefined;
+
+  const commitPendingFreeText = useCallback(() => {
+    if (!commitFreeText || !setValueStore) return;
+    const text = pendingFreeTextRef.current.trim();
+    if (!text) return;
+    if (value.some((item) => String(item.value) === text || String(item.label ?? '') === text)) {
+      pendingFreeTextRef.current = '';
+      return;
+    }
+    const max = maxValues;
+    const atCap = max != null && max > 0 && value.length >= max;
+    if (atCap && max !== 1) return;
+
+    const created: Value = { value: text, label: text };
+    const next: Values =
+      max === 1 || singleSelect ? [created] : atCap ? value : [...value, created];
+
+    pendingFreeTextRef.current = '';
+    // sync — чтобы «Сформировать» успела включиться до click (после blur с disabled-кнопки).
+    flushSync(() => {
+      emitValue(name, next);
+      setFreeTextEpoch((epoch) => epoch + 1);
+    });
+  }, [commitFreeText, setValueStore, value, maxValues, singleSelect, emitValue, name]);
+
+  const handleInputChange = useCallback(
+    (next: string) => {
+      if (commitFreeText) {
+        pendingFreeTextRef.current = next;
+      }
+      (onInputChange ?? reportFilterNoopInputChange)(next);
+    },
+    [commitFreeText, onInputChange],
+  );
+
+  const handleBlur = useCallback(
+    (event: FocusEvent<HTMLDivElement>) => {
+      onBlur?.(event);
+      commitPendingFreeText();
+    },
+    [onBlur, commitPendingFreeText],
+  );
 
   /**
    * Нельзя вешать onClick/onMouseDown в slotProps.clearIndicator:
@@ -149,16 +225,20 @@ export function ReportSearchMultipleSelect<T>({
       }}>
       <SearchMultipleSelect
         {...rest}
+        key={commitFreeText ? `${String(name)}__ft_${freeTextEpoch}` : undefined}
+        name={name}
         label={label}
         placeholder={placeholder}
         multiple={multiple}
+        maxValues={maxValues}
         value={value}
         size={size ?? (compact ? 'small' : undefined)}
         overflowTooltip={overflowTooltip}
         sx={mergedSx}
         // Не передаём clearIndicator-обработчики — иначе ломается clear MUI.
         slotProps={slotProps}
-        onInputChange={onInputChange ?? reportFilterNoopInputChange}
+        onInputChange={handleInputChange}
+        onBlur={handleBlur}
         setValueStore={guardedSetValueStore}
       />
     </div>
