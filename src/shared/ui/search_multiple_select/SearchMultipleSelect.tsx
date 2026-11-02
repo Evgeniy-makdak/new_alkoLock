@@ -787,10 +787,11 @@ export function SearchMultipleSelect<T>({
     }
 
     // freeSolo createOption: details.option — string; selectOption — Value.
-    const rawOption = details?.option;
-    const pickedOption =
+    // MUI-типы для freeSolo сужают option до Value, поэтому каст через unknown.
+    const rawOption = details?.option as unknown;
+    const pickedOption: Value | null =
       rawOption && typeof rawOption === 'object'
-        ? (rawOption as unknown as Value)
+        ? (rawOption as Value)
         : typeof rawOption === 'string' && rawOption.trim()
           ? { value: rawOption.trim(), label: rawOption.trim() }
           : null;
