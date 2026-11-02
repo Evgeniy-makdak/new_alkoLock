@@ -29,6 +29,7 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
   const updateDashboardLayout = dashboardStore((s) => s.updateDashboardLayout);
   const setCellWidget = dashboardStore((s) => s.setCellWidget);
   const currentAccessLevel = dashboardStore((s) => s.currentAccessLevel);
+  const storeError = dashboardStore((s) => s.error);
   const [accessOpen, setAccessOpen] = useState(false);
   const [name, setName] = useState(dashboard.name);
   const [description, setDescription] = useState(dashboard.description);
@@ -202,6 +203,11 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
           'Сформируйте отчёт во вкладке «Отчёты», затем привяжите его к ячейке сетки.',
         )}
       </Typography>
+      {storeError ? (
+        <Typography variant="body2" color="error">
+          {storeError}
+        </Typography>
+      ) : null}
 
       <div className={styles.grid} style={gridStyle}>
         {dashboard.layout.cells.map((cell) => (
