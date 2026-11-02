@@ -326,14 +326,17 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       boundWidget = await persistReportForWidget(boundWidget);
 
       const backendDashboardId = parseBackendDashboardId(dashboardId);
-      const created = await createReportDashboardAllotment(
-        buildAllotmentDefinitionFromWidget(boundWidget),
-        backendDashboardId != null ? { dashboardId: backendDashboardId } : undefined,
-      );
+      const reportId = boundWidget.reportId;
+      if (reportId == null || backendDashboardId == null) {
+        throw new Error('Report id or dashboard id is missing for allotment');
+      }
+
+      const created = await createReportDashboardAllotment({
+        reportId,
+        dashboardId: backendDashboardId,
+      });
       const allotment =
-        created.find((item) =>
-          backendDashboardId != null ? item.dashboard?.id === backendDashboardId : true,
-        ) ?? created[0];
+        created.find((item) => item.dashboard?.id === backendDashboardId) ?? created[0];
 
       if (allotment?.id != null) {
         boundWidget = {

@@ -1,26 +1,11 @@
-import axios from 'axios';
-
 import {
-  getApiUrl,
-  getQuery,
   deleteQuery,
-  returnHeaders,
-  viewResErrors,
+  getQuery,
+  postQuery,
 } from '@shared/api/baseQueryTypes';
-import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
-import {
-  finalizeReportQueryBodyForGroupBy,
-  serializeReportQueryRequest,
-} from '../../lib/buildReportGroupParam';
-import {
-  expandCompositeSelectedFields,
-  isReportCompositeFieldPath,
-} from '../../lib/reportEntityCompositeFields';
-import type { ReportQueryRequest } from '../../types/reportApiTypes';
 import type {
   ReportDashboardAllotment,
-  ReportDashboardAllotmentDefinition,
   ReportDashboardAllotmentListParams,
 } from '../types';
 
@@ -36,43 +21,6 @@ function unwrap<T>(res: {
     throw new Error(res.message || res.detail || 'report-dashboard-allotments request failed');
   }
   return res.data;
-}
-
-function sanitizeDefinition(body: ReportDashboardAllotmentDefinition): ReportDashboardAllotmentDefinition {
-  const selectedFields = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
-    (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
-  );
-  const sanitized = finalizeReportQueryBodyForGroupBy({
-    ...body,
-    selectedFields,
-  }) as ReportDashboardAllotmentDefinition;
-  if (body.pageableDto) {
-    sanitized.pageableDto = body.pageableDto;
-  }
-  return sanitized;
-}
-
-/** POST body — сырой JSON (как у reports query: Long → N.0). */
-async function postAllotmentDefinition(
-  url: string,
-  body: ReportDashboardAllotmentDefinition,
-): Promise<AppAxiosResponse<ReportDashboardAllotment[]>> {
-  const requestUrl = `${getApiUrl()}${url}`;
-  const sanitized = sanitizeDefinition(body);
-  // serializeReportQueryRequest обрабатывает Long-маркеры; pageableDto уходит как есть.
-  const payload = serializeReportQueryRequest(sanitized as ReportQueryRequest);
-  try {
-    const res = await axios.post<ReportDashboardAllotment[]>(requestUrl, payload, {
-      headers: {
-        ...returnHeaders(),
-        'Content-Type': 'application/json',
-      },
-      transformRequest: [(data) => data],
-    });
-    return res as AppAxiosResponse<ReportDashboardAllotment[]>;
-  } catch (e) {
-    return viewResErrors<ReportDashboardAllotment[]>(e as Parameters<typeof viewResErrors>[0]);
-  }
 }
 
 function appendCriteria(
@@ -102,21 +50,33 @@ function buildListUrl(params?: ReportDashboardAllotmentListParams): string {
   return parts.length ? `${BASE}?${parts.join('&')}` : BASE;
 }
 
+export type CreateReportDashboardAllotmentBody = {
+  reportId: number;
+  dashboardId: number;
+};
+
 /**
  * POST /api/v1/report-dashboard-allotments
- * Body = definition отчёта. Опционально dashboardId в query — привязка к уже существующему дашборду.
+ * Связь уже сохранённого отчёта с дашбордом (не definition).
+ * Body — непустой список назначений (иначе «Список не может быть пустым»).
  */
 export async function createReportDashboardAllotment(
-  definition: ReportDashboardAllotmentDefinition,
-  options?: { dashboardId?: number },
+  options: CreateReportDashboardAllotmentBody,
 ): Promise<ReportDashboardAllotment[]> {
-  const query =
-    options?.dashboardId != null && Number.isFinite(options.dashboardId)
-      ? `?dashboardId=${options.dashboardId}`
-      : '';
-  const res = await postAllotmentDefinition(`${BASE}${query}`, definition);
+  const item = {
+    report: { id: options.reportId },
+    dashboard: { id: options.dashboardId },
+  };
+  // Контроллер принимает List — шлём массив из одного элемента.
+  const res = await postQuery<
+    ReportDashboardAllotment[] | ReportDashboardAllotment,
+    Array<{ report: { id: number }; dashboard: { id: number } }>
+  >({
+    url: BASE,
+    data: [item],
+  });
   const data = unwrap(res);
-  return Array.isArray(data) ? data : data ? [data as unknown as ReportDashboardAllotment] : [];
+  return Array.isArray(data) ? data : data ? [data] : [];
 }
 
 /** GET /api/v1/report-dashboard-allotments/{id} */
