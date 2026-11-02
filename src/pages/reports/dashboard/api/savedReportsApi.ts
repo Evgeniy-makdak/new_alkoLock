@@ -86,18 +86,17 @@ async function putRawJson<T>(url: string, payload: string): Promise<AppAxiosResp
 }
 
 /**
- * Как у dashboards: name + visibility + definition как JSON-строка.
- * Плоский selectedFields бэк не видит → «Параметры отчета не могут быть пустыми».
+ * ReportDto.Create: name + visibility + definition как объект
+ * (не строка — иначе no String-argument constructor for Create/definition).
+ * Плоский selectedFields в корне бэк не маппит в parameters.
  */
 function buildSavePayload(body: SavedReportWriteBody): string {
-  const definitionJson = serializeReportQueryRequest(
-    sanitizeDefinition(body.definition) as ReportQueryRequest,
-  );
-  return JSON.stringify({
-    name: body.name.trim(),
-    visibility: body.visibility || 'private',
-    definition: definitionJson,
-  });
+  const definition = sanitizeDefinition(body.definition);
+  // definition сериализуем отдельно (Long-маркеры), затем вшиваем в оболочку.
+  const definitionJson = serializeReportQueryRequest(definition as ReportQueryRequest);
+  return `{"name":${JSON.stringify(body.name.trim())},"visibility":${JSON.stringify(
+    body.visibility || 'private',
+  )},"definition":${definitionJson}}`;
 }
 
 /** POST /api/v1/reports/{entityName}/save — сохранить параметры отчёта. */
