@@ -6,7 +6,6 @@ import {
 
 import type {
   ReportDashboardAllotment,
-  ReportDashboardAllotmentDefinition,
   ReportDashboardAllotmentListParams,
 } from '../types';
 
@@ -54,40 +53,18 @@ function buildListUrl(params?: ReportDashboardAllotmentListParams): string {
 export type CreateReportDashboardAllotmentBody = {
   reportId: number;
   dashboardId: number;
-  definition: ReportDashboardAllotmentDefinition;
 };
 
 /**
  * POST /api/v1/report-dashboard-allotments
- *
- * Проверено в браузере (Create = один объект, не массив):
- * - `reportId` в body принимается (без него — «Поле не может быть пустым»)
- * - при любом непустом `dashboardIds` / `dashboards` / `selectedFields` /
- *   nested `definition` / query `dashboardIds` остаётся «Список не может быть пустым»
- * - swagger Example с definition-полями не закрывает @NotEmpty-коллекцию
- *
- * Пока бэкенд не подтвердит имя коллекции в `ReportDashboardAllotmentDto.Create`,
- * шлём reportId + dashboardIds + definition (как в Example). Soft-fail в store
- * сохраняет виджет локально.
+ * Body: { reportId, dashboardIds } — остальные поля из Swagger Example лишние.
  */
 export async function createReportDashboardAllotment(
   options: CreateReportDashboardAllotmentBody,
 ): Promise<ReportDashboardAllotment[]> {
-  const def = options.definition ?? { selectedFields: [], filters: [] };
   const body = {
     reportId: options.reportId,
     dashboardIds: [options.dashboardId],
-    selectedFields: def.selectedFields ?? [],
-    filters: def.filters ?? [],
-    ...(def.groupBy ? { groupBy: def.groupBy } : {}),
-    ...(def.having ? { having: def.having } : {}),
-    ...(def.logicConnects ? { logicConnects: def.logicConnects } : {}),
-    ...(def.groupConnections ? { groupConnections: def.groupConnections } : {}),
-    ...(def.havingConnects ? { havingConnects: def.havingConnects } : {}),
-    ...(def.havingGroupConnections
-      ? { havingGroupConnections: def.havingGroupConnections }
-      : {}),
-    ...(def.pageableDto ? { pageableDto: def.pageableDto } : {}),
   };
 
   const res = await postQuery<

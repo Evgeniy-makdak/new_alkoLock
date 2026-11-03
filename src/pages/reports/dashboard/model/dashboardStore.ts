@@ -407,7 +407,6 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
         const created = await createReportDashboardAllotment({
           reportId,
           dashboardId: backendDashboardId,
-          definition: buildAllotmentDefinitionFromWidget(boundWidget),
         });
         const allotment =
           created.find((item) => item.dashboard?.id === backendDashboardId) ?? created[0];
