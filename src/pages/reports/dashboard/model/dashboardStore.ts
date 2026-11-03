@@ -403,25 +403,36 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
         throw new Error('Report id or dashboard id is missing for allotment');
       }
 
-      const created = await createReportDashboardAllotment({
-        reportId,
-        dashboardId: backendDashboardId,
-      });
-      const allotment =
-        created.find((item) => item.dashboard?.id === backendDashboardId) ?? created[0];
+      try {
+        const created = await createReportDashboardAllotment({
+          reportId,
+          dashboardId: backendDashboardId,
+          definition: buildAllotmentDefinitionFromWidget(boundWidget),
+        });
+        const allotment =
+          created.find((item) => item.dashboard?.id === backendDashboardId) ?? created[0];
 
-      if (allotment?.id != null) {
-        boundWidget = {
-          ...boundWidget,
-          allotmentId: allotment.id,
-          reportId: allotment.report?.id ?? boundWidget.reportId,
-          title: boundWidget.title || allotment.report?.name || boundWidget.entityName,
-          entityName:
-            allotment.report?.entityName?.trim() ||
-            boundWidget.entityName ||
-            allotment.report?.name ||
-            boundWidget.entityName,
-        };
+        if (allotment?.id != null) {
+          boundWidget = {
+            ...boundWidget,
+            allotmentId: allotment.id,
+            reportId: allotment.report?.id ?? boundWidget.reportId,
+            title: boundWidget.title || allotment.report?.name || boundWidget.entityName,
+            entityName:
+              allotment.report?.entityName?.trim() ||
+              boundWidget.entityName ||
+              allotment.report?.name ||
+              boundWidget.entityName,
+          };
+        }
+      } catch (allotmentError) {
+        // Отчёт уже сохранён — виджет всё равно пишем в дашборд, ошибку allotment показываем.
+        set({
+          error:
+            allotmentError instanceof Error
+              ? allotmentError.message
+              : 'Failed to create report-dashboard-allotment',
+        });
       }
     } catch (error) {
       set({

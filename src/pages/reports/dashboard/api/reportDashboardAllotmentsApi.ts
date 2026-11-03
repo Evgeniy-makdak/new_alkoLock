@@ -6,6 +6,7 @@ import {
 
 import type {
   ReportDashboardAllotment,
+  ReportDashboardAllotmentDefinition,
   ReportDashboardAllotmentListParams,
 } from '../types';
 
@@ -18,7 +19,7 @@ function unwrap<T>(res: {
   detail?: string;
 }): T {
   if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'report-dashboard-allotments request failed');
+    throw new Error(res.detail || res.message || 'report-dashboard-allotments request failed');
   }
   return res.data;
 }
@@ -53,19 +54,42 @@ function buildListUrl(params?: ReportDashboardAllotmentListParams): string {
 export type CreateReportDashboardAllotmentBody = {
   reportId: number;
   dashboardId: number;
+  definition: ReportDashboardAllotmentDefinition;
 };
 
 /**
  * POST /api/v1/report-dashboard-allotments
- * Body = ReportDashboardAllotmentDto.Create (один объект, не массив).
+ *
+ * Проверено в браузере (Create = один объект, не массив):
+ * - `reportId` в body принимается (без него — «Поле не может быть пустым»)
+ * - при любом непустом `dashboardIds` / `dashboards` / `selectedFields` /
+ *   nested `definition` / query `dashboardIds` остаётся «Список не может быть пустым»
+ * - swagger Example с definition-полями не закрывает @NotEmpty-коллекцию
+ *
+ * Пока бэкенд не подтвердит имя коллекции в `ReportDashboardAllotmentDto.Create`,
+ * шлём reportId + dashboardIds + definition (как в Example). Soft-fail в store
+ * сохраняет виджет локально.
  */
 export async function createReportDashboardAllotment(
   options: CreateReportDashboardAllotmentBody,
 ): Promise<ReportDashboardAllotment[]> {
+  const def = options.definition ?? { selectedFields: [], filters: [] };
   const body = {
-    report: { id: options.reportId },
-    dashboard: { id: options.dashboardId },
+    reportId: options.reportId,
+    dashboardIds: [options.dashboardId],
+    selectedFields: def.selectedFields ?? [],
+    filters: def.filters ?? [],
+    ...(def.groupBy ? { groupBy: def.groupBy } : {}),
+    ...(def.having ? { having: def.having } : {}),
+    ...(def.logicConnects ? { logicConnects: def.logicConnects } : {}),
+    ...(def.groupConnections ? { groupConnections: def.groupConnections } : {}),
+    ...(def.havingConnects ? { havingConnects: def.havingConnects } : {}),
+    ...(def.havingGroupConnections
+      ? { havingGroupConnections: def.havingGroupConnections }
+      : {}),
+    ...(def.pageableDto ? { pageableDto: def.pageableDto } : {}),
   };
+
   const res = await postQuery<
     ReportDashboardAllotment[] | ReportDashboardAllotment,
     typeof body
@@ -109,6 +133,6 @@ export async function deleteReportDashboardAllotment(id: number): Promise<void> 
     url: `${BASE}/${id}`,
   });
   if (res.isError) {
-    throw new Error(res.message || res.detail || 'failed to delete report-dashboard-allotment');
+    throw new Error(res.detail || res.message || 'failed to delete report-dashboard-allotment');
   }
 }
