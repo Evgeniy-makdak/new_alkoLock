@@ -57,14 +57,14 @@ export type CreateReportDashboardAllotmentBody = {
 
 /**
  * POST /api/v1/report-dashboard-allotments
- * Body: { reportId, dashboardIds } — остальные поля из Swagger Example лишние.
+ * Body: { reportId, dashboardsIds } — имя поля с бэка (не dashboardIds).
  */
 export async function createReportDashboardAllotment(
   options: CreateReportDashboardAllotmentBody,
 ): Promise<ReportDashboardAllotment[]> {
   const body = {
     reportId: options.reportId,
-    dashboardIds: [options.dashboardId],
+    dashboardsIds: [options.dashboardId],
   };
 
   const res = await postQuery<
