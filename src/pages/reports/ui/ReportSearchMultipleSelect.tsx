@@ -226,7 +226,9 @@ export function ReportSearchMultipleSelect<T>({
       }}
       style={{
         display: 'block',
-        width: '100%',
+        // compact (модалка отчёта): ширина по контенту/чипам — не растягивать на 100%,
+        // иначе «пустое» поле выглядит широким, а чип режется внутри узкого input.
+        width: compact ? 'max-content' : '100%',
         minWidth: minWidthPx,
         maxWidth: '100%',
         boxSizing: 'border-box',

@@ -17,7 +17,12 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import { CHART_REPORT_PAGE_SIZE } from '../types/chartSpec';
 import type { ReportChartSpec } from '../types/chartSpec';
-import type { ReportQueryRequest, ReportQueryResponse } from '../types/reportApiTypes';
+import type { ReportComposeGroupRow } from '../types/reportComposeGroup';
+import type {
+  ReportLogicOperator,
+  ReportQueryRequest,
+  ReportQueryResponse,
+} from '../types/reportApiTypes';
 
 export const DEFAULT_REPORT_PAGE_SIZE = 25;
 
@@ -38,6 +43,12 @@ export type ReportQueryContext = {
   sort?: string[];
   /** UI-ключи строк «Группировки» («field» или клон «field#N») — точный выбор варианта при edit. */
   groupByColumnKeys?: string[];
+  /**
+   * Снимок строк «Группировка» + having UI (оператор/значение/флаг авто-агрегации).
+   * Нужен, т.к. в POST having агрегация для string-операторов может опускаться.
+   */
+  composeGroupRows?: ReportComposeGroupRow[];
+  composeHavingLogic?: ReportLogicOperator;
   /** Сохранённые настройки графика (если отчёт смотрели/сохраняли как график). */
   chartSpec?: ReportChartSpec;
 };

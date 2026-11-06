@@ -66,6 +66,21 @@ export const reportFilterModalControlSx: SxProps<Theme> = {
     minWidth: '12ch',
     whiteSpace: 'nowrap',
   },
+  // Чипы выбранных значений — по тексту, без «te…» при свободной ширине поля.
+  '& .MuiAutocomplete-tag': {
+    maxWidth: 'none',
+    minWidth: 0,
+  },
+  '& .MuiChip-root': {
+    maxWidth: 'none',
+    height: 'auto',
+  },
+  '& .MuiChip-label': {
+    overflow: 'visible',
+    textOverflow: 'clip',
+    whiteSpace: 'nowrap',
+    display: 'block',
+  },
 };
 
 export const reportFilterModalDateTimeControlSx: SxProps<Theme> = {

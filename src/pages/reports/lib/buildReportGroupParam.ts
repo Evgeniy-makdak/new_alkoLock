@@ -302,11 +302,19 @@ function applyHavingToGroupRow(
         label: String(value ?? index),
       }))
     : [];
+  const aggregationFromPayload = havingItem.aggregation?.trim() ?? '';
+  const havingMode = havingItem.havingMode?.trim() ?? '';
+  const operator = havingItem.operator?.trim() ?? '';
+  // String-сравнение по groupBy уходит в POST без aggregation — при restore из body
+  // подставляем countDistinct, чтобы секция «Доп. фильтр» снова показала operator/values.
+  const needsUiAggregationFallback =
+    !aggregationFromPayload &&
+    Boolean(havingMode || operator || values.length);
   return {
     ...row,
-    operator: havingItem.operator?.trim() ?? '',
-    havingAggregation: havingItem.aggregation?.trim() ?? '',
-    havingMode: havingItem.havingMode?.trim() ?? '',
+    operator,
+    havingAggregation: aggregationFromPayload || (needsUiAggregationFallback ? 'countDistinct' : ''),
+    havingMode,
     topN: havingItem.topN != null && Number.isFinite(havingItem.topN) ? String(havingItem.topN) : '',
     values,
     // Флаг UI не хранится на бэке — при restore остаётся false.
@@ -382,13 +390,45 @@ export function isHavingNumericThresholdAggregation(code: string): boolean {
   );
 }
 
+/** endsWith/startsWith/contains — сравнение строки, не Long-порога count/sum. */
+export function isStringPatternHavingOperator(operator: string | undefined): boolean {
+  const normalized = normalizeHavingOperatorForApi(operator ?? '');
+  if (!normalized) return false;
+  const key = normalized.toLowerCase();
+  return key === 'endswith' || key === 'startswith' || key === 'contains';
+}
+
+function resolveFieldHavingStringType(
+  fieldDef: ReportFieldDefinition | null | undefined,
+): string {
+  const fromField = (fieldDef?.type ?? '').trim();
+  if (fromField && fromField.toUpperCase() !== 'LONG' && fromField.toUpperCase() !== 'BIGINT') {
+    return fromField;
+  }
+  const fromHaving = (fieldDef?.availableHaving?.type ?? '').trim();
+  if (fromHaving && fromHaving.toUpperCase() !== 'LONG' && fromHaving.toUpperCase() !== 'BIGINT') {
+    return fromHaving;
+  }
+  return 'STRING';
+}
+
 function resolveHavingValueType(
   fieldDef: ReportFieldDefinition | null | undefined,
   aggregation: string | undefined,
+  operator?: string,
 ): string {
+  // Строковый оператор + count/sum → сравниваем значение поля группы (STRING),
+  // иначе бэк пытается привести «александр» к Long.
+  if (
+    isStringPatternHavingOperator(operator) &&
+    isHavingNumericThresholdAggregation(aggregation ?? '')
+  ) {
+    return resolveFieldHavingStringType(fieldDef);
+  }
+  // count/countDistinct/sum/avg всегда дают Long — важнее availableHaving.type.
+  if (isHavingNumericThresholdAggregation(aggregation ?? '')) return 'LONG';
   const fromHaving = (fieldDef?.availableHaving?.type ?? '').trim();
   if (fromHaving) return fromHaving;
-  if (isHavingNumericThresholdAggregation(aggregation ?? '')) return 'LONG';
   return (fieldDef?.type ?? '').trim();
 }
 
@@ -466,13 +506,28 @@ export function buildComposeHavingParams(
     };
 
     const aggregation = normalizeHavingAggregationForApi(row.havingAggregation);
-    if (aggregation) item.aggregation = aggregation;
-
     const havingMode = normalizeHavingModeForApi(row.havingMode);
     if (havingMode) item.havingMode = havingMode;
 
     const fieldDef = resolveField?.(row.columnKey) ?? null;
-    const valueType = resolveHavingValueType(fieldDef, aggregation);
+    const comparisonOperator =
+      havingMode === 'comparison' ? normalizeHavingOperatorForApi(row.operator) : undefined;
+
+    // TEXT fullName: допустимы только COUNT / COUNT_DISTINCT (дают Long).
+    // endsWith/startsWith/contains — фильтр по ключу groupBy без агрегата в having
+    // (иначе max → «недопустим», countDistinct + строка → «не Long»).
+    const stringCompareOnGroupKey =
+      Boolean(comparisonOperator) &&
+      isStringPatternHavingOperator(comparisonOperator) &&
+      isHavingNumericThresholdAggregation(aggregation ?? '');
+
+    if (aggregation && !stringCompareOnGroupKey) {
+      item.aggregation = aggregation;
+    }
+
+    const valueType = stringCompareOnGroupKey
+      ? resolveFieldHavingStringType(fieldDef)
+      : resolveHavingValueType(fieldDef, aggregation, comparisonOperator);
     if (valueType) item.type = valueType;
 
     // topN только для havingMode = top_n; всегда integer, не строка
@@ -488,8 +543,7 @@ export function buildComposeHavingParams(
 
     // operator + values — только для comparison (не для max_only / top_n / …)
     if (havingMode === 'comparison') {
-      const operator = normalizeHavingOperatorForApi(row.operator);
-      if (operator) item.operator = operator;
+      if (comparisonOperator) item.operator = comparisonOperator;
 
       const cleanedValues = row.values
         .map((v) => coerceHavingValueForApi(v.value, valueType))

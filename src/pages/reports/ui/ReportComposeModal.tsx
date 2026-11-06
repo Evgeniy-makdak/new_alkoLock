@@ -277,17 +277,30 @@ export function ReportComposeModal({
         ? reportGenerationStore.getState().sort
         : (queryContext?.sort ?? []);
     setComposeSortRows(parseComposeSortRowsFromSortParams(savedSort, tableFields));
-    setComposeGroupRows(
-      parseComposeGroupRowsFromGroupBy(
-        queryBody?.groupBy,
-        tableFields,
-        queryBody?.having,
-        queryContext?.groupByColumnKeys,
-      ),
-    );
-    setComposeHavingLogicOperator(
-      queryBody?.havingConnects?.[0]?.logicOperator === 'or' ? 'or' : 'and',
-    );
+    // Точный UI-снимок (оператор/значение having, флаг авто-агрегации) важнее
+    // реконструкции из body.having: для endsWith aggregation в POST может отсутствовать.
+    const savedGroupRows = queryContext?.composeGroupRows;
+    if (savedGroupRows?.length) {
+      setComposeGroupRows(
+        savedGroupRows.map((row) => ({
+          ...row,
+          values: Array.isArray(row.values) ? [...row.values] : [],
+        })),
+      );
+      setComposeHavingLogicOperator(queryContext?.composeHavingLogic === 'or' ? 'or' : 'and');
+    } else {
+      setComposeGroupRows(
+        parseComposeGroupRowsFromGroupBy(
+          queryBody?.groupBy,
+          tableFields,
+          queryBody?.having,
+          queryContext?.groupByColumnKeys,
+        ),
+      );
+      setComposeHavingLogicOperator(
+        queryBody?.havingConnects?.[0]?.logicOperator === 'or' ? 'or' : 'and',
+      );
+    }
     const restoredDisplay: Record<string, string> = {};
     const displayCounts = new Map<string, number>();
     for (const field of queryBody?.selectedFields ?? []) {
@@ -1032,6 +1045,12 @@ export function ReportComposeModal({
         groupByColumnKeys: composeGroupRows
           .map((row) => row.columnKey.trim())
           .filter(Boolean),
+        // Полный снимок UI группировки/having — restore «Доп. фильтра к результату».
+        composeGroupRows: composeGroupRows.map((row) => ({
+          ...row,
+          values: Array.isArray(row.values) ? [...row.values] : [],
+        })),
+        composeHavingLogic: composeHavingLogicOperator,
         chartSpec: reportsStore.getState().chartSpec,
       });
       reportGenerationStore.getState().completeSuccess(result);

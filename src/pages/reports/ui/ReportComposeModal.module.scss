@@ -513,6 +513,28 @@
     min-height: 40px !important;
   }
 
+  /* Чипы значений (having/фильтры): не резать «te…» при свободном месте; тултип — через OverflowTooltip. */
+  :global(.MuiAutocomplete-tag) {
+    max-width: none !important;
+    min-width: 0;
+  }
+
+  :global([class*='chipWrapper']) {
+    max-width: none !important;
+    overflow: visible !important;
+  }
+
+  :global(.MuiChip-root) {
+    max-width: none !important;
+    height: auto !important;
+  }
+
+  :global(.MuiChip-label) {
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
   /* Перебиваем max-content у даты — иначе календарик вылезает на «Время». */
   :global([class*='reportFilterDateField'] .MuiOutlinedInput-root),
   :global([class*='reportFilterDateField'] .MuiPickersOutlinedInput-root),

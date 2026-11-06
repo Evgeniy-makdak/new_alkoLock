@@ -143,7 +143,6 @@ export function ReportComposeHavingSection({
   const { t } = useTranslation();
   const [domainOptionsByPath, setDomainOptionsByPath] = useState<Record<string, Values>>({});
   const [domainOptionsLoading, setDomainOptionsLoading] = useState(false);
-  const [domainSearchByPath, setDomainSearchByPath] = useState<Record<string, string>>({});
   const vehicleLabelMaps = reportsStore((s) => s.vehicleLabelMaps);
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
 
@@ -189,9 +188,6 @@ export function ReportComposeHavingSection({
 
   const branchIdsKey = branchIds.join(',');
   const domainValueFieldPathsKey = domainValueFieldPaths.join('\0');
-  const domainSearchKey = domainValueFieldPaths
-    .map((path) => `${path}=${domainSearchByPath[path] ?? ''}`)
-    .join('\0');
 
   useEffect(() => {
     const fieldPaths = domainValueFieldPathsKey ? domainValueFieldPathsKey.split('\0') : [];
@@ -204,13 +200,6 @@ export function ReportComposeHavingSection({
     let cancelled = false;
     setDomainOptionsLoading(true);
 
-    const searchByPath: Record<string, string> = {};
-    for (const part of domainSearchKey ? domainSearchKey.split('\0') : []) {
-      const eq = part.indexOf('=');
-      if (eq < 0) continue;
-      searchByPath[part.slice(0, eq)] = part.slice(eq + 1);
-    }
-
     void (async () => {
       try {
         const next: Record<string, Values> = {};
@@ -218,24 +207,21 @@ export function ReportComposeHavingSection({
         for (const fieldPath of fieldPaths) {
           const source =
             resolveReportDomainListEntityForFieldPath(fieldPath, entityName) ?? 'DeviceEvent';
-          const search = searchByPath[fieldPath] ?? '';
-          const key = `${source}\n${search}`;
-          const list = byEntity.get(key) ?? [];
+          const list = byEntity.get(source) ?? [];
           list.push(fieldPath);
-          byEntity.set(key, list);
+          byEntity.set(source, list);
         }
 
         await Promise.all(
-          Array.from(byEntity.entries()).map(async ([key, paths]) => {
-            const [source, search = ''] = key.split('\n');
+          Array.from(byEntity.entries()).map(async ([source, paths]) => {
             const records = await fetchReportDomainEntityRecords({
               entityName: source,
-              searchQuery: search,
+              searchQuery: '',
               branchIds,
             });
             for (const fieldPath of paths) {
               if (source === 'DeviceEvent') {
-                next[fieldPath] = buildDeviceEventHavingValueOptions(records, fieldPath, search);
+                next[fieldPath] = buildDeviceEventHavingValueOptions(records, fieldPath, '');
               } else {
                 const attr = fieldPath.includes('.')
                   ? fieldPath.slice(fieldPath.lastIndexOf('.') + 1)
@@ -257,7 +243,7 @@ export function ReportComposeHavingSection({
     return () => {
       cancelled = true;
     };
-  }, [domainValueFieldPathsKey, domainSearchKey, entityName, branchIdsKey, branchIds]);
+  }, [domainValueFieldPathsKey, entityName, branchIdsKey, branchIds]);
 
   const patchRow = (id: string, patch: Partial<ReportComposeGroupRow>) => {
     onChange(groupRows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -357,6 +343,8 @@ export function ReportComposeHavingSection({
               Boolean(resolveReportDomainListEntityForFieldPath(row.columnKey, entityName)) &&
               domainOptionsLoading &&
               !valueOptions.length;
+            // Справочник (users/…) если есть опции; иначе TextField.
+            // commitFreeText на select — чтобы endsWith с ручным вводом тоже попадал в having.values.
             const showValuesSelect =
               showComparisonControls && (valueOptions.length > 0 || waitsDomainOptions);
             const showValuesTextInput =
@@ -469,20 +457,17 @@ export function ReportComposeHavingSection({
                           <ReportSearchMultipleSelect
                             multiple
                             compact
+                            commitFreeText
                             name={`report-having-values-${row.id}`}
                             label={t('reports.composeGroupHavingValuesLabel')}
                             values={valueOptions}
                             value={row.values}
-                            serverFilter
+                            // Клиентский фильтр: serverFilter+поиск по /users на каждый символ
+                            // дергает reset Autocomplete и стирает ввод после 1-го символа.
+                            serverFilter={false}
                             isLoading={waitsDomainOptions}
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
-                            onInputChange={(next) => {
-                              setDomainSearchByPath((prev) => ({
-                                ...prev,
-                                [row.columnKey]: next,
-                              }));
-                            }}
                             setValueStore={(_, next) => {
                               patchRow(row.id, { values: (next as Values) ?? [] });
                             }}
