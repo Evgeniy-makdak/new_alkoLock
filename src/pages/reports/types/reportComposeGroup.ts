@@ -2,8 +2,9 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 /**
  * Строка блока «Группировка».
- * having.* заполняется отдельно от selectedFields.aggregation
- * (aggregation в selectedFields — только контрол «Текущий состав таблицы»).
+ * having.* — секция «Дополнительный фильтр к результату»;
+ * selectedFields.aggregation — контрол «Текущий состав» и/или флаг
+ * autoAggregateRemainingFields.
  */
 export type ReportComposeGroupRow = {
   id: string;
@@ -15,6 +16,11 @@ export type ReportComposeGroupRow = {
   havingMode: string;
   topN: string;
   values: Values;
+  /**
+   * Если true — перед POST все столбцы «Текущего состава» (кроме groupBy)
+   * получают эту агрегирующую функцию. По умолчанию false.
+   */
+  autoAggregateRemainingFields: boolean;
 };
 
 export function createReportComposeGroupRow(columnKey = ''): ReportComposeGroupRow {
@@ -26,5 +32,6 @@ export function createReportComposeGroupRow(columnKey = ''): ReportComposeGroupR
     havingMode: '',
     topN: '',
     values: [],
+    autoAggregateRemainingFields: false,
   };
 }

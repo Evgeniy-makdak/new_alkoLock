@@ -57,22 +57,33 @@ type ReportEntityCompositeConfig = {
   entityLabelKey: string;
   /**
    * false — не склеивать поля в «Состав колонок» / гриде результата.
-   * Нужно для User: SQL не ищет по ФИО+email как по одному полю.
+   * Нужно для User: SQL не ищет по ФИО как по одному полю.
    */
   mergeTableColumns?: boolean;
+  /**
+   * true — добавить составную опцию рядом с атомарными полями
+   * (ФИО / «Название (СН)» / «Марка модель (Гос.номер)»), не скрывая члены.
+   */
+  offerAsExtraOption?: boolean;
 };
 
 function shouldMergeEntityTableColumns(config: ReportEntityCompositeConfig): boolean {
   return config.mergeTableColumns !== false;
 }
 
+function shouldOfferEntityCompositeOption(config: ReportEntityCompositeConfig): boolean {
+  return shouldMergeEntityTableColumns(config) || config.offerAsExtraOption === true;
+}
+
 const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
   {
     referenceEntity: 'User',
-    memberFieldNames: ['surname', 'firstName', 'middleName', 'email'],
+    // ФИО = Фамилия + Имя + Отчество (без e-mail).
+    memberFieldNames: ['surname', 'firstName', 'middleName'],
     labelKey: 'reports.composite.userDisplay',
     entityLabelKey: 'reports.composite.entityUser',
     mergeTableColumns: false,
+    offerAsExtraOption: true,
   },
   {
     referenceEntity: 'MonitoringDevice',
@@ -80,6 +91,7 @@ const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
     labelKey: 'reports.composite.deviceDisplay',
     entityLabelKey: 'reports.composite.entityDevice',
     mergeTableColumns: false,
+    offerAsExtraOption: true,
   },
   {
     referenceEntity: 'Vehicle',
@@ -87,6 +99,7 @@ const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
     labelKey: 'reports.composite.vehicleDisplay',
     entityLabelKey: 'reports.composite.entityVehicle',
     mergeTableColumns: false,
+    offerAsExtraOption: true,
   },
 ];
 
@@ -170,7 +183,7 @@ export function applyReportEntityCompositeFieldGrouping(
     const { prefix, leaf } = parseFieldPath(draft.value);
     if (
       !config ||
-      !shouldMergeEntityTableColumns(config) ||
+      !shouldOfferEntityCompositeOption(config) ||
       !config.memberFieldNames.includes(leaf)
     ) {
       passthrough.push(draft);
@@ -188,10 +201,16 @@ export function applyReportEntityCompositeFieldGrouping(
       groups.set(gk, group);
     }
     group.members.push(draft);
+    // Атомарные поля оставляем видимыми, если merge выключен (offerAsExtraOption).
+    if (!shouldMergeEntityTableColumns(config)) {
+      passthrough.push(draft);
+    }
   }
 
   const compositeDrafts: ReportTableFieldOptionDraft[] = [];
   for (const group of Array.from(groups.values())) {
+    // Составную опцию добавляем, когда собраны все члены группы.
+    if (group.members.length < group.config.memberFieldNames.length) continue;
     const compositePath = buildReportCompositeFieldPath(
       group.prefix,
       group.config.referenceEntity,
@@ -210,6 +229,7 @@ export function applyReportEntityCompositeFieldGrouping(
 
   const memberLeavesToHide = new Set<string>();
   for (const group of Array.from(groups.values())) {
+    if (!shouldMergeEntityTableColumns(group.config)) continue;
     for (const m of group.members) {
       memberLeavesToHide.add(m.value);
     }
@@ -309,15 +329,20 @@ export function planReportCompositeResultColumns(
 
   for (const prefix of Array.from(prefixes)) {
     for (const config of COMPOSITE_CONFIGS) {
-      if (!shouldMergeEntityTableColumns(config)) continue;
       const memberKeys = config.memberFieldNames.map((leaf) =>
         prefix ? `${prefix}.${leaf}` : leaf,
       );
+      const compositeKey = buildReportCompositeFieldPath(prefix, config.referenceEntity);
       const allInContent = memberKeys.every((k) => keySet.has(k));
       const allSelected = memberKeys.every((k) => selectedSet.has(k));
-      if (!allInContent || !allSelected) continue;
+      const compositeSelected = selectedSet.has(compositeKey);
+      // offerAsExtra: склеивать только если в body ещё есть __composite.* (до sanitize API).
+      // Выбор Фамилия+Имя+Отчество по отдельности — три колонки, без авто-ФИО.
+      const shouldMerge =
+        (shouldMergeEntityTableColumns(config) && allInContent && allSelected) ||
+        (config.offerAsExtraOption === true && allInContent && compositeSelected);
+      if (!shouldMerge) continue;
 
-      const compositeKey = buildReportCompositeFieldPath(prefix, config.referenceEntity);
       groups.push({ compositeKey, memberKeys, kind: config.referenceEntity, prefix });
       for (const mk of memberKeys) {
         keysToHide.add(mk);
@@ -487,30 +512,21 @@ export function formatReportCompositeCellValue(
 
   switch (group.kind) {
     case 'User': {
-      const person = {
-        surname: read('surname'),
-        firstName: read('firstName'),
-        middleName: read('middleName'),
-        email: read('email'),
-      };
       const fio = Formatters.nameFormatter(
         {
-          surname: isReportEmptyValue(person.surname)
+          surname: isReportEmptyValue(read('surname'))
             ? undefined
-            : String(person.surname).trim() || undefined,
-          firstName: isReportEmptyValue(person.firstName)
+            : String(read('surname')).trim() || undefined,
+          firstName: isReportEmptyValue(read('firstName'))
             ? undefined
-            : String(person.firstName).trim() || undefined,
-          middleName: isReportEmptyValue(person.middleName)
+            : String(read('firstName')).trim() || undefined,
+          middleName: isReportEmptyValue(read('middleName'))
             ? undefined
-            : String(person.middleName).trim() || undefined,
+            : String(read('middleName')).trim() || undefined,
         },
         false,
       );
-      const email = isReportEmptyValue(person.email) ? '' : String(person.email).trim();
-      if (fio && fio !== '-' && email) display = `${fio} (${email})`;
-      else if (fio && fio !== '-') display = fio;
-      else display = email || REPORT_EMPTY_DISPLAY;
+      display = fio && fio !== '-' ? fio : REPORT_EMPTY_DISPLAY;
       break;
     }
     case 'MonitoringDevice': {
@@ -821,6 +837,13 @@ export function normalizeCompositeTableFieldSelection(values: Values, options: V
   for (const opt of options) {
     const compositePath = String(opt.value);
     if (!isReportCompositeFieldPath(compositePath)) continue;
+    // User/Device/Vehicle с offerAsExtraOption: атомы и составная опция сосуществуют —
+    // не схлопываем выбор Фамилия+Имя+Отчество в «ФИО» автоматически.
+    const parsed = parseCompositePath(compositePath);
+    if (parsed && parsed.kind !== COORDINATES_COMPOSITE_KIND) {
+      const config = CONFIG_BY_ENTITY.get(parsed.kind);
+      if (config && !shouldMergeEntityTableColumns(config)) continue;
+    }
     const members = expandCompositeFieldPath(compositePath);
     const hasComposite = result.some((v) => String(v.value) === compositePath);
     if (hasComposite) continue;

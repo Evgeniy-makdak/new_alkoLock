@@ -84,6 +84,7 @@ import {
   reportComposeBranchValuesToIds,
 } from './ReportComposeBranchSelect';
 import { ReportComposeGroupSection } from './ReportComposeGroupSection';
+import { ReportComposeHavingSection } from './ReportComposeHavingSection';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportComposeSortSection } from './ReportComposeSortSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
@@ -152,6 +153,7 @@ function buildReportComposeEditFingerprint(parts: {
       havingMode: row.havingMode,
       topN: row.topN,
       values: valuesFingerprint(row.values),
+      autoAggregateRemainingFields: row.autoAggregateRemainingFields === true,
     })),
     havingLogic: parts.havingLogic,
     branches: valuesFingerprint(parts.branches),
@@ -971,6 +973,7 @@ export function ReportComposeModal({
             referenceEntityMetadataByName: nestedMetadataByName,
           }
         : undefined,
+      composeGroupRows,
     );
     const { pagination, setQueryContext, setPagination, setSort } =
       reportGenerationStore.getState();
@@ -1151,6 +1154,25 @@ export function ReportComposeModal({
                   onChange={setComposeGroupRows}
                   logicOperator={composeHavingLogicOperator}
                   onLogicOperatorChange={setComposeHavingLogicOperator}
+                  entityMetadata={metadata}
+                  outputRows={outputRows}
+                  tableMetadataByRowId={reportTableFieldsMetadataByRowId}
+                  referenceEntityMetadataByName={referenceEntityMetadataByName}
+                  columnHeaderLabels={editColumnHeaderLabels}
+                  branchIds={
+                    isSuperAdmin
+                      ? reportComposeBranchValuesToIds(selectedBranchOffices)
+                      : []
+                  }
+                />
+              </div>
+            ) : null}
+            {hasComposeTableColumns && showColumnsSection && groupColumnOptions.length > 0 ? (
+              <div className={composeStyles.sortSectionSlot}>
+                <ReportComposeHavingSection
+                  columnOptions={groupColumnOptions}
+                  groupRows={composeGroupRows}
+                  onChange={setComposeGroupRows}
                   entityMetadata={metadata}
                   outputRows={outputRows}
                   tableMetadataByRowId={reportTableFieldsMetadataByRowId}

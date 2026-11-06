@@ -309,6 +309,8 @@ function applyHavingToGroupRow(
     havingMode: havingItem.havingMode?.trim() ?? '',
     topN: havingItem.topN != null && Number.isFinite(havingItem.topN) ? String(havingItem.topN) : '',
     values,
+    // Флаг UI не хранится на бэке — при restore остаётся false.
+    autoAggregateRemainingFields: row.autoAggregateRemainingFields ?? false,
   };
 }
 
@@ -855,18 +857,50 @@ function readGlobalAggregationFromOutputRows(outputRows: ReportOutputRow[]): str
 }
 
 /**
+ * Флаг «Автоматически добавлять остальные поля в агрегирующую функцию»:
+ * всем selectedFields вне groupBy проставляем aggregation из строки группировки.
+ */
+export function applyAutoAggregateRemainingFields(
+  body: ReportQueryRequest,
+  groupRows: ReportComposeGroupRow[],
+): ReportQueryRequest {
+  const source = groupRows.find((row) => {
+    if (!row.autoAggregateRemainingFields) return false;
+    const aggregation = normalizeHavingAggregationForApi(row.havingAggregation);
+    return Boolean(aggregation && aggregation !== 'none');
+  });
+  if (!source) return body;
+
+  const aggregation = normalizeAggregationForApi(
+    normalizeHavingAggregationForApi(source.havingAggregation) ?? source.havingAggregation,
+  );
+  if (!aggregation || aggregation === 'none') return body;
+
+  const groupSet = new Set(body.groupBy ?? []);
+  const selectedFields = (body.selectedFields ?? []).map((field) => {
+    const name = field.fieldName?.trim();
+    if (!name || groupSet.has(name)) return field;
+    return { ...field, aggregation };
+  });
+
+  return { ...body, selectedFields };
+}
+
+/**
  * При groupBy:
  * — дополняет groupBy соседними полями выбранной сущности;
  * — у полей из groupBy убирает aggregation (они в GROUP BY, не в SELECT agg);
  * — снимает автодобавленный для карты vehicle.registrationNumber
  *   (его нет в «Текущем составе», но inject ломал GROUP BY);
- * — НЕ подставляет aggregation в selectedFields автоматически:
- *   aggregation в selectedFields задаёт только контрол «Текущий состав таблицы»;
+ * — autoAggregateRemainingFields (если включён) проставляет aggregation
+ *   остальным столбцам «Текущего состава»; иначе aggregation в selectedFields
+ *   задаёт только контрол «Текущий состав таблицы»;
  *   условия агрегации по группам — в having.
  */
 export function finalizeReportQueryBodyForGroupBy(
   body: ReportQueryRequest,
   _context?: ApplyGroupByAggregationContext,
+  groupRows?: ReportComposeGroupRow[],
 ): ReportQueryRequest {
   const groupBy = body.groupBy;
   if (!groupBy?.length) return body;
@@ -877,7 +911,11 @@ export function finalizeReportQueryBodyForGroupBy(
   );
   const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, withoutMapExtras);
   const groupSet = new Set(effectiveGroupBy);
-  const deduped = dedupeSelectedFieldsByFieldName(withoutMapExtras, groupSet);
+  const withAutoAgg = applyAutoAggregateRemainingFields(
+    { ...body, groupBy: effectiveGroupBy, selectedFields: withoutMapExtras },
+    groupRows ?? [],
+  );
+  const deduped = dedupeSelectedFieldsByFieldName(withAutoAgg.selectedFields ?? [], groupSet);
 
   const selectedFields = deduped.map((field) => {
     if (!field.fieldName) return field;
