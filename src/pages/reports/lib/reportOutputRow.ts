@@ -2,7 +2,8 @@ import { findReferenceEntityFieldByAttribute } from './findReferenceEntityFieldB
 import {
   isReportBetweenFilterOperation,
   isReportBetweenFilterValuesComplete,
-  isReportFilterNullOperation,
+  isReportFilterValueOmittedOperation,
+  resolveReportOperationNumberParameter,
 } from './mapReportQueryOperator';
 import { resolveReportOutputPrimaryField } from './reportEntityCompositeFields';
 import {
@@ -101,12 +102,18 @@ export function isReportOutputRowComplete(
     operationPicked[0]?.value != null && operationPicked[0].value !== ''
       ? String(operationPicked[0].value)
       : null;
-  // isNull / isNotNull — значение не требуется.
+  const operationNumberParameter = resolveReportOperationNumberParameter(
+    operationSource.availableOperations,
+    operationCode,
+  );
+  // numberParameter === 0 (или legacy isNull/isNotNull) — значение не требуется.
   const valueNotRequired =
-    operationSelected && isReportFilterNullOperation(operationCode);
-  // between — обязательно оба слота (начало и конец).
+    operationSelected &&
+    isReportFilterValueOmittedOperation(operationCode, operationNumberParameter);
+  // between / numberParameter === 2 — обязательно оба слота (начало и конец).
   const needsBetweenPair =
-    operationSelected && isReportBetweenFilterOperation(operationCode);
+    operationSelected &&
+    isReportBetweenFilterOperation(operationCode, operationNumberParameter);
 
   const nestedValues = nestedState?.values ?? [];
   const scalarValues = row.filterSelections[primaryField.fieldName] ?? [];

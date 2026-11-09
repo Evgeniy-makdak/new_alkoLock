@@ -20,6 +20,7 @@ type ReportCompositeEntityValueControlProps = {
   fieldKey: string;
   values: Values;
   filterOperationCode?: string | null;
+  filterOperationNumberParameter?: number | null;
   compact?: boolean;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
   onChange: (values: Values) => void;
@@ -30,6 +31,7 @@ export function ReportCompositeEntityValueControl({
   fieldKey,
   values,
   filterOperationCode,
+  filterOperationNumberParameter = null,
   compact = false,
   vehicleLabelMaps,
   onChange,
@@ -54,6 +56,7 @@ export function ReportCompositeEntityValueControl({
       }}
       values={values}
       filterOperationCode={filterOperationCode}
+      filterOperationNumberParameter={filterOperationNumberParameter}
       compact={compact}
       controlSx={controlSx}
       vehicleLabelMaps={vehicleLabelMaps}

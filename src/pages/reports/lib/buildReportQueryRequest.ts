@@ -44,7 +44,8 @@ import {
 } from './formatReportDateTimeFilterValue';
 import {
   isReportDateTimeBetweenOperation,
-  isReportFilterNullOperation,
+  isReportFilterValueOmittedOperation,
+  resolveReportOperationNumberParameter,
 } from './mapReportQueryOperator';
 import { isReportDateTimeField } from './reportFieldFilterKind';
 import {
@@ -142,11 +143,15 @@ function buildDateTimeFiltersWithOp(
   const apiFieldName = resolveReportFilterFieldName(entityName, field.fieldName);
   const operator = operatorCode.trim();
 
-  if (isReportFilterNullOperation(operator)) {
+  const numberParameter = resolveReportOperationNumberParameter(
+    field.availableOperations,
+    operator,
+  );
+  if (isReportFilterValueOmittedOperation(operator, numberParameter)) {
     return [{ fieldName: apiFieldName, operator }];
   }
 
-  if (isReportDateTimeBetweenOperation(operator)) {
+  if (isReportDateTimeBetweenOperation(operator) || numberParameter === 2) {
     const startIso = toReportDateTimeFilterIso(selected[0]?.value);
     const endIso = toReportDateTimeFilterIso(selected[1]?.value);
     if (!startIso || !endIso) {
@@ -281,15 +286,22 @@ function buildRowReportTableFields(
   // в УНИКАЛЬНЫХ alias (иначе бэкенд вернёт одинаковые content-ключи и карта
   // агрегаций схлопнется по fieldName — заголовки/форматирование сломаются).
   const baseOccurrenceCount = new Map<string, number>();
+  // Атомарные пути, выбранные явно (не через __composite.*) — при expand не дублируем.
+  const explicitAtomicBasePaths = new Set<string>();
   for (const tf of tableFields) {
-    const base = stripDuplicateColumnSuffix(String(tf.value ?? ''));
+    const raw = String(tf.value ?? '');
+    const base = stripDuplicateColumnSuffix(raw);
     baseOccurrenceCount.set(base, (baseOccurrenceCount.get(base) ?? 0) + 1);
+    if (raw && !isReportCompositeFieldPath(raw)) {
+      explicitAtomicBasePaths.add(base);
+    }
   }
   const emittedBaseCount = new Map<string, number>();
 
-  return tableFields.flatMap((item) => {
+  const built = tableFields.flatMap((item) => {
     const path = String(item.value);
-    const pathsToEmit = isReportCompositeFieldPath(path)
+    const expandedFromComposite = isReportCompositeFieldPath(path);
+    const pathsToEmit = expandedFromComposite
       ? expandCompositeFieldPath(path)
       : [path];
 
@@ -300,6 +312,11 @@ function buildRowReportTableFields(
     // Дубли колонок («field#N») → базовый fieldPath для бэка; суффикс нужен
     // только для отдельной агрегации/алиаса/видимости строки.
     const basePath = stripDuplicateColumnSuffix(emitPath);
+    // Составная колонка + те же атомы в «Текущем составе» → иначе два selectedFields
+    // с fieldName=name без alias → «Алиас 'name' уже используется».
+    if (expandedFromComposite && explicitAtomicBasePaths.has(basePath)) {
+      return [];
+    }
     if (basePath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
       return [];
     }
@@ -319,7 +336,12 @@ function buildRowReportTableFields(
     }
 
     const defaultLabel = resolveReportFieldDefaultLabelForAlias(basePath, fieldDef);
-    const displayLabel = (item.label ?? '').trim() || defaultLabel;
+    // Раскрытие composite («Название (Серийный номер)» → name + serialNumber):
+    // UI-подпись составной колонки НЕ является переименованием члена —
+    // иначе бэк получает alias вроде «Название_(Серийный_номер)» для fieldName=name.
+    const displayLabel = expandedFromComposite
+      ? defaultLabel
+      : (item.label ?? '').trim() || defaultLabel;
     // fieldName — всегда путь поля для бэка; переименование только в alias.
     const payload: ReportSelectedFieldPayload = {
       fieldName: resolveReportTableSelectedPayloadFieldName(
@@ -370,6 +392,25 @@ function buildRowReportTableFields(
     return [payload];
     });
   });
+
+  // Страховка: одинаковые fieldName+aggregation+alias не уходят на бэк дважды.
+  return dedupeIdenticalSelectedFieldPayloads(built);
+}
+
+/** Дедуп payload с одинаковым fieldName / aggregation / alias (клоны с разным alias сохраняются). */
+function dedupeIdenticalSelectedFieldPayloads(
+  fields: ReportSelectedFieldPayload[],
+): ReportSelectedFieldPayload[] {
+  const seen = new Map<string, ReportSelectedFieldPayload>();
+  for (const field of fields) {
+    const name = field.fieldName?.trim();
+    if (!name) continue;
+    const key = `${name}\0${field.aggregation ?? ''}\0${field.alias ?? ''}`;
+    if (!seen.has(key)) {
+      seen.set(key, field);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 function mergeSelectedFields(
@@ -429,15 +470,25 @@ export function buildReportQueryRequestForRow(
   const selectedFields = buildRowReportTableFields(row, tableFieldsContext);
   const filters: ReportQueryFilter[] = [];
 
-  const pushFilter = (fieldName: string, selected: Values, field?: ReportFieldDefinition) => {
-    if (!selected.length) return;
+  const pushFilter = (
+    fieldName: string,
+    selected: Values,
+    field?: ReportFieldDefinition,
+    allowEmptyValues = false,
+  ) => {
+    if (!selected.length && !allowEmptyValues) return;
 
     let apiFieldName = resolveReportFilterFieldName(metadata.entityName, fieldName);
 
     const fieldDef = resolveFilterFieldDef(fieldName, field, fieldMap);
 
     // Для reference entity полей без явного .id и со scalar-ID значениями — добавляем .id
-    if (fieldDef && !isScalarFieldType(fieldDef.type) && !apiFieldName.endsWith('.id')) {
+    if (
+      selected.length &&
+      fieldDef &&
+      !isScalarFieldType(fieldDef.type) &&
+      !apiFieldName.endsWith('.id')
+    ) {
       if (valuesLookLikeId(selected)) {
         apiFieldName = `${apiFieldName}.id`;
       }
@@ -459,6 +510,23 @@ export function buildReportQueryRequestForRow(
     const opField = fieldDef ?? primary;
     const multi = selected.length > 1;
     const operator = resolveUiOperationCode(opField, row.filterSelections, operationKey, multi);
+    const numberParameter = resolveReportOperationNumberParameter(
+      opField.availableOperations,
+      operator,
+    );
+    if (isReportFilterValueOmittedOperation(operator, numberParameter)) {
+      filters.push(
+        withFilterGroup(
+          {
+            fieldName: apiFieldName,
+            operator,
+          },
+          options.groupNumber,
+        ),
+      );
+      return;
+    }
+
     const values = resolveFilterValues(fieldDef, selected);
     if (!values.length) {
       return;
@@ -481,7 +549,31 @@ export function buildReportQueryRequestForRow(
     if (ref) {
       const nested = row.nestedEntityFilterByField[primary.fieldName];
       const nestedPath = nested ? normalizeNestedFilterPath(nested) : [];
-      if (nestedPath.length && nested.values.length) {
+      const nestedAttributeField =
+        nestedPath.length
+          ? resolveNestedFilterLeafField(
+              tableFieldsContext.tableMetadataByRowId[row.id],
+              nestedPath,
+              tableFieldsContext.referenceEntityMetadataByName,
+            ) ?? primary
+          : null;
+      const nestedOpCode = nestedAttributeField
+        ? resolveUiOperationCode(
+            nestedAttributeField,
+            row.filterSelections,
+            operationKey,
+            false,
+          )
+        : '';
+      const nestedNumberParameter = resolveReportOperationNumberParameter(
+        nestedAttributeField?.availableOperations,
+        nestedOpCode,
+      );
+      const nestedValueOmitted =
+        Boolean(nestedPath.length) &&
+        isReportFilterValueOmittedOperation(nestedOpCode, nestedNumberParameter);
+
+      if (nestedPath.length && (nested.values.length || nestedValueOmitted)) {
         const lastStep = nestedPath[nestedPath.length - 1];
         if (isReportCoordinatesCompositePropertyFieldName(lastStep)) {
           const tableMeta = tableFieldsContext.tableMetadataByRowId[row.id];
@@ -512,21 +604,35 @@ export function buildReportQueryRequestForRow(
             );
           }
         } else {
-          const attributeField =
-            resolveNestedFilterLeafField(
-              tableFieldsContext.tableMetadataByRowId[row.id],
-              nestedPath,
-              tableFieldsContext.referenceEntityMetadataByName,
-            ) ?? primary;
+          const attributeField = nestedAttributeField ?? primary;
           const nestedFilterFieldName =
             resolveEventsForFrontLevelFilterApiFieldName(primary, nestedPath) ??
             resolveNestedFilterApiFieldName(primary, nestedPath);
-          pushFilter(nestedFilterFieldName, nested.values, attributeField);
+          pushFilter(
+            nestedFilterFieldName,
+            nested.values,
+            attributeField,
+            nestedValueOmitted,
+          );
         }
       }
     } else {
       const selected = row.filterSelections[primary.fieldName] ?? [];
-      if (selected.length) {
+      const scalarOpCode = resolveUiOperationCode(
+        primary,
+        row.filterSelections,
+        operationKey,
+        selected.length > 1,
+      );
+      const scalarNumberParameter = resolveReportOperationNumberParameter(
+        primary.availableOperations,
+        scalarOpCode,
+      );
+      const scalarValueOmitted = isReportFilterValueOmittedOperation(
+        scalarOpCode,
+        scalarNumberParameter,
+      );
+      if (selected.length || scalarValueOmitted) {
         if (rootCoordinatesFilter) {
           const latField = metadata.fields.find((f) => f.fieldName === 'latitude');
           const lonField = metadata.fields.find((f) => f.fieldName === 'longitude');
@@ -548,7 +654,7 @@ export function buildReportQueryRequestForRow(
           const apiFieldName = rootCompositeFilter
             ? resolveCompositeFilterApiFieldName(metadata.entityName, primary, [])
             : primary.fieldName;
-          pushFilter(apiFieldName, selected, primary);
+          pushFilter(apiFieldName, selected, primary, scalarValueOmitted);
         }
       }
     }

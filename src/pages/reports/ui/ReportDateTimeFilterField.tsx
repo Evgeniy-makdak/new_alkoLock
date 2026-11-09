@@ -15,7 +15,7 @@ import {
   formatReportTimeInput,
   isCompleteReportTime,
 } from '@pages/reports/lib/formatReportTimeInput';
-import { isReportDateTimeBetweenOperation } from '@pages/reports/lib/mapReportQueryOperator';
+import { isReportBetweenFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -69,6 +69,7 @@ type ReportDateTimeFilterFieldProps = {
   value: Values;
   onChange: (values: Values) => void;
   operationCode?: string | null;
+  operationNumberParameter?: number | null;
 };
 
 type DateTimePairProps = {
@@ -152,9 +153,10 @@ export function ReportDateTimeFilterField({
   value,
   onChange,
   operationCode,
+  operationNumberParameter = null,
 }: ReportDateTimeFilterFieldProps) {
   const { t } = useTranslation();
-  const isRange = isReportDateTimeBetweenOperation(operationCode);
+  const isRange = isReportBetweenFilterOperation(operationCode, operationNumberParameter);
 
   const commitAt = (index: number, iso: string | null) => {
     const makeEntry = (isoValue: string) => ({

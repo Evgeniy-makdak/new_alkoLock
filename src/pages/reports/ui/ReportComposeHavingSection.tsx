@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
-import { TextField, Typography } from '@mui/material';
+import { Box, TextField, Typography } from '@mui/material';
 
 import {
   getReportHavingAggregationOptions,
@@ -20,13 +20,24 @@ import {
   resolveReportDomainListEntityForFieldPath,
 } from '@pages/reports/lib/fetchReportDomainEntityRecords';
 import {
+  commitReportBetweenFilterSlot,
+  reportBetweenSlotValues,
+} from '@pages/reports/lib/reportBetweenFilterSlots';
+import {
+  resolveReportFilterValueControlMode,
+  resolveReportOperationNumberParameter,
+} from '@pages/reports/lib/mapReportQueryOperator';
+import {
   reportFilterAutocompleteSlotProps,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
 import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
 import { resolveComposeColumnDisplayLabel } from '@pages/reports/lib/restoreReportComposeTableFields';
 import { reportsStore } from '@pages/reports/model/reportsStore';
+
+import pageStyles from './Reports.module.scss';
 import type { ReportComposeGroupRow } from '@pages/reports/types/reportComposeGroup';
 import type {
   ReportEntityMetadata,
@@ -337,18 +348,39 @@ export function ReportComposeHavingSection({
             const normalizedHavingMode = normalizeHavingModeForApi(row.havingMode);
             const showTopN = normalizedHavingMode === 'top_n';
             const showComparisonControls = normalizedHavingMode === 'comparison';
-            const waitsDomainOptions =
+            const havingOperatorSelected = Boolean(String(row.operator ?? '').trim());
+            const havingOperatorNumberParameter = resolveReportOperationNumberParameter(
+              getReportHavingOperatorOptions(fieldDef),
+              row.operator,
+            );
+            const havingValueMode = resolveReportFilterValueControlMode({
+              operationCode: row.operator,
+              numberParameter: havingOperatorNumberParameter,
+            });
+            // Значение — только после выбора оператора (каскад слева направо).
+            const showHavingValueControls =
               showComparisonControls &&
+              havingOperatorSelected &&
+              havingValueMode.showValueControl;
+            const waitsDomainOptions =
+              showHavingValueControls &&
               metadataValueOptions.length === 0 &&
               Boolean(resolveReportDomainListEntityForFieldPath(row.columnKey, entityName)) &&
               domainOptionsLoading &&
               !valueOptions.length;
             // Справочник (users/…) если есть опции; иначе TextField.
             // commitFreeText на select — чтобы endsWith с ручным вводом тоже попадал в having.values.
+            const showBetweenValues =
+              showHavingValueControls && havingValueMode.isBetween;
             const showValuesSelect =
-              showComparisonControls && (valueOptions.length > 0 || waitsDomainOptions);
+              showHavingValueControls &&
+              !showBetweenValues &&
+              (valueOptions.length > 0 || waitsDomainOptions);
             const showValuesTextInput =
-              showComparisonControls && !showValuesSelect && !waitsDomainOptions;
+              showHavingValueControls &&
+              !showBetweenValues &&
+              !showValuesSelect &&
+              !waitsDomainOptions;
 
             return (
               <div key={row.id}>
@@ -453,15 +485,77 @@ export function ReportComposeHavingSection({
                           />
                         ) : null}
 
+                        {showBetweenValues ? (
+                          <Box className={pageStyles.reportFilterDateTimeRootRange}>
+                            <ReportSearchMultipleSelect
+                              key={`report-having-values-${row.id}-start`}
+                              multiple
+                              maxValues={1}
+                              compact
+                              commitFreeText
+                              name={`report-having-values-${row.id}-start`}
+                              label={t('reports.dateRangeStart')}
+                              values={valueOptions}
+                              value={reportBetweenSlotValues(row.values, 0)}
+                              serverFilter={false}
+                              isLoading={waitsDomainOptions}
+                              sx={reportFilterModalControlSx}
+                              slotProps={reportFilterAutocompleteSlotProps}
+                              setValueStore={(_, next) => {
+                                patchRow(row.id, {
+                                  values: commitReportBetweenFilterSlot(
+                                    row.values,
+                                    0,
+                                    normalizeReportFilterSelectValues(next),
+                                  ),
+                                });
+                              }}
+                            />
+                            <Typography
+                              component="span"
+                              className={pageStyles.reportFilterDateTimeRangeSep}
+                              color="text.secondary">
+                              —
+                            </Typography>
+                            <ReportSearchMultipleSelect
+                              key={`report-having-values-${row.id}-end`}
+                              multiple
+                              maxValues={1}
+                              compact
+                              commitFreeText
+                              name={`report-having-values-${row.id}-end`}
+                              label={t('reports.dateRangeEnd')}
+                              values={valueOptions}
+                              value={reportBetweenSlotValues(row.values, 1)}
+                              serverFilter={false}
+                              isLoading={waitsDomainOptions}
+                              sx={reportFilterModalControlSx}
+                              slotProps={reportFilterAutocompleteSlotProps}
+                              setValueStore={(_, next) => {
+                                patchRow(row.id, {
+                                  values: commitReportBetweenFilterSlot(
+                                    row.values,
+                                    1,
+                                    normalizeReportFilterSelectValues(next),
+                                  ),
+                                });
+                              }}
+                            />
+                          </Box>
+                        ) : null}
+
                         {showValuesSelect ? (
                           <ReportSearchMultipleSelect
-                            multiple
+                            multiple={!havingValueMode.isSingle}
+                            maxValues={havingValueMode.maxValues}
                             compact
-                            commitFreeText
+                            commitFreeText={!havingValueMode.isSingle}
                             name={`report-having-values-${row.id}`}
                             label={t('reports.composeGroupHavingValuesLabel')}
                             values={valueOptions}
-                            value={row.values}
+                            value={
+                              havingValueMode.isSingle ? row.values.slice(0, 1) : row.values
+                            }
                             // Клиентский фильтр: serverFilter+поиск по /users на каждый символ
                             // дергает reset Autocomplete и стирает ввод после 1-го символа.
                             serverFilter={false}
@@ -469,7 +563,11 @@ export function ReportComposeHavingSection({
                             sx={reportFilterModalControlSx}
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {
-                              patchRow(row.id, { values: (next as Values) ?? [] });
+                              patchRow(row.id, {
+                                values: havingValueMode.isSingle
+                                  ? toValuesFromSingleSelect(next)
+                                  : ((next as Values) ?? []),
+                              });
                             }}
                           />
                         ) : null}

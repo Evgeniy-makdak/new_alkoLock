@@ -33,6 +33,7 @@ import {
 } from '@pages/reports/lib/reportBetweenFilterSlots';
 import {
   isReportBetweenFilterOperation,
+  resolveReportFilterValueControlMode,
   resolveReportFilterValueMaxValues,
 } from '@pages/reports/lib/mapReportQueryOperator';
 import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
@@ -63,6 +64,8 @@ type ReportFieldFilterControlProps = {
   value: Values;
   onChange: (values: Values) => void;
   filterOperationCode?: string | null;
+  /** Из availableOperations[].numberParameter текущего оператора. */
+  filterOperationNumberParameter?: number | null;
   compact?: boolean;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
 };
@@ -87,6 +90,7 @@ export function ReportFieldFilterControl({
   value,
   onChange,
   filterOperationCode,
+  filterOperationNumberParameter = null,
   compact = false,
   vehicleLabelMaps,
 }: ReportFieldFilterControlProps) {
@@ -179,6 +183,7 @@ export function ReportFieldFilterControl({
       <ReportDateTimeFilterField
         value={value}
         operationCode={filterOperationCode}
+        operationNumberParameter={filterOperationNumberParameter}
         onChange={onChange}
       />
     );
@@ -190,6 +195,7 @@ export function ReportFieldFilterControl({
         label={label}
         value={value}
         operationCode={filterOperationCode}
+        operationNumberParameter={filterOperationNumberParameter}
         onChange={onChange}
         sx={controlSx}
         overflowTooltip={compact}
@@ -264,9 +270,13 @@ export function ReportFieldFilterControl({
   }
 
   if (nestedValueLoadKind === 'domainList') {
-    const displayOptions = mergeOptionsWithSelected(remoteOptions, value);
-    const maxValues = resolveReportFilterValueMaxValues(filterOperationCode, true);
-    if (isReportBetweenFilterOperation(filterOperationCode)) {
+    const domainDisplayOptions = mergeOptionsWithSelected(remoteOptions, value);
+    const domainMode = resolveReportFilterValueControlMode({
+      operationCode: filterOperationCode,
+      numberParameter: filterOperationNumberParameter,
+      defaultMultiple: true,
+    });
+    if (isReportBetweenFilterOperation(filterOperationCode, filterOperationNumberParameter)) {
       return (
         <Box className={pageStyles.reportFilterDateTimeRootRange}>
           <ReportSearchMultipleSelect
@@ -276,7 +286,7 @@ export function ReportFieldFilterControl({
             compact={compact}
             name={`${controlId}__between_start`}
             label={t('reports.dateRangeStart')}
-            values={displayOptions}
+            values={domainDisplayOptions}
             value={reportBetweenSlotValues(value, 0)}
             serverFilter
             isLoading={remoteLoading}
@@ -307,7 +317,7 @@ export function ReportFieldFilterControl({
             compact={compact}
             name={`${controlId}__between_end`}
             label={t('reports.dateRangeEnd')}
-            values={displayOptions}
+            values={domainDisplayOptions}
             value={reportBetweenSlotValues(value, 1)}
             serverFilter
             isLoading={remoteLoading}
@@ -331,28 +341,44 @@ export function ReportFieldFilterControl({
     return (
       <ReportSearchMultipleSelect
         key={`${controlId}__${filterOperationCode ?? 'none'}`}
-        multiple
-        maxValues={maxValues}
+        multiple={!domainMode.isSingle}
+        maxValues={domainMode.maxValues}
         compact={compact}
         name={controlId}
         label={label}
-        values={displayOptions}
-        value={value}
+        values={domainDisplayOptions}
+        value={domainMode.isSingle ? value.slice(0, 1) : value}
         serverFilter
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
-        commitFreeText
+        commitFreeText={!domainMode.isSingle}
         onInputChange={(next) => setSearchQuery(next)}
-        setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
+        setValueStore={(_, next) =>
+          onChange(
+            domainMode.isSingle
+              ? toValuesFromSingleSelect(next)
+              : normalizeReportFilterSelectValues(next),
+          )
+        }
       />
     );
   }
 
   const defaultMultiple = valueLoadKind !== 'enum' || metadataValueOptions.length === 0;
-  const maxValues = resolveReportFilterValueMaxValues(filterOperationCode, defaultMultiple);
+  const valueMode = resolveReportFilterValueControlMode({
+    operationCode: filterOperationCode,
+    numberParameter: filterOperationNumberParameter,
+    defaultMultiple,
+  });
+  const maxValues = resolveReportFilterValueMaxValues(
+    filterOperationCode,
+    defaultMultiple,
+    false,
+    filterOperationNumberParameter,
+  );
 
-  if (isReportBetweenFilterOperation(filterOperationCode)) {
+  if (isReportBetweenFilterOperation(filterOperationCode, filterOperationNumberParameter)) {
     return (
       <Box className={pageStyles.reportFilterDateTimeRootRange}>
         <ReportSearchMultipleSelect
@@ -406,18 +432,24 @@ export function ReportFieldFilterControl({
   return (
     <ReportSearchMultipleSelect
       key={`${controlId}__${filterOperationCode ?? 'none'}`}
-      multiple
+      multiple={!valueMode.isSingle}
       maxValues={maxValues}
       compact={compact}
       name={controlId}
       label={label}
       values={displayOptions}
-      value={value}
+      value={valueMode.isSingle ? value.slice(0, 1) : value}
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText
-      setValueStore={(_, next) => onChange(normalizeReportFilterSelectValues(next))}
+      commitFreeText={!valueMode.isSingle}
+      setValueStore={(_, next) =>
+        onChange(
+          valueMode.isSingle
+            ? toValuesFromSingleSelect(next)
+            : normalizeReportFilterSelectValues(next),
+        )
+      }
     />
   );
 }

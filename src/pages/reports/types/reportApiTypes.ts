@@ -8,6 +8,12 @@ export type ReportEntityListItem = {
 export type ReportFieldOperation = {
   code: string;
   label: string;
+  /**
+   * Сколько значений UI допускает для оператора (из metadata):
+   * 1 — один выбор; 0 — без контрола значения; -1 — мультисписок;
+   * 2 — between (два контрола).
+   */
+  numberParameter?: number | null;
 };
 
 /** Блок having из GET …/metadata (availableHaving у поля). */

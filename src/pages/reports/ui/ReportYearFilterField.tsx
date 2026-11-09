@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Box, Typography } from '@mui/material';
 
-import { isReportDateTimeBetweenOperation } from '@pages/reports/lib/mapReportQueryOperator';
+import { isReportBetweenFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
 import { reportFilterControlSx } from '@pages/reports/lib/reportFilterControlSx';
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -16,6 +16,7 @@ type ReportYearFilterFieldProps = {
   onChange: (values: Values) => void;
   /** between → два инпута (год начала / год окончания). */
   operationCode?: string | null;
+  operationNumberParameter?: number | null;
   sx?: import('@mui/material/styles').SxProps<import('@mui/material/styles').Theme>;
   overflowTooltip?: boolean;
 };
@@ -32,12 +33,13 @@ export function ReportYearFilterField({
   value,
   onChange,
   operationCode,
+  operationNumberParameter = null,
   sx,
   overflowTooltip = false,
 }: ReportYearFilterFieldProps) {
   const { t } = useTranslation();
   const controlSx = sx ?? reportFilterControlSx;
-  const isRange = isReportDateTimeBetweenOperation(operationCode);
+  const isRange = isReportBetweenFilterOperation(operationCode, operationNumberParameter);
 
   const commitSlot = (index: 0 | 1, digits: string) => {
     const entry = digits ? { value: digits, label: digits } : undefined;

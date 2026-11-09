@@ -299,7 +299,14 @@ export function ReportComposeGroupSection({
 
                         {hasColumn && hasAggregation ? (
                           <FormControlLabel
-                            sx={{ mt: 0.5, ml: 0, alignItems: 'flex-start' }}
+                            sx={{
+                              mt: 0.5,
+                              ml: 0,
+                              alignItems: 'center',
+                              '& .MuiFormControlLabel-label': {
+                                lineHeight: 1.25,
+                              },
+                            }}
                             control={
                               <Checkbox
                                 size="small"
@@ -309,6 +316,7 @@ export function ReportComposeGroupSection({
                                     autoAggregateRemainingFields: event.target.checked,
                                   });
                                 }}
+                                sx={{ p: 0.5 }}
                               />
                             }
                             label={t('reports.composeGroupAutoAggregateRemaining', {

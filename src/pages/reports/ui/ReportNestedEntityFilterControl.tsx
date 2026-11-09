@@ -25,15 +25,16 @@ import {
 } from '@pages/reports/lib/reportBetweenFilterSlots';
 import {
   isReportBetweenFilterOperation,
+  resolveReportFilterValueControlMode,
   resolveReportFilterValueMaxValues,
 } from '@pages/reports/lib/mapReportQueryOperator';
+import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import {
   reportFilterAutocompleteSlotProps,
   reportFilterControlSx,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import { normalizeReportFilterSelectValues } from '@pages/reports/lib/reportFilterSelectValues';
-import { toValuesFromSingleSelect } from '@pages/reports/lib/reportFilterSingleSelectValue';
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type {
   ReportEntityMetadata,
@@ -59,6 +60,7 @@ type NestedFilterValueControlProps = {
   segment: NestedFilterValueSegment;
   values: Values;
   filterOperationCode?: string | null;
+  filterOperationNumberParameter?: number | null;
   compact: boolean;
   controlSx: typeof reportFilterControlSx;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
@@ -72,6 +74,7 @@ export function NestedFilterValueControl({
   segment,
   values,
   filterOperationCode,
+  filterOperationNumberParameter = null,
   compact,
   controlSx,
   vehicleLabelMaps,
@@ -178,6 +181,7 @@ export function NestedFilterValueControl({
         label={t('reports.terminalValuesLabel', { parameter: segment.label })}
         value={values}
         operationCode={filterOperationCode}
+        operationNumberParameter={filterOperationNumberParameter}
         onChange={onChange}
         sx={controlSx}
         overflowTooltip={compact}
@@ -190,6 +194,7 @@ export function NestedFilterValueControl({
       <ReportDateTimeFilterField
         value={values}
         operationCode={filterOperationCode}
+        operationNumberParameter={filterOperationNumberParameter}
         onChange={onChange}
       />
     );
@@ -209,13 +214,23 @@ export function NestedFilterValueControl({
 
   // domainList для координат — общий select ниже (пары / lat / lon из device-events).
 
+  const valueMode = resolveReportFilterValueControlMode({
+    operationCode: filterOperationCode,
+    numberParameter: filterOperationNumberParameter,
+    defaultMultiple: valueLoadKind !== 'enum' || staticValueOptions.length === 0,
+    isBooleanValueField,
+  });
   const maxValues = resolveReportFilterValueMaxValues(
     filterOperationCode,
     valueLoadKind !== 'enum' || staticValueOptions.length === 0,
     isBooleanValueField,
+    filterOperationNumberParameter,
   );
 
-  if (!isBooleanValueField && isReportBetweenFilterOperation(filterOperationCode)) {
+  if (
+    !isBooleanValueField &&
+    isReportBetweenFilterOperation(filterOperationCode, filterOperationNumberParameter)
+  ) {
     return (
       <Box className={pageStyles.reportFilterDateTimeRootRange}>
         <ReportSearchMultipleSelect
@@ -282,27 +297,29 @@ export function NestedFilterValueControl({
     );
   }
 
+  const forceSingle = isBooleanValueField || valueMode.isSingle;
+
   return (
     <ReportSearchMultipleSelect
       key={`${fieldKey}__terminalValues__${filterOperationCode ?? 'none'}`}
-      multiple={!isBooleanValueField}
+      multiple={!forceSingle}
       maxValues={maxValues}
       compact={compact}
       name={`${fieldKey}__terminalValues`}
       label={t('reports.terminalValuesLabel', { parameter: segment.label })}
       values={displayValueOptions}
-      value={isBooleanValueField ? values.slice(0, 1) : values}
+      value={forceSingle ? values.slice(0, 1) : values}
       serverFilter={valueLoadKind === 'domainList'}
       isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText={!isBooleanValueField}
+      commitFreeText={!forceSingle}
       onInputChange={
         valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
       }
       setValueStore={(_, next) =>
         onChange(
-          isBooleanValueField
+          forceSingle
             ? toValuesFromSingleSelect(next)
             : normalizeReportFilterSelectValues(next),
         )
@@ -322,6 +339,9 @@ type ReportNestedEntityFilterControlProps = {
   state: ReportNestedEntityFilterState;
   onChange: (patch: Partial<ReportNestedEntityFilterState>) => void;
   filterOperationCode?: string | null;
+  filterOperationNumberParameter?: number | null;
+  /** numberParameter === 0 — не рендерим контрол значения. */
+  hideValueControl?: boolean;
   compact?: boolean;
   /** Между «Параметр сущности» и «Значение» (обычно «Операция фильтра»). */
   operationSlot?: ReactNode;
@@ -357,6 +377,8 @@ export function ReportNestedEntityFilterControl({
   state,
   onChange,
   filterOperationCode,
+  filterOperationNumberParameter = null,
+  hideValueControl = false,
   compact = false,
   operationSlot = null,
   hidePropertySegments = false,
@@ -479,7 +501,8 @@ export function ReportNestedEntityFilterControl({
 
       {operationSlot}
 
-      {valueSegments.map((segment, index) => {
+      {!hideValueControl &&
+        valueSegments.map((segment, index) => {
         if (segment.kind !== 'value') return null;
         return (
           <NestedFilterValueControl
@@ -488,6 +511,7 @@ export function ReportNestedEntityFilterControl({
             segment={segment}
             values={state.values}
             filterOperationCode={filterOperationCode}
+            filterOperationNumberParameter={filterOperationNumberParameter}
             compact={compact}
             controlSx={controlSx}
             vehicleLabelMaps={vehicleLabelMaps}

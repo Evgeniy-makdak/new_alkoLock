@@ -8,7 +8,11 @@ import { useTheme } from '@mui/material/styles';
 
 import { operationsToValues } from '@pages/reports/lib/buildReportQueryRequest';
 import { stripDuplicateColumnSuffix } from '@pages/reports/lib/reportColumnDuplicate';
-import { isReportSingleValueFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
+import {
+  isReportSingleValueFilterOperation,
+  resolveReportFilterValueControlMode,
+  resolveReportOperationNumberParameter,
+} from '@pages/reports/lib/mapReportQueryOperator';
 import { getStaticOptionsForControl } from '@pages/reports/lib/extractMetadataFilterOptions';
 import {
   isNestedFilterPathReadyForValueInput,
@@ -162,6 +166,24 @@ export function ReportOutputFilterRow({
     [operationFunctionSource],
   );
 
+  const filterOperationNumberParameter = useMemo(
+    () =>
+      resolveReportOperationNumberParameter(
+        operationFunctionSource?.availableOperations,
+        filterOperationCode,
+      ),
+    [operationFunctionSource, filterOperationCode],
+  );
+
+  const filterValueControlMode = useMemo(
+    () =>
+      resolveReportFilterValueControlMode({
+        operationCode: filterOperationCode,
+        numberParameter: filterOperationNumberParameter,
+      }),
+    [filterOperationCode, filterOperationNumberParameter],
+  );
+
   // Смена листа metadata: сбрасываем чужой оператор; код из AI/restore
   // подменяем на опцию с русской подписью из availableOperations.
   useEffect(() => {
@@ -235,6 +257,12 @@ export function ReportOutputFilterRow({
       ? nestedAttributeReady && operationOptions.length > 0
       : outputControlsReady && operationOptions.length > 0;
 
+  // «Значение» справа от «Оператора» — только после выбора оператора
+  // (и только если numberParameter / режим допускает контрол значения).
+  const showValueAfterOperator =
+    filterValueControlMode.showValueControl &&
+    (operationOptions.length === 0 || Boolean(filterOperationCode));
+
   const selectSx = isModalVariant ? reportFilterModalControlSx : reportFilterControlSx;
   const selectCompact = isModalVariant;
 
@@ -255,20 +283,39 @@ export function ReportOutputFilterRow({
         setValueStore={(_, value) => {
           const nextOperation = toValuesFromSingleSelect(value);
           const prevOperationCode = filterOperationCode;
+          const prevNumberParameter = filterOperationNumberParameter;
           const nextOperationCode =
             nextOperation[0]?.value != null && nextOperation[0].value !== ''
               ? String(nextOperation[0].value)
               : null;
+          const nextNumberParameter = resolveReportOperationNumberParameter(
+            operationFunctionSource?.availableOperations,
+            nextOperationCode,
+          );
 
           onFilterChange(operationKey, nextOperation);
 
           const operatorCleared = nextOperation.length === 0;
-          const switchedToSingleOperator =
-            isReportSingleValueFilterOperation(nextOperationCode) &&
+          const prevMode = resolveReportFilterValueControlMode({
+            operationCode: prevOperationCode,
+            numberParameter: prevNumberParameter,
+          });
+          const nextMode = resolveReportFilterValueControlMode({
+            operationCode: nextOperationCode,
+            numberParameter: nextNumberParameter,
+          });
+          const arityChanged =
             Boolean(prevOperationCode) &&
-            !isReportSingleValueFilterOperation(prevOperationCode);
+            (prevMode.maxValues !== nextMode.maxValues ||
+              prevMode.isBetween !== nextMode.isBetween ||
+              prevMode.showValueControl !== nextMode.showValueControl ||
+              prevMode.isSingle !== nextMode.isSingle);
+          const switchedToSingleOperator =
+            isReportSingleValueFilterOperation(nextOperationCode, nextNumberParameter) &&
+            Boolean(prevOperationCode) &&
+            !isReportSingleValueFilterOperation(prevOperationCode, prevNumberParameter);
 
-          if ((operatorCleared || switchedToSingleOperator) && primaryField) {
+          if ((operatorCleared || switchedToSingleOperator || arityChanged) && primaryField) {
             if (refEntity) {
               onNestedFilterChange(primaryField.fieldName, { values: [] });
             } else if (primaryField.filterable) {
@@ -297,19 +344,25 @@ export function ReportOutputFilterRow({
       }
       onChange={(patch) => onNestedFilterChange(primaryField.fieldName, patch)}
       filterOperationCode={filterOperationCode}
+      filterOperationNumberParameter={filterOperationNumberParameter}
+      hideValueControl={!showValueAfterOperator}
       operationSlot={showOperatorField ? filterOperationBlock : null}
       hidePropertySegments={nestedAttributeReady}
     />
   ) : null;
 
   const scalarValueFilterControl =
-    primaryField && !refEntity && primaryField.filterable ? (
+    primaryField &&
+    !refEntity &&
+    primaryField.filterable &&
+    showValueAfterOperator ? (
       rootCompositeKind ? (
         <ReportCompositeEntityValueControl
           kind={rootCompositeKind}
           fieldKey={primaryField.fieldName}
           values={row.filterSelections[primaryField.fieldName] ?? []}
           filterOperationCode={filterOperationCode}
+          filterOperationNumberParameter={filterOperationNumberParameter}
           compact={selectCompact}
           vehicleLabelMaps={vehicleLabelMaps}
           onChange={(values) => onFilterChange(primaryField.fieldName, values)}
@@ -321,6 +374,7 @@ export function ReportOutputFilterRow({
           metadata={metadata}
           value={row.filterSelections[primaryField.fieldName] ?? []}
           filterOperationCode={filterOperationCode}
+          filterOperationNumberParameter={filterOperationNumberParameter}
           onChange={(values) => onFilterChange(primaryField.fieldName, values)}
           vehicleLabelMaps={vehicleLabelMaps}
         />
