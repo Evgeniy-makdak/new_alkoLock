@@ -320,61 +320,56 @@ function nestedMetadataFields(
   return referenceEntityMetadataByName[referenceEntity]?.fields ?? [];
 }
 
-/** Только selectable поля выбранной сущности отчёта (без вложенных связей). */
-export function buildRootReportTableFieldOptions(
+/** Есть ли в корневой / вложенной metadata хотя бы одно defaultSelected=true. */
+export function reportMetadataHasDefaultSelectedFlags(
   entityMetadata: ReportEntityMetadata | null | undefined,
-  outputRows: ReportOutputRow[] = [],
-  entities: ReportEntityListItem[] = [],
-  t?: TFunction,
-): Values {
-  if (!entityMetadata) return [];
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+): boolean {
+  const hasFlag = (fields: ReportFieldDefinition[] | undefined) =>
+    Boolean(fields?.some((f) => f.defaultSelected === true));
 
-  const entitySourceLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
-  const seen = new Set<string>();
-  const drafts: ReportTableFieldOptionDraft[] = [];
-
-  for (const f of entityMetadata.fields) {
-    if (!isReportTableSelectableField(f)) continue;
-    // Идентификатор не входит в дефолтный «Текущий состав» — только в «Доступные».
-    if (f.fieldName === 'id') continue;
-    if (seen.has(f.fieldName)) continue;
-    seen.add(f.fieldName);
-    drafts.push({
-      value: f.fieldName,
-      baseLabel: f.label || f.fieldName,
-      sourceLabel: entitySourceLabel,
-      qualifyAs: 'root',
-      leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, f.fieldName),
-    });
+  if (hasFlag(entityMetadata?.fields)) return true;
+  for (const meta of Object.values(referenceEntityMetadataByName)) {
+    if (hasFlag(meta?.fields)) return true;
   }
-
-  const grouped = t ? applyReportEntityCompositeFieldGrouping(drafts, t) : drafts;
-  return buildReportTableFieldOptionLabels(grouped);
+  return false;
 }
 
-/**
- * Все опции «Поля в отчёте»:
- * — selectable поля сущности отчёта (timestamp, id, …), кроме полей-ссылок из строк фильтра;
- * — selectable поля metadata всех вложенных сущностей (referenceEntity) из metadata отчёта.
- */
-export function mergeAllReportTableFieldOptions(
-  entityMetadata: ReportEntityMetadata | null | undefined,
-  outputRows: ReportOutputRow[],
-  fieldMap: Map<string, ReportFieldDefinition>,
-  tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
-  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
-  entities: ReportEntityListItem[] = [],
-  t?: TFunction,
-): Values {
-  if (!entityMetadata) return [];
-  const rootEntityName = entityMetadata.entityName?.trim() ?? '';
+type CollectReportTableFieldDraftsParams = {
+  entityMetadata: ReportEntityMetadata;
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
+  entities: ReportEntityListItem[];
+  /** Только поля с defaultSelected=true («Текущий состав» по умолчанию). */
+  defaultSelectedOnly?: boolean;
+};
 
+/**
+ * Черновики колонок: корень + вложенные referenceEntity.
+ * Подписи «Сущность -> поле» от metadata уровня (entities / meta.label / parent.label).
+ */
+function collectReportTableFieldDrafts(
+  params: CollectReportTableFieldDraftsParams,
+): ReportTableFieldOptionDraft[] {
+  const {
+    entityMetadata,
+    referenceEntityMetadataByName,
+    entities,
+    defaultSelectedOnly = false,
+  } = params;
+
+  const rootEntityName = entityMetadata.entityName?.trim() ?? '';
   const entitySourceLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
   const seen = new Set<string>();
   const drafts: ReportTableFieldOptionDraft[] = [];
 
+  const acceptField = (field: ReportFieldDefinition): boolean => {
+    if (defaultSelectedOnly) return field.defaultSelected === true;
+    return true;
+  };
+
   for (const f of entityMetadata.fields) {
     if (!isReportTableSelectableField(f)) continue;
+    if (!acceptField(f)) continue;
     const value = f.fieldName;
     if (seen.has(value)) continue;
     seen.add(value);
@@ -387,17 +382,32 @@ export function mergeAllReportTableFieldOptions(
     });
   }
 
-  // Корневой id всегда в опциях состава (для «Текущего состава»), даже при selectable=false.
-  const rootIdField = entityMetadata.fields.find((f) => f.fieldName === 'id');
-  if (rootIdField && !seen.has('id')) {
-    seen.add('id');
-    drafts.unshift({
-      value: 'id',
-      baseLabel: rootIdField.label || rootIdField.fieldName,
-      sourceLabel: entitySourceLabel,
-      qualifyAs: 'root',
-      leafKey: buildReportTableFieldLeafKey(rootEntityName, 'id'),
-    });
+  // Корневой id в полном списке опций даже при selectable=false (ручной перенос).
+  if (!defaultSelectedOnly) {
+    const rootIdField = entityMetadata.fields.find((f) => f.fieldName === 'id');
+    if (rootIdField && !seen.has('id')) {
+      seen.add('id');
+      drafts.unshift({
+        value: 'id',
+        baseLabel: rootIdField.label || rootIdField.fieldName,
+        sourceLabel: entitySourceLabel,
+        qualifyAs: 'root',
+        leafKey: buildReportTableFieldLeafKey(rootEntityName, 'id'),
+      });
+    }
+  } else {
+    // Дефолтный состав: id только если defaultSelected=true (даже при selectable=false).
+    const rootIdField = entityMetadata.fields.find((f) => f.fieldName === 'id');
+    if (rootIdField?.defaultSelected === true && !seen.has('id')) {
+      seen.add('id');
+      drafts.unshift({
+        value: 'id',
+        baseLabel: rootIdField.label || rootIdField.fieldName,
+        sourceLabel: entitySourceLabel,
+        qualifyAs: 'root',
+        leafKey: buildReportTableFieldLeafKey(rootEntityName, 'id'),
+      });
+    }
   }
 
   for (const parentField of entityMetadata.fields) {
@@ -406,14 +416,24 @@ export function mergeAllReportTableFieldOptions(
 
     const walkNested = (
       prefix: string,
-      sourceLabel: string,
+      fallbackSourceLabel: string,
       referenceEntity: string,
       visitedEntities: Set<string>,
     ) => {
       const meta = referenceEntityMetadataByName[referenceEntity] ?? null;
       if (!meta?.fields?.length) return;
 
+      // Подпись уровня: label вложенной сущности; если API вернул entityName корня
+      // (…/DeviceEvent/metadata?User) — берём label связи (Пользователь, ТС, …).
+      const nestedEntityName = meta.entityName?.trim() ?? '';
+      const fromNestedMeta =
+        nestedEntityName && nestedEntityName !== rootEntityName
+          ? resolveReportEntitySourceLabel(meta, entities)
+          : '';
+      const sourceLabel = fromNestedMeta || fallbackSourceLabel;
+
       for (const f of nestedFieldsForReportTableColumns(meta.fields, referenceEntity)) {
+        if (!acceptField(f)) continue;
         const value = prefixedFieldName(prefix, f.fieldName);
         const segmentsCount = value.split('.').length;
         if (!seen.has(value)) {
@@ -477,6 +497,101 @@ export function mergeAllReportTableFieldOptions(
     );
   }
 
+  return drafts;
+}
+
+/** Только selectable поля выбранной сущности отчёта (без вложенных связей). */
+export function buildRootReportTableFieldOptions(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  outputRows: ReportOutputRow[] = [],
+  entities: ReportEntityListItem[] = [],
+  t?: TFunction,
+): Values {
+  if (!entityMetadata) return [];
+
+  const entitySourceLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
+  const seen = new Set<string>();
+  const drafts: ReportTableFieldOptionDraft[] = [];
+  const hasDefaultSelected = entityMetadata.fields.some((f) => f.defaultSelected === true);
+
+  for (const f of entityMetadata.fields) {
+    if (!isReportTableSelectableField(f)) continue;
+    // Если бэкенд отдаёт defaultSelected — дефолтный состав только по флагу.
+    if (hasDefaultSelected) {
+      if (f.defaultSelected !== true) continue;
+    } else if (f.fieldName === 'id') {
+      // Без флагов: идентификатор не в дефолтном «Текущем составе».
+      continue;
+    }
+    if (seen.has(f.fieldName)) continue;
+    seen.add(f.fieldName);
+    drafts.push({
+      value: f.fieldName,
+      baseLabel: f.label || f.fieldName,
+      sourceLabel: entitySourceLabel,
+      qualifyAs: 'root',
+      leafKey: buildReportTableFieldLeafKey(entityMetadata.entityName, f.fieldName),
+    });
+  }
+
+  const grouped = t ? applyReportEntityCompositeFieldGrouping(drafts, t) : drafts;
+  return buildReportTableFieldOptionLabels(grouped);
+}
+
+/**
+ * «Текущий состав таблицы» по умолчанию: поля с defaultSelected=true
+ * (корень + загруженные вложенные metadata), подписи «Сущность -> поле».
+ */
+export function buildDefaultSelectedReportTableFieldOptions(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  outputRows: ReportOutputRow[],
+  fieldMap: Map<string, ReportFieldDefinition>,
+  tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  entities: ReportEntityListItem[] = [],
+  t?: TFunction,
+): Values {
+  void outputRows;
+  void fieldMap;
+  void tableMetadataByRowId;
+  if (!entityMetadata) return [];
+
+  const drafts = collectReportTableFieldDrafts({
+    entityMetadata,
+    referenceEntityMetadataByName,
+    entities,
+    defaultSelectedOnly: true,
+  });
+  const deduped = dedupeReportTableFieldDraftsByShortestPath(drafts);
+  const grouped = t ? applyReportEntityCompositeFieldGrouping(deduped, t) : deduped;
+  return buildReportTableFieldOptionLabels(grouped);
+}
+
+/**
+ * Все опции «Поля в отчёте»:
+ * — selectable поля сущности отчёта (timestamp, id, …), кроме полей-ссылок из строк фильтра;
+ * — selectable поля metadata всех вложенных сущностей (referenceEntity) из metadata отчёта.
+ */
+export function mergeAllReportTableFieldOptions(
+  entityMetadata: ReportEntityMetadata | null | undefined,
+  outputRows: ReportOutputRow[],
+  fieldMap: Map<string, ReportFieldDefinition>,
+  tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
+  entities: ReportEntityListItem[] = [],
+  t?: TFunction,
+): Values {
+  void outputRows;
+  void fieldMap;
+  void tableMetadataByRowId;
+  if (!entityMetadata) return [];
+
+  const drafts = collectReportTableFieldDrafts({
+    entityMetadata,
+    referenceEntityMetadataByName,
+    entities,
+    defaultSelectedOnly: false,
+  });
   const deduped = dedupeReportTableFieldDraftsByShortestPath(drafts);
   const grouped = t ? applyReportEntityCompositeFieldGrouping(deduped, t) : deduped;
   return buildReportTableFieldOptionLabels(grouped);

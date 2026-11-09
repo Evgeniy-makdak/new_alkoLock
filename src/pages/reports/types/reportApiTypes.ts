@@ -25,11 +25,20 @@ export type ReportFieldDefinition = {
   alias: string | null;
   type: string;
   referenceEntity?: string | null;
+  /** Физическая таблица (events, users, …) — справочно из metadata. */
+  tableName?: string | null;
+  /** Имя колонки в таблице (id, timestamp, …) — справочно из metadata. */
+  fieldNameInTable?: string | null;
   filterable: boolean;
   sortable: boolean;
   groupable: boolean;
   /** false — поле не показывается в «Поля в отчёте» и не попадает в selectedFields по умолчанию. */
   selectable?: boolean;
+  /**
+   * true — по умолчанию в «Текущий состав таблицы»;
+   * иначе (при selectable) — в «Доступные колонки».
+   */
+  defaultSelected?: boolean;
   aggregation: string | null;
   availableOperations: ReportFieldOperation[];
   availableFunctions: ReportFieldOperation[];

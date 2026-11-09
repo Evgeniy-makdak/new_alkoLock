@@ -19,11 +19,13 @@ import {
 } from '@pages/reports/lib/buildReportSortParam';
 import { buildReportQueryRequest } from '@pages/reports/lib/buildReportQueryRequest';
 import {
+  buildDefaultSelectedReportTableFieldOptions,
   buildRootReportTableFieldOptions,
   collectReferenceEntitiesFromMetadata,
   findReportTableFieldDefinition,
   isReportTableFieldLabelAutoQualified,
   mergeAllReportTableFieldOptions,
+  reportMetadataHasDefaultSelectedFlags,
   ROOT_ENTITY_LABEL_SEPARATOR,
   QUALIFIED_LABEL_SEPARATOR,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
@@ -204,6 +206,8 @@ export function ReportComposeModal({
     useState<ReportLogicOperator>('and');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const prevComposeEntityRef = useRef<string | null>(null);
+  /** Уже учтённые defaultSelected-пути — чтобы при подгрузке nested дозаполнить состав. */
+  const knownDefaultTableFieldKeysRef = useRef<Set<string>>(new Set());
   /** Baseline UI при открытии edit — «Сформировать» неактивна, пока снимок совпадает. */
   const editBaselineFingerprintRef = useRef<string | null>(null);
   const editBaselineCapturedRef = useRef(false);
@@ -361,7 +365,10 @@ export function ReportComposeModal({
       entities,
       t,
     );
-    // ТЗ: состав «Доступных колонок» по пресету; для сущностей вне пресета — без изменений.
+    // ТЗ: все selectable из metadata (корень + вложенные); пресет — только без defaultSelected.
+    if (reportMetadataHasDefaultSelectedFlags(metadata, referenceEntityMetadataByName)) {
+      return fullOptions;
+    }
     return applyReportTableFieldPresetAvailable(metadata.entityName, fullOptions);
   }, [
     metadata,
@@ -370,6 +377,7 @@ export function ReportComposeModal({
     referenceEntityMetadataByName,
     entities,
     nestedReferenceMetadataCacheKey,
+    t,
   ]);
 
   const tableFieldsInitialSelection = useMemo((): Values => {
@@ -483,12 +491,20 @@ export function ReportComposeModal({
 
   const defaultRootTableFields = useMemo(() => {
     if (!metadata) return [];
-    // ТЗ: «Текущий состав» по умолчанию — bold-позиции пресета (в т.ч. вложенные
-    // дисплейные колонки); для сущностей вне пресета — прежний состав из корневых полей.
     const fieldMap = new Map(metadata.fields.map((f) => [f.fieldName, f]));
-    const presetDefaults = applyReportTableFieldPresetDefaults(
-      metadata.entityName,
-      mergeAllReportTableFieldOptions(
+    const fullOptions = mergeAllReportTableFieldOptions(
+      metadata,
+      outputRows,
+      fieldMap,
+      reportTableFieldsMetadataByRowId,
+      referenceEntityMetadataByName,
+      entities,
+      t,
+    );
+
+    // ТЗ: «Текущий состав» = поля с defaultSelected=true (корень + вложенные metadata).
+    if (reportMetadataHasDefaultSelectedFlags(metadata, referenceEntityMetadataByName)) {
+      return buildDefaultSelectedReportTableFieldOptions(
         metadata,
         outputRows,
         fieldMap,
@@ -496,7 +512,13 @@ export function ReportComposeModal({
         referenceEntityMetadataByName,
         entities,
         t,
-      ),
+      );
+    }
+
+    // Fallback без флагов: пресет (bold) → корневые selectable.
+    const presetDefaults = applyReportTableFieldPresetDefaults(
+      metadata.entityName,
+      fullOptions,
     );
     if (presetDefaults.length > 0) return presetDefaults;
     return buildRootReportTableFieldOptions(metadata, outputRows, entities, t);
@@ -585,12 +607,13 @@ export function ReportComposeModal({
     [composeGroupRows],
   );
 
-  /** Синхронизация «Текущий состав»: по умолчанию только поля сущности отчёта;
-   *  вложенные колонки не добавляются автоматически (только в «Доступные»).
+  /** Синхронизация «Текущий состав»: defaultSelected из metadata (корень + nested);
+   *  при подгрузке вторичной metadata дозаполняем новые дефолты (create).
    *  Смена сущности в create — полный сброс состава под новую metadata. */
   useEffect(() => {
     if (!open) {
       prevComposeEntityRef.current = null;
+      knownDefaultTableFieldKeysRef.current = new Set();
       return;
     }
 
@@ -610,6 +633,9 @@ export function ReportComposeModal({
       const nextDefaults = orderReportCompositionFieldsByIdentifier(
         defaultRootTableFields.length ? [...defaultRootTableFields] : [],
       );
+      knownDefaultTableFieldKeysRef.current = new Set(
+        nextDefaults.map((item) => String(item.value)),
+      );
       setTableFieldsSelection(nextDefaults);
       const identifierCount = encodeReportIdentifierDisplayParam();
       const display: Record<string, string> = {};
@@ -625,6 +651,13 @@ export function ReportComposeModal({
     }
 
     const currentOptions = tableFieldsDialogOptionsRef.current;
+    const newlyDiscoveredDefaults = defaultRootTableFields.filter(
+      (item) => !knownDefaultTableFieldKeysRef.current.has(String(item.value)),
+    );
+    for (const item of defaultRootTableFields) {
+      knownDefaultTableFieldKeysRef.current.add(String(item.value));
+    }
+
     setTableFieldsSelection((prev) => {
       // На части сущностей options может кратко стать пустым во время перерасчёта metadata.
       if (!currentOptions.length) {
@@ -684,6 +717,17 @@ export function ReportComposeModal({
         }
         return { value: key, label };
       });
+
+      // create: вложенные defaultSelected, появившиеся после загрузки secondary metadata.
+      if (mode === 'create' && newlyDiscoveredDefaults.length > 0) {
+        const present = new Set(remapped.map((item) => String(item.value)));
+        for (const item of newlyDiscoveredDefaults) {
+          const key = String(item.value);
+          if (present.has(key)) continue;
+          remapped.push({ value: key, label: item.label ?? key });
+          present.add(key);
+        }
+      }
 
       const deduped = Array.from(
         new Map(remapped.map((item) => [String(item.value), item])).values(),
