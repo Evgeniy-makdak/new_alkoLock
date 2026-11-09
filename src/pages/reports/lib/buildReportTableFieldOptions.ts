@@ -111,6 +111,14 @@ export function dedupeReportTableFieldDraftsByShortestPath(
   return result;
 }
 
+/** Склеить сегменты подписи через « -> » (пустые отбрасываются). */
+export function formatReportTableFieldLabelPath(...segments: string[]): string {
+  return segments
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(ROOT_ENTITY_LABEL_SEPARATOR);
+}
+
 /** «Сущность -> поле» (корень и вложенные связи). */
 export function formatQualifiedReportTableFieldLabel(
   sourceLabel: string,
@@ -119,16 +127,15 @@ export function formatQualifiedReportTableFieldLabel(
   return formatRootReportTableFieldLabel(sourceLabel, fieldLabel);
 }
 
-/** «Сущность -> поле». */
+/**
+ * «Сущность -> поле».
+ * Для nested sourceLabel уже может быть «База -> Вторичная» → итог из 3 сегментов.
+ */
 export function formatRootReportTableFieldLabel(
   entityLabel: string,
   fieldLabel: string,
 ): string {
-  const entity = entityLabel.trim();
-  const field = fieldLabel.trim();
-  if (!entity) return field;
-  if (!field) return entity;
-  return `${entity}${ROOT_ENTITY_LABEL_SEPARATOR}${field}`;
+  return formatReportTableFieldLabelPath(entityLabel, fieldLabel);
 }
 
 export function buildReportTableFieldOptionLabel(draft: ReportTableFieldOptionDraft): string {
@@ -355,7 +362,8 @@ type CollectReportTableFieldDraftsParams = {
 
 /**
  * Черновики колонок: корень + вложенные referenceEntity.
- * Подписи «Сущность -> поле» от metadata уровня (entities / meta.label / parent.label).
+ * Корень: «База -> поле».
+ * Вторичные: «База -> label вторичной metadata -> поле».
  */
 function collectReportTableFieldDrafts(
   params: CollectReportTableFieldDraftsParams,
@@ -375,6 +383,21 @@ function collectReportTableFieldDrafts(
   const acceptField = (field: ReportFieldDefinition): boolean => {
     if (defaultSelectedOnly) return field.defaultSelected === true;
     return true;
+  };
+
+  /** Secondary UI-path: всегда с префиксом базовой сущности отчёта. */
+  const qualifyNestedSourceLabel = (secondaryLabel: string): string => {
+    const middle = secondaryLabel.trim();
+    if (!entitySourceLabel) return middle;
+    if (!middle) return entitySourceLabel;
+    // Не дублировать базу, если secondary уже начинается с того же label.
+    if (
+      middle === entitySourceLabel ||
+      middle.startsWith(`${entitySourceLabel}${ROOT_ENTITY_LABEL_SEPARATOR}`)
+    ) {
+      return middle;
+    }
+    return formatReportTableFieldLabelPath(entitySourceLabel, middle);
   };
 
   for (const f of entityMetadata.fields) {
@@ -433,8 +456,7 @@ function collectReportTableFieldDrafts(
       const meta = referenceEntityMetadataByName[referenceEntity] ?? null;
       if (!meta?.fields?.length) return;
 
-      // Подпись уровня — только из бэка: secondary metadata.label, иначе label связи.
-      // Техн. entityName / referenceEntity в UI не показываем.
+      // 2-й сегмент — из secondary metadata (label), иначе label связи из базовой metadata.
       const nestedEntityName = meta.entityName?.trim() ?? '';
       const fromNestedMetaLabel = (meta.label ?? '').trim();
       const fromNestedResolved =
@@ -443,8 +465,9 @@ function collectReportTableFieldDrafts(
         nestedEntityName !== rootEntityName
           ? resolveReportEntitySourceLabel(meta, entities)
           : '';
-      const sourceLabel =
+      const secondaryLabel =
         fromNestedMetaLabel || fromNestedResolved || fallbackSourceLabel;
+      const sourceLabel = qualifyNestedSourceLabel(secondaryLabel);
 
       for (const f of nestedFieldsForReportTableColumns(meta.fields, referenceEntity)) {
         if (!acceptField(f)) continue;
@@ -738,14 +761,18 @@ export function resolveReportColumnLabel(
     return columnKey;
   }
   if (t && isReportCompositeFieldPath(columnKey)) {
+    const rootLabel = resolveReportEntitySourceLabel(entityMetadata, entities);
     const parsed = parseCompositePath(columnKey);
     if (parsed?.kind === COORDINATES_COMPOSITE_KIND) {
       const parentField = parsed.prefix
         ? entityMetadata.fields.find((f) => f.fieldName === parsed.prefix)
         : undefined;
-      const sourceLabel = parsed.prefix
+      const secondary = parsed.prefix
         ? (parentField?.label ?? '').trim() || parsed.prefix
-        : resolveReportEntitySourceLabel(entityMetadata, entities);
+        : '';
+      const sourceLabel = secondary
+        ? formatReportTableFieldLabelPath(rootLabel, secondary)
+        : rootLabel;
       return formatRootReportTableFieldLabel(sourceLabel, t('reports.composite.entityCoordinates'));
     }
     const config = parsed ? getReportEntityCompositeConfig(parsed.kind) : undefined;
@@ -753,9 +780,12 @@ export function resolveReportColumnLabel(
       const parentField = parsed.prefix
         ? entityMetadata.fields.find((f) => f.fieldName === parsed.prefix)
         : undefined;
-      const sourceLabel = parsed.prefix
+      const secondary = parsed.prefix
         ? (parentField?.label ?? '').trim() || parsed.prefix
-        : resolveReportEntitySourceLabel(entityMetadata, entities);
+        : '';
+      const sourceLabel = secondary
+        ? formatReportTableFieldLabelPath(rootLabel, secondary)
+        : rootLabel;
       return formatRootReportTableFieldLabel(sourceLabel, t(config.labelKey));
     }
   }
