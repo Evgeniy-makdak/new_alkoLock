@@ -110,8 +110,8 @@ export async function fetchReportEntities(): Promise<ReportEntityListItem[]> {
 
 /**
  * GET …/reports/{entityName}/metadata
- * Вторичная metadata по referenceEntity: …/reports/{root}/metadata?{referenceEntity}
- * (пример: /api/v1/reports/User/metadata?Driver).
+ * Вторичная metadata по referenceEntity: …/reports/{root}/metadata?entityName={referenceEntity}
+ * (пример: /api/v1/reports/User/metadata?entityName=Driver).
  */
 export async function fetchReportEntityMetadata(
   entityName: string,
@@ -119,7 +119,7 @@ export async function fetchReportEntityMetadata(
 ): Promise<ReportEntityMetadata> {
   const encoded = encodeURIComponent(entityName);
   const ref = referenceEntity?.trim();
-  const query = ref ? `?${encodeURIComponent(ref)}` : '';
+  const query = ref ? `?entityName=${encodeURIComponent(ref)}` : '';
   const res = await getQuery<ReportEntityMetadata>({
     url: `api/v1/reports/${encoded}/metadata${query}`,
   });

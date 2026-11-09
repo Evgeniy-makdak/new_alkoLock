@@ -424,7 +424,7 @@ function collectReportTableFieldDrafts(
       if (!meta?.fields?.length) return;
 
       // Подпись уровня: label вложенной сущности; если API вернул entityName корня
-      // (…/DeviceEvent/metadata?User) — берём label связи (Пользователь, ТС, …).
+      // (…/DeviceEvent/metadata?entityName=User) — берём label связи (Пользователь, ТС, …).
       const nestedEntityName = meta.entityName?.trim() ?? '';
       const fromNestedMeta =
         nestedEntityName && nestedEntityName !== rootEntityName
