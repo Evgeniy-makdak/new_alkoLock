@@ -295,7 +295,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
 
       try {
         const { fetchReportEntityMetadata } = await import('../api/reportsApi');
-        // Базовая сущность уже в metadata; вторичный: …/{root}/metadata?entityName={referenceEntity}.
+        // Базовая сущность уже в metadata; вторичный: …/{root}/metadata?referenceEntity=….
         const rootEntityName = get().metadata?.entityName?.trim() ?? '';
         const tableMetadata = rootEntityName
           ? await fetchReportEntityMetadata(rootEntityName, key)
