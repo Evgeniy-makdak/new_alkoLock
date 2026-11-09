@@ -445,7 +445,8 @@ export function ReportNestedEntityFilterControl({
             segment.depth === 0
               ? t('reports.entityPropertyLabel')
               : t('reports.nestedEntityPropertyLabel', {
-                  entity: segment.entityName,
+                  entity:
+                    (segment.metadata?.label ?? '').trim() || segment.entityName,
                 });
 
           // Ключ зависит только от родительского path — при очистке родителя дочерний селект размонтируется.

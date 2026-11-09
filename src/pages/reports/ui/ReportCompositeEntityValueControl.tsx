@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import {
   buildSyntheticCompositeDomainListField,
-  getReportCompositeEntityLabelKey,
+  resolveReportCompositeEntityDisplayLabel,
   type ReportEntityCompositeKind,
 } from '@pages/reports/lib/reportEntityCompositeFields';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
@@ -10,6 +10,7 @@ import {
   reportFilterControlSx,
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
+import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import { NestedFilterValueControl } from './ReportNestedEntityFilterControl';
@@ -35,7 +36,12 @@ export function ReportCompositeEntityValueControl({
 }: ReportCompositeEntityValueControlProps) {
   const { t } = useTranslation();
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
-  const field = buildSyntheticCompositeDomainListField(kind);
+  const rootMetadata = reportsStore((s) => s.metadata);
+  const nestedMetadata = reportsStore((s) => s.referenceEntityMetadataByName[kind] ?? null);
+  const entityMetadata =
+    nestedMetadata ?? (rootMetadata?.entityName === kind ? rootMetadata : null);
+  const field = buildSyntheticCompositeDomainListField(kind, entityMetadata);
+  const entityLabel = resolveReportCompositeEntityDisplayLabel(kind, t, entityMetadata);
 
   return (
     <NestedFilterValueControl
@@ -44,7 +50,7 @@ export function ReportCompositeEntityValueControl({
         kind: 'value',
         leafEntityName: kind,
         field,
-        label: t(getReportCompositeEntityLabelKey(kind)),
+        label: entityLabel,
       }}
       values={values}
       filterOperationCode={filterOperationCode}

@@ -130,6 +130,17 @@ export function getReportCompositeEntityLabelKey(kind: ReportEntityCompositeKind
   return CONFIG_BY_ENTITY.get(kind)?.entityLabelKey ?? kind;
 }
 
+/** UI-подпись составной сущности: metadata.label с бэка, иначе i18n-fallback. */
+export function resolveReportCompositeEntityDisplayLabel(
+  kind: ReportEntityCompositeKind,
+  t: TFunction,
+  metadata?: ReportEntityMetadata | null,
+): string {
+  const fromMeta = metadata?.label?.trim();
+  if (fromMeta) return fromMeta;
+  return t(getReportCompositeEntityLabelKey(kind));
+}
+
 export function isReportCompositeFieldPath(path: string): boolean {
   return path.split('.').includes(REPORT_COMPOSITE_SEGMENT);
 }
@@ -702,9 +713,11 @@ export function buildSyntheticCompositeDomainListField(
   metadata?: ReportEntityMetadata | null,
 ): ReportFieldDefinition {
   const template = findEntityIdFieldDefinition(metadata, kind);
+  const entityLabel = (metadata?.label ?? '').trim();
   return {
     ...template,
     fieldName: 'id',
+    label: entityLabel || template.label,
     referenceEntity: kind,
     type: 'ENTITY',
     filterable: true,
@@ -776,11 +789,14 @@ export function resolveReportOutputPrimaryField(
   const config = CONFIG_BY_ENTITY.get(parsed.kind);
   if (!config) return null;
   const idTemplate = findEntityIdFieldDefinition(metadata, parsed.kind);
+  const entityLabel =
+    (metadata.label ?? '').trim() ||
+    (t ? t(config.entityLabelKey) : config.entityLabelKey);
   return {
     ...idTemplate,
     ...DEFAULT_SYNTHETIC_FIELD_FLAGS,
     fieldName: primaryKey,
-    label: t ? t(config.entityLabelKey) : config.entityLabelKey,
+    label: entityLabel,
     filterable: true,
     referenceEntity: undefined,
     availableOperations: idTemplate.availableOperations ?? [],

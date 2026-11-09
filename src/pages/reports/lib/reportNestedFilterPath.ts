@@ -11,7 +11,7 @@ import {
 } from './reportCoordinateComposite';
 import {
   buildSyntheticCompositeDomainListField,
-  getReportCompositeEntityLabelKey,
+  resolveReportCompositeEntityDisplayLabel,
   parseCompositePropertyFieldName,
   type ReportCompositeKind,
 } from './reportEntityCompositeFields';
@@ -321,7 +321,11 @@ export function buildNestedFilterUiSegments(
         kind: 'value',
         leafEntityName: nextRef,
         field: valueField,
-        label: i18n.t(getReportCompositeEntityLabelKey(compositeKind)),
+        label: resolveReportCompositeEntityDisplayLabel(
+          compositeKind,
+          i18n.t.bind(i18n),
+          metadataByEntity[nextRef] ?? metadata,
+        ),
       });
       return segments;
     }

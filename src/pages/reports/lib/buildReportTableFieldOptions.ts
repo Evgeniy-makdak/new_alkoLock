@@ -135,23 +135,33 @@ export function buildReportTableFieldOptionLabel(draft: ReportTableFieldOptionDr
   return formatRootReportTableFieldLabel(draft.sourceLabel, draft.baseLabel);
 }
 
-/** Подпись сущности отчёта: из GET …/entities, затем metadata, иначе entityName. */
+/**
+ * Русскоязычная подпись сущности для UI.
+ * Приоритет: metadata.label (бэк) → GET …/entities.label → entityName (техн.).
+ */
 export function resolveReportEntitySourceLabel(
   entityMetadata: ReportEntityMetadata | null | undefined,
   entities: ReportEntityListItem[] = [],
 ): string {
   if (!entityMetadata) return '';
+  const fromMeta = entityMetadata.label?.trim();
+  if (fromMeta) return fromMeta;
   const fromList = entities.find((e) => e.entityName === entityMetadata.entityName)?.label?.trim();
-  return fromList || entityMetadata.label?.trim() || entityMetadata.entityName;
+  return fromList || entityMetadata.entityName;
 }
 
+/**
+ * Подставляет label из списка entities только если бэк не отдал metadata.label.
+ * Не перезаписывает русскоязычную подпись из metadata.
+ */
 export function applyReportEntityListLabel(
   metadata: ReportEntityMetadata,
   entities: ReportEntityListItem[],
 ): ReportEntityMetadata {
-  const label = resolveReportEntitySourceLabel(metadata, entities);
-  if (label === metadata.label) return metadata;
-  return { ...metadata, label };
+  if (metadata.label?.trim()) return metadata;
+  const fromList = entities.find((e) => e.entityName === metadata.entityName)?.label?.trim();
+  if (!fromList || fromList === metadata.label) return metadata;
+  return { ...metadata, label: fromList };
 }
 
 export function buildReportTableFieldOptionLabels(drafts: ReportTableFieldOptionDraft[]): Values {
@@ -423,14 +433,18 @@ function collectReportTableFieldDrafts(
       const meta = referenceEntityMetadataByName[referenceEntity] ?? null;
       if (!meta?.fields?.length) return;
 
-      // Подпись уровня: label вложенной сущности; если API вернул entityName корня
-      // (…/DeviceEvent/metadata?referenceEntity=User) — берём label связи (Пользователь, ТС, …).
+      // Подпись уровня — только из бэка: secondary metadata.label, иначе label связи.
+      // Техн. entityName / referenceEntity в UI не показываем.
       const nestedEntityName = meta.entityName?.trim() ?? '';
-      const fromNestedMeta =
-        nestedEntityName && nestedEntityName !== rootEntityName
+      const fromNestedMetaLabel = (meta.label ?? '').trim();
+      const fromNestedResolved =
+        !fromNestedMetaLabel &&
+        nestedEntityName &&
+        nestedEntityName !== rootEntityName
           ? resolveReportEntitySourceLabel(meta, entities)
           : '';
-      const sourceLabel = fromNestedMeta || fallbackSourceLabel;
+      const sourceLabel =
+        fromNestedMetaLabel || fromNestedResolved || fallbackSourceLabel;
 
       for (const f of nestedFieldsForReportTableColumns(meta.fields, referenceEntity)) {
         if (!acceptField(f)) continue;
