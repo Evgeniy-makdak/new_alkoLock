@@ -29,6 +29,11 @@ export const DEFAULT_REPORT_PAGE_SIZE = 25;
 export type ReportQueryContext = {
   entityName: string;
   body: ReportQueryRequest;
+  /**
+   * Id уже сохранённого отчёта, если вкладка «Отчёты» открыла его с бэка.
+   * Пока не заполняется — зарезервировано для «Привязать текущий отчёт» без повторного save.
+   */
+  savedReportId?: number;
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
   /**

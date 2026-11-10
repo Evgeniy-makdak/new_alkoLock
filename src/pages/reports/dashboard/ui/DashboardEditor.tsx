@@ -28,7 +28,6 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
   const { t } = useTranslation();
   const updateDashboardMeta = dashboardStore((s) => s.updateDashboardMeta);
   const removeCellWidget = dashboardStore((s) => s.removeCellWidget);
-  const findSavedReportForWidget = dashboardStore((s) => s.findSavedReportForWidget);
   const linkReportToDashboard = dashboardStore((s) => s.linkReportToDashboard);
   const saveReportAndLink = dashboardStore((s) => s.saveReportAndLink);
   const currentAccessLevel = dashboardStore((s) => s.currentAccessLevel);
@@ -57,14 +56,27 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
     await updateDashboardMeta(dashboard.id, { name, description });
   }, [canEdit, dashboard.id, name, description, updateDashboardMeta]);
 
-  // Текущий отчёт: если такой уже сохранён — привязываем его (без копии), иначе спрашиваем название.
+  /**
+   * «Привязать текущий отчёт» — только отчёт со вкладки «Отчёты» (не поиск в сохранённых).
+   * Несохранённый: диалог имени → save + link.
+   * Уже сохранённый (ctx.savedReportId, на будущее): только link.
+   */
   const bindCurrentReport = useCallback(async () => {
     if (!canEdit) return;
     const ctx = reportGenerationStore.getState().queryContext;
     if (!ctx) return;
+    setLinkError(null);
+
+    // На будущее: вкладка «Отчёты» открыла уже сохранённый отчёт.
+    if (ctx.savedReportId != null) {
+      const message = await linkReportToDashboard(dashboard.id, ctx.savedReportId);
+      if (message) setLinkError(message);
+      return;
+    }
+
     const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
     const chartSpec = reportsStore.getState().chartSpec;
-    const widget: DashboardWidgetBinding = {
+    setPendingWidget({
       title: `${ctx.entityName}`,
       entityName: ctx.entityName,
       body: ctx.body,
@@ -73,21 +85,8 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
       branchOffices: ctx.branchOffices,
       preferredViewMode: viewMode,
       chartSpec: viewMode === 'chart' ? (ctx.chartSpec ?? chartSpec) : undefined,
-    };
-    setLinkError(null);
-    try {
-      const existing = await findSavedReportForWidget(widget);
-      if (existing) {
-        const message = await linkReportToDashboard(dashboard.id, existing.id);
-        if (message) setLinkError(message);
-        return;
-      }
-    } catch (error) {
-      setLinkError(error instanceof Error ? error.message : 'Failed to load saved reports');
-      return;
-    }
-    setPendingWidget(widget);
-  }, [canEdit, dashboard.id, findSavedReportForWidget, linkReportToDashboard]);
+    });
+  }, [canEdit, dashboard.id, linkReportToDashboard]);
 
   const linkedReportIds = useMemo(
     () =>

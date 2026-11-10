@@ -12,9 +12,7 @@ import {
   revokeDashboardAccess,
 } from '../api/dashboardAccessesApi';
 import {
-  fetchSavedReports,
   isDuplicateReportNameError,
-  sanitizeDefinition,
   saveReportForEntity,
 } from '../api/savedReportsApi';
 import {
@@ -22,15 +20,12 @@ import {
   buildLayoutFromWidgets,
   collectReportIdsFromLayout,
   parseBackendDashboardId,
-  resolveReportEntityName,
 } from '../lib/mapAllotmentToWidget';
-import { isSameReportDefinition } from '../lib/reportDefinitionMatch';
 import type {
   DashboardAccessEntry,
   DashboardAccessLevel,
   DashboardWidgetBinding,
   ReportDashboard,
-  ReportDashboardAllotmentReport,
   ReportsWorkspaceTab,
 } from '../types';
 
@@ -98,10 +93,6 @@ type DashboardState = {
   updateDashboardMeta: (id: string, patch: { name?: string; description?: string }) => Promise<void>;
   /** Снять виджет с ячейки: удаляется только привязка к дашборду, сам отчёт остаётся. */
   removeCellWidget: (dashboardId: string, cellId: string) => Promise<void>;
-  /** Уже сохранённый отчёт с теми же сущностью и параметрами, что у виджета (или null). */
-  findSavedReportForWidget: (
-    widget: DashboardWidgetBinding,
-  ) => Promise<ReportDashboardAllotmentReport | null>;
   /** Привязать существующий отчёт к дашборду. @returns текст ошибки или null при успехе. */
   linkReportToDashboard: (dashboardId: string, reportId: number) => Promise<string | null>;
   /** Сохранить отчёт под именем и привязать к дашборду. @returns текст ошибки или null. */
@@ -234,18 +225,6 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     } catch (error) {
       set({ error: errorMessage(error, 'Failed to delete report-dashboard-allotment') });
     }
-  },
-
-  findSavedReportForWidget: async (widget) => {
-    const definition = sanitizeDefinition(buildAllotmentDefinitionFromWidget(widget));
-    const reports = await fetchSavedReports();
-    return (
-      reports.find(
-        (report) =>
-          resolveReportEntityName(report) === widget.entityName &&
-          isSameReportDefinition(definition, report.definition),
-      ) ?? null
-    );
   },
 
   linkReportToDashboard: async (dashboardId, reportId) => {
