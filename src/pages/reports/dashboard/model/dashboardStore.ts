@@ -112,6 +112,8 @@ type DashboardState = {
   ) => Promise<string | null>;
   /** @returns true, если права сохранены на бэке. */
   setAccessList: (dashboardId: string, access: DashboardAccessEntry[]) => Promise<boolean>;
+  /** Отозвать право одного пользователя на дашборд. @returns true при успехе. */
+  revokeAccess: (dashboardId: string, userId: number) => Promise<boolean>;
   deleteDashboard: (id: string) => Promise<void>;
   currentAccessLevel: (dashboard: ReportDashboard) => DashboardAccessLevel | 'owner' | null;
 };
@@ -297,6 +299,20 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       set({
         error: error instanceof Error ? error.message : 'Failed to update access',
       });
+      return false;
+    }
+  },
+
+  revokeAccess: async (dashboardId, userId) => {
+    const backendId = parseBackendDashboardId(dashboardId);
+    if (backendId == null) return false;
+    set({ error: null });
+    try {
+      await revokeDashboardAccess(backendId, [userId]);
+      await get().loadList();
+      return true;
+    } catch (error) {
+      set({ error: errorMessage(error, 'Failed to revoke access') });
       return false;
     }
   },

@@ -1,3 +1,4 @@
+import { UsersApi } from '@shared/api/baseQuerys';
 import { getQuery, putQuery } from '@shared/api/baseQueryTypes';
 
 import type { BackendDashboardAccessDto, DashboardAccessEntry, DashboardAccessLevel } from '../types';
@@ -39,6 +40,31 @@ function userLabelOf(user: NonNullable<BackendDashboardAccessDto['user']>): stri
   );
 }
 
+/** ФИО пользователей, уже полученные с бэка (в ответе dashboard-accesses у user только id и email). */
+const userFullNameCache = new Map<number, string>();
+
+async function resolveUserFullName(userId: number): Promise<string> {
+  const cached = userFullNameCache.get(userId);
+  if (cached) return cached;
+  try {
+    const res = await UsersApi.getUser(userId);
+    if (res.isError || res.data == null) return '';
+    const user = res.data as {
+      fullName?: string;
+      surname?: string;
+      firstName?: string;
+      middleName?: string;
+    };
+    const name =
+      (user.fullName ?? '').trim() ||
+      [user.surname, user.firstName, user.middleName].filter(Boolean).join(' ').trim();
+    if (name) userFullNameCache.set(userId, name);
+    return name;
+  } catch {
+    return '';
+  }
+}
+
 /** GET /api/v1/dashboard-accesses для одного дашборда. */
 export async function fetchDashboardAccesses(
   dashboardId: number,
@@ -62,6 +88,15 @@ export async function fetchDashboardAccesses(
       level: mapPermissionToAccessLevel(item.permission),
     });
   }
+  // В ответе у пользователя только id/email — подписываем ФИО (как у владельца дашборда).
+  await Promise.all(
+    entries.map(async (entry, index) => {
+      const hasFullName = list.find((item) => item.user?.id === entry.userId)?.user?.fullName;
+      if (hasFullName?.trim()) return;
+      const name = await resolveUserFullName(entry.userId);
+      if (name) entries[index] = { ...entry, userLabel: name };
+    }),
+  );
   return entries;
 }
 

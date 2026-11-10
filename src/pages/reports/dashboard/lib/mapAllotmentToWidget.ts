@@ -148,6 +148,7 @@ export function mapBackendDashboardToReportDashboard(
     description: decodeDashboardDescription(dto.definition),
     ownerUserId,
     ownerLabel,
+    branchId: dto.branch?.id,
     createdAt: dto.createdAt || now,
     updatedAt: dto.lastModifiedAt || dto.createdAt || now,
     layout: extras?.layout ?? buildLayoutFromWidgets([]),

@@ -79,6 +79,7 @@ export type ReportDashboardAllotmentReport = {
   definition?: ReportDashboardAllotmentDefinition | ReportQueryRequest | null;
   entityName?: string;
   author?: ReportDashboardAllotmentAuthor | null;
+  branch?: { id?: number; name?: string } | null;
   visibility?: string;
   isActive?: boolean;
   createdAt?: string;
@@ -91,6 +92,7 @@ export type ReportDashboardAllotmentDashboard = {
   /** «Описание дашборда» (строка). */
   definition?: string | null;
   author?: ReportDashboardAllotmentAuthor | null;
+  branch?: { id?: number; name?: string } | null;
   visibility?: string;
   isActive?: boolean;
   createdAt?: string;
@@ -125,6 +127,7 @@ export type BackendDashboardDto = {
   /** На бэке — строка «Описание дашборда» (обязательная, не пустая). */
   definition?: string | null;
   author?: ReportDashboardAllotmentAuthor | null;
+  branch?: { id?: number; name?: string } | null;
   visibility?: string;
   isActive?: boolean;
   createdAt?: string;
@@ -199,6 +202,8 @@ export type ReportDashboard = {
   description: string;
   ownerUserId: number;
   ownerLabel: string;
+  /** Филиал дашборда с бэка — права можно выдавать только пользователям этого филиала. */
+  branchId?: number;
   createdAt: string;
   updatedAt: string;
   layout: DashboardLayout;

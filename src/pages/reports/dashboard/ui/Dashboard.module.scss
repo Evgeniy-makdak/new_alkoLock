@@ -174,7 +174,7 @@
 
 .accessRow {
   display: grid;
-  grid-template-columns: 1fr 140px auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
@@ -187,7 +187,6 @@
 }
 
 @media (max-width: 720px) {
-  .accessRow,
   .accessAddRow {
     grid-template-columns: 1fr;
   }
