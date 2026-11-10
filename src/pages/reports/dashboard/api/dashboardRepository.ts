@@ -214,6 +214,11 @@ export const localDashboardRepository: DashboardRepository = {
       saved = mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard);
       saved = {
         ...saved,
+        // PUT-ответ может не содержать id/author — иначе запись кэша (layout/access)
+        // сохраняется под чужим ключом и клиентские права «теряются» при следующей загрузке.
+        id: dashboard.id,
+        ownerUserId: saved.ownerUserId || dashboard.ownerUserId,
+        ownerLabel: saved.ownerLabel || dashboard.ownerLabel,
         name: name || saved.name,
         description: description || saved.description,
         layout: dashboard.layout,

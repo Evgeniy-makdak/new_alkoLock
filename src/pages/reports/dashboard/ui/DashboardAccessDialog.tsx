@@ -61,6 +61,33 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
   const [selectedLevel, setSelectedLevel] = useState<DashboardAccessLevel>('view');
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [ownerName, setOwnerName] = useState('');
+
+  // DTO дашборда может отдавать автора без ФИО (ownerLabel → «ID 1») — берём fullName у пользователя.
+  const ownerUserId = dashboard?.ownerUserId ?? 0;
+  const ownerLabelFromDto = dashboard?.ownerLabel ?? '';
+  useEffect(() => {
+    setOwnerName('');
+    const needsLookup = !ownerLabelFromDto.trim() || /^ID\s*\d+$/i.test(ownerLabelFromDto.trim());
+    if (!open || !needsLookup || !Number.isFinite(ownerUserId) || ownerUserId <= 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await UsersApi.getUser(ownerUserId);
+        if (cancelled || res.isError || res.data == null) return;
+        const user = res.data as Partial<IUser>;
+        const name =
+          (user.fullName ?? '').trim() ||
+          [user.surname, user.firstName, user.middleName].filter(Boolean).join(' ').trim();
+        if (name) setOwnerName(name);
+      } catch {
+        // остаётся ownerLabel из DTO
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, ownerUserId, ownerLabelFromDto]);
 
   useEffect(() => {
     if (!open || !dashboard) return;
@@ -181,8 +208,8 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
         <Typography variant="body2" sx={{ mb: 1.5 }}>
           {t('reports.dashboard.accessOwner', {
             defaultValue: 'Владелец: {{name}}',
-            name: dashboard.ownerLabel,
-          }).replace('{{name}}', dashboard.ownerLabel)}
+            name: ownerName || dashboard.ownerLabel,
+          }).replace('{{name}}', ownerName || dashboard.ownerLabel)}
         </Typography>
 
         <div className={styles.accessList}>

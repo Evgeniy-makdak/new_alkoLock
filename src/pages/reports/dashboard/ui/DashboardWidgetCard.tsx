@@ -17,6 +17,7 @@ import {
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeChartSpec } from '../../types/chartSpec';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
+import { resolveWidgetColumnHeaderLabels } from '../lib/resolveWidgetColumnHeaderLabels';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardCell, DashboardWidgetBinding } from '../types';
 import { ReportChartCanvas } from '../../ui/ReportChartCanvas';
@@ -49,6 +50,14 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const widget = cell.widget;
+
+  // Подписи колонок: снимок columnHeaderLabels (как в гриде «Отчётов»); если его нет —
+  // строим из metadata сущности, чтобы не показывать технические имена полей.
+  const [fallbackLabels, setFallbackLabels] = useState<Record<string, string>>({});
+  const ownHeaderLabels = widget?.columnHeaderLabels;
+  const hasOwnHeaderLabels =
+    !!ownHeaderLabels && Object.values(ownHeaderLabels).some((label) => (label ?? '').trim());
+  const headerLabels = hasOwnHeaderLabels ? (ownHeaderLabels ?? {}) : fallbackLabels;
 
   const resetAndLoadFirstPage = useCallback(
     async (binding: DashboardWidgetBinding) => {
@@ -153,6 +162,20 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
     }
     void resetAndLoadFirstPage(widget);
   }, [widget, resetAndLoadFirstPage]);
+
+  useEffect(() => {
+    if (!widget || hasOwnHeaderLabels || columns.length === 0) {
+      setFallbackLabels({});
+      return;
+    }
+    let cancelled = false;
+    void resolveWidgetColumnHeaderLabels(widget.entityName, widget.body, columns).then((labels) => {
+      if (!cancelled) setFallbackLabels(labels);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [widget, hasOwnHeaderLabels, columns]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -325,9 +348,14 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
               <table className={styles.widgetPreviewTable}>
                 <thead>
                   <tr>
-                    {columns.map((col) => (
-                      <th key={col}>{col}</th>
-                    ))}
+                    {columns.map((col) => {
+                      const headerText = (headerLabels[col] ?? '').trim() || col;
+                      return (
+                        <th key={col} title={headerText}>
+                          {headerText}
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
