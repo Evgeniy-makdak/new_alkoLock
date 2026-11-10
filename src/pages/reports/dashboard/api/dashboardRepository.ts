@@ -1,27 +1,30 @@
-import type { ReportDashboard } from '../types';
 import {
+  allotmentToWidgetBinding,
+  buildLayoutFromWidgets,
   collectAllotmentIdsFromLayout,
-  collectReportIdsFromLayout,
   mapBackendDashboardToReportDashboard,
-  mergeAllotmentsIntoLayout,
   parseBackendDashboardId,
-  resolveDashboardQueryDefinition,
 } from '../lib/mapAllotmentToWidget';
+import { encodeDashboardDescription } from '../lib/dashboardDescription';
+import type {
+  BackendDashboardDto,
+  DashboardAccessEntry,
+  DashboardWidgetBinding,
+  ReportDashboard,
+  ReportDashboardAllotment,
+} from '../types';
+import { fetchDashboardAccesses } from './dashboardAccessesApi';
 import {
   createDashboard as createDashboardRequest,
   deleteDashboard as deleteDashboardRequest,
   fetchDashboardById,
   fetchDashboards,
-  stringifyDashboardDefinition,
   updateDashboard as updateDashboardRequest,
 } from './dashboardsApi';
 import {
   deleteReportDashboardAllotment,
   fetchReportDashboardAllotments,
 } from './reportDashboardAllotmentsApi';
-import { deleteSavedReport } from './savedReportsApi';
-
-const STORAGE_KEY = 'alkoLock.reports.dashboards.v1';
 
 export type DashboardRepository = {
   list: () => Promise<ReportDashboard[]>;
@@ -30,81 +33,44 @@ export type DashboardRepository = {
   remove: (id: string) => Promise<void>;
 };
 
-function readCache(): ReportDashboard[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as ReportDashboard[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeCache(items: ReportDashboard[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // quota / private mode
-  }
-}
-
 function sortByUpdatedAt(items: ReportDashboard[]): ReportDashboard[] {
   return [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-function shellFromCache(id: string, cache: ReportDashboard[]) {
-  const cached = cache.find((item) => item.id === id);
-  if (!cached) return null;
-  return {
-    description: cached.description,
-    layout: cached.layout,
-    access: cached.access,
-  };
-}
+/** Раскладка (из привязок отчётов) и права дашборда — только из ответов бэка. */
+async function hydrateDashboard(dto: BackendDashboardDto): Promise<ReportDashboard> {
+  const mapped = mapBackendDashboardToReportDashboard(dto);
+  const backendId = parseBackendDashboardId(mapped.id);
+  if (backendId == null) return mapped;
 
-function mergeClientShell(
-  mapped: ReportDashboard,
-  shell: ReportDashboard | null | undefined,
-): ReportDashboard {
-  if (!shell) return mapped;
-  return {
-    ...mapped,
-    description: shell.description || mapped.description,
-    layout: shell.layout ?? mapped.layout,
-    access: shell.access ?? mapped.access,
-    // сохраняем клиентский queryDefinition, если бэк вернул пустой
-    queryDefinition:
-      shell.queryDefinition?.selectedFields?.length &&
-      !mapped.queryDefinition?.selectedFields?.length
-        ? shell.queryDefinition
-        : mapped.queryDefinition ?? shell.queryDefinition,
-  };
-}
-
-async function hydrateWithAllotments(dashboard: ReportDashboard): Promise<ReportDashboard> {
-  const backendId = parseBackendDashboardId(dashboard.id);
-  if (backendId == null) return dashboard;
-  try {
-    const allotments = await fetchReportDashboardAllotments({
+  const [allotments, access] = await Promise.all([
+    fetchReportDashboardAllotments({
       page: 0,
       size: 200,
       dashboardId: { equals: backendId },
       isActiveEquals: true,
-    });
-    if (!allotments.length) return dashboard;
-    return {
-      ...dashboard,
-      layout: mergeAllotmentsIntoLayout(allotments, dashboard.layout, null),
-    };
-  } catch {
-    return dashboard;
+    })
+      .catch((): ReportDashboardAllotment[] => []),
+    fetchDashboardAccesses(backendId).catch((): DashboardAccessEntry[] => []),
+  ]);
+
+  const widgets: DashboardWidgetBinding[] = [];
+  for (const allotment of [...allotments].sort((a, b) => a.id - b.id)) {
+    const widget = allotmentToWidgetBinding(allotment);
+    if (widget) widgets.push(widget);
   }
+
+  return {
+    ...mapped,
+    layout: buildLayoutFromWidgets(widgets),
+    // владелец отображается отдельно, в «дополнительных» пользователях его быть не должно
+    access: access.filter((entry) => entry.userId !== mapped.ownerUserId),
+  };
 }
 
-async function cleanupDashboardLinks(dashboard: ReportDashboard): Promise<void> {
+/** Снимает привязки отчётов дашборда. Сами отчёты остаются — они могут быть на других дашбордах. */
+async function removeDashboardAllotments(dashboard: ReportDashboard): Promise<void> {
   const allotmentIds = new Set(collectAllotmentIdsFromLayout(dashboard.layout));
-  const reportIds = new Set(collectReportIdsFromLayout(dashboard.layout));
   const backendId = parseBackendDashboardId(dashboard.id);
 
   if (backendId != null) {
@@ -116,7 +82,6 @@ async function cleanupDashboardLinks(dashboard: ReportDashboard): Promise<void> 
       });
       for (const item of remote) {
         if (item?.id != null) allotmentIds.add(item.id);
-        if (item?.report?.id != null) reportIds.add(item.report.id);
       }
     } catch {
       // best-effort
@@ -132,63 +97,29 @@ async function cleanupDashboardLinks(dashboard: ReportDashboard): Promise<void> 
       }
     }),
   );
-
-  await Promise.all(
-    [...reportIds].map(async (id) => {
-      try {
-        await deleteSavedReport(id);
-      } catch {
-        // ignore
-      }
-    }),
-  );
 }
 
 /**
- * Репозиторий:
- * - POST /dashboards = report definition
- * - PUT /dashboards/{id} = { dataForUpdate: { name, visibility, definition } }
- * - layout/access/description — клиентский кэш (localStorage), т.к. definition в API = query.
+ * Репозиторий поверх API бэка (без localStorage):
+ * - dashboards: name, visibility, definition (= «Описание дашборда»);
+ * - report-dashboard-allotments: привязанные отчёты → ячейки сетки;
+ * - dashboard-accesses: права пользователей.
  */
 export const localDashboardRepository: DashboardRepository = {
   async list() {
-    const cache = readCache();
-    try {
-      const remote = await fetchDashboards();
-      const mapped = await Promise.all(
-        remote.map(async (dto) => {
-          const base = mapBackendDashboardToReportDashboard(
-            dto,
-            shellFromCache(String(dto.id), cache),
-          );
-          return hydrateWithAllotments(base);
-        }),
-      );
-      const items = sortByUpdatedAt(mapped);
-      writeCache(items);
-      return items;
-    } catch (error) {
-      if (cache.length) return sortByUpdatedAt(cache);
-      throw error;
-    }
+    const remote = await fetchDashboards();
+    const items = await Promise.all(remote.map((dto) => hydrateDashboard(dto)));
+    return sortByUpdatedAt(items);
   },
 
   async getById(id) {
-    const cache = readCache();
     const backendId = parseBackendDashboardId(id);
-    if (backendId != null) {
-      try {
-        const dto = await fetchDashboardById(backendId);
-        const mapped = await hydrateWithAllotments(
-          mapBackendDashboardToReportDashboard(dto, shellFromCache(id, cache)),
-        );
-        writeCache(sortByUpdatedAt([...cache.filter((item) => item.id !== id), mapped]));
-        return mapped;
-      } catch {
-        // fallback
-      }
+    if (backendId == null) return null;
+    try {
+      return await hydrateDashboard(await fetchDashboardById(backendId));
+    } catch {
+      return null;
     }
-    return cache.find((item) => item.id === id) ?? null;
   },
 
   async save(dashboard) {
@@ -196,74 +127,57 @@ export const localDashboardRepository: DashboardRepository = {
     const visibility = dashboard.visibility || 'private';
     const name = dashboard.name.trim();
     const description = dashboard.description.trim();
-    const definition = resolveDashboardQueryDefinition(dashboard);
-
-    let saved: ReportDashboard;
-
-    const definitionString = stringifyDashboardDefinition(definition);
+    const definition = encodeDashboardDescription(description);
 
     if (backendId != null) {
       const dto = await updateDashboardRequest(backendId, {
-        dataForUpdate: {
-          name,
-          description,
-          visibility,
-          definition: definitionString,
-        },
+        dataForUpdate: { name, visibility, definition },
       });
-      saved = mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard);
-      saved = {
-        ...saved,
-        // PUT-ответ может не содержать id/author — иначе запись кэша (layout/access)
-        // сохраняется под чужим ключом и клиентские права «теряются» при следующей загрузке.
-        id: dashboard.id,
-        ownerUserId: saved.ownerUserId || dashboard.ownerUserId,
-        ownerLabel: saved.ownerLabel || dashboard.ownerLabel,
-        name: name || saved.name,
-        description: description || saved.description,
+      const mapped = mapBackendDashboardToReportDashboard(dto, {
         layout: dashboard.layout,
         access: dashboard.access,
-        visibility,
-        queryDefinition: definition,
-      };
-    } else {
-      // definition — JSON-строка (java.lang.String на бэке)
-      const dto = await createDashboardRequest({
-        name,
+      });
+      return {
+        ...mapped,
+        // PUT-ответ может не содержать id/author — оставляем данные сохраняемого дашборда
+        id: dashboard.id,
+        ownerUserId: mapped.ownerUserId || dashboard.ownerUserId,
+        ownerLabel: mapped.ownerLabel || dashboard.ownerLabel,
+        name: name || mapped.name,
         description,
         visibility,
-        definition: definitionString,
-      });
-      saved = {
-        ...mergeClientShell(mapBackendDashboardToReportDashboard(dto), dashboard),
-        name: name || mapBackendDashboardToReportDashboard(dto).name,
-        description: description || dto.description || dashboard.description,
-        layout: dashboard.layout,
-        access: dashboard.access,
-        visibility,
-        queryDefinition: definition,
       };
     }
 
-    const cache = readCache().filter(
-      (item) => item.id !== dashboard.id && item.id !== saved.id,
-    );
-    writeCache(sortByUpdatedAt([...cache, saved]));
-    return saved;
+    // Новый дашборд: POST, затем (если бэк не принял name) PUT с названием.
+    const created = await createDashboardRequest({ name, visibility, definition });
+    let dto = created;
+    if (created.id != null && (created.name ?? '').trim() !== name) {
+      dto = await updateDashboardRequest(created.id, {
+        dataForUpdate: { name, visibility, definition },
+      });
+    }
+    const mapped = mapBackendDashboardToReportDashboard(dto.id != null ? dto : created, {
+      layout: dashboard.layout,
+      access: dashboard.access,
+    });
+    return {
+      ...mapped,
+      id: String(created.id ?? mapped.id),
+      name: name || mapped.name,
+      description,
+      visibility,
+    };
   },
 
   async remove(id) {
-    const current =
-      readCache().find((item) => item.id === id) ??
-      (await this.getById(id).catch((): null => null));
+    const current = await this.getById(id);
     if (current) {
-      await cleanupDashboardLinks(current);
+      await removeDashboardAllotments(current);
     }
-
     const backendId = parseBackendDashboardId(id);
     if (backendId != null) {
       await deleteDashboardRequest(backendId);
     }
-    writeCache(readCache().filter((item) => item.id !== id));
   },
 };

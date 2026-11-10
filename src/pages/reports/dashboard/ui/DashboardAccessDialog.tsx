@@ -29,7 +29,7 @@ import type { DashboardAccessEntry, DashboardAccessLevel, ReportDashboard } from
 
 import styles from './Dashboard.module.scss';
 
-const LEVELS: DashboardAccessLevel[] = ['view', 'edit', 'manage'];
+const LEVELS: DashboardAccessLevel[] = ['view', 'edit'];
 /** Как в боковых селектах: первая порция из ответа бэка. */
 const USER_PAGE_SIZE = 20;
 
@@ -46,13 +46,12 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
 
   const levelLabel = (level: DashboardAccessLevel): string => {
     if (level === 'view') return t('reports.dashboard.accessView', { defaultValue: 'Просмотр' });
-    if (level === 'edit') {
-      return t('reports.dashboard.accessEdit', { defaultValue: 'Редактирование' });
-    }
-    return t('reports.dashboard.accessManage', { defaultValue: 'Управление' });
+    return t('reports.dashboard.accessEdit', { defaultValue: 'Редактирование' });
   };
 
   const setAccessList = dashboardStore((s) => s.setAccessList);
+  const storeError = dashboardStore((s) => s.error);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [rows, setRows] = useState<DashboardAccessEntry[]>([]);
   const [userOptions, setUserOptions] = useState<UserOption[]>([]);
   const [inputValue, setInputValue] = useState('');
@@ -96,6 +95,7 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
     setSelectedLevel('view');
     setInputValue('');
     setSearchQuery('');
+    setSaveFailed(false);
   }, [open, dashboard]);
 
   // Debounce подстроки поиска → запрос к бэку.
@@ -188,9 +188,14 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
   const handleSave = useCallback(async () => {
     if (!dashboard) return;
     setSaving(true);
+    setSaveFailed(false);
     try {
-      await setAccessList(dashboard.id, rows);
-      onClose();
+      const saved = await setAccessList(dashboard.id, rows);
+      if (saved) {
+        onClose();
+      } else {
+        setSaveFailed(true);
+      }
     } finally {
       setSaving(false);
     }
@@ -339,6 +344,11 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
             {t('common.add', { defaultValue: 'Добавить' })}
           </Button>
         </div>
+        {saveFailed && storeError ? (
+          <Typography variant="body2" color="error" sx={{ mt: 1.5 }}>
+            {storeError}
+          </Typography>
+        ) : null}
       </DialogContent>
       <DialogActions>
         <Button

@@ -2,7 +2,7 @@ import type { ReportQueryRequest } from '../../types/reportApiTypes';
 import type {
   BackendDashboardDto,
   DashboardAccessEntry,
-  DashboardClientDefinitionV1,
+  DashboardCell,
   DashboardLayout,
   DashboardWidgetBinding,
   ReportDashboard,
@@ -10,7 +10,7 @@ import type {
   ReportDashboardAllotmentDefinition,
   ReportDashboardAllotmentPageableDto,
 } from '../types';
-import { createDashboardLayout, resizeDashboardLayout } from './dashboardLayout';
+import { decodeDashboardDescription } from './dashboardDescription';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -62,142 +62,76 @@ export function buildAllotmentDefinitionFromWidget(
   };
 }
 
+/**
+ * Сущность отчёта из ответа бэка: фактически приходит в report.definition.entityName
+ * (отдельного поля entityName в ответе нет, хотя Swagger его описывает).
+ */
+export function resolveReportEntityName(
+  report: ReportDashboardAllotment['report'] | null | undefined,
+): string {
+  const direct = report?.entityName?.trim();
+  if (direct) return direct;
+  const definition = report?.definition as { entityName?: unknown } | null | undefined;
+  return typeof definition?.entityName === 'string' ? definition.entityName.trim() : '';
+}
+
 export function allotmentToWidgetBinding(
   allotment: ReportDashboardAllotment,
-  prev?: DashboardWidgetBinding | null,
 ): DashboardWidgetBinding | null {
-  const definition = allotment.report?.definition;
-  const body = allotmentDefinitionToQueryRequest(definition) ?? prev?.body;
+  const body = allotmentDefinitionToQueryRequest(allotment.report?.definition);
   if (!body) return null;
 
-  const entityName =
-    allotment.report?.entityName?.trim() ||
-    prev?.entityName ||
-    allotment.report?.name?.trim() ||
-    'Report';
+  // entityName — только из ответа бэка; имя отчёта — не сущность.
+  const entityName = resolveReportEntityName(allotment.report);
+  if (!entityName) return null;
 
   return {
-    title: prev?.title || allotment.report?.name || entityName,
+    title: allotment.report?.name?.trim() || entityName,
     entityName,
     body,
-    branchIds: prev?.branchIds,
-    columnHeaderLabels: prev?.columnHeaderLabels,
-    branchOffices: prev?.branchOffices,
-    preferredViewMode: prev?.preferredViewMode ?? 'table',
-    chartSpec: prev?.chartSpec,
+    preferredViewMode: 'table',
     allotmentId: allotment.id,
     reportId: allotment.report?.id,
   };
 }
 
-function tryParseLayout(value: unknown): DashboardLayout | null {
-  if (!isRecord(value)) return null;
-  if (
-    typeof value.rows !== 'number' ||
-    typeof value.cols !== 'number' ||
-    !Array.isArray(value.cells)
-  ) {
-    return null;
-  }
-  return value as unknown as DashboardLayout;
-}
+const LAYOUT_COLS = 2;
+const LAYOUT_MIN_ROWS = 2;
+const LAYOUT_MAX_ROWS = 6;
 
-export function parseDashboardClientDefinition(raw: string | null | undefined): {
-  description: string;
-  layout: DashboardLayout;
-  access: DashboardAccessEntry[];
-} {
-  const fallback = {
-    description: '',
-    layout: createDashboardLayout('fixed_2x2'),
-    access: [] as DashboardAccessEntry[],
+/**
+ * Раскладка не хранится на бэке: сетка из 2 столбцов строится по привязанным отчётам
+ * (порядок — как отдаёт бэк) и всегда содержит хотя бы одну свободную ячейку.
+ */
+export function buildLayoutFromWidgets(widgets: DashboardWidgetBinding[]): DashboardLayout {
+  const rows = Math.min(
+    LAYOUT_MAX_ROWS,
+    Math.max(LAYOUT_MIN_ROWS, Math.ceil((widgets.length + 1) / LAYOUT_COLS)),
+  );
+  const cells: DashboardCell[] = [];
+  for (let index = 0; index < rows * LAYOUT_COLS; index += 1) {
+    cells.push({
+      id: `cell-${index}`,
+      row: Math.floor(index / LAYOUT_COLS),
+      col: index % LAYOUT_COLS,
+      widget: widgets[index] ?? null,
+    });
+  }
+  return {
+    preset: rows === LAYOUT_MIN_ROWS ? 'fixed_2x2' : 'custom',
+    rows,
+    cols: LAYOUT_COLS,
+    cells,
   };
-  if (!raw || typeof raw !== 'string') return fallback;
-  try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!isRecord(parsed)) return fallback;
-
-    // v1 envelope
-    if (parsed.v === 1 && tryParseLayout(parsed.layout)) {
-      const access = Array.isArray(parsed.access)
-        ? (parsed.access as DashboardAccessEntry[])
-        : [];
-      return {
-        description: typeof parsed.description === 'string' ? parsed.description : '',
-        layout: parsed.layout as DashboardLayout,
-        access,
-      };
-    }
-
-    // legacy: чистый layout
-    const layout = tryParseLayout(parsed);
-    if (layout) {
-      return { description: '', layout, access: [] };
-    }
-  } catch {
-    // ignore
-  }
-  return fallback;
-}
-
-/** Сериализация клиентской оболочки в dashboard.definition. */
-export function serializeDashboardClientDefinition(input: {
-  description?: string;
-  layout: DashboardLayout;
-  access?: DashboardAccessEntry[];
-}): string {
-  const payload: DashboardClientDefinitionV1 = {
-    v: 1,
-    description: input.description ?? '',
-    layout: input.layout,
-    access: input.access ?? [],
-  };
-  return JSON.stringify(payload);
-}
-
-/** @deprecated используйте serializeDashboardClientDefinition */
-export function serializeDashboardLayoutDefinition(layout: DashboardLayout): string {
-  return serializeDashboardClientDefinition({ layout });
-}
-
-/** Пустая definition для POST /dashboards (создание оболочки без отчёта). */
-export const EMPTY_DASHBOARD_QUERY_DEFINITION: ReportDashboardAllotmentDefinition = {
-  selectedFields: [],
-  filters: [],
-};
-
-export function normalizeBackendDashboardDefinition(
-  raw: BackendDashboardDto['definition'],
-): ReportDashboardAllotmentDefinition {
-  if (raw == null) return { ...EMPTY_DASHBOARD_QUERY_DEFINITION };
-  if (typeof raw === 'string') {
-    try {
-      const parsed = JSON.parse(raw) as unknown;
-      if (isRecord(parsed) && Array.isArray(parsed.selectedFields)) {
-        return parsed as unknown as ReportDashboardAllotmentDefinition;
-      }
-    } catch {
-      // ignore
-    }
-    return { ...EMPTY_DASHBOARD_QUERY_DEFINITION };
-  }
-  if (isRecord(raw) && Array.isArray(raw.selectedFields)) {
-    return raw as ReportDashboardAllotmentDefinition;
-  }
-  return { ...EMPTY_DASHBOARD_QUERY_DEFINITION };
 }
 
 /**
- * Маппинг DTO → клиентская модель.
- * layout/access/description бэк в definition не хранит — подмешиваются из кэша снаружи.
+ * DTO с бэка → клиентская модель.
+ * Права и раскладка приходят отдельными запросами (dashboard-accesses, allotments).
  */
 export function mapBackendDashboardToReportDashboard(
   dto: BackendDashboardDto,
-  shell?: {
-    description?: string;
-    layout?: DashboardLayout;
-    access?: DashboardAccessEntry[];
-  } | null,
+  extras?: { layout?: DashboardLayout; access?: DashboardAccessEntry[] } | null,
 ): ReportDashboard {
   const now = new Date().toISOString();
   const author = dto.author;
@@ -211,97 +145,15 @@ export function mapBackendDashboardToReportDashboard(
   return {
     id: String(dto.id),
     name: dto.name?.trim() || `Дашборд ${dto.id}`,
-    description: dto.description?.trim() || shell?.description || '',
+    description: decodeDashboardDescription(dto.definition),
     ownerUserId,
     ownerLabel,
     createdAt: dto.createdAt || now,
     updatedAt: dto.lastModifiedAt || dto.createdAt || now,
-    layout: shell?.layout ?? createDashboardLayout('fixed_2x2'),
-    access: shell?.access ?? [],
+    layout: extras?.layout ?? buildLayoutFromWidgets([]),
+    access: extras?.access ?? [],
     visibility: dto.visibility || 'private',
-    queryDefinition: normalizeBackendDashboardDefinition(dto.definition),
   };
-}
-
-/** definition для PUT: явная queryDefinition или первый виджет, иначе пустая. */
-export function resolveDashboardQueryDefinition(
-  dashboard: ReportDashboard,
-): ReportDashboardAllotmentDefinition {
-  if (dashboard.queryDefinition?.selectedFields?.length) {
-    return dashboard.queryDefinition;
-  }
-  const widget = dashboard.layout.cells.find((cell) => cell.widget)?.widget;
-  if (widget) {
-    return buildAllotmentDefinitionFromWidget(widget);
-  }
-  return dashboard.queryDefinition ?? { ...EMPTY_DASHBOARD_QUERY_DEFINITION };
-}
-
-/**
- * Раскладывает allotments по ячейкам: сохраняет позиции из prevLayout по allotmentId,
- * новые — в первую свободную ячейку (при необходимости расширяет сетку).
- */
-export function mergeAllotmentsIntoLayout(
-  allotments: ReportDashboardAllotment[],
-  prevLayout?: DashboardLayout | null,
-  dashboardDefinition?: string | null,
-): DashboardLayout {
-  const fromDefinition = parseDashboardClientDefinition(dashboardDefinition).layout;
-  let layout: DashboardLayout = prevLayout ?? fromDefinition ?? createDashboardLayout('fixed_2x2');
-
-  const byAllotmentId = new Map<number, DashboardWidgetBinding>();
-  for (const cell of layout.cells) {
-    if (cell.widget?.allotmentId != null) {
-      byAllotmentId.set(cell.widget.allotmentId, cell.widget);
-    }
-  }
-
-  const widgets: DashboardWidgetBinding[] = [];
-  for (const allotment of allotments) {
-    if (!allotment?.id) continue;
-    const prev = byAllotmentId.get(allotment.id) ?? null;
-    const widget = allotmentToWidgetBinding(allotment, prev);
-    if (widget) widgets.push(widget);
-  }
-
-  const placedIds = new Set<number>();
-  const nextCells = layout.cells.map((cell) => {
-    const allotmentId = cell.widget?.allotmentId;
-    if (allotmentId == null) {
-      // Виджет без allotmentId (ещё только reportId / локальный) — оставляем.
-      if (cell.widget && cell.widget.allotmentId == null) return cell;
-      return { ...cell, widget: null };
-    }
-    const match = widgets.find((w) => w.allotmentId === allotmentId);
-    if (!match) {
-      return { ...cell, widget: null };
-    }
-    placedIds.add(allotmentId);
-    return { ...cell, widget: match };
-  });
-
-  layout = { ...layout, cells: nextCells };
-
-  const unplaced = widgets.filter(
-    (w) => w.allotmentId != null && !placedIds.has(w.allotmentId),
-  );
-  for (const widget of unplaced) {
-    let emptyIndex = layout.cells.findIndex((cell) => !cell.widget);
-    if (emptyIndex < 0) {
-      const nextRows = Math.min(6, layout.rows + 1);
-      layout = resizeDashboardLayout(layout, nextRows, layout.cols, 'custom');
-      emptyIndex = layout.cells.findIndex((cell) => !cell.widget);
-    }
-    if (emptyIndex < 0) break;
-    layout = {
-      ...layout,
-      cells: layout.cells.map((cell, index) =>
-        index === emptyIndex ? { ...cell, widget } : cell,
-      ),
-    };
-  }
-
-  return layout;
 }
 
 export function collectAllotmentIdsFromLayout(layout: DashboardLayout): number[] {

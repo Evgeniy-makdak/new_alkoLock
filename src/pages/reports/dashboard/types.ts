@@ -11,8 +11,8 @@ import type {
   ReportViewMode,
 } from '../types/reportApiTypes';
 
-/** Уровень доступа к дашборду (клиентская модель до появления API). */
-export type DashboardAccessLevel = 'view' | 'edit' | 'manage';
+/** Уровень доступа к дашборду: view = READ, edit = WRITE (dashboard-accesses). */
+export type DashboardAccessLevel = 'view' | 'edit';
 
 export type DashboardAccessEntry = {
   userId: number;
@@ -88,7 +88,7 @@ export type ReportDashboardAllotmentReport = {
 export type ReportDashboardAllotmentDashboard = {
   id: number;
   name?: string;
-  /** JSON-строка клиентской раскладки или произвольный blob с бэка. */
+  /** «Описание дашборда» (строка). */
   definition?: string | null;
   author?: ReportDashboardAllotmentAuthor | null;
   visibility?: string;
@@ -122,11 +122,8 @@ export type BackendDashboardDto = {
   id: number;
   name?: string;
   description?: string;
-  /**
-   * Query-definition отчёта (объект).
-   * Иногда бэк может отдать строку; парсим на клиенте.
-   */
-  definition?: ReportDashboardAllotmentDefinition | string | null;
+  /** На бэке — строка «Описание дашборда» (обязательная, не пустая). */
+  definition?: string | null;
   author?: ReportDashboardAllotmentAuthor | null;
   visibility?: string;
   isActive?: boolean;
@@ -136,29 +133,22 @@ export type BackendDashboardDto = {
 
 /**
  * POST /api/v1/dashboards
- * definition на бэке — String (JSON), не объект
- * (иначе: Cannot deserialize String from START_OBJECT).
+ * definition на бэке — String «Описание дашборда» (@NotBlank).
  */
 export type BackendDashboardCreateBody = {
   name: string;
-  description: string;
   visibility: string;
-  /** JSON-строка report definition. */
   definition: string;
 };
 
-/** PUT /api/v1/dashboards/{id} — dataForUpdate; definition тоже String. */
+/** PUT /api/v1/dashboards/{id} — dataForUpdate. */
 export type BackendDashboardUpdateBody = {
   dataForUpdate: {
     name: string;
-    description: string;
     visibility: string;
     definition: string;
   };
 };
-
-/** @deprecated используйте BackendDashboardCreateBody / BackendDashboardUpdateBody */
-export type BackendDashboardWriteBody = BackendDashboardCreateBody;
 
 /** Тело POST /api/v1/reports/{entityName}/save и PUT /api/v1/reports/{id}. */
 export type SavedReportWriteBody = {
@@ -168,25 +158,21 @@ export type SavedReportWriteBody = {
   visibility: string;
 };
 
-/** DTO прав доступа к отчёту (/api/v1/report-accesses). */
-export type ReportAccessDto = {
+/** Право пользователя на дашборд (/api/v1/dashboard-accesses). */
+export type BackendDashboardAccessDto = {
   id?: number;
-  report?: { id?: number; name?: string } | null;
+  dashboard?: { id?: number } | null;
+  permission?: 'READ' | 'WRITE' | string | null;
   user?: {
     id?: number;
     email?: string;
+    login?: string;
     firstName?: string;
     surname?: string;
     middleName?: string;
     fullName?: string;
   } | null;
-  permission?: string | null;
-  accessLevel?: string | null;
-};
-
-export type ReportAccessGrantBody = {
-  userId: number;
-  permission: string;
+  isActive?: boolean;
 };
 
 export type DashboardCell = {
@@ -207,17 +193,6 @@ export type DashboardLayout = {
   cells: DashboardCell[];
 };
 
-/**
- * Клиентский JSON внутри dashboard.definition.
- * v1: layout + description + access (ACL UI до появления dashboard-accesses).
- */
-export type DashboardClientDefinitionV1 = {
-  v: 1;
-  description?: string;
-  layout: DashboardLayout;
-  access?: DashboardAccessEntry[];
-};
-
 export type ReportDashboard = {
   id: string;
   name: string;
@@ -230,11 +205,6 @@ export type ReportDashboard = {
   access: DashboardAccessEntry[];
   /** visibility с бэка (PUT dataForUpdate.visibility). */
   visibility?: string;
-  /**
-   * Query-definition дашборда на бэке (POST body / PUT dataForUpdate.definition).
-   * Раскладка сетки (layout) хранится клиентски в кэше — в API definition — это отчёт.
-   */
-  queryDefinition?: ReportDashboardAllotmentDefinition;
 };
 
 export type ReportDashboardDraft = {

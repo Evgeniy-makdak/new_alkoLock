@@ -1,28 +1,15 @@
-import {
-  deleteQuery,
-  getQuery,
-  postQuery,
-  putQuery,
-} from '@shared/api/baseQueryTypes';
+import { deleteQuery, getQuery, postQuery, putQuery } from '@shared/api/baseQueryTypes';
 
-import {
-  finalizeReportQueryBodyForGroupBy,
-  serializeReportQueryRequest,
-} from '../../lib/buildReportGroupParam';
-import {
-  expandCompositeSelectedFields,
-  isReportCompositeFieldPath,
-} from '../../lib/reportEntityCompositeFields';
-import type { ReportQueryRequest } from '../../types/reportApiTypes';
 import type {
   BackendDashboardCreateBody,
   BackendDashboardDto,
   BackendDashboardUpdateBody,
-  ReportDashboardAllotmentDefinition,
 } from '../types';
-import { EMPTY_DASHBOARD_QUERY_DEFINITION } from '../lib/mapAllotmentToWidget';
 
 const BASE = 'api/v1/dashboards';
+
+/** Размер порции списка дашбордов (дефолт бэка — 20). */
+const DASHBOARDS_PAGE_SIZE = 200;
 
 function unwrap<T>(res: {
   data: T | null;
@@ -31,7 +18,7 @@ function unwrap<T>(res: {
   detail?: string;
 }): T {
   if (res.isError || res.data == null) {
-    throw new Error(res.message || res.detail || 'dashboards request failed');
+    throw new Error(res.detail || res.message || 'dashboards request failed');
   }
   return res.data;
 }
@@ -44,34 +31,10 @@ function asDashboardList(
   return [];
 }
 
-function sanitizeDefinition(
-  body: ReportDashboardAllotmentDefinition,
-): ReportDashboardAllotmentDefinition {
-  const selectedFields = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
-    (field) => field.fieldName && !isReportCompositeFieldPath(field.fieldName),
-  );
-  const sanitized = finalizeReportQueryBodyForGroupBy({
-    ...body,
-    selectedFields,
-  }) as ReportDashboardAllotmentDefinition;
-  if (body.pageableDto) {
-    sanitized.pageableDto = body.pageableDto;
-  }
-  return sanitized;
-}
-
-/** definition → JSON-строка для поля String на бэке. */
-export function stringifyDashboardDefinition(
-  definition?: ReportDashboardAllotmentDefinition | null,
-): string {
-  const safe = sanitizeDefinition(definition ?? { ...EMPTY_DASHBOARD_QUERY_DEFINITION });
-  return serializeReportQueryRequest(safe as ReportQueryRequest);
-}
-
-/** GET /api/v1/dashboards */
+/** GET /api/v1/dashboards — дашборды, доступные пользователю. */
 export async function fetchDashboards(): Promise<BackendDashboardDto[]> {
   const res = await getQuery<BackendDashboardDto[] | { content?: BackendDashboardDto[] }>({
-    url: BASE,
+    url: `${BASE}?page=0&size=${DASHBOARDS_PAGE_SIZE}`,
   });
   return asDashboardList(unwrap(res));
 }
@@ -86,14 +49,13 @@ export async function fetchDashboardById(id: number): Promise<BackendDashboardDt
 
 /**
  * POST /api/v1/dashboards
- * { name, description, visibility, definition: "<json-string>" }
+ * { name, visibility, definition: "<описание, не пустое>" }
  */
 export async function createDashboard(
   body: BackendDashboardCreateBody,
 ): Promise<BackendDashboardDto> {
   const payload: BackendDashboardCreateBody = {
     name: body.name.trim(),
-    description: body.description.trim(),
     visibility: body.visibility || 'private',
     definition: body.definition,
   };
@@ -106,7 +68,7 @@ export async function createDashboard(
 
 /**
  * PUT /api/v1/dashboards/{id}
- * { dataForUpdate: { name, description, visibility, definition: "<json-string>" } }
+ * { dataForUpdate: { name, visibility, definition: "<описание, не пустое>" } }
  */
 export async function updateDashboard(
   id: number,
@@ -117,7 +79,6 @@ export async function updateDashboard(
     data: {
       dataForUpdate: {
         name: body.dataForUpdate.name.trim(),
-        description: body.dataForUpdate.description.trim(),
         visibility: body.dataForUpdate.visibility || 'private',
         definition: body.dataForUpdate.definition,
       },

@@ -38,7 +38,7 @@ function unwrap<T>(res: {
   return res.data;
 }
 
-function sanitizeDefinition(
+export function sanitizeDefinition(
   body: ReportDashboardAllotmentDefinition,
 ): ReportDashboardAllotmentDefinition {
   const selectedFields = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
@@ -143,12 +143,12 @@ export async function deleteSavedReport(id: number): Promise<void> {
   }
 }
 
-/** GET /api/v1/reports — список сохранённых отчётов. */
+/** GET /api/v1/reports — список активных сохранённых отчётов (первая порция до 500). */
 export async function fetchSavedReports(): Promise<ReportDashboardAllotmentReport[]> {
   const res = await getQuery<
     ReportDashboardAllotmentReport[] | { content?: ReportDashboardAllotmentReport[] }
   >({
-    url: 'api/v1/reports',
+    url: 'api/v1/reports?page=0&size=500&all.isActive.equals=true',
   });
   const data = unwrap(res);
   if (Array.isArray(data)) return data;

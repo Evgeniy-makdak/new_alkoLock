@@ -31,10 +31,17 @@ type Props = {
   cell: DashboardCell;
   canEdit: boolean;
   onBindCurrentReport: () => void;
+  onPickSavedReport: () => void;
   onClear: () => void;
 };
 
-export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClear }: Props) {
+export function DashboardWidgetCard({
+  cell,
+  canEdit,
+  onBindCurrentReport,
+  onPickSavedReport,
+  onClear,
+}: Props) {
   const { t } = useTranslation();
   const hasCurrentReport = reportGenerationStore((s) => !!s.queryContext);
   const [loading, setLoading] = useState(false);
@@ -312,12 +319,17 @@ export function DashboardWidgetCard({ cell, canEdit, onBindCurrentReport, onClea
               })}
             </Typography>
             {canEdit ? (
-              <Button
-                typeButton={ButtonsType.action}
-                disabled={!hasCurrentReport}
-                onClick={onBindCurrentReport}>
-                {t('reports.dashboard.bindCurrent', { defaultValue: 'Привязать текущий отчёт' })}
-              </Button>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Button
+                  typeButton={ButtonsType.action}
+                  disabled={!hasCurrentReport}
+                  onClick={onBindCurrentReport}>
+                  {t('reports.dashboard.bindCurrent', { defaultValue: 'Привязать текущий отчёт' })}
+                </Button>
+                <Button typeButton={ButtonsType.action} onClick={onPickSavedReport}>
+                  {t('reports.dashboard.bindSaved', { defaultValue: 'Выбрать из сохранённых' })}
+                </Button>
+              </Box>
             ) : null}
           </div>
         ) : loading ? (

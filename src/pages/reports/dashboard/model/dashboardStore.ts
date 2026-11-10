@@ -8,28 +8,29 @@ import {
 } from '../api/reportDashboardAllotmentsApi';
 import { localDashboardRepository } from '../api/dashboardRepository';
 import {
-  grantReportAccess,
-  mapAccessLevelToPermission,
-} from '../api/reportAccessesApi';
+  grantDashboardAccess,
+  revokeDashboardAccess,
+} from '../api/dashboardAccessesApi';
 import {
-  deleteSavedReport,
-  findSavedReportByName,
+  fetchSavedReports,
   isDuplicateReportNameError,
+  sanitizeDefinition,
   saveReportForEntity,
-  updateSavedReport,
 } from '../api/savedReportsApi';
-import { createDashboardLayout } from '../lib/dashboardLayout';
 import {
   buildAllotmentDefinitionFromWidget,
+  buildLayoutFromWidgets,
   collectReportIdsFromLayout,
   parseBackendDashboardId,
+  resolveReportEntityName,
 } from '../lib/mapAllotmentToWidget';
+import { isSameReportDefinition } from '../lib/reportDefinitionMatch';
 import type {
   DashboardAccessEntry,
   DashboardAccessLevel,
-  DashboardLayout,
   DashboardWidgetBinding,
   ReportDashboard,
+  ReportDashboardAllotmentReport,
   ReportsWorkspaceTab,
 } from '../types';
 
@@ -55,127 +56,29 @@ function accessLevelFor(
   return dashboard.access.find((entry) => entry.userId === userId)?.level ?? null;
 }
 
-function buildUniqueReportName(widget: DashboardWidgetBinding, dashboardName?: string): string {
-  const base = widget.title?.trim() || widget.entityName;
-  const dash = dashboardName?.trim();
-  const stamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-  if (dash) return `${base} · ${dash} · ${stamp}`;
-  return `${base} · ${stamp}`;
+const REPORT_ALREADY_ON_DASHBOARD_MESSAGE = 'Этот отчёт уже добавлен на дашборд';
+
+function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
-async function reuseOrUpdateExistingReport(
-  widget: DashboardWidgetBinding,
-  name: string,
-  definition: ReturnType<typeof buildAllotmentDefinitionFromWidget>,
-): Promise<DashboardWidgetBinding | null> {
-  const existing = await findSavedReportByName(name);
-  if (!existing?.id) return null;
-  try {
-    const updated = await updateSavedReport(existing.id, {
-      name: existing.name || name,
-      definition,
-      visibility: 'private',
-    });
-    return {
-      ...widget,
-      reportId: updated.id ?? existing.id,
-      title: updated.name || existing.name || widget.title,
-      entityName: updated.entityName?.trim() || widget.entityName,
-    };
-  } catch {
-    return {
-      ...widget,
-      reportId: existing.id,
-      title: existing.name || widget.title,
-      entityName: existing.entityName?.trim() || widget.entityName,
-    };
-  }
-}
-
-async function persistReportForWidget(
-  widget: DashboardWidgetBinding,
-  dashboardName?: string,
-): Promise<DashboardWidgetBinding> {
-  const definition = buildAllotmentDefinitionFromWidget(widget);
-  const visibility = 'private';
-
-  if (widget.reportId != null) {
-    try {
-      const name = widget.title?.trim() || widget.entityName;
-      const updated = await updateSavedReport(widget.reportId, {
-        name,
-        definition,
-        visibility,
-      });
-      return {
-        ...widget,
-        reportId: updated.id ?? widget.reportId,
-        title: updated.name || widget.title,
-        entityName: updated.entityName?.trim() || widget.entityName,
-      };
-    } catch {
-      // если PUT не принял — создаём / переиспользуем по имени
-    }
-  }
-
-  // Уникальное имя: бэк не даёт два отчёта с одним name.
-  let name = buildUniqueReportName(widget, dashboardName);
-  const body = { name, definition, visibility };
-
-  try {
-    const saved = await saveReportForEntity(widget.entityName, body);
-    return {
-      ...widget,
-      reportId: saved.id,
-      title: saved.name || widget.title,
-      entityName: saved.entityName?.trim() || widget.entityName,
-    };
-  } catch (error) {
-    if (!isDuplicateReportNameError(error)) throw error;
-
-    // Имя занято прошлым save (например allotment упал после save) — обновляем/берём существующий.
-    const reused = await reuseOrUpdateExistingReport(widget, name, definition);
-    if (reused) return reused;
-
-    // Fallback: ещё одна попытка с суффиксом
-    name = `${buildUniqueReportName(widget, dashboardName)} · ${Math.random()
-      .toString(36)
-      .slice(2, 6)}`;
-    const saved = await saveReportForEntity(widget.entityName, {
-      name,
-      definition,
-      visibility,
-    });
-    return {
-      ...widget,
-      reportId: saved.id,
-      title: saved.name || widget.title,
-      entityName: saved.entityName?.trim() || widget.entityName,
-    };
-  }
-}
-
-async function syncReportAccesses(
-  dashboard: ReportDashboard,
-  access: DashboardAccessEntry[],
+/** Права на дашборд → бэк: отозвать убранных, выдать добавленным и изменённым. */
+async function syncDashboardAccesses(
+  dashboardId: number,
+  previous: DashboardAccessEntry[],
+  next: DashboardAccessEntry[],
 ): Promise<void> {
-  const reportIds = collectReportIdsFromLayout(dashboard.layout);
-  if (!reportIds.length || !access.length) return;
+  const nextByUser = new Map(next.map((entry) => [entry.userId, entry]));
+  const revokeIds = previous
+    .filter((entry) => !nextByUser.has(entry.userId))
+    .map((entry) => entry.userId);
+  const previousByUser = new Map(previous.map((entry) => [entry.userId, entry]));
+  const grants = next
+    .filter((entry) => previousByUser.get(entry.userId)?.level !== entry.level)
+    .map((entry) => ({ userId: entry.userId, level: entry.level }));
 
-  await Promise.all(
-    reportIds.flatMap((reportId) =>
-      access.map(async (entry) => {
-        try {
-          await grantReportAccess(reportId, {
-            userId: entry.userId,
-            permission: mapAccessLevelToPermission(entry.level),
-          });
-        } catch {
-          // ACL отчётов — best-effort; основная оболочка уже в dashboard.definition
-        }
-      }),
-    ),
-  );
+  await revokeDashboardAccess(dashboardId, revokeIds);
+  await grantDashboardAccess(dashboardId, grants);
 }
 
 type DashboardState = {
@@ -193,13 +96,22 @@ type DashboardState = {
   selectedDashboard: () => ReportDashboard | null;
   createDashboard: (name: string, description?: string) => Promise<ReportDashboard | null>;
   updateDashboardMeta: (id: string, patch: { name?: string; description?: string }) => Promise<void>;
-  updateDashboardLayout: (id: string, layout: DashboardLayout) => Promise<void>;
-  setCellWidget: (
+  /** Снять виджет с ячейки: удаляется только привязка к дашборду, сам отчёт остаётся. */
+  removeCellWidget: (dashboardId: string, cellId: string) => Promise<void>;
+  /** Уже сохранённый отчёт с теми же сущностью и параметрами, что у виджета (или null). */
+  findSavedReportForWidget: (
+    widget: DashboardWidgetBinding,
+  ) => Promise<ReportDashboardAllotmentReport | null>;
+  /** Привязать существующий отчёт к дашборду. @returns текст ошибки или null при успехе. */
+  linkReportToDashboard: (dashboardId: string, reportId: number) => Promise<string | null>;
+  /** Сохранить отчёт под именем и привязать к дашборду. @returns текст ошибки или null. */
+  saveReportAndLink: (
     dashboardId: string,
-    cellId: string,
-    widget: DashboardWidgetBinding | null,
-  ) => Promise<void>;
-  setAccessList: (dashboardId: string, access: DashboardAccessEntry[]) => Promise<void>;
+    widget: DashboardWidgetBinding,
+    name: string,
+  ) => Promise<string | null>;
+  /** @returns true, если права сохранены на бэке. */
+  setAccessList: (dashboardId: string, access: DashboardAccessEntry[]) => Promise<boolean>;
   deleteDashboard: (id: string) => Promise<void>;
   currentAccessLevel: (dashboard: ReportDashboard) => DashboardAccessLevel | 'owner' | null;
 };
@@ -261,7 +173,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     set({ error: null });
     const now = new Date().toISOString();
     const draft: ReportDashboard = {
-      // временный id — repository.save без numeric id: POST definition → PUT name
+      // временный id — repository.save без numeric id создаёт дашборд через POST
       id: `new-${Date.now()}`,
       name: name.trim() || 'Новый дашборд',
       description: description.trim(),
@@ -269,10 +181,9 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       ownerLabel: user.label,
       createdAt: now,
       updatedAt: now,
-      layout: createDashboardLayout('fixed_2x2'),
+      layout: buildLayoutFromWidgets([]),
       access: [],
       visibility: 'private',
-      queryDefinition: { selectedFields: [], filters: [] },
     };
     try {
       const saved = await localDashboardRepository.save(draft);
@@ -307,184 +218,86 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     }
   },
 
-  updateDashboardLayout: async (id, layout) => {
-    const current = await localDashboardRepository.getById(id);
+  removeCellWidget: async (dashboardId, cellId) => {
+    const current = await localDashboardRepository.getById(dashboardId);
     if (!current) return;
+    const widget = current.layout.cells.find((cell) => cell.id === cellId)?.widget ?? null;
     set({ error: null });
     try {
-      await localDashboardRepository.save({
-        ...current,
-        layout,
-        updatedAt: new Date().toISOString(),
-      });
+      if (widget?.allotmentId != null) {
+        await deleteReportDashboardAllotment(widget.allotmentId);
+      }
+      // раскладка строится из привязок бэка — достаточно перечитать список
       await get().loadList();
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to update dashboard layout',
-      });
+      set({ error: errorMessage(error, 'Failed to delete report-dashboard-allotment') });
     }
   },
 
-  setCellWidget: async (dashboardId, cellId, widget) => {
-    const current = await localDashboardRepository.getById(dashboardId);
-    if (!current) return;
+  findSavedReportForWidget: async (widget) => {
+    const definition = sanitizeDefinition(buildAllotmentDefinitionFromWidget(widget));
+    const reports = await fetchSavedReports();
+    return (
+      reports.find(
+        (report) =>
+          resolveReportEntityName(report) === widget.entityName &&
+          isSameReportDefinition(definition, report.definition),
+      ) ?? null
+    );
+  },
 
-    const prevCell = current.layout.cells.find((cell) => cell.id === cellId);
-    const prevWidget = prevCell?.widget ?? null;
-    set({ error: null });
-
-    if (!widget) {
-      if (prevWidget?.allotmentId != null) {
-        try {
-          await deleteReportDashboardAllotment(prevWidget.allotmentId);
-        } catch (error) {
-          set({
-            error:
-              error instanceof Error
-                ? error.message
-                : 'Failed to delete report-dashboard-allotment',
-          });
-          return;
-        }
-      }
-      if (prevWidget?.reportId != null) {
-        try {
-          await deleteSavedReport(prevWidget.reportId);
-        } catch {
-          // отчёт мог быть общим — не блокируем отвязку
-        }
-      }
-      try {
-        await localDashboardRepository.save({
-          ...current,
-          updatedAt: new Date().toISOString(),
-          layout: {
-            ...current.layout,
-            cells: current.layout.cells.map((cell) =>
-              cell.id === cellId ? { ...cell, widget: null } : cell,
-            ),
-          },
-        });
-        await get().loadList();
-      } catch (error) {
-        set({
-          error: error instanceof Error ? error.message : 'Failed to update dashboard',
-        });
-      }
-      return;
-    }
-
-    // Замена: снимаем старое назначение/отчёт.
-    if (prevWidget?.allotmentId != null && prevWidget.allotmentId !== widget.allotmentId) {
-      try {
-        await deleteReportDashboardAllotment(prevWidget.allotmentId);
-      } catch {
-        // continue
-      }
-    }
-    if (
-      prevWidget?.reportId != null &&
-      prevWidget.reportId !== widget.reportId
-    ) {
-      try {
-        await deleteSavedReport(prevWidget.reportId);
-      } catch {
-        // continue
-      }
-    }
-
-    let boundWidget: DashboardWidgetBinding = { ...widget };
+  linkReportToDashboard: async (dashboardId, reportId) => {
+    const backendDashboardId = parseBackendDashboardId(dashboardId);
+    if (backendDashboardId == null) return 'Dashboard id is missing';
     try {
-      boundWidget = await persistReportForWidget(boundWidget, current.name);
-
-      const backendDashboardId = parseBackendDashboardId(dashboardId);
-      const reportId = boundWidget.reportId;
-      if (reportId == null || backendDashboardId == null) {
-        throw new Error('Report id or dashboard id is missing for allotment');
+      const current = await localDashboardRepository.getById(dashboardId);
+      if (current && collectReportIdsFromLayout(current.layout).includes(reportId)) {
+        return REPORT_ALREADY_ON_DASHBOARD_MESSAGE;
       }
-
-      try {
-        const created = await createReportDashboardAllotment({
-          reportId,
-          dashboardId: backendDashboardId,
-        });
-        const allotment =
-          created.find((item) => item.dashboard?.id === backendDashboardId) ?? created[0];
-
-        if (allotment?.id != null) {
-          boundWidget = {
-            ...boundWidget,
-            allotmentId: allotment.id,
-            reportId: allotment.report?.id ?? boundWidget.reportId,
-            title: boundWidget.title || allotment.report?.name || boundWidget.entityName,
-            entityName:
-              allotment.report?.entityName?.trim() ||
-              boundWidget.entityName ||
-              allotment.report?.name ||
-              boundWidget.entityName,
-          };
-        }
-      } catch (allotmentError) {
-        // Отчёт уже сохранён — виджет всё равно пишем в дашборд, ошибку allotment показываем.
-        set({
-          error:
-            allotmentError instanceof Error
-              ? allotmentError.message
-              : 'Failed to create report-dashboard-allotment',
-        });
-      }
-    } catch (error) {
-      set({
-        error:
-          error instanceof Error
-            ? error.message
-            : 'Failed to save report / create allotment',
-      });
-      return;
-    }
-
-    try {
-      const nextLayout = {
-        ...current.layout,
-        cells: current.layout.cells.map((cell) =>
-          cell.id === cellId ? { ...cell, widget: boundWidget } : cell,
-        ),
-      };
-      const saved = await localDashboardRepository.save({
-        ...current,
-        updatedAt: new Date().toISOString(),
-        layout: nextLayout,
-        // PUT dataForUpdate.definition — definition привязанного отчёта
-        queryDefinition: buildAllotmentDefinitionFromWidget(boundWidget),
-      });
-      if (get().selectedId === dashboardId && saved.id !== dashboardId) {
-        set({ selectedId: saved.id });
-      }
+      await createReportDashboardAllotment({ reportId, dashboardId: backendDashboardId });
       await get().loadList();
+      return null;
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to update dashboard',
-      });
+      if (isDuplicateReportNameError(error)) return REPORT_ALREADY_ON_DASHBOARD_MESSAGE;
+      return errorMessage(error, 'Failed to create report-dashboard-allotment');
     }
+  },
+
+  saveReportAndLink: async (dashboardId, widget, name) => {
+    const trimmed = name.trim();
+    if (!trimmed) return 'Введите название отчёта';
+    let reportId: number;
+    try {
+      const saved = await saveReportForEntity(widget.entityName, {
+        name: trimmed,
+        definition: buildAllotmentDefinitionFromWidget(widget),
+        visibility: 'private',
+      });
+      reportId = saved.id;
+    } catch (error) {
+      if (isDuplicateReportNameError(error)) {
+        return `Отчёт с названием «${trimmed}» уже существует. Укажите другое название или выберите его из сохранённых.`;
+      }
+      return errorMessage(error, 'Failed to save report');
+    }
+    return get().linkReportToDashboard(dashboardId, reportId);
   },
 
   setAccessList: async (dashboardId, access) => {
+    const backendId = parseBackendDashboardId(dashboardId);
+    if (backendId == null) return false;
     const current = await localDashboardRepository.getById(dashboardId);
-    if (!current) return;
+    if (!current) return false;
     set({ error: null });
     try {
-      const next: ReportDashboard = {
-        ...current,
-        access,
-        updatedAt: new Date().toISOString(),
-      };
-      await localDashboardRepository.save(next);
-      await syncReportAccesses(next, access);
+      await syncDashboardAccesses(backendId, current.access, access);
       await get().loadList();
+      return true;
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : 'Failed to update access',
       });
+      return false;
     }
   },
 
