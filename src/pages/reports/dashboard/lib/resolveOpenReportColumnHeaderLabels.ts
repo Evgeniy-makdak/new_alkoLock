@@ -3,10 +3,7 @@ import {
   orderReportContentColumnKeys,
 } from '../../lib/buildReportTableFieldOptions';
 import { planReportCompositeResultColumns } from '../../lib/reportEntityCompositeFields';
-import {
-  decodeReportFieldAliasForUi,
-  extractReportTableFieldLabelLeaf,
-} from '../../lib/reportSelectedFieldAliases';
+import { decodeReportFieldAliasForUi } from '../../lib/reportSelectedFieldAliases';
 import type { ReportQueryRequest } from '../../types/reportApiTypes';
 import { resolveWidgetColumnHeaderLabels } from './resolveWidgetColumnHeaderLabels';
 
@@ -28,9 +25,10 @@ export function orderWidgetPreviewColumns(
 }
 
 /**
- * Подписи колонок отчёта на дашборде / при открытии полного отчёта.
- * Приоритет: переданные UI-подписи → alias из definition → metadata без «Сущность -> ».
- * Так сохраняются пользовательские переименования после привязки к дашборду (#10).
+ * Подписи колонок на дашборде / при «открыть полный отчёт».
+ * Как в «Текущий состав таблицы» и гриде «Отчёты»: полные «Сущность -> поле»,
+ * плюс пользовательские переименования из alias (definition) / снимка UI.
+ * Обрезку до листа не делаем — она ломала корректные составные подписи.
  */
 export async function resolveOpenReportColumnHeaderLabels(
   entityName: string,
@@ -41,30 +39,32 @@ export async function resolveOpenReportColumnHeaderLabels(
     .map((field) => (field.fieldName ?? '').trim())
     .filter(Boolean);
 
-  // Снимок с вкладки «Отчёты» / карандаша — как есть (в т.ч. произвольное «Мой АЗ»).
   const labels: Record<string, string> = {};
+
+  // 1) Снимок с формирования отчёта / карандаша — как в «Текущий состав таблицы».
   for (const [key, value] of Object.entries(existing ?? {})) {
     const trimmed = (value ?? '').trim();
     if (trimmed) labels[key] = trimmed;
   }
 
-  // Alias из сохранённого definition — переживает перечитывание дашборда с бэка.
+  // 2) Alias из definition — только если снимка ещё нет (после перечитывания дашборда с бэка).
+  // Снимок «Текущий состав» не затираем: там уже полные «Сущность -> поле» и ручные имена.
   for (const field of body.selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
     if (!path || !alias) continue;
     const fromAlias = decodeReportFieldAliasForUi(alias).trim();
     if (!fromAlias) continue;
-    labels[path] = fromAlias;
-    labels[alias] = fromAlias;
+    if (!labels[path]?.trim()) labels[path] = fromAlias;
+    if (!labels[alias]?.trim()) labels[alias] = labels[path] || fromAlias;
   }
 
-  // Остальное — из metadata, но без автопрефикса «Сущность -> ».
+  // 3) Остальное — полный маппинг как у грида / «Текущий состав» (без обрезки до листа).
   const resolved = await resolveWidgetColumnHeaderLabels(entityName, body, selectedPaths);
   for (const [key, value] of Object.entries(resolved)) {
     if (labels[key]?.trim()) continue;
-    const leaf = extractReportTableFieldLabelLeaf(value) || value;
-    if (leaf.trim()) labels[key] = leaf.trim();
+    const trimmed = (value ?? '').trim();
+    if (trimmed) labels[key] = trimmed;
   }
 
   return labels;
