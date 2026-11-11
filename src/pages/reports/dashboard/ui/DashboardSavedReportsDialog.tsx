@@ -22,15 +22,13 @@ import type { ReportDashboardAllotmentReport } from '../types';
 
 type Props = {
   open: boolean;
-  /** Отчёты, уже привязанные к дашборду, — выбрать повторно нельзя. */
-  linkedReportIds: number[];
   /** @returns текст ошибки или null, если отчёт привязан. */
   onSelect: (reportId: number) => Promise<string | null>;
   onClose: () => void;
 };
 
 /** Выбор уже сохранённого отчёта для привязки к дашборду (без создания копии). */
-export function DashboardSavedReportsDialog({ open, linkedReportIds, onSelect, onClose }: Props) {
+export function DashboardSavedReportsDialog({ open, onSelect, onClose }: Props) {
   const { t } = useTranslation();
   const [reports, setReports] = useState<ReportDashboardAllotmentReport[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,7 +84,14 @@ export function DashboardSavedReportsDialog({ open, linkedReportIds, onSelect, o
   };
 
   return (
-    <Dialog open={open} onClose={busyId != null ? undefined : onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (busyId != null || reason === 'backdropClick') return;
+        onClose();
+      }}
+      fullWidth
+      maxWidth="sm">
       <DialogTitle>
         {t('reports.dashboard.savedReportsTitle', { defaultValue: 'Сохранённые отчёты' })}
       </DialogTitle>
@@ -114,26 +119,17 @@ export function DashboardSavedReportsDialog({ open, linkedReportIds, onSelect, o
           </Typography>
         ) : (
           <List dense disablePadding sx={{ maxHeight: 360, overflow: 'auto' }}>
-            {filtered.map((report) => {
-              const linked = linkedReportIds.includes(report.id);
-              return (
-                <ListItemButton
-                  key={report.id}
-                  disabled={linked || busyId != null}
-                  onClick={() => void handleSelect(report.id)}>
-                  <ListItemText
-                    primary={report.name || resolveReportEntityName(report)}
-                    secondary={
-                      linked
-                        ? t('reports.dashboard.savedReportsLinked', {
-                            defaultValue: 'Уже на этом дашборде',
-                          })
-                        : resolveReportEntityName(report)
-                    }
-                  />
-                </ListItemButton>
-              );
-            })}
+            {filtered.map((report) => (
+              <ListItemButton
+                key={report.id}
+                disabled={busyId != null}
+                onClick={() => void handleSelect(report.id)}>
+                <ListItemText
+                  primary={report.name || resolveReportEntityName(report)}
+                  secondary={resolveReportEntityName(report)}
+                />
+              </ListItemButton>
+            ))}
           </List>
         )}
       </DialogContent>

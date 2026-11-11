@@ -50,7 +50,14 @@ export function DashboardReportNameDialog({ open, defaultName, onSubmit, onClose
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (saving || reason === 'backdropClick') return;
+        onClose();
+      }}
+      fullWidth
+      maxWidth="xs">
       <DialogTitle>
         {t('reports.dashboard.reportNameTitle', { defaultValue: 'Название отчёта' })}
       </DialogTitle>

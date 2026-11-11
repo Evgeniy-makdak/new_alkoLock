@@ -15,15 +15,17 @@ import {
   isDuplicateReportNameError,
   saveReportForEntity,
 } from '../api/savedReportsApi';
+import { packWidgetsIntoLayout } from '../lib/dashboardLayout';
 import {
   buildAllotmentDefinitionFromWidget,
   buildLayoutFromWidgets,
-  collectReportIdsFromLayout,
   parseBackendDashboardId,
 } from '../lib/mapAllotmentToWidget';
 import type {
   DashboardAccessEntry,
   DashboardAccessLevel,
+  DashboardLayout,
+  DashboardLayoutPreset,
   DashboardWidgetBinding,
   ReportDashboard,
   ReportsWorkspaceTab,
@@ -51,7 +53,21 @@ function accessLevelFor(
   return dashboard.access.find((entry) => entry.userId === userId)?.level ?? null;
 }
 
-const REPORT_ALREADY_ON_DASHBOARD_MESSAGE = 'Этот отчёт уже добавлен на дашборд';
+type LayoutPreference = { preset: DashboardLayoutPreset; rows: number; cols: number };
+
+/** Раскладка на бэке не хранится — выбранный размер сетки держим в сторе на сессию. */
+function applyLayoutPreference(
+  dashboard: ReportDashboard,
+  preference: LayoutPreference | undefined,
+): ReportDashboard {
+  if (!preference) return dashboard;
+  const widgets = dashboard.layout.cells.map((cell) => cell.widget);
+  return {
+    ...dashboard,
+    layout: packWidgetsIntoLayout(widgets, preference.rows, preference.cols, preference.preset),
+  };
+}
+
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -80,6 +96,8 @@ type DashboardState = {
   workspaceTab: ReportsWorkspaceTab;
   setWorkspaceTab: (tab: ReportsWorkspaceTab) => void;
   items: ReportDashboard[];
+  /** Выбранная пользователем сетка (id дашборда → размер), пока открыта вкладка. */
+  layoutPreferences: Record<string, LayoutPreference>;
   loading: boolean;
   error: string | null;
   selectedId: string | null;
@@ -91,6 +109,8 @@ type DashboardState = {
   selectedDashboard: () => ReportDashboard | null;
   createDashboard: (name: string, description?: string) => Promise<ReportDashboard | null>;
   updateDashboardMeta: (id: string, patch: { name?: string; description?: string }) => Promise<void>;
+  /** Сменить размер сетки (только в сторе — бэк раскладку не хранит). */
+  updateDashboardLayout: (id: string, layout: DashboardLayout) => Promise<void>;
   /** Снять виджет с ячейки: удаляется только привязка к дашборду, сам отчёт остаётся. */
   removeCellWidget: (dashboardId: string, cellId: string) => Promise<void>;
   /** Привязать существующий отчёт к дашборду. @returns текст ошибки или null при успехе. */
@@ -113,6 +133,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   workspaceTab: 'reports',
   setWorkspaceTab: (tab) => set({ workspaceTab: tab }),
   items: [],
+  layoutPreferences: {},
   loading: false,
   error: null,
   selectedId: null,
@@ -135,7 +156,9 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     try {
       const user = currentUser();
       const all = await localDashboardRepository.list();
-      const items = user ? all.filter((item) => canAccess(item, user.id)) : all;
+      const filtered = user ? all.filter((item) => canAccess(item, user.id)) : all;
+      const { layoutPreferences } = get();
+      const items = filtered.map((item) => applyLayoutPreference(item, layoutPreferences[item.id]));
       set({ items, loading: false });
     } catch (error) {
       set({
@@ -180,6 +203,12 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     };
     try {
       const saved = await localDashboardRepository.save(draft);
+      set((state) => ({
+        layoutPreferences: {
+          ...state.layoutPreferences,
+          [saved.id]: { preset: 'fixed_2x2', rows: 2, cols: 2 },
+        },
+      }));
       await get().loadList();
       set({ selectedId: saved.id, editorOpen: true });
       return saved;
@@ -211,6 +240,27 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     }
   },
 
+  updateDashboardLayout: async (id, layout) => {
+    const preference: LayoutPreference = {
+      preset: layout.preset,
+      rows: layout.rows,
+      cols: layout.cols,
+    };
+    set((state) => ({
+      layoutPreferences: { ...state.layoutPreferences, [id]: preference },
+      items: state.items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              layout,
+              updatedAt: new Date().toISOString(),
+            }
+          : item,
+      ),
+      error: null,
+    }));
+  },
+
   removeCellWidget: async (dashboardId, cellId) => {
     const current = await localDashboardRepository.getById(dashboardId);
     if (!current) return;
@@ -231,15 +281,10 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     const backendDashboardId = parseBackendDashboardId(dashboardId);
     if (backendDashboardId == null) return 'Dashboard id is missing';
     try {
-      const current = await localDashboardRepository.getById(dashboardId);
-      if (current && collectReportIdsFromLayout(current.layout).includes(reportId)) {
-        return REPORT_ALREADY_ON_DASHBOARD_MESSAGE;
-      }
       await createReportDashboardAllotment({ reportId, dashboardId: backendDashboardId });
       await get().loadList();
       return null;
     } catch (error) {
-      if (isDuplicateReportNameError(error)) return REPORT_ALREADY_ON_DASHBOARD_MESSAGE;
       return errorMessage(error, 'Failed to create report-dashboard-allotment');
     }
   },
@@ -300,7 +345,10 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     set({ error: null });
     try {
       await localDashboardRepository.remove(id);
-      const { selectedId } = get();
+      const { selectedId, layoutPreferences } = get();
+      const nextPrefs = { ...layoutPreferences };
+      delete nextPrefs[id];
+      set({ layoutPreferences: nextPrefs });
       if (selectedId === id) {
         set({ selectedId: null, editorOpen: false });
       }

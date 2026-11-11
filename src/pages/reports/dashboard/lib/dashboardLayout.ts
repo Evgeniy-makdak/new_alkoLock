@@ -1,4 +1,4 @@
-import type { DashboardCell, DashboardLayout, DashboardLayoutPreset } from '../types';
+import type { DashboardCell, DashboardLayout, DashboardLayoutPreset, DashboardWidgetBinding } from '../types';
 
 function createCellId(): string {
   return `cell-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -54,4 +54,23 @@ export function resizeDashboardLayout(
 
 export function findDashboardCell(layout: DashboardLayout, cellId: string): DashboardCell | undefined {
   return layout.cells.find((cell) => cell.id === cellId);
+}
+
+
+/** Собирает виджеты в сетку заданного размера (порядок — как в cells / слева направо). */
+export function packWidgetsIntoLayout(
+  widgets: Array<DashboardWidgetBinding | null | undefined>,
+  rows: number,
+  cols: number,
+  preset: DashboardLayoutPreset = 'custom',
+): DashboardLayout {
+  const filled = widgets.filter((widget): widget is DashboardWidgetBinding => widget != null);
+  const base = createDashboardLayout(preset, rows, cols);
+  return {
+    ...base,
+    cells: base.cells.map((cell, index) => ({
+      ...cell,
+      widget: filled[index] ?? null,
+    })),
+  };
 }

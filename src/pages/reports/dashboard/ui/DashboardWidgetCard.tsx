@@ -17,7 +17,10 @@ import {
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeChartSpec } from '../../types/chartSpec';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
-import { resolveWidgetColumnHeaderLabels } from '../lib/resolveWidgetColumnHeaderLabels';
+import {
+  orderWidgetPreviewColumns,
+  resolveOpenReportColumnHeaderLabels,
+} from '../lib/resolveOpenReportColumnHeaderLabels';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardCell, DashboardWidgetBinding } from '../types';
 import { ReportChartCanvas } from '../../ui/ReportChartCanvas';
@@ -58,8 +61,9 @@ export function DashboardWidgetCard({
 
   const widget = cell.widget;
 
-  // Подписи колонок: снимок columnHeaderLabels (как в гриде «Отчётов»); если его нет —
-  // строим из metadata сущности, чтобы не показывать технические имена полей.
+  // Подписи: снимок columnHeaderLabels (если ещё есть) или восстановление из definition
+  // (alias + metadata без «Сущность -> ») — иначе после привязки к дашборду «достраиваются»
+  // убранные префиксы сущностей (#10).
   const [fallbackLabels, setFallbackLabels] = useState<Record<string, string>>({});
   const ownHeaderLabels = widget?.columnHeaderLabels;
   const hasOwnHeaderLabels =
@@ -86,7 +90,7 @@ export function DashboardWidgetCard({
         const total = Number(result?.totalElements ?? content.length);
         const totalPages = Number(result?.totalPages ?? 1);
         setPreviewRows(content);
-        setColumns(content.length > 0 ? Object.keys(content[0]!).slice(0, 8) : []);
+        setColumns(orderWidgetPreviewColumns(content, binding.body, 8));
         setTotalElements(Number.isFinite(total) ? total : content.length);
         const more =
           content.length >= WIDGET_PAGE_SIZE &&
@@ -171,18 +175,22 @@ export function DashboardWidgetCard({
   }, [widget, resetAndLoadFirstPage]);
 
   useEffect(() => {
-    if (!widget || hasOwnHeaderLabels || columns.length === 0) {
+    if (!widget || hasOwnHeaderLabels) {
       setFallbackLabels({});
       return;
     }
     let cancelled = false;
-    void resolveWidgetColumnHeaderLabels(widget.entityName, widget.body, columns).then((labels) => {
+    void resolveOpenReportColumnHeaderLabels(
+      widget.entityName,
+      widget.body,
+      widget.columnHeaderLabels,
+    ).then((labels) => {
       if (!cancelled) setFallbackLabels(labels);
     });
     return () => {
       cancelled = true;
     };
-  }, [widget, hasOwnHeaderLabels, columns]);
+  }, [widget, hasOwnHeaderLabels]);
 
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
@@ -199,20 +207,30 @@ export function DashboardWidgetCard({
     const chartSpec = widget.chartSpec
       ? normalizeChartSpec(widget.chartSpec)
       : reportsStore.getState().chartSpec;
-    reportGenerationStore.getState().setQueryContext({
-      entityName: widget.entityName,
-      body: widget.body,
-      branchIds: widget.branchIds,
-      columnHeaderLabels: widget.columnHeaderLabels,
-      branchOffices: widget.branchOffices,
-      chartSpec: viewMode === 'chart' ? chartSpec : undefined,
-    });
-    reportsStore.getState().setViewMode(viewMode);
-    if (viewMode === 'chart') {
-      reportsStore.getState().setChartSpec(chartSpec);
-    }
-    void reportGenerationStore.getState().loadReportPage(0, DEFAULT_REPORT_PAGE_SIZE);
-    dashboardStore.getState().setWorkspaceTab('reports');
+    const binding = widget;
+    void (async () => {
+      // Подписи/порядок как у исходного отчёта: alias из definition + metadata без «Сущность -> ».
+      const columnHeaderLabels = await resolveOpenReportColumnHeaderLabels(
+        binding.entityName,
+        binding.body,
+        binding.columnHeaderLabels,
+      );
+      reportGenerationStore.getState().setQueryContext({
+        entityName: binding.entityName,
+        body: binding.body,
+        branchIds: binding.branchIds,
+        columnHeaderLabels,
+        branchOffices: binding.branchOffices,
+        chartSpec: viewMode === 'chart' ? chartSpec : undefined,
+        savedReportId: binding.reportId,
+      });
+      reportsStore.getState().setViewMode(viewMode);
+      if (viewMode === 'chart') {
+        reportsStore.getState().setChartSpec(chartSpec);
+      }
+      void reportGenerationStore.getState().loadReportPage(0, DEFAULT_REPORT_PAGE_SIZE);
+      dashboardStore.getState().setWorkspaceTab('reports');
+    })();
   }, [widget]);
 
   const isChartWidget =

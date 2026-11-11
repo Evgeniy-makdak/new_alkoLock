@@ -266,7 +266,14 @@ export function DashboardAccessDialog({ open, dashboard, onClose }: Props) {
   if (!dashboard) return null;
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={(_event, reason) => {
+        if (reason === 'backdropClick') return;
+        onClose();
+      }}
+      fullWidth
+      maxWidth="sm">
       <DialogTitle>
         {t('reports.dashboard.accessTitle', { defaultValue: 'Доступ к дашборду' })}:{' '}
         {dashboard.name}

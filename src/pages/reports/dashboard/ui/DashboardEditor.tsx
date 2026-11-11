@@ -3,15 +3,16 @@ import { useTranslation } from 'react-i18next';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SecurityIcon from '@mui/icons-material/Security';
-import { TextField, Typography } from '@mui/material';
+import { FormControl, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material';
 
 import { Button, ButtonsType } from '@shared/ui/button';
 
 import { reportGenerationStore } from '../../model/reportGenerationStore';
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
+import { resizeDashboardLayout } from '../lib/dashboardLayout';
 import { dashboardStore } from '../model/dashboardStore';
-import type { DashboardWidgetBinding, ReportDashboard } from '../types';
+import type { DashboardLayoutPreset, DashboardWidgetBinding, ReportDashboard } from '../types';
 import { DashboardAccessDialog } from './DashboardAccessDialog';
 import { DashboardReportNameDialog } from './DashboardReportNameDialog';
 import { DashboardSavedReportsDialog } from './DashboardSavedReportsDialog';
@@ -27,6 +28,7 @@ type Props = {
 export function DashboardEditor({ dashboard, onBack }: Props) {
   const { t } = useTranslation();
   const updateDashboardMeta = dashboardStore((s) => s.updateDashboardMeta);
+  const updateDashboardLayout = dashboardStore((s) => s.updateDashboardLayout);
   const removeCellWidget = dashboardStore((s) => s.removeCellWidget);
   const linkReportToDashboard = dashboardStore((s) => s.linkReportToDashboard);
   const saveReportAndLink = dashboardStore((s) => s.saveReportAndLink);
@@ -55,6 +57,40 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
     if (!canEdit) return;
     await updateDashboardMeta(dashboard.id, { name, description });
   }, [canEdit, dashboard.id, name, description, updateDashboardMeta]);
+
+  const handlePresetChange = useCallback(
+    async (preset: DashboardLayoutPreset) => {
+      if (!canEdit) return;
+      if (preset === 'fixed_2x2') {
+        await updateDashboardLayout(
+          dashboard.id,
+          resizeDashboardLayout(dashboard.layout, 2, 2, 'fixed_2x2'),
+        );
+        return;
+      }
+      await updateDashboardLayout(
+        dashboard.id,
+        resizeDashboardLayout(
+          dashboard.layout,
+          dashboard.layout.rows,
+          dashboard.layout.cols,
+          'custom',
+        ),
+      );
+    },
+    [canEdit, dashboard, updateDashboardLayout],
+  );
+
+  const handleResize = useCallback(
+    async (rows: number, cols: number) => {
+      if (!canEdit) return;
+      await updateDashboardLayout(
+        dashboard.id,
+        resizeDashboardLayout(dashboard.layout, rows, cols, 'custom'),
+      );
+    },
+    [canEdit, dashboard, updateDashboardLayout],
+  );
 
   /**
    * «Привязать текущий отчёт» — только отчёт со вкладки «Отчёты» (не поиск в сохранённых).
@@ -88,14 +124,6 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
     });
   }, [canEdit, dashboard.id, linkReportToDashboard]);
 
-  const linkedReportIds = useMemo(
-    () =>
-      dashboard.layout.cells
-        .map((cell) => cell.widget?.reportId)
-        .filter((id): id is number => id != null),
-    [dashboard.layout.cells],
-  );
-
   return (
     <div className={styles.editorRoot}>
       <div className={styles.editorToolbar}>
@@ -120,6 +148,65 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
           onBlur={() => void persistMeta()}
           sx={{ minWidth: 260, flex: 1 }}
         />
+        <FormControl size="small" sx={{ minWidth: 160 }} disabled={!canEdit}>
+          <InputLabel id="dashboard-layout-preset">
+            {t('reports.dashboard.layoutPreset', { defaultValue: 'Разметка' })}
+          </InputLabel>
+          <Select
+            labelId="dashboard-layout-preset"
+            label={t('reports.dashboard.layoutPreset', { defaultValue: 'Разметка' })}
+            value={dashboard.layout.preset}
+            onChange={(event) =>
+              void handlePresetChange(event.target.value as DashboardLayoutPreset)
+            }>
+            <MenuItem value="fixed_2x2">
+              {t('reports.dashboard.layoutFixed22', { defaultValue: 'Фиксированная 2×2' })}
+            </MenuItem>
+            <MenuItem value="custom">
+              {t('reports.dashboard.layoutCustom', { defaultValue: 'Своя сетка' })}
+            </MenuItem>
+          </Select>
+        </FormControl>
+        {dashboard.layout.preset === 'custom' ? (
+          <>
+            <FormControl size="small" sx={{ minWidth: 100 }} disabled={!canEdit}>
+              <InputLabel id="dashboard-rows-label">
+                {t('reports.dashboard.rows', { defaultValue: 'Строки' })}
+              </InputLabel>
+              <Select
+                labelId="dashboard-rows-label"
+                label={t('reports.dashboard.rows', { defaultValue: 'Строки' })}
+                value={dashboard.layout.rows}
+                onChange={(event) =>
+                  void handleResize(Number(event.target.value), dashboard.layout.cols)
+                }>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <MenuItem key={n} value={n}>
+                    {n}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 100 }} disabled={!canEdit}>
+              <InputLabel id="dashboard-cols-label">
+                {t('reports.dashboard.cols', { defaultValue: 'Столбцы' })}
+              </InputLabel>
+              <Select
+                labelId="dashboard-cols-label"
+                label={t('reports.dashboard.cols', { defaultValue: 'Столбцы' })}
+                value={dashboard.layout.cols}
+                onChange={(event) =>
+                  void handleResize(dashboard.layout.rows, Number(event.target.value))
+                }>
+                {[1, 2, 3, 4, 5, 6].map((n) => (
+                  <MenuItem key={n} value={n}>
+                    {n}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </>
+        ) : null}
         {canManageAccess ? (
           <Button
             typeButton={ButtonsType.action}
@@ -175,7 +262,6 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
       />
       <DashboardSavedReportsDialog
         open={savedReportsOpen}
-        linkedReportIds={linkedReportIds}
         onSelect={(reportId) => linkReportToDashboard(dashboard.id, reportId)}
         onClose={() => setSavedReportsOpen(false)}
       />
