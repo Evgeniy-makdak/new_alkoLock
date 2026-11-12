@@ -193,7 +193,8 @@ export function ReportsPage() {
               <Typography component="h1" className={styles.title} sx={{ color: 'text.primary' }}>
                 {isCompactHeader ? t('nav.reports') : t('reports.pageTitle')}
               </Typography>
-              {!isMobile && !isDashboardsTab ? (
+              {/* Тема — переключатель виден и на вкладке «Дашборды» (без фильтров/сброса он рендерит только ThemeToggleControl) */}
+              {!isMobile ? (
                 <div className={styles.headerActions}>
                   <TableHeaderEndToolbar />
                 </div>

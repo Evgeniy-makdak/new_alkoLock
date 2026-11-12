@@ -90,6 +90,43 @@
   .editorToolbar :global(.MuiInputLabel-root) {
     background-color: var(--mui-palette-background-default, #121212);
   }
+
+  /* Тёмная тема списка дашбордов: карточка контрастнее фона страницы,
+     текст явно приводим к светлым тонам темы (иначе не читается). */
+  .card {
+    background: var(--mui-palette-grey-900, #1c1c1c);
+    border-color: var(--mui-palette-divider, rgba(255, 255, 255, 0.12));
+    color: var(--mui-palette-text-primary, rgba(255, 255, 255, 0.92));
+  }
+
+  .cardTitle {
+    color: var(--mui-palette-text-primary, rgba(255, 255, 255, 0.92));
+  }
+
+  .cardMeta {
+    color: var(--mui-palette-text-secondary, rgba(255, 255, 255, 0.7));
+    opacity: 1;
+  }
+
+  /* Ячейки-виджеты редактора дашборда: фон/границы/разделители видны на тёмном фоне. */
+  .cell {
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  .cellFilled {
+    background: var(--mui-palette-grey-900, #1c1c1c);
+    color: var(--mui-palette-text-primary, rgba(255, 255, 255, 0.92));
+  }
+
+  .cellHeader {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
+
+  .widgetPreviewTable th,
+  .widgetPreviewTable td {
+    border-bottom-color: rgba(255, 255, 255, 0.12);
+  }
 }
 
 .grid {

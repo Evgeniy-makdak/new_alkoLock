@@ -26,6 +26,14 @@ import styles from './Dashboard.module.scss';
 export function ReportsDashboardsPanel() {
   const { t } = useTranslation();
   const items = dashboardStore((s) => s.items);
+  // Отображение списка — по возрастанию названия; порядок в store не меняем.
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }),
+      ),
+    [items],
+  );
   const loading = dashboardStore((s) => s.loading);
   const error = dashboardStore((s) => s.error);
   const editorOpen = dashboardStore((s) => s.editorOpen);
@@ -98,7 +106,7 @@ export function ReportsDashboardsPanel() {
         </div>
       ) : (
         <div className={styles.list}>
-          {items.map((item) => (
+          {sortedItems.map((item) => (
             <article key={item.id} className={styles.card}>
               <h3 className={styles.cardTitle}>{item.name}</h3>
               <p className={styles.cardMeta}>
