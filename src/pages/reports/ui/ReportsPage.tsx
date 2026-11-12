@@ -21,6 +21,7 @@ import { PageWrapper } from '@layout/page_wrapper';
 import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
 import { dashboardStore } from '@pages/reports/dashboard/model/dashboardStore';
 import { ReportsDashboardsPanel } from '@pages/reports/dashboard/ui/ReportsDashboardsPanel';
+import { hydrateReportsComposeFromOpenedQuery } from '@pages/reports/lib/hydrateReportsComposeFromOpenedQuery';
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
@@ -134,9 +135,20 @@ export function ReportsPage() {
 
   const openComposeModalForEdit = useCallback(() => {
     if (reportGenerationStore.getState().isGenerating) return;
-    if (!reportGenerationStore.getState().queryContext) return;
-    setComposeModalMode('edit');
-    setComposeModalOpen(true);
+    const ctx = reportGenerationStore.getState().queryContext;
+    if (!ctx) return;
+    // После открытия с дашборда store мог быть без сущности/фильтров —
+    // дотягиваем compose из queryContext перед edit-модалкой.
+    void (async () => {
+      await hydrateReportsComposeFromOpenedQuery({
+        entityName: ctx.entityName,
+        body: ctx.body,
+        columnHeaderLabels: ctx.columnHeaderLabels,
+        sort: ctx.sort,
+      });
+      setComposeModalMode('edit');
+      setComposeModalOpen(true);
+    })();
   }, []);
 
   const openAiComposeDialog = useCallback(() => {

@@ -10,6 +10,7 @@ import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/mat
 import { Button, ButtonsType } from '@shared/ui/button';
 
 import { executeReportQuery } from '../../api/reportsApi';
+import { hydrateReportsComposeFromOpenedQuery } from '../../lib/hydrateReportsComposeFromOpenedQuery';
 import {
   DEFAULT_REPORT_PAGE_SIZE,
   reportGenerationStore,
@@ -209,12 +210,18 @@ export function DashboardWidgetCard({
       : reportsStore.getState().chartSpec;
     const binding = widget;
     void (async () => {
-      // Подписи/порядок как у исходного отчёта: alias из definition + metadata без «Сущность -> ».
+      // Подписи/порядок как у исходного отчёта: alias из definition + metadata.
       const columnHeaderLabels = await resolveOpenReportColumnHeaderLabels(
         binding.entityName,
         binding.body,
         binding.columnHeaderLabels,
       );
+      // Compose-store: сущность/фильтры/состав — иначе «Редактировать» как пустой create.
+      await hydrateReportsComposeFromOpenedQuery({
+        entityName: binding.entityName,
+        body: binding.body,
+        columnHeaderLabels,
+      });
       reportGenerationStore.getState().setQueryContext({
         entityName: binding.entityName,
         body: binding.body,
