@@ -174,6 +174,13 @@ export function ReportsPage() {
     setComposeModalOpen(true);
   }, []);
 
+  /** Отчёт открыт с дашборда — после «Сформировать» обновить виджет/definition. */
+  const handleReportFormed = useCallback(() => {
+    const ctx = reportGenerationStore.getState().queryContext;
+    if (ctx?.savedReportId == null) return;
+    void dashboardStore.getState().syncOpenedFullReportToDashboards(ctx);
+  }, []);
+
   const isCompactHeader = isMobile || isTablet;
 
   return (
@@ -319,6 +326,7 @@ export function ReportsPage() {
         open={composeModalOpen}
         mode={composeModalMode}
         onClose={() => setComposeModalOpen(false)}
+        onReportFormed={handleReportFormed}
       />
 
       {SHOW_REPORT_AI_COMPOSE_UI ? (

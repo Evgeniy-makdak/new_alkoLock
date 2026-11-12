@@ -1,7 +1,11 @@
 import { create } from 'zustand';
+import { enqueueSnackbar } from 'notistack';
 
 import { appStore } from '@shared/model/app_store/AppStore';
 
+import type { ReportQueryContext } from '../../model/reportGenerationStore';
+import { reportsStore } from '../../model/reportsStore';
+import { normalizeReportViewMode } from '../../types/reportApiTypes';
 import {
   createReportDashboardAllotment,
   deleteReportDashboardAllotment,
@@ -13,8 +17,10 @@ import {
   revokeDashboardAccess,
 } from '../api/dashboardAccessesApi';
 import {
+  fetchSavedReportById,
   isDuplicateReportNameError,
   saveReportForEntity,
+  updateSavedReport,
 } from '../api/savedReportsApi';
 import { canFitDashboardWidgets, packWidgetsIntoLayout } from '../lib/dashboardLayout';
 import {
@@ -31,6 +37,32 @@ import type {
   ReportDashboard,
   ReportsWorkspaceTab,
 } from '../types';
+
+/** Обновить виджеты с данным reportId во всех дашбордах стора. */
+function patchWidgetsByReportId(
+  items: ReportDashboard[],
+  reportId: number,
+  patch: Partial<DashboardWidgetBinding>,
+): ReportDashboard[] {
+  return items.map((dashboard) => ({
+    ...dashboard,
+    layout: {
+      ...dashboard.layout,
+      cells: dashboard.layout.cells.map((cell) => {
+        if (cell.widget?.reportId !== reportId) return cell;
+        return {
+          ...cell,
+          widget: {
+            ...cell.widget,
+            ...patch,
+            reportId: cell.widget.reportId,
+            allotmentId: cell.widget.allotmentId,
+          },
+        };
+      }),
+    },
+  }));
+}
 
 function currentUser(): { id: number; label: string } | null {
   const authId = Number(appStore.getState().authId);
@@ -115,6 +147,11 @@ type DashboardState = {
   setFullReportReturnDashboardId: (id: string | null) => void;
   /** Вернуться к родительскому дашборду после «открыть полный отчёт». */
   returnToDashboardFromFullReport: () => void;
+  /**
+   * После «Сформировать» у отчёта, открытого с дашборда (savedReportId):
+   * обновить definition на бэке и локальные виджеты — иначе дашборд показывает старую версию.
+   */
+  syncOpenedFullReportToDashboards: (ctx: ReportQueryContext) => Promise<void>;
   loadList: () => Promise<void>;
   openCreateEditor: () => void;
   openEditEditor: (id: string) => void;
@@ -161,6 +198,60 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       set({ selectedId: id, editorOpen: true });
     }
     set({ fullReportReturnDashboardId: null, workspaceTab: 'dashboards' });
+  },
+
+  syncOpenedFullReportToDashboards: async (ctx) => {
+    const reportId = ctx.savedReportId;
+    if (reportId == null) return;
+
+    const preferredViewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
+    const widgetPatch: Partial<DashboardWidgetBinding> = {
+      entityName: ctx.entityName,
+      body: ctx.body,
+      columnHeaderLabels: ctx.columnHeaderLabels,
+      branchIds: ctx.branchIds,
+      branchOffices: ctx.branchOffices,
+      preferredViewMode,
+      chartSpec: preferredViewMode === 'chart' ? ctx.chartSpec : undefined,
+    };
+
+    // Сразу локально — виджет перезапросит данные при возврате на дашборд.
+    set((state) => ({
+      items: patchWidgetsByReportId(state.items, reportId, widgetPatch),
+    }));
+
+    let name = '';
+    for (const dashboard of get().items) {
+      for (const cell of dashboard.layout.cells) {
+        if (cell.widget?.reportId === reportId && cell.widget.title.trim()) {
+          name = cell.widget.title.trim();
+          break;
+        }
+      }
+      if (name) break;
+    }
+
+    try {
+      const existing = await fetchSavedReportById(reportId);
+      name = existing.name?.trim() || name || ctx.entityName;
+      await updateSavedReport(reportId, {
+        name,
+        visibility: existing.visibility || 'private',
+        definition: buildAllotmentDefinitionFromWidget({
+          title: name,
+          entityName: ctx.entityName,
+          body: ctx.body,
+          preferredViewMode,
+        }),
+      });
+    } catch (error) {
+      enqueueSnackbar(
+        error instanceof Error && error.message
+          ? error.message
+          : 'Не удалось сохранить изменения отчёта на дашборде',
+        { variant: 'warning' },
+      );
+    }
   },
 
   selectedDashboard: () => {

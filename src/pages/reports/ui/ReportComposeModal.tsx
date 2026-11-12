@@ -1065,14 +1065,19 @@ export function ReportComposeModal({
         branchIds: branchIds.length ? branchIds : undefined,
       });
       setSort(sortParams);
+      // Сохраняем savedReportId (открытие с дашборда) — иначе после «Сформировать»
+      // теряется связь с отчётом на дашборде и виджет остаётся со старой definition.
+      const previousSavedReportId =
+        reportGenerationStore.getState().queryContext?.savedReportId;
+      const columnHeaderLabels = buildReportColumnHeaderLabelsFromComposeFields(
+        resolveComposeTableFieldsSelection(),
+        bodyWithGroup.selectedFields,
+      );
       setQueryContext({
         entityName,
         body: bodyWithGroup,
         // Подписи как в UI (с пробелами); `_` только в POST alias.
-        columnHeaderLabels: buildReportColumnHeaderLabelsFromComposeFields(
-          resolveComposeTableFieldsSelection(),
-          bodyWithGroup.selectedFields,
-        ),
+        columnHeaderLabels,
         // Порядок/подписи строк состава (клоны) — для edit после expand selectedFields.
         composeTableFields: resolveComposeTableFieldsSelection().map((item) => ({
           value: item.value,
@@ -1093,6 +1098,7 @@ export function ReportComposeModal({
         })),
         composeHavingLogic: composeHavingLogicOperator,
         chartSpec: reportsStore.getState().chartSpec,
+        savedReportId: previousSavedReportId,
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();
