@@ -236,6 +236,11 @@ export function DashboardWidgetCard({
         reportsStore.getState().setChartSpec(chartSpec);
       }
       void reportGenerationStore.getState().loadReportPage(0, DEFAULT_REPORT_PAGE_SIZE);
+      // Запомнить родительский дашборд — стрелка «назад» на вкладке «Отчёты».
+      const originDashboardId = dashboardStore.getState().selectedId;
+      if (originDashboardId) {
+        dashboardStore.getState().setFullReportReturnDashboardId(originDashboardId);
+      }
       dashboardStore.getState().setWorkspaceTab('reports');
     })();
   }, [widget]);

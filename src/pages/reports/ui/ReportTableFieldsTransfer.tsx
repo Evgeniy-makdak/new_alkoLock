@@ -473,23 +473,11 @@ export function ReportTableFieldsTransfer({
       setRenamingKey(null);
       setRenameDraft('');
     }
-    // Клон («field#N»): «восстановить по умолчанию» возвращает СИСТЕМНОЕ имя клона
-    // («исходная строка + _N»), а не дефолт оригинала, — ручной алиас снимается.
+    // Клон («field#N»): системное имя = дефолт поля + «_N», без текущего алиаса
+    // оригинала — иначе переименование оригинала ложно «кастомизирует» клон.
     const dupIndex = getDuplicateColumnIndex(fieldValue);
-    const baseOriginalRow =
-      dupIndex === 1
-        ? undefined
-        : value.find(
-            (item) =>
-              stripDuplicateColumnSuffix(fieldKey(item)) === baseKey &&
-              getDuplicateColumnIndex(fieldKey(item)) === 1,
-          );
-    const originalRowLabel =
-      baseOriginalRow?.label != null && String(baseOriginalRow.label).trim() !== ''
-        ? String(baseOriginalRow.label).trim()
-        : defaultLabel;
     const systemLabel =
-      dupIndex === 1 ? defaultLabel : `${originalRowLabel}_${dupIndex - 1}`;
+      dupIndex === 1 ? defaultLabel : `${defaultLabel}_${dupIndex - 1}`;
     onChange(
       value.map((item) => {
         const key = fieldKey(item);
@@ -528,20 +516,13 @@ export function ReportTableFieldsTransfer({
       const cloneSequence = value.filter(
         (item) => stripDuplicateColumnSuffix(fieldKey(item)) === base,
       ).length;
-      // Подпись клона строится от ИСХОДНОЙ (первой) строки базового поля + порядковый
-      // номер клона («_1», «_2», …) — тогда она совпадает с системной подписью
-      // (autoLabel в renderList) и «восстановить по умолчанию» не показывается
-      // у технических клонов.
-      const baseOriginalRow = value.find(
-        (item) =>
-          stripDuplicateColumnSuffix(fieldKey(item)) === base &&
-          getDuplicateColumnIndex(fieldKey(item)) === 1,
-      );
-      const baseOriginalLabel =
-        baseOriginalRow?.label != null && String(baseOriginalRow.label).trim() !== ''
-          ? String(baseOriginalRow.label).trim()
-          : resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
-      const dupLabel = `${baseOriginalLabel}_${cloneSequence}`;
+      // Системная подпись клона = дефолт поля из metadata + «_N», а не текущий
+      // алиас оригинала — иначе после переименования оригинала у клона ложно
+      // появляется «восстановить по умолчанию».
+      const baseDefaultLabel =
+        (defaultLabelsByValue[base] || '').trim() ||
+        resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
+      const dupLabel = `${baseDefaultLabel}_${cloneSequence}`;
       const next = value.map((item) =>
         mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue),
       );
@@ -660,26 +641,14 @@ export function ReportTableFieldsTransfer({
         // Идентификатор при добавлении — видим (как прочие); глаз не блокируем.
         const isHidden = Boolean(hiddenByKey[key]);
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
-        // Системное название строки: оригинал — дефолтная подпись поля; клон — подпись
-        // исходной строки + «_N» (технический суффикс для бэка). «Восстановить значение
-        // по умолчанию» показываем только если оператор ВРУЧНУЮ изменил название.
+        // Системное название: оригинал — дефолт поля; клон — тот же дефолт + «_N».
+        // Не берём текущий алиас оригинала: его переименование не должно включать
+        // «восстановить по умолчанию» на нетронутом клоне.
         const baseKey = stripDuplicateColumnSuffix(key);
         const baseDefaultLabel = (defaultLabelsByValue[baseKey] || baseKey).trim();
         const dupIndex = getDuplicateColumnIndex(key);
-        const originalRow =
-          dupIndex === 1
-            ? undefined
-            : value.find(
-                (item) =>
-                  stripDuplicateColumnSuffix(fieldKey(item)) === baseKey &&
-                  getDuplicateColumnIndex(fieldKey(item)) === 1,
-              );
-        const originalRowLabel =
-          originalRow?.label != null && String(originalRow.label).trim() !== ''
-            ? String(originalRow.label).trim()
-            : baseDefaultLabel;
         const autoLabel =
-          dupIndex === 1 ? baseDefaultLabel : `${originalRowLabel}_${dupIndex - 1}`;
+          dupIndex === 1 ? baseDefaultLabel : `${baseDefaultLabel}_${dupIndex - 1}`;
         const isCustomLabel = label.trim() !== autoLabel;
 
         return (

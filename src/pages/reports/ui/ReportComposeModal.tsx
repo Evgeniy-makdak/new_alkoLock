@@ -241,6 +241,14 @@ export function ReportComposeModal({
     const queryContext = reportGenerationStore.getState().queryContext;
     const queryBody = queryContext?.body;
     const primaryRow = getPrimaryReportOutputRow();
+    // Снимок состава (порядок + подписи клонов) важнее expand'нутых selectedFields.
+    const fromComposeSnapshot =
+      queryContext?.composeTableFields?.length
+        ? queryContext.composeTableFields.map((item) => ({
+            value: item.value,
+            label: item.label,
+          }))
+        : [];
     // Источник истины при edit — selectedFields сформированного отчёта, не дефолтный состав.
     const fromQuery = restoreReportComposeTableFieldsFromQuery(
       queryBody?.selectedFields,
@@ -252,7 +260,11 @@ export function ReportComposeModal({
     // и общий дисплей-параметр у дублей. Порядок строк сохраняем КАК В СФОРМИРОВАННОМ
     // отчёте (без принудительного переноса идентификатора наверх при редактировании).
     const tableFields = normalizeDuplicateColumnKeys(
-      fromQuery.length > 0 ? fromQuery : fromStore,
+      fromComposeSnapshot.length > 0
+        ? fromComposeSnapshot
+        : fromQuery.length > 0
+          ? fromQuery
+          : fromStore,
     );
 
     const savedBranchOffices = queryContext?.branchOffices;
@@ -1061,6 +1073,11 @@ export function ReportComposeModal({
           resolveComposeTableFieldsSelection(),
           bodyWithGroup.selectedFields,
         ),
+        // Порядок/подписи строк состава (клоны) — для edit после expand selectedFields.
+        composeTableFields: resolveComposeTableFieldsSelection().map((item) => ({
+          value: item.value,
+          label: item.label,
+        })),
         hiddenColumnKeys,
         branchIds: branchIds.length ? branchIds : undefined,
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,

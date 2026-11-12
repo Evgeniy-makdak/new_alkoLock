@@ -37,6 +37,11 @@ export type ReportQueryContext = {
   /** Заголовки колонок на момент формирования отчёта (не пересчитываются при черновике в модалке). */
   columnHeaderLabels?: Record<string, string>;
   /**
+   * Снимок «Текущий состав таблицы» (порядок + подписи, в т.ч. клоны «…_1»).
+   * Нужен для edit/restore: selectedFields после expand не сохраняют UI-строки.
+   */
+  composeTableFields?: Values;
+  /**
    * Колонки с закрытым «глазом» + идентификаторы: в payload есть, в гриде не рендерятся.
    */
   hiddenColumnKeys?: string[];

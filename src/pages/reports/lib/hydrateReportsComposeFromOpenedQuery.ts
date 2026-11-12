@@ -51,33 +51,39 @@ export async function hydrateReportsComposeFromOpenedQuery(
     ),
   );
 
-  const previewRows = restoreReportComposeFiltersFromQuery(
-    args.body.filters,
-    meta,
-    tableFields,
-  );
-  const tableMetaLoads: Promise<unknown>[] = [];
-  for (const row of previewRows) {
-    const key = row.selectedOutputFields[0]
-      ? String(row.selectedOutputFields[0].value)
-      : '';
-    const field = meta?.fields.find((f) => f.fieldName === key);
-    const ref = field?.referenceEntity?.trim();
-    if (ref) {
-      tableMetaLoads.push(reportsStore.getState().loadReportTableFieldsMetadata(row.id, ref));
+  const hasFilters = (args.body.filters ?? []).some((f) => (f.fieldName ?? '').trim());
+  let outputRows: ReturnType<typeof restoreReportComposeFiltersFromQuery> = [];
+  if (hasFilters) {
+    const previewRows = restoreReportComposeFiltersFromQuery(
+      args.body.filters,
+      meta,
+      tableFields,
+    );
+    const tableMetaLoads: Promise<unknown>[] = [];
+    for (const row of previewRows) {
+      const key = row.selectedOutputFields[0]
+        ? String(row.selectedOutputFields[0].value)
+        : '';
+      const field = meta?.fields.find((f) => f.fieldName === key);
+      const ref = field?.referenceEntity?.trim();
+      if (ref) {
+        tableMetaLoads.push(reportsStore.getState().loadReportTableFieldsMetadata(row.id, ref));
+      }
+    }
+    if (tableMetaLoads.length) {
+      await Promise.all(tableMetaLoads);
+    }
+    const nestedByName = reportsStore.getState().referenceEntityMetadataByName;
+    outputRows = restoreReportComposeFiltersFromQuery(args.body.filters, meta, tableFields, {
+      referenceEntityMetadataByName: nestedByName,
+    });
+    // Если restore не собрал ни одной заполненной строки — не оставляем пустую
+    // карточку: она блокирует «Сформировать» (incomplete selectedOutputFields).
+    if (outputRows.every((row) => !row.selectedOutputFields.length)) {
+      outputRows = [];
     }
   }
-  if (tableMetaLoads.length) {
-    await Promise.all(tableMetaLoads);
-  }
-
-  const nestedByName = reportsStore.getState().referenceEntityMetadataByName;
-  const outputRows = restoreReportComposeFiltersFromQuery(
-    args.body.filters,
-    meta,
-    tableFields,
-    { referenceEntityMetadataByName: nestedByName },
-  );
+  // Без фильтров — [] как в обычном compose (не пустая незаполненная карточка).
   reportsStore.setState({
     outputRows,
     logicOperator: args.body.logicConnects?.[0]?.logicOperator === 'and' ? 'and' : 'or',

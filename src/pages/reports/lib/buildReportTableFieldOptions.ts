@@ -811,49 +811,11 @@ export function collectReportContentColumnKeys(content: Record<string, unknown>[
   return Array.from(keys);
 }
 
-/**
- * Подсказка порядка колонки: в content ключ часто = alias (переименование / дубль),
- * а не fieldName — иначе колонка уезжает в конец.
- */
-export type ReportColumnOrderPreference = {
-  fieldName?: string | null;
-  alias?: string | null;
-};
-
-/** Порядок колонок: сначала selectedFields (alias или fieldName), затем остальные из content. */
-export function orderReportContentColumnKeys(
-  contentKeys: string[],
-  preferredOrder: Array<string | ReportColumnOrderPreference> | undefined,
-): string[] {
-  if (!preferredOrder?.length) {
-    return contentKeys;
-  }
-  const contentSet = new Set(contentKeys);
-  const ordered: string[] = [];
-  const seen = new Set<string>();
-
-  for (const item of preferredOrder) {
-    const candidates =
-      typeof item === 'string'
-        ? [item.trim()].filter(Boolean)
-        : [(item.alias ?? '').trim(), (item.fieldName ?? '').trim()].filter(Boolean);
-    for (const name of candidates) {
-      if (!contentSet.has(name) || seen.has(name)) continue;
-      ordered.push(name);
-      seen.add(name);
-      break;
-    }
-  }
-
-  for (const key of contentKeys) {
-    if (!seen.has(key)) {
-      ordered.push(key);
-      seen.add(key);
-    }
-  }
-
-  return ordered;
-}
+export type { ReportColumnOrderPreference } from './reportContentColumnOrder';
+export {
+  orderColumnKeysByHeaderHints,
+  orderReportContentColumnKeys,
+} from './reportContentColumnOrder';
 
 export function isReportTableFieldLabelAutoQualified(label: string): boolean {
   return (

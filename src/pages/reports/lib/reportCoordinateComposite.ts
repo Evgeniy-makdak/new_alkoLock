@@ -56,8 +56,10 @@ export function parseFieldPath(path: string): { prefix: string; leaf: string } {
 }
 
 export function expandCoordinatesCompositeFieldPath(path: string): string[] {
-  if (!isReportCoordinatesCompositePath(path)) return [path];
-  const parts = path.split('.');
+  // Клон «__composite.Coordinates#2» — срезаем #N до разбора сегментов.
+  const normalized = path.replace(/#\d+$/, '');
+  if (!isReportCoordinatesCompositePath(normalized)) return [path];
+  const parts = normalized.split('.');
   const segIdx = parts.indexOf(REPORT_COMPOSITE_SEGMENT);
   if (segIdx < 0 || parts[segIdx + 1] !== COORDINATES_COMPOSITE_KIND) return [path];
   const prefix = parts.slice(0, segIdx).join('.');

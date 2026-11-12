@@ -16,6 +16,10 @@ import {
   isRootCoordinatesCompositeOutputFilter,
 } from './reportCoordinateComposite';
 import {
+  buildDuplicateColumnKey,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
+import {
   REPORT_EMPTY_DISPLAY,
   finalizeReportCellDisplay,
   formatReportCarDisplay,
@@ -251,11 +255,13 @@ export function applyReportEntityCompositeFieldGrouping(
 }
 
 export function expandCompositeFieldPath(path: string): string[] {
-  if (isReportCoordinatesCompositePath(path)) {
-    return expandCoordinatesCompositeFieldPath(path);
+  // Клон «__composite.User#2» → иначе entity = «User#2» и expand пустой.
+  const normalized = stripDuplicateColumnSuffix(path);
+  if (isReportCoordinatesCompositePath(normalized)) {
+    return expandCoordinatesCompositeFieldPath(normalized);
   }
-  if (!isReportCompositeFieldPath(path)) return [path];
-  const parts = path.split('.');
+  if (!isReportCompositeFieldPath(normalized)) return [path];
+  const parts = normalized.split('.');
   const segIdx = parts.indexOf(REPORT_COMPOSITE_SEGMENT);
   if (segIdx < 0 || segIdx + 1 >= parts.length) return [path];
   const referenceEntity = parts[segIdx + 1];
@@ -321,12 +327,22 @@ export function parseCompositePath(path: string): { prefix: string; kind: Report
 export function planReportCompositeResultColumns(
   columnKeys: string[],
   selectedFieldNames: string[] | undefined,
+  options?: {
+    selectedFields?: ReportSelectedFieldPayload[];
+    /** Ключи состава (__composite.* / #N) — склеивать offerAsExtra после sanitize body. */
+    composeCompositeKeys?: string[];
+  },
 ): {
   displayColumnKeys: string[];
   groups: CompositeColumnGroup[];
 } {
   const keySet = new Set(columnKeys);
   const selectedSet = new Set(selectedFieldNames ?? columnKeys);
+  for (const key of options?.composeCompositeKeys ?? []) {
+    const trimmed = stripDuplicateColumnSuffix(key.trim());
+    if (trimmed) selectedSet.add(trimmed);
+    if (key.trim()) selectedSet.add(key.trim());
+  }
   const groups: CompositeColumnGroup[] = [];
   const keysToHide = new Set<string>();
 
@@ -346,18 +362,57 @@ export function planReportCompositeResultColumns(
       const compositeKey = buildReportCompositeFieldPath(prefix, config.referenceEntity);
       const allInContent = memberKeys.every((k) => keySet.has(k));
       const allSelected = memberKeys.every((k) => selectedSet.has(k));
-      const compositeSelected = selectedSet.has(compositeKey);
-      // offerAsExtra: склеивать только если в body ещё есть __composite.* (до sanitize API).
+      const compositeSelected =
+        selectedSet.has(compositeKey) ||
+        (options?.composeCompositeKeys ?? []).some(
+          (k) => stripDuplicateColumnSuffix(k) === compositeKey,
+        );
+      // offerAsExtra: склеивать если составная опция была в «Текущем составе»
+      // (в т.ч. после sanitize body, когда __composite.* уже раскрыт в члены).
       // Выбор Фамилия+Имя+Отчество по отдельности — три колонки, без авто-ФИО.
       const shouldMerge =
         (shouldMergeEntityTableColumns(config) && allInContent && allSelected) ||
         (config.offerAsExtraOption === true && allInContent && compositeSelected);
       if (!shouldMerge) continue;
 
-      groups.push({ compositeKey, memberKeys, kind: config.referenceEntity, prefix });
-      for (const mk of memberKeys) {
-        keysToHide.add(mk);
+      // Экземпляры (оригинал + клоны) в порядке selectedFields / «Текущего состава».
+      const selectedFields = options?.selectedFields ?? [];
+      const composeKeysOrdered = (options?.composeCompositeKeys ?? []).filter(
+        (k) => stripDuplicateColumnSuffix(k.trim()) === compositeKey,
+      );
+      const instances: string[][] = [];
+      if (selectedFields.length && config.offerAsExtraOption) {
+        const pending = new Map<string, string>();
+        for (const field of selectedFields) {
+          const fieldName = (field.fieldName ?? '').trim();
+          if (!memberKeys.includes(fieldName)) continue;
+          const contentKey = (field.alias ?? '').trim() || fieldName;
+          pending.set(fieldName, contentKey);
+          if (memberKeys.every((m) => pending.has(m))) {
+            instances.push(memberKeys.map((m) => pending.get(m)!));
+            pending.clear();
+          }
+        }
       }
+      if (!instances.length) {
+        instances.push(memberKeys);
+      }
+
+      instances.forEach((contentMemberKeys, index) => {
+        if (!contentMemberKeys.every((k) => keySet.has(k))) return;
+        const instanceKey =
+          composeKeysOrdered[index] ??
+          (index === 0 ? compositeKey : buildDuplicateColumnKey(compositeKey, index + 1));
+        groups.push({
+          compositeKey: instanceKey,
+          memberKeys: contentMemberKeys,
+          kind: config.referenceEntity,
+          prefix,
+        });
+        for (const mk of contentMemberKeys) {
+          keysToHide.add(mk);
+        }
+      });
     }
 
     if (MERGE_COORDINATE_TABLE_COLUMNS) {
@@ -498,7 +553,14 @@ export function formatReportCompositeCellValue(
   row: Record<string, unknown>,
   displayContext?: ReportCompositeCellDisplayContext,
 ): string {
-  const read = (leaf: string) => {
+  const read = (leaf: string, memberIndex?: number) => {
+    // Клон составной колонки: memberKeys = alias content-ключи, не prefix.leaf.
+    if (memberIndex != null && memberIndex >= 0 && memberIndex < group.memberKeys.length) {
+      const mk = group.memberKeys[memberIndex];
+      if (mk && (mk in row || row[mk] !== undefined)) {
+        return readRowValue(row, mk);
+      }
+    }
     const key = group.prefix ? `${group.prefix}.${leaf}` : leaf;
     return readRowValue(row, key);
   };
@@ -523,17 +585,20 @@ export function formatReportCompositeCellValue(
 
   switch (group.kind) {
     case 'User': {
+      const surnameRaw = read('surname', 0);
+      const firstNameRaw = read('firstName', 1);
+      const middleNameRaw = read('middleName', 2);
       const fio = Formatters.nameFormatter(
         {
-          surname: isReportEmptyValue(read('surname'))
+          surname: isReportEmptyValue(surnameRaw)
             ? undefined
-            : String(read('surname')).trim() || undefined,
-          firstName: isReportEmptyValue(read('firstName'))
+            : String(surnameRaw).trim() || undefined,
+          firstName: isReportEmptyValue(firstNameRaw)
             ? undefined
-            : String(read('firstName')).trim() || undefined,
-          middleName: isReportEmptyValue(read('middleName'))
+            : String(firstNameRaw).trim() || undefined,
+          middleName: isReportEmptyValue(middleNameRaw)
             ? undefined
-            : String(read('middleName')).trim() || undefined,
+            : String(middleNameRaw).trim() || undefined,
         },
         false,
       );
@@ -542,8 +607,8 @@ export function formatReportCompositeCellValue(
     }
     case 'MonitoringDevice': {
       const device = {
-        name: read('name'),
-        serialNumber: read('serialNumber'),
+        name: read('name', 0),
+        serialNumber: read('serialNumber', 1),
       };
       display =
         formatDeviceNameSerialLabel({
@@ -556,9 +621,9 @@ export function formatReportCompositeCellValue(
     }
     case 'Vehicle':
       display = formatReportCarDisplay({
-        manufacturer: read('manufacturer') as string | undefined,
-        model: read('model') as string | undefined,
-        registrationNumber: read('registrationNumber') as string | undefined,
+        manufacturer: read('manufacturer', 0) as string | undefined,
+        model: read('model', 1) as string | undefined,
+        registrationNumber: read('registrationNumber', 2) as string | undefined,
       });
       break;
     case COORDINATES_COMPOSITE_KIND:

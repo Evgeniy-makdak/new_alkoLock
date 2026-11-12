@@ -2,7 +2,7 @@ import i18n from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { buildDuplicateColumnKey } from './reportColumnDuplicate';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 
 import {
   isReportTableFieldLabelAutoQualified,
@@ -182,18 +182,32 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     if (!path || !label) continue;
     labels[path] = label;
   }
-  // Алиас из selectedFields привязываем к подписи ДУБЛЯ по UI-ключу («field#N»),
-  // а не по базовому path — иначе заголовок клона в гриде совпадает с оригиналом.
-  const occurrenceByPath = new Map<string, number>();
+  // Алиас → подпись строки состава. Парим selectedFields с UI-строками по порядку
+  // того же base path (клон «#2» может стоять выше оригинала — не occurrence→bare).
+  const remainingUi = tableFields
+    .map((item) => ({
+      key: String(item.value ?? '').trim(),
+      label: String(item.label ?? '').trim(),
+      base: stripDuplicateColumnSuffix(String(item.value ?? '').trim()),
+    }))
+    .filter((row) => row.key);
+
   for (const field of selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
     if (!path) continue;
-    const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
-    occurrenceByPath.set(path, occurrence);
     const alias = (field.alias ?? '').trim();
     if (!alias) continue;
-    const uiKey = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
-    const uiLabel = labels[uiKey] ?? labels[path] ?? decodeReportFieldAliasForUi(alias);
+
+    const uiIdx = remainingUi.findIndex(
+      (row) => row.base === path || row.key === path || row.base === stripDuplicateColumnSuffix(path),
+    );
+    const uiRow = uiIdx >= 0 ? remainingUi.splice(uiIdx, 1)[0] : undefined;
+    const uiLabel =
+      (uiRow?.label || '').trim() ||
+      (uiRow?.key ? (labels[uiRow.key] ?? '').trim() : '') ||
+      (labels[path] ?? '').trim() ||
+      Object.entries(labels).find(([key]) => key.includes('__composite'))?.[1] ||
+      decodeReportFieldAliasForUi(alias);
     labels[alias] = uiLabel;
   }
   return labels;

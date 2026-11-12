@@ -37,8 +37,15 @@ export function buildDuplicateColumnKey(baseKey: string, index: number): string 
  * Приводит список строк состава к уникальным ключам: повторные вхождения одного
  * base fieldPath переименовываются в «field#2», «field#3», … (первое остаётся «field»).
  * Нужно при восстановлении из store/query, где дубли могут прийти с одинаковым ключом.
+ *
+ * Если ключи уже уникальны — не трогаем: клон «field#2» может стоять ВЫШЕ оригинала
+ * «field»; перенумерация по порядку массива ломала порядок колонок в гриде (#42).
  */
 export function normalizeDuplicateColumnKeys(values: Values): Values {
+  const rawKeys = values.map((item) => String(item.value ?? ''));
+  if (rawKeys.every(Boolean) && new Set(rawKeys).size === rawKeys.length) {
+    return values;
+  }
   const seen = new Map<string, number>();
   return values.map((item) => {
     const base = stripDuplicateColumnSuffix(String(item.value ?? ''));

@@ -10,7 +10,8 @@ import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 /**
  * «Текущий состав» при редактировании сформированного отчёта —
  * из body.selectedFields, подписи из columnHeaderLabels / optionLabels.
- * Пользовательский alias показываем как есть — без дописывания «Сущность ->».
+ * Системный клон («…_1») сохраняет «Сущность -> Поле_1»;
+ * ручной alias (пользователь стёр и написал своё) — как есть, без префикса.
  */
 export function restoreReportComposeTableFieldsFromQuery(
   selectedFields: ReportSelectedFieldPayload[] | undefined,
@@ -30,13 +31,14 @@ export function restoreReportComposeTableFieldsFromQuery(
     seen.set(path, occurrence);
     const key = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
 
-    const fromAlias = (field.alias ?? '').trim()
-      ? decodeReportFieldAliasForUi(String(field.alias)).trim()
-      : '';
+    const rawAlias = (field.alias ?? '').trim();
+    const fromAlias = rawAlias ? decodeReportFieldAliasForUi(rawAlias).trim() : '';
 
     if (occurrence === 1) {
-      // Снимок с карандаша важнее; иначе alias как есть, без префикса сущности.
-      const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
+      // Снимок с карандаша / alias → path; ручной alias без снимка — как есть.
+      const fromHeaders =
+        (columnHeaderLabels[path] ?? '').trim() ||
+        (rawAlias ? (columnHeaderLabels[rawAlias] ?? '').trim() : '');
       if (fromHeaders) {
         baseLabelByPath.set(path, fromHeaders);
         result.push({ value: key, label: fromHeaders });
@@ -50,24 +52,30 @@ export function restoreReportComposeTableFieldsFromQuery(
     }
 
     // Клон («field#N»): системное имя = имя исходной строки + «_N» (с подчёркиванием!).
-    // Алиас бэка «Время_события_1» декодируется как «Время события 1» — распознаём
-    // его как системный суффикс и возвращаем UI-форму «…Время события_1».
     const baseLabel = baseLabelByPath.get(path) ?? '';
+    const fromHeaders =
+      (columnHeaderLabels[key] ?? '').trim() ||
+      (rawAlias ? (columnHeaderLabels[rawAlias] ?? '').trim() : '');
+    if (fromHeaders) {
+      result.push({ value: key, label: fromHeaders });
+      continue;
+    }
     // Алиас на бэке хранит только «лист» подписи и кодируется «_» вместо пробелов
-    // («Время_события_1»). Системный алиас клона = encode(лист базовой подписи) + «_N»,
-    // иначе декодированную подпись не отличить от ручного переименования.
+    // («Время_события_1»). Системный алиас клона = encode(лист базовой подписи) + «_N».
     const baseLeaf = extractReportTableFieldLabelLeaf(baseLabel) || baseLabel;
-    const rawAlias = (field.alias ?? '').trim();
     const systemEncodedAlias = baseLeaf
       ? `${baseLeaf.replace(/\s+/g, '_')}_${occurrence - 1}`
       : '';
     const isSystemSuffix =
       Boolean(rawAlias) && Boolean(systemEncodedAlias) && rawAlias === systemEncodedAlias;
-    // Ручной alias клона — как есть, без «Сущность ->».
+    // Системный клон — полная «Сущность -> Поле_N»; ручной alias — как назвал пользователь.
     const label = isSystemSuffix
       ? `${baseLabel}_${occurrence - 1}`
-      : fromAlias ||
-        (baseLabel ? `${baseLabel}_${occurrence - 1}` : key);
+      : fromAlias
+        ? fromAlias
+        : baseLabel
+          ? `${baseLabel}_${occurrence - 1}`
+          : key;
     result.push({ value: key, label });
   }
 

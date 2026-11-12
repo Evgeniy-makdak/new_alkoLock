@@ -2,16 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AutoAwesomeOutlinedIcon from '@mui/icons-material/AutoAwesomeOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
   Button as MuiButton,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
   Tab,
   Tabs,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
@@ -53,7 +56,12 @@ export function ReportsPage() {
 
   const workspaceTab = dashboardStore((s) => s.workspaceTab);
   const setWorkspaceTab = dashboardStore((s) => s.setWorkspaceTab);
+  const fullReportReturnDashboardId = dashboardStore((s) => s.fullReportReturnDashboardId);
+  const returnToDashboardFromFullReport = dashboardStore(
+    (s) => s.returnToDashboardFromFullReport,
+  );
   const isDashboardsTab = workspaceTab === 'dashboards';
+  const showReturnToDashboard = !isDashboardsTab && !!fullReportReturnDashboardId;
 
   const loadEntities = reportsStore((s) => s.loadEntities);
   const resetFilters = reportsStore((s) => s.resetFilters);
@@ -137,15 +145,20 @@ export function ReportsPage() {
     if (reportGenerationStore.getState().isGenerating) return;
     const ctx = reportGenerationStore.getState().queryContext;
     if (!ctx) return;
-    // После открытия с дашборда store мог быть без сущности/фильтров —
-    // дотягиваем compose из queryContext перед edit-модалкой.
+    const store = reportsStore.getState();
+    // Гидратация только если store пуст/другая сущность (открытие с дашборда).
+    // Иначе повторный restore затирает живой compose и может заблокировать «Сформировать».
+    const needsHydrate =
+      store.selectedEntityName !== ctx.entityName || store.metadata?.entityName !== ctx.entityName;
     void (async () => {
-      await hydrateReportsComposeFromOpenedQuery({
-        entityName: ctx.entityName,
-        body: ctx.body,
-        columnHeaderLabels: ctx.columnHeaderLabels,
-        sort: ctx.sort,
-      });
+      if (needsHydrate) {
+        await hydrateReportsComposeFromOpenedQuery({
+          entityName: ctx.entityName,
+          body: ctx.body,
+          columnHeaderLabels: ctx.columnHeaderLabels,
+          sort: ctx.sort,
+        });
+      }
       setComposeModalMode('edit');
       setComposeModalOpen(true);
     })();
@@ -181,7 +194,13 @@ export function ReportsPage() {
             </div>
             <Tabs
               value={workspaceTab}
-              onChange={(_, value) => setWorkspaceTab(value)}
+              onChange={(_, value) => {
+                // Ручной уход с «Отчёты» — сбрасываем контекст возврата к дашборду.
+                if (value === 'dashboards' && fullReportReturnDashboardId) {
+                  dashboardStore.getState().setFullReportReturnDashboardId(null);
+                }
+                setWorkspaceTab(value);
+              }}
               sx={{ px: 2, minHeight: 40 }}
               variant={isMobile ? 'fullWidth' : 'standard'}>
               <Tab
@@ -211,48 +230,74 @@ export function ReportsPage() {
                   padding: '8px var(--table-page-content-inset-inline, 16px)',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'flex-end',
+                  justifyContent: 'space-between',
                   gap: '8px',
                   flexWrap: 'wrap',
                   flexShrink: 0,
                 }}>
-                {renderExportControls()}
-                {hasDisplayableReport ? (
+                <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                  {showReturnToDashboard ? (
+                    <Tooltip
+                      title={t('reports.dashboard.backToDashboard', {
+                        defaultValue: 'Назад к дашборду',
+                      })}>
+                      <IconButton
+                        size="small"
+                        onClick={returnToDashboardFromFullReport}
+                        aria-label={t('reports.dashboard.backToDashboard', {
+                          defaultValue: 'Назад к дашборду',
+                        })}>
+                        <ArrowBackIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : null}
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    gap: '8px',
+                    flexWrap: 'wrap',
+                  }}>
+                  {renderExportControls()}
+                  {hasDisplayableReport ? (
+                    <MuiButton
+                      variant="contained"
+                      size="small"
+                      startIcon={<EditOutlinedIcon />}
+                      disabled={isGenerating}
+                      onClick={openComposeModalForEdit}
+                      sx={createReportButtonSx}>
+                      {t('reports.editReport')}
+                    </MuiButton>
+                  ) : null}
+                  {SHOW_REPORT_AI_COMPOSE_UI ? (
+                    <MuiButton
+                      variant="contained"
+                      size="small"
+                      startIcon={<AutoAwesomeOutlinedIcon />}
+                      disabled={isGenerating}
+                      onClick={openAiComposeDialog}
+                      sx={createReportButtonSx}>
+                      {t('reports.aiComposeOpen')}
+                    </MuiButton>
+                  ) : null}
                   <MuiButton
                     variant="contained"
                     size="small"
-                    startIcon={<EditOutlinedIcon />}
+                    startIcon={<AddIcon />}
                     disabled={isGenerating}
-                    onClick={openComposeModalForEdit}
+                    onClick={openComposeModalForCreate}
                     sx={createReportButtonSx}>
-                    {t('reports.editReport')}
+                    {t('reports.createNewReport')}
                   </MuiButton>
-                ) : null}
-                {SHOW_REPORT_AI_COMPOSE_UI ? (
-                  <MuiButton
-                    variant="contained"
-                    size="small"
-                    startIcon={<AutoAwesomeOutlinedIcon />}
-                    disabled={isGenerating}
-                    onClick={openAiComposeDialog}
-                    sx={createReportButtonSx}>
-                    {t('reports.aiComposeOpen')}
-                  </MuiButton>
-                ) : null}
-                <MuiButton
-                  variant="contained"
-                  size="small"
-                  startIcon={<AddIcon />}
-                  disabled={isGenerating}
-                  onClick={openComposeModalForCreate}
-                  sx={createReportButtonSx}>
-                  {t('reports.createNewReport')}
-                </MuiButton>
-                <ResetFilters reset={handleResetFilters} />
-                <Refetch
-                  onClick={handleRefreshReport}
-                  disabled={!canRefreshReport}
-                />
+                  <ResetFilters reset={handleResetFilters} />
+                  <Refetch
+                    onClick={handleRefreshReport}
+                    disabled={!canRefreshReport}
+                  />
+                </div>
               </div>
 
               <div

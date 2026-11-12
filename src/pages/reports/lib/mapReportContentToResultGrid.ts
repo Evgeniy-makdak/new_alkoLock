@@ -9,6 +9,7 @@ import {
   orderReportContentColumnKeys,
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
+import { orderColumnKeysByHeaderHints } from './reportContentColumnOrder';
 import {
   formatReportCompositeCellValue,
   planReportCompositeResultColumns,
@@ -279,14 +280,47 @@ export function mapReportContentToResultGrid(
     contentKeys,
     selectedFieldsForColumnOrder,
   );
+  const composeCompositeKeys = Object.keys(frozenColumnHeaderLabels ?? {}).filter((key) =>
+    key.includes('__composite'),
+  );
   const { displayColumnKeys: rawColumnKeys, groups: compositeGroups } =
     planReportCompositeResultColumns(
       orderedKeys,
       selectedFieldsForColumnOrder
         ?.map((f) => f.fieldName)
         .filter((name) => name && !hiddenSet.has(name)),
+      {
+        selectedFields: selectedFieldsForColumnOrder,
+        composeCompositeKeys,
+      },
     );
-  const columnKeys = rawColumnKeys.filter((key) => !hiddenSet.has(key));
+  // Порядок колонок как в «Текущем составе» (ключи снимка заголовков).
+  // Content-ключ часто = alias (переименование / дубль), а в снимке сначала
+  // fieldName — без сопоставления alias↔fieldName переименованные/дубли
+  // уезжают в конец (#41 / #42).
+  // Alias-only ключи из второго прохода labels не используем как hints —
+  // они дублируют path-ключи и провоцировали свап клон/оригинал (#42).
+  const selectedAliasKeys = new Set(
+    (selectedFieldsForColumnOrder ?? [])
+      .map((field) => (field.alias ?? '').trim())
+      .filter(Boolean),
+  );
+  const headerOrder = Object.keys(frozenColumnHeaderLabels ?? {}).filter((key) => {
+    if (!key) return false;
+    if (key.includes('__composite')) return true;
+    if (!selectedAliasKeys.has(key)) return true;
+    return (selectedFieldsForColumnOrder ?? []).some(
+      (field) => (field.fieldName ?? '').trim() === key,
+    );
+  });
+  let columnKeys = rawColumnKeys.filter((key) => !hiddenSet.has(key));
+  if (headerOrder.length) {
+    columnKeys = orderColumnKeysByHeaderHints(
+      columnKeys,
+      headerOrder,
+      selectedFieldsForColumnOrder,
+    );
+  }
   const compositeByKey = new Map(compositeGroups.map((g) => [g.compositeKey, g]));
 
   const rawRowByGridKey = new Map<string, Record<string, unknown>>();

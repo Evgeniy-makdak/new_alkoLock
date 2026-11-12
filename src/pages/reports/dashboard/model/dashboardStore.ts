@@ -107,6 +107,14 @@ type DashboardState = {
   error: string | null;
   selectedId: string | null;
   editorOpen: boolean;
+  /**
+   * Id дашборда, с которого открыли «полный отчёт».
+   * Нужен для стрелки возврата на вкладке «Отчёты»; null — перехода не было.
+   */
+  fullReportReturnDashboardId: string | null;
+  setFullReportReturnDashboardId: (id: string | null) => void;
+  /** Вернуться к родительскому дашборду после «открыть полный отчёт». */
+  returnToDashboardFromFullReport: () => void;
   loadList: () => Promise<void>;
   openCreateEditor: () => void;
   openEditEditor: (id: string) => void;
@@ -143,6 +151,17 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   error: null,
   selectedId: null,
   editorOpen: false,
+  fullReportReturnDashboardId: null,
+  setFullReportReturnDashboardId: (id) => set({ fullReportReturnDashboardId: id }),
+
+  returnToDashboardFromFullReport: () => {
+    const id = get().fullReportReturnDashboardId;
+    if (id) {
+      // Редактор мог остаться открытым; если нет — восстанавливаем тот же дашборд.
+      set({ selectedId: id, editorOpen: true });
+    }
+    set({ fullReportReturnDashboardId: null, workspaceTab: 'dashboards' });
+  },
 
   selectedDashboard: () => {
     const { items, selectedId } = get();
