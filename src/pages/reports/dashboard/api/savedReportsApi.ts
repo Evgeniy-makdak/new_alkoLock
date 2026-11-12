@@ -48,8 +48,18 @@ export function sanitizeDefinition(
     ...body,
     selectedFields,
   }) as ReportDashboardAllotmentDefinition;
-  if (body.pageableDto) {
-    sanitized.pageableDto = body.pageableDto;
+  // pageableDto обязателен для PUT; sort не должен быть null.
+  sanitized.pageableDto = body.pageableDto
+    ? {
+        limit: body.pageableDto.limit ?? 25,
+        offset: body.pageableDto.offset ?? 0,
+        sort: Array.isArray(body.pageableDto.sort) ? body.pageableDto.sort : [],
+      }
+    : { limit: 25, offset: 0, sort: [] };
+  // entityName должен остаться в definition (PUT сверяет с сущностью отчёта).
+  const entityName = (body.entityName ?? '').trim();
+  if (entityName) {
+    sanitized.entityName = entityName;
   }
   return sanitized;
 }
@@ -91,13 +101,30 @@ async function putRawJson<T>(url: string, payload: string): Promise<AppAxiosResp
  * (не строка — иначе no String-argument constructor for Create/definition).
  * Плоский selectedFields в корне бэк не маппит в parameters.
  */
-function buildSavePayload(body: SavedReportWriteBody): string {
+function buildCreatePayload(body: SavedReportWriteBody): string {
   const definition = sanitizeDefinition(body.definition);
-  // definition сериализуем отдельно (Long-маркеры), затем вшиваем в оболочку.
   const definitionJson = serializeReportQueryRequest(definition as ReportQueryRequest);
   return `{"name":${JSON.stringify(body.name.trim())},"visibility":${JSON.stringify(
     body.visibility || 'private',
   )},"definition":${definitionJson}}`;
+}
+
+/**
+ * ReportDto.Update (PUT /reports/{id}): только через dataForUpdate —
+ * плоское тело даёт 400 «Поле даты не может быть пустым» (проверено на бэке).
+ */
+function buildUpdatePayload(body: SavedReportWriteBody): string {
+  const definition = sanitizeDefinition(body.definition);
+  const definitionJson = serializeReportQueryRequest(definition as ReportQueryRequest);
+  const parts = [
+    `"name":${JSON.stringify(body.name.trim())}`,
+    `"visibility":${JSON.stringify(body.visibility || 'private')}`,
+    `"definition":${definitionJson}`,
+  ];
+  if (body.entityName?.trim()) {
+    parts.push(`"entityName":${JSON.stringify(body.entityName.trim())}`);
+  }
+  return `{"dataForUpdate":{${parts.join(',')}}}`;
 }
 
 /** POST /api/v1/reports/{entityName}/save — сохранить параметры отчёта. */
@@ -108,7 +135,7 @@ export async function saveReportForEntity(
   const encoded = encodeURIComponent(entityName);
   const res = await postRawJson<ReportDashboardAllotmentReport>(
     `api/v1/reports/${encoded}/save`,
-    buildSavePayload(body),
+    buildCreatePayload(body),
   );
   return unwrap(res);
 }
@@ -121,14 +148,14 @@ export async function fetchSavedReportById(id: number): Promise<ReportDashboardA
   return unwrap(res);
 }
 
-/** PUT /api/v1/reports/{id} */
+/** PUT /api/v1/reports/{id} — тело { dataForUpdate: { name, visibility, definition } }. */
 export async function updateSavedReport(
   id: number,
   body: SavedReportWriteBody,
 ): Promise<ReportDashboardAllotmentReport> {
   const res = await putRawJson<ReportDashboardAllotmentReport>(
     `api/v1/reports/${id}`,
-    buildSavePayload(body),
+    buildUpdatePayload(body),
   );
   return unwrap(res);
 }

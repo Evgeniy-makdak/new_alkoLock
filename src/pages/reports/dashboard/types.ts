@@ -54,6 +54,8 @@ export type ReportDashboardAllotmentPageableDto = {
 export type ReportDashboardAllotmentDefinition = {
   selectedFields: ReportSelectedFieldPayload[];
   filters: ReportQueryFilter[];
+  /** Обязателен в PUT definition — иначе 409 «Не совпадают entity…». */
+  entityName?: string;
   groupBy?: string[];
   having?: ReportHavingFilter[];
   havingConnects?: ReportLogicConnect[];
@@ -159,6 +161,8 @@ export type SavedReportWriteBody = {
   definition: ReportDashboardAllotmentDefinition;
   /** Обязательно на бэке («Область видимости отчёта»). */
   visibility: string;
+  /** Для PUT dataForUpdate: сущность (часто только в definition). */
+  entityName?: string;
 };
 
 /** Право пользователя на дашборд (/api/v1/dashboard-accesses). */

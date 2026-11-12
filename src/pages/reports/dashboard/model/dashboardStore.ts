@@ -234,15 +234,54 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     try {
       const existing = await fetchSavedReportById(reportId);
       name = existing.name?.trim() || name || ctx.entityName;
+      // entityName в GET почти всегда только в definition — без него в PUT → 409.
+      const existingDefinitionEntity =
+        existing.definition &&
+        typeof existing.definition === 'object' &&
+        typeof (existing.definition as { entityName?: unknown }).entityName === 'string'
+          ? String((existing.definition as { entityName?: string }).entityName).trim()
+          : '';
+      const entityName =
+        existing.entityName?.trim() || existingDefinitionEntity || ctx.entityName;
+      // pageableDto обязателен в PUT definition; без sort → 500 на бэке.
+      const existingPageable =
+        existing.definition &&
+        typeof existing.definition === 'object' &&
+        (existing.definition as { pageableDto?: unknown }).pageableDto &&
+        typeof (existing.definition as { pageableDto?: unknown }).pageableDto === 'object'
+          ? ((existing.definition as { pageableDto: Record<string, unknown> }).pageableDto)
+          : null;
+      const pageableDto = existingPageable
+        ? {
+            limit: Number(existingPageable.limit) || 25,
+            offset: Number(existingPageable.offset) || 0,
+            sort: Array.isArray(existingPageable.sort) ? existingPageable.sort : [],
+          }
+        : { limit: 25, offset: 0, sort: [] as [] };
+      const definition = {
+        ...buildAllotmentDefinitionFromWidget({
+          title: name,
+          entityName,
+          body: {
+            ...ctx.body,
+            // Пустые values у фильтров на save не отправляем.
+            filters: (ctx.body.filters ?? []).filter((filter) => {
+              if (!Array.isArray(filter.values)) return true;
+              if (!filter.values.length) return false;
+              return filter.values.every((value) => value !== '' && value != null);
+            }),
+          },
+          preferredViewMode,
+        }),
+        entityName,
+        pageableDto,
+      };
+      // PUT только через dataForUpdate (см. updateSavedReport) — плоский body → 400.
       await updateSavedReport(reportId, {
         name,
         visibility: existing.visibility || 'private',
-        definition: buildAllotmentDefinitionFromWidget({
-          title: name,
-          entityName: ctx.entityName,
-          body: ctx.body,
-          preferredViewMode,
-        }),
+        entityName,
+        definition,
       });
     } catch (error) {
       enqueueSnackbar(
