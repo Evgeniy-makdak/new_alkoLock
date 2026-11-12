@@ -10,7 +10,7 @@ import { Button, ButtonsType } from '@shared/ui/button';
 import { reportGenerationStore } from '../../model/reportGenerationStore';
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
-import { resizeDashboardLayout } from '../lib/dashboardLayout';
+import { canFitDashboardWidgets, resizeDashboardLayout } from '../lib/dashboardLayout';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardLayoutPreset, DashboardWidgetBinding, ReportDashboard } from '../types';
 import { DashboardAccessDialog } from './DashboardAccessDialog';
@@ -58,10 +58,28 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
     await updateDashboardMeta(dashboard.id, { name, description });
   }, [canEdit, dashboard.id, name, description, updateDashboardMeta]);
 
+  const rejectLayoutIfCannotFit = useCallback(
+    (rows: number, cols: number): boolean => {
+      if (canFitDashboardWidgets(dashboard.layout, rows, cols)) {
+        setLinkError(null);
+        return false;
+      }
+      setLinkError(
+        t('reports.dashboard.layoutTooSmall', {
+          defaultValue:
+            'Нельзя уменьшить сетку: число отчётов больше, чем ячеек в новой раскладке',
+        }),
+      );
+      return true;
+    },
+    [dashboard.layout, t],
+  );
+
   const handlePresetChange = useCallback(
     async (preset: DashboardLayoutPreset) => {
       if (!canEdit) return;
       if (preset === 'fixed_2x2') {
+        if (rejectLayoutIfCannotFit(2, 2)) return;
         await updateDashboardLayout(
           dashboard.id,
           resizeDashboardLayout(dashboard.layout, 2, 2, 'fixed_2x2'),
@@ -78,18 +96,19 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
         ),
       );
     },
-    [canEdit, dashboard, updateDashboardLayout],
+    [canEdit, dashboard, rejectLayoutIfCannotFit, updateDashboardLayout],
   );
 
   const handleResize = useCallback(
     async (rows: number, cols: number) => {
       if (!canEdit) return;
+      if (rejectLayoutIfCannotFit(rows, cols)) return;
       await updateDashboardLayout(
         dashboard.id,
         resizeDashboardLayout(dashboard.layout, rows, cols, 'custom'),
       );
     },
-    [canEdit, dashboard, updateDashboardLayout],
+    [canEdit, dashboard, rejectLayoutIfCannotFit, updateDashboardLayout],
   );
 
   /**

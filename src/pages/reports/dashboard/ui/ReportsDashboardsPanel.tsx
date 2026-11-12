@@ -135,7 +135,14 @@ export function ReportsDashboardsPanel() {
         </div>
       )}
 
-      <Dialog open={createOpen} onClose={() => setCreateOpen(false)} fullWidth maxWidth="xs">
+      <Dialog
+        open={createOpen}
+        onClose={(_event, reason) => {
+          if (reason === 'backdropClick') return;
+          setCreateOpen(false);
+        }}
+        fullWidth
+        maxWidth="xs">
         <DialogTitle>{t('reports.dashboard.create', 'Создать дашборд')}</DialogTitle>
         <DialogContent dividers>
           <TextField

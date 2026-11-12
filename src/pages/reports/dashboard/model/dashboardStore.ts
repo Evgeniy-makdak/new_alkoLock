@@ -5,6 +5,7 @@ import { appStore } from '@shared/model/app_store/AppStore';
 import {
   createReportDashboardAllotment,
   deleteReportDashboardAllotment,
+  fetchReportDashboardAllotments,
 } from '../api/reportDashboardAllotmentsApi';
 import { localDashboardRepository } from '../api/dashboardRepository';
 import {
@@ -15,7 +16,7 @@ import {
   isDuplicateReportNameError,
   saveReportForEntity,
 } from '../api/savedReportsApi';
-import { packWidgetsIntoLayout } from '../lib/dashboardLayout';
+import { canFitDashboardWidgets, packWidgetsIntoLayout } from '../lib/dashboardLayout';
 import {
   buildAllotmentDefinitionFromWidget,
   buildLayoutFromWidgets,
@@ -61,6 +62,10 @@ function applyLayoutPreference(
   preference: LayoutPreference | undefined,
 ): ReportDashboard {
   if (!preference) return dashboard;
+  // Не применяем слишком маленькую сетку — иначе часть отчётов пропадёт из UI.
+  if (!canFitDashboardWidgets(dashboard.layout, preference.rows, preference.cols)) {
+    return dashboard;
+  }
   const widgets = dashboard.layout.cells.map((cell) => cell.widget);
   return {
     ...dashboard,
@@ -241,6 +246,14 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   },
 
   updateDashboardLayout: async (id, layout) => {
+    const current = get().items.find((item) => item.id === id);
+    if (current && !canFitDashboardWidgets(current.layout, layout.rows, layout.cols)) {
+      set({
+        error:
+          'Нельзя уменьшить сетку: число отчётов больше, чем ячеек в новой раскладке',
+      });
+      return;
+    }
     const preference: LayoutPreference = {
       preset: layout.preset,
       rows: layout.rows,
@@ -262,13 +275,31 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   },
 
   removeCellWidget: async (dashboardId, cellId) => {
-    const current = await localDashboardRepository.getById(dashboardId);
+    // Ячейку берём из стора (id совпадают с UI). getById пересобирает сетку с другими
+    // cell-0/cell-1 — после смены раскладки поиск по cellId ломался и DELETE не уходил.
+    const current = get().items.find((item) => item.id === dashboardId);
     if (!current) return;
     const widget = current.layout.cells.find((cell) => cell.id === cellId)?.widget ?? null;
     set({ error: null });
     try {
       if (widget?.allotmentId != null) {
         await deleteReportDashboardAllotment(widget.allotmentId);
+      } else if (widget?.reportId != null) {
+        // Запасной путь: найти привязку по reportId на бэке.
+        const backendId = parseBackendDashboardId(dashboardId);
+        if (backendId != null) {
+          const remote = await fetchReportDashboardAllotments({
+            page: 0,
+            size: 200,
+            dashboardId: { equals: backendId },
+            reportId: { equals: widget.reportId },
+            isActiveEquals: true,
+          });
+          const allotmentId = remote[0]?.id;
+          if (allotmentId != null) {
+            await deleteReportDashboardAllotment(allotmentId);
+          }
+        }
       }
       // раскладка строится из привязок бэка — достаточно перечитать список
       await get().loadList();

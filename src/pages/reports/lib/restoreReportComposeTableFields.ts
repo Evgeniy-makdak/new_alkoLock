@@ -1,11 +1,6 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
 import {
-  isReportTableFieldLabelAutoQualified,
-  QUALIFIED_LABEL_SEPARATOR,
-  ROOT_ENTITY_LABEL_SEPARATOR,
-} from './buildReportTableFieldOptions';
-import {
   decodeReportFieldAliasForUi,
   extractReportTableFieldLabelLeaf,
 } from './reportSelectedFieldAliases';
@@ -13,29 +8,9 @@ import { buildDuplicateColumnKey } from './reportColumnDuplicate';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 /**
- * Если в alias только изменённый лист («Тип тип тип»), а дефолт был
- * «Отчет по ТС -> Тип» — собираем полный вид для «Текущего состава».
- */
-function mergeAliasLeafIntoQualifiedOptionLabel(
-  aliasUiLabel: string,
-  optionLabel: string,
-): string {
-  const alias = aliasUiLabel.trim();
-  const option = optionLabel.trim();
-  if (!alias || !option) return alias || option;
-  if (isReportTableFieldLabelAutoQualified(alias)) return alias;
-  if (!isReportTableFieldLabelAutoQualified(option)) return alias;
-  const sep = option.includes(ROOT_ENTITY_LABEL_SEPARATOR)
-    ? ROOT_ENTITY_LABEL_SEPARATOR
-    : QUALIFIED_LABEL_SEPARATOR;
-  const idx = option.lastIndexOf(sep);
-  if (idx < 0) return alias;
-  return `${option.slice(0, idx)}${sep}${alias}`;
-}
-
-/**
  * «Текущий состав» при редактировании сформированного отчёта —
  * из body.selectedFields, подписи из columnHeaderLabels / optionLabels.
+ * Пользовательский alias показываем как есть — без дописывания «Сущность ->».
  */
 export function restoreReportComposeTableFieldsFromQuery(
   selectedFields: ReportSelectedFieldPayload[] | undefined,
@@ -60,7 +35,7 @@ export function restoreReportComposeTableFieldsFromQuery(
       : '';
 
     if (occurrence === 1) {
-      // Полная UI-подпись с карандаша (в т.ч. «Сущность -> …») важнее сырого alias-листа.
+      // Снимок с карандаша важнее; иначе alias как есть, без префикса сущности.
       const fromHeaders = (columnHeaderLabels[path] ?? '').trim();
       if (fromHeaders) {
         baseLabelByPath.set(path, fromHeaders);
@@ -68,13 +43,7 @@ export function restoreReportComposeTableFieldsFromQuery(
         continue;
       }
       const fromOption = (optionLabelByPath[path] ?? '').trim();
-      const label =
-        (fromAlias && fromOption
-          ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, fromOption)
-          : '') ||
-        fromAlias ||
-        fromOption ||
-        path;
+      const label = fromAlias || fromOption || path;
       baseLabelByPath.set(path, label);
       result.push({ value: key, label });
       continue;
@@ -94,13 +63,11 @@ export function restoreReportComposeTableFieldsFromQuery(
       : '';
     const isSystemSuffix =
       Boolean(rawAlias) && Boolean(systemEncodedAlias) && rawAlias === systemEncodedAlias;
+    // Ручной alias клона — как есть, без «Сущность ->».
     const label = isSystemSuffix
       ? `${baseLabel}_${occurrence - 1}`
-      : fromAlias
-        ? mergeAliasLeafIntoQualifiedOptionLabel(fromAlias, baseLabel)
-        : baseLabel
-          ? `${baseLabel}_${occurrence - 1}`
-          : key;
+      : fromAlias ||
+        (baseLabel ? `${baseLabel}_${occurrence - 1}` : key);
     result.push({ value: key, label });
   }
 

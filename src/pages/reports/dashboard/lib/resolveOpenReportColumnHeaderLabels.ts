@@ -13,22 +13,23 @@ export function orderWidgetPreviewColumns(
   body: ReportQueryRequest | undefined,
   limit = 8,
 ): string[] {
-  const selectedPaths = (body?.selectedFields ?? [])
+  const selectedFields = body?.selectedFields ?? [];
+  const selectedPaths = selectedFields
     .map((field) => (field.fieldName ?? '').trim())
     .filter(Boolean);
   const contentKeys = content.length
     ? collectReportContentColumnKeys(content)
     : selectedPaths;
-  const orderedKeys = orderReportContentColumnKeys(contentKeys, selectedPaths);
+  // Порядок как в selectedFields: content-ключ часто = alias (rename/дубль).
+  const orderedKeys = orderReportContentColumnKeys(contentKeys, selectedFields);
   const { displayColumnKeys } = planReportCompositeResultColumns(orderedKeys, selectedPaths);
   return displayColumnKeys.slice(0, limit);
 }
 
 /**
  * Подписи колонок на дашборде / при «открыть полный отчёт».
- * Как в «Текущий состав таблицы» и гриде «Отчёты»: полные «Сущность -> поле»,
- * плюс пользовательские переименования из alias (definition) / снимка UI.
- * Обрезку до листа не делаем — она ломала корректные составные подписи.
+ * Снимок UI / alias — как назвал пользователь (без дописывания «Сущность ->»).
+ * Остальные колонки — полные подписи metadata, как в «Текущий состав».
  */
 export async function resolveOpenReportColumnHeaderLabels(
   entityName: string,
@@ -47,8 +48,7 @@ export async function resolveOpenReportColumnHeaderLabels(
     if (trimmed) labels[key] = trimmed;
   }
 
-  // 2) Alias из definition — только если снимка ещё нет (после перечитывания дашборда с бэка).
-  // Снимок «Текущий состав» не затираем: там уже полные «Сущность -> поле» и ручные имена.
+  // 2) Alias из definition — как есть (без «Сущность ->»), если снимка ещё нет.
   for (const field of body.selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
@@ -56,10 +56,11 @@ export async function resolveOpenReportColumnHeaderLabels(
     const fromAlias = decodeReportFieldAliasForUi(alias).trim();
     if (!fromAlias) continue;
     if (!labels[path]?.trim()) labels[path] = fromAlias;
-    if (!labels[alias]?.trim()) labels[alias] = labels[path] || fromAlias;
+    // Ключ ответа = alias: всегда сама подпись alias, не склеенная с path/metadata.
+    if (!labels[alias]?.trim()) labels[alias] = fromAlias;
   }
 
-  // 3) Остальное — полный маппинг как у грида / «Текущий состав» (без обрезки до листа).
+  // 3) Остальное — полный маппинг metadata (без обрезки до листа).
   const resolved = await resolveWidgetColumnHeaderLabels(entityName, body, selectedPaths);
   for (const [key, value] of Object.entries(resolved)) {
     if (labels[key]?.trim()) continue;

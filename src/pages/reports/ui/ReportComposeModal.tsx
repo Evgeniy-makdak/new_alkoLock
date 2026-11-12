@@ -23,11 +23,8 @@ import {
   buildRootReportTableFieldOptions,
   collectReferenceEntitiesFromMetadata,
   findReportTableFieldDefinition,
-  isReportTableFieldLabelAutoQualified,
   mergeAllReportTableFieldOptions,
   reportMetadataHasDefaultSelectedFlags,
-  ROOT_ENTITY_LABEL_SEPARATOR,
-  QUALIFIED_LABEL_SEPARATOR,
 } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
   expandCompositeFieldPath,
@@ -694,27 +691,10 @@ export function ReportComposeModal({
         const opt = optionByKey.get(key);
         const prevLabel = (p.label ?? '').trim();
         const optLabel = (opt?.label ?? '').trim();
-        // Алиас с «карандаша» не затираем дефолтной подписью options
-        // (в т.ч. правки вида «Сущность -> Цвет транспорта !»).
+        // Алиас с «карандаша» не затираем и не дописываем «Сущность ->».
         const keepCustomAlias =
           Boolean(prevLabel) && prevLabel !== key && prevLabel !== optLabel;
-        let label = keepCustomAlias ? prevLabel : optLabel || prevLabel || key;
-        // После restore alias может быть только листом («Тип тип тип») —
-        // вернём префикс «Сущность ->» из дефолтной option-подписи.
-        if (
-          keepCustomAlias &&
-          optLabel &&
-          isReportTableFieldLabelAutoQualified(optLabel) &&
-          !isReportTableFieldLabelAutoQualified(prevLabel)
-        ) {
-          const sep = optLabel.includes(ROOT_ENTITY_LABEL_SEPARATOR)
-            ? ROOT_ENTITY_LABEL_SEPARATOR
-            : QUALIFIED_LABEL_SEPARATOR;
-          const idx = optLabel.lastIndexOf(sep);
-          if (idx >= 0) {
-            label = `${optLabel.slice(0, idx)}${sep}${prevLabel}`;
-          }
-        }
+        const label = keepCustomAlias ? prevLabel : optLabel || prevLabel || key;
         return { value: key, label };
       });
 

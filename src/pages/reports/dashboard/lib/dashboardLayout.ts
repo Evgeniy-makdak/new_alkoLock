@@ -27,6 +27,25 @@ export function createDashboardLayout(
   return { preset: 'custom', rows: safeRows, cols: safeCols, cells: createEmptyCells(safeRows, safeCols) };
 }
 
+/** Сколько отчётов уже размещено в ячейках сетки. */
+export function countDashboardWidgets(layout: DashboardLayout): number {
+  return layout.cells.reduce((count, cell) => (cell.widget ? count + 1 : count), 0);
+}
+
+/**
+ * Можно ли сменить размер сетки, не потеряв уже привязанные отчёты.
+ * Новая сетка должна вмещать все текущие виджеты (rows * cols >= число отчётов).
+ */
+export function canFitDashboardWidgets(
+  layout: DashboardLayout,
+  nextRows: number,
+  nextCols: number,
+): boolean {
+  const rows = Math.max(1, Math.min(6, Math.floor(nextRows) || 1));
+  const cols = Math.max(1, Math.min(6, Math.floor(nextCols) || 1));
+  return countDashboardWidgets(layout) <= rows * cols;
+}
+
 /** Пересоздаёт сетку, сохраняя виджеты по координатам (row,col), где возможно. */
 export function resizeDashboardLayout(
   layout: DashboardLayout,

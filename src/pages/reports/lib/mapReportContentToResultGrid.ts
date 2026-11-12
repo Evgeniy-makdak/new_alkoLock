@@ -274,11 +274,10 @@ export function mapReportContentToResultGrid(
   }
 
   const contentKeys = allContentKeys.filter((key) => !hiddenSet.has(key));
+  // Порядок = selectedFields; ключ в content — alias при переименовании/дубле.
   const orderedKeys = orderReportContentColumnKeys(
     contentKeys,
-    selectedFieldsForColumnOrder
-      ?.map((f) => f.fieldName)
-      .filter((name) => name && !hiddenSet.has(name)),
+    selectedFieldsForColumnOrder,
   );
   const { displayColumnKeys: rawColumnKeys, groups: compositeGroups } =
     planReportCompositeResultColumns(

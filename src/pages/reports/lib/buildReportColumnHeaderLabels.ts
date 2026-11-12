@@ -41,10 +41,7 @@ export function buildReportColumnHeaderLabels(
   const contentKeys = content.length
     ? collectReportContentColumnKeys(content)
     : (body?.selectedFields ?? []).map((f) => f.fieldName).filter(Boolean);
-  const orderedKeys = orderReportContentColumnKeys(
-    contentKeys,
-    body?.selectedFields?.map((f) => f.fieldName),
-  );
+  const orderedKeys = orderReportContentColumnKeys(contentKeys, body?.selectedFields);
   const { displayColumnKeys, groups } = planReportCompositeResultColumns(
     orderedKeys,
     body?.selectedFields?.map((f) => f.fieldName),
