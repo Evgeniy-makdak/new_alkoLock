@@ -62,10 +62,19 @@ export function DashboardSavedReportsDialog({ open, onSelect, onClose }: Props) 
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return reports;
-    return reports.filter((report) =>
-      `${report.name ?? ''} ${resolveReportEntityName(report)}`.toLowerCase().includes(needle),
-    );
+    const list = !needle
+      ? reports
+      : reports.filter((report) =>
+          `${report.name ?? ''} ${resolveReportEntityName(report)}`
+            .toLowerCase()
+            .includes(needle),
+        );
+    // ASC по наименованию — только отображение в этой модалке.
+    return [...list].sort((a, b) => {
+      const nameA = (a.name || resolveReportEntityName(a) || '').trim();
+      const nameB = (b.name || resolveReportEntityName(b) || '').trim();
+      return nameA.localeCompare(nameB, 'ru', { sensitivity: 'base' });
+    });
   }, [reports, query]);
 
   const handleSelect = async (reportId: number) => {
