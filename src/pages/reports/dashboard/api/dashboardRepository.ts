@@ -20,6 +20,7 @@ import {
   fetchDashboardById,
   fetchDashboards,
   updateDashboard as updateDashboardRequest,
+  type DashboardsListSortDirection,
 } from './dashboardsApi';
 import {
   deleteReportDashboardAllotment,
@@ -27,15 +28,11 @@ import {
 } from './reportDashboardAllotmentsApi';
 
 export type DashboardRepository = {
-  list: () => Promise<ReportDashboard[]>;
+  list: (sortDirection?: DashboardsListSortDirection) => Promise<ReportDashboard[]>;
   getById: (id: string) => Promise<ReportDashboard | null>;
   save: (dashboard: ReportDashboard) => Promise<ReportDashboard>;
   remove: (id: string) => Promise<void>;
 };
-
-function sortByUpdatedAt(items: ReportDashboard[]): ReportDashboard[] {
-  return [...items].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-}
 
 /** Раскладка (из привязок отчётов) и права дашборда — только из ответов бэка. */
 async function hydrateDashboard(dto: BackendDashboardDto): Promise<ReportDashboard> {
@@ -106,10 +103,10 @@ async function removeDashboardAllotments(dashboard: ReportDashboard): Promise<vo
  * - dashboard-accesses: права пользователей.
  */
 export const localDashboardRepository: DashboardRepository = {
-  async list() {
-    const remote = await fetchDashboards();
-    const items = await Promise.all(remote.map((dto) => hydrateDashboard(dto)));
-    return sortByUpdatedAt(items);
+  async list(sortDirection: DashboardsListSortDirection = 'ASC') {
+    const remote = await fetchDashboards(sortDirection);
+    // Порядок как в ответе бэка — без пересортировки на фронте.
+    return Promise.all(remote.map((dto) => hydrateDashboard(dto)));
   },
 
   async getById(id) {

@@ -152,6 +152,13 @@ type DashboardState = {
    * обновить definition на бэке и локальные виджеты — иначе дашборд показывает старую версию.
    */
   syncOpenedFullReportToDashboards: (ctx: ReportQueryContext) => Promise<void>;
+  /**
+   * Сортировка списка дашбордов по name на бэке: ASC → DESC → null (без &sort=).
+   * По умолчанию ASC — как в остальных таблицах приложения.
+   */
+  listNameSort: 'ASC' | 'DESC' | null;
+  /** Цикл ASC → DESC → сброс (null), затем снова ASC. */
+  cycleListNameSort: () => void;
   loadList: () => Promise<void>;
   openCreateEditor: () => void;
   openEditEditor: (id: string) => void;
@@ -198,6 +205,16 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       set({ selectedId: id, editorOpen: true });
     }
     set({ fullReportReturnDashboardId: null, workspaceTab: 'dashboards' });
+  },
+
+  listNameSort: 'ASC',
+  cycleListNameSort: () => {
+    const current = get().listNameSort;
+    // Как EmailTemplates / заголовки таблиц: ASC → DESC → сброс.
+    const next: 'ASC' | 'DESC' | null =
+      current === 'ASC' ? 'DESC' : current === 'DESC' ? null : 'ASC';
+    set({ listNameSort: next });
+    void get().loadList();
   },
 
   syncOpenedFullReportToDashboards: async (ctx) => {
@@ -309,7 +326,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const user = currentUser();
-      const all = await localDashboardRepository.list();
+      const all = await localDashboardRepository.list(get().listNameSort);
       const filtered = user ? all.filter((item) => canAccess(item, user.id)) : all;
       const { layoutPreferences } = get();
       const items = filtered.map((item) => applyLayoutPreference(item, layoutPreferences[item.id]));

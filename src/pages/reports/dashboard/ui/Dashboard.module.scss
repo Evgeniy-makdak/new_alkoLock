@@ -13,6 +13,22 @@
   gap: 12px;
 }
 
+/* Заголовок списка + стрелка сортировки (паттерн EventsHistory / заголовки таблиц). */
+.listTitleSort {
+  cursor: pointer;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  user-select: none;
+}
+
+.listTitleSortIcon {
+  display: inline-block;
+  position: absolute;
+  margin-left: 10px;
+  left: 100%;
+}
+
 .list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

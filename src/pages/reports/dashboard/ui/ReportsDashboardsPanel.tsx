@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
+import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import {
@@ -11,7 +12,9 @@ import {
   DialogContent,
   DialogTitle,
   TextField,
+  Tooltip,
   Typography,
+  useTheme,
 } from '@mui/material';
 
 import { Button, ButtonsType } from '@shared/ui/button';
@@ -25,19 +28,14 @@ import styles from './Dashboard.module.scss';
 
 export function ReportsDashboardsPanel() {
   const { t } = useTranslation();
+  const theme = useTheme();
   const items = dashboardStore((s) => s.items);
-  // Отображение списка — по возрастанию названия; порядок в store не меняем.
-  const sortedItems = useMemo(
-    () =>
-      [...items].sort((a, b) =>
-        a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }),
-      ),
-    [items],
-  );
   const loading = dashboardStore((s) => s.loading);
   const error = dashboardStore((s) => s.error);
   const editorOpen = dashboardStore((s) => s.editorOpen);
   const selectedId = dashboardStore((s) => s.selectedId);
+  const listNameSort = dashboardStore((s) => s.listNameSort);
+  const cycleListNameSort = dashboardStore((s) => s.cycleListNameSort);
   const loadList = dashboardStore((s) => s.loadList);
   const openEditEditor = dashboardStore((s) => s.openEditEditor);
   const closeEditor = dashboardStore((s) => s.closeEditor);
@@ -51,6 +49,8 @@ export function ReportsDashboardsPanel() {
   const [creating, setCreating] = useState(false);
   const [dashboardToDelete, setDashboardToDelete] = useState<ReportDashboard | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Как в EventsHistory: стрелка без активной сортировки — только при наведении.
+  const [sortHovered, setSortHovered] = useState(false);
 
   useEffect(() => {
     void loadList();
@@ -73,11 +73,38 @@ export function ReportsDashboardsPanel() {
     );
   }
 
+  const sortActive = listNameSort === 'ASC' || listNameSort === 'DESC';
+
   return (
     <div className={styles.panel}>
       <div className={styles.toolbar}>
-        <Typography variant="h6" component="h2">
+        <Typography
+          variant="h6"
+          component="h2"
+          className={styles.listTitleSort}
+          onClick={() => cycleListNameSort()}
+          onMouseEnter={() => setSortHovered(true)}
+          onMouseLeave={() => setSortHovered(false)}>
           {t('reports.dashboard.listTitle', 'Дашборды')}
+          <span className={styles.listTitleSortIcon}>
+            <Tooltip title={t('common.sortTooltip')}>
+              <span style={{ display: 'inline-flex' }}>
+                {(sortActive || sortHovered) && (
+                  <ArrowUpwardIcon
+                    sx={{
+                      fontSize: '1rem',
+                      color: sortActive
+                        ? theme.palette.text.primary
+                        : theme.palette.text.secondary,
+                      transform:
+                        listNameSort === 'DESC' ? 'rotate(180deg)' : 'rotate(0deg)',
+                      opacity: sortActive ? 1 : 0.5,
+                    }}
+                  />
+                )}
+              </span>
+            </Tooltip>
+          </span>
         </Typography>
         <Button
           typeButton={ButtonsType.action}
@@ -106,7 +133,7 @@ export function ReportsDashboardsPanel() {
         </div>
       ) : (
         <div className={styles.list}>
-          {sortedItems.map((item) => (
+          {items.map((item) => (
             <article key={item.id} className={styles.card}>
               <h3 className={styles.cardTitle}>{item.name}</h3>
               <p className={styles.cardMeta}>

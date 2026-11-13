@@ -31,10 +31,19 @@ function asDashboardList(
   return [];
 }
 
-/** GET /api/v1/dashboards — дашборды, доступные пользователю. */
-export async function fetchDashboards(): Promise<BackendDashboardDto[]> {
+/** Направление сортировки списка дашбордов по name (null — без &sort=). */
+export type DashboardsListSortDirection = 'ASC' | 'DESC' | null;
+
+/** GET /api/v1/dashboards — дашборды, доступные пользователю (порядок — с бэка). */
+export async function fetchDashboards(
+  sortDirection: DashboardsListSortDirection = 'ASC',
+): Promise<BackendDashboardDto[]> {
+  const sortQuery =
+    sortDirection === 'ASC' || sortDirection === 'DESC'
+      ? `&sort=name,${sortDirection}`
+      : '';
   const res = await getQuery<BackendDashboardDto[] | { content?: BackendDashboardDto[] }>({
-    url: `${BASE}?page=0&size=${DASHBOARDS_PAGE_SIZE}`,
+    url: `${BASE}?page=0&size=${DASHBOARDS_PAGE_SIZE}${sortQuery}`,
   });
   return asDashboardList(unwrap(res));
 }
