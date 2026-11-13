@@ -171,6 +171,8 @@ export function ReportComposeModal({
   const snapshotRef = useRef<ReportsComposeSnapshot | null>(null);
   const confirmedRef = useRef(false);
   const savedReportIdRef = useRef<number | undefined>(undefined);
+  const savedReportEntityNameRef = useRef<string | undefined>(undefined);
+  const savedDashboardIdRef = useRef<string | undefined>(undefined);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const hasFormedReport = reportGenerationStore((s) => Boolean(s.lastResult));
@@ -215,10 +217,14 @@ export function ReportComposeModal({
     if (!open) return;
     confirmedRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
-    savedReportIdRef.current =
+    const savedReportContext = reportGenerationStore.getState().queryContext;
+    savedReportIdRef.current = mode === 'edit' ? savedReportContext?.savedReportId : undefined;
+    savedReportEntityNameRef.current =
       mode === 'edit'
-        ? reportGenerationStore.getState().queryContext?.savedReportId
+        ? savedReportContext?.savedReportEntityName ?? savedReportContext?.entityName
         : undefined;
+    savedDashboardIdRef.current =
+      mode === 'edit' ? savedReportContext?.savedDashboardId : undefined;
     if (mode === 'edit') {
       // До фиксации baseline кнопка неактивна (isEditPristine при null).
       editBaselineFingerprintRef.current = null;
@@ -1074,6 +1080,10 @@ export function ReportComposeModal({
       // теряется связь с отчётом на дашборде и виджет остаётся со старой definition.
       const previousSavedReportId =
         reportGenerationStore.getState().queryContext?.savedReportId ?? savedReportIdRef.current;
+      const previousSavedReportEntityName =
+        reportGenerationStore.getState().queryContext?.savedReportEntityName ??
+        reportGenerationStore.getState().queryContext?.entityName ??
+        savedReportEntityNameRef.current;
       const columnHeaderLabels = buildReportColumnHeaderLabelsFromComposeFields(
         resolveComposeTableFieldsSelection(),
         bodyWithGroup.selectedFields,
@@ -1104,6 +1114,13 @@ export function ReportComposeModal({
         composeHavingLogic: composeHavingLogicOperator,
         chartSpec: reportsStore.getState().chartSpec,
         savedReportId: previousSavedReportId,
+        savedReportEntityName:
+          previousSavedReportId != null ? previousSavedReportEntityName : undefined,
+        savedDashboardId:
+          previousSavedReportId != null
+            ? reportGenerationStore.getState().queryContext?.savedDashboardId ??
+              savedDashboardIdRef.current
+            : undefined,
       });
       reportGenerationStore.getState().completeSuccess(result);
       onReportFormed?.();

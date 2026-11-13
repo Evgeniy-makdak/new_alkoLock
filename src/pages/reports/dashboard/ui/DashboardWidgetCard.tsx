@@ -216,6 +216,7 @@ export function DashboardWidgetCard({
         binding.body,
         binding.columnHeaderLabels,
       );
+      const originDashboardId = dashboardStore.getState().selectedId;
       // Compose-store: сущность/фильтры/состав — иначе «Редактировать» как пустой create.
       await hydrateReportsComposeFromOpenedQuery({
         entityName: binding.entityName,
@@ -230,6 +231,8 @@ export function DashboardWidgetCard({
         branchOffices: binding.branchOffices,
         chartSpec: viewMode === 'chart' ? chartSpec : undefined,
         savedReportId: binding.reportId,
+        savedReportEntityName: binding.entityName,
+        savedDashboardId: originDashboardId ?? undefined,
       });
       reportsStore.getState().setViewMode(viewMode);
       if (viewMode === 'chart') {
@@ -237,7 +240,6 @@ export function DashboardWidgetCard({
       }
       void reportGenerationStore.getState().loadReportPage(0, DEFAULT_REPORT_PAGE_SIZE);
       // Запомнить родительский дашборд — стрелка «назад» на вкладке «Отчёты».
-      const originDashboardId = dashboardStore.getState().selectedId;
       if (originDashboardId) {
         dashboardStore.getState().setFullReportReturnDashboardId(originDashboardId);
       }

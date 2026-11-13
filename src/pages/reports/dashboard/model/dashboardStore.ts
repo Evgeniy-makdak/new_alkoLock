@@ -3,7 +3,10 @@ import { enqueueSnackbar } from 'notistack';
 
 import { appStore } from '@shared/model/app_store/AppStore';
 
-import type { ReportQueryContext } from '../../model/reportGenerationStore';
+import {
+  reportGenerationStore,
+  type ReportQueryContext,
+} from '../../model/reportGenerationStore';
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
 import {
@@ -17,6 +20,7 @@ import {
   revokeDashboardAccess,
 } from '../api/dashboardAccessesApi';
 import {
+  deleteSavedReport,
   fetchSavedReportById,
   isDuplicateReportNameError,
   saveReportForEntity,
@@ -39,6 +43,7 @@ import type {
   DashboardLayoutPreset,
   DashboardWidgetBinding,
   ReportDashboard,
+  ReportDashboardAllotment,
   ReportsWorkspaceTab,
 } from '../types';
 
@@ -66,6 +71,40 @@ function patchWidgetsByReportId(
       }),
     },
   }));
+}
+
+function replaceWidgetsByReportIdOnDashboard(
+  items: ReportDashboard[],
+  dashboardId: string,
+  previousReportId: number,
+  nextReportId: number,
+  allotmentIds: Map<number, number>,
+  patch: Partial<DashboardWidgetBinding>,
+): ReportDashboard[] {
+  return items.map((dashboard) => {
+    if (dashboard.id !== dashboardId) return dashboard;
+    return {
+      ...dashboard,
+      layout: {
+        ...dashboard.layout,
+        cells: dashboard.layout.cells.map((cell) => {
+          const widget = cell.widget;
+          if (widget?.reportId !== previousReportId) return cell;
+          const nextAllotmentId =
+            widget.allotmentId == null ? undefined : allotmentIds.get(widget.allotmentId);
+          return {
+            ...cell,
+            widget: {
+              ...widget,
+              ...patch,
+              reportId: nextReportId,
+              ...(nextAllotmentId != null ? { allotmentId: nextAllotmentId } : {}),
+            },
+          };
+        }),
+      },
+    };
+  });
 }
 
 function currentUser(): { id: number; label: string } | null {
@@ -239,22 +278,6 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       chartSpec: preferredViewMode === 'chart' ? ctx.chartSpec : undefined,
     };
 
-    // Сразу локально — виджет перезапросит данные при возврате на дашборд.
-    set((state) => ({
-      items: patchWidgetsByReportId(state.items, reportId, widgetPatch),
-      ...(ctx.columnHeaderLabels
-        ? {
-            columnHeaderLabelSnapshots: {
-              ...state.columnHeaderLabelSnapshots,
-              [String(reportId)]: {
-                selectedFields: ctx.body.selectedFields.map((field) => ({ ...field })),
-                columnHeaderLabels: { ...ctx.columnHeaderLabels },
-              },
-            },
-          }
-        : {}),
-    }));
-
     let name = '';
     for (const dashboard of get().items) {
       for (const cell of dashboard.layout.cells) {
@@ -276,8 +299,13 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
         typeof (existing.definition as { entityName?: unknown }).entityName === 'string'
           ? String((existing.definition as { entityName?: string }).entityName).trim()
           : '';
-      const entityName =
-        ctx.entityName?.trim() || existing.entityName?.trim() || existingDefinitionEntity;
+      const existingEntityName =
+        ctx.savedReportEntityName?.trim() ||
+        existing.entityName?.trim() ||
+        existingDefinitionEntity;
+      const entityName = ctx.entityName?.trim() || existingEntityName;
+      const sourceDashboardId =
+        ctx.savedDashboardId ?? get().fullReportReturnDashboardId ?? undefined;
       // pageableDto обязателен в PUT definition; без sort → 500 на бэке.
       const existingPageable =
         existing.definition &&
@@ -293,24 +321,167 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
             sort: Array.isArray(existingPageable.sort) ? existingPageable.sort : [],
           }
         : { limit: 25, offset: 0, sort: [] as [] };
+      const definitionBody = {
+        ...ctx.body,
+        // Пустые values у фильтров на save не отправляем.
+        filters: (ctx.body.filters ?? []).filter((filter) => {
+          if (!Array.isArray(filter.values)) return true;
+          if (!filter.values.length) return false;
+          return filter.values.every((value) => value !== '' && value != null);
+        }),
+      };
       const definition = {
         ...buildAllotmentDefinitionFromWidget({
           title: name,
           entityName,
-          body: {
-            ...ctx.body,
-            // Пустые values у фильтров на save не отправляем.
-            filters: (ctx.body.filters ?? []).filter((filter) => {
-              if (!Array.isArray(filter.values)) return true;
-              if (!filter.values.length) return false;
-              return filter.values.every((value) => value !== '' && value != null);
-            }),
-          },
+          body: definitionBody,
           preferredViewMode,
         }),
         entityName,
         pageableDto,
       };
+
+      if (existingEntityName && entityName !== existingEntityName) {
+        if (!sourceDashboardId) {
+          throw new Error('Не удалось определить исходный дашборд для перепривязки отчёта');
+        }
+        const backendDashboardId = parseBackendDashboardId(sourceDashboardId);
+        if (backendDashboardId == null) {
+          throw new Error('Не удалось определить исходный дашборд для перепривязки отчёта');
+        }
+        const oldAllotments = await fetchReportDashboardAllotments({
+          page: 0,
+          size: 500,
+          reportId: { equals: reportId },
+          dashboardId: { equals: backendDashboardId },
+          isActiveEquals: true,
+        });
+        if (!oldAllotments.length) {
+          throw new Error('Не найдены активные привязки исходного отчёта к дашборду');
+        }
+        const dashboardIds = oldAllotments.map((allotment) => allotment.dashboard?.id);
+        if (dashboardIds.some((id) => id == null || !Number.isFinite(id))) {
+          throw new Error('Не удалось определить дашборд для переноса отчёта');
+        }
+
+        const saved = await saveReportForEntity(entityName, {
+          name,
+          visibility: existing.visibility || 'private',
+          entityName,
+          definition,
+        });
+        const createdAllotments: ReportDashboardAllotment[] = [];
+        const deletedAllotments: ReportDashboardAllotment[] = [];
+        try {
+          for (const dashboardId of dashboardIds) {
+            const created = await createReportDashboardAllotment({
+              reportId: saved.id,
+              dashboardId: dashboardId!,
+            });
+            createdAllotments.push(...created);
+          }
+          for (const allotment of oldAllotments) {
+            await deleteReportDashboardAllotment(allotment.id);
+            deletedAllotments.push(allotment);
+          }
+        } catch (error) {
+          const rollbackErrors: string[] = [];
+          for (const allotment of deletedAllotments) {
+            const dashboardId = allotment.dashboard?.id;
+            if (dashboardId == null) continue;
+            try {
+              await createReportDashboardAllotment({ reportId, dashboardId });
+            } catch (rollbackError) {
+              rollbackErrors.push(errorMessage(rollbackError, 'не удалось восстановить привязку'));
+            }
+          }
+          for (const allotment of createdAllotments) {
+            try {
+              await deleteReportDashboardAllotment(allotment.id);
+            } catch (rollbackError) {
+              rollbackErrors.push(errorMessage(rollbackError, 'не удалось удалить новую привязку'));
+            }
+          }
+          try {
+            await deleteSavedReport(saved.id);
+          } catch (rollbackError) {
+            rollbackErrors.push(errorMessage(rollbackError, 'не удалось удалить новый отчёт'));
+          }
+          if (rollbackErrors.length) {
+            throw new Error(
+              `${errorMessage(error, 'Не удалось перепривязать отчёт')}; ` +
+                `ошибка отката: ${rollbackErrors.join('; ')}`,
+            );
+          }
+          throw error;
+        }
+
+        const allotmentIdMap = new Map<number, number>();
+        const createdByDashboard = new Map<number, ReportDashboardAllotment[]>();
+        for (const allotment of createdAllotments) {
+          const dashboardId = allotment.dashboard?.id;
+          if (dashboardId == null) continue;
+          const matching = createdByDashboard.get(dashboardId) ?? [];
+          matching.push(allotment);
+          createdByDashboard.set(dashboardId, matching);
+        }
+        oldAllotments.forEach((oldAllotment, index) => {
+          const dashboardId = oldAllotment.dashboard?.id;
+          const newAllotment =
+            (dashboardId == null ? undefined : createdByDashboard.get(dashboardId)?.shift()) ??
+            createdAllotments[index];
+          if (newAllotment?.id != null) {
+            allotmentIdMap.set(oldAllotment.id, newAllotment.id);
+          }
+        });
+        set((state) => ({
+          items: replaceWidgetsByReportIdOnDashboard(
+            state.items,
+            sourceDashboardId,
+            reportId,
+            saved.id,
+            allotmentIdMap,
+            widgetPatch,
+          ),
+          ...(ctx.columnHeaderLabels
+            ? {
+                columnHeaderLabelSnapshots: {
+                  ...state.columnHeaderLabelSnapshots,
+                  [String(saved.id)]: {
+                    selectedFields: ctx.body.selectedFields.map((field) => ({ ...field })),
+                    columnHeaderLabels: { ...ctx.columnHeaderLabels },
+                  },
+                },
+              }
+            : {}),
+        }));
+        const currentContext = reportGenerationStore.getState().queryContext;
+        if (currentContext) {
+          reportGenerationStore.getState().setQueryContext({
+            ...currentContext,
+            savedReportId: saved.id,
+            savedReportEntityName: entityName,
+          });
+        }
+        await get().loadList();
+        return;
+      }
+
+      // Сразу локально — виджет перезапросит данные при возврате на дашборд.
+      set((state) => ({
+        items: patchWidgetsByReportId(state.items, reportId, widgetPatch),
+        ...(ctx.columnHeaderLabels
+          ? {
+              columnHeaderLabelSnapshots: {
+                ...state.columnHeaderLabelSnapshots,
+                [String(reportId)]: {
+                  selectedFields: ctx.body.selectedFields.map((field) => ({ ...field })),
+                  columnHeaderLabels: { ...ctx.columnHeaderLabels },
+                },
+              },
+            }
+          : {}),
+      }));
       // PUT только через dataForUpdate (см. updateSavedReport) — плоский body → 400.
       await updateSavedReport(reportId, {
         name,
