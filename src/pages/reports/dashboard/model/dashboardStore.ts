@@ -153,7 +153,7 @@ type DashboardState = {
    */
   syncOpenedFullReportToDashboards: (ctx: ReportQueryContext) => Promise<void>;
   /**
-   * Сортировка списка дашбордов по name на бэке: ASC → DESC → null (без &sort=).
+   * Сортировка списка дашбордов по id на бэке: ASC → DESC → null (без &sort=).
    * По умолчанию ASC — как в остальных таблицах приложения.
    */
   listNameSort: 'ASC' | 'DESC' | null;
