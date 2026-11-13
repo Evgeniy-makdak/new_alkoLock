@@ -1,10 +1,14 @@
 import {
   collectReportContentColumnKeys,
+  isReportTableFieldLabelAutoQualified,
   orderReportContentColumnKeys,
 } from '../../lib/buildReportTableFieldOptions';
 import { buildDuplicateColumnKey } from '../../lib/reportColumnDuplicate';
 import { planReportCompositeResultColumns } from '../../lib/reportEntityCompositeFields';
-import { decodeReportFieldAliasForUi } from '../../lib/reportSelectedFieldAliases';
+import {
+  decodeReportFieldAliasForUi,
+  extractReportTableFieldLabelLeaf,
+} from '../../lib/reportSelectedFieldAliases';
 import type {
   ReportQueryRequest,
   ReportSelectedFieldPayload,
@@ -117,17 +121,21 @@ export async function resolveOpenReportColumnHeaderLabels(
     pathOccurrenceTotal.set(path, (pathOccurrenceTotal.get(path) ?? 0) + 1);
   }
 
-  // 2) Alias из definition — как назвал пользователь (в т.ч. лист без «Сущность ->»).
-  // Одиночный path: alias поверх снимка (не склеивать базовую сущность).
-  // Path с клонами: не затирать labels[path] подписью клона — оригинал и «#N» раздельно.
+  // 2) Alias из definition — только если ключа ещё нет в снимке.
+  // Не затираем полные «Сущность -> …_1» decode(alias)=листом; path при клонах не трогаем.
   for (const field of selectedFields) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
     if (!path || !alias) continue;
     const fromAlias = decodeReportFieldAliasForUi(alias).trim();
     if (!fromAlias) continue;
-    labels[alias] = fromAlias;
-    if ((pathOccurrenceTotal.get(path) ?? 0) <= 1) {
+    if (!(labels[alias] ?? '').trim()) {
+      labels[alias] = fromAlias;
+    }
+    if (
+      (pathOccurrenceTotal.get(path) ?? 0) <= 1 &&
+      !(labels[path] ?? '').trim()
+    ) {
       labels[path] = fromAlias;
     }
   }
@@ -138,6 +146,31 @@ export async function resolveOpenReportColumnHeaderLabels(
     if (labels[key]?.trim()) continue;
     const trimmed = (value ?? '').trim();
     if (trimmed) labels[key] = trimmed;
+  }
+
+  // 3b) Системный клон: alias на бэке = «лист_N» → UI «Сущность -> лист_N»
+  // (как restoreReportComposeTableFields), не оставлять голый «Результат_1».
+  const occurrenceByPath = new Map<string, number>();
+  for (const field of selectedFields) {
+    const path = (field.fieldName ?? '').trim();
+    const alias = (field.alias ?? '').trim();
+    if (!path) continue;
+    const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
+    occurrenceByPath.set(path, occurrence);
+    if (occurrence <= 1 || !alias) continue;
+
+    const baseFull = (labels[path] ?? '').trim();
+    if (!baseFull || !isReportTableFieldLabelAutoQualified(baseFull)) continue;
+    const baseLeaf = extractReportTableFieldLabelLeaf(baseFull) || baseFull;
+    const systemEncoded = `${baseLeaf.replace(/\s+/g, '_')}_${occurrence - 1}`;
+    if (alias !== systemEncoded) continue;
+
+    const fullCloneLabel = `${baseFull}_${occurrence - 1}`;
+    labels[alias] = fullCloneLabel;
+    const dupKey = buildDuplicateColumnKey(path, occurrence);
+    if (!(labels[dupKey] ?? '').trim()) {
+      labels[dupKey] = fullCloneLabel;
+    }
   }
 
   // 4) Порядок ключей = selectedFields (+ «field#N» для клонов) — openFullReport.

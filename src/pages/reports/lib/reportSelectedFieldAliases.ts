@@ -2,7 +2,10 @@ import i18n from 'i18next';
 
 import type { Values } from '@shared/ui/search_multiple_select';
 
-import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
+import {
+  buildDuplicateColumnKey,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
 
 import {
   isReportTableFieldLabelAutoQualified,
@@ -155,17 +158,29 @@ export function shouldEmitReportFieldAlias(
 /**
  * Подписи колонок для грида по alias из POST.
  * Значения — всегда UI-форма с пробелами; ключи — fieldName и сырой alias ответа.
+ *
+ * При клонах несколько selectedFields делят один fieldName — НЕ пишем alias на
+ * fieldName: иначе оригинал получает подпись клона («Результат_1»).
  */
 export function buildReportColumnAliasMap(
   selectedFields: ReportSelectedFieldPayload[] | undefined,
 ): Map<string, string> {
   const map = new Map<string, string>();
+  const pathCounts = new Map<string, number>();
+  for (const field of selectedFields ?? []) {
+    const path = (field.fieldName ?? '').trim();
+    if (!path) continue;
+    pathCounts.set(path, (pathCounts.get(path) ?? 0) + 1);
+  }
   for (const field of selectedFields ?? []) {
     const alias = field.alias?.trim();
     if (!alias) continue;
+    const path = (field.fieldName ?? '').trim();
     const uiLabel = decodeReportFieldAliasForUi(alias);
-    map.set(field.fieldName, uiLabel);
     map.set(alias, uiLabel);
+    if (path && (pathCounts.get(path) ?? 0) <= 1) {
+      map.set(path, uiLabel);
+    }
   }
   return map;
 }
@@ -185,8 +200,8 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     if (!path || !label) continue;
     labels[path] = label;
   }
-  // Алиас → подпись строки состава. Парим selectedFields с UI-строками по порядку
-  // того же base path (клон «#2» может стоять выше оригинала — не occurrence→bare).
+  // Алиас → подпись строки состава. Сопоставляем по вхождению path / ключу «field#N»,
+  // а не «первый оставшийся base» — иначе alias клона получает подпись оригинала (без _1).
   const remainingUi = tableFields
     .map((item) => ({
       key: String(item.value ?? '').trim(),
@@ -195,19 +210,31 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     }))
     .filter((row) => row.key);
 
+  const occurrenceByPath = new Map<string, number>();
   for (const field of selectedFields ?? []) {
     const path = (field.fieldName ?? '').trim();
     if (!path) continue;
     const alias = (field.alias ?? '').trim();
+    const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
+    occurrenceByPath.set(path, occurrence);
     if (!alias) continue;
 
-    const uiIdx = remainingUi.findIndex(
-      (row) => row.base === path || row.key === path || row.base === stripDuplicateColumnSuffix(path),
-    );
+    const wantKey =
+      occurrence > 1 ? buildDuplicateColumnKey(path, occurrence) : path;
+    let uiIdx = remainingUi.findIndex((row) => row.key === wantKey);
+    if (uiIdx < 0) {
+      uiIdx = remainingUi.findIndex(
+        (row) =>
+          row.base === path ||
+          row.key === path ||
+          row.base === stripDuplicateColumnSuffix(path),
+      );
+    }
     const uiRow = uiIdx >= 0 ? remainingUi.splice(uiIdx, 1)[0] : undefined;
     const uiLabel =
       (uiRow?.label || '').trim() ||
       (uiRow?.key ? (labels[uiRow.key] ?? '').trim() : '') ||
+      (labels[wantKey] ?? '').trim() ||
       (labels[path] ?? '').trim() ||
       Object.entries(labels).find(([key]) => key.includes('__composite'))?.[1] ||
       decodeReportFieldAliasForUi(alias);
