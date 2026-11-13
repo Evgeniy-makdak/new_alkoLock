@@ -200,8 +200,7 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     if (!path || !label) continue;
     labels[path] = label;
   }
-  // Алиас → подпись строки состава. Сопоставляем по вхождению path / ключу «field#N»,
-  // а не «первый оставшийся base» — иначе alias клона получает подпись оригинала (без _1).
+  // selectedFields создаются в порядке состава; «#N» — ключ клона, не его позиция.
   const remainingUi = tableFields
     .map((item) => ({
       key: String(item.value ?? '').trim(),
@@ -217,11 +216,12 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
     const alias = (field.alias ?? '').trim();
     const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
     occurrenceByPath.set(path, occurrence);
-    if (!alias) continue;
 
-    const wantKey =
-      occurrence > 1 ? buildDuplicateColumnKey(path, occurrence) : path;
-    let uiIdx = remainingUi.findIndex((row) => row.key === wantKey);
+    const wantKey = occurrence > 1 ? buildDuplicateColumnKey(path, occurrence) : path;
+    let uiIdx = remainingUi.findIndex((row) => row.base === path);
+    if (uiIdx < 0) {
+      uiIdx = remainingUi.findIndex((row) => row.key === wantKey);
+    }
     if (uiIdx < 0) {
       uiIdx = remainingUi.findIndex(
         (row) =>
@@ -231,6 +231,7 @@ export function buildReportColumnHeaderLabelsFromComposeFields(
       );
     }
     const uiRow = uiIdx >= 0 ? remainingUi.splice(uiIdx, 1)[0] : undefined;
+    if (!alias) continue;
     const uiLabel =
       (uiRow?.label || '').trim() ||
       (uiRow?.key ? (labels[uiRow.key] ?? '').trim() : '') ||

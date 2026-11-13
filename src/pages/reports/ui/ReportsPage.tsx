@@ -73,6 +73,7 @@ export function ReportsPage() {
   const lastResult = reportGenerationStore((s) => s.lastResult);
   const [composeModalOpen, setComposeModalOpen] = useState(false);
   const [composeModalMode, setComposeModalMode] = useState<ReportComposeModalMode>('create');
+  const isEditingReport = composeModalOpen && composeModalMode === 'edit';
   const [aiComposeOpen, setAiComposeOpen] = useState(false);
   const [saveFileDialogOpen, setSaveFileDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>('CSV');
@@ -291,15 +292,17 @@ export function ReportsPage() {
                       {t('reports.aiComposeOpen')}
                     </MuiButton>
                   ) : null}
-                  <MuiButton
-                    variant="contained"
-                    size="small"
-                    startIcon={<AddIcon />}
-                    disabled={isGenerating}
-                    onClick={openComposeModalForCreate}
-                    sx={createReportButtonSx}>
-                    {t('reports.createNewReport')}
-                  </MuiButton>
+                  {!isEditingReport ? (
+                    <MuiButton
+                      variant="contained"
+                      size="small"
+                      startIcon={<AddIcon />}
+                      disabled={isGenerating}
+                      onClick={openComposeModalForCreate}
+                      sx={createReportButtonSx}>
+                      {t('reports.createNewReport')}
+                    </MuiButton>
+                  ) : null}
                   <ResetFilters reset={handleResetFilters} />
                   <Refetch
                     onClick={handleRefreshReport}

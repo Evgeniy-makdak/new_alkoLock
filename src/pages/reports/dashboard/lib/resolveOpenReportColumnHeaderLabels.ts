@@ -3,7 +3,11 @@ import {
   isReportTableFieldLabelAutoQualified,
   orderReportContentColumnKeys,
 } from '../../lib/buildReportTableFieldOptions';
-import { buildDuplicateColumnKey } from '../../lib/reportColumnDuplicate';
+import {
+  buildDuplicateColumnKey,
+  isDuplicateColumnKey,
+  stripDuplicateColumnSuffix,
+} from '../../lib/reportColumnDuplicate';
 import { planReportCompositeResultColumns } from '../../lib/reportEntityCompositeFields';
 import {
   decodeReportFieldAliasForUi,
@@ -42,12 +46,32 @@ export function orderWidgetPreviewColumns(
  * «открыть полный отчёт» с дашборда клон уезжает в конец (hints без #N / alias).
  * Только порядок/наличие ключей; подписи значений не меняем по смыслу.
  */
-function orderLabelsBySelectedFields(
+export function orderLabelsBySelectedFields(
   labels: Record<string, string>,
   selectedFields: ReportSelectedFieldPayload[],
+  preferredCompositionOrder: string[] = [],
 ): Record<string, string> {
   const ordered: Record<string, string> = {};
   const used = new Set<string>();
+  const selectedPaths = new Set(
+    selectedFields.map((field) => (field.fieldName ?? '').trim()).filter(Boolean),
+  );
+
+  // Keep only explicit composition keys from the saved UI snapshot.
+  for (const key of preferredCompositionOrder) {
+    const base = stripDuplicateColumnSuffix(key);
+    const value = (labels[key] ?? '').trim();
+    if ((key === base || isDuplicateColumnKey(key)) && selectedPaths.has(base) && value) {
+      ordered[key] = labels[key]!;
+      used.add(key);
+    }
+  }
+
+  const totalByPath = new Map<string, number>();
+  for (const field of selectedFields) {
+    const path = (field.fieldName ?? '').trim();
+    if (path) totalByPath.set(path, (totalByPath.get(path) ?? 0) + 1);
+  }
   const occurrenceByPath = new Map<string, number>();
 
   for (const field of selectedFields) {
@@ -56,11 +80,20 @@ function orderLabelsBySelectedFields(
     const occurrence = fieldName ? (occurrenceByPath.get(fieldName) ?? 0) + 1 : 0;
     if (fieldName) occurrenceByPath.set(fieldName, occurrence);
 
-    const composeDupKey =
-      fieldName && occurrence > 1 ? buildDuplicateColumnKey(fieldName, occurrence) : '';
-    // 2-е+ вхождение: сначала «field#N» (hint, не alias), затем alias/path.
+    const aliasCloneIndex = alias.match(/_(\d+)$/);
+    const cloneIndex =
+      fieldName && (totalByPath.get(fieldName) ?? 0) > 1 && aliasCloneIndex
+        ? Number(aliasCloneIndex[1]) + 1
+        : 0;
+    const composeKey =
+      fieldName && cloneIndex > 1
+        ? buildDuplicateColumnKey(fieldName, cloneIndex)
+        : occurrence > 1
+          ? buildDuplicateColumnKey(fieldName, occurrence)
+          : fieldName;
+    const composeDupKey = isDuplicateColumnKey(composeKey) ? composeKey : '';
     const candidates =
-      occurrence > 1 ? [composeDupKey, alias, fieldName] : [fieldName, alias];
+      composeDupKey ? [composeDupKey, alias, fieldName] : [composeKey, alias, fieldName];
 
     for (const key of candidates) {
       if (!key || used.has(key)) continue;
@@ -150,29 +183,32 @@ export async function resolveOpenReportColumnHeaderLabels(
 
   // 3b) Системный клон: alias на бэке = «лист_N» → UI «Сущность -> лист_N»
   // (как restoreReportComposeTableFields), не оставлять голый «Результат_1».
-  const occurrenceByPath = new Map<string, number>();
   for (const field of selectedFields) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
     if (!path) continue;
-    const occurrence = (occurrenceByPath.get(path) ?? 0) + 1;
-    occurrenceByPath.set(path, occurrence);
-    if (occurrence <= 1 || !alias) continue;
+    if ((pathOccurrenceTotal.get(path) ?? 0) <= 1 || !alias) continue;
+    const cloneOrdinal = Number(alias.match(/_(\d+)$/)?.[1] ?? 0);
+    if (cloneOrdinal < 1) continue;
 
     const baseFull = (labels[path] ?? '').trim();
     if (!baseFull || !isReportTableFieldLabelAutoQualified(baseFull)) continue;
     const baseLeaf = extractReportTableFieldLabelLeaf(baseFull) || baseFull;
-    const systemEncoded = `${baseLeaf.replace(/\s+/g, '_')}_${occurrence - 1}`;
+    const systemEncoded = `${baseLeaf.replace(/\s+/g, '_')}_${cloneOrdinal}`;
     if (alias !== systemEncoded) continue;
 
-    const fullCloneLabel = `${baseFull}_${occurrence - 1}`;
+    const fullCloneLabel = `${baseFull}_${cloneOrdinal}`;
     labels[alias] = fullCloneLabel;
-    const dupKey = buildDuplicateColumnKey(path, occurrence);
+    const dupKey = buildDuplicateColumnKey(path, cloneOrdinal + 1);
     if (!(labels[dupKey] ?? '').trim()) {
       labels[dupKey] = fullCloneLabel;
     }
   }
 
   // 4) Порядок ключей = selectedFields (+ «field#N» для клонов) — openFullReport.
-  return orderLabelsBySelectedFields(labels, selectedFields);
+  const preferredCompositionOrder = Object.keys(existing ?? {}).filter((key) => {
+    const base = stripDuplicateColumnSuffix(key);
+    return key === base || isDuplicateColumnKey(key);
+  });
+  return orderLabelsBySelectedFields(labels, selectedFields, preferredCompositionOrder);
 }

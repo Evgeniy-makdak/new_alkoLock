@@ -4,7 +4,11 @@ import {
   decodeReportFieldAliasForUi,
   extractReportTableFieldLabelLeaf,
 } from './reportSelectedFieldAliases';
-import { buildDuplicateColumnKey } from './reportColumnDuplicate';
+import {
+  buildDuplicateColumnKey,
+  isDuplicateColumnKey,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 /**
@@ -21,6 +25,20 @@ export function restoreReportComposeTableFieldsFromQuery(
   const result: Values = [];
   // Дубли колонок («latitude», «latitude#2», …) сохраняются при редактировании отчёта.
   const seen = new Map<string, number>();
+  const totalByPath = new Map<string, number>();
+  for (const field of selectedFields ?? []) {
+    const path = (field.fieldName ?? '').trim();
+    if (path) totalByPath.set(path, (totalByPath.get(path) ?? 0) + 1);
+  }
+  const composeKeysByPath = new Map<string, string[]>();
+  for (const key of Object.keys(columnHeaderLabels)) {
+    const path = stripDuplicateColumnSuffix(key);
+    if (!path || (key !== path && !isDuplicateColumnKey(key))) continue;
+    if (!totalByPath.has(path)) continue;
+    const keys = composeKeysByPath.get(path) ?? [];
+    keys.push(key);
+    composeKeysByPath.set(path, keys);
+  }
   // Имя ИСХОДНОЙ строки базового поля — от неё строится системное имя клона («…_1»).
   const baseLabelByPath = new Map<string, string>();
 
@@ -29,7 +47,13 @@ export function restoreReportComposeTableFieldsFromQuery(
     if (!path) continue;
     const occurrence = (seen.get(path) ?? 0) + 1;
     seen.set(path, occurrence);
-    const key = occurrence === 1 ? path : buildDuplicateColumnKey(path, occurrence);
+    const composeKeys = composeKeysByPath.get(path);
+    const key =
+      composeKeys && composeKeys.length === totalByPath.get(path)
+        ? composeKeys[occurrence - 1]!
+        : occurrence === 1
+          ? path
+          : buildDuplicateColumnKey(path, occurrence);
 
     const rawAlias = (field.alias ?? '').trim();
     const fromAlias = rawAlias ? decodeReportFieldAliasForUi(rawAlias).trim() : '';
@@ -37,16 +61,22 @@ export function restoreReportComposeTableFieldsFromQuery(
     if (occurrence === 1) {
       // Снимок с карандаша / alias → path; ручной alias без снимка — как есть.
       const fromHeaders =
+        (columnHeaderLabels[key] ?? '').trim() ||
         (columnHeaderLabels[path] ?? '').trim() ||
         (rawAlias ? (columnHeaderLabels[rawAlias] ?? '').trim() : '');
       if (fromHeaders) {
-        baseLabelByPath.set(path, fromHeaders);
+        baseLabelByPath.set(
+          path,
+          (columnHeaderLabels[path] ?? '').trim() ||
+            (optionLabelByPath[path] ?? '').trim() ||
+            fromHeaders,
+        );
         result.push({ value: key, label: fromHeaders });
         continue;
       }
       const fromOption = (optionLabelByPath[path] ?? '').trim();
       const label = fromAlias || fromOption || path;
-      baseLabelByPath.set(path, label);
+      baseLabelByPath.set(path, (columnHeaderLabels[path] ?? '').trim() || fromOption || label);
       result.push({ value: key, label });
       continue;
     }

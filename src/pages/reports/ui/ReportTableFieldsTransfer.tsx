@@ -513,16 +513,13 @@ export function ReportTableFieldsTransfer({
       // (resolveReportFieldAliasForApi: подпись ≠ дефолтной → alias эмитится),
       // чтобы колонки-дубли были различимы при группировке/фильтрации.
       // Без скобок: бэк отклоняет их в именах алиасов.
-      const cloneSequence = value.filter(
-        (item) => stripDuplicateColumnSuffix(fieldKey(item)) === base,
-      ).length;
-      // Системная подпись клона = дефолт поля из metadata + «_N», а не текущий
-      // алиас оригинала — иначе после переименования оригинала у клона ложно
-      // появляется «восстановить по умолчанию».
-      const baseDefaultLabel =
-        (defaultLabelsByValue[base] || '').trim() ||
-        resolveFieldLabel(rowKey, customLabelsByKey, defaultLabelsByValue);
-      const dupLabel = `${baseDefaultLabel}_${cloneSequence}`;
+      const cloneSequence = maxIndex;
+      const sourceLabel = fieldDisplayLabel(
+        value[rowIndex]!,
+        customLabelsByKey,
+        defaultLabelsByValue,
+      );
+      const dupLabel = `${sourceLabel}_${cloneSequence}`;
       const next = value.map((item) =>
         mergeOptionMeta(item, customLabelsByKey, defaultLabelsByValue),
       );
@@ -641,9 +638,7 @@ export function ReportTableFieldsTransfer({
         // Идентификатор при добавлении — видим (как прочие); глаз не блокируем.
         const isHidden = Boolean(hiddenByKey[key]);
         const isLockedChosen = side === 'chosen' && lockedChosen.has(key);
-        // Системное название: оригинал — дефолт поля; клон — тот же дефолт + «_N».
-        // Не берём текущий алиас оригинала: его переименование не должно включать
-        // «восстановить по умолчанию» на нетронутом клоне.
+        // Эталон сброса — дефолт metadata; алиас клона остаётся кастомным и сбрасываемым.
         const baseKey = stripDuplicateColumnSuffix(key);
         const baseDefaultLabel = (defaultLabelsByValue[baseKey] || baseKey).trim();
         const dupIndex = getDuplicateColumnIndex(key);

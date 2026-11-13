@@ -28,6 +28,10 @@ import {
   buildLayoutFromWidgets,
   parseBackendDashboardId,
 } from '../lib/mapAllotmentToWidget';
+import {
+  applyDashboardColumnHeaderLabelSnapshot,
+  type DashboardColumnHeaderLabelSnapshot,
+} from '../lib/applyDashboardColumnHeaderLabelSnapshot';
 import type {
   DashboardAccessEntry,
   DashboardAccessLevel,
@@ -133,6 +137,8 @@ type DashboardState = {
   workspaceTab: ReportsWorkspaceTab;
   setWorkspaceTab: (tab: ReportsWorkspaceTab) => void;
   items: ReportDashboard[];
+  /** Снимки UI-заголовков сохраняются между повторными загрузками списка в этой сессии. */
+  columnHeaderLabelSnapshots: Record<string, DashboardColumnHeaderLabelSnapshot>;
   /** Выбранная пользователем сетка (id дашборда → размер), пока открыта вкладка. */
   layoutPreferences: Record<string, LayoutPreference>;
   loading: boolean;
@@ -190,6 +196,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   workspaceTab: 'reports',
   setWorkspaceTab: (tab) => set({ workspaceTab: tab }),
   items: [],
+  columnHeaderLabelSnapshots: {},
   layoutPreferences: {},
   loading: false,
   error: null,
@@ -225,7 +232,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     const widgetPatch: Partial<DashboardWidgetBinding> = {
       entityName: ctx.entityName,
       body: ctx.body,
-      columnHeaderLabels: ctx.columnHeaderLabels,
+      ...(ctx.columnHeaderLabels ? { columnHeaderLabels: ctx.columnHeaderLabels } : {}),
       branchIds: ctx.branchIds,
       branchOffices: ctx.branchOffices,
       preferredViewMode,
@@ -235,6 +242,17 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     // Сразу локально — виджет перезапросит данные при возврате на дашборд.
     set((state) => ({
       items: patchWidgetsByReportId(state.items, reportId, widgetPatch),
+      ...(ctx.columnHeaderLabels
+        ? {
+            columnHeaderLabelSnapshots: {
+              ...state.columnHeaderLabelSnapshots,
+              [String(reportId)]: {
+                selectedFields: ctx.body.selectedFields.map((field) => ({ ...field })),
+                columnHeaderLabels: { ...ctx.columnHeaderLabels },
+              },
+            },
+          }
+        : {}),
     }));
 
     let name = '';
@@ -328,8 +346,26 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       const user = currentUser();
       const all = await localDashboardRepository.list(get().listNameSort);
       const filtered = user ? all.filter((item) => canAccess(item, user.id)) : all;
-      const { layoutPreferences } = get();
-      const items = filtered.map((item) => applyLayoutPreference(item, layoutPreferences[item.id]));
+      const { layoutPreferences, columnHeaderLabelSnapshots } = get();
+      const items = filtered
+        .map((item) => applyLayoutPreference(item, layoutPreferences[item.id]))
+        .map((dashboard) => ({
+          ...dashboard,
+          layout: {
+            ...dashboard.layout,
+            cells: dashboard.layout.cells.map((cell) =>
+              cell.widget
+                ? {
+                    ...cell,
+                    widget: applyDashboardColumnHeaderLabelSnapshot(
+                      cell.widget,
+                      columnHeaderLabelSnapshots,
+                    ),
+                  }
+                : cell,
+            ),
+          },
+        }));
       set({ items, loading: false });
     } catch (error) {
       set({
