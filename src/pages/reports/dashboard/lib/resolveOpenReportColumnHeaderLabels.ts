@@ -4,7 +4,10 @@ import {
 } from '../../lib/buildReportTableFieldOptions';
 import { planReportCompositeResultColumns } from '../../lib/reportEntityCompositeFields';
 import { decodeReportFieldAliasForUi } from '../../lib/reportSelectedFieldAliases';
-import type { ReportQueryRequest } from '../../types/reportApiTypes';
+import type {
+  ReportQueryRequest,
+  ReportSelectedFieldPayload,
+} from '../../types/reportApiTypes';
 import { resolveWidgetColumnHeaderLabels } from './resolveWidgetColumnHeaderLabels';
 
 /** Порядок колонок как на вкладке «Отчёты» (selectedFields + composite). */
@@ -27,6 +30,42 @@ export function orderWidgetPreviewColumns(
 }
 
 /**
+ * Object.keys(columnHeaderLabels) → headerOrder в полном отчёте.
+ * Снимок с дашборда часто начинается с alias-ключей (ЗАМОК, …) — без пересборки
+ * по selectedFields порядок колонок расходится с превью виджета.
+ * Только порядок ключей; подписи не меняем.
+ */
+function orderLabelsBySelectedFields(
+  labels: Record<string, string>,
+  selectedFields: ReportSelectedFieldPayload[],
+): Record<string, string> {
+  const ordered: Record<string, string> = {};
+  const used = new Set<string>();
+
+  for (const field of selectedFields) {
+    const fieldName = (field.fieldName ?? '').trim();
+    const alias = (field.alias ?? '').trim();
+    // fieldName раньше alias: после фильтра alias-only hints остаются path-ключи
+    // в порядке selectedFields (как orderWidgetPreviewColumns).
+    for (const key of [fieldName, alias]) {
+      if (!key || used.has(key)) continue;
+      const value = (labels[key] ?? '').trim();
+      if (!value) continue;
+      ordered[key] = labels[key];
+      used.add(key);
+    }
+  }
+
+  for (const [key, value] of Object.entries(labels)) {
+    if (used.has(key)) continue;
+    ordered[key] = value;
+    used.add(key);
+  }
+
+  return ordered;
+}
+
+/**
  * Подписи колонок на дашборде / при «открыть полный отчёт».
  * Снимок UI / alias — как назвал пользователь (без дописывания «Сущность ->»).
  * Остальные колонки — полные подписи metadata, как в «Текущий состав».
@@ -36,7 +75,8 @@ export async function resolveOpenReportColumnHeaderLabels(
   body: ReportQueryRequest,
   existing?: Record<string, string> | null,
 ): Promise<Record<string, string>> {
-  const selectedPaths = (body.selectedFields ?? [])
+  const selectedFields = body.selectedFields ?? [];
+  const selectedPaths = selectedFields
     .map((field) => (field.fieldName ?? '').trim())
     .filter(Boolean);
 
@@ -49,7 +89,7 @@ export async function resolveOpenReportColumnHeaderLabels(
   }
 
   // 2) Alias из definition — как есть (без «Сущность ->»), если снимка ещё нет.
-  for (const field of body.selectedFields ?? []) {
+  for (const field of selectedFields) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
     if (!path || !alias) continue;
@@ -68,5 +108,6 @@ export async function resolveOpenReportColumnHeaderLabels(
     if (trimmed) labels[key] = trimmed;
   }
 
-  return labels;
+  // 4) Порядок ключей = selectedFields — синхрон с превью виджета при openFullReport.
+  return orderLabelsBySelectedFields(labels, selectedFields);
 }
