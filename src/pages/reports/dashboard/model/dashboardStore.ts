@@ -277,7 +277,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
           ? String((existing.definition as { entityName?: string }).entityName).trim()
           : '';
       const entityName =
-        existing.entityName?.trim() || existingDefinitionEntity || ctx.entityName;
+        ctx.entityName?.trim() || existing.entityName?.trim() || existingDefinitionEntity;
       // pageableDto обязателен в PUT definition; без sort → 500 на бэке.
       const existingPageable =
         existing.definition &&

@@ -170,6 +170,7 @@ export function ReportComposeModal({
   const { t } = useTranslation();
   const snapshotRef = useRef<ReportsComposeSnapshot | null>(null);
   const confirmedRef = useRef(false);
+  const savedReportIdRef = useRef<number | undefined>(undefined);
 
   const isGenerating = reportGenerationStore((s) => s.isGenerating);
   const hasFormedReport = reportGenerationStore((s) => Boolean(s.lastResult));
@@ -214,6 +215,10 @@ export function ReportComposeModal({
     if (!open) return;
     confirmedRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
+    savedReportIdRef.current =
+      mode === 'edit'
+        ? reportGenerationStore.getState().queryContext?.savedReportId
+        : undefined;
     if (mode === 'edit') {
       // До фиксации baseline кнопка неактивна (isEditPristine при null).
       editBaselineFingerprintRef.current = null;
@@ -1068,7 +1073,7 @@ export function ReportComposeModal({
       // Сохраняем savedReportId (открытие с дашборда) — иначе после «Сформировать»
       // теряется связь с отчётом на дашборде и виджет остаётся со старой definition.
       const previousSavedReportId =
-        reportGenerationStore.getState().queryContext?.savedReportId;
+        reportGenerationStore.getState().queryContext?.savedReportId ?? savedReportIdRef.current;
       const columnHeaderLabels = buildReportColumnHeaderLabelsFromComposeFields(
         resolveComposeTableFieldsSelection(),
         bodyWithGroup.selectedFields,
