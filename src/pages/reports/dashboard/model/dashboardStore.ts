@@ -353,37 +353,70 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
           page: 0,
           size: 500,
           reportId: { equals: reportId },
-          dashboardId: { equals: backendDashboardId },
           isActiveEquals: true,
         });
-        if (!oldAllotments.length) {
+        const sourceAllotments = oldAllotments.filter(
+          (allotment) => allotment.dashboard?.id === backendDashboardId,
+        );
+        if (!sourceAllotments.length) {
           throw new Error('Не найдены активные привязки исходного отчёта к дашборду');
         }
-        const dashboardIds = oldAllotments.map((allotment) => allotment.dashboard?.id);
-        if (dashboardIds.some((id) => id == null || !Number.isFinite(id))) {
+        if (sourceAllotments.length !== oldAllotments.length) {
+          throw new Error(
+            'Отчёт также привязан к другим дашбордам. Смена сущности без изменения этих привязок невозможна.',
+          );
+        }
+        if (sourceAllotments.some((allotment) => allotment.dashboard?.id == null)) {
           throw new Error('Не удалось определить дашборд для переноса отчёта');
         }
 
-        const saved = await saveReportForEntity(entityName, {
-          name,
-          visibility: existing.visibility || 'private',
-          entityName,
-          definition,
-        });
+        const previousDefinition =
+          existing.definition && typeof existing.definition === 'object'
+            ? {
+                ...existing.definition,
+                entityName: existingEntityName,
+                pageableDto,
+              }
+            : null;
+        if (!previousDefinition) {
+          throw new Error('Не удалось получить параметры исходного отчёта для замены сущности');
+        }
+
+        const temporaryName = `${name}__replacing_${reportId}_${Date.now()}`;
         const createdAllotments: ReportDashboardAllotment[] = [];
         const deletedAllotments: ReportDashboardAllotment[] = [];
+        let saved: Awaited<ReturnType<typeof saveReportForEntity>> | null = null;
+        let oldReportRenamed = false;
         try {
-          for (const dashboardId of dashboardIds) {
+          await updateSavedReport(reportId, {
+            name: temporaryName,
+            visibility: existing.visibility || 'private',
+            entityName: existingEntityName,
+            definition: previousDefinition,
+          });
+          oldReportRenamed = true;
+          saved = await saveReportForEntity(entityName, {
+            name,
+            visibility: existing.visibility || 'private',
+            entityName,
+            definition,
+          });
+          for (const allotment of sourceAllotments) {
+            const dashboardId = allotment.dashboard?.id;
+            if (dashboardId == null) {
+              throw new Error('Не удалось определить дашборд для переноса отчёта');
+            }
             const created = await createReportDashboardAllotment({
               reportId: saved.id,
-              dashboardId: dashboardId!,
+              dashboardId,
             });
             createdAllotments.push(...created);
           }
-          for (const allotment of oldAllotments) {
+          for (const allotment of sourceAllotments) {
             await deleteReportDashboardAllotment(allotment.id);
             deletedAllotments.push(allotment);
           }
+          await deleteSavedReport(reportId);
         } catch (error) {
           const rollbackErrors: string[] = [];
           for (const allotment of deletedAllotments) {
@@ -402,10 +435,24 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
               rollbackErrors.push(errorMessage(rollbackError, 'не удалось удалить новую привязку'));
             }
           }
-          try {
-            await deleteSavedReport(saved.id);
-          } catch (rollbackError) {
-            rollbackErrors.push(errorMessage(rollbackError, 'не удалось удалить новый отчёт'));
+          if (saved) {
+            try {
+              await deleteSavedReport(saved.id);
+            } catch (rollbackError) {
+              rollbackErrors.push(errorMessage(rollbackError, 'не удалось удалить новый отчёт'));
+            }
+          }
+          if (oldReportRenamed) {
+            try {
+              await updateSavedReport(reportId, {
+                name,
+                visibility: existing.visibility || 'private',
+                entityName: existingEntityName,
+                definition: previousDefinition,
+              });
+            } catch (rollbackError) {
+              rollbackErrors.push(errorMessage(rollbackError, 'не удалось восстановить имя отчёта'));
+            }
           }
           if (rollbackErrors.length) {
             throw new Error(
@@ -425,7 +472,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
           matching.push(allotment);
           createdByDashboard.set(dashboardId, matching);
         }
-        oldAllotments.forEach((oldAllotment, index) => {
+        sourceAllotments.forEach((oldAllotment, index) => {
           const dashboardId = oldAllotment.dashboard?.id;
           const newAllotment =
             (dashboardId == null ? undefined : createdByDashboard.get(dashboardId)?.shift()) ??

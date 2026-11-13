@@ -182,11 +182,17 @@ describe('dashboardStore report entity changes', () => {
       page: 0,
       size: 500,
       reportId: { equals: 11 },
-      dashboardId: { equals: 9 },
       isActiveEquals: true,
     });
     expect(deleteReportDashboardAllotment).toHaveBeenCalledWith(201);
-    expect(updateSavedReport).not.toHaveBeenCalled();
+    expect(deleteSavedReport).toHaveBeenCalledWith(11);
+    expect(updateSavedReport).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({
+        name: expect.stringMatching(/Vehicle report__replacing_11_/),
+        entityName: 'Vehicle',
+      }),
+    );
     expect(dashboardStore.getState().items[0]?.layout.cells[0]?.widget).toMatchObject({
       entityName: 'Driver',
       reportId: 22,
