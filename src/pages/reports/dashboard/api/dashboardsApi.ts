@@ -31,7 +31,10 @@ function asDashboardList(
   return [];
 }
 
-/** Направление сортировки списка дашбордов по id (null — без &sort=). */
+/**
+ * Направление сортировки списка дашбордов:
+ * ASC/DESC → &sort=name,…; null → fallback &sort=id,ASC (не «без sort»).
+ */
 export type DashboardsListSortDirection = 'ASC' | 'DESC' | null;
 
 /** GET /api/v1/dashboards — дашборды, доступные пользователю (порядок — с бэка). */
@@ -40,8 +43,8 @@ export async function fetchDashboards(
 ): Promise<BackendDashboardDto[]> {
   const sortQuery =
     sortDirection === 'ASC' || sortDirection === 'DESC'
-      ? `&sort=id,${sortDirection}`
-      : '';
+      ? `&sort=name,${sortDirection}`
+      : '&sort=id,ASC';
   const res = await getQuery<BackendDashboardDto[] | { content?: BackendDashboardDto[] }>({
     url: `${BASE}?page=0&size=${DASHBOARDS_PAGE_SIZE}${sortQuery}`,
   });

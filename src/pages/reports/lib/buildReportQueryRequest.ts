@@ -368,12 +368,15 @@ function buildRowReportTableFields(
     // всё равно должен получить уникальный alias, а голый path — остаться без forced alias.
     const uiDupIndex = getDuplicateColumnIndex(emitPath);
 
-    const apiAlias = resolveReportFieldAliasForApi(
-      displayLabel,
-      basePath,
-      payload.fieldName,
-      defaultLabel,
-    );
+    // Раскрытие composite: подпись колонки ≠ rename члена — alias не эмитим.
+    const apiAlias = expandedFromComposite
+      ? undefined
+      : resolveReportFieldAliasForApi(
+          displayLabel,
+          basePath,
+          payload.fieldName,
+          defaultLabel,
+        );
     if (apiAlias) {
       payload.alias = apiAlias;
     } else if (isDupBase && uiDupIndex > 1) {

@@ -153,11 +153,11 @@ type DashboardState = {
    */
   syncOpenedFullReportToDashboards: (ctx: ReportQueryContext) => Promise<void>;
   /**
-   * Сортировка списка дашбордов по id на бэке: ASC → DESC → null (без &sort=).
-   * По умолчанию ASC — как в остальных таблицах приложения.
+   * Сортировка списка дашбордов на бэке:
+   * ASC → name,ASC; DESC → name,DESC; null → id,ASC (третий клик стрелки).
    */
   listNameSort: 'ASC' | 'DESC' | null;
-  /** Цикл ASC → DESC → сброс (null), затем снова ASC. */
+  /** Цикл name ASC → name DESC → id ASC, затем снова name ASC. */
   cycleListNameSort: () => void;
   loadList: () => Promise<void>;
   openCreateEditor: () => void;
@@ -210,7 +210,7 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
   listNameSort: 'ASC',
   cycleListNameSort: () => {
     const current = get().listNameSort;
-    // Как EmailTemplates / заголовки таблиц: ASC → DESC → сброс.
+    // ASC → DESC по name; третий клик — id,ASC (listNameSort=null в API).
     const next: 'ASC' | 'DESC' | null =
       current === 'ASC' ? 'DESC' : current === 'DESC' ? null : 'ASC';
     set({ listNameSort: next });

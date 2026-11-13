@@ -2,6 +2,7 @@ import {
   collectReportContentColumnKeys,
   orderReportContentColumnKeys,
 } from '../../lib/buildReportTableFieldOptions';
+import { buildDuplicateColumnKey } from '../../lib/reportColumnDuplicate';
 import { planReportCompositeResultColumns } from '../../lib/reportEntityCompositeFields';
 import { decodeReportFieldAliasForUi } from '../../lib/reportSelectedFieldAliases';
 import type {
@@ -31,9 +32,11 @@ export function orderWidgetPreviewColumns(
 
 /**
  * Object.keys(columnHeaderLabels) → headerOrder в полном отчёте.
- * Снимок с дашборда часто начинается с alias-ключей (ЗАМОК, …) — без пересборки
- * по selectedFields порядок колонок расходится с превью виджета.
- * Только порядок ключей; подписи не меняем.
+ *
+ * Alias-only ключи режутся в mapReportContent (#42). Для клона N-го вхождения
+ * path нужен compose-ключ «field#N» на месте selectedFields — иначе при повторном
+ * «открыть полный отчёт» с дашборда клон уезжает в конец (hints без #N / alias).
+ * Только порядок/наличие ключей; подписи значений не меняем по смыслу.
  */
 function orderLabelsBySelectedFields(
   labels: Record<string, string>,
@@ -41,18 +44,37 @@ function orderLabelsBySelectedFields(
 ): Record<string, string> {
   const ordered: Record<string, string> = {};
   const used = new Set<string>();
+  const occurrenceByPath = new Map<string, number>();
 
   for (const field of selectedFields) {
     const fieldName = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
-    // fieldName раньше alias: после фильтра alias-only hints остаются path-ключи
-    // в порядке selectedFields (как orderWidgetPreviewColumns).
-    for (const key of [fieldName, alias]) {
+    const occurrence = fieldName ? (occurrenceByPath.get(fieldName) ?? 0) + 1 : 0;
+    if (fieldName) occurrenceByPath.set(fieldName, occurrence);
+
+    const composeDupKey =
+      fieldName && occurrence > 1 ? buildDuplicateColumnKey(fieldName, occurrence) : '';
+    // 2-е+ вхождение: сначала «field#N» (hint, не alias), затем alias/path.
+    const candidates =
+      occurrence > 1 ? [composeDupKey, alias, fieldName] : [fieldName, alias];
+
+    for (const key of candidates) {
       if (!key || used.has(key)) continue;
       const value = (labels[key] ?? '').trim();
       if (!value) continue;
       ordered[key] = labels[key];
       used.add(key);
+    }
+
+    // После loadList снимка с «#N» нет — синтезируем ключ для headerHints.
+    if (composeDupKey && !used.has(composeDupKey)) {
+      const fromAlias = alias ? (labels[alias] ?? '').trim() : '';
+      const fromPath = fieldName ? (labels[fieldName] ?? '').trim() : '';
+      const text = fromAlias || fromPath || alias || fieldName;
+      if (text) {
+        ordered[composeDupKey] = fromAlias || fromPath || text;
+        used.add(composeDupKey);
+      }
     }
   }
 
@@ -88,16 +110,26 @@ export async function resolveOpenReportColumnHeaderLabels(
     if (trimmed) labels[key] = trimmed;
   }
 
-  // 2) Alias из definition — как есть (без «Сущность ->»), если снимка ещё нет.
+  const pathOccurrenceTotal = new Map<string, number>();
+  for (const field of selectedFields) {
+    const path = (field.fieldName ?? '').trim();
+    if (!path) continue;
+    pathOccurrenceTotal.set(path, (pathOccurrenceTotal.get(path) ?? 0) + 1);
+  }
+
+  // 2) Alias из definition — как назвал пользователь (в т.ч. лист без «Сущность ->»).
+  // Одиночный path: alias поверх снимка (не склеивать базовую сущность).
+  // Path с клонами: не затирать labels[path] подписью клона — оригинал и «#N» раздельно.
   for (const field of selectedFields) {
     const path = (field.fieldName ?? '').trim();
     const alias = (field.alias ?? '').trim();
     if (!path || !alias) continue;
     const fromAlias = decodeReportFieldAliasForUi(alias).trim();
     if (!fromAlias) continue;
-    if (!labels[path]?.trim()) labels[path] = fromAlias;
-    // Ключ ответа = alias: всегда сама подпись alias, не склеенная с path/metadata.
-    if (!labels[alias]?.trim()) labels[alias] = fromAlias;
+    labels[alias] = fromAlias;
+    if ((pathOccurrenceTotal.get(path) ?? 0) <= 1) {
+      labels[path] = fromAlias;
+    }
   }
 
   // 3) Остальное — полный маппинг metadata (без обрезки до листа).
@@ -108,6 +140,6 @@ export async function resolveOpenReportColumnHeaderLabels(
     if (trimmed) labels[key] = trimmed;
   }
 
-  // 4) Порядок ключей = selectedFields — синхрон с превью виджета при openFullReport.
+  // 4) Порядок ключей = selectedFields (+ «field#N» для клонов) — openFullReport.
   return orderLabelsBySelectedFields(labels, selectedFields);
 }

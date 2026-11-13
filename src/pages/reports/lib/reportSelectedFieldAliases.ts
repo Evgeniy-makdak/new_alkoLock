@@ -95,6 +95,10 @@ export function resolveReportFieldDefaultLabelForAlias(
 /**
  * Текст для alias в POST: только изменённая часть, с `_` вместо пробелов.
  * Дефолтный префикс «Сущность ->» не кодируем.
+ *
+ * Важно: UI-дефолт всегда «Сущность -> Поле». Если пользователь оставил только
+ * лист («Поле»), это кастомный alias — его нужно эмитить, иначе после перезагрузки
+ * дашборда metadata снова склеит базовую сущность.
  */
 export function resolveReportFieldAliasForApi(
   displayLabel: string,
@@ -105,7 +109,6 @@ export function resolveReportFieldAliasForApi(
   const label = displayLabel.trim();
   const defaultLabel = defaultFieldLabel.trim();
   if (!label || label === emitPath || label === fieldName) return undefined;
-  if (defaultLabel && label === defaultLabel) return undefined;
 
   let aliasSource = label;
   if (isReportTableFieldLabelAutoQualified(label)) {
@@ -131,7 +134,7 @@ export function resolveReportFieldAliasForApi(
   // строки, а не только для клонов. Декодирование в гриде («_» → пробелы) не меняется.
   const apiAlias = encodeReportFieldAliasForApi(aliasSource);
   if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
-  if (defaultLabel && apiAlias === defaultLabel) return undefined;
+  // Bare leaf (== defaultLabel) тоже alias: это снятие «Сущность ->», не дефолт UI.
   return apiAlias;
 }
 
