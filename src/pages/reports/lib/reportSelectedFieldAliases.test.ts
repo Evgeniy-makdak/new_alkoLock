@@ -17,6 +17,11 @@ jest.mock('./buildReportTableFieldOptions', () => ({
   ROOT_ENTITY_LABEL_SEPARATOR: ' -> ',
 }));
 jest.mock('./reportEntityCompositeFields', () => ({
+  expandCompositeFieldPath: (path: string) =>
+    path.replace(/#\d+$/, '') === '__composite.User'
+      ? ['surname', 'firstName', 'middleName']
+      : [path],
+  isReportCompositeFieldPath: (path: string) => path.split('.').includes('__composite'),
   planReportCompositeResultColumns: () => ({}),
 }));
 jest.mock('../dashboard/lib/resolveWidgetColumnHeaderLabels', () => ({
@@ -26,6 +31,24 @@ jest.mock('../dashboard/lib/resolveWidgetColumnHeaderLabels', () => ({
 }));
 
 describe('cloned report column labels', () => {
+  it('restores a selected ФИО composite instead of its expanded member fields', () => {
+    const selectedFields = [
+      { fieldName: 'user.name' },
+      { fieldName: 'surname' },
+      { fieldName: 'firstName' },
+      { fieldName: 'middleName' },
+    ];
+    const labels = {
+      'user.name': 'Отчет по пользователям -> Пользователь',
+      '__composite.User': 'Отчет по пользователям -> ФИО',
+    };
+
+    expect(restoreReportComposeTableFieldsFromQuery(selectedFields, labels)).toEqual([
+      { value: 'user.name', label: 'Отчет по пользователям -> Пользователь' },
+      { value: '__composite.User', label: 'Отчет по пользователям -> ФИО' },
+    ]);
+  });
+
   it('reapplies the UI label snapshot after the dashboard list reloads', () => {
     const widget: Parameters<typeof applyDashboardColumnHeaderLabelSnapshot>[0] = {
       title: 'Отчёт',

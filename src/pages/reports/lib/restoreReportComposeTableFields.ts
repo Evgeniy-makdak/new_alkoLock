@@ -9,6 +9,10 @@ import {
   isDuplicateColumnKey,
   stripDuplicateColumnSuffix,
 } from './reportColumnDuplicate';
+import {
+  expandCompositeFieldPath,
+  isReportCompositeFieldPath,
+} from './reportEntityCompositeFields';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 /**
@@ -23,13 +27,39 @@ export function restoreReportComposeTableFieldsFromQuery(
   optionLabelByPath: Record<string, string> = {},
 ): Values {
   const result: Values = [];
+  const fields = selectedFields ?? [];
   // Дубли колонок («latitude», «latitude#2», …) сохраняются при редактировании отчёта.
   const seen = new Map<string, number>();
   const totalByPath = new Map<string, number>();
-  for (const field of selectedFields ?? []) {
+  for (const field of fields) {
     const path = (field.fieldName ?? '').trim();
     if (path) totalByPath.set(path, (totalByPath.get(path) ?? 0) + 1);
   }
+
+  const compositeAtIndex = new Map<number, { key: string; label: string; memberCount: number }>();
+  const usedCompositeIndexes = new Set<number>();
+  for (const [key, rawLabel] of Object.entries(columnHeaderLabels)) {
+    const label = (rawLabel ?? '').trim();
+    if (!isReportCompositeFieldPath(key) || !label) continue;
+    const members = expandCompositeFieldPath(key);
+    if (members.length < 2 || members.some(isReportCompositeFieldPath)) continue;
+
+    for (let start = 0; start <= fields.length - members.length; start += 1) {
+      const matches = members.every(
+        (member, offset) =>
+          !usedCompositeIndexes.has(start + offset) &&
+          (fields[start + offset]?.fieldName ?? '').trim() === member,
+      );
+      if (!matches) continue;
+
+      compositeAtIndex.set(start, { key, label, memberCount: members.length });
+      for (let offset = 0; offset < members.length; offset += 1) {
+        usedCompositeIndexes.add(start + offset);
+      }
+      break;
+    }
+  }
+
   const composeKeysByPath = new Map<string, string[]>();
   for (const key of Object.keys(columnHeaderLabels)) {
     const path = stripDuplicateColumnSuffix(key);
@@ -42,7 +72,15 @@ export function restoreReportComposeTableFieldsFromQuery(
   // Имя ИСХОДНОЙ строки базового поля — от неё строится системное имя клона («…_1»).
   const baseLabelByPath = new Map<string, string>();
 
-  for (const field of selectedFields ?? []) {
+  for (let index = 0; index < fields.length; index += 1) {
+    const composite = compositeAtIndex.get(index);
+    if (composite) {
+      result.push({ value: composite.key, label: composite.label });
+      index += composite.memberCount - 1;
+      continue;
+    }
+
+    const field = fields[index];
     const path = (field.fieldName ?? '').trim();
     if (!path) continue;
     const occurrence = (seen.get(path) ?? 0) + 1;

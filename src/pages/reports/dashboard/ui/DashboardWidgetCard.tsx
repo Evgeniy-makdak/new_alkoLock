@@ -11,6 +11,7 @@ import { Button, ButtonsType } from '@shared/ui/button';
 
 import { executeReportQuery } from '../../api/reportsApi';
 import { hydrateReportsComposeFromOpenedQuery } from '../../lib/hydrateReportsComposeFromOpenedQuery';
+import { formatReportCompositeCellValue } from '../../lib/reportEntityCompositeFields';
 import {
   DEFAULT_REPORT_PAGE_SIZE,
   reportGenerationStore,
@@ -18,13 +19,13 @@ import {
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeChartSpec } from '../../types/chartSpec';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
+import { ReportChartCanvas } from '../../ui/ReportChartCanvas';
 import {
-  orderWidgetPreviewColumns,
+  planWidgetPreviewColumns,
   resolveOpenReportColumnHeaderLabels,
 } from '../lib/resolveOpenReportColumnHeaderLabels';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardCell, DashboardWidgetBinding } from '../types';
-import { ReportChartCanvas } from '../../ui/ReportChartCanvas';
 
 import styles from './Dashboard.module.scss';
 
@@ -52,7 +53,6 @@ export function DashboardWidgetCard({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewRows, setPreviewRows] = useState<Array<Record<string, unknown>>>([]);
-  const [columns, setColumns] = useState<string[]>([]);
   const [totalElements, setTotalElements] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const pageRef = useRef(0);
@@ -61,6 +61,20 @@ export function DashboardWidgetCard({
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const widget = cell.widget;
+  const composeCompositeKeys = useMemo(
+    () =>
+      Object.keys(widget?.columnHeaderLabels ?? {}).filter((key) => key.includes('__composite')),
+    [widget?.columnHeaderLabels],
+  );
+  const previewColumnPlan = useMemo(
+    () => planWidgetPreviewColumns(previewRows, widget?.body, composeCompositeKeys),
+    [composeCompositeKeys, previewRows, widget?.body],
+  );
+  const columns = previewColumnPlan.displayColumnKeys.slice(0, 8);
+  const compositeGroupsByKey = useMemo(
+    () => new Map(previewColumnPlan.groups.map((group) => [group.compositeKey, group])),
+    [previewColumnPlan.groups],
+  );
 
   // Подписи: снимок columnHeaderLabels (если ещё есть) или восстановление из definition
   // (alias + metadata без «Сущность -> ») — иначе после привязки к дашборду «достраиваются»
@@ -76,7 +90,6 @@ export function DashboardWidgetCard({
       setLoading(true);
       setError(null);
       setPreviewRows([]);
-      setColumns([]);
       pageRef.current = 0;
       hasMoreRef.current = true;
       try {
@@ -91,7 +104,6 @@ export function DashboardWidgetCard({
         const total = Number(result?.totalElements ?? content.length);
         const totalPages = Number(result?.totalPages ?? 1);
         setPreviewRows(content);
-        setColumns(orderWidgetPreviewColumns(content, binding.body, 8));
         setTotalElements(Number.isFinite(total) ? total : content.length);
         const more =
           content.length >= WIDGET_PAGE_SIZE &&
@@ -105,7 +117,6 @@ export function DashboardWidgetCard({
         pageRef.current = 0;
       } catch (err) {
         setPreviewRows([]);
-        setColumns([]);
         setTotalElements(0);
         hasMoreRef.current = false;
         setHasMore(false);
@@ -165,7 +176,6 @@ export function DashboardWidgetCard({
   useEffect(() => {
     if (!widget) {
       setPreviewRows([]);
-      setColumns([]);
       setError(null);
       setTotalElements(0);
       hasMoreRef.current = false;
@@ -405,9 +415,13 @@ export function DashboardWidgetCard({
                 <tbody>
                   {previewRows.map((row, index) => (
                     <tr key={index}>
-                      {columns.map((col) => (
-                        <td key={col}>{formatCell(row[col])}</td>
-                      ))}
+                      {columns.map((col) => {
+                        const compositeGroup = compositeGroupsByKey.get(col);
+                        const value = compositeGroup
+                          ? formatReportCompositeCellValue(compositeGroup, row)
+                          : row[col];
+                        return <td key={col}>{formatCell(value)}</td>;
+                      })}
                     </tr>
                   ))}
                 </tbody>

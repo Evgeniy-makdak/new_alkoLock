@@ -20,11 +20,11 @@ import type {
 import { resolveWidgetColumnHeaderLabels } from './resolveWidgetColumnHeaderLabels';
 
 /** Порядок колонок как на вкладке «Отчёты» (selectedFields + composite). */
-export function orderWidgetPreviewColumns(
+export function planWidgetPreviewColumns(
   content: Array<Record<string, unknown>>,
   body: ReportQueryRequest | undefined,
-  limit = 8,
-): string[] {
+  composeCompositeKeys: string[] = [],
+) {
   const selectedFields = body?.selectedFields ?? [];
   const selectedPaths = selectedFields
     .map((field) => (field.fieldName ?? '').trim())
@@ -34,8 +34,22 @@ export function orderWidgetPreviewColumns(
     : selectedPaths;
   // Порядок как в selectedFields: content-ключ часто = alias (rename/дубль).
   const orderedKeys = orderReportContentColumnKeys(contentKeys, selectedFields);
-  const { displayColumnKeys } = planReportCompositeResultColumns(orderedKeys, selectedPaths);
-  return displayColumnKeys.slice(0, limit);
+  return planReportCompositeResultColumns(orderedKeys, selectedPaths, {
+    selectedFields,
+    composeCompositeKeys,
+  });
+}
+
+export function orderWidgetPreviewColumns(
+  content: Array<Record<string, unknown>>,
+  body: ReportQueryRequest | undefined,
+  limit = 8,
+  composeCompositeKeys: string[] = [],
+): string[] {
+  return planWidgetPreviewColumns(content, body, composeCompositeKeys).displayColumnKeys.slice(
+    0,
+    limit,
+  );
 }
 
 /**

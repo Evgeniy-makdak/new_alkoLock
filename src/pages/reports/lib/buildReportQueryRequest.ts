@@ -289,8 +289,7 @@ function buildRowReportTableFields(
   // агрегаций схлопнется по fieldName — заголовки/форматирование сломаются).
   // Составные колонки считаем по РАСКРЫТЫМ членам (два «User» → surname×2).
   const baseOccurrenceCount = new Map<string, number>();
-  // Атомарные пути, указанные явно (не через __composite.*) — при expand не дублируем.
-  const explicitAtomicBasePaths = new Set<string>();
+  const compositeMemberBasePaths = new Set<string>();
   for (const tf of tableFields) {
     const raw = String(tf.value ?? '');
     const base = stripDuplicateColumnSuffix(raw);
@@ -298,6 +297,7 @@ function buildRowReportTableFields(
       for (const member of expandCompositeFieldPath(base)) {
         const memberBase = stripDuplicateColumnSuffix(member);
         if (!memberBase || isReportCompositeFieldPath(memberBase)) continue;
+        compositeMemberBasePaths.add(memberBase);
         baseOccurrenceCount.set(
           memberBase,
           (baseOccurrenceCount.get(memberBase) ?? 0) + 1,
@@ -306,10 +306,8 @@ function buildRowReportTableFields(
     } else {
       baseOccurrenceCount.set(base, (baseOccurrenceCount.get(base) ?? 0) + 1);
     }
-    if (raw && !isReportCompositeFieldPath(base)) {
-      explicitAtomicBasePaths.add(base);
-    }
   }
+  const explicitCompositeMemberOccurrenceByPath = new Map<string, number>();
   const built = tableFields.flatMap((item) => {
     const path = String(item.value);
     const expandedFromComposite = isReportCompositeFieldPath(path);
@@ -324,11 +322,6 @@ function buildRowReportTableFields(
     // Дубли колонок («field#N») → базовый fieldPath для бэка; суффикс нужен
     // только для отдельной агрегации/алиаса/видимости строки.
     const basePath = stripDuplicateColumnSuffix(emitPath);
-    // Составная колонка + те же атомы в «Текущем составе» → иначе два selectedFields
-    // с fieldName=name без alias → «Алиас 'name' уже используется».
-    if (expandedFromComposite && explicitAtomicBasePaths.has(basePath)) {
-      return [];
-    }
     if (basePath.split('.').length > MAX_SELECTED_FIELD_PATH_SEGMENTS) {
       return [];
     }
@@ -364,6 +357,14 @@ function buildRowReportTableFields(
     // Alias только для изменённых подписей: `_` вместо пробелов в кастомном тексте.
     // Дефолт «Сущность -> Поле» в alias не кодируем (подчёркивания туда не добавляем).
     const isDupBase = (baseOccurrenceCount.get(basePath) ?? 0) > 1;
+    const isStandaloneCompositeMember =
+      !expandedFromComposite && compositeMemberBasePaths.has(basePath);
+    const standaloneMemberOccurrence = isStandaloneCompositeMember
+      ? (explicitCompositeMemberOccurrenceByPath.get(basePath) ?? 0) + 1
+      : 0;
+    if (isStandaloneCompositeMember) {
+      explicitCompositeMemberOccurrenceByPath.set(basePath, standaloneMemberOccurrence);
+    }
     // Индекс из UI-ключа («field#2» → 2), НЕ из порядка эмита: клон выше оригинала
     // всё равно должен получить уникальный alias, а голый path — остаться без forced alias.
     const uiDupIndex = getDuplicateColumnIndex(emitPath);
@@ -379,10 +380,13 @@ function buildRowReportTableFields(
         );
     if (apiAlias) {
       payload.alias = apiAlias;
-    } else if (isDupBase && uiDupIndex > 1) {
+    } else if (isDupBase && (uiDupIndex > 1 || isStandaloneCompositeMember)) {
       // Уникальный alias для клонов «field#N»; оригинал (index 1) остаётся fieldName,
       // иначе content-ключи = alias и склейка составной колонки не находит members.
-      payload.alias = encodeSafeReportFieldAlias(displayLabel, uiDupIndex);
+      const aliasIndex = isStandaloneCompositeMember
+        ? standaloneMemberOccurrence
+        : uiDupIndex;
+      payload.alias = encodeSafeReportFieldAlias(displayLabel, aliasIndex);
     }
     // aggregation — только из селекта «Текущий состав»; ключ — строка (м.б. дубль
     // «field#N» → своя агрегация). Дубль НЕ наследует aggregation базы.
