@@ -31,7 +31,7 @@ jest.mock('../dashboard/lib/resolveWidgetColumnHeaderLabels', () => ({
 }));
 
 describe('cloned report column labels', () => {
-  it('restores a selected ФИО composite instead of its expanded member fields', () => {
+  it('does not restore legacy ФИО labels as a synthetic table field', () => {
     const selectedFields = [
       { fieldName: 'user.name' },
       { fieldName: 'surname' },
@@ -43,10 +43,9 @@ describe('cloned report column labels', () => {
       '__composite.User': 'Отчет по пользователям -> ФИО',
     };
 
-    expect(restoreReportComposeTableFieldsFromQuery(selectedFields, labels)).toEqual([
-      { value: 'user.name', label: 'Отчет по пользователям -> Пользователь' },
-      { value: '__composite.User', label: 'Отчет по пользователям -> ФИО' },
-    ]);
+    expect(
+      restoreReportComposeTableFieldsFromQuery(selectedFields, labels).map((field) => field.value),
+    ).toEqual(['user.name', 'surname', 'firstName', 'middleName']);
   });
 
   it('reapplies the UI label snapshot after the dashboard list reloads', () => {

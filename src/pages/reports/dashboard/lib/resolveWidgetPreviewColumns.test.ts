@@ -1,6 +1,5 @@
 import { describe, expect, it, jest } from '@jest/globals';
 
-import { formatReportCompositeCellValue } from '../../lib/reportEntityCompositeFields';
 import type { ReportQueryRequest } from '../../types/reportApiTypes';
 import { planWidgetPreviewColumns } from './resolveOpenReportColumnHeaderLabels';
 
@@ -48,29 +47,16 @@ describe('dashboard widget preview columns', () => {
     },
   ];
 
-  it('renders the saved ФИО composition as one column and combines its member values', () => {
-    const plan = planWidgetPreviewColumns(content, body, ['__composite.User']);
-
-    expect(plan.displayColumnKeys).toEqual(['__composite.User']);
-    expect(formatReportCompositeCellValue(plan.groups[0], content[0])).toBe('Иванов Иван Иванович');
-  });
-
-  it('keeps an extra Фамилия column alongside the saved ФИО composition', () => {
-    const contentWithExtraSurname = [{ ...content[0], Фамилия: 'Петров' }];
-    const bodyWithExtraSurname: ReportQueryRequest = {
-      selectedFields: [...body.selectedFields, { fieldName: 'surname', alias: 'Фамилия' }],
+  it('keeps backend-provided user fields as independent columns', () => {
+    const contentWithBackendFullName = [{ ...content[0], fullName: 'Иванов Иван Иванович' }];
+    const bodyWithBackendFullName: ReportQueryRequest = {
+      selectedFields: [{ fieldName: 'fullName' }, ...body.selectedFields],
       filters: [],
     };
 
-    const plan = planWidgetPreviewColumns(contentWithExtraSurname, bodyWithExtraSurname, [
-      '__composite.User',
-    ]);
+    const plan = planWidgetPreviewColumns(contentWithBackendFullName, bodyWithBackendFullName);
 
-    expect(plan.displayColumnKeys).toEqual(['__composite.User', 'Фамилия']);
-    expect(formatReportCompositeCellValue(plan.groups[0], contentWithExtraSurname[0])).toBe(
-      'Иванов Иван Иванович',
-    );
-    expect(contentWithExtraSurname[0]['Фамилия']).toBe('Петров');
+    expect(plan.displayColumnKeys).toEqual(['fullName', 'surname', 'firstName', 'middleName']);
   });
 
   it('keeps separately selected name fields as separate columns', () => {

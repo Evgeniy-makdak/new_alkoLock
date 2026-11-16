@@ -6,7 +6,6 @@ import {
   COORDINATES_COMPOSITE_KIND,
   MERGE_COORDINATE_TABLE_COLUMNS,
   applyReportCoordinateFieldGrouping,
-  buildReportCoordinatesCompositePropertyFieldName,
   buildSyntheticCoordinatesFilterField,
   expandCoordinatesCompositeFieldPath,
   formatReportCoordinatesCompositeCellValue,
@@ -28,7 +27,6 @@ import {
 
 import {
   buildReportTableFieldLeafKey,
-  formatRootReportTableFieldLabel,
   type ReportTableFieldOptionDraft,
 } from './buildReportTableFieldOptions';
 import {
@@ -55,19 +53,13 @@ export type ReportEntityCompositeKind = 'User' | 'MonitoringDevice' | 'Vehicle';
 type ReportEntityCompositeConfig = {
   referenceEntity: ReportEntityCompositeKind;
   memberFieldNames: string[];
-  /** Длинная подпись колонки таблицы. */
+  /** Legacy labels for reading previously saved synthetic paths. */
   labelKey: string;
-  /** Короткая подпись в фильтрах («Пользователь», «Алкозамок», «ТС»). */
+  /** Legacy labels for previously saved entity filters. */
   entityLabelKey: string;
-  /**
-   * false — не склеивать поля в «Состав колонок» / гриде результата.
-   * Нужно для User: SQL не ищет по ФИО как по одному полю.
-   */
+  /** Entity fields come from metadata and must remain independent columns. */
   mergeTableColumns?: boolean;
-  /**
-   * true — добавить составную опцию рядом с атомарными полями
-   * (ФИО / «Название (СН)» / «Марка модель (Гос.номер)»), не скрывая члены.
-   */
+  /** Kept false: do not expose frontend-generated aggregate options. */
   offerAsExtraOption?: boolean;
 };
 
@@ -82,12 +74,11 @@ function shouldOfferEntityCompositeOption(config: ReportEntityCompositeConfig): 
 const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
   {
     referenceEntity: 'User',
-    // ФИО = Фамилия + Имя + Отчество (без e-mail).
     memberFieldNames: ['surname', 'firstName', 'middleName'],
     labelKey: 'reports.composite.userDisplay',
     entityLabelKey: 'reports.composite.entityUser',
     mergeTableColumns: false,
-    offerAsExtraOption: true,
+    offerAsExtraOption: false,
   },
   {
     referenceEntity: 'MonitoringDevice',
@@ -95,7 +86,7 @@ const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
     labelKey: 'reports.composite.deviceDisplay',
     entityLabelKey: 'reports.composite.entityDevice',
     mergeTableColumns: false,
-    offerAsExtraOption: true,
+    offerAsExtraOption: false,
   },
   {
     referenceEntity: 'Vehicle',
@@ -103,7 +94,7 @@ const COMPOSITE_CONFIGS: ReportEntityCompositeConfig[] = [
     labelKey: 'reports.composite.vehicleDisplay',
     entityLabelKey: 'reports.composite.entityVehicle',
     mergeTableColumns: false,
-    offerAsExtraOption: true,
+    offerAsExtraOption: false,
   },
 ];
 
@@ -216,7 +207,7 @@ export function applyReportEntityCompositeFieldGrouping(
       groups.set(gk, group);
     }
     group.members.push(draft);
-    // Атомарные поля оставляем видимыми, если merge выключен (offerAsExtraOption).
+    // Keep metadata fields as separate options.
     if (!shouldMergeEntityTableColumns(config)) {
       passthrough.push(draft);
     }
@@ -362,17 +353,8 @@ export function planReportCompositeResultColumns(
       const compositeKey = buildReportCompositeFieldPath(prefix, config.referenceEntity);
       const allInContent = memberKeys.every((k) => keySet.has(k));
       const allSelected = memberKeys.every((k) => selectedSet.has(k));
-      const compositeSelected =
-        selectedSet.has(compositeKey) ||
-        (options?.composeCompositeKeys ?? []).some(
-          (k) => stripDuplicateColumnSuffix(k) === compositeKey,
-        );
-      // offerAsExtra: склеивать если составная опция была в «Текущем составе»
-      // (в т.ч. после sanitize body, когда __composite.* уже раскрыт в члены).
-      // Выбор Фамилия+Имя+Отчество по отдельности — три колонки, без авто-ФИО.
       const shouldMerge =
-        (shouldMergeEntityTableColumns(config) && allInContent && allSelected) ||
-        (config.offerAsExtraOption === true && allInContent && compositeSelected);
+        shouldMergeEntityTableColumns(config) && allInContent && allSelected;
       if (!shouldMerge) continue;
 
       // Экземпляры (оригинал + клоны) в порядке selectedFields / «Текущего состава».
@@ -918,8 +900,7 @@ export function normalizeCompositeTableFieldSelection(values: Values, options: V
   for (const opt of options) {
     const compositePath = String(opt.value);
     if (!isReportCompositeFieldPath(compositePath)) continue;
-    // User/Device/Vehicle с offerAsExtraOption: атомы и составная опция сосуществуют —
-    // не схлопываем выбор Фамилия+Имя+Отчество в «ФИО» автоматически.
+    // Legacy entity composite keys are expanded into metadata-backed fields above.
     const parsed = parseCompositePath(compositePath);
     if (parsed && parsed.kind !== COORDINATES_COMPOSITE_KIND) {
       const config = CONFIG_BY_ENTITY.get(parsed.kind);

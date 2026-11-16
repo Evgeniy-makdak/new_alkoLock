@@ -16,17 +16,6 @@ function basePathIncludesCompositeSegment(path: string): boolean {
   return path.split('.').includes(COMPOSITE_SEGMENT);
 }
 
-function labelForEntityCompositePath(path: string, t: TFunction): string {
-  const parts = path.split('.');
-  const idx = parts.indexOf(COMPOSITE_SEGMENT);
-  const kind = idx >= 0 ? parts[idx + 1] : '';
-  if (kind === 'User') return t('reports.composite.userDisplay');
-  if (kind === 'MonitoringDevice') return t('reports.composite.deviceDisplay');
-  if (kind === 'Vehicle') return t('reports.composite.vehicleDisplay');
-  if (kind === 'Coordinates') return t('reports.composite.entityCoordinates');
-  return '';
-}
-
 /**
  * Контракт бэка: selectable=false отменяет filterable для самого поля.
  * В UI фильтрации — только filterable && selectable === true.
@@ -122,16 +111,7 @@ export function buildReportFilterOptionsFromComposition(
       continue;
     }
 
-    // Составные User/Device/Vehicle (__composite.*) — фронтовые опции из «Текущего состава».
     if (basePathIncludesCompositeSegment(rawPath)) {
-      seen.add(rawPath);
-      options.push({
-        value: rawPath,
-        label:
-          (item.label != null && String(item.label).trim()) ||
-          labelForEntityCompositePath(rawPath, t) ||
-          rawPath,
-      });
       continue;
     }
 

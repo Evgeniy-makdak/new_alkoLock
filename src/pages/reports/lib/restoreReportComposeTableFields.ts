@@ -13,6 +13,7 @@ import {
   expandCompositeFieldPath,
   isReportCompositeFieldPath,
 } from './reportEntityCompositeFields';
+import { isReportCoordinatesCompositePath } from './reportCoordinateComposite';
 import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 /**
@@ -40,7 +41,7 @@ export function restoreReportComposeTableFieldsFromQuery(
   const usedCompositeIndexes = new Set<number>();
   for (const [key, rawLabel] of Object.entries(columnHeaderLabels)) {
     const label = (rawLabel ?? '').trim();
-    if (!isReportCompositeFieldPath(key) || !label) continue;
+    if (!isReportCoordinatesCompositePath(key) || !label) continue;
     const members = expandCompositeFieldPath(key);
     if (members.length < 2 || members.some(isReportCompositeFieldPath)) continue;
 

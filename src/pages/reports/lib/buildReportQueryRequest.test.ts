@@ -28,24 +28,12 @@ function field(fieldName: string, label: string): ReportFieldDefinition {
 }
 
 describe('buildReportQueryRequest', () => {
-  it.each([
-    {
-      tableFields: [
-        { value: '__composite.User', label: 'Отчет по пользователям -> ФИО' },
-        { value: 'surname', label: 'Отчет по пользователям -> Фамилия' },
-      ],
-    },
-    {
-      tableFields: [
-        { value: 'surname', label: 'Отчет по пользователям -> Фамилия' },
-        { value: '__composite.User', label: 'Отчет по пользователям -> ФИО' },
-      ],
-    },
-  ])('keeps an explicitly selected Фамилия beside ФИО in either order', ({ tableFields }) => {
+  it('sends each metadata-provided user field independently', () => {
     const metadata: ReportEntityMetadata = {
-      entityName: 'Users',
+      entityName: 'User',
       label: 'Отчет по пользователям',
       fields: [
+        field('fullName', 'Пользователь'),
         field('surname', 'Фамилия'),
         field('firstName', 'Имя'),
         field('middleName', 'Отчество'),
@@ -55,17 +43,19 @@ describe('buildReportQueryRequest', () => {
     const request = buildReportQueryRequest({
       metadata,
       outputRows: [],
-      fallbackReportTableFields: tableFields,
+      fallbackReportTableFields: [
+        { value: 'fullName', label: 'Отчет по пользователям -> Пользователь' },
+        { value: 'surname', label: 'Отчет по пользователям -> Фамилия' },
+        { value: 'firstName', label: 'Отчет по пользователям -> Имя' },
+        { value: 'middleName', label: 'Отчет по пользователям -> Отчество' },
+      ],
     });
 
-    expect(request.selectedFields).toEqual(
-      expect.arrayContaining([
-        { fieldName: 'surname' },
-        { fieldName: 'firstName' },
-        { fieldName: 'middleName' },
-        { fieldName: 'surname', alias: 'Фамилия' },
-      ]),
-    );
-    expect(request.selectedFields).toHaveLength(4);
+    expect(request.selectedFields).toEqual([
+      { fieldName: 'fullName' },
+      { fieldName: 'surname' },
+      { fieldName: 'firstName' },
+      { fieldName: 'middleName' },
+    ]);
   });
 });
