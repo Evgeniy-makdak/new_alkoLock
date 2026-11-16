@@ -238,6 +238,8 @@ export function ReportComposeModal({
     if (mode === 'create') {
       // Чтобы «Создать новый отчёт» открывался без черновых полей текущего отчёта.
       // При «Отмена» снимок будет восстановлен (handleClose).
+      prevComposeEntityRef.current = null;
+      knownDefaultTableFieldKeysRef.current = new Set();
       reportsStore.getState().setSelectedEntityName(null);
       reportsStore.getState().resetFilters();
       reportsStore.getState().setTableFieldDisplayParamByPath({});
@@ -634,6 +636,14 @@ export function ReportComposeModal({
     if (!open) {
       prevComposeEntityRef.current = null;
       knownDefaultTableFieldKeysRef.current = new Set();
+      return;
+    }
+
+    if (
+      mode === 'create' &&
+      (reportsStore.getState().selectedEntityName !== selectedEntityName ||
+        reportsStore.getState().metadata !== metadata)
+    ) {
       return;
     }
 
@@ -1205,7 +1215,9 @@ export function ReportComposeModal({
                 setComposeSortRows([]);
                 setComposeGroupRows([]);
                 setComposeHavingLogicOperator('and');
-                reportGenerationStore.getState().clearResults();
+                if (mode === 'edit') {
+                  reportGenerationStore.getState().clearResults();
+                }
               }}
             />
             {showColumnsSection ? (

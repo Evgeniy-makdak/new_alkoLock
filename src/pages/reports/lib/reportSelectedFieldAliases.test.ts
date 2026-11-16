@@ -8,7 +8,9 @@ import { applyDashboardColumnHeaderLabelSnapshot } from '../dashboard/lib/applyD
 import { orderColumnKeysByHeaderHints } from './reportContentColumnOrder';
 import { buildReportColumnHeaderLabelsFromComposeFields } from './reportSelectedFieldAliases';
 import { restoreReportComposeTableFieldsFromQuery } from './restoreReportComposeTableFields';
+import { formatReportAggregationHeaderSuffix } from './reportAggregationDisplay';
 import type { ReportQueryRequest } from '../types/reportApiTypes';
+import i18n from 'i18next';
 
 jest.mock('./buildReportTableFieldOptions', () => ({
   isReportTableFieldLabelAutoQualified: (label: string) =>
@@ -169,5 +171,21 @@ describe('cloned report column labels', () => {
       { value: 'user.name#2', label: 'Пользователь -> Имя_1' },
       { value: 'user.name', label: 'Пользователь -> Имя' },
     ]);
+  });
+
+  it('restores the entity prefix when an aggregated source label is used for a system clone', async () => {
+    const body: ReportQueryRequest = {
+      selectedFields: [
+        { fieldName: 'timestamp', aggregation: 'min' },
+        { fieldName: 'timestamp', alias: 'Дата_1', aggregation: 'max' },
+      ],
+      filters: [],
+    };
+    const aggregationSuffix = formatReportAggregationHeaderSuffix('min', i18n.t.bind(i18n));
+    const labels = await resolveOpenReportColumnHeaderLabels('DeviceEvent', body, {
+      timestamp: `Отчёт о событиях -> Дата${aggregationSuffix}`,
+    });
+
+    expect(labels['Дата_1']).toBe('Отчёт о событиях -> Дата_1');
   });
 });

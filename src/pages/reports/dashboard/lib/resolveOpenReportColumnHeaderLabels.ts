@@ -1,3 +1,5 @@
+import i18n from 'i18next';
+
 import {
   collectReportContentColumnKeys,
   isReportTableFieldLabelAutoQualified,
@@ -13,6 +15,7 @@ import {
   decodeReportFieldAliasForUi,
   extractReportTableFieldLabelLeaf,
 } from '../../lib/reportSelectedFieldAliases';
+import { formatReportAggregationHeaderSuffix } from '../../lib/reportAggregationDisplay';
 import type {
   ReportQueryRequest,
   ReportSelectedFieldPayload,
@@ -205,7 +208,17 @@ export async function resolveOpenReportColumnHeaderLabels(
     const cloneOrdinal = Number(alias.match(/_(\d+)$/)?.[1] ?? 0);
     if (cloneOrdinal < 1) continue;
 
-    const baseFull = (labels[path] ?? '').trim();
+    const baseFieldAggregation = selectedFields.find(
+      (selectedField) => (selectedField.fieldName ?? '').trim() === path,
+    )?.aggregation;
+    const aggregationSuffix = baseFieldAggregation
+      ? formatReportAggregationHeaderSuffix(baseFieldAggregation, i18n.t.bind(i18n))
+      : '';
+    const baseHeader = (labels[path] ?? '').trim();
+    const baseFull =
+      aggregationSuffix && baseHeader.endsWith(aggregationSuffix)
+        ? baseHeader.slice(0, -aggregationSuffix.length).trimEnd()
+        : baseHeader;
     if (!baseFull || !isReportTableFieldLabelAutoQualified(baseFull)) continue;
     const baseLeaf = extractReportTableFieldLabelLeaf(baseFull) || baseFull;
     const systemEncoded = `${baseLeaf.replace(/\s+/g, '_')}_${cloneOrdinal}`;
