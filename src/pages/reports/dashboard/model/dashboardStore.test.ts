@@ -201,4 +201,39 @@ describe('dashboardStore report entity changes', () => {
     expect(reportGenerationStore.getState().queryContext?.savedReportId).toBe(22);
     expect(reportGenerationStore.getState().queryContext?.savedReportEntityName).toBe('Driver');
   });
+
+  it('persists the selected report sort in the saved dashboard definition', async () => {
+    reportGenerationStore.getState().setQueryContext({
+      entityName: 'Vehicle',
+      savedReportEntityName: 'Vehicle',
+      savedReportId: 11,
+      savedDashboardId: '9',
+      body: { selectedFields: [{ fieldName: 'id' }], filters: [] },
+      sort: ['createdAt,DESC'],
+    });
+
+    const syncPromise = dashboardStore.getState().syncOpenedFullReportToDashboards(
+      reportGenerationStore.getState().queryContext!,
+    );
+    expect(dashboardStore.getState().items[0]?.layout.cells[0]?.widget?.sort).toEqual([
+      'createdAt,DESC',
+    ]);
+    await syncPromise;
+
+    expect(updateSavedReport).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({
+        definition: expect.objectContaining({
+          pageableDto: {
+            limit: 25,
+            offset: 0,
+            sort: [{ field: 'createdAt', direction: 'DESC' }],
+          },
+        }),
+      }),
+    );
+    expect(dashboardStore.getState().items[0]?.layout.cells[0]?.widget?.sort).toEqual([
+      'createdAt,DESC',
+    ]);
+  });
 });

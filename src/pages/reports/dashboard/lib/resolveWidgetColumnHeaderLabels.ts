@@ -3,7 +3,17 @@ import { buildReportColumnHeaderLabels } from '../../lib/buildReportColumnHeader
 import {
   applyReportEntityListLabel,
   collectReferenceEntitiesFromMetadata,
+  findReportFieldDefForColumnKey,
 } from '../../lib/buildReportTableFieldOptions';
+import {
+  type ReportDateTimePrecision,
+  resolveReportDateTimePrecision,
+} from '../../lib/formatReportTableDateTime';
+import { isReportDateTimeField } from '../../lib/reportFieldFilterKind';
+import {
+  DEVICE_EVENT_REPORT_ROW_COLUMNS,
+  REPORT_RESULT_COLUMNS_BY_REFERENCE,
+} from '../../lib/reportResultTableColumns';
 import type {
   ReportEntityListItem,
   ReportEntityMetadata,
@@ -18,6 +28,11 @@ type WidgetMetadataBundle = {
 
 /** Кэш metadata по корневой сущности: виджеты одной сущности не дублируют запросы. */
 const bundleCache = new Map<string, Promise<WidgetMetadataBundle | null>>();
+const STATIC_DATE_COLUMN_NAMES = new Set(
+  [...DEVICE_EVENT_REPORT_ROW_COLUMNS, ...Object.values(REPORT_RESULT_COLUMNS_BY_REFERENCE).flat()]
+    .filter((column) => column.isDateTime)
+    .map((column) => column.field),
+);
 
 async function loadBundle(entityName: string): Promise<WidgetMetadataBundle | null> {
   let entities: ReportEntityListItem[] = [];
@@ -91,4 +106,60 @@ export async function resolveWidgetColumnHeaderLabels(
   } catch {
     return {};
   }
+}
+
+/** Date precision by content key, using the same metadata and path rules as report tables. */
+export async function resolveWidgetDateTimeColumnFormats(
+  entityName: string,
+  body: ReportQueryRequest,
+): Promise<Record<string, ReportDateTimePrecision>> {
+  if (!entityName) return {};
+
+  const bundle = await getBundle(entityName);
+  if (!bundle) return {};
+
+  return resolveWidgetDateTimeColumnFormatsFromMetadata(
+    body,
+    bundle.metadata,
+    bundle.referenceEntityMetadataByName,
+  );
+}
+
+export function resolveWidgetDateTimeColumnFormatsFromMetadata(
+  body: ReportQueryRequest,
+  metadata: ReportEntityMetadata,
+  referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>,
+): Record<string, ReportDateTimePrecision> {
+  const selectedFields = body.selectedFields ?? [];
+  if (!selectedFields.length) return {};
+
+  const fieldMap = new Map(metadata.fields.map((field) => [field.fieldName, field]));
+  const formats: Record<string, ReportDateTimePrecision> = {};
+
+  for (const selectedField of selectedFields) {
+    const fieldName = (selectedField.fieldName ?? '').trim();
+    if (!fieldName) continue;
+
+    const fieldDef = findReportFieldDefForColumnKey(
+      fieldName,
+      metadata,
+      [],
+      fieldMap,
+      {},
+      referenceEntityMetadataByName,
+    );
+    const precision = resolveReportDateTimePrecision(fieldName);
+    const leaf = fieldName.slice(fieldName.lastIndexOf('.') + 1);
+    const isDateTime =
+      (fieldDef != null && isReportDateTimeField(fieldDef)) ||
+      precision === 'day' ||
+      STATIC_DATE_COLUMN_NAMES.has(leaf);
+    if (!isDateTime) continue;
+
+    formats[fieldName] = precision;
+    const alias = (selectedField.alias ?? '').trim();
+    if (alias) formats[alias] = precision;
+  }
+
+  return formats;
 }

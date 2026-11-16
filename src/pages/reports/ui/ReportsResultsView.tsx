@@ -7,6 +7,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useMediaQuery, Box, CircularProgress, IconButton, TablePagination, Tooltip, Typography } from '@mui/material';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
+import { dashboardStore } from '@pages/reports/dashboard/model/dashboardStore';
 import {
   alignReportGridSortModelToColumnFields,
   buildReportGridSortModelFromSortParams,
@@ -430,9 +431,11 @@ export function ReportsResultsView() {
     setSort(nextSort);
     const ctx = reportGenerationStore.getState().queryContext;
     if (ctx && !reportSortParamsEqual(ctx.sort ?? [], nextSort)) {
-      reportGenerationStore.setState({
-        queryContext: { ...ctx, sort: nextSort },
-      });
+      const updatedContext = { ...ctx, sort: nextSort };
+      reportGenerationStore.setState({ queryContext: updatedContext });
+      if (updatedContext.savedReportId != null) {
+        void dashboardStore.getState().syncOpenedFullReportToDashboards(updatedContext);
+      }
     }
     changeTableState({ page: 0, pageSize: pagination.pageSize });
     setPagination({ page: 0 });

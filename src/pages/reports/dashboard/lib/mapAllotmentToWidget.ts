@@ -52,6 +52,38 @@ export function allotmentDefinitionToQueryRequest(
   return body;
 }
 
+export function pageableSortToReportSortParams(pageableDto: unknown): string[] {
+  if (!isRecord(pageableDto) || !Array.isArray(pageableDto.sort)) return [];
+
+  return pageableDto.sort.flatMap((item) => {
+    if (typeof item === 'string') {
+      return item.trim() ? [item.trim()] : [];
+    }
+    if (!isRecord(item)) return [];
+
+    const field = typeof item.field === 'string' ? item.field.trim() : '';
+    const direction =
+      typeof item.direction === 'string' ? item.direction.trim().toUpperCase() : '';
+    return field && (direction === 'ASC' || direction === 'DESC') ? [`${field},${direction}`] : [];
+  });
+}
+
+export function reportSortParamsToPageableSort(
+  sortParams: string[] | undefined,
+): Array<{ field: string; direction: 'ASC' | 'DESC' }> {
+  return (sortParams ?? []).flatMap((param) => {
+    const separatorIndex = param.lastIndexOf(',');
+    if (separatorIndex <= 0) return [];
+
+    const field = param.slice(0, separatorIndex).trim();
+    const direction = param
+      .slice(separatorIndex + 1)
+      .trim()
+      .toUpperCase();
+    return field && (direction === 'ASC' || direction === 'DESC') ? [{ field, direction }] : [];
+  });
+}
+
 export function buildAllotmentDefinitionFromWidget(
   widget: DashboardWidgetBinding,
 ): ReportDashboardAllotmentDefinition {
@@ -84,11 +116,17 @@ export function allotmentToWidgetBinding(
   // entityName — только из ответа бэка; имя отчёта — не сущность.
   const entityName = resolveReportEntityName(allotment.report);
   if (!entityName) return null;
+  const definition = allotment.report?.definition;
+  const definitionRecord: Record<string, unknown> | null = isRecord(definition)
+    ? definition
+    : null;
+  const pageableDto = definitionRecord?.['pageableDto'];
 
   return {
     title: allotment.report?.name?.trim() || entityName,
     entityName,
     body,
+    sort: pageableSortToReportSortParams(pageableDto),
     preferredViewMode: 'table',
     allotmentId: allotment.id,
     reportId: allotment.report?.id,

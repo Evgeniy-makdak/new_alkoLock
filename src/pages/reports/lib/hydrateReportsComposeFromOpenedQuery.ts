@@ -112,8 +112,7 @@ export async function hydrateReportsComposeFromOpenedQuery(
   }
   reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
 
-  const sort = args.sort?.filter(Boolean) ?? [];
-  if (sort.length) {
-    reportGenerationStore.getState().setSort(sort);
+  if (args.sort !== undefined) {
+    reportGenerationStore.getState().setSort(args.sort.filter(Boolean));
   }
 }

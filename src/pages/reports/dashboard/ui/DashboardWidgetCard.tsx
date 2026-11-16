@@ -10,7 +10,16 @@ import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/mat
 import { Button, ButtonsType } from '@shared/ui/button';
 
 import { executeReportQuery } from '../../api/reportsApi';
+import {
+  type ReportDateTimePrecision,
+  formatReportTableDateTime,
+} from '../../lib/formatReportTableDateTime';
+import { finalizeReportCellDisplay } from '../../lib/reportDisplayValue';
 import { hydrateReportsComposeFromOpenedQuery } from '../../lib/hydrateReportsComposeFromOpenedQuery';
+import {
+  buildReportFieldAggregationMap,
+  isReportFieldAggregatedForDisplay,
+} from '../../lib/reportAggregationDisplay';
 import { formatReportCompositeCellValue } from '../../lib/reportEntityCompositeFields';
 import {
   DEFAULT_REPORT_PAGE_SIZE,
@@ -24,6 +33,7 @@ import {
   planWidgetPreviewColumns,
   resolveOpenReportColumnHeaderLabels,
 } from '../lib/resolveOpenReportColumnHeaderLabels';
+import { resolveWidgetDateTimeColumnFormats } from '../lib/resolveWidgetColumnHeaderLabels';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardCell, DashboardWidgetBinding } from '../types';
 
@@ -53,6 +63,9 @@ export function DashboardWidgetCard({
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewRows, setPreviewRows] = useState<Array<Record<string, unknown>>>([]);
+  const [dateTimeColumnFormats, setDateTimeColumnFormats] = useState<
+    Record<string, ReportDateTimePrecision>
+  >({});
   const [totalElements, setTotalElements] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const pageRef = useRef(0);
@@ -71,6 +84,10 @@ export function DashboardWidgetCard({
     [composeCompositeKeys, previewRows, widget?.body],
   );
   const columns = previewColumnPlan.displayColumnKeys.slice(0, 8);
+  const aggregationMap = useMemo(
+    () => buildReportFieldAggregationMap(widget?.body.selectedFields),
+    [widget?.body.selectedFields],
+  );
   const compositeGroupsByKey = useMemo(
     () => new Map(previewColumnPlan.groups.map((group) => [group.compositeKey, group])),
     [previewColumnPlan.groups],
@@ -96,6 +113,7 @@ export function DashboardWidgetCard({
         const result = await executeReportQuery(binding.entityName, binding.body, {
           page: 0,
           size: WIDGET_PAGE_SIZE,
+          sort: binding.sort,
           branchIds: binding.branchIds,
         });
         const content = Array.isArray(result?.content)
@@ -142,6 +160,7 @@ export function DashboardWidgetCard({
         const result = await executeReportQuery(binding.entityName, binding.body, {
           page: nextPage,
           size: WIDGET_PAGE_SIZE,
+          sort: binding.sort,
           branchIds: binding.branchIds,
         });
         const content = Array.isArray(result?.content)
@@ -184,6 +203,22 @@ export function DashboardWidgetCard({
     }
     void resetAndLoadFirstPage(widget);
   }, [widget, resetAndLoadFirstPage]);
+
+  useEffect(() => {
+    if (!widget) {
+      setDateTimeColumnFormats((current) => (Object.keys(current).length ? {} : current));
+      return;
+    }
+
+    setDateTimeColumnFormats({});
+    let cancelled = false;
+    void resolveWidgetDateTimeColumnFormats(widget.entityName, widget.body).then((formats) => {
+      if (!cancelled) setDateTimeColumnFormats(formats);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [widget]);
 
   useEffect(() => {
     if (!widget || hasOwnHeaderLabels) {
@@ -232,10 +267,12 @@ export function DashboardWidgetCard({
         entityName: binding.entityName,
         body: binding.body,
         columnHeaderLabels,
+        sort: binding.sort ?? [],
       });
       reportGenerationStore.getState().setQueryContext({
         entityName: binding.entityName,
         body: binding.body,
+        sort: binding.sort ?? [],
         branchIds: binding.branchIds,
         columnHeaderLabels,
         branchOffices: binding.branchOffices,
@@ -420,7 +457,15 @@ export function DashboardWidgetCard({
                         const value = compositeGroup
                           ? formatReportCompositeCellValue(compositeGroup, row)
                           : row[col];
-                        return <td key={col}>{formatCell(value)}</td>;
+                        const precision = dateTimeColumnFormats[col];
+                        const isAggregatedNumber =
+                          typeof value === 'number' &&
+                          isReportFieldAggregatedForDisplay(col, aggregationMap);
+                        const displayValue =
+                          precision && !isAggregatedNumber
+                            ? formatReportTableDateTime(value, precision)
+                            : formatCell(value);
+                        return <td key={col}>{finalizeReportCellDisplay(displayValue)}</td>;
                       })}
                     </tr>
                   ))}

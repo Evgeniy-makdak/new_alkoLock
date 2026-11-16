@@ -28,6 +28,8 @@ export type DashboardWidgetBinding = {
   title: string;
   entityName: string;
   body: ReportQueryRequest;
+  /** pageable.sort сохранённого отчёта (например, ["createdAt,DESC"]). */
+  sort?: string[];
   branchIds?: number[];
   columnHeaderLabels?: Record<string, string>;
   branchOffices?: Values;

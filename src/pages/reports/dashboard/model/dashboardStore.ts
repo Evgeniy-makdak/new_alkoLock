@@ -31,6 +31,7 @@ import {
   buildAllotmentDefinitionFromWidget,
   buildLayoutFromWidgets,
   parseBackendDashboardId,
+  reportSortParamsToPageableSort,
 } from '../lib/mapAllotmentToWidget';
 import {
   applyDashboardColumnHeaderLabelSnapshot,
@@ -267,11 +268,19 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     const reportId = ctx.savedReportId;
     if (reportId == null) return;
 
+    const reportSort = ctx.sort;
+    if (reportSort !== undefined) {
+      set((state) => ({
+        items: patchWidgetsByReportId(state.items, reportId, { sort: [...reportSort] }),
+      }));
+    }
+
     const preferredViewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
     const widgetPatch: Partial<DashboardWidgetBinding> = {
       entityName: ctx.entityName,
       body: ctx.body,
       ...(ctx.columnHeaderLabels ? { columnHeaderLabels: ctx.columnHeaderLabels } : {}),
+      ...(ctx.sort !== undefined ? { sort: [...ctx.sort] } : {}),
       branchIds: ctx.branchIds,
       branchOffices: ctx.branchOffices,
       preferredViewMode,
@@ -318,9 +327,18 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
         ? {
             limit: Number(existingPageable.limit) || 25,
             offset: Number(existingPageable.offset) || 0,
-            sort: Array.isArray(existingPageable.sort) ? existingPageable.sort : [],
+            sort:
+              ctx.sort !== undefined
+                ? reportSortParamsToPageableSort(ctx.sort)
+                : Array.isArray(existingPageable.sort)
+                  ? existingPageable.sort
+                  : [],
           }
-        : { limit: 25, offset: 0, sort: [] as [] };
+        : {
+            limit: 25,
+            offset: 0,
+            sort: reportSortParamsToPageableSort(ctx.sort),
+          };
       const definitionBody = {
         ...ctx.body,
         // Пустые values у фильтров на save не отправляем.
