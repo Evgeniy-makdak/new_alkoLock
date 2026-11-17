@@ -4,6 +4,22 @@ export function isReportBooleanField(field: ReportFieldDefinition): boolean {
   return (field.type ?? '').toUpperCase().trim() === 'BOOLEAN';
 }
 
+/** Text fields may accept values that are not present in the autocomplete options. */
+export function isReportFreeTextField(field: ReportFieldDefinition | undefined): boolean {
+  const type = (field?.type ?? '').toUpperCase().trim();
+  return (
+    type === 'TEXT' ||
+    type === 'STRING' ||
+    type === 'CHAR' ||
+    type === 'NCHAR' ||
+    type === 'CLOB' ||
+    type === 'LONGTEXT' ||
+    type === 'MEDIUMTEXT' ||
+    type.startsWith('VARCHAR') ||
+    type.startsWith('NVARCHAR')
+  );
+}
+
 function coordinateFieldLeafName(fieldName: string): string {
   const lower = fieldName.toLowerCase();
   const leaf = lower.includes('.') ? lower.slice(lower.lastIndexOf('.') + 1) : lower;

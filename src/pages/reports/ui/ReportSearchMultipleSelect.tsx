@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import { flushSync } from 'react-dom';
@@ -197,6 +198,21 @@ export function ReportSearchMultipleSelect<T>({
     [onBlur, commitPendingFreeText],
   );
 
+  const handleKeyDownCapture = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Enter' || !commitFreeText || !setValueStore) return;
+      const input = event.target;
+      if (!(input instanceof HTMLInputElement)) return;
+      if (input.getAttribute('aria-activedescendant')) return;
+      if (!pendingFreeTextRef.current.trim()) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      commitPendingFreeText();
+    },
+    [commitFreeText, setValueStore, commitPendingFreeText],
+  );
+
   /**
    * Нельзя вешать onClick/onMouseDown в slotProps.clearIndicator:
    * в MUI Autocomplete они идут после getClearProps() и полностью затирают очистку.
@@ -217,6 +233,7 @@ export function ReportSearchMultipleSelect<T>({
 
   return (
     <div
+      onKeyDownCapture={handleKeyDownCapture}
       onMouseDownCapture={onClearIntentCapture}
       onPointerDownCapture={(event) => {
         if (!blockEmptyClear) return;

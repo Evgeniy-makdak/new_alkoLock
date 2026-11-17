@@ -18,7 +18,10 @@ import {
   normalizeNestedFilterPath,
 } from '@pages/reports/lib/reportNestedFilterPath';
 import { buildNestedEntityStaticValueOptions } from '@pages/reports/lib/reportNestedEntityValueOptions';
-import { isReportBooleanField } from '@pages/reports/lib/reportFieldFilterKind';
+import {
+  isReportBooleanField,
+  isReportFreeTextField,
+} from '@pages/reports/lib/reportFieldFilterKind';
 import {
   commitReportBetweenFilterSlot,
   reportBetweenSlotValues,
@@ -313,7 +316,9 @@ export function NestedFilterValueControl({
       isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText={!forceSingle}
+      commitFreeText={
+        !forceSingle || (!isBooleanValueField && isReportFreeTextField(fetchTarget.field))
+      }
       onInputChange={
         valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
       }

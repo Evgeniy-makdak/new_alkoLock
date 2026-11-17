@@ -23,6 +23,7 @@ import {
   isReportBooleanField,
   isReportCoordinateField,
   isReportDateTimeField,
+  isReportFreeTextField,
   isReportTimeOnlyField,
   isReportYearOnlyField,
 } from '@pages/reports/lib/reportFieldFilterKind';
@@ -352,7 +353,7 @@ export function ReportFieldFilterControl({
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
-        commitFreeText={!domainMode.isSingle}
+        commitFreeText={!domainMode.isSingle || isReportFreeTextField(field)}
         onInputChange={(next) => setSearchQuery(next)}
         setValueStore={(_, next) =>
           onChange(
@@ -442,7 +443,7 @@ export function ReportFieldFilterControl({
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText={!valueMode.isSingle}
+      commitFreeText={!valueMode.isSingle || isReportFreeTextField(field)}
       setValueStore={(_, next) =>
         onChange(
           valueMode.isSingle
