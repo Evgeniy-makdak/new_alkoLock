@@ -363,7 +363,7 @@ type CollectReportTableFieldDraftsParams = {
 /**
  * Черновики колонок: корень + вложенные referenceEntity.
  * Корень: «База -> поле».
- * Вторичные: «label вторичной metadata -> поле» (без базовой сущности).
+ * Вложенные: «label поля-связи родителя -> поле» (без базовой сущности).
  */
 function collectReportTableFieldDrafts(
   params: CollectReportTableFieldDraftsParams,
@@ -441,19 +441,12 @@ function collectReportTableFieldDrafts(
       const meta = referenceEntityMetadataByName[referenceEntity] ?? null;
       if (!meta?.fields?.length) return;
 
-      // 2-й сегмент — из secondary metadata (label), иначе label связи из базовой metadata.
-      const nestedEntityName = meta.entityName?.trim() ?? '';
-      const fromNestedMetaLabel = (meta.label ?? '').trim();
-      const fromNestedResolved =
-        !fromNestedMetaLabel &&
-        nestedEntityName &&
-        nestedEntityName !== rootEntityName
-          ? resolveReportEntitySourceLabel(meta, entities)
-          : '';
-      const secondaryLabel =
-        fromNestedMetaLabel || fromNestedResolved || fallbackSourceLabel;
-      // Вторичные строки — только из ответа бэка (label metadata → поле), без базовой сущности.
-      const sourceLabel = secondaryLabel.trim();
+      const autoServiceUserRelation =
+        rootEntityName === 'AutoServiceHistory' &&
+        referenceEntity === 'User' &&
+        (prefix === 'initiator' || prefix === 'handler');
+      // Заголовок вложенных атрибутов всегда берётся из поля-связи родителя.
+      const sourceLabel = fallbackSourceLabel.trim();
 
       for (const f of nestedFieldsForReportTableColumns(meta.fields, referenceEntity)) {
         if (!acceptField(f)) continue;
@@ -469,7 +462,9 @@ function collectReportTableFieldDrafts(
             baseLabel: f.label || f.fieldName,
             sourceLabel,
             qualifyAs: 'nested',
-            leafKey: buildReportTableFieldLeafKey(referenceEntity, f.fieldName),
+            leafKey: autoServiceUserRelation
+              ? `${buildReportTableFieldLeafKey(referenceEntity, f.fieldName)}:${prefix}`
+              : buildReportTableFieldLeafKey(referenceEntity, f.fieldName),
           });
         }
 
