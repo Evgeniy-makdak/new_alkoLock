@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ViewColumnOutlinedIcon from '@mui/icons-material/ViewColumnOutlined';
 import { Box } from '@mui/material';
 
+import { appendNewlyDiscoveredReportTableDefaults } from '@pages/reports/lib/appendNewlyDiscoveredReportTableDefaults';
 import { REPORT_QUERY_TRANSPORT_ERROR, executeReportQuery } from '@pages/reports/api/reportsApi';
 import {
   buildGroupableColumnOptions,
@@ -206,6 +207,7 @@ export function ReportComposeModal({
     useState<ReportLogicOperator>('and');
   const [selectedBranchOffices, setSelectedBranchOffices] = useState<Values>([]);
   const prevComposeEntityRef = useRef<string | null>(null);
+  const entityChangedDuringEditRef = useRef(false);
   /** Уже учтённые defaultSelected-пути — чтобы при подгрузке nested дозаполнить состав. */
   const knownDefaultTableFieldKeysRef = useRef<Set<string>>(new Set());
   /** Baseline UI при открытии edit — «Сформировать» неактивна, пока снимок совпадает. */
@@ -216,6 +218,7 @@ export function ReportComposeModal({
   useLayoutEffect(() => {
     if (!open) return;
     confirmedRef.current = false;
+    entityChangedDuringEditRef.current = false;
     snapshotRef.current = captureReportsComposeSnapshot();
     const savedReportContext = reportGenerationStore.getState().queryContext;
     savedReportIdRef.current = mode === 'edit' ? savedReportContext?.savedReportId : undefined;
@@ -731,19 +734,15 @@ export function ReportComposeModal({
         return { value: key, label };
       });
 
-      // create: вложенные defaultSelected, появившиеся после загрузки secondary metadata.
-      if (mode === 'create' && newlyDiscoveredDefaults.length > 0) {
-        const present = new Set(remapped.map((item) => String(item.value)));
-        for (const item of newlyDiscoveredDefaults) {
-          const key = String(item.value);
-          if (present.has(key)) continue;
-          remapped.push({ value: key, label: item.label ?? key });
-          present.add(key);
-        }
-      }
+      const withDiscoveredDefaults = appendNewlyDiscoveredReportTableDefaults(
+        remapped,
+        newlyDiscoveredDefaults,
+        mode,
+        entityChangedDuringEditRef.current,
+      );
 
       const deduped = Array.from(
-        new Map(remapped.map((item) => [String(item.value), item])).values(),
+        new Map(withDiscoveredDefaults.map((item) => [String(item.value), item])).values(),
       );
       const normalized = normalizeCompositeTableFieldSelection(deduped, currentOptions);
       const unchanged =
@@ -1212,6 +1211,9 @@ export function ReportComposeModal({
               part="entity"
               confirmEntityChange={mode === 'edit'}
               onAfterEntityChange={() => {
+                if (mode === 'edit') {
+                  entityChangedDuringEditRef.current = true;
+                }
                 setComposeSortRows([]);
                 setComposeGroupRows([]);
                 setComposeHavingLogicOperator('and');
