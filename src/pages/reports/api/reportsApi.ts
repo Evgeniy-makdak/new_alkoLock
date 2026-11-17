@@ -10,6 +10,7 @@ import {
 import type { AppAxiosResponse } from '@shared/api/baseQueryTypes';
 
 import { appendReportBranchIdsToQueryParts } from '../lib/buildReportBranchQueryParams';
+import { encodeReportSortParamForQuery } from '../lib/buildReportSortParam';
 import {
   finalizeReportQueryBodyForGroupBy,
   serializeReportQueryRequest,
@@ -92,7 +93,7 @@ function buildQueryUrl(entityName: string, pageable?: ReportQueryPageable): stri
     queryParts.push(`page=${pageable.page}`, `size=${pageable.size}`);
     for (const sort of pageable.sort ?? []) {
       if (sort) {
-        queryParts.push(`sort=${sort}`);
+        queryParts.push(`sort=${encodeReportSortParamForQuery(sort)}`);
       }
     }
     appendReportBranchIdsToQueryParts(queryParts, pageable.branchIds);

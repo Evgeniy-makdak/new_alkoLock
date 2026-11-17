@@ -5,7 +5,14 @@ import {
   isReportCompositeFieldPath,
   planReportCompositeResultColumns,
 } from './reportEntityCompositeFields';
-import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
+import {
+  getDuplicateColumnIndex,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
+import {
+  encodeReportFieldAliasForApi,
+  extractReportTableFieldLabelLeaf,
+} from './reportSelectedFieldAliases';
 
 import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
 import { createReportComposeSortRow } from '../types/reportComposeSort';
@@ -37,6 +44,7 @@ export function resolveReportSortApiFieldForQuery(
   columnKey: string,
   _groupBy?: string[],
 ): string | null {
+  void _groupBy;
   return resolveComposeColumnApiField(columnKey);
 }
 
@@ -64,7 +72,9 @@ export function buildReportSortFieldMap(
       map.set(fieldName, sortField);
       // content/колонка грида может быть с ключом = alias
       const alias = field.alias?.trim();
-      if (alias) map.set(alias, sortField);
+      if (alias) {
+        map.set(alias, field.aggregation ? alias : sortField);
+      }
     }
   }
 
@@ -228,17 +238,58 @@ export function resolveComposeColumnApiField(columnKey: string): string | null {
 export function buildComposeSortParams(
   rows: { columnKey: string; direction: 'ASC' | 'DESC' }[],
   groupBy?: string[],
+  selectedFields?: ReportSelectedFieldPayload[],
+  columnFields?: Values,
 ): string[] {
   return rows
     .map((row) => {
-      const apiField = resolveReportSortApiFieldForQuery(row.columnKey, groupBy);
-      if (!apiField) return null;
+      const baseField = resolveReportSortApiFieldForQuery(row.columnKey, groupBy);
+      if (!baseField) return null;
+
+      const column = columnFields?.find(
+        (item) => String(item.value) === row.columnKey,
+      );
+      const labelLeaf = column ? extractReportTableFieldLabelLeaf(column.label) : '';
+      const expectedAlias = labelLeaf ? encodeReportFieldAliasForApi(labelLeaf) : '';
+      const duplicateIndex = getDuplicateColumnIndex(row.columnKey);
+      const matchingFields = (selectedFields ?? []).filter(
+        (field) => field.fieldName?.trim() === baseField,
+      );
+      const selectedField =
+        matchingFields.find((field) => field.alias?.trim() === expectedAlias) ??
+        matchingFields[duplicateIndex - 1] ??
+        matchingFields[0];
+      const apiField =
+        selectedField?.aggregation && selectedField.alias?.trim()
+          ? selectedField.alias.trim()
+          : baseField;
       return `${apiField},${row.direction}`;
     })
     .filter((item): item is string => item != null);
 }
 
-function findComposeSortColumnKey(apiField: string, columnKeys: Values): string {
+function findComposeSortColumnKey(
+  apiField: string,
+  columnKeys: Values,
+  selectedFields?: ReportSelectedFieldPayload[],
+): string {
+  const aliasField = selectedFields?.find((field) => field.alias?.trim() === apiField);
+  if (aliasField?.aggregation) {
+    const aliasIndex = (selectedFields ?? [])
+      .filter((field) => field.fieldName === aliasField.fieldName)
+      .indexOf(aliasField);
+    const matchingColumns = columnKeys.filter(
+      (item) =>
+        resolveComposeColumnApiField(String(item.value)) === aliasField.fieldName,
+    );
+    const aliasColumn = matchingColumns.find(
+      (item) =>
+        encodeReportFieldAliasForApi(extractReportTableFieldLabelLeaf(item.label)) === apiField,
+    );
+    if (aliasColumn) return String(aliasColumn.value);
+    if (matchingColumns[aliasIndex]) return String(matchingColumns[aliasIndex].value);
+  }
+
   for (const item of columnKeys) {
     const key = String(item.value);
     if (resolveComposeColumnApiField(key) === apiField) {
@@ -258,6 +309,7 @@ function findComposeSortColumnKey(apiField: string, columnKeys: Values): string 
 export function parseComposeSortRowsFromSortParams(
   sortParams: string[],
   columnKeys: Values,
+  selectedFields?: ReportSelectedFieldPayload[],
 ): ReportComposeSortRow[] {
   return sortParams
     .map((param) => {
@@ -269,9 +321,18 @@ export function parseComposeSortRowsFromSortParams(
       if (directionRaw !== 'ASC' && directionRaw !== 'DESC') return null;
 
       return createReportComposeSortRow(
-        findComposeSortColumnKey(apiField, columnKeys),
+        findComposeSortColumnKey(apiField, columnKeys, selectedFields),
         directionRaw as ReportSortDirection,
       );
     })
     .filter((row): row is ReportComposeSortRow => row != null);
+}
+
+/** URL query value for pageable.sort; preserve Spring's comma direction separator. */
+export function encodeReportSortParamForQuery(sortParam: string): string {
+  const separatorIndex = sortParam.lastIndexOf(',');
+  if (separatorIndex < 0) return encodeURIComponent(sortParam);
+  return `${encodeURIComponent(sortParam.slice(0, separatorIndex))},${encodeURIComponent(
+    sortParam.slice(separatorIndex + 1),
+  )}`;
 }

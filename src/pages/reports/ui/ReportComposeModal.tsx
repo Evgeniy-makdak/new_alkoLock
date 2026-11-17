@@ -305,7 +305,9 @@ export function ReportComposeModal({
       reportGenerationStore.getState().sort.length > 0
         ? reportGenerationStore.getState().sort
         : (queryContext?.sort ?? []);
-    setComposeSortRows(parseComposeSortRowsFromSortParams(savedSort, tableFields));
+    setComposeSortRows(
+      parseComposeSortRowsFromSortParams(savedSort, tableFields, queryBody?.selectedFields),
+    );
     // Точный UI-снимок (оператор/значение having, флаг авто-агрегации) важнее
     // реконструкции из body.having: для endsWith aggregation в POST может отсутствовать.
     const savedGroupRows = queryContext?.composeGroupRows;
@@ -1025,7 +1027,6 @@ export function ReportComposeModal({
       ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
       : [];
     // Сортировка — по любому полю из «Текущего состава»; groupBy не сужает pageable.sort.
-    const sortParams = buildComposeSortParams(composeSortRows);
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
       {
         ...body,
@@ -1043,6 +1044,12 @@ export function ReportComposeModal({
           }
         : undefined,
       composeGroupRows,
+    );
+    const sortParams = buildComposeSortParams(
+      composeSortRows,
+      undefined,
+      bodyWithGroup.selectedFields,
+      resolveComposeTableFieldsSelection(),
     );
     const { pagination, setQueryContext, setPagination, setSort } =
       reportGenerationStore.getState();
