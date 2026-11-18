@@ -206,7 +206,10 @@ export function ReportsDashboardsPanel() {
             onClick={() => {
               setCreating(true);
               void createDashboard(newName, newDescription)
-                .then(() => setCreateOpen(false))
+                .then((saved) => {
+                  // При ошибке (дубль имени) диалог оставляем открытым — текст в snackbar.
+                  if (saved) setCreateOpen(false);
+                })
                 .finally(() => setCreating(false));
             }}>
             {t('common.create', { defaultValue: 'Создать' })}

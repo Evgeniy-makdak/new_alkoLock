@@ -656,8 +656,10 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       set({ selectedId: saved.id, editorOpen: true });
       return saved;
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to create dashboard',
+      // Snackbar как остальные ошибки бэка; store.error не трогаем — иначе список
+      // заменяется красным текстом и закрывается диалог создания/правки имени.
+      enqueueSnackbar(errorMessage(error, 'Failed to create dashboard'), {
+        variant: 'error',
       });
       return null;
     }
@@ -677,8 +679,8 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       });
       await get().loadList();
     } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to update dashboard',
+      enqueueSnackbar(errorMessage(error, 'Failed to update dashboard'), {
+        variant: 'error',
       });
     }
   },

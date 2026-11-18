@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { enqueueSnackbar } from 'notistack';
 
 import {
   Dialog,
@@ -25,22 +26,20 @@ export function DashboardReportNameDialog({ open, defaultName, onSubmit, onClose
   const { t } = useTranslation();
   const [name, setName] = useState(defaultName);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setName(defaultName);
-    setError(null);
     setSaving(false);
   }, [open, defaultName]);
 
   const handleSubmit = async () => {
     setSaving(true);
-    setError(null);
     try {
       const message = await onSubmit(name);
       if (message) {
-        setError(message);
+        // Дубль имени / ошибка бэка — красная плашка; диалог не закрываем.
+        enqueueSnackbar(message, { variant: 'error' });
       } else {
         onClose();
       }
@@ -80,11 +79,6 @@ export function DashboardReportNameDialog({ open, defaultName, onSubmit, onClose
             if (event.key === 'Enter' && !saving) void handleSubmit();
           }}
         />
-        {error ? (
-          <Typography variant="body2" color="error" sx={{ mt: 1.5 }}>
-            {error}
-          </Typography>
-        ) : null}
       </DialogContent>
       <DialogActions>
         <Button

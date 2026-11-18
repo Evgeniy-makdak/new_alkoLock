@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { enqueueSnackbar } from 'notistack';
 
 import {
   CircularProgress,
@@ -83,7 +84,8 @@ export function DashboardSavedReportsDialog({ open, onSelect, onClose }: Props) 
     try {
       const message = await onSelect(reportId);
       if (message) {
-        setError(message);
+        // Ошибка привязки (в т.ч. дубль) — snackbar; диалог выбора не закрываем.
+        enqueueSnackbar(message, { variant: 'error' });
       } else {
         onClose();
       }

@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { enqueueSnackbar } from 'notistack';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SecurityIcon from '@mui/icons-material/Security';
@@ -125,7 +126,7 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
     // На будущее: вкладка «Отчёты» открыла уже сохранённый отчёт.
     if (ctx.savedReportId != null) {
       const message = await linkReportToDashboard(dashboard.id, ctx.savedReportId);
-      if (message) setLinkError(message);
+      if (message) enqueueSnackbar(message, { variant: 'error' });
       return;
     }
 
