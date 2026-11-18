@@ -1224,9 +1224,8 @@ export function ReportComposeModal({
                 setComposeSortRows([]);
                 setComposeGroupRows([]);
                 setComposeHavingLogicOperator('and');
-                if (mode === 'edit') {
-                  reportGenerationStore.getState().clearResults();
-                }
+                // Не clearResults(): уже сформированный отчёт на экране должен
+                // оставаться до нового «Сформировать» / отмены edit (как при create+cancel).
               }}
             />
             {showColumnsSection ? (
