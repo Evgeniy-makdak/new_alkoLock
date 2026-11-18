@@ -8,7 +8,14 @@ import {
   exportReport,
   type ReportExportFormat,
 } from '../api/reportsApi';
+import { buildReportExportPlan } from '../lib/buildReportExportPlan';
+import { buildReportTablePdfFromRows } from '../lib/buildReportTablePdfFromRows';
 import { downloadReportFile } from '../lib/downloadReportFile';
+import { fetchSortedReportRowsForPdf } from '../lib/fetchSortedReportRowsForPdf';
+import {
+  buildReportExportCsvBlob,
+  polishReportExportBlob,
+} from '../lib/postProcessReportExportBlob';
 import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLabels';
 import { filterReportContentRowsForUi } from '../lib/reportAnonymousUser';
 import { reportsStore } from './reportsStore';
@@ -271,7 +278,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     }),
 
   async exportDisplayedReport(format, fileName = '') {
-    const { queryContext, isGenerating, isExporting } = get();
+    const { queryContext, isGenerating, isExporting, sort } = get();
     if (isGenerating || isExporting) return false;
     if (!queryContext) {
       enqueueSnackbar(i18n.t('reports.noReportToExport'), { variant: 'warning' });
@@ -280,13 +287,45 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
 
     set({ isExporting: true });
     try {
-      const blob = await exportReport(
-        queryContext.entityName,
-        format,
-        fileName,
-        queryContext.body,
-        queryContext.branchIds,
-      );
+      // Как таблица на экране: без скрытых колонок, подписи из снимка.
+      // Бэкенд /export игнорирует ?sort= — порядок строк = /query (как UI), не localeCompare.
+      const exportSort = (sort?.length ? sort : queryContext.sort) ?? [];
+      const plan = buildReportExportPlan(queryContext.body, {
+        columnHeaderLabels: queryContext.columnHeaderLabels,
+        hiddenColumnKeys: queryContext.hiddenColumnKeys,
+      });
+      const sortedRows = await fetchSortedReportRowsForPdf({
+        entityName: queryContext.entityName,
+        plan,
+        sort: exportSort,
+        branchIds: queryContext.branchIds,
+      });
+
+      let blob: Blob;
+      if (format === 'PDF') {
+        blob = await buildReportTablePdfFromRows({
+          headers: plan.displayHeaders,
+          rows: sortedRows,
+          title: fileName.trim() || 'Отчёт',
+        });
+      } else if (format === 'CSV') {
+        blob = buildReportExportCsvBlob(plan.displayHeaders, sortedRows);
+      } else {
+        // XLS: структура/стили с /export, порядок строк — как в UI (sortedRows).
+        const rawBlob = await exportReport(
+          queryContext.entityName,
+          format,
+          fileName,
+          plan.body,
+          queryContext.branchIds,
+          exportSort,
+        );
+        blob = await polishReportExportBlob(rawBlob, format, {
+          displayHeaders: plan.displayHeaders,
+          dateColumns: plan.dateColumns,
+          orderedRows: sortedRows,
+        });
+      }
       downloadReportFile(blob, fileName, format);
       enqueueSnackbar(i18n.t('reports.exportSuccess'), { variant: 'success' });
       return true;

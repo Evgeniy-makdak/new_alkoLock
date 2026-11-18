@@ -7,7 +7,7 @@ const FORMAT_EXTENSIONS: Record<ReportExportFormat, string> = {
 };
 
 const FORMAT_MIME: Record<ReportExportFormat, string> = {
-  CSV: 'text/csv;charset=utf-8;',
+  CSV: 'text/csv;charset=utf-16le;',
   XLS: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   PDF: 'application/pdf',
 };
@@ -15,7 +15,7 @@ const FORMAT_MIME: Record<ReportExportFormat, string> = {
 export function downloadReportFile(blob: Blob, fileName: string, format: ReportExportFormat): void {
   const ext = FORMAT_EXTENSIONS[format];
   const fullName = fileName.trim() ? `${fileName.trim()}.${ext}` : `report.${ext}`;
-  const mimeType = FORMAT_MIME[format];
+  const mimeType = blob.type || FORMAT_MIME[format];
 
   const blobWithType = new Blob([blob], { type: mimeType });
   const url = window.URL.createObjectURL(blobWithType);

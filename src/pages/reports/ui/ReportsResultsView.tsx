@@ -32,6 +32,7 @@ import { MobilePaginationWithJump, TablePaginationJumpActions } from '@shared/co
 import { Table } from '@shared/components/Table/Table';
 import { StorageKeys } from '@shared/const/storageKeys';
 import { useSavedLocalTableSorts } from '@shared/hooks/useSavedLocalTableSorts';
+import { ensureSafeGridScrollToIndexes } from '@shared/lib/safeScrollToIndexes';
 import { breakpoints } from '@widgets/nav_bar/breakpoints';
 
 import styles from './Reports.module.scss';
@@ -43,6 +44,32 @@ type ReportsRestoreState = {
   pageSize: number;
   sort: string[];
 };
+
+/**
+ * После remount Table (key=reportTableKey) внутренности DataGrid (scroll) ещё могут
+ * быть undefined — setPage/setSortModel тогда падают на `.current`.
+ * Перед вызовом патчим scrollToIndexes (MUI сам дергает его на paginationModelChange).
+ */
+function safeReportGridApi(
+  apiRef: { current?: { setSortModel?: (m: unknown) => void; setPage?: (p: number) => void; setPaginationModel?: (m: GridPaginationModel) => void } | null },
+  run: (api: NonNullable<(typeof apiRef)['current']>) => void,
+) {
+  const invoke = () => {
+    ensureSafeGridScrollToIndexes(apiRef);
+    const api = apiRef?.current;
+    if (!api) return;
+    try {
+      run(api);
+    } catch {
+      // DataGrid scroll/pagination internals not ready
+    }
+  };
+  if (typeof queueMicrotask === 'function') {
+    queueMicrotask(invoke);
+  } else {
+    setTimeout(invoke, 0);
+  }
+}
 
 export function ReportsResultsView() {
   const { t } = useTranslation();
@@ -139,6 +166,19 @@ export function ReportsResultsView() {
     [storePagination.page, storePagination.pageSize],
   );
 
+  // Идемпотентный патч scrollToIndexes: на render + layout + rAF, чтобы успеть до
+  // paginationModelChange MUI (иначе remount при «Сформировать» → TypeError .current).
+  ensureSafeGridScrollToIndexes(apiRef);
+  useLayoutEffect(() => {
+    ensureSafeGridScrollToIndexes(apiRef);
+    const raf = requestAnimationFrame(() => ensureSafeGridScrollToIndexes(apiRef));
+    const t = window.setTimeout(() => ensureSafeGridScrollToIndexes(apiRef), 0);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(t);
+    };
+  }, [reportTableKey, apiRef, lastResult?.content?.length, isGenerating]);
+
   // Сброс страницы при новом отчёте / очистке. Compose-sort не затираем — нужен для page и edit.
   useLayoutEffect(() => {
     if (!queryContext) {
@@ -149,9 +189,11 @@ export function ReportsResultsView() {
       setSort([]);
       changeTableState({ page: 0, pageSize });
       changeTableSorts([]);
-      apiRef.current?.setSortModel?.([]);
-      apiRef.current?.setPage?.(0);
-      apiRef.current?.setPaginationModel?.({ page: 0, pageSize });
+      safeReportGridApi(apiRef, (api) => {
+        api.setSortModel?.([]);
+        api.setPage?.(0);
+        api.setPaginationModel?.({ page: 0, pageSize });
+      });
       return;
     }
     const composeSort = queryContext.sort ?? [];
@@ -183,8 +225,10 @@ export function ReportsResultsView() {
 
     changeTableState({ page: 0, pageSize });
     changeTableSorts(gridSortModel);
-    apiRef.current?.setSortModel?.(gridSortModel);
-    apiRef.current?.setPage?.(0);
+    safeReportGridApi(apiRef, (api) => {
+      api.setSortModel?.(gridSortModel);
+      api.setPage?.(0);
+    });
     setPagination({ page: 0, pageSize });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- sync once per reportTableKey
   }, [reportTableKey, queryContext]);
@@ -207,8 +251,10 @@ export function ReportsResultsView() {
     if (!reportSortParamsEqual(restore.sort, reportGenerationStore.getState().sort)) {
       setSort(restore.sort);
     }
-    apiRef.current?.setPage?.(restore.page);
-    apiRef.current?.setPaginationModel?.({ page: restore.page, pageSize: restore.pageSize });
+    safeReportGridApi(apiRef, (api) => {
+      api.setPage?.(restore.page);
+      api.setPaginationModel?.({ page: restore.page, pageSize: restore.pageSize });
+    });
 
     if (restore.page !== pagination.page || restore.pageSize !== pagination.pageSize) {
       void loadReportPage(restore.page, restore.pageSize);
@@ -311,7 +357,9 @@ export function ReportsResultsView() {
     if (current?.field === next.field && current?.sort === next.sort) return;
 
     changeTableSorts(aligned);
-    apiRef.current?.setSortModel?.(aligned);
+    safeReportGridApi(apiRef, (api) => {
+      api.setSortModel?.(aligned);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- align when columns ready for this report
   }, [reportTableKey, columns, queryContext]);
 
@@ -400,7 +448,9 @@ export function ReportsResultsView() {
             );
             if (reportSortParamsEqual(restoredParams, sort)) {
               changeTableSorts(restored);
-              apiRef.current?.setSortModel?.(restored);
+              safeReportGridApi(apiRef, (api) => {
+                api.setSortModel?.(restored);
+              });
             }
           }
         }
@@ -439,7 +489,9 @@ export function ReportsResultsView() {
     }
     changeTableState({ page: 0, pageSize: pagination.pageSize });
     setPagination({ page: 0 });
-    apiRef.current?.setPage?.(0);
+    safeReportGridApi(apiRef, (api) => {
+      api.setPage?.(0);
+    });
     void loadReportPage(0, pagination.pageSize);
   }, [
     reportTableKey,
@@ -621,37 +673,47 @@ export function ReportsResultsView() {
             </>
           )}
         </div>
+      ) : isGenerating && !lastResult ? (
+        <Box className={styles.chartsLoading}>
+          <CircularProgress size={48} />
+        </Box>
       ) : (
         <>
           <div
             className={`${styles.scrollableTable} ${showReportColumnHeaders ? '' : styles.scrollableTableHideColumnHeaders}`}>
-            <Table
-              key={reportTableKey}
-              columns={columns}
-              rows={rows}
-              rowCount={totalElements}
-              paginationMode="server"
-              sortingMode="server"
-              paginationModel={paginationModel}
-              onSortModelChange={changeTableSorts}
-              apiRef={apiRef}
-              pageNumber={storePagination.page}
-              pageSize={storePagination.pageSize}
-              loading={isLoadingPage}
-              onPaginationModelChange={handlePaginationModelChange}
-              getRowId={getReportGridRowId}
-              pointer={false}
-              disableRowSelectionOnClick
-              pageSizeOptions={[25, 50, 75, 100]}
-              hideFooterSelectedRowCount
-              sx={{
-                '& .MuiDataGrid-virtualScroller': {
-                  overflowX: 'auto',
-                },
-              }}
-            />
+            {/*
+              Монтируем DataGrid только когда есть lastResult: start() обнуляет его,
+              иначе remount + paginationModelChange бьёт в баг MUI scrollToIndexes.
+            */}
+            {lastResult ? (
+              <Table
+                key={reportTableKey}
+                columns={columns}
+                rows={rows}
+                rowCount={totalElements}
+                paginationMode="server"
+                sortingMode="server"
+                paginationModel={paginationModel}
+                onSortModelChange={changeTableSorts}
+                apiRef={apiRef}
+                pageNumber={storePagination.page}
+                pageSize={storePagination.pageSize}
+                loading={isLoadingPage}
+                onPaginationModelChange={handlePaginationModelChange}
+                getRowId={getReportGridRowId}
+                pointer={false}
+                disableRowSelectionOnClick
+                pageSizeOptions={[25, 50, 75, 100]}
+                hideFooterSelectedRowCount
+                sx={{
+                  '& .MuiDataGrid-virtualScroller': {
+                    overflowX: 'auto',
+                  },
+                }}
+              />
+            ) : null}
           </div>
-          {isMobile ? (
+          {isMobile && lastResult ? (
             <div className={styles.mobilePagination}>
               <MobilePaginationWithJump
                 page={storePagination.page}

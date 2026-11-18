@@ -78,9 +78,13 @@ export const useSavedLocalTableSorts = (
     if (!apiRef?.current) return;
 
     isRestoring.current = true;
-    apiRef?.current?.setPage && apiRef?.current?.setPage(state.page);
-    apiRef?.current?.setPageSize && apiRef?.current?.setPageSize(state.pageSize);
-    apiRef?.current?.setSortModel && apiRef?.current?.setSortModel(state.sortModel);
+    try {
+      apiRef?.current?.setPage && apiRef?.current?.setPage(state.page);
+      apiRef?.current?.setPageSize && apiRef?.current?.setPageSize(state.pageSize);
+      apiRef?.current?.setSortModel && apiRef?.current?.setSortModel(state.sortModel);
+    } catch {
+      // DataGrid scroll internals may be unready on remount (`.current` undefined).
+    }
     isRestoring.current = false;
   }, [apiRef?.current]);
 

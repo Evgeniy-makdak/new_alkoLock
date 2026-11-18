@@ -170,16 +170,24 @@ export async function exportReport(
   fileName: string,
   body: ReportQueryRequest,
   branchIds?: number[],
+  /** pageable.sort как у /query — иначе выгрузка теряет сортировку грида. */
+  sort?: string[],
 ): Promise<Blob> {
   const encoded = encodeURIComponent(entityName);
   const queryParts = [`format=${encodeURIComponent(format)}`];
   if (fileName.trim()) {
     queryParts.push(`fileName=${encodeURIComponent(fileName.trim())}`);
   }
+  for (const sortParam of sort ?? []) {
+    if (sortParam) {
+      queryParts.push(`sort=${encodeReportSortParamForQuery(sortParam)}`);
+    }
+  }
   appendReportBranchIdsToQueryParts(queryParts, branchIds);
   const url = `${getApiUrl()}api/v1/reports/${encoded}/export?${queryParts.join('&')}`;
 
-  const res = await axios.post(url, serializeReportQueryRequest(sanitizeReportQueryBody(body)), {
+  // sanitize уже сделан в buildReportExportPlan (hidden/видимые поля) — не дублируем expand.
+  const res = await axios.post(url, serializeReportQueryRequest(body), {
     headers: {
       ...returnHeaders(),
       'Content-Type': 'application/json',
