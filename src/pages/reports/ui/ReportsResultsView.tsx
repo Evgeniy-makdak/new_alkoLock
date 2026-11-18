@@ -20,6 +20,7 @@ import {
   getReportGridRowId,
   mapReportContentToResultGrid,
 } from '@pages/reports/lib/mapReportContentToResultGrid';
+import { buildReportChartFieldOptions } from '@pages/reports/lib/buildReportChartFieldOptions';
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { buildReportColumnAliasMap } from '@pages/reports/lib/reportSelectedFieldAliases';
 import { shouldLoadVehicleLabelMaps } from '@pages/reports/lib/reportVehicleContext';
@@ -514,23 +515,14 @@ export function ReportsResultsView() {
   const showReportColumnHeaders = Boolean(queryContext && columns.length > 0);
   const isChartView = viewMode === 'chart';
 
-  const chartFieldOptions = useMemo(() => {
-    const labels = queryContext?.columnHeaderLabels ?? {};
-    const keys = new Set<string>();
-    for (const field of queryContext?.body.selectedFields ?? []) {
-      if (field?.fieldName) keys.add(field.fieldName);
-    }
-    for (const field of queryContext?.body.groupBy ?? []) {
-      if (field) keys.add(field);
-    }
-    for (const row of lastResult?.content ?? []) {
-      Object.keys(row as Record<string, unknown>).forEach((key) => keys.add(key));
-    }
-    return Array.from(keys).map((value) => ({
-      value,
-      label: labels[value] || value,
-    }));
-  }, [queryContext, lastResult?.content]);
+  const chartFieldOptions = useMemo(
+    () =>
+      buildReportChartFieldOptions(
+        queryContext,
+        (lastResult?.content as Array<Record<string, unknown>> | undefined) ?? null,
+      ),
+    [queryContext, lastResult?.content],
+  );
 
   const handleChartSpecChange = useCallback(
     (next: ReportChartSpec) => {
