@@ -96,6 +96,17 @@ export function resolveNestedEntityValueLoadKind(
     return 'domainList';
   }
 
+  // «Алкозамок» -> «Режим»: всегда полный справочник front-data/device-mode,
+  // а не режимы, встречающиеся среди замков текущего филиала.
+  if (
+    field &&
+    (field.fieldName === 'mode' || field.fieldName.endsWith('.mode')) &&
+    (leafEntityName === 'MonitoringDevice' ||
+      field.referenceEntity?.trim() === 'MonitoringDevice')
+  ) {
+    return 'domainList';
+  }
+
   // Уровень события: прямой листовой фильтр может приходить как level/levelForFront
   // без явной referenceEntity. Значение берётся только из event-classes.
   if (field && isEventsForFrontLevelAttribute(field.fieldName)) {

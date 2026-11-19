@@ -1,4 +1,4 @@
-import { EventsApi } from '@shared/api/baseQuerys';
+import { AlcolocksApi, EventsApi } from '@shared/api/baseQuerys';
 import { appStore } from '@shared/model/app_store/AppStore';
 import type { IDeviceAction } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -26,6 +26,40 @@ import { resolveNestedEntityValueLoadKind } from './reportNestedEntityValueOptio
 import { REPORT_REFERENCE_LIST_PAGE_SIZE } from './reportReferencePageSize';
 import type { ReportFieldDefinition } from '../types/reportApiTypes';
 
+function buildDeviceModeValues(raw: unknown, searchQuery: string): Values {
+  if (!Array.isArray(raw)) return [];
+
+  const seen = new Set<string>();
+  const values: Values = [];
+  for (const item of raw) {
+    if (item == null || typeof item !== 'object') continue;
+    const option = item as { value?: unknown; label?: unknown; key?: unknown };
+    const rawValue = option.value ?? option.key;
+    if (rawValue == null || rawValue === '') continue;
+    const value = String(rawValue);
+    if (seen.has(value)) continue;
+    seen.add(value);
+    values.push({
+      value,
+      label: String(option.label ?? rawValue),
+    });
+  }
+
+  const match = Formatters.removeExtraSpaces(searchQuery ?? '').toLowerCase();
+  return match
+    ? values.filter((option) => String(option.label).toLowerCase().includes(match))
+    : values;
+}
+
+/** GET api/v1/front-data/device-mode — полный справочник режимов алкозамка. */
+async function fetchDeviceModeOptions(searchQuery: string): Promise<Values> {
+  const res = await AlcolocksApi.getDeviceModes();
+  if (res.isError || res.data == null) {
+    throw new Error(res.message || res.detail || 'report device-mode failed');
+  }
+  return buildDeviceModeValues(res.data, searchQuery);
+}
+
 /**
  * Опции «Значение» для листового поля (referenceEntity === null) — доменный API по типу сущности.
  */
@@ -38,6 +72,12 @@ export async function fetchReportNestedEntityValueOptions(
   const ref = (referenceEntity ?? '').trim();
   const attr = (field.fieldName ?? '').trim();
   if (!ref || !attr) return [];
+
+  // «Алкозамок» -> «Режим»: значения только из front-data/device-mode.
+  const attrLeaf = attr.includes('.') ? attr.slice(attr.lastIndexOf('.') + 1) : attr;
+  if (ref === 'MonitoringDevice' && attrLeaf === 'mode') {
+    return fetchDeviceModeOptions(searchQuery);
+  }
 
   if (shouldUseEventsForFrontTypeListApi(ref, field)) {
     return fetchEventsForFrontFilterValueOptions(field, searchQuery);

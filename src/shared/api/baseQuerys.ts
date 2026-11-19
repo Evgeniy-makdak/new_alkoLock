@@ -441,6 +441,13 @@ export class AlcolocksApi {
     return getQuery<IAlcolock>({ url: getAlkolockURL(id) });
   }
 
+  /** Справочник режимов алкозамка (Рабочий / Аварийный / Сервисный). */
+  static getDeviceModes() {
+    return getQuery<{ value?: string; label?: string; key?: string }[]>({
+      url: 'api/v1/front-data/device-mode',
+    });
+  }
+
   static createItem(data: CreateAlcolockData) {
     return postQuery({ url: getCreateAlkolocksURL(), data });
   }
