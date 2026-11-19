@@ -348,11 +348,14 @@ function buildRowReportTableFields(
       ? defaultLabel
       : (item.label ?? '').trim() || defaultLabel;
     // fieldName — всегда путь поля для бэка; переименование только в alias.
+    // label — пользовательская подпись из «Текущего состава»: бэкенд использует
+    // её в ошибках валидации (группировка/агрегация), а не технический fieldName.
     const payload: ReportSelectedFieldPayload = {
       fieldName: resolveReportTableSelectedPayloadFieldName(
         basePath,
         context.entityMetadata.entityName,
       ),
+      label: displayLabel,
     };
     // Alias только для изменённых подписей: `_` вместо пробелов в кастомном тексте.
     // Дефолт «Сущность -> Поле» в alias не кодируем (подчёркивания туда не добавляем).

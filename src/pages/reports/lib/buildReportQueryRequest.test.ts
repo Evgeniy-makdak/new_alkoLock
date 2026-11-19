@@ -52,10 +52,10 @@ describe('buildReportQueryRequest', () => {
     });
 
     expect(request.selectedFields).toEqual([
-      { fieldName: 'fullName' },
-      { fieldName: 'surname' },
-      { fieldName: 'firstName' },
-      { fieldName: 'middleName' },
+      { fieldName: 'fullName', label: 'Отчет по пользователям -> Пользователь' },
+      { fieldName: 'surname', label: 'Отчет по пользователям -> Фамилия' },
+      { fieldName: 'firstName', label: 'Отчет по пользователям -> Имя' },
+      { fieldName: 'middleName', label: 'Отчет по пользователям -> Отчество' },
     ]);
   });
 });

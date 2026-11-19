@@ -87,6 +87,12 @@ export type ReportEntityMetadata = {
 /** Элемент selectedFields в POST …/query (как в контракте бэкенда). */
 export type ReportSelectedFieldPayload = {
   fieldName: string;
+  /**
+   * Пользовательская подпись поля из «Текущего состава таблицы».
+   * Бэкенд использует её в тексте ошибок валидации (группировка/агрегация),
+   * чтобы не показывать технические fieldName.
+   */
+  label?: string;
   alias?: string;
   aggregation?: string;
 };

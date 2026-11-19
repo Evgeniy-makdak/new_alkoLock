@@ -279,6 +279,7 @@ export function expandCompositeSelectedFields(
     }
     return members.map((fieldName) => ({
       fieldName,
+      label: item.label,
       aggregation: item.aggregation,
       alias: item.alias,
     }));
