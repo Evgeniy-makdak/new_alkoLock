@@ -419,6 +419,15 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       };
     }
 
+    // Смена поля внутри той же referenceEntity (user.surname → user.middleName):
+    // metadata вложенной сущности та же, кэш строки не сбрасываем. Иначе
+    // tableFieldsMetadata становится null, «Атрибут» показывает technical fieldName,
+    // а «Оператор» пропадает (эффект загрузки зависит только от refEntity).
+    const nextRefEntity = binding?.primary.referenceEntity?.trim() ?? '';
+    const cachedRefEntity = get().reportTableFieldsMetadataKeyByRowId[rowId] ?? '';
+    const keepRowMetadataCache =
+      Boolean(nextRefEntity) && nextRefEntity === cachedRefEntity;
+
     set({
       outputRows: get().outputRows.map((row) =>
         row.id === rowId
@@ -432,12 +441,14 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
             }
           : row,
       ),
-      ...omitRowReportTableMetadataCache(
-        get().reportTableFieldsMetadataByRowId,
-        get().reportTableFieldsMetadataLoadingByRowId,
-        get().reportTableFieldsMetadataKeyByRowId,
-        rowId,
-      ),
+      ...(keepRowMetadataCache
+        ? {}
+        : omitRowReportTableMetadataCache(
+            get().reportTableFieldsMetadataByRowId,
+            get().reportTableFieldsMetadataLoadingByRowId,
+            get().reportTableFieldsMetadataKeyByRowId,
+            rowId,
+          )),
     });
 
     // Пустое «Поле результата» — дочерние nested/операции уже сброшены выше.

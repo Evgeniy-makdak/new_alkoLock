@@ -126,7 +126,9 @@ export function ReportOutputFilterRow({
   useEffect(() => {
     if (!refEntity) return;
     void loadReportTableFieldsMetadata(row.id, refEntity);
-  }, [refEntity, row.id, loadReportTableFieldsMetadata]);
+    // Смена поля при той же referenceEntity не меняет refEntity — добавляем ключ,
+    // чтобы восстановить metadata строки, если кэш всё же был сброшен.
+  }, [refEntity, primaryBaseKey, row.id, loadReportTableFieldsMetadata]);
 
   useEffect(() => {
     const needsVehicleLabels =
