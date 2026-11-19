@@ -6,12 +6,6 @@ import {
   resolveReportColumnLabel,
 } from './buildReportTableFieldOptions';
 import { planReportCompositeResultColumns } from './reportEntityCompositeFields';
-import {
-  applyReportAggregationHeaderLabel,
-  buildReportFieldAggregationMap,
-  buildReportGroupBySet,
-  resolveReportColumnDisplayAggregation,
-} from './reportAggregationDisplay';
 import { buildReportColumnAliasMap, resolveReportColumnHeaderLabel } from './reportSelectedFieldAliases';
 import type {
   ReportEntityListItem,
@@ -42,23 +36,13 @@ export function buildReportColumnHeaderLabels(
     ? collectReportContentColumnKeys(content)
     : (body?.selectedFields ?? []).map((f) => f.fieldName).filter(Boolean);
   const orderedKeys = orderReportContentColumnKeys(contentKeys, body?.selectedFields);
-  const { displayColumnKeys, groups } = planReportCompositeResultColumns(
+  const { displayColumnKeys } = planReportCompositeResultColumns(
     orderedKeys,
     body?.selectedFields?.map((f) => f.fieldName),
   );
-  const compositeByKey = new Map(groups.map((group) => [group.compositeKey, group]));
-  const aggregationMap = buildReportFieldAggregationMap(body?.selectedFields);
-  const groupBySet = buildReportGroupBySet(body?.groupBy);
   const labels: Record<string, string> = {};
 
   for (const key of displayColumnKeys) {
-    const compositeGroup = compositeByKey.get(key);
-    const columnAggregation = resolveReportColumnDisplayAggregation(
-      key,
-      compositeGroup,
-      aggregationMap,
-      groupBySet,
-    );
     const baseLabel = resolveReportColumnHeaderLabel(
       key,
       columnAliases,
@@ -73,7 +57,7 @@ export function buildReportColumnHeaderLabels(
         t,
       ),
     );
-    labels[key] = applyReportAggregationHeaderLabel(baseLabel, columnAggregation, t);
+    labels[key] = baseLabel;
   }
 
   return labels;
