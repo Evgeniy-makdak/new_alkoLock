@@ -1,5 +1,6 @@
 import type { ReportVehicleLabelMaps } from './fetchVehicleFrontDataMaps';
 import { resolveVehicleAttributeLabel } from './fetchVehicleFrontDataMaps';
+import { resolveReportVehicleDictionaryAttribute } from './reportVehicleDictionaryAttribute';
 
 import type { ICar } from '@shared/types/BaseQueryTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
@@ -33,7 +34,7 @@ function resolveOptionLabel(
     return resolveVehicleAttributeLabel('color', value, labelMaps) ?? value;
   }
   if (attribute === 'id' && car) {
-    return Formatters.carNameFormatter(car, false, true, false);
+    return Formatters.carNameFormatter(car, false, true, false) ?? value;
   }
   return value;
 }
@@ -50,10 +51,11 @@ export function buildVehicleAttributeOptions(
   attribute: string,
   labelMaps?: ReportVehicleLabelMaps,
 ): Values {
-  if (attribute === 'color' && labelMaps?.colors && Object.keys(labelMaps.colors).length > 0) {
+  const attr = resolveReportVehicleDictionaryAttribute(attribute) ?? attribute;
+  if (attr === 'color' && labelMaps?.colors && Object.keys(labelMaps.colors).length > 0) {
     return dictionaryToValues(labelMaps.colors);
   }
-  if (attribute === 'type' && labelMaps?.types && Object.keys(labelMaps.types).length > 0) {
+  if (attr === 'type' && labelMaps?.types && Object.keys(labelMaps.types).length > 0) {
     return dictionaryToValues(labelMaps.types);
   }
 
@@ -87,7 +89,8 @@ export function enrichVehicleFilterValues(
 
   return values.map((item) => {
     const value = String(item.value);
-    const label = resolveOptionLabel(attribute, value, undefined, labelMaps);
+    const attr = resolveReportVehicleDictionaryAttribute(attribute) ?? attribute;
+    const label = resolveOptionLabel(attr, value, undefined, labelMaps);
     return { value, label };
   });
 }

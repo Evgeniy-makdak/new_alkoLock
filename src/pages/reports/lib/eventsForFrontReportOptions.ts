@@ -132,6 +132,52 @@ export function buildEventsForFrontLevelOptions(types: IEventType[]): Values {
 }
 
 /**
+ * Уровни события из front-data/event-classes.
+ * Ответ может быть массивом строк или объектов { id, label } (как в useEventClasses).
+ */
+function toEventClassValues(raw: unknown, searchQuery: string): Values {
+  if (!Array.isArray(raw)) return [];
+
+  const seen = new Set<string>();
+  const values: Values = [];
+
+  raw.forEach((item, index) => {
+    let value: string | number;
+    let label: string;
+    if (typeof item === 'string') {
+      // Строки без id: порядковый номер, как в основном фильтре событий (useEventClasses).
+      value = index;
+      label = item.trim();
+    } else if (item != null && typeof item === 'object' && 'label' in item) {
+      const obj = item as { id?: unknown; label?: unknown };
+      label = String(obj.label ?? '').trim();
+      value = typeof obj.id === 'number' ? obj.id : index;
+    } else {
+      return;
+    }
+    if (!label) return;
+    const key = String(value);
+    if (seen.has(key)) return;
+    seen.add(key);
+    values.push({ value, label });
+  });
+
+  const match = (searchQuery ?? '').trim().toLowerCase();
+  return match
+    ? values.filter((option) => String(option.label).toLowerCase().includes(match))
+    : values;
+}
+
+/** GET api/v1/front-data/event-classes — уровни события для «Значение». */
+export async function fetchEventClassesForReport(searchQuery: string): Promise<Values> {
+  const res = await EventsApi.getEventClasses();
+  if (res.isError) {
+    throw new Error(res.message || res.detail || 'report event-classes failed');
+  }
+  return toEventClassValues(res.data, searchQuery);
+}
+
+/**
  * POST …/query: фильтр по уровню — id (как eventsForFront.event с кодом события), не label «Информация».
  * Путь без дублирования level.level из nested path.
  */
@@ -155,6 +201,13 @@ export async function fetchEventsForFrontFilterValueOptions(
   searchQuery: string,
 ): Promise<Values> {
   const attr = (field.fieldName ?? '').trim();
+
+  // Уровень события — отдельный справочник front-data/event-classes,
+  // а не производная от типов событий (event-types).
+  if (isEventsForFrontLevelAttribute(attr)) {
+    return fetchEventClassesForReport(searchQuery);
+  }
+
   const types = await fetchEventTypesForReport(searchQuery);
 
   if (attr === 'label') {
@@ -170,10 +223,6 @@ export async function fetchEventsForFrontFilterValueOptions(
         value: String(item.event).trim(),
         label: item.label ?? String(item.event),
       }));
-  }
-
-  if (isEventsForFrontLevelAttribute(attr)) {
-    return buildEventsForFrontLevelOptions(types);
   }
 
   return types

@@ -90,6 +90,20 @@ export function buildDomainListValuesForAttribute(
       .filter((item, index, arr) => arr.findIndex((x) => x.value === item.value) === index);
   }
 
+  // У записей алкозамков/ТС нет поля fullName (оно есть только у User):
+  // это вычисляемая подпись. value = label — фильтр по *_fullName идёт строкой.
+  if (attr === 'fullName' && (ref === 'MonitoringDevice' || ref === 'Vehicle')) {
+    const seen = new Set<string>();
+    const values: Values = [];
+    for (const item of recordsToEntityListValues(ref, visibleRecords)) {
+      const label = String(item.label ?? '').trim();
+      if (!label || seen.has(label)) continue;
+      seen.add(label);
+      values.push({ value: label, label });
+    }
+    return values;
+  }
+
   if (ref === 'DeviceAction') {
     if (isDeviceActionDeviceAttribute(attr)) {
       return buildDeviceActionDevicePickerOptions(visibleRecords);

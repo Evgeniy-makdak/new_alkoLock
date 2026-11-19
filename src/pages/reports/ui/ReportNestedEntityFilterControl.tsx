@@ -7,6 +7,7 @@ import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchRep
 import { resolveNestedFilterValueFetchTarget } from '@pages/reports/lib/eventsForFrontReportOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
+import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
 import {
   buildReferenceEntityPropertyOptions,
   buildReportAttributeValueOptions,
@@ -67,6 +68,10 @@ type NestedFilterValueControlProps = {
   compact: boolean;
   controlSx: typeof reportFilterControlSx;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
+  /** Корневая сущность отчёта (Vehicle, DeviceEvent, …) — для справочников ТС. */
+  rootReportEntityName?: string;
+  /** Подпись выбранного «Поля результата» (родительского поля пути). */
+  primaryFieldLabel?: string;
   metadataByEntity: Record<string, import('@pages/reports/types/reportApiTypes').ReportEntityMetadata | null>;
   t: TFunction;
   onChange: (values: Values) => void;
@@ -81,23 +86,103 @@ export function NestedFilterValueControl({
   compact,
   controlSx,
   vehicleLabelMaps,
+  rootReportEntityName,
+  primaryFieldLabel,
   metadataByEntity,
   t,
   onChange,
 }: NestedFilterValueControlProps) {
+  /**
+   * «Отчёт по истории автосервиса» -> «Результат» (service_history_events_for_front.label):
+   * значения берём из общего справочника front-data/event-types, даже если
+   * referenceEntity в metadata отличается от EventsForFront.
+   */
+  const normalizeLabel = (value: string | undefined) =>
+    (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+  const primaryFieldKey = fieldKey.toLowerCase();
+  const primaryLabel = normalizeLabel(primaryFieldLabel);
+  const leafLabel = normalizeLabel(segment.field.label);
+  const leafFieldName = (segment.field.fieldName ?? '').trim().toLowerCase();
+  const isAutoServiceHistoryResultField =
+    rootReportEntityName === 'AutoServiceHistory' &&
+    (primaryFieldKey.includes('service_history') ||
+      primaryFieldKey.includes('servicehistory') ||
+      primaryFieldKey.includes('events_for_front') ||
+      primaryFieldKey.includes('eventsforfront') ||
+      primaryLabel.includes('тип результата') ||
+      primaryLabel === 'результат') &&
+    (leafFieldName === 'label' ||
+      segment.fieldPath === 'label' ||
+      (segment.fieldPath ?? '').endsWith('.label') ||
+      leafLabel === 'результат' ||
+      leafLabel.includes('результат'));
+
   const fetchTarget = useMemo(
-    () => resolveNestedFilterValueFetchTarget(segment.leafEntityName, segment.field, metadataByEntity),
-    [segment.leafEntityName, segment.field, metadataByEntity],
+    () =>
+      isAutoServiceHistoryResultField
+        ? {
+            referenceEntity: 'EventsForFront',
+            // Для «Результата» значения всегда берём из label справочника event-types.
+            field: { ...segment.field, fieldName: 'label' },
+          }
+        : resolveNestedFilterValueFetchTarget(
+            segment.leafEntityName,
+            segment.field,
+            metadataByEntity,
+          ),
+    [
+      isAutoServiceHistoryResultField,
+      segment.leafEntityName,
+      segment.field,
+      metadataByEntity,
+    ],
   );
 
-  const valueLoadKind = resolveNestedEntityValueLoadKind(
-    fetchTarget.field,
-    fetchTarget.referenceEntity,
-  );
   const isBooleanValueField = isReportBooleanField(segment.field);
   const [searchQuery, setSearchQuery] = useState('');
   const [remoteOptions, setRemoteOptions] = useState<Values>([]);
   const [remoteLoading, setRemoteLoading] = useState(false);
+  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
+
+  /**
+   * Полный путь поля: «Поле результата» + шаги path. Для ТС тип/цвет может быть
+   * вложенной сущностью (vehicle.type.label / typeReference.label), поэтому лист
+   * `label` сам по себе не говорит, что это справочник front-data.
+   */
+  const fullVehicleFieldPath = [fieldKey, segment.fieldPath].filter(Boolean).join('.');
+  const vehicleDictionaryAttribute =
+    resolveReportVehicleDictionaryAttribute(fullVehicleFieldPath) ??
+    resolveReportVehicleDictionaryAttribute(segment.field.fieldName);
+  const vehicleDictionaryHints = [
+    rootReportEntityName,
+    segment.rootEntityName,
+    segment.leafEntityName,
+    fetchTarget.referenceEntity,
+    fieldKey,
+    segment.fieldPath,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const isVehicleDictionaryField =
+    Boolean(vehicleDictionaryAttribute) && vehicleDictionaryHints.includes('vehicle');
+  const hasVehicleLabelMaps =
+    Object.keys(vehicleLabelMaps?.types ?? {}).length > 0 ||
+    Object.keys(vehicleLabelMaps?.colors ?? {}).length > 0;
+
+  // «Тип»/«Цвет» ТС всегда из front-data/vehicle-types и vehicle-color.
+  useEffect(() => {
+    if (isVehicleDictionaryField && !hasVehicleLabelMaps) {
+      void loadVehicleLabelMaps();
+    }
+  }, [isVehicleDictionaryField, hasVehicleLabelMaps, loadVehicleLabelMaps]);
+
+  const resolvedValueLoadKind = resolveNestedEntityValueLoadKind(
+    fetchTarget.field,
+    fetchTarget.referenceEntity,
+  );
+  // Справочник ТС показываем как ENUM-список даже для вложенного label/ENTITY.
+  const valueLoadKind = isVehicleDictionaryField ? 'enum' : resolvedValueLoadKind;
 
   useEffect(() => {
     setSearchQuery('');
@@ -108,13 +193,13 @@ export function NestedFilterValueControl({
       return buildNestedEntityStaticValueOptions(segment.field, t);
     }
     if (valueLoadKind === 'enum') {
-      const attr = segment.field.fieldName;
       // Цвет/тип ТС — русские подписи из front-data, не ENUM-коды metadata.
-      if (
-        (attr === 'color' || attr === 'type') &&
-        (segment.leafEntityName === 'Vehicle' || fetchTarget.referenceEntity === 'Vehicle')
-      ) {
-        const fromMaps = buildVehicleAttributeOptions([], attr, vehicleLabelMaps);
+      if (isVehicleDictionaryField && vehicleDictionaryAttribute) {
+        const fromMaps = buildVehicleAttributeOptions(
+          [],
+          vehicleDictionaryAttribute,
+          vehicleLabelMaps,
+        );
         if (fromMaps.length) return fromMaps;
       }
       return buildReportAttributeValueOptions(segment.field, t);
@@ -122,11 +207,11 @@ export function NestedFilterValueControl({
     return [];
   }, [
     segment.field,
-    segment.leafEntityName,
     valueLoadKind,
     t,
     vehicleLabelMaps,
-    fetchTarget.referenceEntity,
+    isVehicleDictionaryField,
+    vehicleDictionaryAttribute,
   ]);
 
   useEffect(() => {
@@ -341,6 +426,8 @@ type ReportNestedEntityFilterControlProps = {
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
   referenceEntityMetadataLoadingByName: Record<string, boolean>;
   vehicleLabelMaps?: ReportVehicleLabelMaps;
+  /** Корневая сущность отчёта (Vehicle, DeviceEvent, …) — для справочников ТС. */
+  rootReportEntityName?: string;
   state: ReportNestedEntityFilterState;
   onChange: (patch: Partial<ReportNestedEntityFilterState>) => void;
   filterOperationCode?: string | null;
@@ -379,6 +466,7 @@ export function ReportNestedEntityFilterControl({
   referenceEntityMetadataByName,
   referenceEntityMetadataLoadingByName,
   vehicleLabelMaps,
+  rootReportEntityName,
   state,
   onChange,
   filterOperationCode,
@@ -520,6 +608,8 @@ export function ReportNestedEntityFilterControl({
             compact={compact}
             controlSx={controlSx}
             vehicleLabelMaps={vehicleLabelMaps}
+            rootReportEntityName={rootReportEntityName}
+            primaryFieldLabel={field.label || field.fieldName}
             metadataByEntity={metadataByEntity}
             t={t}
             onChange={(values) => onChange({ values })}

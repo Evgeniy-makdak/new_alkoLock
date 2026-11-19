@@ -9,8 +9,10 @@ import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAtt
 import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
 import { fetchVehicleDriverAllotmentsForReportFilter } from './fetchVehicleDriverAllotmentsForReportFilter';
 import {
+  fetchEventClassesForReport,
   fetchEventTypesForReport,
   fetchEventsForFrontFilterValueOptions,
+  isEventsForFrontLevelAttribute,
   shouldUseEventsForFrontTypeListApi,
 } from './eventsForFrontReportOptions';
 import { isEntityIdAttribute } from './reportEntityIdAttribute';
@@ -39,6 +41,12 @@ export async function fetchReportNestedEntityValueOptions(
 
   if (shouldUseEventsForFrontTypeListApi(ref, field)) {
     return fetchEventsForFrontFilterValueOptions(field, searchQuery);
+  }
+
+  // «Уровень события» -> «Уровень»: values только из event-classes,
+  // независимо от отсутствующей/несовпадающей referenceEntity в листовой метадате.
+  if (isEventsForFrontLevelAttribute(attr) || ref === 'LevelsForFront') {
+    return fetchEventClassesForReport(searchQuery);
   }
 
   const kind = resolveNestedEntityValueLoadKind(field, ref);

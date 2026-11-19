@@ -301,7 +301,8 @@ export function ReportsResultsView() {
       entities,
       reportGroupBy,
       queryContext?.hiddenColumnKeys ?? [],
-      // Подписи «Текущего состава» (карандаш) — база для headerName.
+      // Подписи «Текущего состава» (карандаш) — база для headerName; суффикс
+      // агрегации добавляется внутри маппера ПОВЕРХ (frozen не стирает «(Количество)»).
       frozenColumnHeaderLabels,
     );
 

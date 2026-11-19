@@ -118,6 +118,10 @@ export function ReportOutputFilterRow({
 
   const nestedState = primaryField ? row.nestedEntityFilterByField[primaryField.fieldName] : undefined;
   const nestedPath = nestedState ? normalizeNestedFilterPath(nestedState) : [];
+  const nestedPathKey = nestedPath.join('\0');
+  const hasVehicleLabelMaps =
+    Object.keys(vehicleLabelMaps.types).length > 0 ||
+    Object.keys(vehicleLabelMaps.colors).length > 0;
 
   useEffect(() => {
     if (!refEntity) return;
@@ -131,13 +135,19 @@ export function ReportOutputFilterRow({
       primaryBaseKey === 'type' ||
       primaryBaseKey.endsWith('.color') ||
       primaryBaseKey.endsWith('.type') ||
-      nestedPath.includes('color') ||
-      nestedPath.includes('type') ||
-      nestedPath.includes('vehicle');
-    if (needsVehicleLabels) {
+      nestedPathKey.includes('color') ||
+      nestedPathKey.includes('type') ||
+      nestedPathKey.includes('vehicle');
+    if (needsVehicleLabels && !hasVehicleLabelMaps) {
       void loadVehicleLabelMaps();
     }
-  }, [refEntity, primaryBaseKey, nestedPath, loadVehicleLabelMaps]);
+  }, [
+    refEntity,
+    primaryBaseKey,
+    nestedPathKey,
+    hasVehicleLabelMaps,
+    loadVehicleLabelMaps,
+  ]);
 
   const operationKey = reportOutputOperationKey(row.id);
   const filterOperationCode = useMemo(() => {
@@ -336,6 +346,7 @@ export function ReportOutputFilterRow({
       referenceEntityMetadataByName={referenceEntityMetadataByName}
       referenceEntityMetadataLoadingByName={referenceEntityMetadataLoadingByName}
       vehicleLabelMaps={vehicleLabelMaps}
+      rootReportEntityName={metadata.entityName}
       state={
         row.nestedEntityFilterByField[primaryField.fieldName] ?? {
           path: [],

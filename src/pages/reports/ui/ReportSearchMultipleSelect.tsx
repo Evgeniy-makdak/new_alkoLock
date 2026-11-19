@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
   type FocusEvent,
+  type FormEvent,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
@@ -190,6 +191,23 @@ export function ReportSearchMultipleSelect<T>({
     [commitFreeText, onInputChange],
   );
 
+  /**
+   * onInputChange у SearchMultipleSelect debounce-ится (~500 мс). Из-за этого
+   * pendingFreeTextRef мог хранить более ранний префикс: при Enter/blur чип
+   * создавался из неполного текста (например, из первого символа).
+   * Фиксируем набранное значение синхронно на каждое нажатие.
+   */
+  const handleInputCapture = useCallback(
+    (event: FormEvent<HTMLDivElement>) => {
+      if (!commitFreeText) return;
+      const target = event.target;
+      if (target instanceof HTMLInputElement) {
+        pendingFreeTextRef.current = target.value;
+      }
+    },
+    [commitFreeText],
+  );
+
   const handleBlur = useCallback(
     (event: FocusEvent<HTMLDivElement>) => {
       onBlur?.(event);
@@ -234,6 +252,7 @@ export function ReportSearchMultipleSelect<T>({
   return (
     <div
       onKeyDownCapture={handleKeyDownCapture}
+      onInputCapture={handleInputCapture}
       onMouseDownCapture={onClearIntentCapture}
       onPointerDownCapture={(event) => {
         if (!blockEmptyClear) return;

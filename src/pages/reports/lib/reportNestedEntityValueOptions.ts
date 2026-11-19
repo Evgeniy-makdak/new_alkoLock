@@ -9,6 +9,7 @@ import {
   isReportCoordinatesCompositePropertyFieldName,
 } from './reportCoordinateComposite';
 import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
+import { resolveReportVehicleDictionaryAttribute } from './reportVehicleDictionaryAttribute';
 import {
   isReportBooleanField,
   isReportDateTimeField,
@@ -17,6 +18,7 @@ import {
 } from './reportFieldFilterKind';
 import { resolveReportDomainListEntityName } from './reportLeafEntityListApi';
 import { resolveReportMetadataValueLoadKind } from './reportMetadataFilterOptions';
+import { isEventsForFrontLevelAttribute } from './eventsForFrontReportOptions';
 
 export type NestedEntityValueLoadKind =
   | 'static'
@@ -74,6 +76,32 @@ export function resolveNestedEntityValueLoadKind(
   field: ReportFieldDefinition | undefined,
   leafEntityName: string,
 ): NestedEntityValueLoadKind {
+  // ТС: «Тип»/«Цвет» — справочники front-data/vehicle-types и vehicle-color,
+  // даже если в metadata ENUM без allowedValues (иначе был бы пустой textInput).
+  if (
+    field &&
+    resolveReportVehicleDictionaryAttribute(field.fieldName) &&
+    (leafEntityName === 'Vehicle' ||
+      field.referenceEntity?.trim() === 'Vehicle' ||
+      field.fieldName.includes('vehicle.'))
+  ) {
+    return 'enum';
+  }
+
+  // Уровень события — отдельный справочник front-data/event-classes.
+  if (
+    leafEntityName === 'LevelsForFront' ||
+    field?.referenceEntity?.trim() === 'LevelsForFront'
+  ) {
+    return 'domainList';
+  }
+
+  // Уровень события: прямой листовой фильтр может приходить как level/levelForFront
+  // без явной referenceEntity. Значение берётся только из event-classes.
+  if (field && isEventsForFrontLevelAttribute(field.fieldName)) {
+    return 'domainList';
+  }
+
   if (field && isCoordinatesCompositeFilterField(field)) {
     return canLoadCoordinatesFromDomainApi(leafEntityName)
       ? 'domainList'

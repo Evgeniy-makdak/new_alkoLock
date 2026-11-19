@@ -187,6 +187,13 @@ export type NestedFilterValueSegment = {
   kind: 'value';
   /** Имя сущности metadata, в которой выбрано листовое поле (User, Vehicle, …). */
   leafEntityName: string;
+  /**
+   * Сущность, с которой начат путь (referenceEntity выбранного «Поля результата»).
+   * Нужна для справочников ТС: vehicle.type.label и т.п.
+   */
+  rootEntityName?: string;
+  /** Путь листового поля внутри сущности (type.label, vehicle.type, …). */
+  fieldPath?: string;
   field: ReportFieldDefinition;
   label: string;
 };
@@ -273,6 +280,8 @@ export function buildNestedFilterUiSegments(
       segments.push({
         kind: 'value',
         leafEntityName: entityName,
+        rootEntityName,
+        fieldPath: path.join('.'),
         field: valueField,
         label: i18n.t('reports.composite.entityCoordinates'),
       });
@@ -298,6 +307,8 @@ export function buildNestedFilterUiSegments(
         segments.push({
           kind: 'value',
           leafEntityName: valueLeafEntity,
+          rootEntityName,
+          fieldPath: path.slice(0, depth + 1).join('.'),
           field: valueField,
           label: (valueField.label ?? '').trim() || valueField.fieldName,
         });
@@ -320,6 +331,8 @@ export function buildNestedFilterUiSegments(
       segments.push({
         kind: 'value',
         leafEntityName: nextRef,
+        rootEntityName,
+        fieldPath: path.join('.'),
         field: valueField,
         label: resolveReportCompositeEntityDisplayLabel(
           compositeKind,

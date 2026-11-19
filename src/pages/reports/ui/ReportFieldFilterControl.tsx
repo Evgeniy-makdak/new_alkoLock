@@ -45,8 +45,10 @@ import {
   reportFilterModalControlSx,
 } from '@pages/reports/lib/reportFilterControlSx';
 import type { ReportEntityMetadata, ReportFieldDefinition } from '@pages/reports/types/reportApiTypes';
+import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
+import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 
 import { ReportSearchMultipleSelect } from './ReportSearchMultipleSelect';
@@ -113,10 +115,28 @@ export function ReportFieldFilterControl({
   const [searchQuery, setSearchQuery] = useState('');
   const [remoteOptions, setRemoteOptions] = useState<Values>([]);
   const [remoteLoading, setRemoteLoading] = useState(false);
+  const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
+  const vehicleDictionaryAttribute = resolveReportVehicleDictionaryAttribute(field.fieldName);
+  const isVehicleDictionaryField =
+    Boolean(vehicleDictionaryAttribute) &&
+    (metadata.entityName === 'Vehicle' ||
+      domainListEntityName === 'Vehicle' ||
+      field.referenceEntity?.trim() === 'Vehicle' ||
+      field.fieldName.includes('vehicle.'));
+  const hasVehicleLabelMaps =
+    Object.keys(vehicleLabelMaps?.types ?? {}).length > 0 ||
+    Object.keys(vehicleLabelMaps?.colors ?? {}).length > 0;
 
   useEffect(() => {
     setSearchQuery('');
   }, [field.fieldName, metadata.entityName]);
+
+  // «Тип»/«Цвет» ТС всегда из front-data/vehicle-types и vehicle-color.
+  useEffect(() => {
+    if (isVehicleDictionaryField && !hasVehicleLabelMaps) {
+      void loadVehicleLabelMaps();
+    }
+  }, [isVehicleDictionaryField, hasVehicleLabelMaps, loadVehicleLabelMaps]);
 
   useEffect(() => {
     if (nestedValueLoadKind !== 'domainList') {
@@ -154,15 +174,9 @@ export function ReportFieldFilterControl({
   );
 
   const vehicleDictionaryOptions = useMemo(() => {
-    const attr = field.fieldName;
-    if (
-      (attr === 'color' || attr === 'type') &&
-      (metadata.entityName === 'Vehicle' || domainListEntityName === 'Vehicle')
-    ) {
-      return buildVehicleAttributeOptions([], attr, vehicleLabelMaps);
-    }
-    return [];
-  }, [field.fieldName, metadata.entityName, domainListEntityName, vehicleLabelMaps]);
+    if (!isVehicleDictionaryField || !vehicleDictionaryAttribute) return [];
+    return buildVehicleAttributeOptions([], vehicleDictionaryAttribute, vehicleLabelMaps);
+  }, [isVehicleDictionaryField, vehicleDictionaryAttribute, vehicleLabelMaps]);
 
   const groupStaticOptions = getStaticOptionsForControl(controlId, metadata, t);
   const isCoordinatesComposite =

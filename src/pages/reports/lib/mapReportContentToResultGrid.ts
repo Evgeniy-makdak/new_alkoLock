@@ -27,9 +27,11 @@ import {
 import { ReportCoordinateMapCell } from '../ui/ReportCoordinateMapCell';
 import { ReportTableCellTooltip } from '../ui/ReportTableCellTooltip';
 import {
+  applyReportAggregationHeaderLabel,
   buildReportFieldAggregationMap,
   buildReportGroupBySet,
   formatAggregatedReportCoordinateCountValue,
+  resolveReportColumnDisplayAggregation,
   shouldRenderReportCoordinateAsMap,
   isReportFieldAggregatedForDisplay,
 } from './reportAggregationDisplay';
@@ -235,7 +237,11 @@ export function mapReportContentToResultGrid(
   groupBy?: string[],
   /** Ключи с закрытым глазом — не рендерить в гриде (в т.ч. Идентификатор, если скрыт). */
   hiddenColumnKeys: string[] = [],
-  /** Заголовки «Текущего состава» (карандаш) — база для headerName. */
+  /**
+   * Заголовки «Текущего состава» (карандаш) — БАЗА для headerName.
+   * Суффикс агрегации добавляется ПОВЕРХ, чтобы frozen-подпись не стирала
+   * «(Количество)»/«(Минимум)» у агрегированных колонок.
+   */
   frozenColumnHeaderLabels?: Record<string, string>,
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
   if (!content.length) {
@@ -333,6 +339,14 @@ export function mapReportContentToResultGrid(
       referenceEntityMetadataByName,
     );
     const compositeGroup = compositeByKey.get(key);
+    // Агрегацию берём по content-ключу: для дублей колонок это уникальный alias,
+    // карта агрегаций хранит alias → агрегацию (по fieldName она бы схлопнулась).
+    const columnAggregation = resolveReportColumnDisplayAggregation(
+      key,
+      compositeGroup,
+      aggregationMap,
+      groupBySet,
+    );
     const baseHeaderLabel = resolveReportColumnHeaderLabel(
       key,
       columnAliases,
@@ -347,12 +361,12 @@ export function mapReportContentToResultGrid(
         t,
       ),
     );
-    // Заголовок «Текущего состава» (карандаш) — база для headerName.
+    // Заголовок «Текущего состава» (карандаш) — база; суффикс агрегации ПОВЕРХ.
     const frozenLabel = (frozenColumnHeaderLabels?.[key] ?? '').trim();
     const headerLabel = frozenLabel || baseHeaderLabel;
     const colDef: GridColDef = {
       field: key,
-      headerName: headerLabel,
+      headerName: applyReportAggregationHeaderLabel(headerLabel, columnAggregation, t),
       flex: 1,
       minWidth: 160,
       // Стрелка грида — для любой колонки состава (как выбор sort в модалке),
