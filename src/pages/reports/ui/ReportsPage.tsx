@@ -25,6 +25,11 @@ import type { ReportExportFormat } from '@pages/reports/api/reportsApi';
 import { dashboardStore } from '@pages/reports/dashboard/model/dashboardStore';
 import { ReportsDashboardsPanel } from '@pages/reports/dashboard/ui/ReportsDashboardsPanel';
 import { hydrateReportsComposeFromOpenedQuery } from '@pages/reports/lib/hydrateReportsComposeFromOpenedQuery';
+import {
+  clearTextSelectionOnDoubleClick,
+  preventMultiClickTextSelection,
+  reportToolbarSelectNoTextSelectSx,
+} from '@pages/reports/lib/preventReportSelectTextSelect';
 import { resetReportsTablePaginationStorage } from '@pages/reports/lib/resetReportsTablePaginationStorage';
 import { reportGenerationStore } from '@pages/reports/model/reportGenerationStore';
 import { reportsStore } from '@pages/reports/model/reportsStore';
@@ -98,7 +103,10 @@ export function ReportsPage() {
       {hasDisplayableReport ? (
         <ReportsViewModeSelect disabled={isGenerating || isExporting} />
       ) : null}
-      <FormControl size="small" sx={{ minWidth: 100 }}>
+      <FormControl
+        size="small"
+        sx={{ minWidth: 100, ...reportToolbarSelectNoTextSelectSx }}
+        onDoubleClick={clearTextSelectionOnDoubleClick}>
         <InputLabel id="report-export-format-label">{t('reports.format')}</InputLabel>
         <Select
           labelId="report-export-format-label"
@@ -243,7 +251,10 @@ export function ReportsPage() {
                   gap: '8px',
                   flexWrap: 'wrap',
                   flexShrink: 0,
-                }}>
+                  userSelect: 'none',
+                }}
+                onMouseDown={preventMultiClickTextSelection}
+                onDoubleClick={clearTextSelectionOnDoubleClick}>
                 <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
                   {showReturnToDashboard ? (
                     <Tooltip

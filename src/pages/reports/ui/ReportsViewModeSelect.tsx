@@ -6,6 +6,10 @@ import GridOnOutlinedIcon from '@mui/icons-material/GridOnOutlined';
 import { FormControl, InputLabel, MenuItem, Select } from '@mui/material';
 
 import { buildReportChartFieldOptions } from '../lib/buildReportChartFieldOptions';
+import {
+  clearTextSelectionOnDoubleClick,
+  reportToolbarSelectNoTextSelectSx,
+} from '../lib/preventReportSelectTextSelect';
 import { reportGenerationStore } from '../model/reportGenerationStore';
 import { reportsStore } from '../model/reportsStore';
 import {
@@ -99,7 +103,10 @@ export function ReportsViewModeSelect({ disabled }: ReportsViewModeSelectProps) 
 
   return (
     <>
-      <FormControl size="small" sx={{ minWidth: 148 }}>
+      <FormControl
+        size="small"
+        sx={{ minWidth: 148, ...reportToolbarSelectNoTextSelectSx }}
+        onDoubleClick={clearTextSelectionOnDoubleClick}>
         <InputLabel id="reports-view-mode-label">{t('reports.viewModeLabel')}</InputLabel>
         <Select
           labelId="reports-view-mode-label"

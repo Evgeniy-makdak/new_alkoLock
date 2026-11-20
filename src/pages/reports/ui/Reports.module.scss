@@ -603,6 +603,8 @@
 
     .MuiDataGrid-columnHeaderTitle {
       white-space: nowrap;
+      /* Иначе dblclick по кромке тулбара «перескакивает» выделение на «Отчет…». */
+      user-select: none;
     }
 
     .MuiDataGrid-cell {

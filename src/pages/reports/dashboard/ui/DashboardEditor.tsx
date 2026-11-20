@@ -12,6 +12,11 @@ import { reportGenerationStore } from '../../model/reportGenerationStore';
 import { reportsStore } from '../../model/reportsStore';
 import { normalizeReportViewMode } from '../../types/reportApiTypes';
 import { canFitDashboardWidgets, resizeDashboardLayout } from '../lib/dashboardLayout';
+import {
+  clearTextSelectionOnDoubleClick,
+  preventMultiClickTextSelection,
+  reportToolbarSelectNoTextSelectSx,
+} from '../../lib/preventReportSelectTextSelect';
 import { dashboardStore } from '../model/dashboardStore';
 import type { DashboardLayoutPreset, DashboardWidgetBinding, ReportDashboard } from '../types';
 import { DashboardAccessDialog } from './DashboardAccessDialog';
@@ -146,7 +151,11 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
 
   return (
     <div className={styles.editorRoot}>
-      <div className={styles.editorToolbar}>
+      <div
+        className={styles.editorToolbar}
+        onMouseDown={preventMultiClickTextSelection}
+        onDoubleClick={clearTextSelectionOnDoubleClick}
+        style={{ userSelect: 'none' }}>
         <Button typeButton={ButtonsType.action} startIcon={<ArrowBackIcon />} onClick={onBack}>
           {t('reports.dashboard.backToList', { defaultValue: 'К списку' })}
         </Button>
@@ -168,7 +177,11 @@ export function DashboardEditor({ dashboard, onBack }: Props) {
           onBlur={() => void persistMeta()}
           sx={{ minWidth: 260, flex: 1 }}
         />
-        <FormControl size="small" sx={{ minWidth: 160 }} disabled={!canEdit}>
+        <FormControl
+          size="small"
+          sx={{ minWidth: 160, ...reportToolbarSelectNoTextSelectSx }}
+          disabled={!canEdit}
+          onDoubleClick={clearTextSelectionOnDoubleClick}>
           <InputLabel id="dashboard-layout-preset">
             {t('reports.dashboard.layoutPreset', { defaultValue: 'Разметка' })}
           </InputLabel>
