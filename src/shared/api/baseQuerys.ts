@@ -181,6 +181,14 @@ export class UsersApi {
       url: `api/v1/users/photos/reference/${userId}`,
     });
   }
+
+  /** Справочник категорий ВУ (A, B, C…). */
+  static getDriverLicenceClasses() {
+    return getQuery<{ value?: string; label?: string; key?: string }[] | string[]>({
+      url: 'api/v1/front-data/driver-licence-class',
+    });
+  }
+
   static changeAvatar(data: FormData, userId: ID) {
     return putQuery({ url: `api/v1/users/photos/${userId}/update`, data });
   }

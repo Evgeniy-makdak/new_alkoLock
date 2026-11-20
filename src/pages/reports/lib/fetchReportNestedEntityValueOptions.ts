@@ -9,9 +9,15 @@ import { buildDomainListValuesForAttribute } from './buildDomainListValuesForAtt
 import { fetchAllReportReferencePages } from './fetchAllReportReferencePages';
 import { fetchVehicleDriverAllotmentsForReportFilter } from './fetchVehicleDriverAllotmentsForReportFilter';
 import {
+  fetchDriverLicenceClassFilterValueOptions,
+  isReportDriverLicenceClassAttribute,
+} from './fetchDriverLicenceClassOptions';
+import {
+  SERVICE_HISTORY_RESULT_REFERENCE_ENTITY,
   fetchEventClassesForReport,
   fetchEventTypesForReport,
   fetchEventsForFrontFilterValueOptions,
+  fetchServiceHistoryResultFilterValueOptions,
   isEventsForFrontLevelAttribute,
   shouldUseEventsForFrontTypeListApi,
 } from './eventsForFrontReportOptions';
@@ -77,6 +83,18 @@ export async function fetchReportNestedEntityValueOptions(
   const attrLeaf = attr.includes('.') ? attr.slice(attr.lastIndexOf('.') + 1) : attr;
   if (ref === 'MonitoringDevice' && attrLeaf === 'mode') {
     return fetchDeviceModeOptions(searchQuery);
+  }
+
+  // «Водитель → Категории ВУ»: front-data/driver-licence-class
+  // (и при leaf User/Driver, и по маркеру — не список водителей/пользователей).
+  if (isReportDriverLicenceClassAttribute(attr)) {
+    return fetchDriverLicenceClassFilterValueOptions(searchQuery);
+  }
+
+  // «Тип результата → Результат» (AutoServiceHistory): service-history-event-types,
+  // не общие event-types типов событий устройства.
+  if (ref === SERVICE_HISTORY_RESULT_REFERENCE_ENTITY) {
+    return fetchServiceHistoryResultFilterValueOptions(searchQuery);
   }
 
   if (shouldUseEventsForFrontTypeListApi(ref, field)) {

@@ -112,6 +112,38 @@ export async function fetchEventTypesForReport(searchQuery: string): Promise<IEv
   return unwrapEventTypesList(res);
 }
 
+/**
+ * GET api/v1/front-data/service-history-event-types — исходы сервисного режима
+ * (service_history_events_for_front.label), не типы событий устройства.
+ * Id 63 здесь не исключаем (другая сущность, чем «Слабый выдох» в event-types).
+ */
+export async function fetchServiceHistoryEventTypesForReport(
+  searchQuery: string,
+): Promise<IEventType[]> {
+  const match = Formatters.removeExtraSpaces(searchQuery ?? '');
+  const res = await EventsApi.getEventsTypeList(
+    { filterOptions: { match } },
+    null,
+    false,
+    true,
+  );
+  return unwrapEventTypesList(res);
+}
+
+/** Опции «Значение» для «Тип результата → Результат» (AutoServiceHistory). */
+export async function fetchServiceHistoryResultFilterValueOptions(
+  searchQuery: string,
+): Promise<Values> {
+  const types = await fetchServiceHistoryEventTypesForReport(searchQuery);
+  return types
+    .filter((item) => item.label != null && String(item.label).trim() !== '')
+    .map((item) => ({ value: String(item.label), label: String(item.label) }))
+    .sort((a, b) => a.label.localeCompare(b.label, 'ru', { sensitivity: 'base' }));
+}
+
+/** Маркер fetchTarget для фильтра «Результат» истории автосервиса. */
+export const SERVICE_HISTORY_RESULT_REFERENCE_ENTITY = 'ServiceHistoryEventsForFront';
+
 export function buildEventsForFrontLevelOptions(types: IEventType[]): Values {
   const seen = new Map<string, Values[number]>();
 

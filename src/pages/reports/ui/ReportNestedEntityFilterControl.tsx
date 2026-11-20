@@ -4,7 +4,10 @@ import { useTranslation } from 'react-i18next';
 import { Box, Typography } from '@mui/material';
 
 import { fetchReportNestedEntityValueOptions } from '@pages/reports/lib/fetchReportNestedEntityValueOptions';
-import { resolveNestedFilterValueFetchTarget } from '@pages/reports/lib/eventsForFrontReportOptions';
+import {
+  SERVICE_HISTORY_RESULT_REFERENCE_ENTITY,
+  resolveNestedFilterValueFetchTarget,
+} from '@pages/reports/lib/eventsForFrontReportOptions';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
@@ -94,8 +97,7 @@ export function NestedFilterValueControl({
 }: NestedFilterValueControlProps) {
   /**
    * «Отчёт по истории автосервиса» -> «Результат» (service_history_events_for_front.label):
-   * значения берём из общего справочника front-data/event-types, даже если
-   * referenceEntity в metadata отличается от EventsForFront.
+   * значения из front-data/service-history-event-types (исходы заявок), не event-types.
    */
   const normalizeLabel = (value: string | undefined) =>
     (value ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
@@ -121,8 +123,7 @@ export function NestedFilterValueControl({
     () =>
       isAutoServiceHistoryResultField
         ? {
-            referenceEntity: 'EventsForFront',
-            // Для «Результата» значения всегда берём из label справочника event-types.
+            referenceEntity: SERVICE_HISTORY_RESULT_REFERENCE_ENTITY,
             field: { ...segment.field, fieldName: 'label' },
           }
         : resolveNestedFilterValueFetchTarget(

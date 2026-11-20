@@ -8,7 +8,12 @@ import {
   isReportCoordinatesCompositePath,
   isReportCoordinatesCompositePropertyFieldName,
 } from './reportCoordinateComposite';
-import { shouldForceEventsForFrontDomainList } from './eventsForFrontReportOptions';
+import { isReportDriverLicenceClassAttribute } from './fetchDriverLicenceClassOptions';
+import {
+  SERVICE_HISTORY_RESULT_REFERENCE_ENTITY,
+  isEventsForFrontLevelAttribute,
+  shouldForceEventsForFrontDomainList,
+} from './eventsForFrontReportOptions';
 import { resolveReportVehicleDictionaryAttribute } from './reportVehicleDictionaryAttribute';
 import {
   isReportBooleanField,
@@ -18,7 +23,6 @@ import {
 } from './reportFieldFilterKind';
 import { resolveReportDomainListEntityName } from './reportLeafEntityListApi';
 import { resolveReportMetadataValueLoadKind } from './reportMetadataFilterOptions';
-import { isEventsForFrontLevelAttribute } from './eventsForFrontReportOptions';
 
 export type NestedEntityValueLoadKind =
   | 'static'
@@ -88,6 +92,12 @@ export function resolveNestedEntityValueLoadKind(
     return 'enum';
   }
 
+  // «Водитель → Категории ВУ»: front-data/driver-licence-class
+  // (не textInput, не ENUM metadata, не список водителей).
+  if (field && isReportDriverLicenceClassAttribute(field.fieldName)) {
+    return 'domainList';
+  }
+
   // Уровень события — отдельный справочник front-data/event-classes.
   if (
     leafEntityName === 'LevelsForFront' ||
@@ -126,6 +136,11 @@ export function resolveNestedEntityValueLoadKind(
   }
   if (fromMetadata !== 'textInput') {
     return fromMetadata;
+  }
+
+  // Исходы сервисного режима (маркер из NestedFilterValueControl).
+  if (leafEntityName === SERVICE_HISTORY_RESULT_REFERENCE_ENTITY) {
+    return 'domainList';
   }
 
   if (shouldForceEventsForFrontDomainList(leafEntityName, field)) {
