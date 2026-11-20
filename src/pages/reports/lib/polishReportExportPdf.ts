@@ -29,6 +29,9 @@ const PDF_SPLIT_ISO_DATE_RE =
 const PDF_SINGLE_ISO_DATE_RE =
   /\((\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z?)\)Tj/g;
 
+/** Дата-без-времени в Tj — только при precision=day. */
+const PDF_SINGLE_ISO_DATE_ONLY_RE = /\((\d{4}-\d{2}-\d{2})\)Tj/g;
+
 export type PolishReportExportPdfOptions = {
   dateColumns?: ReportExportDateColumn[];
   sortSpec?: ReportExportSortSpec | null;
@@ -154,6 +157,14 @@ function polishPdfContentBytes(
     if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(iso)) return _full;
     return `(${escapePdfLiteral(formatReportExportDateCell(iso, datePrecision))})Tj`;
   });
+
+  // DATE без времени: только если все date-колонки — day (иначе не трогаем YYYY-MM-DD).
+  if (datePrecision === 'day') {
+    text = text.replace(PDF_SINGLE_ISO_DATE_ONLY_RE, (_full, iso: string) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return _full;
+      return `(${escapePdfLiteral(formatReportExportDateCell(iso, 'day'))})Tj`;
+    });
+  }
 
   return encodeAscii(text);
 }

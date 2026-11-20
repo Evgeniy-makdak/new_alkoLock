@@ -16,6 +16,7 @@ import {
   buildReportExportCsvBlob,
   polishReportExportBlob,
 } from '../lib/postProcessReportExportBlob';
+import { remapReportSortParamsForExportBody } from '../lib/reportExportSortSpec';
 import { buildReportColumnHeaderLabels } from '../lib/buildReportColumnHeaderLabels';
 import { filterReportContentRowsForUi } from '../lib/reportAnonymousUser';
 import { reportsStore } from './reportsStore';
@@ -289,11 +290,17 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     try {
       // Как таблица на экране: без скрытых колонок, подписи из снимка.
       // Бэкенд /export игнорирует ?sort= — порядок строк = /query (как UI), не localeCompare.
-      const exportSort = (sort?.length ? sort : queryContext.sort) ?? [];
+      const uiSort = (sort?.length ? sort : queryContext.sort) ?? [];
       const plan = buildReportExportPlan(queryContext.body, {
         columnHeaderLabels: queryContext.columnHeaderLabels,
         hiddenColumnKeys: queryContext.hiddenColumnKeys,
       });
+      // GROUP BY: бэк принимает sort только по alias selectedFields; в plan — RU-alias.
+      const exportSort = remapReportSortParamsForExportBody(
+        uiSort,
+        queryContext.body.selectedFields,
+        plan.body.selectedFields,
+      );
       const sortedRows = await fetchSortedReportRowsForPdf({
         entityName: queryContext.entityName,
         plan,

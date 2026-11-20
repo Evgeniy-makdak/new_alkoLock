@@ -31,7 +31,10 @@ type PolishOptions = {
   orderedRows?: string[][] | null;
 };
 
-const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+/** Дата-и-время с бэка. */
+const ISO_DATE_TIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+/** Дата-без-времени (DATE) — только вместе с precision=day. */
+const ISO_DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Excel (в т.ч. macOS) стабильно открывает UTF-16LE + BOM; UTF-8 часто читает как Mac Cyrillic. */
 function csvTextToUtf16LeBlob(text: string): Blob {
@@ -91,7 +94,10 @@ function polishCsv(text: string, options: PolishOptions): string {
     for (const [index, precision] of precisionMap) {
       if (index < 0 || index >= cells.length) continue;
       const raw = cells[index] ?? '';
-      if (!ISO_DATE_RE.test(raw.trim())) continue;
+      const trimmed = raw.trim();
+      const isDateOnly = precision === 'day' && ISO_DATE_ONLY_RE.test(trimmed);
+      const isDateTime = ISO_DATE_TIME_RE.test(trimmed);
+      if (!isDateOnly && !isDateTime) continue;
       cells[index] = formatReportExportDateCell(raw, precision);
     }
     dataRows.push(cells);
@@ -201,7 +207,10 @@ async function polishXlsx(blob: Blob, options: PolishOptions): Promise<Blob> {
       for (const idx of indexes) {
         if (headerRefs.includes(idx)) continue;
         const raw = strings[idx] ?? '';
-        if (!ISO_DATE_RE.test(raw.trim())) continue;
+        const trimmed = raw.trim();
+        const isDateOnly = precision === 'day' && ISO_DATE_ONLY_RE.test(trimmed);
+        const isDateTime = ISO_DATE_TIME_RE.test(trimmed);
+        if (!isDateOnly && !isDateTime) continue;
         strings[idx] = formatReportExportDateCell(raw, precision);
       }
     }

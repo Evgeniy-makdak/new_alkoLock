@@ -93,6 +93,14 @@ export function formatReportExportDateCell(
   precision: ReportDateTimePrecision,
 ): string {
   const trimmed = raw.trim();
+  // Дата-без-времени (DATE): `YYYY-MM-DD` → `ДД.ММ.ГГГГ`.
+  // Только при precision=day — не трогаем «дата-и-время» и сырые YYYY-MM-DD в прочих колонках.
+  // Без `new Date()`, чтобы не сдвинуть день из‑за UTC.
+  if (precision === 'day' && /^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-');
+    return `${day}.${month}.${year}`;
+  }
+  // Дата-и-время: только полный ISO с `T` (как раньше).
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(trimmed)) {
     return raw;
   }

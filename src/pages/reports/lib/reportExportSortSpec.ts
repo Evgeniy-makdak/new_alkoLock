@@ -8,6 +8,69 @@ export type ReportExportSortSpec = {
   fieldName: string;
 };
 
+/** Нормализация имени поля sort: `user.fullName` ↔ `user_fullname`. */
+function normalizeReportSortFieldKey(value: string): string {
+  return value.trim().replace(/\./g, '_');
+}
+
+function fieldMatchesSortKey(
+  field: ReportSelectedFieldPayload,
+  sortField: string,
+): boolean {
+  const path = (field.fieldName ?? '').trim();
+  const alias = (field.alias ?? '').trim();
+  if (!sortField) return false;
+  if (path === sortField || alias === sortField) return true;
+  const key = normalizeReportSortFieldKey(sortField);
+  return (
+    (path !== '' && normalizeReportSortFieldKey(path) === key) ||
+    (alias !== '' && normalizeReportSortFieldKey(alias) === key)
+  );
+}
+
+/**
+ * pageable.sort UI (`user.fullName` / `user_fullname`) → alias полей тела export
+ * (`пользователь___пользователь`). При GROUP BY бэкенд принимает только alias’ы
+ * selectedFields; buildReportExportPlan как раз подставляет RU-alias.
+ */
+export function remapReportSortParamsForExportBody(
+  sortParams: string[],
+  sourceFields: ReportSelectedFieldPayload[] | undefined,
+  exportFields: ReportSelectedFieldPayload[] | undefined,
+): string[] {
+  if (!sortParams.length || !exportFields?.length) return sortParams;
+
+  return sortParams.map((param) => {
+    const raw = (param ?? '').trim();
+    if (!raw) return param;
+    const commaIndex = raw.lastIndexOf(',');
+    if (commaIndex <= 0) return param;
+
+    const sortField = raw.slice(0, commaIndex).trim();
+    const direction = raw.slice(commaIndex + 1).trim();
+    if (!sortField || !direction) return param;
+
+    // Уже alias из тела export — не трогаем.
+    if (exportFields.some((field) => (field.alias ?? '').trim() === sortField)) {
+      return param;
+    }
+
+    const sourceHits = (sourceFields ?? []).filter((field) =>
+      fieldMatchesSortKey(field, sortField),
+    );
+    const exportHits = exportFields.filter((field) => {
+      if (fieldMatchesSortKey(field, sortField)) return true;
+      const exportPath = (field.fieldName ?? '').trim();
+      return sourceHits.some((source) => (source.fieldName ?? '').trim() === exportPath);
+    });
+
+    const target = exportHits[0];
+    const exportAlias = (target?.alias ?? '').trim();
+    if (!exportAlias) return param;
+    return `${exportAlias},${direction}`;
+  });
+}
+
 /**
  * pageable.sort (`name,ASC`) → колонка в теле export.
  * Бэкенд /export sort игнорирует — сортируем файл на клиенте.

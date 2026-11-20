@@ -27,8 +27,14 @@ function cellToDisplay(
     : raw instanceof Date
       ? raw.toISOString()
       : JSON.stringify(raw);
-  if (precision && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(asString.trim())) {
-    return formatReportExportDateCell(asString, precision);
+  // day: `YYYY-MM-DD`; minute/second: только полный ISO с `T` (см. formatReportExportDateCell).
+  if (precision) {
+    const trimmed = asString.trim();
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(trimmed);
+    const isDateTime = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(trimmed);
+    if ((precision === 'day' && isDateOnly) || isDateTime) {
+      return formatReportExportDateCell(asString, precision);
+    }
   }
   return finalizeReportCellDisplay(asString);
 }
