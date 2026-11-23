@@ -674,8 +674,9 @@ export function ReportsResultsView() {
           <div
             className={`${styles.scrollableTable} ${showReportColumnHeaders ? '' : styles.scrollableTableHideColumnHeaders}`}>
             {/*
-              Монтируем DataGrid только когда есть lastResult: start() обнуляет его,
-              иначе remount + paginationModelChange бьёт в баг MUI scrollToIndexes.
+              Монтируем DataGrid только при lastResult.
+              start() больше не обнуляет lastResult (ошибка regenerate сохраняет грид);
+              при первом формировании lastResult ещё null — оверлей/спиннер.
             */}
             {lastResult ? (
               <Table

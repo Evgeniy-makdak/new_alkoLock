@@ -79,22 +79,29 @@ export function resolveReportColumnDisplayAggregation(
   return aggregationMap.get(columnKey) ?? null;
 }
 
-export function formatReportAggregationHeaderSuffix(aggregation: string, t: TFunction): string {
-  const key = normalizeReportAggregationCode(aggregation)?.replace(/[_-]/g, '');
-  if (!key) return '';
-  // countDistinct / count_distinct / count-distinct → ключ «countdistinct».
-  const label = t(`reports.aggregation.${key}`, { defaultValue: '' });
-  if (!label) return ` (${aggregation})`;
-  return ` (${label})`;
+/**
+ * Суффикс «(макс. значение)» / «(Количество)» к заголовку больше НЕ добавляем:
+ * алиас/подпись колонки в UI = ровно то, что пользователь передал на бэк.
+ * Функция留влена для call-sites restore/open (strip старых суффиксов) — всегда ''.
+ */
+export function formatReportAggregationHeaderSuffix(
+  _aggregation: string,
+  _t: TFunction,
+): string {
+  void _aggregation;
+  void _t;
+  return '';
 }
 
+/** Заголовок без фронтовых агрегационных постфиксов. */
 export function applyReportAggregationHeaderLabel(
   baseLabel: string,
-  aggregation: string | null | undefined,
-  t: TFunction,
+  _aggregation: string | null | undefined,
+  _t: TFunction,
 ): string {
-  if (!aggregation) return baseLabel;
-  return `${baseLabel}${formatReportAggregationHeaderSuffix(aggregation, t)}`;
+  void _aggregation;
+  void _t;
+  return baseLabel;
 }
 
 /** Карта координат: без агрегации или при max — пара из одной строки ответа; при count — число. */

@@ -160,12 +160,15 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
   start: () => {
     reportFetchAbortController?.abort();
     reportFetchAbortController = new AbortController();
+    // Не трогаем lastResult/queryContext: при ошибке «Сформировать» (409 и т.п.)
+    // ранее сформированный отчёт должен остаться на экране (edit + Cancel).
+    // Успех перезапишет lastResult в completeSuccess; явная очистка — clearResults /
+    // prepareNewReportView.
     set({
       isGenerating: true,
       isLoadingPage: false,
       isAppendingChart: false,
       chartExhausted: false,
-      lastResult: null,
       progress: 0,
       loaded: 0,
       total: 0,

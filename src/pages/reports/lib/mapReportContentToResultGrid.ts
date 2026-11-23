@@ -238,9 +238,8 @@ export function mapReportContentToResultGrid(
   /** Ключи с закрытым глазом — не рендерить в гриде (в т.ч. Идентификатор, если скрыт). */
   hiddenColumnKeys: string[] = [],
   /**
-   * Заголовки «Текущего состава» (карандаш) — БАЗА для headerName.
-   * Суффикс агрегации добавляется ПОВЕРХ, чтобы frozen-подпись не стирала
-   * «(Количество)»/«(Минимум)» у агрегированных колонок.
+   * Заголовки «Текущего состава» (карандаш) — headerName как есть,
+   * без фронтовых суффиксов агрегации «(макс. значение)» и т.п.
    */
   frozenColumnHeaderLabels?: Record<string, string>,
 ): { columns: GridColDef[]; rows: ReportGridRow[] } {
@@ -361,7 +360,7 @@ export function mapReportContentToResultGrid(
         t,
       ),
     );
-    // Заголовок «Текущего состава» (карандаш) — база; суффикс агрегации ПОВЕРХ.
+    // Заголовок = alias/подпись состава (без «(макс. значение)» и др. постфиксов).
     const frozenLabel = (frozenColumnHeaderLabels?.[key] ?? '').trim();
     const headerLabel = frozenLabel || baseHeaderLabel;
     const colDef: GridColDef = {
