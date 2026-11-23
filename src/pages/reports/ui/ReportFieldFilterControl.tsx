@@ -48,6 +48,7 @@ import type { ReportEntityMetadata, ReportFieldDefinition } from '@pages/reports
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
+import { isReportDictionarySelectFilterField } from '@pages/reports/lib/reportDictionarySelectFilterField';
 import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 
@@ -123,6 +124,12 @@ export function ReportFieldFilterControl({
       domainListEntityName === 'Vehicle' ||
       field.referenceEntity?.trim() === 'Vehicle' ||
       field.fieldName.includes('vehicle.'));
+  const isDictionarySelectFilter = isReportDictionarySelectFilterField({
+    field,
+    leafEntityName: domainListEntityName,
+    fieldPathHints: field.fieldName,
+    rootReportEntityName: metadata.entityName,
+  });
   const hasVehicleLabelMaps =
     Object.keys(vehicleLabelMaps?.types ?? {}).length > 0 ||
     Object.keys(vehicleLabelMaps?.colors ?? {}).length > 0;
@@ -353,6 +360,9 @@ export function ReportFieldFilterControl({
         </Box>
       );
     }
+    const allowDomainFreeText =
+      !isDictionarySelectFilter &&
+      (!domainMode.isSingle || isReportFreeTextField(field));
     return (
       <ReportSearchMultipleSelect
         key={`${controlId}__${filterOperationCode ?? 'none'}`}
@@ -367,13 +377,16 @@ export function ReportFieldFilterControl({
         isLoading={remoteLoading}
         sx={controlSx}
         slotProps={reportFilterAutocompleteSlotProps}
-        commitFreeText={!domainMode.isSingle || isReportFreeTextField(field)}
+        selectionOnly={isDictionarySelectFilter}
+        commitFreeText={allowDomainFreeText}
         onInputChange={(next) => setSearchQuery(next)}
         setValueStore={(_, next) =>
           onChange(
             domainMode.isSingle
               ? toValuesFromSingleSelect(next)
-              : normalizeReportFilterSelectValues(next),
+              : allowDomainFreeText
+                ? normalizeReportFilterSelectValues(next)
+                : (Array.isArray(next) ? (next as Values) : []),
           )
         }
       />
@@ -444,6 +457,10 @@ export function ReportFieldFilterControl({
     );
   }
 
+  const allowEnumFreeText =
+    !isDictionarySelectFilter &&
+    (!valueMode.isSingle || isReportFreeTextField(field));
+
   return (
     <ReportSearchMultipleSelect
       key={`${controlId}__${filterOperationCode ?? 'none'}`}
@@ -457,12 +474,15 @@ export function ReportFieldFilterControl({
       serverFilter={false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText={!valueMode.isSingle || isReportFreeTextField(field)}
+      selectionOnly={isDictionarySelectFilter}
+      commitFreeText={allowEnumFreeText}
       setValueStore={(_, next) =>
         onChange(
           valueMode.isSingle
             ? toValuesFromSingleSelect(next)
-            : normalizeReportFilterSelectValues(next),
+            : allowEnumFreeText
+              ? normalizeReportFilterSelectValues(next)
+              : (Array.isArray(next) ? (next as Values) : []),
         )
       }
     />

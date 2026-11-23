@@ -11,6 +11,7 @@ import {
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
+import { isReportDictionarySelectFilterField } from '@pages/reports/lib/reportDictionarySelectFilterField';
 import {
   buildReferenceEntityPropertyOptions,
   buildReportAttributeValueOptions,
@@ -167,6 +168,13 @@ export function NestedFilterValueControl({
     .toLowerCase();
   const isVehicleDictionaryField =
     Boolean(vehicleDictionaryAttribute) && vehicleDictionaryHints.includes('vehicle');
+  const isDictionarySelectFilter = isReportDictionarySelectFilterField({
+    field: fetchTarget.field,
+    leafEntityName: fetchTarget.referenceEntity,
+    fieldPathHints: fullVehicleFieldPath,
+    rootReportEntityName,
+    isServiceHistoryResult: isAutoServiceHistoryResultField,
+  });
   const hasVehicleLabelMaps =
     Object.keys(vehicleLabelMaps?.types ?? {}).length > 0 ||
     Object.keys(vehicleLabelMaps?.colors ?? {}).length > 0;
@@ -387,6 +395,10 @@ export function NestedFilterValueControl({
   }
 
   const forceSingle = isBooleanValueField || valueMode.isSingle;
+  // Справочники (тип/цвет ТС, режим, события, ВУ, результат заявки) — только из списка.
+  const allowValueFreeText =
+    !isDictionarySelectFilter &&
+    (!forceSingle || (!isBooleanValueField && isReportFreeTextField(fetchTarget.field)));
 
   return (
     <ReportSearchMultipleSelect
@@ -402,9 +414,8 @@ export function NestedFilterValueControl({
       isLoading={valueLoadKind === 'domainList' ? remoteLoading : false}
       sx={controlSx}
       slotProps={reportFilterAutocompleteSlotProps}
-      commitFreeText={
-        !forceSingle || (!isBooleanValueField && isReportFreeTextField(fetchTarget.field))
-      }
+      selectionOnly={isDictionarySelectFilter}
+      commitFreeText={allowValueFreeText}
       onInputChange={
         valueLoadKind === 'domainList' ? (next) => setSearchQuery(next) : undefined
       }
@@ -412,7 +423,9 @@ export function NestedFilterValueControl({
         onChange(
           forceSingle
             ? toValuesFromSingleSelect(next)
-            : normalizeReportFilterSelectValues(next),
+            : allowValueFreeText
+              ? normalizeReportFilterSelectValues(next)
+              : (Array.isArray(next) ? (next as Values) : []),
         )
       }
     />

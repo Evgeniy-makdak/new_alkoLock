@@ -520,6 +520,8 @@ export function SearchMultipleSelect<T>({
   maxValues,
   sx,
   size,
+  /** По умолчанию true — прежнее поведение; false запрещает произвольный ввод. */
+  freeSolo = true,
   ...rest
 }: SearchMultipleSelectProps<T>) {
   const { t } = useTranslation();
@@ -846,7 +848,7 @@ export function SearchMultipleSelect<T>({
         multiple={isMultipleMode}
         onChange={onChange}
         fullWidth
-        freeSolo
+        freeSolo={freeSolo}
         value={readyValue || null}
         open={
           isElectronDesktop

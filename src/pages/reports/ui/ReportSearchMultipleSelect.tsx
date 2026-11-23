@@ -40,6 +40,11 @@ type ReportSearchMultipleSelectProps<T> = SearchMultipleSelectProps<T> & {
    * Только для value-контролов; оператор / поле результата не включают.
    */
   commitFreeText?: boolean;
+  /**
+   * Только выбор из `values` (справочники с конечным набором).
+   * Отключает freeSolo и commit произвольной подстроки; остальные селекты не трогает.
+   */
+  selectionOnly?: boolean;
 };
 
 function isEmptySelectValue(next: string | Values | Value | (string | Values | Value)[]): boolean {
@@ -81,6 +86,7 @@ export function ReportSearchMultipleSelect<T>({
   name,
   blockEmptyClear = false,
   commitFreeText = false,
+  selectionOnly = false,
   label,
   placeholder,
   slotProps,
@@ -90,6 +96,7 @@ export function ReportSearchMultipleSelect<T>({
 }: ReportSearchMultipleSelectProps<T>) {
   const controlSx = compact ? reportFilterModalControlSx : reportFilterControlSx;
   const singleSelect = multiple === false;
+  const allowFreeText = commitFreeText && !selectionOnly;
   /** Явный clear (крестик) — пропускаем при blockEmptyClear. */
   const permitEmptyClearRef = useRef(false);
   const pendingFreeTextRef = useRef('');
@@ -124,10 +131,10 @@ export function ReportSearchMultipleSelect<T>({
   const emitValue = useCallback(
     (fieldName: keyof T | string, next: string | Values | Value | (string | Values | Value)[]) => {
       if (!setValueStore) return;
-      const payload = commitFreeText ? normalizeReportFilterSelectValues(next) : next;
+      const payload = allowFreeText ? normalizeReportFilterSelectValues(next) : next;
       setValueStore(fieldName, payload);
     },
-    [commitFreeText, setValueStore],
+    [allowFreeText, setValueStore],
   );
 
   const guardedSetValueStore: SearchMultipleSelectProps<T>['setValueStore'] = setValueStore
@@ -142,7 +149,7 @@ export function ReportSearchMultipleSelect<T>({
           return;
         }
         permitEmptyClearRef.current = false;
-        if (commitFreeText) {
+        if (allowFreeText) {
           const pending = pendingFreeTextRef.current.trim();
           const normalized = normalizeReportFilterSelectValues(next);
           // Shared Autocomplete при freeSolo-string может отдать [] — не затираем набор.
@@ -158,7 +165,7 @@ export function ReportSearchMultipleSelect<T>({
     : undefined;
 
   const commitPendingFreeText = useCallback(() => {
-    if (!commitFreeText || !setValueStore) return;
+    if (!allowFreeText || !setValueStore) return;
     const text = pendingFreeTextRef.current.trim();
     if (!text) return;
     if (value.some((item) => String(item.value) === text || String(item.label ?? '') === text)) {
@@ -179,16 +186,16 @@ export function ReportSearchMultipleSelect<T>({
       emitValue(name, next);
       setFreeTextEpoch((epoch) => epoch + 1);
     });
-  }, [commitFreeText, setValueStore, value, maxValues, singleSelect, emitValue, name]);
+  }, [allowFreeText, setValueStore, value, maxValues, singleSelect, emitValue, name]);
 
   const handleInputChange = useCallback(
     (next: string) => {
-      if (commitFreeText) {
+      if (allowFreeText) {
         pendingFreeTextRef.current = next;
       }
       (onInputChange ?? reportFilterNoopInputChange)(next);
     },
-    [commitFreeText, onInputChange],
+    [allowFreeText, onInputChange],
   );
 
   /**
@@ -199,13 +206,13 @@ export function ReportSearchMultipleSelect<T>({
    */
   const handleInputCapture = useCallback(
     (event: FormEvent<HTMLDivElement>) => {
-      if (!commitFreeText) return;
+      if (!allowFreeText) return;
       const target = event.target;
       if (target instanceof HTMLInputElement) {
         pendingFreeTextRef.current = target.value;
       }
     },
-    [commitFreeText],
+    [allowFreeText],
   );
 
   const handleBlur = useCallback(
@@ -218,7 +225,7 @@ export function ReportSearchMultipleSelect<T>({
 
   const handleKeyDownCapture = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (event.key !== 'Enter' || !commitFreeText || !setValueStore) return;
+      if (event.key !== 'Enter' || !allowFreeText || !setValueStore) return;
       const input = event.target;
       if (!(input instanceof HTMLInputElement)) return;
       if (input.getAttribute('aria-activedescendant')) return;
@@ -228,7 +235,7 @@ export function ReportSearchMultipleSelect<T>({
       event.stopPropagation();
       commitPendingFreeText();
     },
-    [commitFreeText, setValueStore, commitPendingFreeText],
+    [allowFreeText, setValueStore, commitPendingFreeText],
   );
 
   /**
@@ -271,7 +278,7 @@ export function ReportSearchMultipleSelect<T>({
       }}>
       <SearchMultipleSelect
         {...rest}
-        key={commitFreeText ? `${String(name)}__ft_${freeTextEpoch}` : undefined}
+        key={allowFreeText ? `${String(name)}__ft_${freeTextEpoch}` : undefined}
         name={name}
         label={label}
         placeholder={placeholder}
@@ -283,6 +290,8 @@ export function ReportSearchMultipleSelect<T>({
         sx={mergedSx}
         // Не передаём clearIndicator-обработчики — иначе ломается clear MUI.
         slotProps={slotProps}
+        // selectionOnly: только пункты из values; иначе прежний freeSolo (по умолчанию true).
+        freeSolo={selectionOnly ? false : rest.freeSolo}
         onInputChange={handleInputChange}
         onBlur={handleBlur}
         setValueStore={guardedSetValueStore}

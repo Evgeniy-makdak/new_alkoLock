@@ -173,6 +173,7 @@ export function ReportOutputFilterRow({
     return primaryField;
   }, [primaryField, refEntity, nestedPath, tableFieldsMetadata, referenceEntityMetadataByName]);
 
+  // Операторы — как отдал бэк в availableOperations (ограничение eq/ne/in/notIn делает бэк).
   const operationOptions = useMemo(
     () => operationsToValues(operationFunctionSource?.availableOperations),
     [operationFunctionSource],
