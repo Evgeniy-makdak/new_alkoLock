@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -224,6 +224,18 @@ export function ReportOutputFilterRow({
     onFilterChange,
   ]);
 
+  // Смена атрибута/path при том же «Поле результата» не чистит filterSelections в store —
+  // сбрасываем оператор, иначе остаётся «Содержит» при новом листе без контрола значения.
+  const prevFilterLeafKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const leafKey = `${primaryBaseKey}\0${nestedPathKey}`;
+    const prev = prevFilterLeafKeyRef.current;
+    prevFilterLeafKeyRef.current = leafKey;
+    if (prev == null || prev === leafKey) return;
+    if ((row.filterSelections[operationKey]?.length ?? 0) === 0) return;
+    onFilterChange(operationKey, []);
+  }, [primaryBaseKey, nestedPathKey, operationKey, row.filterSelections, onFilterChange]);
+
   const nestedAttributeReady = Boolean(
     refEntity &&
       isNestedFilterPathReadyForValueInput(
@@ -282,7 +294,10 @@ export function ReportOutputFilterRow({
   const filterOperationBlock =
     primaryField && showOperatorField ? (
       <ReportSearchMultipleSelect
-        key={`${operationKey}__${nestedPath.join('.') || 'none'}`}
+        // primaryBaseKey: смена «Поля результата» сбрасывает filterSelections в store,
+        // но без remount Autocomplete может оставить визуально старый «Содержит»
+        // при пустом value — тогда «Значение» справа скрыто (нет filterOperationCode).
+        key={`${operationKey}__${primaryBaseKey}__${nestedPath.join('.') || 'none'}`}
         multiple={false}
         compact={selectCompact}
         name={operationKey}

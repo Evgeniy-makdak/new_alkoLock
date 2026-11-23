@@ -38,8 +38,8 @@ function contextBlob(ctx: ReportDictionarySelectFilterContext): string {
 }
 
 /**
- * Справочные фильтры с конечным набором значений (выбор только из списка).
- * Операторы для них ограничивает бэкенд через availableOperations — фронт их не режет.
+ * Эвристика на случай metadata без onlyDefaultValue (старый бэк / кэш).
+ * Операторы фронт не режет — их отдаёт availableOperations.
  */
 export function isReportDictionarySelectFilterField(
   ctx: ReportDictionarySelectFilterContext,
@@ -109,4 +109,18 @@ export function isReportDictionarySelectFilterField(
   }
 
   return false;
+}
+
+/**
+ * Нужно ли запретить произвольный ввод значения фильтра.
+ * Источник истины: field.onlyDefaultValue с бэка;
+ * если флага нет — эвристика для известных справочников.
+ */
+export function shouldRestrictReportFilterValueToDefaults(
+  ctx: ReportDictionarySelectFilterContext,
+): boolean {
+  const flag = ctx.field?.onlyDefaultValue;
+  if (flag === true) return true;
+  if (flag === false) return false;
+  return isReportDictionarySelectFilterField(ctx);
 }

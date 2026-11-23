@@ -50,6 +50,12 @@ export type ReportFieldDefinition = {
   availableFunctions: ReportFieldOperation[];
   /** Параметры UI/операций для блока «Группировка» → having. */
   availableHaving?: ReportAvailableHaving | null;
+  /**
+   * true — значение фильтра только из справочника/дефолтного списка (без произвольной подстроки);
+   * false — допускается любой ввод.
+   * Источник истины с бэка (GET …/metadata); операторы бэк уже режет в availableOperations.
+   */
+  onlyDefaultValue?: boolean | null;
   /** Справочник значений для ENUM (если бэкенд отдаёт в metadata). */
   allowedValues?: Array<
     | string

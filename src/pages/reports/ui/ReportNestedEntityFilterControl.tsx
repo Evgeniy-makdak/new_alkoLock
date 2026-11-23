@@ -11,7 +11,7 @@ import {
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
 import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
-import { isReportDictionarySelectFilterField } from '@pages/reports/lib/reportDictionarySelectFilterField';
+import { shouldRestrictReportFilterValueToDefaults } from '@pages/reports/lib/reportDictionarySelectFilterField';
 import {
   buildReferenceEntityPropertyOptions,
   buildReportAttributeValueOptions,
@@ -168,7 +168,7 @@ export function NestedFilterValueControl({
     .toLowerCase();
   const isVehicleDictionaryField =
     Boolean(vehicleDictionaryAttribute) && vehicleDictionaryHints.includes('vehicle');
-  const isDictionarySelectFilter = isReportDictionarySelectFilterField({
+  const isDictionarySelectFilter = shouldRestrictReportFilterValueToDefaults({
     field: fetchTarget.field,
     leafEntityName: fetchTarget.referenceEntity,
     fieldPathHints: fullVehicleFieldPath,
@@ -564,9 +564,16 @@ export function ReportNestedEntityFilterControl({
                 const fromMeta = segment.metadata?.fields?.find(
                   (f) => f.fieldName === segment.selectedFieldName,
                 );
-                const label =
-                  (fromMeta?.label ?? '').trim() || segment.selectedFieldName;
-                return [{ value: segment.selectedFieldName, label }];
+                const metaLabel = (fromMeta?.label ?? '').trim();
+                if (metaLabel) {
+                  return [{ value: segment.selectedFieldName, label: metaLabel }];
+                }
+                // Пока metadata/options грузятся — не показываем technical fieldName
+                // (middleName / email / …) вместо русской подписи / оператора.
+                if (segment.loading || !segment.metadata || propertyOptions.length === 0) {
+                  return [];
+                }
+                return [{ value: segment.selectedFieldName, label: segment.selectedFieldName }];
               })()
             : [];
 

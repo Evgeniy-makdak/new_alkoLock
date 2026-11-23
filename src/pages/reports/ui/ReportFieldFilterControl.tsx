@@ -48,7 +48,7 @@ import type { ReportEntityMetadata, ReportFieldDefinition } from '@pages/reports
 import { reportsStore } from '@pages/reports/model/reportsStore';
 import type { Value, Values } from '@shared/ui/search_multiple_select';
 import { buildVehicleAttributeOptions } from '@pages/reports/lib/buildVehicleAttributeOptions';
-import { isReportDictionarySelectFilterField } from '@pages/reports/lib/reportDictionarySelectFilterField';
+import { shouldRestrictReportFilterValueToDefaults } from '@pages/reports/lib/reportDictionarySelectFilterField';
 import { resolveReportVehicleDictionaryAttribute } from '@pages/reports/lib/reportVehicleDictionaryAttribute';
 import type { ReportVehicleLabelMaps } from '@pages/reports/lib/fetchVehicleFrontDataMaps';
 
@@ -124,7 +124,7 @@ export function ReportFieldFilterControl({
       domainListEntityName === 'Vehicle' ||
       field.referenceEntity?.trim() === 'Vehicle' ||
       field.fieldName.includes('vehicle.'));
-  const isDictionarySelectFilter = isReportDictionarySelectFilterField({
+  const isDictionarySelectFilter = shouldRestrictReportFilterValueToDefaults({
     field,
     leafEntityName: domainListEntityName,
     fieldPathHints: field.fieldName,
