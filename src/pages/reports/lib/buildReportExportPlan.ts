@@ -4,6 +4,7 @@ import {
   isReportCompositeFieldPath,
 } from './reportEntityCompositeFields';
 import { finalizeReportQueryBodyForGroupBy } from './buildReportGroupParam';
+import { isReportSelectedFieldOccurrenceHidden } from './reportColumnVisibility';
 import { decodeReportFieldAliasForUi } from './reportSelectedFieldAliases';
 import {
   formatReportTableDateTime,
@@ -75,16 +76,7 @@ function isSelectedFieldHidden(
   occurrence: number,
   hiddenColumnKeys: string[] | undefined,
 ): boolean {
-  if (!hiddenColumnKeys?.length) return false;
-  const hidden = new Set(hiddenColumnKeys.map((key) => String(key).trim()).filter(Boolean));
-  if (!hidden.size) return false;
-  const path = (field.fieldName ?? '').trim();
-  const alias = (field.alias ?? '').trim();
-  const dupKey = path && occurrence > 1 ? buildDuplicateColumnKey(path, occurrence) : path;
-  if (dupKey && hidden.has(dupKey)) return true;
-  if (path && hidden.has(path)) return true;
-  if (alias && hidden.has(alias)) return true;
-  return false;
+  return isReportSelectedFieldOccurrenceHidden(field, occurrence, hiddenColumnKeys);
 }
 
 /** ISO date/time из выгрузки бэка → формат как в ячейке грида. */

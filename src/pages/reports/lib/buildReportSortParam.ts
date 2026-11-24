@@ -13,6 +13,7 @@ import {
   encodeReportFieldAliasForApi,
   extractReportTableFieldLabelLeaf,
 } from './reportSelectedFieldAliases';
+import { isReportSortApiFieldHidden } from './reportColumnVisibility';
 
 import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
 import { createReportComposeSortRow } from '../types/reportComposeSort';
@@ -177,20 +178,7 @@ export function isReportSortFieldHidden(
 ): boolean {
   const apiField = getReportSortApiFieldFromParams(sortParams);
   if (!apiField) return false;
-
-  const hidden = new Set(
-    (hiddenColumnKeys ?? []).map((key) => String(key).trim()).filter(Boolean),
-  );
-  if (!hidden.size) return false;
-  if (hidden.has(apiField)) return true;
-
-  for (const field of selectedFields ?? []) {
-    const fieldName = (field.fieldName ?? '').trim();
-    const alias = (field.alias ?? '').trim();
-    if (fieldName !== apiField && alias !== apiField) continue;
-    if (hidden.has(fieldName) || (alias && hidden.has(alias))) return true;
-  }
-  return false;
+  return isReportSortApiFieldHidden(apiField, hiddenColumnKeys, selectedFields);
 }
 
 /** Подгоняет sortModel под фактические field колонок грида (fieldName ↔ alias). */

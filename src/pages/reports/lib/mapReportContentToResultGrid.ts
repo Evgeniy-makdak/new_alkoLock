@@ -42,6 +42,10 @@ import {
 import { formatReportCoordinateDisplay } from './formatReportCoordinateInput';
 import { formatReportTableDateTime, resolveReportDateTimePrecision } from './formatReportTableDateTime';
 import {
+  collectHiddenReportContentKeys,
+  isReportSelectedFieldOccurrenceHidden,
+} from './reportColumnVisibility';
+import {
   REPORT_EMPTY_DISPLAY,
   finalizeReportCellDisplay,
   formatReportCarDisplay,
@@ -252,26 +256,12 @@ export function mapReportContentToResultGrid(
 
   const allContentKeys = collectReportContentColumnKeys(content);
 
-  // Скрытые пути из UI (fieldName) + alias ответа.
-  // Иначе при alias content-ключ ≠ fieldName и «глаз» перестаёт скрывать колонку.
-  // Идентификатор скрываем только если он в hiddenColumnKeys (закрытый глаз).
-  const hiddenSet = new Set<string>();
-  for (const key of hiddenColumnKeys) {
-    const trimmed = String(key).trim();
-    if (trimmed) hiddenSet.add(trimmed);
-  }
-  for (const field of selectedFieldsForColumnOrder ?? []) {
-    const fieldName = (field.fieldName ?? '').trim();
-    if (!fieldName || !hiddenSet.has(fieldName)) continue;
-    const alias = (field.alias ?? '').trim();
-    if (alias) hiddenSet.add(alias);
-  }
-  for (const key of allContentKeys) {
-    const resolved = resolveReportContentFieldName(key, selectedFieldsForColumnOrder);
-    if (hiddenSet.has(resolved) || hiddenSet.has(key)) {
-      hiddenSet.add(key);
-    }
-  }
+  // Скрытие по строке состава (field / field#N + alias), без протечки исходник→клон.
+  const hiddenSet = collectHiddenReportContentKeys(
+    allContentKeys,
+    selectedFieldsForColumnOrder,
+    hiddenColumnKeys,
+  );
 
   const contentKeys = allContentKeys.filter((key) => !hiddenSet.has(key));
   // Порядок = selectedFields; ключ в content — alias при переименовании/дубле.
@@ -282,17 +272,25 @@ export function mapReportContentToResultGrid(
   const composeCompositeKeys = Object.keys(frozenColumnHeaderLabels ?? {}).filter((key) =>
     key.includes('__composite'),
   );
+  const preferredVisibleFieldNames: string[] = [];
+  {
+    const occurrenceByPath = new Map<string, number>();
+    for (const field of selectedFieldsForColumnOrder ?? []) {
+      const name = (field.fieldName ?? '').trim();
+      if (!name) continue;
+      const occurrence = (occurrenceByPath.get(name) ?? 0) + 1;
+      occurrenceByPath.set(name, occurrence);
+      if (isReportSelectedFieldOccurrenceHidden(field, occurrence, hiddenColumnKeys)) {
+        continue;
+      }
+      preferredVisibleFieldNames.push(name);
+    }
+  }
   const { displayColumnKeys: rawColumnKeys, groups: compositeGroups } =
-    planReportCompositeResultColumns(
-      orderedKeys,
-      selectedFieldsForColumnOrder
-        ?.map((f) => f.fieldName)
-        .filter((name) => name && !hiddenSet.has(name)),
-      {
-        selectedFields: selectedFieldsForColumnOrder,
-        composeCompositeKeys,
-      },
-    );
+    planReportCompositeResultColumns(orderedKeys, preferredVisibleFieldNames, {
+      selectedFields: selectedFieldsForColumnOrder,
+      composeCompositeKeys,
+    });
   // Порядок колонок как в «Текущем составе» (ключи снимка заголовков).
   // Content-ключ часто = alias (переименование / дубль), а в снимке сначала
   // fieldName — без сопоставления alias↔fieldName переименованные/дубли

@@ -52,6 +52,7 @@ import {
   applyReportTableFieldPresetDefaults,
 } from '@pages/reports/lib/reportTableFieldPresets';
 import { buildReportColumnHeaderLabelsFromComposeFields } from '@pages/reports/lib/reportSelectedFieldAliases';
+import { buildReportHiddenColumnKeys } from '@pages/reports/lib/reportColumnVisibility';
 import { areReportComposeFiltersComplete } from '@pages/reports/lib/reportOutputRow';
 import { restoreReportComposeTableFieldsFromQuery } from '@pages/reports/lib/restoreReportComposeTableFields';
 import {
@@ -1058,25 +1059,10 @@ export function ReportComposeModal({
     setPagination({ page: 0 });
 
     try {
-      const hiddenFromUi = reportsStore.getState().tableFieldHiddenByPath;
-      const hiddenFieldNames = Object.entries(hiddenFromUi)
-        .filter(([, hidden]) => hidden)
-        .map(([key]) => key.trim())
-        .filter(Boolean);
-      // Вместе с fieldName кладём alias — content ответа часто ключуется alias.
-      const hiddenColumnKeys = Array.from(
-        new Set([
-          ...hiddenFieldNames,
-          ...(bodyWithGroup.selectedFields ?? []).flatMap((field) => {
-            const fieldName = (field.fieldName ?? '').trim();
-            if (!fieldName) return [];
-            if (hiddenFieldNames.includes(fieldName)) {
-              const alias = (field.alias ?? '').trim();
-              return alias ? [fieldName, alias] : [fieldName];
-            }
-            return [];
-          }),
-        ]),
+      // Видимость по точным ключам строк состава (field / field#N) — клон не наследует глаз исходника.
+      const hiddenColumnKeys = buildReportHiddenColumnKeys(
+        reportsStore.getState().tableFieldHiddenByPath,
+        bodyWithGroup.selectedFields,
       );
 
       const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
