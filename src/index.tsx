@@ -72,7 +72,11 @@ const AppContent = (
                                     )}
                                     maxSnack={3}
                                     anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-                                    autoHideDuration={null}>
+                                    autoHideDuration={null}
+                                    // Portal на body: иначе toast внутри #root периодически
+                                    // оказывается под MUI Dialog (модалки отчётов и др.).
+                                    domRoot={document.body}
+                                    classes={{ containerRoot: 'app-snackbar-container' }}>
                                     <AuthSessionSync />
                                     <RouterProvider router={routers} />
                                   </SnackbarProvider>
