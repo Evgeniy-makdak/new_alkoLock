@@ -12,7 +12,7 @@ import {
 import { filterReportContentRowsForUi } from './reportAnonymousUser';
 import { REPORT_EMPTY_DISPLAY, finalizeReportCellDisplay, isReportEmptyValue } from './reportDisplayValue';
 
-import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
+import type { ReportQueryRequest, ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
 const QUERY_PAGE_SIZE = 200;
 const MAX_PAGES = 500;
@@ -39,15 +39,22 @@ function cellToDisplay(
   return finalizeReportCellDisplay(asString);
 }
 
-function pickRowValue(
+/**
+ * Значение колонки из content. При наличии alias (клон Дата_1 / Дата_1_2)
+ * НЕ падаем на fieldName — клоны делят path и иначе получают чужую ячейку.
+ */
+export function pickReportExportRowValue(
   row: Record<string, unknown>,
   field: ReportSelectedFieldPayload,
 ): unknown {
   const alias = (field.alias ?? '').trim();
   const path = (field.fieldName ?? '').trim();
-  if (alias && Object.prototype.hasOwnProperty.call(row, alias)) return row[alias];
+  if (alias) {
+    if (Object.prototype.hasOwnProperty.call(row, alias)) return row[alias];
+    if (row[alias] !== undefined) return row[alias];
+    return null;
+  }
   if (path && Object.prototype.hasOwnProperty.call(row, path)) return row[path];
-  if (alias && row[alias] !== undefined) return row[alias];
   if (path && row[path] !== undefined) return row[path];
   return null;
 }
@@ -60,29 +67,39 @@ function mapContentToRows(
   const precisionByIndex = new Map(dateColumns.map((col) => [col.index, col.precision]));
   return content.map((row) =>
     fields.map((field, index) =>
-      cellToDisplay(pickRowValue(row, field), precisionByIndex.get(index)),
+      cellToDisplay(pickReportExportRowValue(row, field), precisionByIndex.get(index)),
     ),
   );
 }
 
 /**
- * Все страницы /query с тем же sort, что у грида → строки выгрузки.
+ * Все страницы /query с тем же sort и alias, что у грида → строки выгрузки.
+ * queryBody/valueFields — исходные alias UI; plan.body (RU-alias) только для /export XLS.
  */
 export async function fetchSortedReportRowsForPdf(args: {
   entityName: string;
   plan: ReportExportPlan;
   sort: string[];
   branchIds?: number[];
+  /** Тело как у сформированного отчёта (исходные alias). */
+  queryBody?: ReportQueryRequest;
 }): Promise<string[][]> {
-  const fields = args.plan.body.selectedFields ?? [];
+  const fields =
+    args.plan.valueFields?.length > 0
+      ? args.plan.valueFields
+      : (args.plan.body.selectedFields ?? []);
   if (!fields.length) return [];
+
+  const queryBody: ReportQueryRequest = args.queryBody
+    ? { ...args.queryBody, selectedFields: fields }
+    : { ...args.plan.body, selectedFields: fields };
 
   const rows: string[][] = [];
   let page = 0;
   let total = Number.POSITIVE_INFINITY;
 
   while (page < MAX_PAGES && rows.length < total) {
-    const result = await executeReportQuery(args.entityName, args.plan.body, {
+    const result = await executeReportQuery(args.entityName, queryBody, {
       page,
       size: QUERY_PAGE_SIZE,
       sort: args.sort,

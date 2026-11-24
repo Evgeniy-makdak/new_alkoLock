@@ -76,6 +76,8 @@ export type ReportQueryContext = {
 
 let reportFetchAbortController: AbortController | null = null;
 let reportPageRequestSeq = 0;
+/** Инкремент на каждый Save: отбрасываем устаревший async-export после нового «Сформировать»/Save. */
+let reportExportRequestSeq = 0;
 
 type ReportGenerationState = {
   isGenerating: boolean;
@@ -148,24 +150,30 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     set({ sort });
   },
 
-  prepareNewReportView: () =>
+  prepareNewReportView: () => {
+    reportExportRequestSeq += 1;
     set({
       lastResult: null,
       queryContext: null,
       pagination: { page: 0, pageSize: get().pagination.pageSize },
       sort: [] as string[],
       chartExhausted: false,
-    }),
+      isExporting: false,
+    });
+  },
 
   start: () => {
     reportFetchAbortController?.abort();
     reportFetchAbortController = new AbortController();
+    // Новый «Сформировать» — отбросить незавершённый Save (иначе файл смешает эпохи).
+    reportExportRequestSeq += 1;
     // Не трогаем lastResult/queryContext: при ошибке «Сформировать» (409 и т.п.)
     // ранее сформированный отчёт должен остаться на экране (edit + Cancel).
     // Успех перезапишет lastResult в completeSuccess; явная очистка — clearResults /
     // prepareNewReportView.
     set({
       isGenerating: true,
+      isExporting: false,
       isLoadingPage: false,
       isAppendingChart: false,
       chartExhausted: false,
@@ -272,14 +280,17 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     });
   },
 
-  clearResults: () =>
+  clearResults: () => {
+    reportExportRequestSeq += 1;
     set({
       lastResult: null,
       queryContext: null,
       pagination: { page: 0, pageSize: get().pagination.pageSize },
       sort: [],
       chartExhausted: false,
-    }),
+      isExporting: false,
+    });
+  },
 
   async exportDisplayedReport(format, fileName = '') {
     const { queryContext, isGenerating, isExporting, sort } = get();
@@ -289,27 +300,41 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       return false;
     }
 
+    // Снимок только текущего сформированного отчёта — без ссылок на прошлый Save.
+    const exportSeq = ++reportExportRequestSeq;
+    const entityName = queryContext.entityName;
+    const branchIds = queryContext.branchIds ? [...queryContext.branchIds] : undefined;
+    const bodySnapshot = queryContext.body;
+    const labelsSnapshot = queryContext.columnHeaderLabels
+      ? { ...queryContext.columnHeaderLabels }
+      : undefined;
+    const hiddenSnapshot = queryContext.hiddenColumnKeys
+      ? [...queryContext.hiddenColumnKeys]
+      : undefined;
+    // Sort снимка «Сформировать» / грида в queryContext; store.sort может отстать
+    // от localStorage DataGrid после edit и дать смесь старого/нового порядка.
+    const uiSort = [
+      ...((queryContext.sort?.length ? queryContext.sort : sort) ?? []),
+    ];
+
     set({ isExporting: true });
     try {
       // Как таблица на экране: без скрытых колонок, подписи из снимка.
       // Бэкенд /export игнорирует ?sort= — порядок строк = /query (как UI), не localeCompare.
-      const uiSort = (sort?.length ? sort : queryContext.sort) ?? [];
-      const plan = buildReportExportPlan(queryContext.body, {
-        columnHeaderLabels: queryContext.columnHeaderLabels,
-        hiddenColumnKeys: queryContext.hiddenColumnKeys,
+      const plan = buildReportExportPlan(bodySnapshot, {
+        columnHeaderLabels: labelsSnapshot,
+        hiddenColumnKeys: hiddenSnapshot,
       });
-      // GROUP BY: бэк принимает sort только по alias selectedFields; в plan — RU-alias.
-      const exportSort = remapReportSortParamsForExportBody(
-        uiSort,
-        queryContext.body.selectedFields,
-        plan.body.selectedFields,
-      );
+      // Строки PDF/CSV/XLS — тем же /query, что грид: исходные alias (Дата_1 / Дата_1_2)
+      // и uiSort. RU-alias plan.body + exportSort — только для бинарного /export XLS.
       const sortedRows = await fetchSortedReportRowsForPdf({
-        entityName: queryContext.entityName,
+        entityName,
         plan,
-        sort: exportSort,
-        branchIds: queryContext.branchIds,
+        sort: uiSort,
+        branchIds,
+        queryBody: bodySnapshot,
       });
+      if (exportSeq !== reportExportRequestSeq) return false;
 
       let blob: Blob;
       if (format === 'PDF') {
@@ -321,25 +346,35 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       } else if (format === 'CSV') {
         blob = buildReportExportCsvBlob(plan.displayHeaders, sortedRows);
       } else {
-        // XLS: структура/стили с /export, порядок строк — как в UI (sortedRows).
+        // GROUP BY: бэк /export принимает sort только по RU-alias selectedFields.
+        const exportSort = remapReportSortParamsForExportBody(
+          uiSort,
+          bodySnapshot.selectedFields,
+          plan.body.selectedFields,
+        );
+        // XLS: структура/стили с /export, порядок/значения строк — как в UI (sortedRows).
         const rawBlob = await exportReport(
-          queryContext.entityName,
+          entityName,
           format,
           fileName,
           plan.body,
-          queryContext.branchIds,
+          branchIds,
           exportSort,
         );
+        if (exportSeq !== reportExportRequestSeq) return false;
         blob = await polishReportExportBlob(rawBlob, format, {
           displayHeaders: plan.displayHeaders,
           dateColumns: plan.dateColumns,
           orderedRows: sortedRows,
         });
       }
+      if (exportSeq !== reportExportRequestSeq) return false;
+
       downloadReportFile(blob, fileName, format);
       enqueueSnackbar(i18n.t('reports.exportSuccess'), { variant: 'success' });
       return true;
     } catch (e) {
+      if (exportSeq !== reportExportRequestSeq) return false;
       const message =
         e instanceof Error && e.message === REPORT_QUERY_TRANSPORT_ERROR
           ? i18n.t('reports.queryNetworkError')
@@ -349,7 +384,9 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       enqueueSnackbar(message, { variant: 'error' });
       return false;
     } finally {
-      set({ isExporting: false });
+      if (exportSeq === reportExportRequestSeq) {
+        set({ isExporting: false });
+      }
     }
   },
 

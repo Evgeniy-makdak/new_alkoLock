@@ -175,10 +175,18 @@ export function zipEntryText(entry: ZipEntry | undefined): string | null {
 
 export function zipSetText(entries: ZipEntry[], name: string, text: string): void {
   const data = new TextEncoder().encode(text);
-  const index = entries.findIndex((entry) => entry.name === name);
-  if (index >= 0) {
-    entries[index] = { name, data };
-  } else {
+  let replaced = false;
+  // Удаляем дубликаты имени: иначе в ZIP остаются старый и новый sheet1/sharedStrings.
+  for (let i = entries.length - 1; i >= 0; i -= 1) {
+    if (entries[i]?.name !== name) continue;
+    if (!replaced) {
+      entries[i] = { name, data };
+      replaced = true;
+    } else {
+      entries.splice(i, 1);
+    }
+  }
+  if (!replaced) {
     entries.push({ name, data });
   }
 }

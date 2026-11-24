@@ -1,6 +1,5 @@
 import {
   buildDuplicateColumnKey,
-  getDuplicateColumnIndex,
   isDuplicateColumnKey,
   stripDuplicateColumnSuffix,
 } from './reportColumnDuplicate';
@@ -16,11 +15,13 @@ export function reportSelectedFieldUiKey(fieldName: string, occurrence: number):
 
 /**
  * Скрыт ли конкретный selectedField (исходник или клон) по hiddenColumnKeys.
- * Клон смотрит только на свой `field#N` / alias — не на path исходника.
+ * Клон — только по своему alias; path исходника на клон не распространяется.
+ * Не используем occurrence→path#N: при порядке [клон, оригинал] счётчик ≠ UI #N
+ * и hide одного клона цеплял другой.
  */
 export function isReportSelectedFieldOccurrenceHidden(
   field: ReportSelectedFieldPayload,
-  occurrence: number,
+  _occurrence: number,
   hiddenColumnKeys: string[] | undefined,
 ): boolean {
   if (!hiddenColumnKeys?.length) return false;
@@ -31,20 +32,51 @@ export function isReportSelectedFieldOccurrenceHidden(
 
   const path = (field.fieldName ?? '').trim();
   const alias = (field.alias ?? '').trim();
-  const uiKey = reportSelectedFieldUiKey(path, occurrence);
 
-  if (occurrence > 1) {
-    if (uiKey && hidden.has(uiKey)) return true;
-    if (alias && hidden.has(alias)) return true;
-    return false;
+  // Свой alias — точная строка (клон или переименованный исходник).
+  if (alias && hidden.has(alias)) return true;
+
+  // Path скрыт → только исходник без alias. Клон всегда с alias; переименованный
+  // исходник при hide получает и path, и свой alias в hiddenColumnKeys.
+  if (path && hidden.has(path) && !alias) return true;
+
+  return false;
+}
+
+/**
+ * UI-ключ состава → selectedField: zip по порядку compose (1:1 с эмитом без composite).
+ * Нельзя брать siblings[dupIndex-1] — selectedFields в порядке состава, не по #N.
+ */
+function buildUiKeyToSelectedFieldMap(
+  composeFieldKeys: string[] | undefined,
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): Map<string, ReportSelectedFieldPayload> {
+  const map = new Map<string, ReportSelectedFieldPayload>();
+  if (!composeFieldKeys?.length || !selectedFields?.length) return map;
+
+  if (composeFieldKeys.length === selectedFields.length) {
+    for (let i = 0; i < composeFieldKeys.length; i += 1) {
+      const uiKey = String(composeFieldKeys[i] ?? '').trim();
+      if (uiKey) map.set(uiKey, selectedFields[i]!);
+    }
+    return map;
   }
 
-  // Исходник (или единственный оставшийся после удаления А): path / alias /
-  // и UI-ключ клона field#N, если он остался единственным sibling.
-  if (path && hidden.has(path)) return true;
-  if (alias && hidden.has(alias)) return true;
-  if (uiKey && hidden.has(uiKey)) return true;
-  return false;
+  const used = new Set<number>();
+  for (const raw of composeFieldKeys) {
+    const uiKey = String(raw ?? '').trim();
+    if (!uiKey) continue;
+    const base = stripDuplicateColumnSuffix(uiKey);
+    const idx = selectedFields.findIndex((field, i) => {
+      if (used.has(i)) return false;
+      const name = (field.fieldName ?? '').trim();
+      return Boolean(name) && (name === base || base.endsWith(name) || name.endsWith(base));
+    });
+    if (idx < 0) continue;
+    used.add(idx);
+    map.set(uiKey, selectedFields[idx]!);
+  }
+  return map;
 }
 
 /**
@@ -52,10 +84,14 @@ export function isReportSelectedFieldOccurrenceHidden(
  * UI-ключ строки (`field` / `field#N`) + alias этой строки.
  * `fieldName` исходника кладём только если скрыт именно исходник —
  * иначе скрытие А протекало бы на все клоны А1/А2 через общий path.
+ *
+ * @param composeFieldKeys ключи «Текущего состава» в UI-порядке — чтобы alias
+ *   клона не привязать к hide исходника при порядке [клон, оригинал, …].
  */
 export function buildReportHiddenColumnKeys(
   hiddenByUiKey: Record<string, boolean> | undefined,
   selectedFields: ReportSelectedFieldPayload[] | undefined,
+  composeFieldKeys?: string[],
 ): string[] {
   const hiddenUi = hiddenByUiKey ?? {};
   const keys = new Set<string>();
@@ -69,6 +105,8 @@ export function buildReportHiddenColumnKeys(
     siblingsByPath.set(fieldName, list);
   }
 
+  const uiKeyToField = buildUiKeyToSelectedFieldMap(composeFieldKeys, selectedFields);
+
   for (const [uiKey, isHidden] of Object.entries(hiddenUi)) {
     if (!isHidden) continue;
     const trimmed = uiKey.trim();
@@ -76,13 +114,18 @@ export function buildReportHiddenColumnKeys(
     keys.add(trimmed);
 
     const base = stripDuplicateColumnSuffix(trimmed);
-    const dupIndex = getDuplicateColumnIndex(trimmed);
     const siblings = siblingsByPath.get(base) ?? [];
-    // UI «field#2» после удаления исходника: в selectedFields один sibling —
-    // всё равно берём его alias (глаз клона не теряется).
-    const matched =
-      siblings[dupIndex - 1] ??
-      (isDuplicateColumnKey(trimmed) && siblings.length === 1 ? siblings[0] : undefined);
+
+    // Сначала точное сопоставление по compose; иначе — без siblings[dupIndex-1]
+    // (при клоне выше оригинала индекс врал и hide path цеплял alias клона).
+    let matched = uiKeyToField.get(trimmed);
+    if (!matched) {
+      if (!isDuplicateColumnKey(trimmed)) {
+        matched = siblings.find((field) => !(field.alias ?? '').trim());
+      } else if (siblings.length === 1) {
+        matched = siblings[0];
+      }
+    }
 
     if (matched) {
       const alias = (matched.alias ?? '').trim();
@@ -127,9 +170,11 @@ export function collectHiddenReportContentKeys(
       continue;
     }
     const alias = (field.alias ?? '').trim();
-    if (alias) hiddenContent.add(alias);
-    // Content-ключ = fieldName только у исходника (клоны обычно под alias).
-    if (occurrence === 1) {
+    if (alias) {
+      hiddenContent.add(alias);
+    } else {
+      // Исходник без alias: content-ключ = fieldName (и при occurrence>1, если
+      // клон выше оригинала в selectedFields).
       hiddenContent.add(fieldName);
     }
   }
@@ -158,12 +203,12 @@ export function isReportSortApiFieldHidden(
     occurrenceByPath.set(fieldName, occurrence);
     const alias = (selected.alias ?? '').trim();
     if (alias !== field && fieldName !== field) continue;
-    // Match по alias — только эта строка; по fieldName — только исходник (occurrence 1),
-    // иначе sort по path скрывал бы и клон.
+    // Match по alias — только эта строка; по fieldName — только исходник без alias
+    // (не occurrence===1: при клоне сверху occ 1 = клон).
     if (alias === field) {
       return isReportSelectedFieldOccurrenceHidden(selected, occurrence, hiddenColumnKeys);
     }
-    if (fieldName === field && occurrence === 1) {
+    if (fieldName === field && !alias) {
       return isReportSelectedFieldOccurrenceHidden(selected, occurrence, hiddenColumnKeys);
     }
   }

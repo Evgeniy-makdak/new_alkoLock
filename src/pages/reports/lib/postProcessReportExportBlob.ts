@@ -241,7 +241,11 @@ async function polishXlsx(blob: Blob, options: PolishOptions): Promise<Blob> {
   return writeZipStore(entries);
 }
 
-/** sheetData из заголовков + строк /query (порядок UI); остальной sheet XML без изменений. */
+/**
+ * sheetData = только актуальные заголовки + строки /query.
+ * Сбрасываем dimension/mergeCells от прежнего /export — иначе Excel
+ * показывает «хвосты» прошлого отчёта вместе с новым составом.
+ */
 function rebuildXlsxSheetFromOrderedRows(
   sheetXml: string,
   displayHeaders: string[],
@@ -270,12 +274,34 @@ function rebuildXlsxSheetFromOrderedRows(
     rowXmls.push(`<row r="${rowNum}">${cells}</row>`);
   }
 
-  const sheetDataOpen = sheetXml.match(/<sheetData[^>]*>/)?.[0] ?? '<sheetData>';
-  const nextSheetData = `${sheetDataOpen}${rowXmls.join('')}</sheetData>`;
-  const nextSheetXml = sheetXml.replace(
-    /<sheetData[^>]*>[\s\S]*?<\/sheetData>/,
-    nextSheetData,
-  );
+  const nextSheetData = `<sheetData>${rowXmls.join('')}</sheetData>`;
+  let nextSheetXml = sheetXml;
+  if (/<sheetData[\s\S]*?<\/sheetData>/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<sheetData[^>]*>[\s\S]*?<\/sheetData>/, nextSheetData);
+  } else if (/<sheetData\b[^>]*\/>/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<sheetData\b[^>]*\/>/, nextSheetData);
+  } else if (/<\/worksheet>/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<\/worksheet>/, `${nextSheetData}</worksheet>`);
+  } else {
+    nextSheetXml = nextSheetData;
+  }
+
+  const lastCol = columnIndexToLetters(Math.max(displayHeaders.length - 1, 0));
+  const lastRow = Math.max(orderedRows.length + 1, 1);
+  const dimension = `<dimension ref="A1:${lastCol}${lastRow}"/>`;
+  if (/<dimension\b[^>]*\/>/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<dimension\b[^>]*\/>/, dimension);
+  } else if (/<dimension\b[\s\S]*?<\/dimension>/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<dimension\b[\s\S]*?<\/dimension>/, dimension);
+  } else if (/<sheetData\b/.test(nextSheetXml)) {
+    nextSheetXml = nextSheetXml.replace(/<sheetData\b/, `${dimension}<sheetData`);
+  }
+
+  // Merge/autoFilter от старого листа — источник «остатков» прошлой выгрузки.
+  nextSheetXml = nextSheetXml.replace(/<mergeCells\b[\s\S]*?<\/mergeCells>/g, '');
+  nextSheetXml = nextSheetXml.replace(/<mergeCells\b[^>]*\/>/g, '');
+  nextSheetXml = nextSheetXml.replace(/<autoFilter\b[\s\S]*?<\/autoFilter>/g, '');
+  nextSheetXml = nextSheetXml.replace(/<autoFilter\b[^>]*\/>/g, '');
 
   return { sheetXml: nextSheetXml, strings };
 }

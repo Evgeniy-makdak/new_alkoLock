@@ -1,4 +1,3 @@
-import { buildDuplicateColumnKey } from './reportColumnDuplicate';
 import {
   expandCompositeSelectedFields,
   isReportCompositeFieldPath,
@@ -24,11 +23,14 @@ export type ReportExportDateColumn = {
  * План выгрузки: тело для бэка + подписи/даты как в гриде на экране.
  * Alias в POST: только буквы/цифры/`_` (бэк не принимает пробелы/`->`);
  * displayHeaders — подписи как в UI (пробелы, ` -> `) для CSV/XLS/PDF polish.
+ * valueFields — те же видимые поля с ИСХОДНЫМИ alias (Дата_1 / Дата_1_2),
+ * как ключи content в UI; нельзя подменять RU-alias при маппинге строк.
  */
 export type ReportExportPlan = {
   body: ReportQueryRequest;
   displayHeaders: string[];
   dateColumns: ReportExportDateColumn[];
+  valueFields: ReportSelectedFieldPayload[];
 };
 
 /** Маркер стрелки « -> » внутри API-alias (бэк принимает только `_`). */
@@ -53,19 +55,30 @@ export function encodeDisplayHeaderAsExportAlias(header: string): string {
 
 function resolveDisplayHeader(
   field: ReportSelectedFieldPayload,
-  occurrence: number,
+  _occurrence: number,
   columnHeaderLabels: Record<string, string> | undefined,
 ): string {
   const path = (field.fieldName ?? '').trim();
   const alias = (field.alias ?? '').trim();
   const labels = columnHeaderLabels ?? {};
-  const dupKey = occurrence > 1 ? buildDuplicateColumnKey(path, occurrence) : path;
 
-  const fromLabels =
-    (dupKey && (labels[dupKey] ?? '').trim()) ||
-    (alias && (labels[alias] ?? '').trim()) ||
-    (path && (labels[path] ?? '').trim());
-  if (fromLabels) return fromLabels;
+  // Alias раньше path/occurrence: при клоне выше оригинала счётчик occurrence
+  // в selectedFields ≠ UI `field#N`, и labels[path] / labels[path#N] дают чужой
+  // заголовок → в PDF/CSV колонки выглядят переставленными при верных данных.
+  if (alias) {
+    const byAlias = (labels[alias] ?? '').trim();
+    if (byAlias) return byAlias;
+  }
+
+  // Исходник без alias — только path. Не брать path#N по occurrence:
+  // при порядке [клон, оригинал] occurrence=2 у оригинала = UI-ключ клона.
+  if (!alias && path) {
+    const byPath = (labels[path] ?? '').trim();
+    if (byPath) return byPath;
+  }
+
+  const fieldLabel = (field.label ?? '').trim();
+  if (fieldLabel) return fieldLabel;
 
   if (alias) return decodeReportFieldAliasForUi(alias);
   return path;
@@ -114,6 +127,7 @@ export function buildReportExportPlan(
   );
 
   const visibleFields: ReportSelectedFieldPayload[] = [];
+  const valueFields: ReportSelectedFieldPayload[] = [];
   const displayHeaders: string[] = [];
   const dateColumns: ReportExportDateColumn[] = [];
   const occurrenceByPath = new Map<string, number>();
@@ -129,7 +143,10 @@ export function buildReportExportPlan(
     const header = resolveDisplayHeader(field, occurrence, options.columnHeaderLabels);
     displayHeaders.push(header);
 
-    // В тело export — RU alias (с `_`/`__`), чтобы PDF/CSV с бэка не отдавали name/serialNumber.
+    // Исходный alias (Дата_1 / Дата_1_2) — для /query и маппинга ячеек как в UI.
+    valueFields.push({ ...field });
+
+    // В тело /export — RU alias (с `_`/`__`); PDF/CSV строки строим из valueFields.
     let exportAlias = encodeDisplayHeaderAsExportAlias(header);
     let suffix = 2;
     while (usedExportAliases.has(exportAlias.toLowerCase())) {
@@ -162,5 +179,6 @@ export function buildReportExportPlan(
     body: exportBody,
     displayHeaders,
     dateColumns,
+    valueFields,
   };
 }

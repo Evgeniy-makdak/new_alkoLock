@@ -1060,9 +1060,12 @@ export function ReportComposeModal({
 
     try {
       // Видимость по точным ключам строк состава (field / field#N) — клон не наследует глаз исходника.
+      // compose keys в UI-порядке: иначе при [клон, оригинал] hide path цеплял alias клона.
+      const composeSelectionForVisibility = resolveComposeTableFieldsSelection();
       const hiddenColumnKeys = buildReportHiddenColumnKeys(
         reportsStore.getState().tableFieldHiddenByPath,
         bodyWithGroup.selectedFields,
+        composeSelectionForVisibility.map((item) => String(item.value ?? '')),
       );
 
       const viewMode = normalizeReportViewMode(reportsStore.getState().viewMode);
