@@ -13,25 +13,73 @@ function normalizeReportSortFieldKey(value: string): string {
   return value.trim().replace(/\./g, '_');
 }
 
-function fieldMatchesSortKey(
-  field: ReportSelectedFieldPayload,
+/**
+ * Источник sort в UI: клон с агрегацией идёт по alias (`Максимум` / `timestamp_1`),
+ * исходник — по своему alias или fieldName. Нельзя брать «первый с тем же fieldName».
+ */
+function pickSourceFieldForExportSort(
+  sources: ReportSelectedFieldPayload[],
   sortField: string,
-): boolean {
-  const path = (field.fieldName ?? '').trim();
-  const alias = (field.alias ?? '').trim();
-  if (!sortField) return false;
-  if (path === sortField || alias === sortField) return true;
+): ReportSelectedFieldPayload | undefined {
+  if (!sortField) return undefined;
+
+  const byAlias = sources.find((field) => (field.alias ?? '').trim() === sortField);
+  if (byAlias) return byAlias;
+
   const key = normalizeReportSortFieldKey(sortField);
-  return (
-    (path !== '' && normalizeReportSortFieldKey(path) === key) ||
-    (alias !== '' && normalizeReportSortFieldKey(alias) === key)
+  const byAliasNorm = sources.find((field) => {
+    const alias = (field.alias ?? '').trim();
+    return Boolean(alias) && normalizeReportSortFieldKey(alias) === key;
+  });
+  if (byAliasNorm) return byAliasNorm;
+
+  const byPath = sources.filter((field) => {
+    const path = (field.fieldName ?? '').trim();
+    return path === sortField || normalizeReportSortFieldKey(path) === key;
+  });
+  if (!byPath.length) return undefined;
+  if (byPath.length === 1) return byPath[0];
+  // Несколько колонок с одним path (исходник + клон): sort по fieldName → исходник.
+  return byPath.find((field) => !(field.alias ?? '').trim()) ?? byPath[0];
+}
+
+/** Тот же ordinal среди полей с одинаковым fieldName (исходник/клон). */
+function pickExportFieldForSource(
+  sourceHit: ReportSelectedFieldPayload,
+  sources: ReportSelectedFieldPayload[],
+  exportFields: ReportSelectedFieldPayload[],
+): ReportSelectedFieldPayload | undefined {
+  const sourcePath = (sourceHit.fieldName ?? '').trim();
+  if (!sourcePath) return undefined;
+
+  const sourceSiblings = sources.filter((field) => (field.fieldName ?? '').trim() === sourcePath);
+  const sourceIndex = Math.max(0, sourceSiblings.indexOf(sourceHit));
+  const exportSiblings = exportFields.filter(
+    (field) => (field.fieldName ?? '').trim() === sourcePath,
   );
+  if (!exportSiblings.length) return undefined;
+
+  if (exportSiblings[sourceIndex]) return exportSiblings[sourceIndex];
+
+  const sourceAgg = (sourceHit.aggregation ?? '').trim();
+  if (sourceAgg) {
+    const byAgg = exportSiblings.filter(
+      (field) => (field.aggregation ?? '').trim() === sourceAgg,
+    );
+    if (byAgg.length === 1) return byAgg[0];
+    if (byAgg[sourceIndex]) return byAgg[sourceIndex];
+    if (byAgg[0]) return byAgg[0];
+  }
+
+  return exportSiblings[0];
 }
 
 /**
- * pageable.sort UI (`user.fullName` / `user_fullname`) → alias полей тела export
- * (`пользователь___пользователь`). При GROUP BY бэкенд принимает только alias’ы
- * selectedFields; buildReportExportPlan как раз подставляет RU-alias.
+ * pageable.sort UI (`user.fullName` / alias клона) → alias полей тела export.
+ * При GROUP BY бэкенд принимает только alias’ы selectedFields;
+ * buildReportExportPlan подставляет RU-alias.
+ * Исходник и клон с разной агрегацией — разные alias: sort по клону не должен
+ * уезжать на исходник (раньше брался exportHits[0] по общему fieldName).
  */
 export function remapReportSortParamsForExportBody(
   sortParams: string[],
@@ -39,6 +87,7 @@ export function remapReportSortParamsForExportBody(
   exportFields: ReportSelectedFieldPayload[] | undefined,
 ): string[] {
   if (!sortParams.length || !exportFields?.length) return sortParams;
+  const sources = sourceFields ?? [];
 
   return sortParams.map((param) => {
     const raw = (param ?? '').trim();
@@ -55,16 +104,10 @@ export function remapReportSortParamsForExportBody(
       return param;
     }
 
-    const sourceHits = (sourceFields ?? []).filter((field) =>
-      fieldMatchesSortKey(field, sortField),
-    );
-    const exportHits = exportFields.filter((field) => {
-      if (fieldMatchesSortKey(field, sortField)) return true;
-      const exportPath = (field.fieldName ?? '').trim();
-      return sourceHits.some((source) => (source.fieldName ?? '').trim() === exportPath);
-    });
+    const sourceHit = pickSourceFieldForExportSort(sources, sortField);
+    if (!sourceHit) return param;
 
-    const target = exportHits[0];
+    const target = pickExportFieldForSource(sourceHit, sources, exportFields);
     const exportAlias = (target?.alias ?? '').trim();
     if (!exportAlias) return param;
     return `${exportAlias},${direction}`;
@@ -89,11 +132,19 @@ export function resolveReportExportSortSpec(
   const directionRaw = param.slice(commaIndex + 1).trim().toUpperCase();
   if (!fieldName || (directionRaw !== 'ASC' && directionRaw !== 'DESC')) return null;
 
-  const columnIndex = selectedFields.findIndex((field) => {
-    const path = (field.fieldName ?? '').trim();
-    const alias = (field.alias ?? '').trim();
-    return path === fieldName || alias === fieldName;
-  });
+  // Как remap: сначала точный alias (клон), не первый fieldName (исходник).
+  let columnIndex = selectedFields.findIndex(
+    (field) => (field.alias ?? '').trim() === fieldName,
+  );
+  if (columnIndex < 0) {
+    columnIndex = selectedFields.findIndex((field) => {
+      const path = (field.fieldName ?? '').trim();
+      return (
+        path === fieldName ||
+        normalizeReportSortFieldKey(path) === normalizeReportSortFieldKey(fieldName)
+      );
+    });
+  }
   if (columnIndex < 0) return null;
 
   return {
