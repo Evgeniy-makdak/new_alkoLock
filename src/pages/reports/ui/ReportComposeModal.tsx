@@ -34,6 +34,7 @@ import {
 } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   buildReportTableFieldDisplayOptions,
+  buildRestoredTableFieldDisplayParamByPath,
   encodeReportIdentifierDisplayParam,
   encodeReportTableFieldFunctionParam,
   parseReportTableFieldDisplayParam,
@@ -43,7 +44,6 @@ import {
   orderReportCompositionFieldsByIdentifier,
 } from '@pages/reports/lib/reportTableFieldIdentifier';
 import {
-  buildDuplicateColumnKey,
   normalizeDuplicateColumnKeys,
   stripDuplicateColumnSuffix,
 } from '@pages/reports/lib/reportColumnDuplicate';
@@ -333,18 +333,11 @@ export function ReportComposeModal({
         queryBody?.havingConnects?.[0]?.logicOperator === 'or' ? 'or' : 'and',
       );
     }
-    const restoredDisplay: Record<string, string> = {};
-    const displayCounts = new Map<string, number>();
-    for (const field of queryBody?.selectedFields ?? []) {
-      const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
-      if (!encoded || !field.fieldName) continue;
-      const base = stripDuplicateColumnSuffix(field.fieldName);
-      const n = (displayCounts.get(base) ?? 0) + 1;
-      displayCounts.set(base, n);
-      // Первое вхождение — базовый ключ; дубли — «field#N» (своя агрегация).
-      const key = n === 1 ? base : buildDuplicateColumnKey(base, n);
-      restoredDisplay[key] = encoded;
-    }
+    // Агрегации — по реальным UI-ключам состава (snapshot/порядок), не occurrence→#N.
+    const restoredDisplay = buildRestoredTableFieldDisplayParamByPath(
+      tableFields.map((field) => String(field.value)),
+      queryBody?.selectedFields,
+    );
     // Идентификатор: из body.aggregation; если нет — дефолт count.
     const identifierCount = encodeReportIdentifierDisplayParam();
     for (const field of tableFields) {

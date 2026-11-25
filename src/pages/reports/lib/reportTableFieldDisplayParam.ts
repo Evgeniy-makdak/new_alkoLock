@@ -1,11 +1,16 @@
 import type { Values } from '@shared/ui/search_multiple_select';
 
+import { buildUiKeyToSelectedFieldMap } from './reportColumnVisibility';
 import {
   isReportIdentifierAggregationCode,
   isReportIdentifierFieldPath,
   REPORT_IDENTIFIER_AGGREGATION_CODE,
 } from './reportTableFieldIdentifier';
-import type { ReportFieldDefinition, ReportFieldOperation } from '../types/reportApiTypes';
+import type {
+  ReportFieldDefinition,
+  ReportFieldOperation,
+  ReportSelectedFieldPayload,
+} from '../types/reportApiTypes';
 
 export const REPORT_TABLE_FIELD_FN_PREFIX = 'fn:';
 
@@ -73,4 +78,22 @@ export function buildReportTableFieldDisplayOptions(
 export function encodeReportTableFieldFunctionParam(code: string | undefined | null): string {
   const trimmed = String(code ?? '').trim();
   return trimmed ? `${REPORT_TABLE_FIELD_FN_PREFIX}${trimmed}` : '';
+}
+
+/**
+ * Restore «Текущий состав» display-param (aggregation) по UI-ключам состава.
+ * Zip compose↔selectedFields (как visibility), НЕ occurrence→path#N —
+ * иначе после reorder клон #3 сверху получал aggregation третьего вхождения.
+ */
+export function buildRestoredTableFieldDisplayParamByPath(
+  composeFieldKeys: string[],
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): Record<string, string> {
+  const restored: Record<string, string> = {};
+  const uiKeyToField = buildUiKeyToSelectedFieldMap(composeFieldKeys, selectedFields);
+  for (const [uiKey, field] of uiKeyToField) {
+    const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
+    if (encoded) restored[uiKey] = encoded;
+  }
+  return restored;
 }

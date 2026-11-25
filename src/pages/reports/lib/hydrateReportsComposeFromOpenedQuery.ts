@@ -1,13 +1,9 @@
-import {
-  buildDuplicateColumnKey,
-  normalizeDuplicateColumnKeys,
-  stripDuplicateColumnSuffix,
-} from './reportColumnDuplicate';
+import { normalizeDuplicateColumnKeys } from './reportColumnDuplicate';
 import { restoreReportComposeFiltersFromQuery } from './restoreReportComposeFiltersFromQuery';
 import { restoreReportComposeTableFieldsFromQuery } from './restoreReportComposeTableFields';
 import {
+  buildRestoredTableFieldDisplayParamByPath,
   encodeReportIdentifierDisplayParam,
-  encodeReportTableFieldFunctionParam,
 } from './reportTableFieldDisplayParam';
 import { isReportIdentifierFieldPath } from './reportTableFieldIdentifier';
 import { reportGenerationStore } from '../model/reportGenerationStore';
@@ -92,17 +88,11 @@ export async function hydrateReportsComposeFromOpenedQuery(
     reportsStore.getState().setOutputRowReportTableFields(outputRows[0].id, tableFields);
   }
 
-  const restoredDisplay: Record<string, string> = {};
-  const displayCounts = new Map<string, number>();
-  for (const field of args.body.selectedFields ?? []) {
-    const encoded = encodeReportTableFieldFunctionParam(field.aggregation);
-    if (!encoded || !field.fieldName) continue;
-    const base = stripDuplicateColumnSuffix(field.fieldName);
-    const n = (displayCounts.get(base) ?? 0) + 1;
-    displayCounts.set(base, n);
-    const key = n === 1 ? base : buildDuplicateColumnKey(base, n);
-    restoredDisplay[key] = encoded;
-  }
+  // Агрегации — zip к UI-ключам состава, не occurrence→path#N (клон сверху).
+  const restoredDisplay = buildRestoredTableFieldDisplayParamByPath(
+    tableFields.map((field) => String(field.value)),
+    args.body.selectedFields,
+  );
   const identifierCount = encodeReportIdentifierDisplayParam();
   for (const field of tableFields) {
     const key = String(field.value);

@@ -14,7 +14,7 @@ import { REPORT_EMPTY_DISPLAY, finalizeReportCellDisplay, isReportEmptyValue } f
 
 import type { ReportQueryRequest, ReportSelectedFieldPayload } from '../types/reportApiTypes';
 
-const QUERY_PAGE_SIZE = 200;
+const DEFAULT_QUERY_PAGE_SIZE = 200;
 const MAX_PAGES = 500;
 
 function cellToDisplay(
@@ -72,36 +72,79 @@ function mapContentToRows(
   );
 }
 
+export type ReportExportSeedPage = {
+  /** Номер страницы как у /query (`lastResult.number`). */
+  pageNumber: number;
+  /** Уже отфильтрованный content (как в lastResult после completeSuccess). */
+  content: Record<string, unknown>[];
+  /** size ответа — seed только если совпадает с pageSize выгрузки. */
+  pageSize: number;
+  totalElements: number;
+  /** lastResult.last — не останавливаться по длине отфильтрованного content. */
+  isLast: boolean;
+};
+
 /**
- * Все страницы /query с тем же sort и alias, что у грида → строки выгрузки.
- * queryBody/valueFields — исходные alias UI; plan.body (RU-alias) только для /export XLS.
+ * Все страницы /query с тем же sort/body/pageSize, что у грида → строки выгрузки.
+ * valueFields — только проекция видимых колонок в файл; тело /query не подменяем
+ * (иначе ties по sort-колонке перетасовывают целые строки относительно UI).
  */
 export async function fetchSortedReportRowsForPdf(args: {
   entityName: string;
   plan: ReportExportPlan;
   sort: string[];
   branchIds?: number[];
-  /** Тело как у сформированного отчёта (исходные alias). */
+  /** Тело как у сформированного отчёта (исходные alias) — без подмены selectedFields. */
   queryBody?: ReportQueryRequest;
+  /** Как у грида (`pagination.pageSize`), иначе ties ≠ UI при size=200. */
+  pageSize?: number;
+  /** Страница, уже показанная в UI — без повторного /query. */
+  seedPage?: ReportExportSeedPage | null;
 }): Promise<string[][]> {
-  const fields =
+  const mappingFields =
     args.plan.valueFields?.length > 0
       ? args.plan.valueFields
       : (args.plan.body.selectedFields ?? []);
-  if (!fields.length) return [];
+  if (!mappingFields.length) return [];
 
+  // Как грид: полное body (в т.ч. скрытые в selectedFields). valueFields — только map.
   const queryBody: ReportQueryRequest = args.queryBody
-    ? { ...args.queryBody, selectedFields: fields }
-    : { ...args.plan.body, selectedFields: fields };
+    ? args.queryBody
+    : { ...args.plan.body, selectedFields: mappingFields };
+
+  const pageSize =
+    typeof args.pageSize === 'number' && args.pageSize > 0
+      ? args.pageSize
+      : DEFAULT_QUERY_PAGE_SIZE;
+
+  const seed =
+    args.seedPage &&
+    typeof args.seedPage.pageNumber === 'number' &&
+    args.seedPage.pageSize === pageSize &&
+    Array.isArray(args.seedPage.content)
+      ? args.seedPage
+      : null;
 
   const rows: string[][] = [];
   let page = 0;
   let total = Number.POSITIVE_INFINITY;
 
   while (page < MAX_PAGES && rows.length < total) {
+    if (seed && seed.pageNumber === page) {
+      // Тот же content, что на экране — порядок ties как в UI.
+      total =
+        typeof seed.totalElements === 'number' && seed.totalElements >= 0
+          ? seed.totalElements
+          : seed.content.length;
+      rows.push(...mapContentToRows(seed.content, mappingFields, args.plan.dateColumns));
+      if (seed.isLast) break;
+      page += 1;
+      continue;
+    }
+
     const result = await executeReportQuery(args.entityName, queryBody, {
       page,
-      size: QUERY_PAGE_SIZE,
+      size: pageSize,
       sort: args.sort,
       branchIds: args.branchIds,
     });
@@ -111,8 +154,8 @@ export async function fetchSortedReportRowsForPdf(args: {
     // Как таблица UI: без служебных anonymous-строк.
     const content = filterReportContentRowsForUi(rawContent);
     total = typeof result.totalElements === 'number' ? result.totalElements : rawContent.length;
-    rows.push(...mapContentToRows(content, fields, args.plan.dateColumns));
-    if (!rawContent.length || rawContent.length < QUERY_PAGE_SIZE) break;
+    rows.push(...mapContentToRows(content, mappingFields, args.plan.dateColumns));
+    if (!rawContent.length || rawContent.length < pageSize) break;
     page += 1;
   }
 

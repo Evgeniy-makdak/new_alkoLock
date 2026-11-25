@@ -293,7 +293,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
   },
 
   async exportDisplayedReport(format, fileName = '') {
-    const { queryContext, isGenerating, isExporting, sort } = get();
+    const { queryContext, isGenerating, isExporting, sort, lastResult, pagination } = get();
     if (isGenerating || isExporting) return false;
     if (!queryContext) {
       enqueueSnackbar(i18n.t('reports.noReportToExport'), { variant: 'warning' });
@@ -316,6 +316,25 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
     const uiSort = [
       ...((queryContext.sort?.length ? queryContext.sort : sort) ?? []),
     ];
+    const exportPageSize =
+      pagination.pageSize > 0 ? pagination.pageSize : DEFAULT_REPORT_PAGE_SIZE;
+    // Страница на экране — тот же content/порядок ties, без повторного /query.
+    const seedPage =
+      lastResult &&
+      typeof lastResult.number === 'number' &&
+      (lastResult.size ?? exportPageSize) === exportPageSize &&
+      Array.isArray(lastResult.content)
+        ? {
+            pageNumber: lastResult.number,
+            content: lastResult.content as Record<string, unknown>[],
+            pageSize: exportPageSize,
+            totalElements:
+              typeof lastResult.totalElements === 'number'
+                ? lastResult.totalElements
+                : lastResult.content.length,
+            isLast: Boolean(lastResult.last),
+          }
+        : null;
 
     set({ isExporting: true });
     try {
@@ -326,14 +345,16 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
         hiddenColumnKeys: hiddenSnapshot,
         entityName,
       });
-      // Строки PDF/CSV/XLS — тем же /query, что грид: исходные alias (Дата_1 / Дата_1_2)
-      // и uiSort. RU-alias plan.body + exportSort — только для бинарного /export XLS.
+      // Строки PDF/CSV/XLS — тот же body/pageSize/sort, что грид; seed = lastResult.
+      // valueFields только для проекции колонок; selectedFields в /query не подменяем.
       const sortedRows = await fetchSortedReportRowsForPdf({
         entityName,
         plan,
         sort: uiSort,
         branchIds,
         queryBody: bodySnapshot,
+        pageSize: exportPageSize,
+        seedPage,
       });
       if (exportSeq !== reportExportRequestSeq) return false;
 

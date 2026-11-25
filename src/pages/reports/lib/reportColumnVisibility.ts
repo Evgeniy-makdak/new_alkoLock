@@ -46,8 +46,10 @@ export function isReportSelectedFieldOccurrenceHidden(
 /**
  * UI-ключ состава → selectedField: zip по порядку compose (1:1 с эмитом без composite).
  * Нельзя брать siblings[dupIndex-1] — selectedFields в порядке состава, не по #N.
+ * Нужен и для restore агрегаций: occurrence→path#N ломал COUNT_DISTINCT у клона
+ * после reorder (ключ #3 сверху получал aggregation третьего вхождения).
  */
-function buildUiKeyToSelectedFieldMap(
+export function buildUiKeyToSelectedFieldMap(
   composeFieldKeys: string[] | undefined,
   selectedFields: ReportSelectedFieldPayload[] | undefined,
 ): Map<string, ReportSelectedFieldPayload> {
