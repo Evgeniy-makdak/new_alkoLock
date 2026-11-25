@@ -911,7 +911,16 @@
     "composeSortCard": "Sort #{{number}}",
     "composeGroupCard": "Grouping #{{number}}",
     "composeGroupHavingAggregationLabel": "Aggregation function",
+    "composeGroupDateTimeFormatLabel": "Date format",
+    "composeGroupDateTimeFormatPlaceholder": "Select format",
     "composeGroupAutoAggregateRemaining": "Automatically add remaining fields to the aggregation function",
+    "dateTimeFormat": {
+      "minute": "Minutes",
+      "hour": "Hours",
+      "day": "Days",
+      "month": "Months",
+      "year": "Years"
+    },
     "composeGroupHavingModeLabel": "Having mode",
     "composeGroupTopNLabel": "N",
     "composeGroupTopNPlaceholder": "Enter N",

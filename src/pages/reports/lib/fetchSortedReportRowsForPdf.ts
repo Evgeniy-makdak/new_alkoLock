@@ -10,6 +10,7 @@ import {
   type ReportExportPlan,
 } from './buildReportExportPlan';
 import { filterReportContentRowsForUi } from './reportAnonymousUser';
+import { formatBackendTruncatedDateTime } from './formatReportTableDateTime';
 import { REPORT_EMPTY_DISPLAY, finalizeReportCellDisplay, isReportEmptyValue } from './reportDisplayValue';
 
 import type { ReportQueryRequest, ReportSelectedFieldPayload } from '../types/reportApiTypes';
@@ -27,6 +28,9 @@ function cellToDisplay(
     : raw instanceof Date
       ? raw.toISOString()
       : JSON.stringify(raw);
+  // dateTimeFormat бэка (year/month/hour/minute/day без T) — как в гриде.
+  const truncated = formatBackendTruncatedDateTime(asString);
+  if (truncated != null) return truncated;
   // day: `YYYY-MM-DD`; minute/second: только полный ISO с `T` (см. formatReportExportDateCell).
   if (precision) {
     const trimmed = asString.trim();

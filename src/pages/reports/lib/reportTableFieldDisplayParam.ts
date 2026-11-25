@@ -97,3 +97,17 @@ export function buildRestoredTableFieldDisplayParamByPath(
   }
   return restored;
 }
+
+/** Restore dateTimeFormat по UI-ключам состава (zip compose↔selectedFields). */
+export function buildRestoredTableFieldDateTimeFormatByPath(
+  composeFieldKeys: string[],
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): Record<string, string> {
+  const restored: Record<string, string> = {};
+  const uiKeyToField = buildUiKeyToSelectedFieldMap(composeFieldKeys, selectedFields);
+  for (const [uiKey, field] of uiKeyToField) {
+    const format = (field.dateTimeFormat ?? '').trim();
+    if (format) restored[uiKey] = format;
+  }
+  return restored;
+}

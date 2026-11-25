@@ -51,6 +51,11 @@ export type ReportFieldDefinition = {
   /** Параметры UI/операций для блока «Группировка» → having. */
   availableHaving?: ReportAvailableHaving | null;
   /**
+   * Форматы DATETIME для select/groupBy (minute|hour|day|month|year).
+   * Если массив непустой — в «Группировке» показываем контрол формата.
+   */
+  availableDateTimeFormatters?: ReportFieldOperation[] | null;
+  /**
    * true — значение фильтра только из справочника/дефолтного списка (без произвольной подстроки);
    * false — допускается любой ввод.
    * Источник истины с бэка (GET …/metadata); операторы бэк уже режет в availableOperations.
@@ -101,6 +106,13 @@ export type ReportSelectedFieldPayload = {
   label?: string;
   alias?: string;
   aggregation?: string;
+  /**
+   * Формат DATETIME в select (из availableDateTimeFormatters.code):
+   * minute | hour | day | month | year.
+   */
+  dateTimeFormat?: string;
+  /** Часовой пояс (опционально, контракт бэка). */
+  timeZone?: string;
 };
 
 export type ReportLogicOperator = 'or' | 'and';

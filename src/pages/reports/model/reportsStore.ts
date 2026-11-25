@@ -90,6 +90,13 @@ type ReportsStore = {
   setTableFieldDisplayParam: (fieldPath: string, encoded: string) => void;
   setTableFieldDisplayParamByPath: (next: Record<string, string>) => void;
   /**
+   * dateTimeFormat (minute|hour|day|month|year) по UI-ключу строки «Текущего состава».
+   * Синхронизируется с группировкой для того же поля.
+   */
+  tableFieldDateTimeFormatByPath: Record<string, string>;
+  setTableFieldDateTimeFormat: (fieldPath: string, code: string) => void;
+  setTableFieldDateTimeFormatByPath: (next: Record<string, string>) => void;
+  /**
    * Скрытые в гриде колонки (закрытый глаз): поле остаётся в selectedFields / payload,
    * но не рендерится в таблице результата. true = скрыто.
    */
@@ -164,6 +171,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   reportTableFieldsMetadataLoadingByRowId: {},
   reportTableFieldsMetadataKeyByRowId: {},
   tableFieldDisplayParamByPath: {},
+  tableFieldDateTimeFormatByPath: {},
   tableFieldHiddenByPath: {},
   viewMode: 'table',
   chartSpec: createDefaultChartSpec(),
@@ -205,6 +213,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
       tableFieldDisplayParamByPath: {},
+      tableFieldDateTimeFormatByPath: {},
       tableFieldHiddenByPath: {},
     });
   },
@@ -242,6 +251,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
         tableFieldDisplayParamByPath: {},
+        tableFieldDateTimeFormatByPath: {},
         tableFieldHiddenByPath: {},
       });
       await get().loadAllReferenceEntityMetadataForReport(metadata);
@@ -266,6 +276,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
         reportTableFieldsMetadataLoadingByRowId: {},
         reportTableFieldsMetadataKeyByRowId: {},
         tableFieldDisplayParamByPath: {},
+        tableFieldDateTimeFormatByPath: {},
         tableFieldHiddenByPath: {},
       });
     }
@@ -596,6 +607,25 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
     set({ tableFieldDisplayParamByPath: { ...next } });
   },
 
+  setTableFieldDateTimeFormat(fieldPath, code) {
+    const key = fieldPath.trim();
+    if (!key) return;
+    set((state) => {
+      const next = { ...state.tableFieldDateTimeFormatByPath };
+      const value = code.trim();
+      if (!value) {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return { tableFieldDateTimeFormatByPath: next };
+    });
+  },
+
+  setTableFieldDateTimeFormatByPath(next) {
+    set({ tableFieldDateTimeFormatByPath: { ...next } });
+  },
+
   setTableFieldHidden(fieldPath, hidden) {
     const key = fieldPath.trim();
     if (!key) return;
@@ -689,6 +719,7 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
       tableFieldDisplayParamByPath: {},
+      tableFieldDateTimeFormatByPath: {},
       tableFieldHiddenByPath: {},
     });
     const entityMetadata = get().metadata;

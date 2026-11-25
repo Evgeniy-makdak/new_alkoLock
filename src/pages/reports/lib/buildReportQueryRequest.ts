@@ -60,6 +60,8 @@ import {
   isDuplicateColumnKey,
   stripDuplicateColumnSuffix,
 } from './reportColumnDuplicate';
+import { resolveBrowserReportTimeZone } from './buildReportGroupParam';
+import { resolveSemanticDateTimeFormatCode } from './formatReportTableDateTime';
 import { parseReportTableFieldDisplayParam } from './reportTableFieldDisplayParam';
 import { resolveEventsForFrontLevelFilterApiFieldName } from './eventsForFrontReportOptions';
 import {
@@ -270,6 +272,8 @@ type BuildRowReportTableFieldsContext = {
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null>;
   allowedTableFieldPaths: Set<string>;
   displayParamByPath: Record<string, string>;
+  /** IANA TZ браузера — только вместе с dateTimeFormat. */
+  browserTimeZone: string;
 };
 
 const MAX_SELECTED_FIELD_PATH_SEGMENTS = 3;
@@ -408,6 +412,19 @@ function buildRowReportTableFields(
       perField.code.toLowerCase().replace(/[_-]/g, '') !== 'none'
     ) {
       payload.aggregation = perField.code;
+    }
+    // dateTimeFormat без UI в «Текущем составе»: по смыслу поля (день/минута).
+    // Группировка при наличии перезапишет через applyDateTimeFormatFromGroupRows.
+    const hasFormatters = Boolean(fieldDef?.availableDateTimeFormatters?.length);
+    const isDateTime = Boolean(fieldDef && isReportDateTimeField(fieldDef));
+    if (hasFormatters || isDateTime) {
+      payload.dateTimeFormat = resolveSemanticDateTimeFormatCode(
+        basePath,
+        context.entityMetadata.entityName,
+      );
+      if (context.browserTimeZone) {
+        payload.timeZone = context.browserTimeZone;
+      }
     }
     return [payload];
     });
@@ -785,6 +802,7 @@ function createTableFieldsContext(
     referenceEntityMetadataByName,
     allowedTableFieldPaths,
     displayParamByPath,
+    browserTimeZone: resolveBrowserReportTimeZone(),
   };
 }
 

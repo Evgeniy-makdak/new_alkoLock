@@ -10,7 +10,10 @@ import {
   isReportCompositeFieldPath,
   parseCompositePath,
 } from './reportEntityCompositeFields';
-import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
+import {
+  getDuplicateColumnIndex,
+  stripDuplicateColumnSuffix,
+} from './reportColumnDuplicate';
 import { reportOutputFunctionKey } from './reportOutputFilterKeys';
 import { getPrimaryOutputRowFromList } from './reportOutputRow';
 
@@ -322,12 +325,25 @@ function applyHavingToGroupRow(
   };
 }
 
+function findSelectedDateTimeFormat(
+  apiField: string,
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): string {
+  if (!apiField || !selectedFields?.length) return '';
+  const match = selectedFields.find(
+    (field) =>
+      field.fieldName?.trim() === apiField && Boolean((field.dateTimeFormat ?? '').trim()),
+  );
+  return (match?.dateTimeFormat ?? '').trim();
+}
+
 /** groupBy (+ having) из сформированного отчёта → строки формы (режим редактирования). */
 export function parseComposeGroupRowsFromGroupBy(
   groupBy: string[] | undefined,
   columnKeys: Values,
   having?: ReportHavingFilter[],
   preferColumnKeys?: string[],
+  selectedFields?: ReportSelectedFieldPayload[],
 ): ReportComposeGroupRow[] {
   const groupByList = (groupBy ?? []).map((field) => field.trim()).filter(Boolean);
   if (!groupByList.length) return [];
@@ -347,14 +363,28 @@ export function parseComposeGroupRowsFromGroupBy(
     const members = resolveComposeGroupApiFields(columnKey);
     if (!members.length || !members.every((member) => remaining.has(member))) continue;
     const primary = members[0];
-    rows.push(applyHavingToGroupRow(createReportComposeGroupRow(columnKey), havingMap.get(primary)));
+    const base = applyHavingToGroupRow(
+      createReportComposeGroupRow(columnKey),
+      havingMap.get(primary),
+    );
+    rows.push({
+      ...base,
+      dateTimeFormat: findSelectedDateTimeFormat(primary, selectedFields),
+    });
     for (const member of members) remaining.delete(member);
   }
 
   for (const apiField of groupByList) {
     if (!remaining.has(apiField)) continue;
     const columnKey = resolveGroupColumnKey(apiField, columnKeys, preferColumnKeys);
-    rows.push(applyHavingToGroupRow(createReportComposeGroupRow(columnKey), havingMap.get(apiField)));
+    const base = applyHavingToGroupRow(
+      createReportComposeGroupRow(columnKey),
+      havingMap.get(apiField),
+    );
+    rows.push({
+      ...base,
+      dateTimeFormat: findSelectedDateTimeFormat(apiField, selectedFields),
+    });
     remaining.delete(apiField);
   }
 
@@ -910,6 +940,114 @@ function readGlobalAggregationFromOutputRows(outputRows: ReportOutputRow[]): str
   return fnPick?.value != null && fnPick.value !== '' ? String(fnPick.value) : null;
 }
 
+/** Опции контрола формата DATETIME в «Группировке» (из metadata.availableDateTimeFormatters). */
+export function getReportDateTimeFormatterOptions(
+  fieldDef: ReportFieldDefinition | null | undefined,
+): ReportFieldOperation[] {
+  const list = fieldDef?.availableDateTimeFormatters;
+  if (!Array.isArray(list) || !list.length) return [];
+  return list.filter((op) => String(op?.code ?? '').trim());
+}
+
+/** Дефолт формата DATETIME: `day`, иначе первый из metadata. */
+export function resolveDefaultDateTimeFormatCode(
+  formatters: ReportFieldOperation[],
+): string {
+  if (!formatters.length) return '';
+  const day = formatters.find(
+    (op) => String(op.code ?? '').trim().toLowerCase() === 'day',
+  );
+  const picked = day ?? formatters[0];
+  return picked?.code != null ? String(picked.code).trim() : '';
+}
+
+/**
+ * То же поле в составе и группировке (клон «field#N» ↔ «field#N»).
+ * Нужно для синхронизации dateTimeFormat.
+ */
+export function reportComposeUiKeysMatchDateTimeField(
+  leftKey: string,
+  rightKey: string,
+): boolean {
+  const left = String(leftKey ?? '').trim();
+  const right = String(rightKey ?? '').trim();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  return (
+    stripDuplicateColumnSuffix(left) === stripDuplicateColumnSuffix(right) &&
+    getDuplicateColumnIndex(left) === getDuplicateColumnIndex(right)
+  );
+}
+
+/**
+ * Если у поля есть availableDateTimeFormatters, а в строке формат пуст —
+ * подставляем day (или первый code, если day нет в metadata).
+ */
+export function ensureComposeGroupRowDateTimeFormats(
+  rows: ReportComposeGroupRow[],
+  resolveFieldDef: (columnKey: string) => ReportFieldDefinition | null,
+): ReportComposeGroupRow[] {
+  if (!rows.length) return rows;
+  let changed = false;
+  const next = rows.map((row) => {
+    if ((row.dateTimeFormat ?? '').trim()) return row;
+    const code = resolveDefaultDateTimeFormatCode(
+      getReportDateTimeFormatterOptions(resolveFieldDef(row.columnKey)),
+    );
+    if (!code) return row;
+    changed = true;
+    return { ...row, dateTimeFormat: code };
+  });
+  return changed ? next : rows;
+}
+
+/** IANA TZ браузера (`Europe/Moscow` и т.п.) для selectedFields.timeZone. */
+export function resolveBrowserReportTimeZone(): string {
+  try {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return typeof zone === 'string' ? zone.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Проставляет selectedFields.dateTimeFormat (+ timeZone из браузера) из строк «Группировки»
+ * (только поля с выбранным форматом; чужие selectedFields не трогаем).
+ */
+export function applyDateTimeFormatFromGroupRows(
+  body: ReportQueryRequest,
+  groupRows: ReportComposeGroupRow[] | undefined,
+): ReportQueryRequest {
+  if (!groupRows?.length) return body;
+
+  const formatByApiField = new Map<string, string>();
+  for (const row of groupRows) {
+    const format = String(row.dateTimeFormat ?? '').trim();
+    if (!format) continue;
+    for (const apiField of resolveComposeGroupApiFields(row.columnKey)) {
+      if (apiField) formatByApiField.set(apiField, format);
+    }
+  }
+  if (!formatByApiField.size) return body;
+
+  const timeZone = resolveBrowserReportTimeZone();
+
+  const selectedFields = (body.selectedFields ?? []).map((field) => {
+    const name = field.fieldName?.trim();
+    if (!name) return field;
+    const format = formatByApiField.get(name);
+    if (!format) return field;
+    return {
+      ...field,
+      dateTimeFormat: format,
+      ...(timeZone ? { timeZone } : {}),
+    };
+  });
+
+  return { ...body, selectedFields };
+}
+
 /**
  * Флаг «Автоматически добавлять остальные поля в агрегирующую функцию»:
  * всем selectedFields вне groupBy проставляем aggregation из строки группировки.
@@ -984,12 +1122,14 @@ export function finalizeReportQueryBodyForGroupBy(
     return field;
   });
 
-  return {
+  const finalized: ReportQueryRequest = {
     ...body,
     groupBy: effectiveGroupBy,
     selectedFields,
     ...(body.having?.length ? { having: body.having } : {}),
   };
+  // dateTimeFormat — только при наличии groupRows (модалка); sanitize без rows не затирает.
+  return applyDateTimeFormatFromGroupRows(finalized, groupRows);
 }
 
 /** @deprecated Используйте finalizeReportQueryBodyForGroupBy */

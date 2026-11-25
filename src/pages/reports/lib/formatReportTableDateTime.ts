@@ -45,6 +45,35 @@ export function resolveReportDateTimePrecision(
 }
 
 /**
+ * Код selectedFields.dateTimeFormat по смысловой точности поля.
+ * В API нет `second` — моменты событий → `minute` (наименьший шаг formatters).
+ */
+export function resolveSemanticDateTimeFormatCode(
+  fieldPath: string | undefined,
+  entityName?: string | null,
+): 'minute' | 'day' {
+  return resolveReportDateTimePrecision(fieldPath, entityName) === 'day' ? 'day' : 'minute';
+}
+
+/**
+ * Усечённые DATETIME из select (dateTimeFormat бэка) — без `T`, не прогонять через Date
+ * (иначе «2025-03» / «2025-03-31 07» ломаются).
+ * day `YYYY-MM-DD` → ДД.ММ.ГГГГ; остальное — как пришло.
+ */
+export function formatBackendTruncatedDateTime(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (/^\d{4}$/.test(trimmed)) return trimmed;
+  if (/^\d{4}-\d{2}$/.test(trimmed)) return trimmed;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}$/.test(trimmed)) return trimmed;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(trimmed)) return trimmed;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-');
+    return `${day}.${month}.${year}`;
+  }
+  return null;
+}
+
+/**
  * ДД.ММ.ГГГГ ЧЧ:ММ для ячеек отчёта.
  * precision: 'second' — добавляет секунды (ЧЧ:ММ:СС); 'day' — без времени (ДД.ММ.ГГГГ).
  */
@@ -55,9 +84,14 @@ export function formatReportTableDateTime(
   if (isReportEmptyValue(value)) {
     return REPORT_EMPTY_DISPLAY;
   }
-  const date = new Date(String(value));
+  const asString = String(value);
+  const truncated = formatBackendTruncatedDateTime(asString);
+  if (truncated != null) {
+    return finalizeReportCellDisplay(truncated);
+  }
+  const date = new Date(asString);
   if (Number.isNaN(date.getTime())) {
-    return finalizeReportCellDisplay(String(value));
+    return finalizeReportCellDisplay(asString);
   }
 
   const day = String(date.getDate()).padStart(2, '0');

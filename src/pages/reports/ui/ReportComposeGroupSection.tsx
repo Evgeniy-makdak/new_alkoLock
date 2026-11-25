@@ -7,8 +7,10 @@ import { Checkbox, FormControlLabel, IconButton, Tooltip, Typography } from '@mu
 import { useTheme } from '@mui/material/styles';
 
 import {
+  getReportDateTimeFormatterOptions,
   getReportHavingAggregationOptions,
   normalizeHavingAggregationForApi,
+  resolveDefaultDateTimeFormatCode,
 } from '@pages/reports/lib/buildReportGroupParam';
 import { findReportTableFieldDefinition } from '@pages/reports/lib/buildReportTableFieldOptions';
 import {
@@ -49,6 +51,8 @@ type ReportComposeGroupSectionProps = {
   branchIds?: number[];
   /** Подписи колонок сформированного отчёта (edit) — если поля нет в columnOptions. */
   columnHeaderLabels?: Record<string, string>;
+  /** Синхронизация dateTimeFormat → снимок состава (не UI-селект). */
+  onDateTimeFormatChange?: (columnKey: string, format: string) => void;
 };
 
 function resolveGroupFieldDef(
@@ -92,17 +96,35 @@ export function ReportComposeGroupSection({
   tableMetadataByRowId,
   referenceEntityMetadataByName,
   columnHeaderLabels = {},
+  onDateTimeFormatChange,
 }: ReportComposeGroupSectionProps) {
   const { t } = useTranslation();
   const theme = useTheme();
   const circleIconSx = getToolbarCircleIconButtonSx(theme);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
 
+  /** При добавлении группировки всегда day (не semantic minute из состава без groupBy). */
+  const resolveInitialDateTimeFormat = (columnKey: string): string => {
+    const fieldDef = resolveGroupFieldDef(
+      columnKey,
+      entityMetadata,
+      outputRows,
+      tableMetadataByRowId,
+      referenceEntityMetadataByName,
+    );
+    return resolveDefaultDateTimeFormatCode(getReportDateTimeFormatterOptions(fieldDef));
+  };
+
   const handleConfirmAdd = ({ columnKey, logicOperator: nextLogic }: ReportAddGroupConfirm) => {
     if (nextLogic) {
       onLogicOperatorChange(nextLogic);
     }
-    onChange([...groupRows, createReportComposeGroupRow(columnKey)]);
+    const row = createReportComposeGroupRow(columnKey);
+    const format = resolveInitialDateTimeFormat(columnKey);
+    if (format) {
+      row.dateTimeFormat = format;
+    }
+    onChange([...groupRows, row]);
   };
 
   const handleRemove = (id: string) => {
@@ -161,11 +183,18 @@ export function ReportComposeGroupSection({
                 getReportHavingAggregationOptions(fieldDef),
                 labelFromMetaOrI18n('reports.havingAggregation'),
               );
+              const dateTimeFormatOptions = opsToLabeledValues(
+                getReportDateTimeFormatterOptions(fieldDef),
+                labelFromMetaOrI18n('reports.dateTimeFormat'),
+              );
               const noAggregationOption = aggregationOptions.find((option) => {
                 const raw = String(option.value);
                 const code = raw.startsWith('fn:') ? raw.slice(3) : raw;
                 return normalizeHavingAggregationForApi(code) === 'none';
               });
+              const defaultDateTimeFormat = resolveDefaultDateTimeFormatCode(
+                getReportDateTimeFormatterOptions(fieldDef),
+              );
 
               const selectedColumn = columnOptions.find(
                 (option) => String(option.value) === row.columnKey,
@@ -200,6 +229,10 @@ export function ReportComposeGroupSection({
                 row.havingAggregation ||
                   (noAggregationOption ? String(noAggregationOption.value) : ''),
               );
+              const dateTimeFormatValue = pickSingle(
+                dateTimeFormatOptions,
+                row.dateTimeFormat || defaultDateTimeFormat,
+              );
 
               const columnChoices = [
                 ...columnValue,
@@ -212,6 +245,8 @@ export function ReportComposeGroupSection({
               const hasColumn = Boolean(row.columnKey.trim());
               const aggregationCode = normalizeHavingAggregationForApi(row.havingAggregation);
               const hasAggregation = Boolean(aggregationCode && aggregationCode !== 'none');
+              const showDateTimeFormat =
+                hasColumn && dateTimeFormatOptions.length > 0;
 
               return (
                 <div key={row.id}>
@@ -238,14 +273,18 @@ export function ReportComposeGroupSection({
                             slotProps={reportFilterAutocompleteSlotProps}
                             setValueStore={(_, next) => {
                               const picked = toValuesFromSingleSelect(next)[0];
+                              const nextKey = picked ? String(picked.value) : '';
                               patchRow(row.id, {
-                                columnKey: picked ? String(picked.value) : '',
+                                columnKey: nextKey,
                                 operator: '',
                                 havingAggregation: '',
                                 havingMode: '',
                                 topN: '',
                                 values: [],
                                 autoAggregateRemainingFields: false,
+                                dateTimeFormat: nextKey
+                                  ? resolveInitialDateTimeFormat(nextKey)
+                                  : '',
                               });
                             }}
                           />
@@ -292,6 +331,44 @@ export function ReportComposeGroupSection({
                                       }
                                     : {}),
                                 });
+                              }}
+                            />
+                          ) : null}
+
+                          {showDateTimeFormat ? (
+                            <ReportSearchMultipleSelect
+                              key={`report-group-datetime-format-${row.id}-${row.columnKey}`}
+                              multiple={false}
+                              compact
+                              name={`report-group-datetime-format-${row.id}`}
+                              label={t('reports.composeGroupDateTimeFormatLabel')}
+                              placeholder={t('reports.composeGroupDateTimeFormatPlaceholder')}
+                              values={dateTimeFormatOptions}
+                              value={dateTimeFormatValue}
+                              serverFilter={false}
+                              disableClearable
+                              onKeyDown={(event) => {
+                                const keyEdit = event.key;
+                                if (event.ctrlKey || event.metaKey || event.altKey) return;
+                                if (
+                                  keyEdit.length === 1 ||
+                                  keyEdit === 'Backspace' ||
+                                  keyEdit === 'Delete'
+                                ) {
+                                  event.preventDefault();
+                                }
+                              }}
+                              sx={reportFilterModalControlSx}
+                              slotProps={reportFilterAutocompleteSlotProps}
+                              setValueStore={(_, next) => {
+                                const picked = toValuesFromSingleSelect(next)[0];
+                                const nextFormat = picked ? String(picked.value) : '';
+                                patchRow(row.id, {
+                                  dateTimeFormat: nextFormat,
+                                });
+                                if (row.columnKey.trim()) {
+                                  onDateTimeFormatChange?.(row.columnKey, nextFormat);
+                                }
                               }}
                             />
                           ) : null}

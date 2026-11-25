@@ -920,7 +920,16 @@
     "composeGroupColumnPlaceholder": "Выберите поле для группировки",
     "composeGroupCard": "Группировка №{{number}}",
     "composeGroupHavingAggregationLabel": "Агрегирующая функция",
+    "composeGroupDateTimeFormatLabel": "Формат даты",
+    "composeGroupDateTimeFormatPlaceholder": "Выберите формат",
     "composeGroupAutoAggregateRemaining": "Автоматически добавлять остальные поля в агрегирующую функцию",
+    "dateTimeFormat": {
+      "minute": "Минуты",
+      "hour": "Часы",
+      "day": "Дни",
+      "month": "Месяцы",
+      "year": "Годы"
+    },
     "composeGroupHavingModeLabel": "Режим having",
     "composeGroupTopNLabel": "N",
     "composeGroupTopNPlaceholder": "Введите N",

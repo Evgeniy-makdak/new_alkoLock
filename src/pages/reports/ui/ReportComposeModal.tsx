@@ -11,8 +11,10 @@ import {
   buildComposeGroupParams,
   buildComposeHavingConnects,
   buildComposeHavingParams,
+  ensureComposeGroupRowDateTimeFormats,
   finalizeReportQueryBodyForGroupBy,
   parseComposeGroupRowsFromGroupBy,
+  reportComposeUiKeysMatchDateTimeField,
 } from '@pages/reports/lib/buildReportGroupParam';
 import {
   buildComposeSortParams,
@@ -34,6 +36,7 @@ import {
 } from '@pages/reports/lib/reportEntityCompositeFields';
 import {
   buildReportTableFieldDisplayOptions,
+  buildRestoredTableFieldDateTimeFormatByPath,
   buildRestoredTableFieldDisplayParamByPath,
   encodeReportIdentifierDisplayParam,
   encodeReportTableFieldFunctionParam,
@@ -108,6 +111,7 @@ function buildReportComposeEditFingerprint(parts: {
   entityName: string | null | undefined;
   tableFields: Values;
   displayParams: Record<string, string>;
+  dateTimeFormats: Record<string, string>;
   hiddenByPath: Record<string, boolean>;
   sortRows: ReportComposeSortRow[];
   groupRows: ReportComposeGroupRow[];
@@ -142,6 +146,7 @@ function buildReportComposeEditFingerprint(parts: {
       label: String(item.label ?? '').trim(),
     })),
     displayParams: parts.displayParams,
+    dateTimeFormats: parts.dateTimeFormats,
     hiddenByPath: parts.hiddenByPath,
     sortRows: parts.sortRows.map((row) => ({
       columnKey: row.columnKey.trim(),
@@ -155,6 +160,7 @@ function buildReportComposeEditFingerprint(parts: {
       topN: row.topN,
       values: valuesFingerprint(row.values),
       autoAggregateRemainingFields: row.autoAggregateRemainingFields === true,
+      dateTimeFormat: (row.dateTimeFormat ?? '').trim(),
     })),
     havingLogic: parts.havingLogic,
     branches: valuesFingerprint(parts.branches),
@@ -192,6 +198,9 @@ export function ReportComposeModal({
   const tableFieldDisplayParamByPath = reportsStore((s) => s.tableFieldDisplayParamByPath);
   const setTableFieldDisplayParam = reportsStore((s) => s.setTableFieldDisplayParam);
   const setTableFieldDisplayParamByPath = reportsStore((s) => s.setTableFieldDisplayParamByPath);
+  const tableFieldDateTimeFormatByPath = reportsStore((s) => s.tableFieldDateTimeFormatByPath);
+  const setTableFieldDateTimeFormat = reportsStore((s) => s.setTableFieldDateTimeFormat);
+  const setTableFieldDateTimeFormatByPath = reportsStore((s) => s.setTableFieldDateTimeFormatByPath);
   const tableFieldHiddenByPath = reportsStore((s) => s.tableFieldHiddenByPath);
   const setTableFieldHidden = reportsStore((s) => s.setTableFieldHidden);
   const setTableFieldHiddenByPath = reportsStore((s) => s.setTableFieldHiddenByPath);
@@ -247,6 +256,7 @@ export function ReportComposeModal({
       reportsStore.getState().setSelectedEntityName(null);
       reportsStore.getState().resetFilters();
       reportsStore.getState().setTableFieldDisplayParamByPath({});
+      reportsStore.getState().setTableFieldDateTimeFormatByPath({});
       setTableFieldsSelection([]);
       setComposeSortRows([]);
       setComposeGroupRows([]);
@@ -317,6 +327,7 @@ export function ReportComposeModal({
         savedGroupRows.map((row) => ({
           ...row,
           values: Array.isArray(row.values) ? [...row.values] : [],
+          dateTimeFormat: row.dateTimeFormat ?? '',
         })),
       );
       setComposeHavingLogicOperator(queryContext?.composeHavingLogic === 'or' ? 'or' : 'and');
@@ -327,6 +338,7 @@ export function ReportComposeModal({
           tableFields,
           queryBody?.having,
           queryContext?.groupByColumnKeys,
+          queryBody?.selectedFields,
         ),
       );
       setComposeHavingLogicOperator(
@@ -334,8 +346,9 @@ export function ReportComposeModal({
       );
     }
     // Агрегации — по реальным UI-ключам состава (snapshot/порядок), не occurrence→#N.
+    const composeKeys = tableFields.map((field) => String(field.value));
     const restoredDisplay = buildRestoredTableFieldDisplayParamByPath(
-      tableFields.map((field) => String(field.value)),
+      composeKeys,
       queryBody?.selectedFields,
     );
     // Идентификатор: из body.aggregation; если нет — дефолт count.
@@ -347,6 +360,9 @@ export function ReportComposeModal({
       }
     }
     reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
+    reportsStore.getState().setTableFieldDateTimeFormatByPath(
+      buildRestoredTableFieldDateTimeFormatByPath(composeKeys, queryBody?.selectedFields),
+    );
     const restoredHidden: Record<string, boolean> = {};
     for (const key of queryContext?.hiddenColumnKeys ?? []) {
       if (key) restoredHidden[key] = true;
@@ -412,6 +428,7 @@ export function ReportComposeModal({
         entityName: selectedEntityName,
         tableFields: tableFieldsSelection,
         displayParams: tableFieldDisplayParamByPath,
+        dateTimeFormats: tableFieldDateTimeFormatByPath,
         hiddenByPath: tableFieldHiddenByPath,
         sortRows: composeSortRows,
         groupRows: composeGroupRows,
@@ -424,6 +441,7 @@ export function ReportComposeModal({
       selectedEntityName,
       tableFieldsSelection,
       tableFieldDisplayParamByPath,
+      tableFieldDateTimeFormatByPath,
       tableFieldHiddenByPath,
       composeSortRows,
       composeGroupRows,
@@ -856,6 +874,19 @@ export function ReportComposeModal({
     [setTableFieldDisplayParam],
   );
 
+  const handleGroupDateTimeFormatChange = useCallback(
+    (columnKey: string, format: string) => {
+      const nextCode = format.trim();
+      const composeKeys = tableFieldsSelection.map((item) => String(item.value));
+      for (const key of composeKeys) {
+        if (reportComposeUiKeysMatchDateTimeField(key, columnKey)) {
+          setTableFieldDateTimeFormat(key, nextCode);
+        }
+      }
+    },
+    [tableFieldsSelection, setTableFieldDateTimeFormat],
+  );
+
   const handleTableFieldsSelectionChange = useCallback(
     (next: Values) => {
       // Порядок сохраняем как в UI (без принудительного pin идентификаторов наверх —
@@ -948,6 +979,16 @@ export function ReportComposeModal({
       setTableFieldDisplayParamByPath(next);
     }
 
+    // dateTimeFormat в «Текущем составе» без UI — только prune снимка (для sync с группировкой).
+    const currentFormats = reportsStore.getState().tableFieldDateTimeFormatByPath;
+    const nextFormats: Record<string, string> = {};
+    for (const [path, code] of Object.entries(currentFormats)) {
+      if (allowed.has(path)) nextFormats[path] = code;
+    }
+    if (Object.keys(nextFormats).length !== Object.keys(currentFormats).length) {
+      setTableFieldDateTimeFormatByPath(nextFormats);
+    }
+
     // Ключи вне состава убираем; Идентификатор по умолчанию видимый (как прочие поля).
     const prevHidden = reportsStore.getState().tableFieldHiddenByPath;
     const hidden: Record<string, boolean> = {};
@@ -966,7 +1007,12 @@ export function ReportComposeModal({
     if (hiddenChanged || Object.keys(hidden).length !== Object.keys(prevHidden).length) {
       setTableFieldHiddenByPath(hidden);
     }
-  }, [tableFieldsSelection, setTableFieldDisplayParamByPath, setTableFieldHiddenByPath]);
+  }, [
+    tableFieldsSelection,
+    setTableFieldDisplayParamByPath,
+    setTableFieldDateTimeFormatByPath,
+    setTableFieldHiddenByPath,
+  ]);
 
   const ensureSelectedFieldsInBody = useCallback((body: ReportQueryRequest) => body, []);
 
@@ -1004,7 +1050,7 @@ export function ReportComposeModal({
     const havingFieldMap = entityMetadata
       ? new Map(entityMetadata.fields.map((field) => [field.fieldName, field]))
       : null;
-    const having = buildComposeHavingParams(composeGroupRows, columnLabelByKey, (columnKey) => {
+    const resolveGroupFieldDef = (columnKey: string) => {
       if (!entityMetadata || !havingFieldMap) return null;
       return (
         findReportTableFieldDefinition(
@@ -1016,9 +1062,15 @@ export function ReportComposeModal({
           nestedMetadataByName,
         ) ?? null
       );
-    });
+    };
+    // Пустой dateTimeFormat в группировке → day (не semantic minute состава без groupBy).
+    const groupRowsForQuery = ensureComposeGroupRowDateTimeFormats(
+      composeGroupRows,
+      resolveGroupFieldDef,
+    );
+    const having = buildComposeHavingParams(groupRowsForQuery, columnLabelByKey, resolveGroupFieldDef);
     const havingConnects = having.length
-      ? buildComposeHavingConnects(composeGroupRows, composeHavingLogicOperator)
+      ? buildComposeHavingConnects(groupRowsForQuery, composeHavingLogicOperator)
       : [];
     // Сортировка — по любому полю из «Текущего состава»; groupBy не сужает pageable.sort.
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
@@ -1037,7 +1089,7 @@ export function ReportComposeModal({
             referenceEntityMetadataByName: nestedMetadataByName,
           }
         : undefined,
-      composeGroupRows,
+      groupRowsForQuery,
     );
     const sortParams = buildComposeSortParams(
       composeSortRows,
@@ -1101,11 +1153,11 @@ export function ReportComposeModal({
         branchOffices: selectedBranchOffices.length ? selectedBranchOffices : undefined,
         sort: sortParams,
         // Точный выбор варианта группировки (оригинал/клон «#N») для edit-restore.
-        groupByColumnKeys: composeGroupRows
+        groupByColumnKeys: groupRowsForQuery
           .map((row) => row.columnKey.trim())
           .filter(Boolean),
         // Полный снимок UI группировки/having — restore «Доп. фильтра к результату».
-        composeGroupRows: composeGroupRows.map((row) => ({
+        composeGroupRows: groupRowsForQuery.map((row) => ({
           ...row,
           values: Array.isArray(row.values) ? [...row.values] : [],
         })),
@@ -1249,6 +1301,7 @@ export function ReportComposeModal({
                   tableMetadataByRowId={reportTableFieldsMetadataByRowId}
                   referenceEntityMetadataByName={referenceEntityMetadataByName}
                   columnHeaderLabels={editColumnHeaderLabels}
+                  onDateTimeFormatChange={handleGroupDateTimeFormatChange}
                   branchIds={
                     isSuperAdmin
                       ? reportComposeBranchValuesToIds(selectedBranchOffices)

@@ -21,6 +21,11 @@ export type ReportComposeGroupRow = {
    * получают эту агрегирующую функцию. По умолчанию false.
    */
   autoAggregateRemainingFields: boolean;
+  /**
+   * selectedFields.dateTimeFormat — формат DATETIME при группировке
+   * (code из availableDateTimeFormatters).
+   */
+  dateTimeFormat: string;
 };
 
 export function createReportComposeGroupRow(columnKey = ''): ReportComposeGroupRow {
@@ -33,5 +38,6 @@ export function createReportComposeGroupRow(columnKey = ''): ReportComposeGroupR
     topN: '',
     values: [],
     autoAggregateRemainingFields: false,
+    dateTimeFormat: '',
   };
 }

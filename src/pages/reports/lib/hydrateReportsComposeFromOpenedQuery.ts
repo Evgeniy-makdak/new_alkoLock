@@ -2,6 +2,7 @@ import { normalizeDuplicateColumnKeys } from './reportColumnDuplicate';
 import { restoreReportComposeFiltersFromQuery } from './restoreReportComposeFiltersFromQuery';
 import { restoreReportComposeTableFieldsFromQuery } from './restoreReportComposeTableFields';
 import {
+  buildRestoredTableFieldDateTimeFormatByPath,
   buildRestoredTableFieldDisplayParamByPath,
   encodeReportIdentifierDisplayParam,
 } from './reportTableFieldDisplayParam';
@@ -88,9 +89,10 @@ export async function hydrateReportsComposeFromOpenedQuery(
     reportsStore.getState().setOutputRowReportTableFields(outputRows[0].id, tableFields);
   }
 
-  // Агрегации — zip к UI-ключам состава, не occurrence→path#N (клон сверху).
+  // Агрегации / dateTimeFormat — zip к UI-ключам состава, не occurrence→path#N.
+  const composeKeys = tableFields.map((field) => String(field.value));
   const restoredDisplay = buildRestoredTableFieldDisplayParamByPath(
-    tableFields.map((field) => String(field.value)),
+    composeKeys,
     args.body.selectedFields,
   );
   const identifierCount = encodeReportIdentifierDisplayParam();
@@ -101,6 +103,9 @@ export async function hydrateReportsComposeFromOpenedQuery(
     }
   }
   reportsStore.getState().setTableFieldDisplayParamByPath(restoredDisplay);
+  reportsStore.getState().setTableFieldDateTimeFormatByPath(
+    buildRestoredTableFieldDateTimeFormatByPath(composeKeys, args.body.selectedFields),
+  );
 
   if (args.sort !== undefined) {
     reportGenerationStore.getState().setSort(args.sort.filter(Boolean));
