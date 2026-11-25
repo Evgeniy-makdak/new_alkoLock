@@ -209,10 +209,20 @@ function resolveOptionLabel(
   return value;
 }
 
+/**
+ * front-data map: key → русская подпись.
+ * В filter.values для типа/цвета ТС уходит подпись, не код key.
+ */
 function dictionaryToValues(map: Record<string, string>): Values {
-  return Object.entries(map)
-    .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => String(a.label).localeCompare(String(b.label), 'ru'));
+  const seen = new Set<string>();
+  const values: Values = [];
+  for (const label of Object.values(map)) {
+    const text = String(label ?? '').trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    values.push({ value: text, label: text });
+  }
+  return values.sort((a, b) => String(a.label).localeCompare(String(b.label), 'ru'));
 }
 
 /** Опции для мультивыбора «Значения» по выбранному свойству сущности. */

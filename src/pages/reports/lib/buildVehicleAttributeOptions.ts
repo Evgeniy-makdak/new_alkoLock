@@ -39,10 +39,21 @@ function resolveOptionLabel(
   return value;
 }
 
+/**
+ * front-data map: key(PASSENGER) → value(«Автобус»).
+ * В filter.values уходит русская подпись (value), не код key —
+ * бэк ждёт «Автобус», а не «PASSENGER» / «PERSONAL».
+ */
 function dictionaryToValues(map: Record<string, string>): Values {
-  return Object.entries(map)
-    .map(([value, label]) => ({ value, label }))
-    .sort((a, b) => String(a.label).localeCompare(String(b.label), 'ru'));
+  const seen = new Set<string>();
+  const values: Values = [];
+  for (const label of Object.values(map)) {
+    const text = String(label ?? '').trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    values.push({ value: text, label: text });
+  }
+  return values.sort((a, b) => String(a.label).localeCompare(String(b.label), 'ru'));
 }
 
 /** Опции значения параметра ТС для фильтра отчёта. */
@@ -65,12 +76,16 @@ export function buildVehicleAttributeOptions(
     const raw = readCarAttribute(car, attribute);
     if (raw == null) continue;
 
-    const value = String(raw);
-    if (seen.has(value)) continue;
+    const code = String(raw);
+    const label = resolveOptionLabel(attribute, code, car, labelMaps);
+    // type/color: в values фильтра — русская подпись; прочие атрибуты — как раньше (код/id).
+    const optionValue =
+      attr === 'type' || attr === 'color' ? label : code;
+    if (seen.has(String(optionValue))) continue;
 
-    seen.set(value, {
-      value,
-      label: resolveOptionLabel(attribute, value, car, labelMaps),
+    seen.set(String(optionValue), {
+      value: optionValue,
+      label,
     });
   }
 
@@ -88,9 +103,13 @@ export function enrichVehicleFilterValues(
   if (!attribute || !values.length) return values;
 
   return values.map((item) => {
-    const value = String(item.value);
+    const raw = String(item.value);
     const attr = resolveReportVehicleDictionaryAttribute(attribute) ?? attribute;
-    const label = resolveOptionLabel(attr, value, undefined, labelMaps);
-    return { value, label };
+    const label = resolveOptionLabel(attr, raw, undefined, labelMaps);
+    // Старый чип мог хранить код (PERSONAL) — в filter.values нужна русская подпись.
+    if (attr === 'type' || attr === 'color') {
+      return { value: label, label };
+    }
+    return { value: raw, label };
   });
 }
