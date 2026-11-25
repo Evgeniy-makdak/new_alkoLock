@@ -120,6 +120,8 @@ export function buildReportExportPlan(
   options: {
     columnHeaderLabels?: Record<string, string>;
     hiddenColumnKeys?: string[];
+    /** Корневая сущность отчёта — точность дат (AutoServiceHistory.createdAt → секунды). */
+    entityName?: string | null;
   } = {},
 ): ReportExportPlan {
   const expanded = expandCompositeSelectedFields(body.selectedFields ?? []).filter(
@@ -164,7 +166,7 @@ export function buildReportExportPlan(
     dateColumns.push({
       index: colIndex,
       fieldPath: path,
-      precision: resolveReportDateTimePrecision(path),
+      precision: resolveReportDateTimePrecision(path, options.entityName),
     });
   }
 

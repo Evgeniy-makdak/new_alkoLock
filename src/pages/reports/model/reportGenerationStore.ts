@@ -324,6 +324,7 @@ export const reportGenerationStore = create<ReportGenerationState>()((set, get) 
       const plan = buildReportExportPlan(bodySnapshot, {
         columnHeaderLabels: labelsSnapshot,
         hiddenColumnKeys: hiddenSnapshot,
+        entityName,
       });
       // Строки PDF/CSV/XLS — тем же /query, что грид: исходные alias (Дата_1 / Дата_1_2)
       // и uiSort. RU-alias plan.body + exportSort — только для бинарного /export XLS.

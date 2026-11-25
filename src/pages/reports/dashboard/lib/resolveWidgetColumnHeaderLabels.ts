@@ -148,7 +148,7 @@ export function resolveWidgetDateTimeColumnFormatsFromMetadata(
       {},
       referenceEntityMetadataByName,
     );
-    const precision = resolveReportDateTimePrecision(fieldName);
+    const precision = resolveReportDateTimePrecision(fieldName, metadata.entityName);
     const leaf = fieldName.slice(fieldName.lastIndexOf('.') + 1);
     const isDateTime =
       (fieldDef != null && isReportDateTimeField(fieldDef)) ||

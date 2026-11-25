@@ -107,11 +107,15 @@ function formatFromStaticMeta(
   t: TFunction,
   /** Путь колонки (fieldName из состава) — для точности отображения даты/времени. */
   fieldPath?: string,
+  entityName?: string | null,
 ): string | null {
   if (!meta) return null;
   if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
   if (meta.isDateTime) {
-    return formatReportTableDateTime(raw, resolveReportDateTimePrecision(fieldPath));
+    return formatReportTableDateTime(
+      raw,
+      resolveReportDateTimePrecision(fieldPath, entityName),
+    );
   }
 
   const format = meta.format as ReportResultColumnFormat | undefined;
@@ -146,6 +150,7 @@ function formatDynamicCellValue(
   aggregationMap: Map<string, string>,
   /** fieldName из selectedFields — даже если content-ключ = alias. */
   resolvedFieldName: string = columnKey,
+  entityName?: string | null,
 ): string {
   if (isReportEmptyValue(raw)) return REPORT_EMPTY_DISPLAY;
 
@@ -187,7 +192,10 @@ function formatDynamicCellValue(
     // Датами остаются только значения-строки (MIN/MAX: сервер возвращает ISO-строку).
     // Решение по типу значения устойчиво и к дублям колонок (count+max на одном fieldName).
     // Точность как у обычного поля: «Время события» — до секунд, «Дата рождения» — до дня.
-    const dateTimePrecision = resolveReportDateTimePrecision(resolvedFieldName || columnKey);
+    const dateTimePrecision = resolveReportDateTimePrecision(
+      resolvedFieldName || columnKey,
+      entityName,
+    );
     // Поля-даты документов (birthDate/licenseIssueDate/licenseExpirationDate) бэк может
     // отдавать типом DATE — isReportDateTimeField их не распознаёт, но округление до дня
     // должно сохраняться и в агрегированных MIN/MAX.
@@ -203,11 +211,21 @@ function formatDynamicCellValue(
     return finalizeReportCellDisplay(String(raw));
   }
 
-  const fromStatic = formatFromStaticMeta(raw, staticMeta, labelMaps, t, resolvedFieldName);
+  const fromStatic = formatFromStaticMeta(
+    raw,
+    staticMeta,
+    labelMaps,
+    t,
+    resolvedFieldName,
+    entityName,
+  );
   if (fromStatic != null) return finalizeReportCellDisplay(fromStatic);
 
   if (fieldDef && isReportDateTimeField(fieldDef)) {
-    return formatReportTableDateTime(raw, resolveReportDateTimePrecision(resolvedFieldName || columnKey));
+    return formatReportTableDateTime(
+      raw,
+      resolveReportDateTimePrecision(resolvedFieldName || columnKey, entityName),
+    );
   }
 
   if (fieldDef && isReportCoordinateField(fieldDef)) {
@@ -445,6 +463,7 @@ export function mapReportContentToResultGrid(
         t,
         aggregationMap,
         resolvedFieldName,
+        entityMetadata?.entityName,
       );
     }
 

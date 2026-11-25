@@ -17,14 +17,27 @@ const DUP_SUFFIX_PATTERN = /#\d+$/;
  * - секунды — события-моменты (timestamp, eventDate, event_date, vehicleBind.createdAt);
  * - день — даты документов (birthDate, licenseIssueDate, licenseExpirationDate);
  * - минуты — остальное (createdAt, lastModifiedAt, occurredAt, startedAt, __reportRowCreatedAt и т.п.).
+ *
+ * @param entityName — корневая сущность отчёта; только для точечных исключений
+ *   (AutoServiceHistory.createdAt → секунды), без влияния на прочие отчёты.
  */
-export function resolveReportDateTimePrecision(fieldPath: string | undefined): ReportDateTimePrecision {
+export function resolveReportDateTimePrecision(
+  fieldPath: string | undefined,
+  entityName?: string | null,
+): ReportDateTimePrecision {
   const path = String(fieldPath ?? '').trim().replace(DUP_SUFFIX_PATTERN, '');
   if (!path) return 'minute';
   const leaf = path.includes('.') ? path.slice(path.lastIndexOf('.') + 1) : path;
   if (DATE_TIME_SECOND_LEAFS.has(leaf)) return 'second';
   // Дата установки алкозамка на ТС — момент времени, а не системный createdAt.
   if (path === 'vehicleBind.createdAt' || path.endsWith('.vehicleBind.createdAt')) {
+    return 'second';
+  }
+  // «Отчёт по истории автосервиса» → «Дата создания»: до секунд (только этот отчёт).
+  if (
+    (entityName ?? '').trim() === 'AutoServiceHistory' &&
+    (leaf === 'createdAt' || path === 'createdAt')
+  ) {
     return 'second';
   }
   if (DATE_TIME_DAY_LEAFS.has(leaf)) return 'day';
