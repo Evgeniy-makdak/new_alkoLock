@@ -9,6 +9,7 @@ import { encodeDashboardDescription } from '../lib/dashboardDescription';
 import type {
   BackendDashboardDto,
   DashboardAccessEntry,
+  DashboardLayout,
   DashboardWidgetBinding,
   ReportDashboard,
   ReportDashboardAllotment,
@@ -97,6 +98,45 @@ async function removeDashboardAllotments(dashboard: ReportDashboard): Promise<vo
 }
 
 /**
+ * Allotments для карточек списка: параллельно по каждому dashboardId.equals
+ * (как в hydrateDashboard), с изоляцией ошибок.
+ *
+ * Нельзя одним `dashboardId.in=…`: бэк при битом definition любого отчёта
+ * отвечает 409 «Не удалось прочитать определение отчёта» на весь batch.
+ * Accesses по-прежнему только в getById.
+ */
+async function fetchAllotmentsGroupedByDashboardId(
+  dashboardIds: number[],
+): Promise<Map<number, ReportDashboardAllotment[]>> {
+  const grouped = new Map<number, ReportDashboardAllotment[]>();
+  if (!dashboardIds.length) return grouped;
+
+  await Promise.all(
+    dashboardIds.map(async (dashboardId) => {
+      const allotments = await fetchReportDashboardAllotments({
+        page: 0,
+        size: 200,
+        dashboardId: { equals: dashboardId },
+        isActiveEquals: true,
+      }).catch((): ReportDashboardAllotment[] => []);
+      grouped.set(dashboardId, allotments);
+    }),
+  );
+  return grouped;
+}
+
+function layoutFromDashboardAllotments(
+  allotments: ReportDashboardAllotment[] | undefined,
+): DashboardLayout {
+  const widgets: DashboardWidgetBinding[] = [];
+  for (const allotment of [...(allotments ?? [])].sort((a, b) => a.id - b.id)) {
+    const widget = allotmentToWidgetBinding(allotment);
+    if (widget) widgets.push(widget);
+  }
+  return buildLayoutFromWidgets(widgets);
+}
+
+/**
  * Репозиторий поверх API бэка (без localStorage):
  * - dashboards: name, visibility, definition (= «Описание дашборда»);
  * - report-dashboard-allotments: привязанные отчёты → ячейки сетки;
@@ -105,9 +145,21 @@ async function removeDashboardAllotments(dashboard: ReportDashboard): Promise<vo
 export const localDashboardRepository: DashboardRepository = {
   async list(sortDirection: DashboardsListSortDirection = 'ASC') {
     const remote = await fetchDashboards(sortDirection);
-    // Список карточек — только DTO (name/description). Allotments/accesses
-    // подгружаются в getById при открытии конкретного дашборда.
-    return remote.map((dto) => mapBackendDashboardToReportDashboard(dto));
+    const dashboardIds = remote
+      .map((dto) => dto.id)
+      .filter((id): id is number => id != null && Number.isFinite(id));
+    // Allotments по id (параллельно) → «Сетка · виджетов»; без batch.in (409 на битом definition).
+    // Accesses не грузим здесь (дорого по UsersApi) — только при открытии getById.
+    const allotmentsByDashboardId = await fetchAllotmentsGroupedByDashboardId(dashboardIds);
+
+    return remote.map((dto) => {
+      const mapped = mapBackendDashboardToReportDashboard(dto);
+      if (dto.id == null || !Number.isFinite(dto.id)) return mapped;
+      return {
+        ...mapped,
+        layout: layoutFromDashboardAllotments(allotmentsByDashboardId.get(dto.id)),
+      };
+    });
   },
 
   async getById(id) {
