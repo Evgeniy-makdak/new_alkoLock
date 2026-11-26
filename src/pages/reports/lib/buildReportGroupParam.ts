@@ -232,9 +232,32 @@ export function resolveComposeGroupApiFields(columnKey: string): string[] {
   return [key];
 }
 
+/**
+ * alias из selectedFields для groupBy: тот же, что у колонки состава
+ * (учёт клонов field#N; предпочтение записи без aggregation).
+ */
+function resolveGroupByAliasFromSelectedFields(
+  apiField: string,
+  columnKey: string,
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): string | undefined {
+  if (!apiField || !selectedFields?.length) return undefined;
+  const matches = selectedFields.filter((field) => field.fieldName?.trim() === apiField);
+  if (!matches.length) return undefined;
+
+  const bare = matches.filter((field) => !String(field.aggregation ?? '').trim());
+  const pool = bare.length ? bare : matches;
+  const dupIndex = getDuplicateColumnIndex(columnKey);
+  const picked = pool[Math.max(0, dupIndex - 1)] ?? pool[0];
+  // Только реальный alias из selectedFields (без технических grp_*).
+  const alias = picked?.alias?.trim();
+  return alias || undefined;
+}
+
 /** Строки группировки из формы → groupBy в теле POST …/query (объекты GroupBy). */
 export function buildComposeGroupParams(
   rows: Pick<ReportComposeGroupRow, 'columnKey' | 'dateTimeFormat'>[],
+  selectedFields?: ReportSelectedFieldPayload[],
 ): ReportGroupByField[] {
   const seen = new Set<string>();
   const result: ReportGroupByField[] = [];
@@ -246,6 +269,12 @@ export function buildComposeGroupParams(
       if (!apiField || seen.has(apiField)) continue;
       seen.add(apiField);
       const entry: ReportGroupByField = { fieldName: apiField };
+      const alias = resolveGroupByAliasFromSelectedFields(
+        apiField,
+        row.columnKey,
+        selectedFields,
+      );
+      if (alias) entry.alias = alias;
       if (format) {
         entry.dateTimeFormat = format;
         if (timeZone) entry.timeZone = timeZone;
@@ -255,6 +284,31 @@ export function buildComposeGroupParams(
   }
 
   return result;
+}
+
+/** Копирует alias из selectedFields в groupBy, если он уже есть (без генерации). */
+export function syncGroupByAliasesFromSelectedFields(
+  groupBy: ReportGroupByField[],
+  selectedFields: ReportSelectedFieldPayload[] | undefined,
+): ReportGroupByField[] {
+  if (!groupBy.length || !selectedFields?.length) return groupBy;
+  return groupBy.map((item) => {
+    if (item.alias?.trim()) return item;
+    const name = item.fieldName?.trim();
+    if (!name) return item;
+    const match =
+      selectedFields.find(
+        (field) =>
+          field.fieldName?.trim() === name &&
+          field.alias?.trim() &&
+          !String(field.aggregation ?? '').trim(),
+      ) ??
+      selectedFields.find(
+        (field) => field.fieldName?.trim() === name && field.alias?.trim(),
+      );
+    const alias = match?.alias?.trim();
+    return alias ? { ...item, alias } : item;
+  });
 }
 
 function findComposeGroupColumnKey(apiField: string, columnKeys: Values): string {
@@ -855,7 +909,10 @@ export function augmentGroupByWithSiblingSelectedFields(
     const prefix = name.slice(0, dot);
     if (!prefixes.has(prefix)) continue;
 
-    augmented.push({ fieldName: name });
+    const sibling: ReportGroupByField = { fieldName: name };
+    const alias = field.alias?.trim();
+    if (alias) sibling.alias = alias;
+    augmented.push(sibling);
     groupSet.add(name);
   }
 
@@ -1157,9 +1214,14 @@ export function finalizeReportQueryBodyForGroupBy(
     return field;
   });
 
+  const groupByWithAliases = syncGroupByAliasesFromSelectedFields(
+    effectiveGroupBy,
+    selectedFields,
+  );
+
   const finalized: ReportQueryRequest = {
     ...body,
-    groupBy: effectiveGroupBy,
+    groupBy: groupByWithAliases,
     selectedFields,
     ...(body.having?.length ? { having: body.having } : {}),
   };

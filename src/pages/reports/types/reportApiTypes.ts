@@ -159,10 +159,11 @@ export type ReportQueryRowPayload = {
 
 /**
  * Элемент groupBy в POST …/query (ReportDto$GroupBy).
- * dateTimeFormat/timeZone — для DATETIME-измерений из «Группировки».
+ * alias — как в selectedFields (переименование / клон); dateTimeFormat/timeZone — DATETIME.
  */
 export type ReportGroupByField = {
   fieldName: string;
+  alias?: string;
   dateTimeFormat?: string;
   timeZone?: string;
 };
@@ -198,6 +199,8 @@ export function normalizeReportGroupByFields(
     const fieldName = String(item?.fieldName ?? '').trim();
     if (!fieldName) continue;
     const entry: ReportGroupByField = { fieldName };
+    const alias = String(item?.alias ?? '').trim();
+    if (alias) entry.alias = alias;
     const dateTimeFormat = String(item?.dateTimeFormat ?? '').trim();
     if (dateTimeFormat) entry.dateTimeFormat = dateTimeFormat;
     const timeZone = String(item?.timeZone ?? '').trim();

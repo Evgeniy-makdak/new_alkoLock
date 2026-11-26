@@ -4,6 +4,17 @@ import type {
 } from '../types/reportAiComposeTypes';
 import type { ReportQueryFilter } from '../types/reportApiTypes';
 
+import {
+  resolveReportRollingDateRange,
+  type ReportRollingDatePreset,
+} from './reportRelativeDatePresets';
+
+/** Только час/сутки — минутная точность; last_7/30_days остаются day-boundary ниже. */
+const ROLLING_AI_RANGES = new Set<ReportAiRelativeDateRange>([
+  'last_1_hour',
+  'last_24_hours',
+]);
+
 function startOfDay(d: Date): Date {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -21,6 +32,10 @@ export function resolveReportAiRelativeDateRange(
   range: ReportAiRelativeDateRange,
   now: Date = new Date(),
 ): { from: string; to: string } {
+  if (ROLLING_AI_RANGES.has(range)) {
+    return resolveReportRollingDateRange(range as ReportRollingDatePreset, now);
+  }
+
   const today = startOfDay(now);
 
   switch (range) {

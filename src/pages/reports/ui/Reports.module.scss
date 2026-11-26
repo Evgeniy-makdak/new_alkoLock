@@ -437,6 +437,26 @@
   gap: 10px;
 }
 
+/** Быстрые периоды (15 мин / 1 ч / 24 ч) — отдельная строка над парой дат. */
+.reportFilterDateTimePresets {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.reportFilterDateTimePresetBtn {
+  text-transform: none;
+  white-space: nowrap;
+  min-height: 28px;
+  padding: 2px 10px;
+  line-height: 1.2;
+}
+
 .reportFilterDateTimeRangeSep {
   flex: 0 0 auto;
   align-self: flex-end;

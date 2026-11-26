@@ -16,7 +16,9 @@ export type ReportAiRelativeDateRange =
   | 'current_month'
   | 'current_year'
   | 'last_7_days'
-  | 'last_30_days';
+  | 'last_30_days'
+  | 'last_1_hour'
+  | 'last_24_hours';
 
 /** Упоминание справочника для резолва id по подписи/номеру. */
 export type ReportAiResolveHint = {

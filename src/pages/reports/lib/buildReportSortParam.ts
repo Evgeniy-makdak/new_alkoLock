@@ -68,16 +68,23 @@ export function buildReportSortFieldMap(
 ): Map<string, string> {
   const map = new Map<string, string>();
   const fieldNames: string[] = [];
+  // При GROUP BY бэкенд принимает в sort только alias из selectedFields/groupBy.
+  const sortByAliasWhenGrouped = Boolean(groupBy?.length);
 
   for (const field of selectedFields) {
     const fieldName = field.fieldName?.trim();
     if (!fieldName || isReportCompositeFieldPath(fieldName)) continue;
     fieldNames.push(fieldName);
     const sortField = resolveReportSortApiFieldForQuery(fieldName, groupBy);
-    if (sortField) {
+    if (!sortField) continue;
+    const alias = field.alias?.trim();
+    if (sortByAliasWhenGrouped && alias) {
+      // GROUP BY: и fieldName, и content-ключ-alias → один alias в &sort=.
+      map.set(fieldName, alias);
+      map.set(alias, alias);
+    } else {
       map.set(fieldName, sortField);
       // content/колонка грида может быть с ключом = alias
-      const alias = field.alias?.trim();
       if (alias) {
         map.set(alias, field.aggregation ? alias : sortField);
       }
@@ -252,9 +259,11 @@ export function buildComposeSortParams(
         matchingFields.find((field) => field.alias?.trim() === expectedAlias) ??
         matchingFields[duplicateIndex - 1] ??
         matchingFields[0];
+      const alias = selectedField?.alias?.trim();
+      // При GROUP BY sort только по alias (иначе 409 «Сортировка по полю … невозможна»).
       const apiField =
-        selectedField?.aggregation && selectedField.alias?.trim()
-          ? selectedField.alias.trim()
+        alias && (Boolean(selectedField?.aggregation) || Boolean(groupBy?.length))
+          ? alias
           : baseField;
       return `${apiField},${row.direction}`;
     })

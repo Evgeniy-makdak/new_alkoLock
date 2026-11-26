@@ -144,9 +144,9 @@ export function buildLocalReportAiComposeDraft(
     });
   }
 
-  // Относительные периоды: «предыдущий квартал», «текущий месяц» и т.п.
+  // Относительные периоды: «предыдущий квартал», «за последний час», «за последние 7/30 дней» и т.п.
   const periodMatch =
-    /предыдущ[а-яё]*\s+квартал|текущ[а-яё]*\s+месяц|текущ[а-яё]*\s+год|последн[а-яё]*\s+(7|30)\s+дн|прошл[а-яё]*\s+месяц|прошл[а-яё]*\s+недел/i.exec(
+    /предыдущ[а-яё]*\s+квартал|текущ[а-яё]*\s+месяц|текущ[а-яё]*\s+год|последн[а-яё]*\s+24\s+час|последн[а-яё]*\s+(1\s+)?час|последн[а-яё]*\s+(7|30)\s+дн|прошл[а-яё]*\s+месяц|прошл[а-яё]*\s+недел/i.exec(
       text,
     );
   if (periodMatch) {
@@ -158,13 +158,17 @@ export function buildLocalReportAiComposeDraft(
           ? 'current_month'
           : /текущ[а-яё]*\s+год/.test(phrase)
             ? 'current_year'
-            : /последн[а-яё]*\s+7\s+дн/.test(phrase)
-              ? 'last_7_days'
-              : /последн[а-яё]*\s+30\s+дн/.test(phrase)
-                ? 'last_30_days'
-                : /прошл[а-яё]*\s+месяц/.test(phrase)
-                  ? 'previous_month'
-                  : 'previous_week';
+            : /последн[а-яё]*\s+24\s+час/.test(phrase)
+              ? 'last_24_hours'
+              : /последн[а-яё]*\s+(1\s+)?час/.test(phrase)
+                ? 'last_1_hour'
+                : /последн[а-яё]*\s+7\s+дн/.test(phrase)
+                  ? 'last_7_days'
+                  : /последн[а-яё]*\s+30\s+дн/.test(phrase)
+                    ? 'last_30_days'
+                    : /прошл[а-яё]*\s+месяц/.test(phrase)
+                      ? 'previous_month'
+                      : 'previous_week';
 
     const meta = context.metadataByEntity[entity.entityName];
     const timeField = meta?.fields.find((f) =>
@@ -226,8 +230,10 @@ export function buildLocalReportAiComposeDraft(
         previous_week: 'предыдущая неделя',
         current_month: 'текущий месяц',
         current_year: 'текущий год',
-        last_7_days: 'последние 7 дней',
-        last_30_days: 'последние 30 дней',
+        last_7_days: 'за последние 7 дней',
+        last_30_days: 'за последние 30 дней',
+        last_1_hour: 'за последний час',
+        last_24_hours: 'за последние 24 часа',
       }[relativeDateRanges[0].range] ?? relativeDateRanges[0].range
     : '';
 

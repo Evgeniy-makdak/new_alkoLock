@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import dayjs, { type Dayjs } from 'dayjs';
 
-import { Box, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 
 import {
@@ -16,6 +16,11 @@ import {
   isCompleteReportTime,
 } from '@pages/reports/lib/formatReportTimeInput';
 import { isReportBetweenFilterOperation } from '@pages/reports/lib/mapReportQueryOperator';
+import {
+  REPORT_ROLLING_DATE_PRESETS,
+  resolveReportRollingDateRange,
+  type ReportRollingDatePreset,
+} from '@pages/reports/lib/reportRelativeDatePresets';
 import { InputDate } from '@shared/ui/input_date/InputDate';
 import type { Values } from '@shared/ui/search_multiple_select';
 
@@ -158,11 +163,12 @@ export function ReportDateTimeFilterField({
   const { t } = useTranslation();
   const isRange = isReportBetweenFilterOperation(operationCode, operationNumberParameter);
 
+  const makeEntry = (isoValue: string) => ({
+    value: isoValue,
+    label: formatDateTimeDisplay(dayjs(isoValue)),
+  });
+
   const commitAt = (index: number, iso: string | null) => {
-    const makeEntry = (isoValue: string) => ({
-      value: isoValue,
-      label: formatDateTimeDisplay(dayjs(isoValue)),
-    });
     const slot0 = index === 0 ? (iso ? makeEntry(iso) : undefined) : value[0];
     const slot1 = index === 1 ? (iso ? makeEntry(iso) : undefined) : value[1];
     const next: Values = [];
@@ -171,9 +177,30 @@ export function ReportDateTimeFilterField({
     onChange(next);
   };
 
+  const applyRollingPreset = (preset: ReportRollingDatePreset) => {
+    const { from, to } = resolveReportRollingDateRange(preset);
+    onChange([makeEntry(from), makeEntry(to)]);
+  };
+
   if (isRange) {
     return (
       <Box className={pageStyles.reportFilterDateTimeRootRange}>
+        <Box
+          className={pageStyles.reportFilterDateTimePresets}
+          role="group"
+          aria-label={t('reports.datePresetsAriaLabel')}>
+          {REPORT_ROLLING_DATE_PRESETS.map((preset) => (
+            <Button
+              key={preset.id}
+              type="button"
+              size="small"
+              variant="outlined"
+              className={pageStyles.reportFilterDateTimePresetBtn}
+              onClick={() => applyRollingPreset(preset.id)}>
+              {t(preset.labelKey)}
+            </Button>
+          ))}
+        </Box>
         <DateTimePair
           dateLabel={t('reports.dateRangeStartDate')}
           storedRaw={value[0]?.value}

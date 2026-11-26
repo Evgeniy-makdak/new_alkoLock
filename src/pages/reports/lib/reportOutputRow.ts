@@ -5,6 +5,7 @@ import {
   isReportFilterValueOmittedOperation,
   resolveReportOperationNumberParameter,
 } from './mapReportQueryOperator';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 import { resolveReportOutputPrimaryField } from './reportEntityCompositeFields';
 import {
   isNestedFilterPathReadyForValueInput,
@@ -76,9 +77,11 @@ export function isReportOutputRowComplete(
   const primaryKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
   if (!primaryKey) return false;
 
+  // Клон «field#N»: metadata/резолв — по базовому пути (как в ReportOutputFilterRow).
+  const primaryBaseKey = stripDuplicateColumnSuffix(primaryKey);
   const primaryField = t
-    ? resolveReportOutputPrimaryField(primaryKey, fieldMap, entityMetadata ?? null, t)
-    : fieldMap.get(primaryKey);
+    ? resolveReportOutputPrimaryField(primaryBaseKey, fieldMap, entityMetadata ?? null, t)
+    : fieldMap.get(primaryBaseKey);
   if (!primaryField) return false;
 
   const refEntity = primaryField.referenceEntity?.trim();
@@ -150,7 +153,8 @@ export function isReportOutputRowComplete(
 
 /**
  * Фильтры модалки «Новый отчёт» готовы к формированию:
- * нет строк — ок; каждая добавленная строка должна быть заполнена полностью.
+ * нет строк / пустые карточки без «Поля результата» — ок (как в сборке query);
+ * строка с выбранным полем должна быть заполнена полностью.
  */
 export function areReportComposeFiltersComplete(
   outputRows: ReportOutputRow[],
@@ -160,8 +164,9 @@ export function areReportComposeFiltersComplete(
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
   t?: TFunction,
 ): boolean {
-  if (!outputRows.length) return true;
-  return outputRows.every((row) =>
+  const startedRows = outputRows.filter((row) => row.selectedOutputFields.length > 0);
+  if (!startedRows.length) return true;
+  return startedRows.every((row) =>
     isReportOutputRowComplete(
       row,
       fieldMap,

@@ -616,21 +616,18 @@ export function ReportComposeModal({
       const key = row.columnKey.trim();
       if (!key || byKey.has(key)) continue;
       const fromSort = sortColumnOptions.find((o) => String(o.value) === key);
+      // Live-label состава → снимок прошлого формирования → ключ.
       byKey.set(key, {
         value: key,
         label:
-          (editColumnHeaderLabels?.[key] ?? '').trim() ||
           (fromSort?.label != null && String(fromSort.label).trim()) ||
+          (editColumnHeaderLabels?.[key] ?? '').trim() ||
           key,
       });
     }
-    // Карандаш из columnHeaderLabels — поверх options (иначе edit показывает дефолт).
-    return Array.from(byKey.values()).map((option) => {
-      const key = String(option.value);
-      const fromHeader = (editColumnHeaderLabels?.[key] ?? '').trim();
-      if (!fromHeader) return option;
-      return { ...option, label: fromHeader };
-    });
+    // Не перезаписываем live-label снимком: карандаш в составе должен сразу
+    // отражаться в «Группировке» / having.
+    return Array.from(byKey.values());
   }, [
     sortColumnOptions,
     metadata,
@@ -936,6 +933,21 @@ export function ReportComposeModal({
           }
         }
       }
+
+      // Live-label из состава → выбранное «Поле результата» (тот же value, новая подпись).
+      const labelByKey = new Map(
+        selection.map((item) => [String(item.value), String(item.label ?? '').trim()]),
+      );
+      for (const row of reportsStore.getState().outputRows) {
+        const selected = row.selectedOutputFields[0];
+        if (!selected) continue;
+        const key = String(selected.value);
+        const liveLabel = labelByKey.get(key) ?? '';
+        if (!liveLabel || String(selected.label ?? '').trim() === liveLabel) continue;
+        reportsStore
+          .getState()
+          .setOutputRowSelectedFields(row.id, [{ ...selected, label: liveLabel }]);
+      }
     },
     [setTableFieldHiddenByPath],
   );
@@ -1062,13 +1074,13 @@ export function ReportComposeModal({
       composeGroupRows,
       resolveGroupFieldDef,
     );
-    // groupBy — объекты { fieldName, dateTimeFormat?, timeZone? } из строк после ensure.
-    const groupBy = buildComposeGroupParams(groupRowsForQuery);
+    // groupBy — объекты { fieldName, alias?, dateTimeFormat?, timeZone? } из строк после ensure.
+    const groupBy = buildComposeGroupParams(groupRowsForQuery, body.selectedFields);
     const having = buildComposeHavingParams(groupRowsForQuery, columnLabelByKey, resolveGroupFieldDef);
     const havingConnects = having.length
       ? buildComposeHavingConnects(groupRowsForQuery, composeHavingLogicOperator)
       : [];
-    // Сортировка — по любому полю из «Текущего состава»; groupBy не сужает pageable.sort.
+    // Сортировка — по любому полю из «Текущего состава»; при groupBy — по alias полей.
     const bodyWithGroup = finalizeReportQueryBodyForGroupBy(
       {
         ...body,
@@ -1089,7 +1101,7 @@ export function ReportComposeModal({
     );
     const sortParams = buildComposeSortParams(
       composeSortRows,
-      undefined,
+      bodyWithGroup.groupBy,
       bodyWithGroup.selectedFields,
       resolveComposeTableFieldsSelection(),
     );

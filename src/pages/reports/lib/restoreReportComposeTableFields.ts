@@ -159,12 +159,12 @@ export function resolveComposeColumnDisplayLabel(
 ): string {
   const key = columnKey.trim();
   if (!key) return '';
-  // Сначала сохранённые заголовки (карандаш) — options могли уже сброситься к дефолту.
-  const fromHeaders = (columnHeaderLabels[key] ?? '').trim();
-  if (fromHeaders) return fromHeaders;
+  // Live-label из состава (карандаш) — приоритет; снимок — только запасной вариант.
   const fromOptions = columnOptions.find((o) => String(o.value) === key);
   if (fromOptions?.label != null && String(fromOptions.label).trim()) {
     return String(fromOptions.label).trim();
   }
+  const fromHeaders = (columnHeaderLabels[key] ?? '').trim();
+  if (fromHeaders) return fromHeaders;
   return key;
 }
