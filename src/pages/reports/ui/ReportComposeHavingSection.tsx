@@ -130,7 +130,10 @@ function opsToLabeledValues(
   });
 }
 
-function rowHasAggregation(row: ReportComposeGroupRow): boolean {
+/** Есть поле группировки + агрегирующая функция (не none) → можно показать Having. */
+export function reportComposeGroupRowHasHavingAggregation(
+  row: ReportComposeGroupRow,
+): boolean {
   const code = normalizeHavingAggregationForApi(row.havingAggregation);
   return Boolean(row.columnKey.trim() && code && code !== 'none');
 }
@@ -158,7 +161,10 @@ export function ReportComposeHavingSection({
   const loadVehicleLabelMaps = reportsStore((s) => s.loadVehicleLabelMaps);
 
   const entityName = entityMetadata?.entityName?.trim() ?? '';
-  const havingRows = useMemo(() => groupRows.filter(rowHasAggregation), [groupRows]);
+  const havingRows = useMemo(
+    () => groupRows.filter(reportComposeGroupRowHasHavingAggregation),
+    [groupRows],
+  );
 
   useEffect(() => {
     const needsVehicleMaps = havingRows.some(
@@ -260,6 +266,9 @@ export function ReportComposeHavingSection({
     onChange(groupRows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
   };
 
+  // Скрыт, пока нет группировки с выбранной агрегацией (не none).
+  if (!havingRows.length) return null;
+
   return (
     <ReportComposeSection
       icon={FilterAltOutlinedIcon}
@@ -267,16 +276,8 @@ export function ReportComposeHavingSection({
       title={t('reports.composeSectionHaving', {
         defaultValue: 'Дополнительный фильтр к результату',
       })}>
-      {havingRows.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          {t('reports.composeHavingEmpty', {
-            defaultValue:
-              'Появится после выбора агрегирующей функции в блоке «Группировка».',
-          })}
-        </Typography>
-      ) : (
-        <div className={composeStyles.filterGroups}>
-          {havingRows.map((row, index) => {
+      <div className={composeStyles.filterGroups}>
+        {havingRows.map((row, index) => {
             const fieldDef = resolveGroupFieldDef(
               row.columnKey,
               entityMetadata,
@@ -600,8 +601,7 @@ export function ReportComposeHavingSection({
               </div>
             );
           })}
-        </div>
-      )}
+      </div>
     </ReportComposeSection>
   );
 }

@@ -88,7 +88,10 @@ import {
   reportComposeBranchValuesToIds,
 } from './ReportComposeBranchSelect';
 import { ReportComposeGroupSection } from './ReportComposeGroupSection';
-import { ReportComposeHavingSection } from './ReportComposeHavingSection';
+import {
+  ReportComposeHavingSection,
+  reportComposeGroupRowHasHavingAggregation,
+} from './ReportComposeHavingSection';
 import { ReportComposeSection } from './ReportComposeSection';
 import { ReportComposeSortSection } from './ReportComposeSortSection';
 import { ReportTableFieldsTransfer } from './ReportTableFieldsTransfer';
@@ -1317,7 +1320,10 @@ export function ReportComposeModal({
                 />
               </div>
             ) : null}
-            {hasComposeTableColumns && showColumnsSection && groupColumnOptions.length > 0 ? (
+            {hasComposeTableColumns &&
+            showColumnsSection &&
+            groupColumnOptions.length > 0 &&
+            composeGroupRows.some(reportComposeGroupRowHasHavingAggregation) ? (
               <div className={composeStyles.sortSectionSlot}>
                 <ReportComposeHavingSection
                   columnOptions={groupColumnOptions}
