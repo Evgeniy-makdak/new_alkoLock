@@ -105,8 +105,9 @@ async function removeDashboardAllotments(dashboard: ReportDashboard): Promise<vo
 export const localDashboardRepository: DashboardRepository = {
   async list(sortDirection: DashboardsListSortDirection = 'ASC') {
     const remote = await fetchDashboards(sortDirection);
-    // Порядок как в ответе бэка — без пересортировки на фронте.
-    return Promise.all(remote.map((dto) => hydrateDashboard(dto)));
+    // Список карточек — только DTO (name/description). Allotments/accesses
+    // подгружаются в getById при открытии конкретного дашборда.
+    return remote.map((dto) => mapBackendDashboardToReportDashboard(dto));
   },
 
   async getById(id) {

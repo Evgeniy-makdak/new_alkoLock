@@ -139,16 +139,18 @@ export function ReportsDashboardsPanel() {
               <p className={styles.cardMeta}>
                 {item.description || t('reports.dashboard.noDescription', 'Без описания')}
               </p>
-              <p className={styles.cardMeta}>
-                {t('reports.dashboard.gridSize', 'Сетка {{rows}}×{{cols}}')
-                  .replace('{{rows}}', String(item.layout.rows))
-                  .replace('{{cols}}', String(item.layout.cols))}
-                {' · '}
-                {t('reports.dashboard.widgetsCount', 'виджетов: {{count}}').replace(
-                  '{{count}}',
-                  String(item.layout.cells.filter((cell) => cell.widget).length),
-                )}
-              </p>
+              {item.layout.cells.some((cell) => cell.widget) ? (
+                <p className={styles.cardMeta}>
+                  {t('reports.dashboard.gridSize', 'Сетка {{rows}}×{{cols}}')
+                    .replace('{{rows}}', String(item.layout.rows))
+                    .replace('{{cols}}', String(item.layout.cols))}
+                  {' · '}
+                  {t('reports.dashboard.widgetsCount', 'виджетов: {{count}}').replace(
+                    '{{count}}',
+                    String(item.layout.cells.filter((cell) => cell.widget).length),
+                  )}
+                </p>
+              ) : null}
               <div className={styles.cardActions}>
                 <Button
                   size="small"

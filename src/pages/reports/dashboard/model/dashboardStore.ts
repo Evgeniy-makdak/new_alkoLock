@@ -149,6 +149,32 @@ function applyLayoutPreference(
   };
 }
 
+/** Preference сетки + снимки заголовков колонок виджетов. */
+function decorateDashboardForStore(
+  dashboard: ReportDashboard,
+  layoutPreferences: Record<string, LayoutPreference>,
+  columnHeaderLabelSnapshots: Record<string, DashboardColumnHeaderLabelSnapshot>,
+): ReportDashboard {
+  const withPreference = applyLayoutPreference(dashboard, layoutPreferences[dashboard.id]);
+  return {
+    ...withPreference,
+    layout: {
+      ...withPreference.layout,
+      cells: withPreference.layout.cells.map((cell) =>
+        cell.widget
+          ? {
+              ...cell,
+              widget: applyDashboardColumnHeaderLabelSnapshot(
+                cell.widget,
+                columnHeaderLabelSnapshots,
+              ),
+            }
+          : cell,
+      ),
+    },
+  };
+}
+
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
@@ -207,7 +233,8 @@ type DashboardState = {
   cycleListNameSort: () => void;
   loadList: () => Promise<void>;
   openCreateEditor: () => void;
-  openEditEditor: (id: string) => void;
+  /** Открыть редактор: подгружает allotments/accesses только для этого дашборда. */
+  openEditEditor: (id: string) => Promise<void>;
   closeEditor: () => void;
   selectedDashboard: () => ReportDashboard | null;
   createDashboard: (name: string, description?: string) => Promise<ReportDashboard | null>;
@@ -247,11 +274,11 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
 
   returnToDashboardFromFullReport: () => {
     const id = get().fullReportReturnDashboardId;
-    if (id) {
-      // Редактор мог остаться открытым; если нет — восстанавливаем тот же дашборд.
-      set({ selectedId: id, editorOpen: true });
-    }
     set({ fullReportReturnDashboardId: null, workspaceTab: 'dashboards' });
+    if (id) {
+      // Список мог быть лёгким — гидратация allotments/accesses при открытии.
+      void get().openEditEditor(id);
+    }
   },
 
   listNameSort: 'ASC',
@@ -582,26 +609,24 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
       const user = currentUser();
       const all = await localDashboardRepository.list(get().listNameSort);
       const filtered = user ? all.filter((item) => canAccess(item, user.id)) : all;
-      const { layoutPreferences, columnHeaderLabelSnapshots } = get();
-      const items = filtered
-        .map((item) => applyLayoutPreference(item, layoutPreferences[item.id]))
-        .map((dashboard) => ({
-          ...dashboard,
-          layout: {
-            ...dashboard.layout,
-            cells: dashboard.layout.cells.map((cell) =>
-              cell.widget
-                ? {
-                    ...cell,
-                    widget: applyDashboardColumnHeaderLabelSnapshot(
-                      cell.widget,
-                      columnHeaderLabelSnapshots,
-                    ),
-                  }
-                : cell,
-            ),
-          },
-        }));
+      const { layoutPreferences, columnHeaderLabelSnapshots, editorOpen, selectedId } = get();
+      let items = filtered.map((item) =>
+        decorateDashboardForStore(item, layoutPreferences, columnHeaderLabelSnapshots),
+      );
+      // Редактор открыт: list() лёгкий — догрузить виджеты/права только для текущего.
+      if (editorOpen && selectedId) {
+        const hydrated = await localDashboardRepository.getById(selectedId);
+        if (hydrated) {
+          const decorated = decorateDashboardForStore(
+            hydrated,
+            layoutPreferences,
+            columnHeaderLabelSnapshots,
+          );
+          items = items.some((item) => item.id === selectedId)
+            ? items.map((item) => (item.id === selectedId ? decorated : item))
+            : [...items, decorated];
+        }
+      }
       set({ items, loading: false });
     } catch (error) {
       set({
@@ -615,7 +640,29 @@ export const dashboardStore = create<DashboardState>((set, get) => ({
     set({ selectedId: null, editorOpen: true });
   },
 
-  openEditEditor: (id) => {
+  openEditEditor: async (id) => {
+    const { layoutPreferences, columnHeaderLabelSnapshots } = get();
+    try {
+      const hydrated = await localDashboardRepository.getById(id);
+      if (hydrated) {
+        const decorated = decorateDashboardForStore(
+          hydrated,
+          layoutPreferences,
+          columnHeaderLabelSnapshots,
+        );
+        set((state) => ({
+          items: state.items.some((item) => item.id === id)
+            ? state.items.map((item) => (item.id === id ? decorated : item))
+            : [...state.items, decorated],
+          selectedId: id,
+          editorOpen: true,
+          error: null,
+        }));
+        return;
+      }
+    } catch {
+      // открываем редактор даже при ошибке гидратации — selectedDashboard может быть из list
+    }
     set({ selectedId: id, editorOpen: true });
   },
 

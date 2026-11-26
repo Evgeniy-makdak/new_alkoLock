@@ -708,13 +708,16 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
   },
 
   resetFilters() {
+    // Не чистим и не перезапрашиваем referenceEntityMetadataByName:
+    // «Сбросить фильтры» на странице сразу зовёт setSelectedEntityName(null),
+    // и mid-flight loadAll…/metadata?referenceEntity=… уходит уже без root → 409.
+    // Кэш nested metadata живёт с текущей сущностью; смена/сброс сущности
+    // очищает его в setSelectedEntityName / loadMetadataForEntity.
     set({
       outputRows: get().outputRows.map(resetRowFilterState),
       referenceRecordsCache: {},
       vehicleLabelMaps: emptyLabelMaps(),
       vehicleLabelMapsLoading: false,
-      referenceEntityMetadataByName: {},
-      referenceEntityMetadataLoadingByName: {},
       reportTableFieldsMetadataByRowId: {},
       reportTableFieldsMetadataLoadingByRowId: {},
       reportTableFieldsMetadataKeyByRowId: {},
@@ -722,10 +725,6 @@ export const reportsStore = create<ReportsStore>()((set, get) => ({
       tableFieldDateTimeFormatByPath: {},
       tableFieldHiddenByPath: {},
     });
-    const entityMetadata = get().metadata;
-    if (entityMetadata) {
-      void get().loadAllReferenceEntityMetadataForReport(entityMetadata);
-    }
   },
 }));
 
