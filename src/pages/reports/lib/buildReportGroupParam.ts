@@ -259,15 +259,19 @@ export function buildComposeGroupParams(
   rows: Pick<ReportComposeGroupRow, 'columnKey' | 'dateTimeFormat'>[],
   selectedFields?: ReportSelectedFieldPayload[],
 ): ReportGroupByField[] {
+  // Ключ: fieldName + индекс клона — иначе timestamp и timestamp#2 схлопываются в один groupBy.
   const seen = new Set<string>();
   const result: ReportGroupByField[] = [];
   const timeZone = resolveBrowserReportTimeZone();
 
   for (const row of rows) {
     const format = String(row.dateTimeFormat ?? '').trim();
+    const dupIndex = getDuplicateColumnIndex(row.columnKey);
     for (const apiField of resolveComposeGroupApiFields(row.columnKey)) {
-      if (!apiField || seen.has(apiField)) continue;
-      seen.add(apiField);
+      if (!apiField) continue;
+      const seenKey = `${apiField}\0${dupIndex}`;
+      if (seen.has(seenKey)) continue;
+      seen.add(seenKey);
       const entry: ReportGroupByField = { fieldName: apiField };
       const alias = resolveGroupByAliasFromSelectedFields(
         apiField,
@@ -296,17 +300,17 @@ export function syncGroupByAliasesFromSelectedFields(
     if (item.alias?.trim()) return item;
     const name = item.fieldName?.trim();
     if (!name) return item;
-    const match =
-      selectedFields.find(
-        (field) =>
-          field.fieldName?.trim() === name &&
-          field.alias?.trim() &&
-          !String(field.aggregation ?? '').trim(),
-      ) ??
-      selectedFields.find(
-        (field) => field.fieldName?.trim() === name && field.alias?.trim(),
-      );
-    const alias = match?.alias?.trim();
+    const bare = selectedFields.filter(
+      (field) =>
+        field.fieldName?.trim() === name && !String(field.aggregation ?? '').trim(),
+    );
+    // Клоны (несколько bare с одним fieldName): alias уже выставлен в
+    // buildComposeGroupParams по dup-index — не подставляем чужой alias клона.
+    if (bare.length > 1) return item;
+    const alias =
+      bare[0]?.alias?.trim() ||
+      selectedFields.find((field) => field.fieldName?.trim() === name && field.alias?.trim())
+        ?.alias?.trim();
     return alias ? { ...item, alias } : item;
   });
 }
@@ -1105,6 +1109,7 @@ export function resolveBrowserReportTimeZone(): string {
 /**
  * Проставляет selectedFields.dateTimeFormat (+ timeZone из браузера) из строк «Группировки»
  * (только поля с выбранным форматом; чужие selectedFields не трогаем).
+ * Клоны: формат строки «field#N» → N-е вхождение fieldName в selectedFields.
  */
 export function applyDateTimeFormatFromGroupRows(
   body: ReportQueryRequest,
@@ -1112,22 +1117,27 @@ export function applyDateTimeFormatFromGroupRows(
 ): ReportQueryRequest {
   if (!groupRows?.length) return body;
 
-  const formatByApiField = new Map<string, string>();
+  // apiField + 1-based occurrence → format (клон #2 → occurrence 2).
+  const formatByOccurrence = new Map<string, string>();
   for (const row of groupRows) {
     const format = String(row.dateTimeFormat ?? '').trim();
     if (!format) continue;
+    const occurrence = getDuplicateColumnIndex(row.columnKey);
     for (const apiField of resolveComposeGroupApiFields(row.columnKey)) {
-      if (apiField) formatByApiField.set(apiField, format);
+      if (apiField) formatByOccurrence.set(`${apiField}\0${occurrence}`, format);
     }
   }
-  if (!formatByApiField.size) return body;
+  if (!formatByOccurrence.size) return body;
 
   const timeZone = resolveBrowserReportTimeZone();
+  const seenByName = new Map<string, number>();
 
   const selectedFields = (body.selectedFields ?? []).map((field) => {
     const name = field.fieldName?.trim();
     if (!name) return field;
-    const format = formatByApiField.get(name);
+    const occurrence = (seenByName.get(name) ?? 0) + 1;
+    seenByName.set(name, occurrence);
+    const format = formatByOccurrence.get(`${name}\0${occurrence}`);
     if (!format) return field;
     return {
       ...field,

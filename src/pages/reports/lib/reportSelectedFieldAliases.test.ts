@@ -32,6 +32,38 @@ jest.mock('../dashboard/lib/resolveWidgetColumnHeaderLabels', () => ({
   }),
 }));
 
+
+describe('resolveReportFieldAliasForApi', () => {
+  it('uses the clone/rename label literally (spaces and -> kept; only UI _N)', async () => {
+    const { resolveReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
+    // Клон в UI: исходная подпись + «_1» — alias = эта же строка целиком.
+    expect(
+      resolveReportFieldAliasForApi(
+        'Отчет о событиях -> Дата_1',
+        'timestamp',
+        'timestamp',
+        'Дата',
+      ),
+    ).toBe('Отчет о событиях -> Дата_1');
+    // Rename карандашом — как в поле, пробелы не трогаем.
+    expect(
+      resolveReportFieldAliasForApi('Моя дата', 'timestamp', 'timestamp', 'Дата'),
+    ).toBe('Моя дата');
+  });
+
+  it('does not emit alias for an unchanged default qualified label', async () => {
+    const { resolveReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
+    expect(
+      resolveReportFieldAliasForApi(
+        'Отчет о событиях -> Дата',
+        'timestamp',
+        'timestamp',
+        'Дата',
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe('cloned report column labels', () => {
   it('does not restore legacy ФИО labels as a synthetic table field', () => {
     const selectedFields = [

@@ -19,7 +19,7 @@ jest.mock('./reportEntityCompositeFields', () => ({
 }));
 
 jest.mock('./reportSelectedFieldAliases', () => ({
-  encodeReportFieldAliasForApi: (value: string) => value.trim().replace(/\s+/g, '_'),
+  encodeReportFieldAliasForApi: (value: string) => value.trim(),
   extractReportTableFieldLabelLeaf: (label: string) =>
     label.includes('->') ? label.slice(label.lastIndexOf('->') + 2).trim() : label.trim(),
 }));

@@ -14,6 +14,7 @@ import {
   isReportCoordinatesCompositePath,
 } from './reportCoordinateComposite';
 import { isEventsForFrontTypeListAttribute } from './eventsForFrontReportOptions';
+import { stripDuplicateColumnSuffix } from './reportColumnDuplicate';
 import { resolveReportFilterPathLeafField } from './reportFilterFieldEligibility';
 
 import type {
@@ -641,17 +642,21 @@ export function findReportTableFieldDefinition(
   tableMetadataByRowId: Record<string, ReportEntityMetadata | null>,
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
 ): ReportFieldDefinition | undefined {
+  // Клон «field#N» — metadata/formatters по базовому пути (как в фильтрах).
+  const normalizedPath = stripDuplicateColumnSuffix(String(fieldPath ?? '').trim());
+  if (!normalizedPath) return undefined;
+
   const rootPrefix = reportEntityFieldPrefix(entityMetadata?.entityName ?? '');
   const allEntityFields = entityMetadata?.fields ?? [];
 
-  if (rootPrefix && fieldPath.startsWith(`${rootPrefix}.`)) {
-    const leaf = fieldPath.slice(rootPrefix.length + 1);
+  if (rootPrefix && normalizedPath.startsWith(`${rootPrefix}.`)) {
+    const leaf = normalizedPath.slice(rootPrefix.length + 1);
     return allEntityFields.find((f) => f.fieldName === leaf);
   }
 
   // Глубокие пути через ENTITY-bridge (assignment.branch.name): шаговой walk по referenceEntity.
   const deepLeaf = resolveReportFilterPathLeafField(
-    fieldPath,
+    normalizedPath,
     entityMetadata,
     referenceEntityMetadataByName,
   );
@@ -659,9 +664,9 @@ export function findReportTableFieldDefinition(
 
   for (const parentField of allEntityFields) {
     const nestedPrefix = parentField.fieldName?.trim() ?? '';
-    if (!nestedPrefix || !fieldPath.startsWith(`${nestedPrefix}.`)) continue;
+    if (!nestedPrefix || !normalizedPath.startsWith(`${nestedPrefix}.`)) continue;
 
-    const leaf = fieldPath.slice(nestedPrefix.length + 1);
+    const leaf = normalizedPath.slice(nestedPrefix.length + 1);
     const refEntity = parentField.referenceEntity?.trim();
     const tableFields = refEntity
       ? nestedMetadataFields(refEntity, referenceEntityMetadataByName)
@@ -680,11 +685,11 @@ export function findReportTableFieldDefinition(
   for (const row of outputRows) {
     const outputKey = row.selectedOutputFields[0] ? String(row.selectedOutputFields[0].value) : '';
     if (!outputKey) continue;
-    const outputField = fieldMap.get(outputKey);
+    const outputField = fieldMap.get(stripDuplicateColumnSuffix(outputKey)) ?? fieldMap.get(outputKey);
     const nestedPrefix = outputField?.fieldName?.trim() ?? '';
-    if (!nestedPrefix || !fieldPath.startsWith(`${nestedPrefix}.`)) continue;
+    if (!nestedPrefix || !normalizedPath.startsWith(`${nestedPrefix}.`)) continue;
 
-    const leaf = fieldPath.slice(nestedPrefix.length + 1);
+    const leaf = normalizedPath.slice(nestedPrefix.length + 1);
     const refEntity = outputField?.referenceEntity?.trim();
     const tableFields = refEntity
       ? nestedMetadataFields(refEntity, referenceEntityMetadataByName)
@@ -696,7 +701,7 @@ export function findReportTableFieldDefinition(
     }
   }
 
-  return allEntityFields.find((f) => f.fieldName === fieldPath);
+  return allEntityFields.find((f) => f.fieldName === normalizedPath);
 }
 
 /** Имя в POST selectedFields — как в metadata / filters (без префикса корневой сущности). */

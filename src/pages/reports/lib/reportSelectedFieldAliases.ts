@@ -18,18 +18,17 @@ import type {
 } from '../types/reportApiTypes';
 
 /**
- * UI → API: пробелы между словами → `_` (бэк принимает одно непрерывное слово).
- * Пример: «Время события» → «Время_события».
- * Только для POST alias; в гриде и модалке показываем с пробелами.
+ * UI → API alias: подпись поля как в «Текущем составе», без правок.
+ * Пробелы и «->» сохраняем; `_` только если он уже есть в подписи
+ * (клон «…Дата_1», rename с подчёркиванием) — ничего не дописываем.
+ * Пример: «Отчет о событиях -> Дата_1» → тот же текст.
  */
 export function encodeReportFieldAliasForApi(displayAlias: string): string {
-  return displayAlias.trim().replace(/\s+/g, '_');
+  return displayAlias.trim();
 }
 
 /**
- * Пробелы → `_` только в добавленной/изменённой части.
- * Дефолт «Координаты (долгота)» + « рпе» → «Координаты (долгота)_рпе»
- * (не «Координаты_(долгота)_рпе»).
+ * Alias = подпись как есть (префикс дефолта + хвост rename), без замены пробелов на `_`.
  */
 export function encodeReportFieldAliasPreservingDefault(
   displayAlias: string,
@@ -41,13 +40,7 @@ export function encodeReportFieldAliasPreservingDefault(
   if (!defaultLabel || !label.startsWith(defaultLabel)) {
     return encodeReportFieldAliasForApi(label);
   }
-  const suffix = label.slice(defaultLabel.length);
-  if (!suffix.trim()) {
-    return defaultLabel;
-  }
-  // Ведущие пробелы хвоста → один `_`, остальные пробелы хвоста → `_`.
-  const encodedSuffix = suffix.replace(/^\s+/, '_').replace(/\s+/g, '_');
-  return `${defaultLabel}${encodedSuffix}`;
+  return label;
 }
 
 /**
@@ -96,12 +89,12 @@ export function resolveReportFieldDefaultLabelForAlias(
 }
 
 /**
- * Текст для alias в POST: только изменённая часть, с `_` вместо пробелов.
- * Дефолтный префикс «Сущность ->» не кодируем.
+ * Alias в POST = подпись поля из «Текущего состава» после клонирования или
+ * переименования (карандаш) — буквально как в UI.
+ * Не урезаем до листа, не ставим `_` вместо пробелов/«->».
+ * «_1» у клона уже в подписи из UI — отдельно не добавляем.
  *
- * Важно: UI-дефолт всегда «Сущность -> Поле». Если пользователь оставил только
- * лист («Поле»), это кастомный alias — его нужно эмитить, иначе после перезагрузки
- * дашборда metadata снова склеит базовую сущность.
+ * Дефолтная авто-подпись «Сущность -> Поле» без изменений — alias не эмитим.
  */
 export function resolveReportFieldAliasForApi(
   displayLabel: string,
@@ -113,12 +106,12 @@ export function resolveReportFieldAliasForApi(
   const defaultLabel = defaultFieldLabel.trim();
   if (!label || label === emitPath || label === fieldName) return undefined;
 
-  let aliasSource = label;
   if (isReportTableFieldLabelAutoQualified(label)) {
     const leaf = extractReportTableFieldLabelLeaf(label);
     if (!leaf) return undefined;
     // Без известного дефолта авто-подпись считаем неизменённой.
     if (!defaultLabel) return undefined;
+    // Лист совпадает с дефолтом metadata → это не rename/клон, alias не нужен.
     if (leaf === defaultLabel) return undefined;
     // Дефолт свалился на technical path (fieldDef не найден) — «Сущность -> Поле» не alias.
     if (
@@ -128,16 +121,12 @@ export function resolveReportFieldAliasForApi(
     ) {
       return undefined;
     }
-    // В alias только изменённый лист, не вся строка с префиксом.
-    aliasSource = leaf;
   }
 
-  // При изменении названия строки ВСЕ отдельные слова алиаса разделяются нижними
-  // подчёркиваниями (SQL видит одно непрерывное слово) — для каждой переименованной
-  // строки, а не только для клонов. Декодирование в гриде («_» → пробелы) не меняется.
-  const apiAlias = encodeReportFieldAliasForApi(aliasSource);
+  // Ровно подпись поля (см. encodeReportFieldAliasForApi).
+  const apiAlias = encodeReportFieldAliasForApi(label);
   if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
-  // Bare leaf (== defaultLabel) тоже alias: это снятие «Сущность ->», не дефолт UI.
+  // Bare leaf (== defaultLabel) тоже alias: снятие «Сущность ->», не дефолт UI.
   return apiAlias;
 }
 
