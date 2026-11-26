@@ -13,11 +13,12 @@ import {
 } from '../lib/buildChartOption';
 import { prepareChartData } from '../lib/prepareChartData';
 import { normalizeChartSpec, type ReportChartSpec } from '../types/chartSpec';
+import type { ReportGroupByField } from '../types/reportApiTypes';
 
 type Props = {
   rows: Array<Record<string, unknown>>;
   spec: ReportChartSpec;
-  groupBy?: string[];
+  groupBy?: Array<string | ReportGroupByField>;
   height?: number | string;
   compact?: boolean;
   /** Есть ли ещё строки отчёта для подгрузки. */

@@ -641,11 +641,6 @@ export function ReportComposeModal({
     editColumnHeaderLabels,
   ]);
 
-  const composeGroupBy = useMemo(
-    () => buildComposeGroupParams(composeGroupRows),
-    [composeGroupRows],
-  );
-
   /** Синхронизация «Текущий состав»: defaultSelected из metadata (корень + nested);
    *  при подгрузке вторичной metadata дозаполняем новые дефолты (create).
    *  Смена сущности в create — полный сброс состава под новую metadata. */
@@ -1034,7 +1029,6 @@ export function ReportComposeModal({
     const { entityName, body: rawBody } = ctx;
     const body = ensureSelectedFieldsInBody(rawBody);
 
-    const groupBy = composeGroupBy;
     const columnLabelByKey = new Map(
       groupColumnOptions.map((option) => [
         String(option.value),
@@ -1068,6 +1062,8 @@ export function ReportComposeModal({
       composeGroupRows,
       resolveGroupFieldDef,
     );
+    // groupBy — объекты { fieldName, dateTimeFormat?, timeZone? } из строк после ensure.
+    const groupBy = buildComposeGroupParams(groupRowsForQuery);
     const having = buildComposeHavingParams(groupRowsForQuery, columnLabelByKey, resolveGroupFieldDef);
     const havingConnects = having.length
       ? buildComposeHavingConnects(groupRowsForQuery, composeHavingLogicOperator)
@@ -1189,7 +1185,6 @@ export function ReportComposeModal({
     resolveComposeTableFieldsSelection,
     ensureSelectedFieldsInBody,
     composeSortRows,
-    composeGroupBy,
     composeGroupRows,
     composeHavingLogicOperator,
     groupColumnOptions,

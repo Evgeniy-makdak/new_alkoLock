@@ -50,8 +50,18 @@ export function buildReportFieldAggregationMap(
   return map;
 }
 
-export function buildReportGroupBySet(groupBy: string[] | undefined): Set<string> {
-  return new Set((groupBy ?? []).map((field) => field.trim()).filter(Boolean));
+export function buildReportGroupBySet(
+  groupBy: Array<string | { fieldName?: string }> | undefined,
+): Set<string> {
+  return new Set(
+    (groupBy ?? [])
+      .map((item) =>
+        typeof item === 'string'
+          ? item.trim()
+          : String(item?.fieldName ?? '').trim(),
+      )
+      .filter(Boolean),
+  );
 }
 
 export function resolveReportColumnDisplayAggregation(

@@ -29,6 +29,7 @@ import type {
   ReportEntityMetadata,
   ReportFieldDefinition,
   ReportFieldOperation,
+  ReportGroupByField,
   ReportHavingFilter,
   ReportLogicConnect,
   ReportLogicOperator,
@@ -36,6 +37,7 @@ import type {
   ReportQueryRequest,
   ReportSelectedFieldPayload,
 } from '../types/reportApiTypes';
+import { resolveReportGroupByFieldNames } from '../types/reportApiTypes';
 import type { Values } from '@shared/ui/search_multiple_select';
 
 const AGGREGATION_PREFERENCE = ['COUNT', 'MAX', 'MIN', 'SUM', 'AVG'] as const;
@@ -230,16 +232,25 @@ export function resolveComposeGroupApiFields(columnKey: string): string[] {
   return [key];
 }
 
-/** Строки группировки из формы → groupBy в теле POST …/query. */
-export function buildComposeGroupParams(rows: Pick<ReportComposeGroupRow, 'columnKey'>[]): string[] {
+/** Строки группировки из формы → groupBy в теле POST …/query (объекты GroupBy). */
+export function buildComposeGroupParams(
+  rows: Pick<ReportComposeGroupRow, 'columnKey' | 'dateTimeFormat'>[],
+): ReportGroupByField[] {
   const seen = new Set<string>();
-  const result: string[] = [];
+  const result: ReportGroupByField[] = [];
+  const timeZone = resolveBrowserReportTimeZone();
 
   for (const row of rows) {
+    const format = String(row.dateTimeFormat ?? '').trim();
     for (const apiField of resolveComposeGroupApiFields(row.columnKey)) {
       if (!apiField || seen.has(apiField)) continue;
       seen.add(apiField);
-      result.push(apiField);
+      const entry: ReportGroupByField = { fieldName: apiField };
+      if (format) {
+        entry.dateTimeFormat = format;
+        if (timeZone) entry.timeZone = timeZone;
+      }
+      result.push(entry);
     }
   }
 
@@ -337,15 +348,28 @@ function findSelectedDateTimeFormat(
   return (match?.dateTimeFormat ?? '').trim();
 }
 
+function findGroupByDateTimeFormat(
+  apiField: string,
+  groupBy: Array<string | ReportGroupByField> | undefined,
+): string {
+  if (!apiField || !groupBy?.length) return '';
+  for (const item of groupBy) {
+    if (typeof item === 'string') continue;
+    if ((item.fieldName ?? '').trim() !== apiField) continue;
+    return String(item.dateTimeFormat ?? '').trim();
+  }
+  return '';
+}
+
 /** groupBy (+ having) из сформированного отчёта → строки формы (режим редактирования). */
 export function parseComposeGroupRowsFromGroupBy(
-  groupBy: string[] | undefined,
+  groupBy: Array<string | ReportGroupByField> | undefined,
   columnKeys: Values,
   having?: ReportHavingFilter[],
   preferColumnKeys?: string[],
   selectedFields?: ReportSelectedFieldPayload[],
 ): ReportComposeGroupRow[] {
-  const groupByList = (groupBy ?? []).map((field) => field.trim()).filter(Boolean);
+  const groupByList = resolveReportGroupByFieldNames(groupBy);
   if (!groupByList.length) return [];
 
   const remaining = new Set(groupByList);
@@ -369,7 +393,9 @@ export function parseComposeGroupRowsFromGroupBy(
     );
     rows.push({
       ...base,
-      dateTimeFormat: findSelectedDateTimeFormat(primary, selectedFields),
+      dateTimeFormat:
+        findGroupByDateTimeFormat(primary, groupBy) ||
+        findSelectedDateTimeFormat(primary, selectedFields),
     });
     for (const member of members) remaining.delete(member);
   }
@@ -383,7 +409,9 @@ export function parseComposeGroupRowsFromGroupBy(
     );
     rows.push({
       ...base,
-      dateTimeFormat: findSelectedDateTimeFormat(apiField, selectedFields),
+      dateTimeFormat:
+        findGroupByDateTimeFormat(apiField, groupBy) ||
+        findSelectedDateTimeFormat(apiField, selectedFields),
     });
     remaining.delete(apiField);
   }
@@ -786,9 +814,9 @@ function isMaxAggregatableReportField(
   return !LIKELY_NON_MAX_AGGREGATABLE_LEAVES.has(leaf);
 }
 
-function collectEntityPrefixesFromGroupBy(groupBy: string[]): Set<string> {
+function collectEntityPrefixesFromGroupBy(groupBy: ReportGroupByField[]): Set<string> {
   const prefixes = new Set<string>();
-  for (const field of groupBy) {
+  for (const field of resolveReportGroupByFieldNames(groupBy)) {
     const dot = field.lastIndexOf('.');
     if (dot > 0) {
       prefixes.add(field.slice(0, dot));
@@ -800,20 +828,26 @@ function collectEntityPrefixesFromGroupBy(groupBy: string[]): Set<string> {
 /**
  * Если в groupBy уже есть поля сущности (vehicleBind.vehicle.*), остальные выбранные поля
  * того же префикса тоже включаем в GROUP BY — иначе Hibernate пытается max(enum) и падает.
+ *
+ * Поля с aggregation (COUNT и т.п.) — меры, не измерения: в groupBy их не тянем,
+ * иначе бэкенд попадает в «aggregate functions are not allowed in GROUP BY»
+ * (типичный кейс: группировка по user.firstName при COUNT(user.fullName) в составе).
  */
 export function augmentGroupByWithSiblingSelectedFields(
-  groupBy: string[],
+  groupBy: ReportGroupByField[],
   selectedFields: ReportSelectedFieldPayload[],
-): string[] {
+): ReportGroupByField[] {
   const prefixes = collectEntityPrefixesFromGroupBy(groupBy);
   if (!prefixes.size) return groupBy;
 
-  const groupSet = new Set(groupBy);
+  const groupSet = new Set(resolveReportGroupByFieldNames(groupBy));
   const augmented = [...groupBy];
 
   for (const field of selectedFields) {
     const name = field.fieldName?.trim();
     if (!name || groupSet.has(name)) continue;
+    // Мера (COUNT/SUM/…) не должна попадать в GROUP BY как «сосед» измерения.
+    if (String(field.aggregation ?? '').trim()) continue;
 
     const dot = name.lastIndexOf('.');
     if (dot <= 0) continue;
@@ -821,7 +855,7 @@ export function augmentGroupByWithSiblingSelectedFields(
     const prefix = name.slice(0, dot);
     if (!prefixes.has(prefix)) continue;
 
-    augmented.push(name);
+    augmented.push({ fieldName: name });
     groupSet.add(name);
   }
 
@@ -1068,7 +1102,7 @@ export function applyAutoAggregateRemainingFields(
   );
   if (!aggregation || aggregation === 'none') return body;
 
-  const groupSet = new Set(body.groupBy ?? []);
+  const groupSet = new Set(resolveReportGroupByFieldNames(body.groupBy));
   const selectedFields = (body.selectedFields ?? []).map((field) => {
     const name = field.fieldName?.trim();
     if (!name || groupSet.has(name)) return field;
@@ -1097,12 +1131,13 @@ export function finalizeReportQueryBodyForGroupBy(
   const groupBy = body.groupBy;
   if (!groupBy?.length) return body;
 
+  const groupByNames = resolveReportGroupByFieldNames(groupBy);
   const withoutMapExtras = stripMapNavigationFieldsIncompatibleWithGroupBy(
     body.selectedFields ?? [],
-    groupBy,
+    groupByNames,
   );
   const effectiveGroupBy = augmentGroupByWithSiblingSelectedFields(groupBy, withoutMapExtras);
-  const groupSet = new Set(effectiveGroupBy);
+  const groupSet = new Set(resolveReportGroupByFieldNames(effectiveGroupBy));
   const withAutoAgg = applyAutoAggregateRemainingFields(
     { ...body, groupBy: effectiveGroupBy, selectedFields: withoutMapExtras },
     groupRows ?? [],
@@ -1128,7 +1163,7 @@ export function finalizeReportQueryBodyForGroupBy(
     selectedFields,
     ...(body.having?.length ? { having: body.having } : {}),
   };
-  // dateTimeFormat — только при наличии groupRows (модалка); sanitize без rows не затирает.
+  // dateTimeFormat на selectedFields — при groupRows; sanitize без rows не затирает.
   return applyDateTimeFormatFromGroupRows(finalized, groupRows);
 }
 

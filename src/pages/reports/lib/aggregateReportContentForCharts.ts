@@ -20,7 +20,11 @@ import {
 } from './reportChartRowLabels';
 import { classifySobrietyLabel, getEventTypeLabel } from './sobriety';
 
-import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
+import {
+  resolveReportGroupByFieldNames,
+  type ReportGroupByField,
+  type ReportSelectedFieldPayload,
+} from '../types/reportApiTypes';
 
 const RANKING_CHART_LIMIT = 12;
 const BREAKDOWN_LIMIT = 8;
@@ -346,14 +350,14 @@ function aggregateGroupedContent(
 export function aggregateReportContentForCharts(
   content: Record<string, unknown>[],
   options?: {
-    groupBy?: string[];
+    groupBy?: Array<string | ReportGroupByField>;
     selectedFields?: ReportSelectedFieldPayload[];
     t?: TFunction;
   },
 ): ReportAggregates | null {
   if (!content.length) return null;
 
-  const groupBy = (options?.groupBy ?? []).filter(Boolean);
+  const groupBy = resolveReportGroupByFieldNames(options?.groupBy);
   if (groupBy.length) {
     return aggregateGroupedContent(content, groupBy, options?.selectedFields);
   }

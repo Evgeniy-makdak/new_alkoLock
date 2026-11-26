@@ -1,5 +1,6 @@
 import type { ReportChartSpec } from './chartSpec';
 import type {
+  ReportGroupByField,
   ReportHavingFilter,
   ReportLogicConnect,
   ReportQueryFilter,
@@ -41,7 +42,7 @@ export type ReportAiComposeDraft = {
   entityName: string;
   selectedFields: ReportSelectedFieldPayload[];
   filters: ReportQueryFilter[];
-  groupBy?: string[];
+  groupBy?: ReportGroupByField[];
   having?: ReportHavingFilter[];
   havingConnects?: ReportLogicConnect[];
   logicConnects?: ReportLogicConnect[];

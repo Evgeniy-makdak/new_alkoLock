@@ -78,7 +78,7 @@ export function buildLocalReportAiComposeDraft(
   const relativeDateRanges: ReportAiComposeDraft['relativeDateRanges'] = [];
   const filters: ReportAiComposeDraft['filters'] = [];
   const sort: string[] = [];
-  let groupBy: string[] | undefined;
+  let groupBy: ReportAiComposeDraft['groupBy'];
   let chartSpec: ReportAiComposeDraft['chartSpec'];
 
   const serialMatch = text.match(
@@ -184,7 +184,10 @@ export function buildLocalReportAiComposeDraft(
   }
 
   if (/водител/i.test(text) && /статистик/i.test(text)) {
-    groupBy = entity.entityName === 'DeviceEvent' ? ['user.id'] : ['id'];
+    groupBy =
+      entity.entityName === 'DeviceEvent'
+        ? [{ fieldName: 'user.id' }]
+        : [{ fieldName: 'id' }];
     if (!selectedFields.some((f) => f.fieldName === 'id')) {
       selectedFields.unshift({ fieldName: 'id', aggregation: 'count' });
     } else {

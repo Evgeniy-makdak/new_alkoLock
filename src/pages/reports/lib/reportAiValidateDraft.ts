@@ -11,11 +11,22 @@ import type {
   ReportAiResolveHint,
   ReportAiValidatedCompose,
 } from '../types/reportAiComposeTypes';
-import type {
-  ReportEntityMetadata,
-  ReportQueryFilter,
-  ReportSelectedFieldPayload,
+import {
+  normalizeReportGroupByFields,
+  type ReportEntityMetadata,
+  type ReportGroupByField,
+  type ReportQueryFilter,
+  type ReportSelectedFieldPayload,
 } from '../types/reportApiTypes';
+
+/** LLM/legacy могут отдать строки или объекты GroupBy — нормализуем к контракту. */
+function normalizeDraftGroupBy(raw: unknown): ReportGroupByField[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const result = normalizeReportGroupByFields(
+    raw as Array<string | ReportGroupByField>,
+  );
+  return result.length ? result : undefined;
+}
 
 function normalizeOperator(op: string): string {
   return (op ?? '').trim();
@@ -101,9 +112,7 @@ function normalizeDraftShape(raw: unknown): ReportAiComposeDraft | null {
     entityName,
     selectedFields,
     filters,
-    groupBy: Array.isArray(o.groupBy)
-      ? o.groupBy.map((x) => String(x).trim()).filter(Boolean)
-      : undefined,
+    groupBy: normalizeDraftGroupBy(o.groupBy),
     having: Array.isArray(o.having) ? (o.having as ReportAiComposeDraft['having']) : undefined,
     havingConnects: Array.isArray(o.havingConnects)
       ? (o.havingConnects as ReportAiComposeDraft['havingConnects'])
@@ -353,7 +362,8 @@ export async function validateAndResolveReportAiDraft(
     filters.push(filter);
   }
 
-  const groupBy = (draft.groupBy ?? []).filter((path) => {
+  const groupBy = (draft.groupBy ?? []).filter((item) => {
+    const path = item.fieldName;
     const info = index.get(path);
     if (index.size && info && !info.groupable) {
       warnings.push(`groupBy «${path}» пропущен (не groupable).`);

@@ -256,7 +256,7 @@ export function mapReportContentToResultGrid(
   referenceEntityMetadataByName: Record<string, ReportEntityMetadata | null> = {},
   selectedFieldsForColumnOrder?: ReportSelectedFieldPayload[],
   entities: ReportEntityListItem[] = [],
-  groupBy?: string[],
+  groupBy?: Array<string | { fieldName?: string }>,
   /** Ключи с закрытым глазом — не рендерить в гриде (в т.ч. Идентификатор, если скрыт). */
   hiddenColumnKeys: string[] = [],
   /**

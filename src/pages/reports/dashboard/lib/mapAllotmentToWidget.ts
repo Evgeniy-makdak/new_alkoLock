@@ -1,4 +1,8 @@
-import type { ReportQueryRequest } from '../../types/reportApiTypes';
+import {
+  normalizeReportGroupByFields,
+  type ReportGroupByField,
+  type ReportQueryRequest,
+} from '../../types/reportApiTypes';
 import type {
   BackendDashboardDto,
   DashboardAccessEntry,
@@ -32,7 +36,12 @@ export function allotmentDefinitionToQueryRequest(
       ? (definition.filters as ReportQueryRequest['filters'])
       : [],
   };
-  if (Array.isArray(definition.groupBy)) body.groupBy = definition.groupBy as string[];
+  if (Array.isArray(definition.groupBy)) {
+    const groupBy = normalizeReportGroupByFields(
+      definition.groupBy as Array<string | ReportGroupByField>,
+    );
+    if (groupBy.length) body.groupBy = groupBy;
+  }
   if (Array.isArray(definition.having)) {
     body.having = definition.having as ReportQueryRequest['having'];
   }

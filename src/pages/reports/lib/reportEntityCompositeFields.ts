@@ -679,11 +679,19 @@ function isCompositeBundleRepresentedInGroupBy(
  */
 export function stripUngroupedCompositeMemberFields(
   fields: ReportSelectedFieldPayload[],
-  groupBy: string[] | undefined,
+  groupBy: Array<string | { fieldName?: string }> | undefined,
 ): ReportSelectedFieldPayload[] {
   if (!groupBy?.length) return fields;
 
-  const groupSet = new Set(groupBy);
+  const groupSet = new Set(
+    groupBy
+      .map((item) =>
+        typeof item === 'string'
+          ? item.trim()
+          : String(item?.fieldName ?? '').trim(),
+      )
+      .filter(Boolean),
+  );
   const fieldNames = fields
     .map((field) => field.fieldName?.trim())
     .filter((name): name is string => Boolean(name));

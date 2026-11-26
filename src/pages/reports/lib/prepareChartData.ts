@@ -1,5 +1,11 @@
 import type { ReportChartEncoding, ReportChartSpec } from '../types/chartSpec';
 import { createDefaultChartSpec } from '../types/chartSpec';
+import {
+  resolveReportGroupByFieldNames,
+  type ReportGroupByField,
+} from '../types/reportApiTypes';
+
+type ReportGroupByInput = Array<string | ReportGroupByField> | undefined;
 
 export type ChartDatasetPoint = {
   category: string;
@@ -68,10 +74,11 @@ function looksLikeDateField(field: string): boolean {
 
 function pickDefaultCategoryField(
   rows: Array<Record<string, unknown>>,
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): string | null {
-  if (groupBy?.length) {
-    const first = groupBy.find((field) => field && rows.some((row) => field in row));
+  const groupByNames = resolveReportGroupByFieldNames(groupBy);
+  if (groupByNames.length) {
+    const first = groupByNames.find((field) => field && rows.some((row) => field in row));
     if (first) return first;
   }
   if (!rows.length) return null;
@@ -117,7 +124,7 @@ function pickDefaultValueField(
 export function resolveChartEncoding(
   spec: ReportChartSpec,
   rows: Array<Record<string, unknown>>,
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): ReportChartEncoding {
   const categoryField =
     spec.encoding.categoryField && rows.some((r) => spec.encoding.categoryField! in r)
@@ -163,7 +170,7 @@ function parseSortableDate(label: string): number | null {
 export function prepareChartData(
   rows: Array<Record<string, unknown>>,
   spec: ReportChartSpec,
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): ChartPreparedData {
   const encoding = resolveChartEncoding(spec, rows, groupBy);
   const empty: ChartPreparedData = {
@@ -245,7 +252,7 @@ export function prepareChartData(
 
 export function inferInitialChartSpec(
   rows: Array<Record<string, unknown>>,
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): ReportChartSpec {
   const encoding = resolveChartEncoding(createDefaultChartSpec(), rows, groupBy);
   return createDefaultChartSpec({ encoding });

@@ -2,6 +2,7 @@ import type { Values } from '@shared/ui/search_multiple_select';
 
 import type { ReportChartSpec } from '../types/chartSpec';
 import type {
+  ReportGroupByField,
   ReportHavingFilter,
   ReportHavingGroupConnection,
   ReportLogicConnect,
@@ -58,7 +59,7 @@ export type ReportDashboardAllotmentDefinition = {
   filters: ReportQueryFilter[];
   /** Обязателен в PUT definition — иначе 409 «Не совпадают entity…». */
   entityName?: string;
-  groupBy?: string[];
+  groupBy?: ReportGroupByField[];
   having?: ReportHavingFilter[];
   havingConnects?: ReportLogicConnect[];
   havingGroupConnections?: ReportHavingGroupConnection[];

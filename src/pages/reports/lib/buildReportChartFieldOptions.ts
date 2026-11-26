@@ -1,4 +1,7 @@
-import type { ReportQueryRequest } from '../types/reportApiTypes';
+import {
+  resolveReportGroupByFieldNames,
+  type ReportQueryRequest,
+} from '../types/reportApiTypes';
 
 export type ReportChartFieldOption = { value: string; label: string };
 
@@ -19,8 +22,8 @@ export function buildReportChartFieldOptions(
   for (const field of queryContext?.body?.selectedFields ?? []) {
     if (field?.fieldName) keys.add(field.fieldName);
   }
-  for (const field of queryContext?.body?.groupBy ?? []) {
-    if (field) keys.add(field);
+  for (const field of resolveReportGroupByFieldNames(queryContext?.body?.groupBy)) {
+    keys.add(field);
   }
   for (const row of content ?? []) {
     Object.keys(row).forEach((key) => keys.add(key));

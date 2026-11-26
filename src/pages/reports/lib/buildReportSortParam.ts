@@ -17,9 +17,14 @@ import { isReportSortApiFieldHidden } from './reportColumnVisibility';
 
 import type { ReportComposeSortRow, ReportSortDirection } from '../types/reportComposeSort';
 import { createReportComposeSortRow } from '../types/reportComposeSort';
-import type { ReportSelectedFieldPayload } from '../types/reportApiTypes';
+import type {
+  ReportGroupByField,
+  ReportSelectedFieldPayload,
+} from '../types/reportApiTypes';
 import { SortsTypes } from '@shared/config/queryParamsEnums';
 import type { Values } from '@shared/ui/search_multiple_select';
+
+type ReportGroupByInput = Array<string | ReportGroupByField> | undefined;
 
 /** Устаревшие ключи грида → ключ колонки content (как в selectedFields / content). */
 const REPORT_GRID_FIELD_TO_CONTENT_KEY: Record<string, string> = {
@@ -43,7 +48,7 @@ export function resolveReportSortApiField(contentColumnKey: string): string {
  */
 export function resolveReportSortApiFieldForQuery(
   columnKey: string,
-  _groupBy?: string[],
+  _groupBy?: ReportGroupByInput,
 ): string | null {
   void _groupBy;
   return resolveComposeColumnApiField(columnKey);
@@ -51,7 +56,7 @@ export function resolveReportSortApiFieldForQuery(
 
 export function isReportSortAllowedWithGroupBy(
   columnKey: string,
-  groupBy: string[] | undefined,
+  groupBy: ReportGroupByInput,
 ): boolean {
   return resolveReportSortApiFieldForQuery(columnKey, groupBy) != null;
 }
@@ -59,7 +64,7 @@ export function isReportSortAllowedWithGroupBy(
 /** content-ключ колонки → имя для &sort= */
 export function buildReportSortFieldMap(
   selectedFields: ReportSelectedFieldPayload[],
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): Map<string, string> {
   const map = new Map<string, string>();
   const fieldNames: string[] = [];
@@ -103,7 +108,7 @@ export function buildReportSortFieldMap(
 export function buildReportSortParams(
   sortModel: GridSortModel,
   sortFieldByColumn: Map<string, string>,
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
 ): string[] {
   const item = sortModel[0];
   if (!item?.field || !item.sort) {
@@ -225,7 +230,7 @@ export function resolveComposeColumnApiField(columnKey: string): string | null {
 /** Строки сортировки из формы «Новый отчёт» → параметры pageable.sort. */
 export function buildComposeSortParams(
   rows: { columnKey: string; direction: 'ASC' | 'DESC' }[],
-  groupBy?: string[],
+  groupBy?: ReportGroupByInput,
   selectedFields?: ReportSelectedFieldPayload[],
   columnFields?: Values,
 ): string[] {

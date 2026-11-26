@@ -157,11 +157,61 @@ export type ReportQueryRowPayload = {
   filters: ReportQueryFilter[];
 };
 
+/**
+ * Элемент groupBy в POST …/query (ReportDto$GroupBy).
+ * dateTimeFormat/timeZone — для DATETIME-измерений из «Группировки».
+ */
+export type ReportGroupByField = {
+  fieldName: string;
+  dateTimeFormat?: string;
+  timeZone?: string;
+};
+
+/** fieldName из groupBy (объекты контракта или legacy-строки). */
+export function resolveReportGroupByFieldNames(
+  groupBy: Array<string | ReportGroupByField> | undefined | null,
+): string[] {
+  if (!groupBy?.length) return [];
+  const names: string[] = [];
+  for (const item of groupBy) {
+    const name =
+      typeof item === 'string'
+        ? item.trim()
+        : String((item as ReportGroupByField)?.fieldName ?? '').trim();
+    if (name) names.push(name);
+  }
+  return names;
+}
+
+/** Нормализация groupBy к объектам контракта (legacy string[] → { fieldName }). */
+export function normalizeReportGroupByFields(
+  groupBy: Array<string | ReportGroupByField> | undefined | null,
+): ReportGroupByField[] {
+  if (!groupBy?.length) return [];
+  const result: ReportGroupByField[] = [];
+  for (const item of groupBy) {
+    if (typeof item === 'string') {
+      const fieldName = item.trim();
+      if (fieldName) result.push({ fieldName });
+      continue;
+    }
+    const fieldName = String(item?.fieldName ?? '').trim();
+    if (!fieldName) continue;
+    const entry: ReportGroupByField = { fieldName };
+    const dateTimeFormat = String(item?.dateTimeFormat ?? '').trim();
+    if (dateTimeFormat) entry.dateTimeFormat = dateTimeFormat;
+    const timeZone = String(item?.timeZone ?? '').trim();
+    if (timeZone) entry.timeZone = timeZone;
+    result.push(entry);
+  }
+  return result;
+}
+
 /** Тело query в POST api/v1/reports/{entity}/query. */
 export type ReportQueryRequest = {
   selectedFields: ReportSelectedFieldPayload[];
   filters: ReportQueryFilter[];
-  groupBy?: string[];
+  groupBy?: ReportGroupByField[];
   having?: ReportHavingFilter[];
   havingConnects?: ReportLogicConnect[];
   havingGroupConnections?: ReportHavingGroupConnection[];

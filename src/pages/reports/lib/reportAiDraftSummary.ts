@@ -86,9 +86,10 @@ export function buildReportAiDraftSummary(
   );
   lines.push(`Фильтры: ${filters.length ? filters.join('; ') : '(нет)'}`);
 
-  const groupBy = (draft.groupBy ?? []).map(
-    (path) => (fieldLabels[path] ?? '').trim() || path,
-  );
+  const groupBy = (draft.groupBy ?? []).map((item) => {
+    const path = item.fieldName;
+    return (fieldLabels[path] ?? '').trim() || path;
+  });
   lines.push(`Группировка: ${groupBy.length ? groupBy.join(', ') : '(нет)'}`);
 
   const sort = (draft.sort ?? []).map((param) => {
