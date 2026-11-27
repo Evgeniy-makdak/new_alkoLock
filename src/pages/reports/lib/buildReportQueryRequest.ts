@@ -26,7 +26,7 @@ import {
   resolveCoordinateMemberFilterFieldName,
 } from './reportCoordinateComposite';
 import {
-  encodeReportFieldAliasForApi,
+  extractReportTableFieldLabelLeaf,
   resolveReportFieldAliasForApi,
   resolveReportFieldDefaultLabelForAlias,
 } from './reportSelectedFieldAliases';
@@ -71,11 +71,12 @@ import {
 } from './reportNestedFilterPath';
 
 /**
- * Fallback-alias для дублей: та же подпись поля, что в составе (как resolveReportFieldAliasForApi).
- * Не дописываем «_N» и не вырезаем «Сущность ->» — клон уже несёт нужную подпись из UI.
+ * Fallback-alias для дублей: только лист после «->» (напр. «Пользователь_1»).
+ * «_N» уже в подписи клона из UI — отдельно не добавляем.
  */
 function encodeSafeReportFieldAlias(display: string, _uiDupIndex: number): string {
-  return encodeReportFieldAliasForApi(display) || 'column';
+  const trimmed = display.trim();
+  return extractReportTableFieldLabelLeaf(trimmed) || trimmed || 'column';
 }
 
 function pickOperator(field: ReportFieldDefinition | undefined, multi: boolean): string {
@@ -351,8 +352,8 @@ function buildRowReportTableFields(
       ),
       label: displayLabel,
     };
-    // Alias = подпись после клона/карандаша как в UI (пробелы и «->» сохраняем).
-    // Дефолт «Сущность -> Поле» без изменений — alias не эмитим.
+    // Alias: клон → только лист после «->» («Пользователь_1»); rename → вся подпись
+    // (charset без пробелов/«->»). Дефолт «Сущность -> Поле» — alias не эмитим.
     const isDupBase = (baseOccurrenceCount.get(basePath) ?? 0) > 1;
     const isStandaloneCompositeMember =
       !expandedFromComposite && compositeMemberBasePaths.has(basePath);
@@ -365,6 +366,7 @@ function buildRowReportTableFields(
     // Индекс из UI-ключа («field#2» → 2), НЕ из порядка эмита: клон выше оригинала
     // всё равно должен получить уникальный alias, а голый path — остаться без forced alias.
     const uiDupIndex = getDuplicateColumnIndex(emitPath);
+    const isCloneRow = uiDupIndex > 1;
 
     // Раскрытие composite: подпись колонки ≠ rename члена — alias не эмитим.
     const apiAlias = expandedFromComposite
@@ -374,12 +376,12 @@ function buildRowReportTableFields(
           basePath,
           payload.fieldName,
           defaultLabel,
+          { isClone: isCloneRow },
         );
     if (apiAlias) {
       payload.alias = apiAlias;
-    } else if (isDupBase && (uiDupIndex > 1 || isStandaloneCompositeMember)) {
-      // Fallback: подпись клона из UI как есть (без искусственного «_N»).
-      // Обычно срабатывает resolveReportFieldAliasForApi — ветка на крайние случаи.
+    } else if (isDupBase && (isCloneRow || isStandaloneCompositeMember)) {
+      // Fallback: лист клона (напр. «Пользователь_1») — крайние случаи.
       payload.alias = encodeSafeReportFieldAlias(
         displayLabel,
         isStandaloneCompositeMember ? standaloneMemberOccurrence : uiDupIndex,

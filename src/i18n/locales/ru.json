@@ -1012,6 +1012,8 @@
     "tableFieldsSelectAll": "Выбрать все",
     "tableFieldRenameHint": "Отметьте строку для переноса. Переименование — кнопка с карандашом справа.",
     "tableFieldRenameAria": "Название колонки: {{field}}",
+    "tableFieldAliasEmpty": "Название колонки не может быть пустым",
+    "tableFieldAliasInvalidChars": "Алиас может содержать только буквы, цифры и символ подчёркивания (без пробелов и «->»)",
     "tableFieldsDialogEmpty": "Нет доступных полей для отчёта",
     "addOutputRow": "Добавить вариант отчёта",
     "removeOutputRow": "Удалить вариант отчёта",

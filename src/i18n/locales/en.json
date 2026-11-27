@@ -988,6 +988,8 @@
     "tableFieldsSelectAll": "Select all",
     "tableFieldRenameHint": "Select a row to move it. Use the pencil button on the right to rename.",
     "tableFieldRenameAria": "Column title: {{field}}",
+    "tableFieldAliasEmpty": "Column title cannot be empty",
+    "tableFieldAliasInvalidChars": "Alias may contain only letters, digits, and underscore (no spaces or «->»)",
     "tableFieldsDialogEmpty": "No fields available for the report",
     "totalEvents": "Events in selection",
     "chartByDay": "Trend by day",

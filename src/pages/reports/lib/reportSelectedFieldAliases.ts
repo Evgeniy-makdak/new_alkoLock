@@ -18,10 +18,17 @@ import type {
 } from '../types/reportApiTypes';
 
 /**
- * UI → API alias: подпись поля как в «Текущем составе», без правок.
- * Пробелы и «->» сохраняем; `_` только если он уже есть в подписи
- * (клон «…Дата_1», rename с подчёркиванием) — ничего не дописываем.
- * Пример: «Отчет о событиях -> Дата_1» → тот же текст.
+ * Backend принимает alias только из букв, цифр и `_`, начиная с буквы.
+ * Пробелы, «->» и прочие символы недопустимы.
+ */
+export function isValidReportFieldAliasForApi(alias: string): boolean {
+  const trimmed = alias.trim();
+  if (!trimmed) return false;
+  return /^[\p{L}][\p{L}\p{N}_]*$/u.test(trimmed);
+}
+
+/**
+ * UI → API: для клона — лист после «->»; для rename — строка как есть (уже валидная).
  */
 export function encodeReportFieldAliasForApi(displayAlias: string): string {
   return displayAlias.trim();
@@ -89,31 +96,38 @@ export function resolveReportFieldDefaultLabelForAlias(
 }
 
 /**
- * Alias в POST = подпись поля из «Текущего состава» после клонирования или
- * переименования (карандаш) — буквально как в UI.
- * Не урезаем до листа, не ставим `_` вместо пробелов/«->».
- * «_1» у клона уже в подписи из UI — отдельно не добавляем.
+ * Alias в POST:
+ * - клон («field#N»): только лист после «->» (уже с «_N» из UI), напр. «Пользователь_1»;
+ * - rename базовой строки карандашом: вся изменённая подпись целиком (без пробелов/«->»).
  *
  * Дефолтная авто-подпись «Сущность -> Поле» без изменений — alias не эмитим.
+ * Невалидный charset не эмитим (UI валидирует до commit).
  */
 export function resolveReportFieldAliasForApi(
   displayLabel: string,
   emitPath: string,
   fieldName: string,
   defaultFieldLabel: string,
+  options?: { isClone?: boolean },
 ): string | undefined {
   const label = displayLabel.trim();
   const defaultLabel = defaultFieldLabel.trim();
   if (!label || label === emitPath || label === fieldName) return undefined;
 
+  // Клон: в API только сущность высшего уровня (хвост после стрелки), label в UI полный.
+  if (options?.isClone) {
+    const leaf = extractReportTableFieldLabelLeaf(label) || label;
+    if (!leaf || leaf === emitPath || leaf === fieldName) return undefined;
+    return leaf;
+  }
+
   if (isReportTableFieldLabelAutoQualified(label)) {
     const leaf = extractReportTableFieldLabelLeaf(label);
     if (!leaf) return undefined;
-    // Без известного дефолта авто-подпись считаем неизменённой.
     if (!defaultLabel) return undefined;
-    // Лист совпадает с дефолтом metadata → это не rename/клон, alias не нужен.
+    // Лист совпадает с дефолтом metadata → не rename, alias не нужен.
     if (leaf === defaultLabel) return undefined;
-    // Дефолт свалился на technical path (fieldDef не найден) — «Сущность -> Поле» не alias.
+    // Дефолт свалился на technical path — «Сущность -> Поле» не alias.
     if (
       defaultLabel === emitPath ||
       defaultLabel === fieldName ||
@@ -121,13 +135,19 @@ export function resolveReportFieldAliasForApi(
     ) {
       return undefined;
     }
+    // Rename с сохранением «Сущность -> …»: alias = вся строка, только если charset ок.
+    // Обычно UI блокирует пробелы/«->» — тогда сюда не попадём.
+    const apiAlias = encodeReportFieldAliasForApi(label);
+    if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
+    return isValidReportFieldAliasForApi(apiAlias) ? apiAlias : undefined;
   }
 
-  // Ровно подпись поля (см. encodeReportFieldAliasForApi).
+  if (defaultLabel && label === defaultLabel) return undefined;
+
+  // Rename без клона: вся изменённая надпись = alias (при валидном charset).
   const apiAlias = encodeReportFieldAliasForApi(label);
   if (!apiAlias || apiAlias === emitPath || apiAlias === fieldName) return undefined;
-  // Bare leaf (== defaultLabel) тоже alias: снятие «Сущность ->», не дефолт UI.
-  return apiAlias;
+  return isValidReportFieldAliasForApi(apiAlias) ? apiAlias : undefined;
 }
 
 /**
@@ -138,9 +158,16 @@ export function shouldEmitReportFieldAlias(
   emitPath: string,
   fieldName: string,
   defaultFieldLabel: string,
+  options?: { isClone?: boolean },
 ): boolean {
   return Boolean(
-    resolveReportFieldAliasForApi(displayLabel, emitPath, fieldName, defaultFieldLabel),
+    resolveReportFieldAliasForApi(
+      displayLabel,
+      emitPath,
+      fieldName,
+      defaultFieldLabel,
+      options,
+    ),
   );
 }
 

@@ -34,21 +34,49 @@ jest.mock('../dashboard/lib/resolveWidgetColumnHeaderLabels', () => ({
 
 
 describe('resolveReportFieldAliasForApi', () => {
-  it('uses the clone/rename label literally (spaces and -> kept; only UI _N)', async () => {
+  it('emits only the leaf after -> for a cloned row', async () => {
     const { resolveReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
-    // Клон в UI: исходная подпись + «_1» — alias = эта же строка целиком.
+    // Клон: label полный, alias = лист «Дата_1».
     expect(
       resolveReportFieldAliasForApi(
         'Отчет о событиях -> Дата_1',
         'timestamp',
         'timestamp',
         'Дата',
+        { isClone: true },
       ),
-    ).toBe('Отчет о событиях -> Дата_1');
-    // Rename карандашом — как в поле, пробелы не трогаем.
+    ).toBe('Дата_1');
+    expect(
+      resolveReportFieldAliasForApi(
+        'Отчёт о событиях -> Пользователь_1',
+        'user',
+        'user',
+        'Пользователь',
+        { isClone: true },
+      ),
+    ).toBe('Пользователь_1');
+  });
+
+  it('emits the full renamed label for a base row when charset is valid', async () => {
+    const { resolveReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
+    expect(
+      resolveReportFieldAliasForApi('Моя_дата', 'timestamp', 'timestamp', 'Дата'),
+    ).toBe('Моя_дата');
+  });
+
+  it('does not emit alias for rename with forbidden characters', async () => {
+    const { resolveReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
     expect(
       resolveReportFieldAliasForApi('Моя дата', 'timestamp', 'timestamp', 'Дата'),
-    ).toBe('Моя дата');
+    ).toBeUndefined();
+    expect(
+      resolveReportFieldAliasForApi(
+        'Отчет о событиях -> Другое',
+        'timestamp',
+        'timestamp',
+        'Дата',
+      ),
+    ).toBeUndefined();
   });
 
   it('does not emit alias for an unchanged default qualified label', async () => {
@@ -61,6 +89,16 @@ describe('resolveReportFieldAliasForApi', () => {
         'Дата',
       ),
     ).toBeUndefined();
+  });
+});
+
+describe('isValidReportFieldAliasForApi', () => {
+  it('allows letters digits underscore and rejects spaces/arrow', async () => {
+    const { isValidReportFieldAliasForApi } = await import('./reportSelectedFieldAliases');
+    expect(isValidReportFieldAliasForApi('Пользователь_1')).toBe(true);
+    expect(isValidReportFieldAliasForApi('Моя_дата')).toBe(true);
+    expect(isValidReportFieldAliasForApi('Моя дата')).toBe(false);
+    expect(isValidReportFieldAliasForApi('Отчет -> Дата')).toBe(false);
   });
 });
 

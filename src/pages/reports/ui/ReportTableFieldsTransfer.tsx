@@ -47,6 +47,10 @@ import {
   isDuplicateColumnKey,
   stripDuplicateColumnSuffix,
 } from '@pages/reports/lib/reportColumnDuplicate';
+import {
+  extractReportTableFieldLabelLeaf,
+  isValidReportFieldAliasForApi,
+} from '@pages/reports/lib/reportSelectedFieldAliases';
 import { isReportIdentifierFieldPath } from '@pages/reports/lib/reportTableFieldIdentifier';
 
 import composeStyles from './ReportComposeModal.module.scss';
@@ -218,6 +222,7 @@ export function ReportTableFieldsTransfer({
   const chosenListRef = useRef<HTMLDivElement>(null);
   const [renamingKey, setRenamingKey] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
   /** Алиасы колонок по fieldName — сохраняются при переносе между списками. */
   const [customLabelsByKey, setCustomLabelsByKey] = useState<Record<string, string>>({});
 
@@ -412,6 +417,7 @@ export function ReportTableFieldsTransfer({
     setChosenSelected([]);
     if (renamingKey && remove.has(renamingKey)) {
       setRenamingKey(null);
+      setRenameError(null);
     }
   };
 
@@ -425,6 +431,7 @@ export function ReportTableFieldsTransfer({
     emitChosen(value.filter((item) => fieldKey(item) !== removeKey));
     if (renamingKey === removeKey) {
       setRenamingKey(null);
+      setRenameError(null);
     }
   };
 
@@ -450,9 +457,57 @@ export function ReportTableFieldsTransfer({
   const startRename = (key: string, currentLabel: string) => {
     setRenamingKey(key);
     setRenameDraft(currentLabel);
+    setRenameError(null);
+  };
+
+  /**
+   * Alias в API:
+   * - клон: лист после «->» (Пользователь_1);
+   * - базовая строка после карандаша: вся надпись целиком.
+   * Пробелы, «->» и прочие символы кроме букв/цифр/`_` — недопустимы.
+   */
+  const getRenameAliasValidationError = (key: string, draft: string): string | null => {
+    const trimmed = draft.trim();
+    if (!trimmed) {
+      return t('reports.tableFieldAliasEmpty', {
+        defaultValue: 'Название колонки не может быть пустым',
+      });
+    }
+    const baseKey = stripDuplicateColumnSuffix(key);
+    const defaultLabel = defaultLabelsByValue[baseKey] || baseKey;
+    const isClone = getDuplicateColumnIndex(key) > 1;
+
+    if (isClone) {
+      const leaf = extractReportTableFieldLabelLeaf(trimmed) || trimmed;
+      if (!isValidReportFieldAliasForApi(leaf)) {
+        return t('reports.tableFieldAliasInvalidChars', {
+          defaultValue:
+            'Алиас может содержать только буквы, цифры и символ подчёркивания (без пробелов и «->»)',
+        });
+      }
+      return null;
+    }
+
+    // Базовая строка: дефолт «Сущность -> Поле» без изменений — alias не уходит, ок.
+    if (trimmed === defaultLabel) return null;
+
+    // Rename: вся изменённая надпись = alias → charset как у бэка.
+    if (!isValidReportFieldAliasForApi(trimmed)) {
+      return t('reports.tableFieldAliasInvalidChars', {
+        defaultValue:
+          'Алиас может содержать только буквы, цифры и символ подчёркивания (без пробелов и «->»)',
+      });
+    }
+    return null;
   };
 
   const commitRename = (key: string) => {
+    const error = getRenameAliasValidationError(key, renameDraft);
+    if (error) {
+      setRenameError(error);
+      return;
+    }
+    setRenameError(null);
     updateLabel(key, renameDraft);
     setRenamingKey(null);
   };
@@ -460,6 +515,7 @@ export function ReportTableFieldsTransfer({
   const cancelRename = () => {
     setRenamingKey(null);
     setRenameDraft('');
+    setRenameError(null);
   };
 
   /** Вернуть подпись колонки к дефолту из metadata («Сущность -> поле»). */
@@ -508,11 +564,9 @@ export function ReportTableFieldsTransfer({
         }),
       );
       const dupKey = buildDuplicateColumnKey(base, maxIndex + 1);
-      // Порядковый номер клона (первый дубль — «_1», второй — «_2» и т.д.)
-      // добавляется к подписи строки и автоматически попадает в SQL-alias
-      // (resolveReportFieldAliasForApi: подпись ≠ дефолтной → alias эмитится),
-      // чтобы колонки-дубли были различимы при группировке/фильтрации.
-      // Без скобок: бэк отклоняет их в именах алиасов.
+      // Порядковый номер клона (первый дубль — «_1») дописывается к подписи UI.
+      // В POST alias уходит только лист после «->» (напр. «Пользователь_1»),
+      // полный label «Сущность -> Пользователь_1» остаётся в составе для отображения.
       const cloneSequence = maxIndex;
       const sourceLabel = fieldDisplayLabel(
         value[rowIndex]!,
@@ -848,8 +902,13 @@ export function ReportTableFieldsTransfer({
                   fullWidth
                   value={renameDraft}
                   disabled={disabled}
+                  error={Boolean(renameError)}
+                  helperText={renameError || undefined}
                   onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => setRenameDraft(e.target.value)}
+                  onChange={(e) => {
+                    setRenameDraft(e.target.value);
+                    if (renameError) setRenameError(null);
+                  }}
                   onBlur={() => commitRename(key)}
                   onKeyDown={(e) => {
                     e.stopPropagation();
